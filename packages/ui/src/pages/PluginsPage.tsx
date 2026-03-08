@@ -12,7 +12,12 @@ import {
   Globe,
   AlertTriangle,
   Database,
+  Home,
+  Zap,
+  Layers,
+  Code,
 } from '../components/icons';
+import { PageHomeTab } from '../components/PageHomeTab';
 import { DynamicConfigForm } from '../components/DynamicConfigForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
@@ -83,6 +88,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
 };
 
+type TabId = 'home' | 'installed' | 'system';
+
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  installed: 'Installed',
+  system: 'System',
+};
+
+const TAB_DESCRIPTIONS: Record<TabId, string> = {
+  home: 'Overview of the plugin system',
+  installed: 'View and manage installed plugins',
+  system: 'Browse system plugins',
+};
+
 export function PluginsPage() {
   const toast = useToast();
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -90,6 +109,7 @@ export function PluginsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | null>(null);
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [activeTab, setActiveTab] = useState<TabId>('home');
 
   useEffect(() => {
     fetchPlugins();
@@ -158,83 +178,182 @@ export function PluginsPage() {
         </button>
       </header>
 
-      {/* Stats Bar */}
-      {stats && (
-        <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                {stats.total}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              <span className="text-text-muted dark:text-dark-text-muted">Enabled:</span>
-              <span className="font-medium text-success">{stats.enabled}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-text-muted" />
-              <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
-                {stats.disabled}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-primary" />
-              <span className="text-text-muted dark:text-dark-text-muted">Tools:</span>
-              <span className="font-medium text-primary">{stats.totalTools}</span>
-            </div>
-          </div>
+      {/* Tab Bar */}
+      <div className="flex gap-0 px-6 border-b border-border dark:border-dark-border">
+        {(['home', 'installed', 'system'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+            }`}
+            title={TAB_DESCRIPTIONS[tab]}
+          >
+            {tab === 'home' && <Home className="w-3.5 h-3.5" />}
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      {/* Home Tab */}
+      {activeTab === 'home' && (
+        <div className="flex-1 overflow-y-auto">
+          <PageHomeTab
+            heroIcons={[
+              { icon: Puzzle, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Settings, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Zap, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Extend Your AI with Plugins"
+            subtitle="Plugins add new capabilities — tools, routes, event handlers. Install system plugins or build your own."
+            cta={{ label: 'Browse Plugins', icon: Puzzle, onClick: () => setActiveTab('installed') }}
+            features={[
+              {
+                icon: Layers,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Modular Architecture',
+                description:
+                  'Each plugin is self-contained with its own tools, handlers, and configuration. Enable or disable without affecting other plugins.',
+              },
+              {
+                icon: Shield,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'System Plugins',
+                description:
+                  'Pre-built plugins for common tasks — productivity, integrations, data management, and more.',
+              },
+              {
+                icon: Code,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Event Hooks',
+                description:
+                  'Plugins can listen and react to system events, enabling powerful automation and cross-plugin communication.',
+              },
+              {
+                icon: RefreshCw,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Hot Reload',
+                description:
+                  'Enable, disable, or reconfigure plugins on the fly without restarting the system.',
+              },
+            ]}
+            steps={[
+              { title: 'Browse plugins', detail: 'Explore the installed and system plugin catalog.' },
+              {
+                title: 'Enable & configure',
+                detail: 'Turn on plugins and adjust their settings to fit your needs.',
+              },
+              {
+                title: 'Use new tools',
+                detail: 'Enabled plugins register new tools your AI can use in conversations.',
+              },
+              {
+                title: 'Build your own',
+                detail: 'Create custom plugins with tools, event handlers, and UI components.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Puzzle,
+                label: 'View Installed',
+                description: 'See all installed plugins',
+                onClick: () => setActiveTab('installed'),
+              },
+              {
+                icon: Settings,
+                label: 'System Plugins',
+                description: 'Browse system plugin catalog',
+                onClick: () => setActiveTab('system'),
+              },
+            ]}
+          />
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="px-6 py-3 border-b border-border dark:border-dark-border">
-        <div className="flex gap-2">
-          {(['all', 'enabled', 'disabled'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filter === f
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-              }`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Installed / System Tabs Content */}
+      {activeTab !== 'home' && (
+        <>
+          {/* Stats Bar */}
+          {stats && (
+            <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    {stats.total}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-success" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Enabled:</span>
+                  <span className="font-medium text-success">{stats.enabled}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-text-muted" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
+                  <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                    {stats.disabled}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-primary" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Tools:</span>
+                  <span className="font-medium text-primary">{stats.totalTools}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <LoadingSpinner message="Loading plugins..." />
-        ) : filteredPlugins.length === 0 ? (
-          <EmptyState
-            icon={Puzzle}
-            title={`No plugins ${filter !== 'all' ? filter : 'installed'}`}
-            description={
-              filter === 'all'
-                ? 'Install plugins to extend your AI assistant.'
-                : `No ${filter} plugins found.`
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPlugins.map((plugin) => (
-              <PluginCard
-                key={plugin.id}
-                plugin={plugin}
-                onToggle={() => togglePlugin(plugin)}
-                onClick={() => setSelectedPlugin(plugin)}
-              />
-            ))}
+          {/* Filter Tabs */}
+          <div className="px-6 py-3 border-b border-border dark:border-dark-border">
+            <div className="flex gap-2">
+              {(['all', 'enabled', 'disabled'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    filter === f
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <LoadingSpinner message="Loading plugins..." />
+            ) : filteredPlugins.length === 0 ? (
+              <EmptyState
+                icon={Puzzle}
+                title={`No plugins ${filter !== 'all' ? filter : 'installed'}`}
+                description={
+                  filter === 'all'
+                    ? 'Install plugins to extend your AI assistant.'
+                    : `No ${filter} plugins found.`
+                }
+              />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredPlugins.map((plugin) => (
+                  <PluginCard
+                    key={plugin.id}
+                    plugin={plugin}
+                    onToggle={() => togglePlugin(plugin)}
+                    onClick={() => setSelectedPlugin(plugin)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Plugin Detail Modal */}
       {selectedPlugin && (
