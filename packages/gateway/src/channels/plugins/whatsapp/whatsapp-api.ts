@@ -774,14 +774,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       throw new Error('Rate limited — wait 30 seconds between history fetch requests');
     }
 
-    let anchor = this.historyAnchorByJid.get(groupJid);
-    if (!anchor) {
-      const dbAnchor = await this.loadHistoryAnchorFromDatabase(groupJid);
-      if (dbAnchor) {
-        this.historyAnchorByJid.set(groupJid, dbAnchor);
-        anchor = dbAnchor;
-      }
-    }
+    // Always load from DB — historyAnchorByJid tracks NEWEST per chat (for dedup/upsert),
+    // but fetchMessageHistory requires the OLDEST known message as anchor to page backward.
+    // Using newest as anchor yields empty ON_DEMAND batches (WhatsApp treats history as synced).
+    const anchor = await this.loadHistoryAnchorFromDatabase(groupJid);
     const anchorKey = anchor?.key;
     const requestKey =
       anchorKey?.id && anchorKey.id.length > 0
