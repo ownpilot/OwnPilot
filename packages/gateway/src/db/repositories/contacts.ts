@@ -431,13 +431,19 @@ export class ContactsRepository extends BaseRepository {
     externalSource: string;
     name: string;
     phone?: string;
+    /** When true, only update name if current name is just the phone number (pushName enrichment) */
+    softName?: boolean;
   }): Promise<void> {
+    const nameClause = input.softName
+      ? `name = CASE WHEN contacts.name = contacts.phone OR contacts.name ~ '^[0-9+]+$' THEN EXCLUDED.name ELSE contacts.name END`
+      : `name = EXCLUDED.name`;
+
     await this.execute(
       `INSERT INTO contacts (id, user_id, name, phone, external_id, external_source)
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (external_id, external_source)
        DO UPDATE SET
-         name = EXCLUDED.name,
+         ${nameClause},
          phone = COALESCE(EXCLUDED.phone, contacts.phone),
          updated_at = NOW()
        WHERE contacts.name != EXCLUDED.name

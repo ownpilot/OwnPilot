@@ -277,6 +277,20 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           }
         }
 
+        // Enrich contacts from message pushName (works for both notify and append)
+        // softName: only update if existing name is just a phone number (don't overwrite phonebook names)
+        const pushNameContacts = upsert.messages
+          .filter((msg) => msg.pushName && msg.key.remoteJid && !msg.key.fromMe)
+          .map((msg) => ({
+            id: msg.key.remoteJid!,
+            notify: msg.pushName!,
+          }));
+        if (pushNameContacts.length > 0) {
+          this.syncContactsToDb(pushNameContacts, { softName: true }).catch((err) => {
+            log.error('[WhatsApp] pushName contact sync failed:', err);
+          });
+        }
+
         if (upsert.type === 'append') {
           // Offline/reconnect messages: save to DB but do NOT trigger AI responses.
           // Serialized via historySyncQueue to prevent race conditions with messaging-history.set.
@@ -1663,7 +1677,8 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
    * Uses ON CONFLICT upsert — safe to call repeatedly (idempotent).
    */
   private async syncContactsToDb(
-    contacts: Array<{ id?: string; lid?: string; name?: string; notify?: string; verifiedName?: string; phoneNumber?: string }>
+    contacts: Array<{ id?: string; lid?: string; name?: string; notify?: string; verifiedName?: string; phoneNumber?: string }>,
+    options?: { softName?: boolean }
   ): Promise<number> {
     const { ContactsRepository } = await import('../../../db/repositories/contacts.js');
     const repo = new ContactsRepository();
@@ -1698,6 +1713,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           externalSource: 'whatsapp',
           name,
           phone,
+          softName: options?.softName,
         });
         synced++;
       } catch (err) {
