@@ -852,6 +852,7 @@ CREATE INDEX IF NOT EXISTS idx_calendar_user ON calendar_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_calendar_start ON calendar_events(start_time);
 CREATE INDEX IF NOT EXISTS idx_contacts_user ON contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_contacts_name ON contacts(name);
+ALTER TABLE contacts ADD CONSTRAINT IF NOT EXISTS uq_contacts_external UNIQUE (external_id, external_source);
 CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_time ON reminders(remind_at);

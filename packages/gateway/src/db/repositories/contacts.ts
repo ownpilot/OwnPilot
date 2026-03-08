@@ -421,6 +421,37 @@ export class ContactsRepository extends BaseRepository {
   async search(searchQuery: string, limit = 20): Promise<Contact[]> {
     return this.list({ search: searchQuery, limit });
   }
+
+  /**
+   * Upsert a contact by external ID + source (e.g. WhatsApp JID).
+   * Uses ON CONFLICT to insert or update. Only updates if name or phone changed.
+   */
+  async upsertByExternal(input: {
+    externalId: string;
+    externalSource: string;
+    name: string;
+    phone?: string;
+  }): Promise<void> {
+    await this.execute(
+      `INSERT INTO contacts (id, user_id, name, phone, external_id, external_source)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (external_id, external_source)
+       DO UPDATE SET
+         name = EXCLUDED.name,
+         phone = COALESCE(EXCLUDED.phone, contacts.phone),
+         updated_at = NOW()
+       WHERE contacts.name != EXCLUDED.name
+          OR contacts.phone IS DISTINCT FROM EXCLUDED.phone`,
+      [
+        crypto.randomUUID(),
+        this.userId,
+        input.name,
+        input.phone ?? null,
+        input.externalId,
+        input.externalSource,
+      ]
+    );
+  }
 }
 
 export const contactsRepo = new ContactsRepository();

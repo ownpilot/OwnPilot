@@ -320,6 +320,21 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Save credentials on update
       this.sock.ev.on('creds.update', saveCreds);
 
+      // Sync WhatsApp contacts to DB (new/updated contacts from phone)
+      this.sock.ev.on('contacts.upsert', (contacts) => {
+        log.info(`[WhatsApp] contacts.upsert: ${contacts.length} contacts`);
+        this.syncContactsToDb(contacts).catch((err) => {
+          log.error('[WhatsApp] contacts.upsert sync failed:', err);
+        });
+      });
+
+      this.sock.ev.on('contacts.update', (updates) => {
+        log.info(`[WhatsApp] contacts.update: ${updates.length} updates`);
+        this.syncContactsToDb(updates).catch((err) => {
+          log.error('[WhatsApp] contacts.update sync failed:', err);
+        });
+      });
+
       // Handle passive history sync (WhatsApp sends past messages on first connect)
       // Uses promise queue to serialize concurrent batches (Baileys can fire multiple events rapidly)
       this.sock.ev.on(
@@ -500,6 +515,27 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
                 );
               } else {
                 log.info('[WhatsApp] History sync — no processable messages in batch');
+              }
+
+              // Sync contacts from history sync payload to DB
+              if (contacts && contacts.length > 0) {
+                try {
+                  const mappedContacts = contacts
+                    .filter((c: { id?: string; name?: string; notify?: string }) => c.id && (c.name || c.notify))
+                    .map((c: { id: string; name?: string; notify?: string }) => ({
+                      id: c.id,
+                      name: c.name ?? c.notify,
+                      notify: c.notify,
+                    }));
+                  if (mappedContacts.length > 0) {
+                    const synced = await this.syncContactsToDb(mappedContacts);
+                    log.info(
+                      `[WhatsApp] History sync contacts: ${synced}/${contacts.length} synced to DB`
+                    );
+                  }
+                } catch (contactErr) {
+                  log.error('[WhatsApp] History sync contacts failed:', contactErr);
+                }
               }
             } catch (err) {
               log.error('[WhatsApp] History sync failed:', err);
@@ -1628,6 +1664,44 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   /** Extract phone number from a WhatsApp JID. */
   private phoneFromJid(jid: string): string {
     return jid.split('@')[0]?.split(':')[0] ?? jid;
+  }
+
+  /**
+   * Sync WhatsApp contacts to the contacts DB table.
+   * Handles contacts.upsert, contacts.update, and messaging-history.set contacts.
+   * Uses ON CONFLICT upsert — safe to call repeatedly (idempotent).
+   */
+  private async syncContactsToDb(
+    contacts: Array<{ id?: string; name?: string; notify?: string; verifiedName?: string }>
+  ): Promise<number> {
+    const { ContactsRepository } = await import('../../../db/repositories/contacts.js');
+    const repo = new ContactsRepository();
+
+    let synced = 0;
+    for (const contact of contacts) {
+      if (!contact.id) continue;
+
+      // Skip group JIDs and status broadcasts
+      if (contact.id.endsWith('@g.us') || contact.id.endsWith('@broadcast')) continue;
+
+      const name =
+        contact.name || contact.notify || contact.verifiedName || contact.id.split('@')[0] || contact.id;
+      const phone = this.phoneFromJid(contact.id);
+      if (!phone) continue;
+
+      try {
+        await repo.upsertByExternal({
+          externalId: contact.id,
+          externalSource: 'whatsapp',
+          name,
+          phone,
+        });
+        synced++;
+      } catch (err) {
+        log.warn(`[WhatsApp] Contact sync failed for ${contact.id}:`, err);
+      }
+    }
+    return synced;
   }
 
   /**
