@@ -280,7 +280,7 @@ export function AgentProfilePage() {
 
   if (!soul && !bgAgent) {
     return (
-      <div className="p-6 max-w-6xl mx-auto text-center py-16">
+      <div className="flex-1 flex items-center justify-center p-6 text-center">
         {fetchError ? (
           <>
             <AlertCircle className="w-12 h-12 text-danger mx-auto mb-3" />
@@ -312,9 +312,9 @@ export function AgentProfilePage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate('/autonomous')}
@@ -325,10 +325,10 @@ export function AgentProfilePage() {
           </button>
           <span className="text-3xl">{emoji}</span>
           <div>
-            <h1 className="text-xl font-bold text-text-primary dark:text-dark-text-primary flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary flex items-center gap-3">
               {name}
               <AgentStatusBadge status={status} />
-            </h1>
+            </h2>
             <p className="text-sm text-text-muted dark:text-dark-text-muted">
               {role}
               {crewName && <span className="ml-2 text-primary">Crew: {crewName}</span>}
@@ -376,18 +376,18 @@ export function AgentProfilePage() {
             <Trash2 className="w-4 h-4" /> Delete
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border dark:border-dark-border">
+      <div className="flex border-b border-border dark:border-dark-border px-6">
         {profileTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               activeTab === tab.key
                 ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
             }`}
           >
             {tab.label}
@@ -395,8 +395,8 @@ export function AgentProfilePage() {
         ))}
       </div>
 
-      {/* Tab content - consistent width container */}
-      <div className="w-full min-h-[500px] min-w-[800px]">
+      {/* Tab content */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-6">
         {activeTab === 'overview' && (
           <TabContent>
             <OverviewTab
