@@ -312,18 +312,27 @@ export function ChatPage() {
     acc[m.provider]!.push(m);
     return acc;
   }, {});
+  // Ensure CLI providers appear in dropdown even without model entries
+  for (const pid of configuredProviders) {
+    if (pid.startsWith('cli-') && !modelsByProvider[pid]) {
+      modelsByProvider[pid] = [];
+    }
+  }
 
   // Update model when provider changes
   const handleProviderChange = (newProvider: string) => {
     setProvider(newProvider);
-    const providerModels = modelsByProvider[newProvider];
-    if (providerModels && providerModels.length > 0) {
-      const recommended = providerModels.find((m) => m.recommended);
-      setModel(recommended?.id ?? providerModels[0]!.id);
+    // CLI providers don't have model selection — set empty model
+    if (newProvider.startsWith('cli-')) {
+      setModel('default');
+    } else {
+      const providerModels = modelsByProvider[newProvider];
+      if (providerModels && providerModels.length > 0) {
+        const recommended = providerModels.find((m) => m.recommended);
+        setModel(recommended?.id ?? providerModels[0]!.id);
+      }
     }
     setShowProviderMenu(false);
-    // Keep agent context - just update the provider/model being used
-    // Agent's personality/tools remain, only the underlying LLM changes
   };
 
   const handleNewChat = async () => {
