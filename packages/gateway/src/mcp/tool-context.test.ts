@@ -15,7 +15,7 @@ describe('buildToolContextBlock', () => {
   it('should mention common tools', () => {
     const block = buildToolContextBlock();
     expect(block).toContain('add_task');
-    expect(block).toContain('search_memory');
+    expect(block).toContain('search_memories');
     expect(block).toContain('search_web');
   });
 

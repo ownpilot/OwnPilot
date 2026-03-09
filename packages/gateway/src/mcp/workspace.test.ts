@@ -73,7 +73,7 @@ describe('ensureWorkspace', () => {
     expect(content).toContain('OwnPilot');
     expect(content).toContain('MCP');
     expect(content).toContain('add_task');
-    expect(content).toContain('search_memory');
+    expect(content).toContain('search_memories');
   });
 
   it('should include correlationId in MCP URL when provided', async () => {

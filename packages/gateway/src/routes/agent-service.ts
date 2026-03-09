@@ -39,7 +39,7 @@ import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getLog } from '../services/log.js';
-import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
+import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from './agent-prompt.js';
 import {
   registerGatewayTools,
   registerDynamicTools,
@@ -526,14 +526,16 @@ async function createChatAgentInstance(
   );
   const toolDefs = [...filteredChatTools, ...chatAlwaysIncluded];
 
-  const basePrompt = BASE_SYSTEM_PROMPT;
+  // CLI providers get a compact identity-first prompt (no meta-tools, no namespaces).
+  // API providers get the full prompt with tool schemas injected.
+  const basePrompt = isCliProvider ? CLI_SYSTEM_PROMPT : BASE_SYSTEM_PROMPT;
   const { systemPrompt: enhancedPrompt } = await injectMemoryIntoPrompt(basePrompt, {
     userId: 'default',
-    tools: toolDefs,
+    tools: isCliProvider ? [] : toolDefs, // CLI tools are discovered via MCP, not injected
     includeProfile: true,
     includeInstructions: true,
     includeTimeContext: true,
-    includeToolDescriptions: true,
+    includeToolDescriptions: !isCliProvider, // CLI doesn't need tool descriptions in prompt
   });
 
   // Extension sections are now injected per-request by the context-injection middleware
