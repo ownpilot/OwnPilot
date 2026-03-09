@@ -18,6 +18,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { getBaseName } from '@ownpilot/core';
 import { getSharedToolRegistry } from './tool-executor.js';
 import { getLog } from './log.js';
+import { emitMcpToolEvent } from '../mcp/mcp-events.js';
 
 const log = getLog('McpServer');
 
@@ -28,6 +29,8 @@ const log = getLog('McpServer');
 interface McpSession {
   transport: WebStandardStreamableHTTPServerTransport;
   server: Server;
+  /** Correlation ID linking this MCP session to a chat SSE stream */
+  correlationId?: string;
 }
 
 const sessions = new Map<string, McpSession>();
@@ -69,7 +72,7 @@ function touchSession(sid: string): void {
 // MCP SERVER FACTORY (one per session)
 // =============================================================================
 
-function createMcpServer(): Server {
+function createMcpServer(correlationId?: string): Server {
   const server = new Server({ name: 'OwnPilot', version: '1.0.0' }, { capabilities: { tools: {} } });
 
   const registry = getSharedToolRegistry();
@@ -92,7 +95,7 @@ function createMcpServer(): Server {
     };
   });
 
-  // tools/call — execute tool via ToolRegistry
+  // tools/call — execute tool via ToolRegistry, emit real-time events
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
@@ -106,6 +109,19 @@ function createMcpServer(): Server {
         isError: true,
       };
     }
+
+    // Emit tool_start event for real-time tracking
+    if (correlationId) {
+      emitMcpToolEvent({
+        type: 'tool_start',
+        correlationId,
+        toolName: name,
+        arguments: (args ?? {}) as Record<string, unknown>,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const startTime = performance.now();
 
     try {
       const result = await registry.execute(
@@ -121,15 +137,42 @@ function createMcpServer(): Server {
             ? String((result as { content: unknown }).content)
             : JSON.stringify(result, null, 2);
 
+      // Emit tool_end event
+      if (correlationId) {
+        emitMcpToolEvent({
+          type: 'tool_end',
+          correlationId,
+          toolName: name,
+          result: {
+            success: true,
+            preview: text.substring(0, 500),
+            durationMs: Math.round(performance.now() - startTime),
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       return { content: [{ type: 'text' as const, text }] };
     } catch (err) {
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: `Error: ${err instanceof Error ? err.message : String(err)}`,
+      const errorText = `Error: ${err instanceof Error ? err.message : String(err)}`;
+
+      // Emit tool_end event with error
+      if (correlationId) {
+        emitMcpToolEvent({
+          type: 'tool_end',
+          correlationId,
+          toolName: name,
+          result: {
+            success: false,
+            preview: errorText.substring(0, 500),
+            durationMs: Math.round(performance.now() - startTime),
           },
-        ],
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: errorText }],
         isError: true,
       };
     }
@@ -149,6 +192,10 @@ function createMcpServer(): Server {
 export async function handleMcpRequest(request: Request): Promise<Response> {
   // Extract session ID from header
   const sessionId = request.headers.get('mcp-session-id');
+
+  // Extract correlation ID from URL query parameter (links MCP session to chat SSE stream)
+  const url = new URL(request.url, 'http://localhost');
+  const correlationId = url.searchParams.get('correlationId') ?? undefined;
 
   if (request.method === 'GET' || request.method === 'DELETE') {
     // GET = SSE stream, DELETE = terminate session
@@ -184,10 +231,10 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (sid) => {
-        sessions.set(sid, { transport, server });
+        sessions.set(sid, { transport, server, correlationId });
         touchSession(sid);
         startSessionCleanup();
-        log.info('MCP session initialized', { sessionId: sid });
+        log.info('MCP session initialized', { sessionId: sid, correlationId });
       },
       onsessionclosed: (sid) => {
         sessions.delete(sid);
@@ -196,7 +243,8 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     });
 
     // Each session gets its own Server instance (MCP SDK requirement)
-    const server = createMcpServer();
+    // Pass correlationId so tool calls emit events for the linked chat stream
+    const server = createMcpServer(correlationId);
     await server.connect(transport);
 
     return transport.handleRequest(request);

@@ -9,27 +9,14 @@
  */
 
 /**
- * Build a concise tool usage guide to prepend to the first user message.
- * Kept short to avoid wasting context window on coding CLIs.
+ * Build a minimal tool context hint for CLI providers.
+ * Kept extremely short — CLIs discover tools via MCP's tools/list.
  */
 export function buildToolContextBlock(): string {
-  return `<ownpilot_tools>
-You have access to OwnPilot's tool system via 4 MCP tools.
-Use them to help the user with tasks beyond coding.
-
-WORKFLOW:
-1. search_tools(query: "keyword") — find tools by keyword (or "all" to list everything)
-2. get_tool_help(tool_name: "core.xxx") — get parameter docs for a specific tool
-3. use_tool(tool_name: "core.xxx", arguments: {...}) — execute a tool
-4. batch_use_tool(calls: [{tool_name, arguments}, ...]) — execute multiple tools in parallel
-
-Tool names use namespaces: core.*, custom.*, plugin.*, skill.*
-Common tools: core.add_task, core.search_web, core.add_memory, core.list_tasks,
-core.send_email, core.manage_goal, core.web_fetch, core.search_memory
-
-When the user asks to do something that requires a tool (tasks, memory, email, web search, etc.),
-search for the right tool first, then use it. Don't guess tool names — always search first.
-</ownpilot_tools>`;
+  return `<ownpilot>
+You have OwnPilot tools available via MCP. Call them directly when needed.
+Common: add_task, list_tasks, search_memory, add_memory, search_web, web_fetch, send_email, manage_goal.
+</ownpilot>`;
 }
 
 /**

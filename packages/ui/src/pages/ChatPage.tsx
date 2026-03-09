@@ -520,7 +520,10 @@ export function ChatPage() {
                     <span className="font-medium text-text-primary dark:text-dark-text-primary">
                       {currentProviderName}
                     </span>
-                    <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
+                    {/* CLI providers don't have model selection — they use their own defaults */}
+                    {!provider.startsWith('cli-') && (
+                      <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
+                    )}
                   </>
                 )}
                 <svg
@@ -569,7 +572,8 @@ export function ChatPage() {
                         >
                           {providerNames[providerId] ?? providerId}
                         </div>
-                        {provider === providerId && (
+                        {/* CLI providers don't need model selection — they handle models internally */}
+                        {provider === providerId && !providerId.startsWith('cli-') && (
                           <div className="px-2 pb-2">
                             {providerModels.map((m) => (
                               <button

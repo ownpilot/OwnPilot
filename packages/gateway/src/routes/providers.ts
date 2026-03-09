@@ -322,7 +322,7 @@ app.get('/', async (c) => {
       docsUrl: undefined,
       features: {
         streaming: cli.binary === 'claude', // Only Claude CLI supports true streaming
-        toolUse: false, // CLI providers don't support tool calling
+        toolUse: true, // CLI providers call tools via MCP
         vision: false,
         jsonMode: false,
         systemMessage: true,
