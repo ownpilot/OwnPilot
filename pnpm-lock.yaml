@@ -156,7 +156,7 @@ importers:
         specifier: ^17.3.1
         version: 17.3.1
       grammy:
-        specifier: 1.41.0
+        specifier: ^1.41.0
         version: 1.41.0
       hono:
         specifier: ^4.12.3
@@ -214,8 +214,8 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
       '@types/node':
-        specifier: ^25.3.2
-        version: 25.3.2
+        specifier: ^22.19.13
+        version: 22.19.13
       '@types/pg':
         specifier: ^8.18.0
         version: 8.18.0
@@ -236,7 +236,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.18
-        version: 4.0.18(@types/node@25.3.2)(happy-dom@20.7.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
+        version: 4.0.18(@types/node@22.19.13)(happy-dom@20.7.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
     optionalDependencies:
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.2.63
@@ -4893,13 +4893,13 @@ snapshots:
 
   '@slack/logger@4.0.0':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@slack/socket-mode@2.0.5':
     dependencies:
       '@slack/logger': 4.0.0
       '@slack/web-api': 7.14.1
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
       '@types/ws': 8.18.1
       eventemitter3: 5.0.4
       ws: 8.19.0
@@ -4914,7 +4914,7 @@ snapshots:
     dependencies:
       '@slack/logger': 4.0.0
       '@slack/types': 2.20.0
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
       '@types/retry': 0.12.0
       axios: 1.13.6
       eventemitter3: 5.0.4
@@ -5014,7 +5014,7 @@ snapshots:
 
   '@types/adm-zip@0.5.7':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/archiver@7.0.0':
     dependencies:
@@ -5043,7 +5043,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/chai@5.2.3':
     dependencies:
@@ -5092,10 +5092,11 @@ snapshots:
   '@types/node@25.3.2':
     dependencies:
       undici-types: 7.18.2
+    optional: true
 
   '@types/pg@8.18.0':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
       pg-protocol: 1.12.0
       pg-types: 2.2.0
 
@@ -5103,7 +5104,7 @@ snapshots:
 
   '@types/qrcode@1.5.6':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
@@ -5115,11 +5116,11 @@ snapshots:
 
   '@types/readable-stream@4.0.23':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/readdir-glob@1.1.5':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/retry@0.12.0': {}
 
@@ -5130,11 +5131,11 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
     optional: true
 
   '@typescript-eslint/eslint-plugin@8.56.1(@typescript-eslint/parser@8.56.1(eslint@10.0.2(jiti@2.6.1))(typescript@5.9.3))(eslint@10.0.2(jiti@2.6.1))(typescript@5.9.3)':
@@ -6237,7 +6238,7 @@ snapshots:
 
   happy-dom@20.7.0:
     dependencies:
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       entities: 7.0.1
@@ -6948,7 +6949,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 25.3.2
+      '@types/node': 22.19.13
       long: 5.3.2
 
   proxy-addr@2.0.7:
@@ -7511,7 +7512,8 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.18.2: {}
+  undici-types@7.18.2:
+    optional: true
 
   undici@7.22.0: {}
 
