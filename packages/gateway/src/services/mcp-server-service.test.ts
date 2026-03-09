@@ -11,6 +11,7 @@ const mockLogError = vi.hoisted(() => vi.fn());
 
 const mockSetRequestHandler = vi.hoisted(() => vi.fn());
 const mockServerConnect = vi.hoisted(() => vi.fn());
+const mockServerClose = vi.hoisted(() => vi.fn());
 
 const mockTransportHandleRequest = vi.hoisted(() => vi.fn());
 const mockTransportClose = vi.hoisted(() => vi.fn());
@@ -31,6 +32,7 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
     return {
       setRequestHandler: mockSetRequestHandler,
       connect: mockServerConnect,
+      close: mockServerClose,
     };
   }),
 }));
@@ -127,11 +129,12 @@ function getCallHandler(): ((...args: unknown[]) => unknown) | undefined {
 }
 
 /**
- * Make a POST request to trigger lazy server initialization so that
+ * Make a POST request to trigger server creation so that
  * setRequestHandler calls are recorded and can be extracted via
  * getListHandler / getCallHandler.
  */
 async function ensureServerInitialized(): Promise<void> {
+  mockSetRequestHandler.mockClear();
   mockTransportHandleRequest.mockResolvedValueOnce(new Response('ok'));
   await handleMcpRequest(makeRequest('POST'));
 }
@@ -149,6 +152,7 @@ beforeEach(() => {
   mockTransportHandleRequest.mockResolvedValue(new Response('ok'));
   mockTransportClose.mockResolvedValue(undefined);
   mockServerConnect.mockResolvedValue(undefined);
+  mockServerClose.mockResolvedValue(undefined);
   mockGetAllTools.mockReturnValue([]);
 });
 
@@ -384,12 +388,12 @@ describe('handleMcpRequest — unsupported methods', () => {
 // Lazy MCP server singleton
 // =============================================================================
 
-describe('lazy MCP server singleton', () => {
-  it('creates server only once across multiple POST requests', async () => {
+describe('MCP server per session', () => {
+  it('creates a new server for each new session', async () => {
     await handleMcpRequest(makeRequest('POST'));
     await handleMcpRequest(makeRequest('POST'));
     await handleMcpRequest(makeRequest('POST'));
-    expect(Server).toHaveBeenCalledTimes(1);
+    expect(Server).toHaveBeenCalledTimes(3);
   });
 
   it('passes correct name and version to Server constructor', async () => {
@@ -400,18 +404,17 @@ describe('lazy MCP server singleton', () => {
     );
   });
 
-  it('creates new server after invalidateMcpServer', async () => {
+  it('reuses existing server for POST with known session ID', async () => {
     await handleMcpRequest(makeRequest('POST'));
-    expect(Server).toHaveBeenCalledTimes(1);
+    const opts = transportConstructorCalls[0]!;
+    (opts.onsessioninitialized as (s: string) => void)('reuse-sid');
 
-    invalidateMcpServer();
     vi.mocked(Server).mockClear();
-
-    await handleMcpRequest(makeRequest('POST'));
-    expect(Server).toHaveBeenCalledTimes(1);
+    await handleMcpRequest(makeRequest('POST', 'reuse-sid'));
+    expect(Server).not.toHaveBeenCalled();
   });
 
-  it('registers both list and call request handlers', async () => {
+  it('registers both list and call request handlers on each server', async () => {
     await handleMcpRequest(makeRequest('POST'));
     expect(mockSetRequestHandler).toHaveBeenCalledTimes(2);
     expect(mockSetRequestHandler).toHaveBeenCalledWith(
@@ -422,11 +425,6 @@ describe('lazy MCP server singleton', () => {
       'CallToolRequestSchema',
       expect.any(Function)
     );
-  });
-
-  it('logs initialization message', async () => {
-    await handleMcpRequest(makeRequest('POST'));
-    expect(mockLogInfo).toHaveBeenCalledWith('MCP Server initialized');
   });
 });
 
@@ -774,18 +772,7 @@ describe('tools/call handler', () => {
 // =============================================================================
 
 describe('invalidateMcpServer', () => {
-  it('clears the cached server so next request creates a new one', async () => {
-    await handleMcpRequest(makeRequest('POST'));
-    expect(Server).toHaveBeenCalledTimes(1);
-
-    invalidateMcpServer();
-    vi.mocked(Server).mockClear();
-
-    await handleMcpRequest(makeRequest('POST'));
-    expect(Server).toHaveBeenCalledTimes(1);
-  });
-
-  it('closes all transport sessions', async () => {
+  it('closes all transport and server sessions', async () => {
     // Create two sessions
     await handleMcpRequest(makeRequest('POST'));
     const opts1 = transportConstructorCalls[0]!;
@@ -796,9 +783,11 @@ describe('invalidateMcpServer', () => {
     (opts2.onsessioninitialized as (s: string) => void)('s2');
 
     mockTransportClose.mockClear();
+    mockServerClose.mockClear();
     invalidateMcpServer();
 
     expect(mockTransportClose).toHaveBeenCalledTimes(2);
+    expect(mockServerClose).toHaveBeenCalledTimes(2);
   });
 
   it('clears sessions map so subsequent lookups fail', async () => {
@@ -812,12 +801,13 @@ describe('invalidateMcpServer', () => {
     expect(res.status).toBe(404);
   });
 
-  it('handles transport.close rejection gracefully', async () => {
+  it('handles transport/server close rejection gracefully', async () => {
     await handleMcpRequest(makeRequest('POST'));
     const opts = transportConstructorCalls[0]!;
     (opts.onsessioninitialized as (s: string) => void)('err-sid');
 
     mockTransportClose.mockRejectedValue(new Error('close failed'));
+    mockServerClose.mockRejectedValue(new Error('server close failed'));
 
     // Should not throw synchronously
     expect(() => invalidateMcpServer()).not.toThrow();
@@ -852,9 +842,9 @@ describe('session cleanup timer', () => {
       await vi.advanceTimersByTimeAsync(35 * 60 * 1000 + 1);
 
       expect(mockTransportClose).toHaveBeenCalled();
-      expect(mockLogInfo).toHaveBeenCalledWith('Cleaned up stale MCP session', {
-        sessionId: 'stale-sid',
-      });
+      expect(mockLogInfo).toHaveBeenCalledWith('Cleaned up stale MCP session',
+        expect.objectContaining({ sessionId: 'stale-sid' })
+      );
     } finally {
       vi.useRealTimers();
       invalidateMcpServer();

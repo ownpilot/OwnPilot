@@ -108,6 +108,30 @@ mcpRoutes.get('/serve/info', async (c) => {
             },
           },
         },
+        gemini_cli: {
+          label: 'Gemini CLI',
+          description: 'Add to ~/.gemini/settings.json under "mcpServers"',
+          config: {
+            mcpServers: {
+              ownpilot: {
+                type: 'streamable-http',
+                url: endpoint,
+              },
+            },
+          },
+        },
+        codex_cli: {
+          label: 'Codex CLI',
+          description: 'Add to ~/.codex/mcp.json under "mcpServers"',
+          config: {
+            mcpServers: {
+              ownpilot: {
+                type: 'streamable-http',
+                url: endpoint,
+              },
+            },
+          },
+        },
         generic_http: {
           label: 'Generic HTTP Client',
           description: 'Any MCP client supporting Streamable HTTP',
@@ -120,6 +144,71 @@ mcpRoutes.get('/serve/info', async (c) => {
     });
   } catch (err) {
     log.error('Failed to get MCP server info:', err);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// CLI MCP TOOL-CALL PROXY — Used by the stdio MCP server for CLI tools
+// =============================================================================
+
+/**
+ * POST /tool-call — Execute an OwnPilot meta-tool via HTTP.
+ *
+ * The standalone MCP stdio server (cli-mcp-server) proxies CLI tool calls here.
+ * Accepts: { tool_name, arguments }
+ * Returns: { content, isError }
+ */
+mcpRoutes.post('/tool-call', async (c) => {
+  try {
+    const body = await c.req.json<{
+      tool_name: string;
+      arguments: Record<string, unknown>;
+    }>();
+
+    const { tool_name: toolName, arguments: toolArgs } = body;
+    if (!toolName) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'tool_name is required' }, 400);
+    }
+
+    const registry = getSharedToolRegistry();
+    const context = {
+      callId: `mcp-cli-${Date.now()}`,
+      userId: 'default',
+      conversationId: 'mcp-cli',
+      source: 'mcp' as const,
+    };
+
+    // Import executors dynamically to avoid circular deps
+    const {
+      executeSearchTools,
+      executeGetToolHelp,
+      executeUseTool,
+      executeBatchUseTool,
+    } = await import('../tools/agent-tool-registry.js');
+
+    let result: { content: unknown; isError?: boolean };
+
+    switch (toolName) {
+      case 'search_tools':
+        result = await executeSearchTools(registry, toolArgs ?? {});
+        break;
+      case 'get_tool_help':
+        result = await executeGetToolHelp(registry, toolArgs ?? {});
+        break;
+      case 'use_tool':
+        result = await executeUseTool(registry, toolArgs ?? {}, context);
+        break;
+      case 'batch_use_tool':
+        result = await executeBatchUseTool(registry, toolArgs ?? {}, context);
+        break;
+      default:
+        result = { content: `Unknown meta-tool: ${toolName}. Use search_tools, get_tool_help, use_tool, or batch_use_tool.`, isError: true };
+    }
+
+    return apiResponse(c, { content: String(result.content), isError: result.isError ?? false });
+  } catch (err) {
+    log.error('MCP tool-call failed:', err);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

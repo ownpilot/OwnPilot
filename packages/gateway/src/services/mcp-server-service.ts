@@ -7,6 +7,9 @@
  *
  * Uses the low-level Server class (not McpServer) because our tool definitions
  * use raw JSON schemas, not Zod schemas.
+ *
+ * Each session gets its own Server instance (MCP SDK requirement — a Server
+ * can only be connected to one transport at a time).
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -22,7 +25,12 @@ const log = getLog('McpServer');
 // TRANSPORT SESSION MAP (stateful — one transport per session)
 // =============================================================================
 
-const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>();
+interface McpSession {
+  transport: WebStandardStreamableHTTPServerTransport;
+  server: Server;
+}
+
+const sessions = new Map<string, McpSession>();
 const sessionLastActivity = new Map<string, number>();
 
 /** Max session age before cleanup (30 minutes) */
@@ -39,9 +47,10 @@ function startSessionCleanup(): void {
     const now = Date.now();
     for (const [sid, lastActivity] of sessionLastActivity) {
       if (now - lastActivity > SESSION_MAX_AGE_MS) {
-        const transport = sessions.get(sid);
-        if (transport) {
-          transport.close().catch(() => {});
+        const session = sessions.get(sid);
+        if (session) {
+          session.server.close().catch(() => {});
+          session.transport.close().catch(() => {});
         }
         sessions.delete(sid);
         sessionLastActivity.delete(sid);
@@ -57,20 +66,16 @@ function touchSession(sid: string): void {
 }
 
 // =============================================================================
-// LAZY MCP SERVER (created once, reused)
+// MCP SERVER FACTORY (one per session)
 // =============================================================================
 
-let mcpServer: Server | null = null;
-
-function getOrCreateMcpServer(): Server {
-  if (mcpServer) return mcpServer;
-
-  mcpServer = new Server({ name: 'OwnPilot', version: '1.0.0' }, { capabilities: { tools: {} } });
+function createMcpServer(): Server {
+  const server = new Server({ name: 'OwnPilot', version: '1.0.0' }, { capabilities: { tools: {} } });
 
   const registry = getSharedToolRegistry();
 
   // tools/list — return raw JSON schemas from our ToolRegistry
-  mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
     const allTools = registry.getAllTools();
     return {
       tools: allTools.map((tool) => ({
@@ -88,7 +93,7 @@ function getOrCreateMcpServer(): Server {
   });
 
   // tools/call — execute tool via ToolRegistry
-  mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
     // Resolve base name to qualified name
@@ -130,8 +135,7 @@ function getOrCreateMcpServer(): Server {
     }
   });
 
-  log.info('MCP Server initialized');
-  return mcpServer;
+  return server;
 }
 
 // =============================================================================
@@ -143,8 +147,6 @@ function getOrCreateMcpServer(): Server {
  * Called from the Hono route handler.
  */
 export async function handleMcpRequest(request: Request): Promise<Response> {
-  const server = getOrCreateMcpServer();
-
   // Extract session ID from header
   const sessionId = request.headers.get('mcp-session-id');
 
@@ -152,8 +154,8 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     // GET = SSE stream, DELETE = terminate session
     if (sessionId && sessions.has(sessionId)) {
       touchSession(sessionId);
-      const transport = sessions.get(sessionId)!;
-      return transport.handleRequest(request);
+      const session = sessions.get(sessionId)!;
+      return session.transport.handleRequest(request);
     }
     // No session — return 400 for GET, 404 for DELETE
     if (request.method === 'DELETE') {
@@ -174,17 +176,18 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     // Check if this is an existing session
     if (sessionId && sessions.has(sessionId)) {
       touchSession(sessionId);
-      const transport = sessions.get(sessionId)!;
-      return transport.handleRequest(request);
+      const session = sessions.get(sessionId)!;
+      return session.transport.handleRequest(request);
     }
 
-    // New session — create transport
+    // New session — create transport + server pair
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (sid) => {
-        sessions.set(sid, transport);
+        sessions.set(sid, { transport, server });
         touchSession(sid);
         startSessionCleanup();
+        log.info('MCP session initialized', { sessionId: sid });
       },
       onsessionclosed: (sid) => {
         sessions.delete(sid);
@@ -192,7 +195,8 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
       },
     });
 
-    // Connect server to this transport
+    // Each session gets its own Server instance (MCP SDK requirement)
+    const server = createMcpServer();
     await server.connect(transport);
 
     return transport.handleRequest(request);
@@ -209,10 +213,10 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
  * Invalidate the cached MCP server (e.g., when tools change).
  */
 export function invalidateMcpServer(): void {
-  mcpServer = null;
-  // Close all sessions
-  for (const [sid, transport] of sessions) {
-    transport.close().catch(() => {});
+  // Close all sessions and their servers
+  for (const [sid, session] of sessions) {
+    session.server.close().catch(() => {});
+    session.transport.close().catch(() => {});
     sessions.delete(sid);
   }
   sessionLastActivity.clear();
