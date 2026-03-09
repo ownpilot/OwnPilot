@@ -15,3 +15,6 @@ export { ensureWorkspace, createTempWorkspace, getWorkspaceDir } from './workspa
 export type { WorkspaceConfig, WorkspaceInfo } from './workspace.js';
 
 export { buildToolContextBlock, injectToolContext } from './tool-context.js';
+
+export { emitMcpToolEvent, onMcpToolEvents } from './mcp-events.js';
+export type { McpToolEvent } from './mcp-events.js';

@@ -62,6 +62,7 @@ export {
   clearAllChatAgentCaches,
   getContextBreakdown,
   compactContext,
+  getCliCorrelationId,
 } from './agent-service.js';
 export type { ContextBreakdown } from './agent-service.js';
 export { invalidateAgentCache } from './agent-cache.js';

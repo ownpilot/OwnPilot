@@ -98,6 +98,21 @@ import {
 const log = getLog('AgentService');
 
 // =============================================================================
+// CLI Provider Correlation (links MCP tool calls to chat SSE streams)
+// =============================================================================
+
+/** WeakMap to store correlationId for CLI agents (for MCP event forwarding) */
+const cliCorrelationIds = new WeakMap<Agent, string>();
+
+/**
+ * Get the MCP correlation ID for a CLI agent.
+ * Returns undefined for non-CLI agents.
+ */
+export function getCliCorrelationId(agent: Agent): string | undefined {
+  return cliCorrelationIds.get(agent);
+}
+
+// =============================================================================
 // Agent creation
 // =============================================================================
 
@@ -402,6 +417,12 @@ export async function getOrCreateChatAgent(
   model: string,
   fallback?: { provider: string; model: string }
 ): Promise<Agent> {
+  // CLI providers are NOT cached — each request needs a fresh temp workspace
+  // with a unique correlationId for MCP tool call tracking.
+  if (isCliChatProvider(provider)) {
+    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback);
+  }
+
   const sanitize = (s: string) => s.replace(/\|/g, '_');
   const fbSuffix = fallback ? `|fb_${sanitize(fallback.provider)}_${sanitize(fallback.model)}` : '';
   const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}`;
@@ -435,6 +456,7 @@ async function createChatAgentInstance(
   // CLI providers (cli-claude, cli-codex, cli-gemini) use login-based auth
   // and don't require API keys. They spawn CLI processes for completions.
   const isCliProvider = isCliChatProvider(provider);
+  let correlationId: string | undefined;
 
   let apiKey: string | undefined;
   if (!isCliProvider) {
@@ -551,35 +573,32 @@ async function createChatAgentInstance(
   let providerInstance: IProvider | undefined;
 
   if (isCliProvider) {
-    // CLI provider: spawn CLI process for completions
+    // CLI provider: spawn CLI process for completions.
+    // Uses MCP mode — CLI discovers tools via MCP server automatically.
+    // No ToolBridge prompt injection needed (avoids bloating the prompt).
     const cliBinary = getCliBinaryFromProviderId(provider);
     if (!cliBinary) {
       throw new Error(`Unknown CLI chat provider: ${provider}`);
     }
-    // Build a curated tool list for the ToolBridge prompt injection.
-    // We pass tool definitions (schemas) — not meta-tools — so the model
-    // can call them directly via <tool_call> blocks.
-    const metaNames = new Set<string>(AI_META_TOOL_NAMES);
-    const bridgeToolDefs = toolDefs.filter(
-      (t) => !metaNames.has(t.name)
-    );
+
+    // Create a temp workspace with MCP config pointing to our gateway.
+    // correlationId links MCP tool calls to the chat SSE stream for real-time tracking.
+    correlationId = crypto.randomUUID();
+    const { createTempWorkspace } = await import('../mcp/workspace.js');
+    const workspace = await createTempWorkspace({
+      correlationId,
+    });
 
     providerInstance = createCliChatProvider({
       binary: cliBinary,
       model,
       apiKey: apiKey ?? undefined,
-      toolBridge: bridgeToolDefs.length > 0
-        ? {
-            tools,
-            toolDefinitions: bridgeToolDefs,
-            conversationId: `cli_chat_${provider}_${model}`,
-            userId: 'default',
-            maxRounds: 6,
-          }
-        : undefined,
+      mcpToolContext: true,
+      cwd: workspace.dir,
+      correlationId,
     });
     log.info(
-      `Created CLI chat provider: ${provider} (${cliBinary}) model=${model} tools=${bridgeToolDefs.length}`
+      `Created CLI chat provider: ${provider} (${cliBinary}) model=${model} correlationId=${correlationId}`
     );
   } else if (fallback) {
     // Build FallbackProvider if a backup model is configured
@@ -619,7 +638,15 @@ async function createChatAgentInstance(
   }
 
   const agent = createAgent(config, { tools, provider: providerInstance });
-  chatAgentCache.set(cacheKey, agent);
+
+  // Store correlation ID for CLI agents (used by SSE stream to forward MCP events)
+  if (isCliProvider && correlationId) {
+    cliCorrelationIds.set(agent, correlationId);
+  }
+
+  if (!isCliProvider) {
+    chatAgentCache.set(cacheKey, agent);
+  }
 
   return agent;
 }

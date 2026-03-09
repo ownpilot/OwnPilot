@@ -31,7 +31,9 @@ import {
   getDefaultModel,
   getWorkspaceContext,
   getSessionInfo,
+  getCliCorrelationId,
 } from './agents.js';
+import { onMcpToolEvents } from '../mcp/mcp-events.js';
 import { resolveForProcess } from '../services/model-routing.js';
 import { ChatRepository } from '../db/repositories/index.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
@@ -346,6 +348,27 @@ chatRoutes.post('/', async (c) => {
         wireStreamApproval(agent, stream);
         log.info(`[ExecSecurity] SSE requestApproval callback wired on agent (MessageBus path)`);
 
+        // ── MCP tool event forwarding for CLI providers ──
+        let unsubMcp: (() => void) | undefined;
+        const cliCorrelationId = getCliCorrelationId(agent);
+        if (cliCorrelationId) {
+          unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
+            stream.writeSSE({
+              data: JSON.stringify({
+                type: event.type,
+                tool: {
+                  id: `mcp-${event.toolName}-${Date.now()}`,
+                  name: event.toolName,
+                  ...(event.arguments && { arguments: event.arguments }),
+                },
+                ...(event.result && { result: event.result }),
+                timestamp: event.timestamp,
+              }),
+              event: 'progress',
+            });
+          });
+        }
+
         try {
           await processStreamingViaBus(streamBus, stream, {
             agent: agent!,
@@ -359,6 +382,7 @@ chatRoutes.post('/', async (c) => {
             contextWindowOverride: userContextWindow,
           });
         } finally {
+          unsubMcp?.();
           agent.setRequestApproval(undefined);
           agent.setExecutionPermissions(undefined);
           agent.setMaxToolCalls(undefined);
@@ -385,6 +409,28 @@ chatRoutes.post('/', async (c) => {
       });
 
       wireStreamApproval(agent, stream);
+
+      // ── MCP tool event forwarding for CLI providers ──
+      // Subscribe to real-time tool call events from MCP server and forward as SSE progress events.
+      let unsubMcp: (() => void) | undefined;
+      const cliCorrelationId = getCliCorrelationId(agent);
+      if (cliCorrelationId) {
+        unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
+          stream.writeSSE({
+            data: JSON.stringify({
+              type: event.type,
+              tool: {
+                id: `mcp-${event.toolName}-${Date.now()}`,
+                name: event.toolName,
+                ...(event.arguments && { arguments: event.arguments }),
+              },
+              ...(event.result && { result: event.result }),
+              timestamp: event.timestamp,
+            }),
+            event: 'progress',
+          });
+        });
+      }
 
       // Expose direct tools to LLM if requested (from picker selection)
       if (body.directTools?.length) {
@@ -438,6 +484,8 @@ chatRoutes.post('/', async (c) => {
           });
         }
       } finally {
+        // Clean up MCP event subscription
+        unsubMcp?.();
         // Always clean up per-request overrides, even on error
         if (body.directTools?.length) {
           agent.clearAdditionalTools();

@@ -55,6 +55,8 @@ export interface CliChatProviderConfig {
   mcpToolContext?: boolean;
   /** Working directory for CLI process — set to OwnPilot workspace for MCP auto-discovery */
   cwd?: string;
+  /** Correlation ID for linking MCP tool calls to the chat SSE stream */
+  correlationId?: string;
 }
 
 /** Attachment for ToolBridge support on a CLI provider */
@@ -320,10 +322,14 @@ export class CliChatProvider implements IProvider {
   private readonly definition: (typeof CLI_DEFINITIONS)[CliChatBinary];
   private currentProcess: ChildProcess | null = null;
 
+  /** Correlation ID for real-time MCP tool call tracking */
+  readonly correlationId?: string;
+
   constructor(config: CliChatProviderConfig) {
     this.config = config;
     this.definition = CLI_DEFINITIONS[config.binary];
     this.type = this.definition.coreProvider;
+    this.correlationId = config.correlationId;
   }
 
   isReady(): boolean {

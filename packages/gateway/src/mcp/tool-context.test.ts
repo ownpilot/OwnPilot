@@ -6,30 +6,27 @@ import { describe, it, expect } from 'vitest';
 import { buildToolContextBlock, injectToolContext } from './tool-context.js';
 
 describe('buildToolContextBlock', () => {
-  it('should include ownpilot_tools tags', () => {
+  it('should include ownpilot tags', () => {
     const block = buildToolContextBlock();
-    expect(block).toContain('<ownpilot_tools>');
-    expect(block).toContain('</ownpilot_tools>');
+    expect(block).toContain('<ownpilot>');
+    expect(block).toContain('</ownpilot>');
   });
 
-  it('should mention all 4 meta-tools', () => {
+  it('should mention common tools', () => {
     const block = buildToolContextBlock();
-    expect(block).toContain('search_tools');
-    expect(block).toContain('get_tool_help');
-    expect(block).toContain('use_tool');
-    expect(block).toContain('batch_use_tool');
+    expect(block).toContain('add_task');
+    expect(block).toContain('search_memory');
+    expect(block).toContain('search_web');
   });
 
-  it('should include namespace info', () => {
+  it('should be concise (under 300 chars)', () => {
     const block = buildToolContextBlock();
-    expect(block).toContain('core.*');
-    expect(block).toContain('custom.*');
+    expect(block.length).toBeLessThan(300);
   });
 
-  it('should include common tool examples', () => {
+  it('should mention MCP', () => {
     const block = buildToolContextBlock();
-    expect(block).toContain('core.add_task');
-    expect(block).toContain('core.search_web');
+    expect(block).toContain('MCP');
   });
 });
 
@@ -46,7 +43,7 @@ describe('injectToolContext', () => {
     expect(result[0]!.role).toBe('system');
     expect(result[0]!.content).toBe('You are helpful.'); // unchanged
     expect(result[1]!.role).toBe('user');
-    expect(result[1]!.content as string).toContain('<ownpilot_tools>');
+    expect(result[1]!.content as string).toContain('<ownpilot>');
     expect(result[1]!.content as string).toContain('Hello');
   });
 
@@ -59,7 +56,7 @@ describe('injectToolContext', () => {
 
     const result = injectToolContext(messages);
 
-    expect(result[0]!.content as string).toContain('<ownpilot_tools>');
+    expect(result[0]!.content as string).toContain('<ownpilot>');
     expect(result[2]!.content).toBe('Second'); // unchanged
   });
 

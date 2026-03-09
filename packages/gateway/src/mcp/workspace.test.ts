@@ -50,7 +50,7 @@ describe('ensureWorkspace', () => {
     );
     expect(claudeCall).toBeDefined();
     expect(claudeCall![1] as string).toContain('OwnPilot');
-    expect(claudeCall![1] as string).toContain('search_tools');
+    expect(claudeCall![1] as string).toContain('MCP');
   });
 
   it('should write GEMINI.md', async () => {
@@ -62,7 +62,7 @@ describe('ensureWorkspace', () => {
     expect(geminiCall).toBeDefined();
   });
 
-  it('should write AGENTS.md with full tool guide', async () => {
+  it('should write AGENTS.md with minimal tool guide', async () => {
     await ensureWorkspace({ baseDir: '/tmp/test-ws' });
 
     const agentsCall = vi.mocked(writeFile).mock.calls.find(
@@ -70,12 +70,21 @@ describe('ensureWorkspace', () => {
     );
     expect(agentsCall).toBeDefined();
     const content = agentsCall![1] as string;
-    expect(content).toContain('search_tools');
-    expect(content).toContain('use_tool');
-    expect(content).toContain('batch_use_tool');
-    expect(content).toContain('get_tool_help');
-    expect(content).toContain('core.*');
-    expect(content).toContain('core.add_task');
+    expect(content).toContain('OwnPilot');
+    expect(content).toContain('MCP');
+    expect(content).toContain('add_task');
+    expect(content).toContain('search_memory');
+  });
+
+  it('should include correlationId in MCP URL when provided', async () => {
+    await ensureWorkspace({ baseDir: '/tmp/test-ws', correlationId: 'test-corr-123' });
+
+    const mcpCall = vi.mocked(writeFile).mock.calls.find(
+      (c) => (c[0] as string).includes('.mcp.json')
+    );
+    const content = JSON.parse(mcpCall![1] as string);
+    expect(content.mcpServers.ownpilot.url).toContain('correlationId=test-corr-123');
+    expect(content.mcpServers.ownpilot.httpUrl).toContain('correlationId=test-corr-123');
   });
 
   it('should write 4 files total', async () => {

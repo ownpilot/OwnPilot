@@ -26,6 +26,8 @@ export interface WorkspaceConfig {
   gatewayUrl?: string;
   /** Base directory for workspaces (default: ~/.ownpilot/workspace) */
   baseDir?: string;
+  /** Correlation ID for linking MCP tool calls to a chat SSE stream */
+  correlationId?: string;
 }
 
 export interface WorkspaceInfo {
@@ -39,8 +41,9 @@ export interface WorkspaceInfo {
 // Context Files
 // =============================================================================
 
-function buildMcpConfig(gatewayUrl: string): string {
-  const mcpUrl = `${gatewayUrl}/api/v1/mcp/serve`;
+function buildMcpConfig(gatewayUrl: string, correlationId?: string): string {
+  const base = `${gatewayUrl}/api/v1/mcp/serve`;
+  const mcpUrl = correlationId ? `${base}?correlationId=${correlationId}` : base;
   return JSON.stringify(
     {
       mcpServers: {
@@ -59,91 +62,35 @@ function buildMcpConfig(gatewayUrl: string): string {
 }
 
 function buildAgentsMd(): string {
-  return `# OwnPilot Tools
+  return `# OwnPilot
 
-You are connected to **OwnPilot**, a personal AI assistant platform with 150+ tools.
-Access them through 4 MCP tools provided by the \`ownpilot\` MCP server.
-
-## How to Use Tools
-
-### Step 1: Search
-\`\`\`
-search_tools(query: "keyword")
-\`\`\`
-Find tools by keyword. Use \`"all"\` to list everything. Returns tool names with parameter docs.
-
-### Step 2: Get Help (optional)
-\`\`\`
-get_tool_help(tool_name: "core.add_task")
-\`\`\`
-Get detailed parameter documentation for a specific tool.
-
-### Step 3: Execute
-\`\`\`
-use_tool(tool_name: "core.add_task", arguments: { title: "Buy milk", priority: "high" })
-\`\`\`
-Execute a single tool. Or execute multiple in parallel:
-\`\`\`
-batch_use_tool(calls: [
-  { tool_name: "core.list_tasks", arguments: { status: "pending" } },
-  { tool_name: "core.search_memory", arguments: { query: "meeting notes" } }
-])
-\`\`\`
-
-## Tool Namespaces
-- \`core.*\` — Built-in tools (tasks, memory, email, web, goals, etc.)
-- \`custom.*\` — User-created tools
-- \`plugin.*\` — Plugin-provided tools
-- \`skill.*\` — Skill-provided tools
+You have access to OwnPilot tools via MCP. Use \`tools/list\` to discover available tools.
 
 ## Common Tools
-| Tool | Description |
-|------|-------------|
-| \`core.add_task\` | Create a task |
-| \`core.list_tasks\` | List tasks with filters |
-| \`core.add_memory\` | Save to long-term memory |
-| \`core.search_memory\` | Search memory |
-| \`core.search_web\` | Web search |
-| \`core.web_fetch\` | Fetch URL content |
-| \`core.send_email\` | Send email |
-| \`core.manage_goal\` | Create/update goals |
+- \`add_task\` — Create a task
+- \`list_tasks\` — List tasks with filters
+- \`add_memory\` / \`search_memory\` — Long-term memory
+- \`search_web\` / \`web_fetch\` — Web access
+- \`send_email\` — Send email
+- \`manage_goal\` — Goals
 
-## Important
-- **Always search first** — don't guess tool names
-- Tool names include namespace prefix: \`core.add_task\`, not just \`add_task\`
-- If a tool call fails, read the error — it includes correct parameter docs
+When the user asks for something that requires a tool, call it directly.
 `;
 }
 
 function buildClaudeMd(): string {
   return `# OwnPilot Workspace
 
-This workspace is managed by OwnPilot. You have access to OwnPilot's tool system
-via the \`ownpilot\` MCP server (configured in \`.mcp.json\`).
-
-Read AGENTS.md for the full tool usage guide.
-
-Key points:
-- Use \`search_tools\` to discover tools, then \`use_tool\` to execute them
-- Tool names have namespace prefixes: \`core.*\`, \`custom.*\`, \`plugin.*\`
-- Use \`batch_use_tool\` for parallel execution of multiple tools
-- Always search before using — don't guess tool names
+OwnPilot tools are available via MCP. See AGENTS.md for tool list.
+Call tools directly when the user needs tasks, memory, web search, email, or goals.
 `;
 }
 
 function buildGeminiMd(): string {
   return `# OwnPilot Workspace
 
-This workspace is managed by OwnPilot. You have access to OwnPilot's tool system
-via the \`ownpilot\` MCP server.
-
-Read AGENTS.md for the full tool usage guide.
-
-Key points:
-- Use \`search_tools\` to discover tools, then \`use_tool\` to execute them
-- Tool names have namespace prefixes: \`core.*\`, \`custom.*\`, \`plugin.*\`
-- Use \`batch_use_tool\` for parallel execution of multiple tools
-- Always search before using — don't guess tool names
+OwnPilot tools are available via MCP. See AGENTS.md for tool list.
+Call tools directly when the user needs tasks, memory, web search, email, or goals.
 `;
 }
 
@@ -169,7 +116,7 @@ export async function ensureWorkspace(config: WorkspaceConfig = {}): Promise<Wor
 
   // Write config files (always overwrite to keep in sync)
   await Promise.all([
-    writeFile(join(dir, '.mcp.json'), buildMcpConfig(gatewayUrl), 'utf-8'),
+    writeFile(join(dir, '.mcp.json'), buildMcpConfig(gatewayUrl, config.correlationId), 'utf-8'),
     writeFile(join(dir, 'AGENTS.md'), buildAgentsMd(), 'utf-8'),
     writeFile(join(dir, 'CLAUDE.md'), buildClaudeMd(), 'utf-8'),
     writeFile(join(dir, 'GEMINI.md'), buildGeminiMd(), 'utf-8'),
