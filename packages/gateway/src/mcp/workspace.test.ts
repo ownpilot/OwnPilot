@@ -87,6 +87,31 @@ describe('ensureWorkspace', () => {
     expect(content.mcpServers.ownpilot.httpUrl).toContain('correlationId=test-corr-123');
   });
 
+  it('should include session token as X-Session-Token header when provided', async () => {
+    await ensureWorkspace({
+      baseDir: '/tmp/test-ws',
+      sessionToken: 'mcp-token-abc',
+    });
+
+    const mcpCall = vi.mocked(writeFile).mock.calls.find(
+      (c) => (c[0] as string).includes('.mcp.json')
+    );
+    const content = JSON.parse(mcpCall![1] as string);
+    expect(content.mcpServers.ownpilot.headers).toEqual({
+      'X-Session-Token': 'mcp-token-abc',
+    });
+  });
+
+  it('should not include headers when no session token', async () => {
+    await ensureWorkspace({ baseDir: '/tmp/test-ws' });
+
+    const mcpCall = vi.mocked(writeFile).mock.calls.find(
+      (c) => (c[0] as string).includes('.mcp.json')
+    );
+    const content = JSON.parse(mcpCall![1] as string);
+    expect(content.mcpServers.ownpilot.headers).toBeUndefined();
+  });
+
   it('should write 4 files total', async () => {
     await ensureWorkspace({ baseDir: '/tmp/test-ws' });
 

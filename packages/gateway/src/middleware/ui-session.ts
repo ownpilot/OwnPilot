@@ -22,8 +22,7 @@ export const uiSessionMiddleware = createMiddleware(async (c, next) => {
 
   // 1. Auth-exempt paths — these handle their own authentication or are public.
   //    Set sessionAuthenticated so the API auth middleware (api-key/jwt) is skipped.
-  //    MCP serve endpoint is exempt to allow CLI tools to connect without API keys.
-  if (relativePath.startsWith('/auth/') || relativePath.startsWith('/mcp/serve')) {
+  if (relativePath.startsWith('/auth/')) {
     c.set('sessionAuthenticated', true);
     c.set('userId', 'default');
     return next();

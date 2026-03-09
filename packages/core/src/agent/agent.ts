@@ -281,7 +281,11 @@ export class Agent {
       };
 
       // Notify that we're about to call the model
-      options?.onProgress?.(`Calling ${this.config.model.model || 'AI model'}...`, {
+      const modelLabel =
+        this.config.model.model === 'default'
+          ? this.config.name || 'AI model'
+          : this.config.model.model || 'AI model';
+      options?.onProgress?.(`Calling ${modelLabel}...`, {
         model: this.config.model.model,
         turn: turnCount,
         messageCount: messages.length,

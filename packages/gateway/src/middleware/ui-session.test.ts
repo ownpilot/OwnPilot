@@ -39,6 +39,9 @@ describe('UI Session Middleware', () => {
     app.get('/api/v1/auth/sessions', (c) =>
       c.json({ ok: true, session: c.get('sessionAuthenticated') })
     );
+    app.post('/api/v1/mcp/serve', (c) =>
+      c.json({ ok: true, session: c.get('sessionAuthenticated') })
+    );
     return app;
   }
 
@@ -87,6 +90,43 @@ describe('UI Session Middleware', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.session).toBe(true);
+    });
+  });
+
+  // ── MCP serve requires auth ──────────────────────────────────────
+
+  describe('MCP serve endpoint', () => {
+    it('returns 401 for /mcp/serve when password is set and no auth', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/mcp/serve', { method: 'POST' });
+      expect(res.status).toBe(401);
+    });
+
+    it('passes through /mcp/serve with valid session token', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/mcp/serve', {
+        method: 'POST',
+        headers: { 'X-Session-Token': 'valid-mcp-token' },
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.session).toBe(true);
+    });
+
+    it('passes through /mcp/serve with Authorization header', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/mcp/serve', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer some-key' },
+      });
+      expect(res.status).toBe(200);
     });
   });
 

@@ -97,8 +97,8 @@ const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'in
     displayName: 'Claude (CLI)',
     description: 'Use Claude via the Claude Code CLI. Requires Claude Max/Pro subscription or API key.',
     coreProvider: 'anthropic',
-    models: ['claude-sonnet-4-6', 'claude-opus-4-6', 'claude-haiku-4-5'],
-    defaultModel: 'claude-sonnet-4-6',
+    models: ['default'],
+    defaultModel: 'default',
   },
   codex: {
     id: 'cli-codex',
@@ -106,8 +106,8 @@ const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'in
     displayName: 'Codex (CLI)',
     description: 'Use OpenAI models via the Codex CLI. Requires ChatGPT Pro/Plus subscription or API key.',
     coreProvider: 'openai',
-    models: ['o4-mini', 'o3', 'gpt-4.1'],
-    defaultModel: 'o4-mini',
+    models: ['default'],
+    defaultModel: 'default',
   },
   gemini: {
     id: 'cli-gemini',
@@ -115,8 +115,8 @@ const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'in
     displayName: 'Gemini (CLI)',
     description: 'Use Gemini models via the Gemini CLI. Requires Google account login or API key.',
     coreProvider: 'google',
-    models: ['gemini-2.5-pro', 'gemini-2.5-flash'],
-    defaultModel: 'gemini-2.5-flash',
+    models: ['default'],
+    defaultModel: 'default',
   },
 };
 
@@ -126,9 +126,10 @@ const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'in
 
 /**
  * Flatten a message array into a single text prompt for CLI input.
- * Preserves system prompt and conversation history context.
+ * Returns { prompt, systemPrompt } — systemPrompt is extracted separately
+ * so it can be passed via CLI flags (e.g. claude --system-prompt).
  */
-function messagesToPrompt(messages: readonly Message[]): string {
+function messagesToPrompt(messages: readonly Message[]): { prompt: string; systemPrompt: string } {
   const parts: string[] = [];
   let systemPrompt = '';
 
@@ -150,21 +151,14 @@ function messagesToPrompt(messages: readonly Message[]): string {
     // Skip tool messages — CLIs don't understand them
   }
 
-  // For single-turn (system + 1 user message), just send the user message
+  // For single-turn (system + 1 user message), just send the user message directly
   const userMessages = parts.filter((p) => p.startsWith('User: '));
   if (userMessages.length === 1 && parts.length === 1) {
-    const userText = userMessages[0]!.slice(6); // Remove "User: " prefix
-    if (systemPrompt) {
-      return `${systemPrompt}\n\n${userText}`;
-    }
-    return userText;
+    return { prompt: userMessages[0]!.slice(6), systemPrompt };
   }
 
   // Multi-turn: include conversation history
   const sections: string[] = [];
-  if (systemPrompt) {
-    sections.push(`<system_instructions>\n${systemPrompt}\n</system_instructions>`);
-  }
   if (parts.length > 1) {
     sections.push(`<conversation_history>\n${parts.slice(0, -1).join('\n\n')}\n</conversation_history>`);
   }
@@ -175,7 +169,7 @@ function messagesToPrompt(messages: readonly Message[]): string {
     sections.push(currentMessage);
   }
 
-  return sections.join('\n\n');
+  return { prompt: sections.join('\n\n'), systemPrompt };
 }
 
 // =============================================================================
@@ -288,27 +282,34 @@ const IS_WIN = platform() === 'win32';
  * Build CLI args. Prompt is sent via stdin on Windows to avoid shell escaping issues.
  * On Unix, prompt is passed as an arg (safe since no shell involved).
  */
-function buildClaudeArgs(prompt: string, model?: string, streaming?: boolean): string[] {
+function buildClaudeArgs(
+  prompt: string,
+  _model?: string,
+  streaming?: boolean,
+  systemPrompt?: string
+): string[] {
   const args = IS_WIN
     ? ['--output-format', streaming ? 'stream-json' : 'json']
     : ['-p', prompt, '--output-format', streaming ? 'stream-json' : 'json'];
   if (streaming) args.push('--verbose');
-  if (model) args.push('--model', model);
+  // Pass system prompt via --system-prompt to override Claude Code's default identity
+  if (systemPrompt) args.push('--system-prompt', systemPrompt);
+  // No --model flag: CLI tools use their own default model.
   return args;
 }
 
-function buildCodexArgs(prompt: string, model?: string): string[] {
+function buildCodexArgs(prompt: string, _model?: string): string[] {
   const args = ['exec', '--json', '--full-auto'];
-  if (model) args.push('--model', model);
+  // No --model flag: CLI tools use their own default model.
   if (!IS_WIN) args.push(prompt);
   return args;
 }
 
-function buildGeminiArgs(prompt: string, model?: string): string[] {
+function buildGeminiArgs(prompt: string, _model?: string): string[] {
   const args = IS_WIN
     ? ['--yolo', '--output-format', 'json']
     : ['-p', prompt, '--yolo', '--output-format', 'json'];
-  if (model) args.push('--model', model);
+  // No --model flag: CLI tools use their own default model.
   return args;
 }
 
@@ -362,13 +363,13 @@ export class CliChatProvider implements IProvider {
       const { injectToolContext } = await import('../mcp/tool-context.js');
       effectiveMessages = injectToolContext(messages) as readonly Message[];
     }
-    const prompt = messagesToPrompt(effectiveMessages);
+    const { prompt, systemPrompt } = messagesToPrompt(effectiveMessages);
     const timeout = this.config.timeout ?? 120_000;
 
     let args: string[];
     switch (this.config.binary) {
       case 'claude':
-        args = buildClaudeArgs(prompt, model, false);
+        args = buildClaudeArgs(prompt, model, false, systemPrompt || undefined);
         break;
       case 'codex':
         args = buildCodexArgs(prompt, model);
@@ -471,14 +472,14 @@ export class CliChatProvider implements IProvider {
   async *stream(
     request: CompletionRequest
   ): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
-    const prompt = messagesToPrompt(request.messages);
+    const { prompt, systemPrompt } = messagesToPrompt(request.messages);
     const model = request.model.model || this.config.model || this.definition.defaultModel;
     const timeout = this.config.timeout ?? 120_000;
     const id = `cli-${this.config.binary}-${Date.now()}`;
 
     // Only Claude supports true streaming via stream-json
     if (this.config.binary === 'claude') {
-      yield* this.streamClaude(prompt, model, id, timeout);
+      yield* this.streamClaude(prompt, model, id, timeout, systemPrompt || undefined);
       return;
     }
 
@@ -536,9 +537,10 @@ export class CliChatProvider implements IProvider {
     prompt: string,
     model: string,
     id: string,
-    timeout: number
+    timeout: number,
+    systemPrompt?: string
   ): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
-    const args = buildClaudeArgs(prompt, model, true);
+    const args = buildClaudeArgs(prompt, model, true, systemPrompt);
     const env = createSanitizedEnv('claude-code', this.config.apiKey);
 
     const proc = spawn(this.config.binary, args, {

@@ -74,6 +74,22 @@ export function createSession(): { token: string; expiresAt: Date } {
 }
 
 /**
+ * Create a session token for MCP clients (e.g. CLI tools connecting via Streamable HTTP).
+ * Uses the same session store but with a 30-day TTL by default.
+ */
+export function createMcpSession(): { token: string; expiresAt: Date } {
+  const token = randomBytes(32).toString('hex');
+  const now = new Date();
+  const ttlMs = 30 * 24 * 60 * 60 * 1000; // 30 days
+  const expiresAt = new Date(now.getTime() + ttlMs);
+
+  sessions.set(token, { token, createdAt: now, expiresAt });
+  log.info('MCP session created', { sessionCount: sessions.size });
+
+  return { token, expiresAt };
+}
+
+/**
  * Validate a session token. Returns true if token exists and is not expired.
  */
 export function validateSession(token: string): boolean {

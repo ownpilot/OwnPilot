@@ -585,10 +585,14 @@ async function createChatAgentInstance(
 
     // Create a temp workspace with MCP config pointing to our gateway.
     // correlationId links MCP tool calls to the chat SSE stream for real-time tracking.
+    // sessionToken authenticates the MCP client against the gateway.
     correlationId = crypto.randomUUID();
     const { createTempWorkspace } = await import('../mcp/workspace.js');
+    const { createMcpSession } = await import('../services/ui-session.js');
+    const mcpSession = createMcpSession();
     const workspace = await createTempWorkspace({
       correlationId,
+      sessionToken: mcpSession.token,
     });
 
     providerInstance = createCliChatProvider({

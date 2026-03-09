@@ -183,6 +183,12 @@ chatRoutes.post('/', async (c) => {
     }
   }
 
+  // CLI providers always use their own default model — ignore any model from the UI
+  if (provider.startsWith('cli-')) {
+    model = 'default';
+    requestedModel = 'default';
+  }
+
   // Check for demo mode
   if (await isDemoMode()) {
     const demoResponse = generateDemoResponse(body.message, provider, model);

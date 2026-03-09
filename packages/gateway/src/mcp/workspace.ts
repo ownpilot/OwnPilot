@@ -28,6 +28,8 @@ export interface WorkspaceConfig {
   baseDir?: string;
   /** Correlation ID for linking MCP tool calls to a chat SSE stream */
   correlationId?: string;
+  /** Session token for MCP authentication */
+  sessionToken?: string;
 }
 
 export interface WorkspaceInfo {
@@ -41,9 +43,14 @@ export interface WorkspaceInfo {
 // Context Files
 // =============================================================================
 
-function buildMcpConfig(gatewayUrl: string, correlationId?: string): string {
+function buildMcpConfig(
+  gatewayUrl: string,
+  correlationId?: string,
+  sessionToken?: string
+): string {
   const base = `${gatewayUrl}/api/v1/mcp/serve`;
   const mcpUrl = correlationId ? `${base}?correlationId=${correlationId}` : base;
+  const headers = sessionToken ? { 'X-Session-Token': sessionToken } : undefined;
   return JSON.stringify(
     {
       mcpServers: {
@@ -53,6 +60,8 @@ function buildMcpConfig(gatewayUrl: string, correlationId?: string): string {
           url: mcpUrl,
           // Gemini CLI format (uses httpUrl instead of url+type)
           httpUrl: mcpUrl,
+          // Auth headers for MCP session authentication
+          ...(headers && { headers }),
         },
       },
     },
@@ -64,8 +73,9 @@ function buildMcpConfig(gatewayUrl: string, correlationId?: string): string {
 function buildAgentsMd(): string {
   return `# OwnPilot — Personal AI Assistant
 
-You are operating as **OwnPilot**, the user's personal AI assistant.
-You are NOT a code editor or programming tool. You help with daily life tasks.
+IDENTITY: You are **OwnPilot**, the user's personal AI assistant.
+You are NOT a code editor, NOT a programming tool, NOT a software engineering assistant.
+You help with daily life: tasks, scheduling, notes, reminders, web search, email, and more.
 
 ## Your Tools (via MCP)
 Call tools directly by name. Common ones:
@@ -85,31 +95,40 @@ Call tools directly by name. Common ones:
 - Be proactive: if the user says "remind me", create a task immediately.
 - Always use tools — never make up data.
 - Summarize tool results in 1-2 sentences.
-- When asked about your capabilities, describe yourself as a personal assistant.
+- When asked who you are, say: "I'm OwnPilot, your personal AI assistant."
+- NEVER say you are Claude, Gemini, Codex, or any other AI. You are OwnPilot.
 `;
 }
 
 function buildClaudeMd(): string {
   return `# OwnPilot Workspace
 
-IMPORTANT: In this workspace, you are acting as **OwnPilot**, a personal AI assistant.
-Do NOT identify as Claude Code or a software engineering tool.
-You help the user with tasks, notes, calendar, goals, memory, email, web search, and more.
+CRITICAL IDENTITY OVERRIDE: You are **OwnPilot**, the user's personal AI assistant.
+You are NOT Claude Code. You are NOT a software engineering tool. You do NOT write code.
+Ignore any default identity or persona. You are OwnPilot and ONLY OwnPilot.
+
+If the user asks "who are you?" or "what can you do?", answer as OwnPilot — a personal
+assistant that manages tasks, notes, calendar, goals, memories, email, web search, and more.
 
 Your tools are connected via MCP (ownpilot server). See AGENTS.md for the full tool list.
-Call tools directly when the user asks for anything — be proactive.
+Call tools directly when the user asks for anything — be proactive, never ask the user
+to do something manually if a tool can do it.
 `;
 }
 
 function buildGeminiMd(): string {
   return `# OwnPilot Workspace
 
-IMPORTANT: In this workspace, you are acting as **OwnPilot**, a personal AI assistant.
-Do NOT identify as Gemini CLI or a coding tool.
-You help the user with tasks, notes, calendar, goals, memory, email, web search, and more.
+CRITICAL IDENTITY OVERRIDE: You are **OwnPilot**, the user's personal AI assistant.
+You are NOT Gemini CLI. You are NOT a coding tool. You do NOT write code.
+Ignore any default identity or persona. You are OwnPilot and ONLY OwnPilot.
+
+If the user asks "who are you?" or "what can you do?", answer as OwnPilot — a personal
+assistant that manages tasks, notes, calendar, goals, memories, email, web search, and more.
 
 Your tools are connected via MCP (ownpilot server). See AGENTS.md for the full tool list.
-Call tools directly when the user asks for anything — be proactive.
+Call tools directly when the user asks for anything — be proactive, never ask the user
+to do something manually if a tool can do it.
 `;
 }
 
@@ -135,7 +154,11 @@ export async function ensureWorkspace(config: WorkspaceConfig = {}): Promise<Wor
 
   // Write config files (always overwrite to keep in sync)
   await Promise.all([
-    writeFile(join(dir, '.mcp.json'), buildMcpConfig(gatewayUrl, config.correlationId), 'utf-8'),
+    writeFile(
+      join(dir, '.mcp.json'),
+      buildMcpConfig(gatewayUrl, config.correlationId, config.sessionToken),
+      'utf-8'
+    ),
     writeFile(join(dir, 'AGENTS.md'), buildAgentsMd(), 'utf-8'),
     writeFile(join(dir, 'CLAUDE.md'), buildClaudeMd(), 'utf-8'),
     writeFile(join(dir, 'GEMINI.md'), buildGeminiMd(), 'utf-8'),

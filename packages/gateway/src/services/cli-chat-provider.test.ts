@@ -309,8 +309,19 @@ describe('CliChatProvider', () => {
         const promptIdx = spawnArgs.indexOf('-p');
         prompt = spawnArgs[promptIdx + 1] as string;
       }
-      expect(prompt).toContain('system_instructions');
-      expect(prompt).toContain('You are a helpful assistant.');
+      // System prompt is passed via --system-prompt flag, not embedded in prompt
+      if (IS_WIN) {
+        // On Windows, command+args are joined into a single shell string
+        const shellCmd = mockSpawn.mock.calls[0][0] as string;
+        expect(shellCmd).toContain('--system-prompt');
+        expect(shellCmd).toContain('You are a helpful assistant.');
+      } else {
+        const allArgs = mockSpawn.mock.calls[0][1] as string[];
+        const sysIdx = allArgs.indexOf('--system-prompt');
+        expect(sysIdx).toBeGreaterThan(-1);
+        expect(allArgs[sysIdx + 1]).toBe('You are a helpful assistant.');
+      }
+      // Conversation history and current message are in the prompt
       expect(prompt).toContain('conversation_history');
       expect(prompt).toContain('User: Hello');
       expect(prompt).toContain('Assistant: Hi there!');
@@ -329,22 +340,21 @@ describe('CliChatProvider', () => {
   });
 
   describe('getModels', () => {
-    it('should return models for claude', async () => {
+    it('should return default model for claude', async () => {
       const provider = new CliChatProvider({ binary: 'claude' });
       const result = await provider.getModels();
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toContain('claude-sonnet-4-6');
-        expect(result.value).toContain('claude-opus-4-6');
+        expect(result.value).toEqual(['default']);
       }
     });
 
-    it('should return models for codex', async () => {
+    it('should return default model for codex', async () => {
       const provider = new CliChatProvider({ binary: 'codex' });
       const result = await provider.getModels();
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toContain('o4-mini');
+        expect(result.value).toEqual(['default']);
       }
     });
   });
