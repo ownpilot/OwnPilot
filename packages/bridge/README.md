@@ -4,6 +4,49 @@
 
 It exposes an OpenAI-compatible `/v1/chat/completions` endpoint and manages Claude Code session lifecycles — spawning, streaming, idle cleanup, pattern detection, and multi-project orchestration.
 
+## How It Works
+
+### MCP Role
+
+Bridge has **two MCP roles**:
+
+- **MCP Server** (`mcp/index.ts`): Exposes 20 tools (spawn_cc, ping, get_projects, etc.) that other Claude Code instances can call. These are thin HTTP wrappers over the bridge REST API.
+- **MCP Client**: Bridge does **not** pass MCP servers to spawned CC instances (`mcpServers: {}` in config). Spawned CC runs without MCP for fastest startup.
+
+### How CC is Spawned
+
+Bridge spawns Claude Code as a **direct child process** — no MCP, no SDK, just `child_process.spawn()`:
+
+```typescript
+// claude-manager.ts (simplified):
+const proc = spawn(config.claudePath, [
+  '--verbose',
+  '--output-format', 'stream-json',
+  '-p', projectDir,
+  '--allowedTools', ...config.allowedTools,
+  '--model', model,
+  '--max-turns', '100',
+], {
+  env: sanitizedEnv,  // CLAUDECODE env deleted to prevent nested rejection
+});
+```
+
+The process runs in **interactive mode** with a persistent stdin/stdout NDJSON protocol:
+
+1. **Spawn**: A single `claude` process starts, stdin stays open
+2. **Send**: Messages written to stdin as NDJSON:
+   ```json
+   {"type":"user","message":{"role":"user","content":"message here"}}
+   ```
+3. **Receive**: stdout streams NDJSON events (`stream-parser.ts` parses them):
+   - `content_block_delta` — text chunk
+   - `result` — completion + token usage
+   - `system` — session_id assignment
+4. **Pattern Detection**: Response text scanned for `QUESTION:`, `TASK_BLOCKED:`, `Phase N complete` — triggers SSE events + webhooks
+5. **Idle Timeout**: Process gets SIGTERM after 30min of inactivity
+
+This interactive mode gives ~2s latency per message (vs ~10s with the old spawn-per-message approach).
+
 ## Architecture
 
 ```
