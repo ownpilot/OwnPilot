@@ -192,10 +192,16 @@ plansRoutes.route('/', planCrudRoutes);
 
 /**
  * POST /plans/:id/execute - Execute a plan
+ *
+ * Query params:
+ *   - waveExecution: Enable parallel wave execution for dependency-aware plans (default: false)
+ *   - maxConcurrent: Maximum concurrent steps in wave mode (default: 5)
  */
 plansRoutes.post('/:id/execute', async (c) => {
   const userId = getUserId(c);
   const id = c.req.param('id');
+  const waveExecution = c.req.query('waveExecution') === 'true';
+  const maxConcurrent = getIntParam(c, 'maxConcurrent', 5, 1, 20);
 
   const service = getServiceRegistry().get(Services.Plan);
   const plan = await service.getPlan(userId, id);
@@ -213,8 +219,8 @@ plansRoutes.post('/:id/execute', async (c) => {
   }
 
   try {
-    log.info('Plan execution started', { userId, planId: id, name: plan.name });
-    const executor = getPlanExecutor({ userId });
+    log.info('Plan execution started', { userId, planId: id, name: plan.name, waveExecution });
+    const executor = getPlanExecutor({ userId, enableWaveExecution: waveExecution, maxConcurrent });
     const result = await executor.execute(id);
 
     log.info('Plan execution completed', {

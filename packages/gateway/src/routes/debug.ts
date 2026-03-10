@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { getDebugInfo, debugLog } from '@ownpilot/core';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, safeKeyCompare } from './helpers.js';
+import { getCircuitBreakerStats, resetAllCircuits } from '../middleware/circuit-breaker.js';
 
 export const debugRoutes = new Hono();
 
@@ -182,5 +183,35 @@ debugRoutes.get('/sandbox', async (c) => {
     count: sandboxExecutions.length,
     stats,
     entries: sandboxExecutions,
+  });
+});
+
+/**
+ * Get circuit breaker statistics
+ */
+debugRoutes.get('/circuit-breakers', async (c) => {
+  const stats = getCircuitBreakerStats();
+
+  const summary = {
+    total: stats.length,
+    closed: stats.filter((s) => s.state === 'CLOSED').length,
+    open: stats.filter((s) => s.state === 'OPEN').length,
+    halfOpen: stats.filter((s) => s.state === 'HALF_OPEN').length,
+  };
+
+  return apiResponse(c, {
+    summary,
+    circuits: stats,
+  });
+});
+
+/**
+ * Reset all circuit breakers
+ */
+debugRoutes.post('/circuit-breakers/reset', async (c) => {
+  resetAllCircuits();
+
+  return apiResponse(c, {
+    message: 'All circuit breakers reset',
   });
 });
