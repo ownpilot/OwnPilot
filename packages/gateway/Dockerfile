@@ -35,8 +35,8 @@ FROM dependencies AS builder
 # Copy source code
 COPY . .
 
-# Build all packages
-RUN pnpm run build
+# Build only necessary packages (exclude UI)
+RUN pnpm run build --filter=@ownpilot/core --filter=@ownpilot/gateway --filter=@ownpilot/channels --filter=@ownpilot/cli
 
 # ============================================================================
 # Stage 4: Production

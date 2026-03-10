@@ -30,7 +30,7 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: packages/gateway/Dockerfile
     container_name: ownpilot
     restart: unless-stopped
     ports:
@@ -85,7 +85,9 @@ services:
     restart: unless-stopped
     ports:
       - '${MQTT_PORT:-1883}:1883'
+      - '${MQTT_WS_PORT:-9001}:9001'
     volumes:
+      - ./packages/gateway/docker/mosquitto/config:/mosquitto/config:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
     networks:
