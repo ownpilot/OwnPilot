@@ -16,8 +16,12 @@ const mockServerClose = vi.hoisted(() => vi.fn());
 const mockTransportHandleRequest = vi.hoisted(() => vi.fn());
 const mockTransportClose = vi.hoisted(() => vi.fn());
 
-const mockGetAllTools = vi.hoisted(() => vi.fn());
-const mockExecute = vi.hoisted(() => vi.fn());
+const mockExecuteSearchTools = vi.hoisted(() => vi.fn());
+const mockExecuteGetToolHelp = vi.hoisted(() => vi.fn());
+const mockExecuteUseTool = vi.hoisted(() => vi.fn());
+const mockExecuteBatchUseTool = vi.hoisted(() => vi.fn());
+
+const mockEmitMcpToolEvent = vi.hoisted(() => vi.fn());
 
 /** Tracks all transport constructor calls for assertions */
 const transportConstructorCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
@@ -52,18 +56,15 @@ vi.mock('@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js', () => (
   }),
 }));
 
-vi.mock('@ownpilot/core', () => ({
-  getBaseName: (name: string) => {
-    const dotIndex = name.indexOf('.');
-    return dotIndex >= 0 ? name.slice(dotIndex + 1) : name;
-  },
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+  };
+});
 
 vi.mock('./tool-executor.js', () => ({
-  getSharedToolRegistry: () => ({
-    getAllTools: mockGetAllTools,
-    execute: mockExecute,
-  }),
+  getSharedToolRegistry: () => ({}),
 }));
 
 vi.mock('./log.js', () => ({
@@ -73,6 +74,17 @@ vi.mock('./log.js', () => ({
     warn: mockLogWarn,
     error: mockLogError,
   }),
+}));
+
+vi.mock('../mcp/mcp-events.js', () => ({
+  emitMcpToolEvent: mockEmitMcpToolEvent,
+}));
+
+vi.mock('../tools/agent-tool-registry.js', () => ({
+  executeSearchTools: mockExecuteSearchTools,
+  executeGetToolHelp: mockExecuteGetToolHelp,
+  executeUseTool: mockExecuteUseTool,
+  executeBatchUseTool: mockExecuteBatchUseTool,
 }));
 
 // =============================================================================
@@ -88,28 +100,13 @@ const { handleMcpRequest, invalidateMcpServer } = await import('./mcp-server-ser
 // HELPERS
 // =============================================================================
 
-function makeRequest(method: string, sessionId?: string): Request {
+function makeRequest(method: string, sessionId?: string, queryParams?: string): Request {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
   if (sessionId) headers['mcp-session-id'] = sessionId;
-  return new Request('http://localhost/mcp', { method, headers });
-}
-
-function makeToolDef(
-  name: string,
-  description: string,
-  properties: Record<string, unknown> = {},
-  required: string[] = []
-) {
-  return {
-    definition: {
-      name,
-      description,
-      parameters: { properties, required },
-    },
-    executor: vi.fn(),
-  };
+  const url = queryParams ? `http://localhost/mcp?${queryParams}` : 'http://localhost/mcp';
+  return new Request(url, { method, headers });
 }
 
 /** Extract the tools/list handler registered on the mock Server */
@@ -133,10 +130,10 @@ function getCallHandler(): ((...args: unknown[]) => unknown) | undefined {
  * setRequestHandler calls are recorded and can be extracted via
  * getListHandler / getCallHandler.
  */
-async function ensureServerInitialized(): Promise<void> {
+async function ensureServerInitialized(queryParams?: string): Promise<void> {
   mockSetRequestHandler.mockClear();
   mockTransportHandleRequest.mockResolvedValueOnce(new Response('ok'));
-  await handleMcpRequest(makeRequest('POST'));
+  await handleMcpRequest(makeRequest('POST', undefined, queryParams));
 }
 
 // =============================================================================
@@ -153,7 +150,6 @@ beforeEach(() => {
   mockTransportClose.mockResolvedValue(undefined);
   mockServerConnect.mockResolvedValue(undefined);
   mockServerClose.mockResolvedValue(undefined);
-  mockGetAllTools.mockReturnValue([]);
 });
 
 // =============================================================================
@@ -385,7 +381,7 @@ describe('handleMcpRequest — unsupported methods', () => {
 });
 
 // =============================================================================
-// Lazy MCP server singleton
+// MCP server per session
 // =============================================================================
 
 describe('MCP server per session', () => {
@@ -429,341 +425,312 @@ describe('MCP server per session', () => {
 });
 
 // =============================================================================
-// tools/list handler
+// tools/list handler — 4 meta-tools
 // =============================================================================
 
 describe('tools/list handler', () => {
-  it('returns empty tools array when registry has no tools', async () => {
-    mockGetAllTools.mockReturnValue([]);
-    await ensureServerInitialized();
-    const handler = getListHandler()!;
-
-    const result = await handler();
-    expect(result).toEqual({ tools: [] });
-  });
-
-  it('maps tool definition names using getBaseName', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.search_files', 'Search files')]);
+  it('returns exactly 4 meta-tools', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
     const result = (await handler()) as { tools: Array<{ name: string }> };
-    expect(result.tools[0]!.name).toBe('search_files');
+    expect(result.tools).toHaveLength(4);
   });
 
-  it('strips first namespace segment from qualified names', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('plugin.telegram.send_message', 'Send a message'),
-    ]);
+  it('returns the correct meta-tool names', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
     const result = (await handler()) as { tools: Array<{ name: string }> };
-    expect(result.tools[0]!.name).toBe('telegram.send_message');
+    const names = result.tools.map((t) => t.name);
+    expect(names).toEqual(['search_tools', 'get_tool_help', 'use_tool', 'batch_use_tool']);
   });
 
-  it('preserves unqualified names (no dot)', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('simple_tool', 'A simple tool')]);
+  it('includes descriptions for all meta-tools', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
-    const result = (await handler()) as { tools: Array<{ name: string }> };
-    expect(result.tools[0]!.name).toBe('simple_tool');
+    const result = (await handler()) as { tools: Array<{ name: string; description: string }> };
+    for (const tool of result.tools) {
+      expect(tool.description).toBeTruthy();
+      expect(typeof tool.description).toBe('string');
+    }
   });
 
-  it('includes description in output', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.read_file', 'Read a file from disk')]);
-    await ensureServerInitialized();
-    const handler = getListHandler()!;
-
-    const result = (await handler()) as {
-      tools: Array<{ description: string }>;
-    };
-    expect(result.tools[0]!.description).toBe('Read a file from disk');
-  });
-
-  it('wraps properties in inputSchema with type: object', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.tool1', 'desc', { path: { type: 'string' } }),
-    ]);
+  it('each meta-tool has inputSchema with type: object', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
     const result = (await handler()) as {
-      tools: Array<{ inputSchema: { type: string } }>;
+      tools: Array<{ inputSchema: { type: string; properties: Record<string, unknown> } }>;
     };
-    expect(result.tools[0]!.inputSchema.type).toBe('object');
+    for (const tool of result.tools) {
+      expect(tool.inputSchema.type).toBe('object');
+      expect(tool.inputSchema.properties).toBeDefined();
+    }
   });
 
-  it('maps parameters.properties to inputSchema.properties', async () => {
-    const props = {
-      path: { type: 'string' },
-      recursive: { type: 'boolean' },
-    };
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc', props)]);
+  it('search_tools has query parameter', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
     const result = (await handler()) as {
-      tools: Array<{
-        inputSchema: { properties: Record<string, unknown> };
-      }>;
+      tools: Array<{ name: string; inputSchema: { properties: Record<string, unknown> } }>;
     };
-    expect(result.tools[0]!.inputSchema.properties).toEqual(props);
+    const searchTool = result.tools.find((t) => t.name === 'search_tools')!;
+    expect(searchTool.inputSchema.properties).toHaveProperty('query');
   });
 
-  it('includes required array when non-empty', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.tool1', 'desc', { path: { type: 'string' } }, ['path']),
-    ]);
+  it('use_tool has tool_name parameter', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
     const result = (await handler()) as {
-      tools: Array<{ inputSchema: { required?: string[] } }>;
+      tools: Array<{ name: string; inputSchema: { properties: Record<string, unknown> } }>;
     };
-    expect(result.tools[0]!.inputSchema.required).toEqual(['path']);
+    const useTool = result.tools.find((t) => t.name === 'use_tool')!;
+    expect(useTool.inputSchema.properties).toHaveProperty('tool_name');
   });
 
-  it('omits required field when required array is empty', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.tool1', 'desc', { path: { type: 'string' } }, []),
-    ]);
+  it('returns static list (does not depend on registry)', async () => {
     await ensureServerInitialized();
     const handler = getListHandler()!;
 
-    const result = (await handler()) as {
-      tools: Array<{ inputSchema: Record<string, unknown> }>;
-    };
-    expect(result.tools[0]!.inputSchema).not.toHaveProperty('required');
-  });
-
-  it('defaults properties to empty object when undefined', async () => {
-    mockGetAllTools.mockReturnValue([
-      {
-        definition: {
-          name: 'core.no_params',
-          description: 'No params tool',
-          parameters: { properties: undefined, required: [] },
-        },
-        executor: vi.fn(),
-      },
-    ]);
-    await ensureServerInitialized();
-    const handler = getListHandler()!;
-
-    const result = (await handler()) as {
-      tools: Array<{
-        inputSchema: { properties: Record<string, unknown> };
-      }>;
-    };
-    expect(result.tools[0]!.inputSchema.properties).toEqual({});
-  });
-
-  it('maps multiple tools correctly', async () => {
-    mockGetAllTools.mockReturnValue([
-      makeToolDef('core.tool_a', 'Tool A'),
-      makeToolDef('core.tool_b', 'Tool B'),
-      makeToolDef('custom.tool_c', 'Tool C'),
-    ]);
-    await ensureServerInitialized();
-    const handler = getListHandler()!;
-
-    const result = (await handler()) as { tools: Array<{ name: string }> };
-    expect(result.tools).toHaveLength(3);
-    expect(result.tools.map((t) => t.name)).toEqual(['tool_a', 'tool_b', 'tool_c']);
-  });
-
-  it('spreads required array (no mutation of original)', async () => {
-    const required = ['path', 'encoding'];
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc', {}, required)]);
-    await ensureServerInitialized();
-    const handler = getListHandler()!;
-
-    const result = (await handler()) as {
-      tools: Array<{ inputSchema: { required: string[] } }>;
-    };
-    const returned = result.tools[0]!.inputSchema.required;
-    expect(returned).toEqual(required);
-    // Should be a copy, not the same reference
-    expect(returned).not.toBe(required);
+    // Call twice — should return same result
+    const result1 = (await handler()) as { tools: Array<{ name: string }> };
+    const result2 = (await handler()) as { tools: Array<{ name: string }> };
+    expect(result1.tools.map((t) => t.name)).toEqual(result2.tools.map((t) => t.name));
   });
 });
 
 // =============================================================================
-// tools/call handler
+// tools/call handler — routes to shared executors
 // =============================================================================
 
 describe('tools/call handler', () => {
-  it('resolves base name to qualified name and executes', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.search_files', 'Search files')]);
-    mockExecute.mockResolvedValue('search results');
+  it('routes search_tools to executeSearchTools', async () => {
+    mockExecuteSearchTools.mockResolvedValue({ content: 'found tools' });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
-    await handler({
-      params: { name: 'search_files', arguments: { query: 'test' } },
-    });
+    const result = (await handler({
+      params: { name: 'search_tools', arguments: { query: 'file' } },
+    })) as { content: Array<{ type: string; text: string }> };
 
-    expect(mockExecute).toHaveBeenCalledWith(
-      'core.search_files',
-      { query: 'test' },
+    expect(mockExecuteSearchTools).toHaveBeenCalledWith(
+      expect.anything(), // registry
+      { query: 'file' }
+    );
+    expect(result.content[0]!.text).toBe('found tools');
+  });
+
+  it('routes get_tool_help to executeGetToolHelp', async () => {
+    mockExecuteGetToolHelp.mockResolvedValue({ content: 'tool help text' });
+    await ensureServerInitialized();
+    const handler = getCallHandler()!;
+
+    const result = (await handler({
+      params: { name: 'get_tool_help', arguments: { tool_name: 'core.read_file' } },
+    })) as { content: Array<{ type: string; text: string }> };
+
+    expect(mockExecuteGetToolHelp).toHaveBeenCalledWith(
+      expect.anything(),
+      { tool_name: 'core.read_file' }
+    );
+    expect(result.content[0]!.text).toBe('tool help text');
+  });
+
+  it('routes use_tool to executeUseTool with context', async () => {
+    mockExecuteUseTool.mockResolvedValue({ content: 'tool result' });
+    await ensureServerInitialized();
+    const handler = getCallHandler()!;
+
+    const args = { tool_name: 'core.list_tasks', arguments: { status: 'pending' } };
+    const result = (await handler({
+      params: { name: 'use_tool', arguments: args },
+    })) as { content: Array<{ type: string; text: string }> };
+
+    expect(mockExecuteUseTool).toHaveBeenCalledWith(
+      expect.anything(),
+      args,
       { userId: 'default', conversationId: 'mcp-session' }
     );
+    expect(result.content[0]!.text).toBe('tool result');
   });
 
-  it('returns text content on string result', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue('hello world');
+  it('routes batch_use_tool to executeBatchUseTool with context', async () => {
+    mockExecuteBatchUseTool.mockResolvedValue({ content: 'batch results' });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
+    const args = { calls: [{ tool_name: 'core.a', arguments: {} }] };
     const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
-    })) as { content: Array<{ type: string; text: string }>; isError?: boolean };
-    expect(result.content).toEqual([{ type: 'text', text: 'hello world' }]);
-    expect(result).not.toHaveProperty('isError');
-  });
-
-  it('returns stringified JSON for plain object results', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    const obj = { count: 42, items: ['a', 'b'] };
-    mockExecute.mockResolvedValue(obj);
-    await ensureServerInitialized();
-    const handler = getCallHandler()!;
-
-    const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
+      params: { name: 'batch_use_tool', arguments: args },
     })) as { content: Array<{ type: string; text: string }> };
-    expect(result.content[0]!.text).toBe(JSON.stringify(obj, null, 2));
-  });
 
-  it('extracts .content from result objects that have a content property', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue({
-      content: 'extracted content',
-      meta: 'ignored',
-    });
-    await ensureServerInitialized();
-    const handler = getCallHandler()!;
-
-    const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
-    })) as { content: Array<{ type: string; text: string }> };
-    expect(result.content[0]!.text).toBe('extracted content');
-  });
-
-  it('converts non-string content property via String()', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue({ content: 12345 });
-    await ensureServerInitialized();
-    const handler = getCallHandler()!;
-
-    const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
-    })) as { content: Array<{ type: string; text: string }> };
-    expect(result.content[0]!.text).toBe('12345');
+    expect(mockExecuteBatchUseTool).toHaveBeenCalledWith(
+      expect.anything(),
+      args,
+      { userId: 'default', conversationId: 'mcp-session' }
+    );
+    expect(result.content[0]!.text).toBe('batch results');
   });
 
   it('returns isError true for unknown tool name', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.known', 'desc')]);
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
       params: { name: 'nonexistent', arguments: {} },
     })) as { content: Array<{ type: string; text: string }>; isError: boolean };
+
     expect(result.isError).toBe(true);
-    expect(result.content[0]!.text).toBe('Unknown tool: nonexistent');
+    expect(result.content[0]!.text).toContain('Unknown tool: nonexistent');
+    expect(result.content[0]!.text).toContain('search_tools');
   });
 
-  it('does not call execute for unknown tool', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.known', 'desc')]);
+  it('does not call any executor for unknown tool', async () => {
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     await handler({ params: { name: 'nonexistent', arguments: {} } });
-    expect(mockExecute).not.toHaveBeenCalled();
+
+    expect(mockExecuteSearchTools).not.toHaveBeenCalled();
+    expect(mockExecuteGetToolHelp).not.toHaveBeenCalled();
+    expect(mockExecuteUseTool).not.toHaveBeenCalled();
+    expect(mockExecuteBatchUseTool).not.toHaveBeenCalled();
   });
 
   it('catches execution errors and returns isError true', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.failing', 'desc')]);
-    mockExecute.mockRejectedValue(new Error('execution failed'));
+    mockExecuteUseTool.mockRejectedValue(new Error('execution failed'));
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
-      params: { name: 'failing', arguments: {} },
+      params: { name: 'use_tool', arguments: { tool_name: 'core.failing' } },
     })) as { content: Array<{ type: string; text: string }>; isError: boolean };
+
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toBe('Error: execution failed');
   });
 
   it('handles non-Error thrown values', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.failing', 'desc')]);
-    mockExecute.mockRejectedValue('string error');
+    mockExecuteSearchTools.mockRejectedValue('string error');
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
-      params: { name: 'failing', arguments: {} },
+      params: { name: 'search_tools', arguments: { query: 'test' } },
     })) as { content: Array<{ type: string; text: string }>; isError: boolean };
+
     expect(result.isError).toBe(true);
     expect(result.content[0]!.text).toBe('Error: string error');
   });
 
   it('uses empty object when arguments is undefined', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue('ok');
+    mockExecuteSearchTools.mockResolvedValue({ content: 'ok' });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
-    await handler({ params: { name: 'tool1', arguments: undefined } });
+    await handler({ params: { name: 'search_tools', arguments: undefined } });
 
-    expect(mockExecute).toHaveBeenCalledWith(
-      'core.tool1',
-      {},
-      { userId: 'default', conversationId: 'mcp-session' }
+    expect(mockExecuteSearchTools).toHaveBeenCalledWith(
+      expect.anything(),
+      {}
     );
   });
 
-  it('handles null result from execute', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue(null);
+  it('JSON-stringifies object content from executor result', async () => {
+    const obj = { count: 42, items: ['a', 'b'] };
+    mockExecuteSearchTools.mockResolvedValue({ content: obj });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
+      params: { name: 'search_tools', arguments: { query: 'all' } },
     })) as { content: Array<{ type: string; text: string }> };
-    // null is not a string, not truthy with 'content', → JSON.stringify(null) → 'null'
-    expect(result.content[0]!.text).toBe('null');
+
+    expect(result.content[0]!.text).toBe(JSON.stringify(obj, null, 2));
   });
 
-  it('handles numeric result from execute', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue(42);
+  it('passes string content through directly', async () => {
+    mockExecuteGetToolHelp.mockResolvedValue({ content: 'help text here' });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
+      params: { name: 'get_tool_help', arguments: { tool_name: 'core.x' } },
     })) as { content: Array<{ type: string; text: string }> };
-    // 42 is not a string, not an object → JSON.stringify(42) → '42'
-    expect(result.content[0]!.text).toBe('42');
+
+    expect(result.content[0]!.text).toBe('help text here');
   });
 
-  it('handles empty string result from execute', async () => {
-    mockGetAllTools.mockReturnValue([makeToolDef('core.tool1', 'desc')]);
-    mockExecute.mockResolvedValue('');
+  it('propagates isError from executor result', async () => {
+    mockExecuteUseTool.mockResolvedValue({ content: 'Tool not found', isError: true });
     await ensureServerInitialized();
     const handler = getCallHandler()!;
 
     const result = (await handler({
-      params: { name: 'tool1', arguments: {} },
-    })) as { content: Array<{ type: string; text: string }> };
-    // '' is a string (typeof === 'string') → returned directly
-    expect(result.content[0]!.text).toBe('');
+      params: { name: 'use_tool', arguments: { tool_name: 'core.missing' } },
+    })) as { content: Array<{ type: string; text: string }>; isError: boolean };
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]!.text).toBe('Tool not found');
+  });
+});
+
+// =============================================================================
+// MCP tool events (correlationId tracking)
+// =============================================================================
+
+describe('MCP tool events', () => {
+  it('emits tool_start and tool_end events when correlationId is present', async () => {
+    mockExecuteSearchTools.mockResolvedValue({ content: 'results' });
+    await ensureServerInitialized('correlationId=test-corr');
+    const handler = getCallHandler()!;
+
+    await handler({
+      params: { name: 'search_tools', arguments: { query: 'test' } },
+    });
+
+    expect(mockEmitMcpToolEvent).toHaveBeenCalledTimes(2);
+
+    const startCall = mockEmitMcpToolEvent.mock.calls[0]![0];
+    expect(startCall.type).toBe('tool_start');
+    expect(startCall.correlationId).toBe('test-corr');
+    expect(startCall.toolName).toBe('search_tools');
+
+    const endCall = mockEmitMcpToolEvent.mock.calls[1]![0];
+    expect(endCall.type).toBe('tool_end');
+    expect(endCall.correlationId).toBe('test-corr');
+    expect(endCall.result.success).toBe(true);
+  });
+
+  it('does not emit events when no correlationId', async () => {
+    mockExecuteSearchTools.mockResolvedValue({ content: 'results' });
+    await ensureServerInitialized();
+    const handler = getCallHandler()!;
+
+    await handler({
+      params: { name: 'search_tools', arguments: { query: 'test' } },
+    });
+
+    expect(mockEmitMcpToolEvent).not.toHaveBeenCalled();
+  });
+
+  it('emits tool_end with success:false on error', async () => {
+    mockExecuteUseTool.mockRejectedValue(new Error('boom'));
+    await ensureServerInitialized('correlationId=err-corr');
+    const handler = getCallHandler()!;
+
+    await handler({
+      params: { name: 'use_tool', arguments: { tool_name: 'core.x' } },
+    });
+
+    const endCall = mockEmitMcpToolEvent.mock.calls.find(
+      (c: unknown[]) => (c[0] as Record<string, unknown>).type === 'tool_end'
+    )![0] as Record<string, unknown>;
+    expect((endCall.result as Record<string, unknown>).success).toBe(false);
   });
 });
 
@@ -825,7 +792,7 @@ describe('invalidateMcpServer', () => {
 });
 
 // =============================================================================
-// Session cleanup timer (lines 39-48)
+// Session cleanup timer
 // =============================================================================
 
 describe('session cleanup timer', () => {
@@ -838,7 +805,6 @@ describe('session cleanup timer', () => {
       (opts.onsessioninitialized as (s: string) => void)('stale-sid');
 
       // Advance fake clock past SESSION_MAX_AGE_MS (30min) + one full interval (5min) + 1ms
-      // Timer fires every 5min; at 35min+1ms the diff (35min+1ms) > SESSION_MAX_AGE_MS (30min)
       await vi.advanceTimersByTimeAsync(35 * 60 * 1000 + 1);
 
       expect(mockTransportClose).toHaveBeenCalled();

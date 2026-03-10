@@ -316,6 +316,77 @@ export interface ServerEvents {
   'coding-agent:session:exit': { sessionId: string; exitCode: number; signal?: number };
   'coding-agent:session:error': { sessionId: string; error: string };
 
+  // ACP (Agent Client Protocol) events — structured coding agent communication
+  'coding-agent:acp:tool-call': {
+    sessionId: string;
+    toolCall: {
+      toolCallId: string;
+      title: string;
+      kind: string;
+      status: string;
+      rawInput?: Record<string, unknown>;
+      content?: unknown[];
+      locations?: Array<{ path: string; startLine?: number }>;
+      startedAt: string;
+    };
+  };
+  'coding-agent:acp:tool-update': {
+    sessionId: string;
+    toolCallId: string;
+    status?: string;
+    content?: unknown[];
+    locations?: Array<{ path: string; startLine?: number }>;
+    title?: string;
+  };
+  'coding-agent:acp:plan': {
+    sessionId: string;
+    plan: {
+      entries: Array<{ content: string; status: string; priority: string }>;
+      updatedAt: string;
+    };
+  };
+  'coding-agent:acp:message': {
+    sessionId: string;
+    content: unknown;
+    role: 'assistant' | 'user';
+  };
+  'coding-agent:acp:thought': {
+    sessionId: string;
+    content: unknown;
+  };
+  'coding-agent:acp:mode-change': {
+    sessionId: string;
+    mode: string;
+  };
+  'coding-agent:acp:config-update': {
+    sessionId: string;
+    configOptions: unknown[];
+  };
+  'coding-agent:acp:complete': {
+    sessionId: string;
+    stopReason: string;
+  };
+  'coding-agent:acp:permission-request': {
+    sessionId: string;
+    toolCallId: string;
+    title: string;
+    options: Array<{
+      optionId: string;
+      name: string;
+      kind: 'allow_once' | 'allow_always' | 'reject_once' | 'reject_always';
+    }>;
+  };
+  'coding-agent:acp:session-info': {
+    sessionId: string;
+    [key: string]: unknown;
+  };
+  'coding-agent:acp:snapshot': {
+    sessionId: string;
+    toolCalls: unknown[];
+    plan: unknown;
+    acpEnabled: boolean;
+  };
+
   // Orchestration events
   'orchestration:created': { id: string; goal: string };
   'orchestration:status': { id: string; status: string };

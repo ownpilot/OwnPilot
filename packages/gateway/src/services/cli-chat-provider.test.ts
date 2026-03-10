@@ -42,6 +42,7 @@ import {
 import { isBinaryInstalled } from './binary-utils.js';
 import type { EventEmitter } from 'events';
 import { platform } from 'node:os';
+import { ToolRegistry } from '@ownpilot/core';
 
 const IS_WIN = platform() === 'win32';
 
@@ -168,7 +169,13 @@ describe('CliChatProvider', () => {
       } else {
         expect(mockSpawn).toHaveBeenCalledWith(
           'claude',
-          expect.arrayContaining(['-p', 'Hello', '--output-format', 'json']),
+          expect.arrayContaining([
+            '-p',
+            'Hello',
+            '--output-format',
+            'json',
+            '--dangerously-skip-permissions',
+          ]),
           expect.any(Object)
         );
       }
@@ -208,6 +215,51 @@ describe('CliChatProvider', () => {
       }
     });
 
+    it('should inject shared workspace guidance into codex prompt', async () => {
+      const codexResponse = JSON.stringify({
+        type: 'message',
+        role: 'assistant',
+        content: 'Hello from Codex CLI',
+      });
+      mockSpawn.mockReturnValue(createMockProcess(codexResponse));
+
+      const provider = new CliChatProvider({
+        binary: 'codex',
+        cwd: '/home/test/.ownpilot/workspace',
+      });
+      await provider.complete({
+        messages: [{ role: 'user', content: 'Hello' }],
+        model: { model: 'o4-mini' },
+      });
+
+      if (!IS_WIN) {
+        const spawnArgs = mockSpawn.mock.calls[0][1] as string[];
+        const promptArg = spawnArgs.at(-1) as string;
+        expect(promptArg).toContain('/home/test/.ownpilot/workspace');
+        expect(promptArg).toContain('CODEX.md');
+        expect(promptArg).toContain('.mcp.json');
+      }
+    });
+
+    it('should parse codex event stream and return only assistant text', async () => {
+      const codexResponse =
+        '{"type":"thread.started","thread_id":"thread_123"}{"type":"turn.started"}\n' +
+        '{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"Hello from Codex event stream"}}\n' +
+        '{"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":5}}';
+      mockSpawn.mockReturnValue(createMockProcess(codexResponse));
+
+      const provider = new CliChatProvider({ binary: 'codex' });
+      const result = await provider.complete({
+        messages: [{ role: 'user', content: 'Hello' }],
+        model: { model: 'o4-mini' },
+      });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.content).toBe('Hello from Codex event stream');
+      }
+    });
+
     it('should spawn gemini with correct args', async () => {
       const geminiResponse = JSON.stringify({
         response: 'Hello from Gemini CLI',
@@ -237,6 +289,30 @@ describe('CliChatProvider', () => {
           expect.arrayContaining(['-p', 'Hello', '--yolo', '--output-format', 'json']),
           expect.any(Object)
         );
+      }
+    });
+
+    it('should inject shared workspace guidance into gemini prompt', async () => {
+      const geminiResponse = JSON.stringify({
+        response: 'Hello from Gemini CLI',
+      });
+      mockSpawn.mockReturnValue(createMockProcess(geminiResponse));
+
+      const provider = new CliChatProvider({
+        binary: 'gemini',
+        cwd: '/home/test/.ownpilot/workspace',
+      });
+      await provider.complete({
+        messages: [{ role: 'user', content: 'Hello' }],
+        model: { model: 'gemini-2.5-flash' },
+      });
+
+      if (!IS_WIN) {
+        const spawnArgs = mockSpawn.mock.calls[0][1] as string[];
+        const promptIdx = spawnArgs.indexOf('-p');
+        expect(spawnArgs[promptIdx + 1]).toContain('/home/test/.ownpilot/workspace');
+        expect(spawnArgs[promptIdx + 1]).toContain('GEMINI.md');
+        expect(spawnArgs[promptIdx + 1]).toContain('AGENTS.md');
       }
     });
 
@@ -309,12 +385,11 @@ describe('CliChatProvider', () => {
         const promptIdx = spawnArgs.indexOf('-p');
         prompt = spawnArgs[promptIdx + 1] as string;
       }
-      // System prompt is passed via --system-prompt flag, not embedded in prompt
+      // On Windows, system prompt is inlined into stdin prompt to avoid command-line
+      // length limits. On Unix, it is passed via --system-prompt.
       if (IS_WIN) {
-        // On Windows, command+args are joined into a single shell string
-        const shellCmd = mockSpawn.mock.calls[0][0] as string;
-        expect(shellCmd).toContain('--system-prompt');
-        expect(shellCmd).toContain('You are a helpful assistant.');
+        expect(prompt).toContain('<system_prompt>');
+        expect(prompt).toContain('You are a helpful assistant.');
       } else {
         const allArgs = mockSpawn.mock.calls[0][1] as string[];
         const sysIdx = allArgs.indexOf('--system-prompt');
@@ -326,6 +401,64 @@ describe('CliChatProvider', () => {
       expect(prompt).toContain('User: Hello');
       expect(prompt).toContain('Assistant: Hi there!');
       expect(prompt).toContain('What is the weather?');
+    });
+
+    it('streams ToolBridge progress across rounds for gemini', async () => {
+      const registry = new ToolRegistry();
+      registry.register(
+        {
+          name: 'core.list_tasks',
+          description: 'List tasks',
+          parameters: { type: 'object', properties: { status: { type: 'string' } } },
+        },
+        async (args) => ({ content: `tasks for ${String(args.status ?? 'all')}` }),
+        'core'
+      );
+
+      mockSpawn
+        .mockReturnValueOnce(
+          createMockProcess(
+            '<tool_call>\n{"name":"core.list_tasks","arguments":{"status":"pending"}}\n</tool_call>'
+          )
+        )
+        .mockReturnValueOnce(createMockProcess('Pending tasks loaded.'));
+
+      const provider = new CliChatProvider({
+        binary: 'gemini',
+        toolBridge: {
+          tools: registry,
+          toolDefinitions: [
+            {
+              name: 'core.list_tasks',
+              description: 'List tasks',
+              parameters: { type: 'object', properties: { status: { type: 'string' } } },
+            },
+          ],
+          conversationId: 'conv-1',
+          userId: 'default',
+          maxRounds: 3,
+        },
+      });
+
+      const chunks = [] as Array<{
+        content?: string;
+        toolCalls?: unknown;
+        done: boolean;
+        metadata?: Record<string, unknown>;
+      }>;
+      for await (const chunk of provider.stream({
+        messages: [{ role: 'user', content: 'List pending tasks' }],
+        model: { model: 'gemini-2.5-flash' },
+      })) {
+        expect(chunk.ok).toBe(true);
+        if (chunk.ok) chunks.push(chunk.value);
+      }
+
+      expect(chunks.some((c) => c.metadata?.type === 'tool_bridge_status')).toBe(true);
+      expect(chunks.some((c) => c.metadata?.type === 'tool_bridge_progress')).toBe(true);
+      expect(chunks.some((c) => Array.isArray(c.toolCalls) && c.toolCalls.length === 1)).toBe(true);
+      expect(chunks.at(-1)?.content).toBe('Pending tasks loaded.');
+      expect(chunks.at(-1)?.done).toBe(true);
     });
   });
 
@@ -345,7 +478,7 @@ describe('CliChatProvider', () => {
       const result = await provider.getModels();
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toEqual(['default']);
+        expect(result.value).toEqual(['cli-default']);
       }
     });
 
@@ -354,7 +487,7 @@ describe('CliChatProvider', () => {
       const result = await provider.getModels();
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value).toEqual(['default']);
+        expect(result.value).toEqual(['cli-default']);
       }
     });
   });

@@ -67,6 +67,53 @@ export interface CodingAgentSession {
   userId: string;
   skillIds?: string[];
   permissions?: CodingAgentPermissions;
+  acp?: {
+    enabled: boolean;
+    toolCalls: AcpToolCall[];
+    plan: AcpPlan | null;
+  };
+}
+
+// =============================================================================
+// ACP (Agent Client Protocol) types
+// =============================================================================
+
+export interface AcpToolCall {
+  toolCallId: string;
+  title: string;
+  kind: string;
+  status: string;
+  rawInput?: Record<string, unknown>;
+  content?: AcpToolCallContent[];
+  locations?: Array<{ path: string; startLine?: number }>;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface AcpToolCallContent {
+  type: 'text' | 'diff' | 'terminal' | 'content';
+  text?: string;
+  path?: string;
+  oldText?: string;
+  newText?: string;
+  terminalId?: string;
+  content?: unknown;
+}
+
+export interface AcpPlan {
+  entries: Array<{ content: string; status: string; priority: string }>;
+  updatedAt: string;
+}
+
+export interface AcpData {
+  toolCalls: AcpToolCall[];
+  plan: AcpPlan | null;
+  isAcp: boolean;
+}
+
+export interface AcpPromptResult {
+  stopReason: string;
+  output: string;
 }
 
 export interface CreateCodingSessionInput {
@@ -266,6 +313,20 @@ export const codingAgentsApi = {
   /** Detach a skill */
   detachSkill: (providerRef: string, id: string) =>
     apiClient.delete<{ deleted: boolean }>(`/coding-agents/skills/${providerRef}/${id}`),
+
+  // --- ACP (Agent Client Protocol) ---
+
+  /** Get ACP-specific data for a session (tool calls, plan) */
+  getAcpData: (sessionId: string) =>
+    apiClient.get<AcpData>(`/coding-agents/sessions/${sessionId}/acp`),
+
+  /** Send a follow-up prompt to an ACP session */
+  promptAcpSession: (sessionId: string, prompt: string) =>
+    apiClient.post<AcpPromptResult>(`/coding-agents/sessions/${sessionId}/acp/prompt`, { prompt }),
+
+  /** Cancel an ongoing ACP prompt turn */
+  cancelAcpSession: (sessionId: string) =>
+    apiClient.post<{ cancelled: boolean }>(`/coding-agents/sessions/${sessionId}/acp/cancel`),
 
   // --- Subscriptions ---
 

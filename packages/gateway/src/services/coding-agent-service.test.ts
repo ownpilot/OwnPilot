@@ -40,6 +40,15 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
+// Mock node:fs — existsSync always returns true so validateCwd doesn't reject
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>;
+  return {
+    ...actual,
+    existsSync: vi.fn(() => true),
+  };
+});
+
 // Mock log
 vi.mock('./log.js', () => ({
   getLog: () => ({

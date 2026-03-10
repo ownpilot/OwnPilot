@@ -208,6 +208,7 @@ export class ConversationService {
     params: { provider: string; model: string; historyLength?: number; finishReason?: string }
   ): { trace: Record<string, unknown>; usage?: SaveChatParams['usage'] } {
     const streamLatency = Math.round(performance.now() - state.startTime);
+    const mcpToolEvents = state.mcpToolEvents ?? [];
     return {
       trace: {
         duration: streamLatency,
@@ -230,6 +231,14 @@ export class ConversationService {
               },
             ]
           : [],
+        mcpToolEvents,
+        events: mcpToolEvents.map((event) => ({
+          type: event.type,
+          name: event.toolName,
+          arguments: event.arguments,
+          result: event.result,
+          timestamp: event.timestamp,
+        })),
         request: {
           provider: params.provider,
           model: params.model,

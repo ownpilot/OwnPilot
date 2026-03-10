@@ -45,12 +45,18 @@ export interface ToolBridgeConfig {
   conversationId: string;
   /** User ID for tool execution context */
   userId?: string;
+  /** Shared OwnPilot workspace path used by the CLI */
+  workspaceDir?: string;
   /** Maximum tool-calling rounds (default: 8) */
   maxRounds?: number;
+  /** Called when a new tool-bridge round starts */
+  onRoundStart?: (round: number) => void;
+  /** Called after tool calls are parsed from a model response */
+  onToolCallsParsed?: (calls: ParsedToolCall[], round: number) => void;
   /** Called when a tool is about to be executed */
-  onToolStart?: (name: string, args: Record<string, unknown>) => void;
+  onToolStart?: (toolCall: ToolCall, args: Record<string, unknown>) => void;
   /** Called after a tool finishes */
-  onToolEnd?: (name: string, result: ToolResult) => void;
+  onToolEnd?: (toolCall: ToolCall, result: ToolResult) => void;
 }
 
 export interface ParsedToolCall {
@@ -77,12 +83,24 @@ export interface ToolBridgeResult {
  * Build tool definitions section for injection into the prompt.
  * Uses a compact format that LLMs understand well.
  */
-export function buildToolPromptSection(tools: readonly ToolDefinition[]): string {
+export function buildToolPromptSection(
+  tools: readonly ToolDefinition[],
+  workspaceDir?: string
+): string {
   if (tools.length === 0) return '';
 
-  const lines: string[] = [
-    '## Available Tools',
-    '',
+  const lines: string[] = ['## Available Tools', ''];
+
+  if (workspaceDir) {
+    lines.push(
+      `You are running inside the shared OwnPilot workspace at: ${workspaceDir}`,
+      'Stay in this workspace for chat tasks.',
+      'Read and follow the local instruction files here: AGENTS.md, .mcp.json, and provider-specific markdown files.',
+      ''
+    );
+  }
+
+  lines.push(
     'You have access to the following tools. To use a tool, respond with a JSON block wrapped in <tool_call> tags.',
     'You may call multiple tools in a single response. After calling tools, you will receive results in <tool_result> tags, then continue your response.',
     '',
@@ -91,11 +109,13 @@ export function buildToolPromptSection(tools: readonly ToolDefinition[]): string
     '{"name": "tool_name", "arguments": {"param1": "value1"}}',
     '</tool_call>',
     '',
+    'CRITICAL: Never call OwnPilot HTTP endpoints directly (for example /api/v1/tasks or /api/v1/mcp/serve).',
+    'CRITICAL: Do not describe tools instead of using them. Emit <tool_call> when tool use is needed.',
     'IMPORTANT: Only call tools when necessary. When you have enough information, respond directly without tool calls.',
     '',
     '### Tool Definitions',
-    '',
-  ];
+    ''
+  );
 
   for (const tool of tools) {
     lines.push(`**${tool.name}**`);
@@ -207,7 +227,7 @@ async function executeToolCalls(
     };
     toolCalls.push(toolCall);
 
-    config.onToolStart?.(call.name, call.arguments);
+    config.onToolStart?.(toolCall, call.arguments);
 
     try {
       const result = await config.tools.executeToolCall(
@@ -216,7 +236,7 @@ async function executeToolCalls(
         config.userId
       );
       results.push(result);
-      config.onToolEnd?.(call.name, result);
+      config.onToolEnd?.(toolCall, result);
     } catch (error) {
       const errorResult: ToolResult = {
         toolCallId: callId,
@@ -224,7 +244,7 @@ async function executeToolCalls(
         isError: true,
       };
       results.push(errorResult);
-      config.onToolEnd?.(call.name, errorResult);
+      config.onToolEnd?.(toolCall, errorResult);
     }
   }
 
@@ -241,11 +261,12 @@ async function executeToolCalls(
  */
 export function injectToolsIntoMessages(
   messages: readonly Message[],
-  tools: readonly ToolDefinition[]
+  tools: readonly ToolDefinition[],
+  workspaceDir?: string
 ): Message[] {
   if (tools.length === 0) return [...messages];
 
-  const toolSection = buildToolPromptSection(tools);
+  const toolSection = buildToolPromptSection(tools, workspaceDir);
   const result: Message[] = [];
 
   // Find the system message and append tools to it
@@ -280,7 +301,8 @@ export function injectToolsIntoMessages(
 export function appendToolResults(
   messages: readonly Message[],
   assistantResponse: string,
-  results: ToolResult[]
+  results: ToolResult[],
+  workspaceDir?: string
 ): Message[] {
   const newMessages: Message[] = [...messages];
 
@@ -292,9 +314,12 @@ export function appendToolResults(
 
   // Add tool results as a user message
   const resultsText = formatToolResults(results);
+  const workspaceReminder = workspaceDir
+    ? `Stay in the shared OwnPilot workspace at ${workspaceDir} and keep following the local instruction files before continuing.\n\n`
+    : '';
   newMessages.push({
     role: 'user',
-    content: `Here are the results of your tool calls:\n\n${resultsText}\n\nPlease continue your response based on these results. If you need more tools, use <tool_call> again. Otherwise, provide your final answer.`,
+    content: `${workspaceReminder}Here are the results of your tool calls:\n\n${resultsText}\n\nPlease continue your response based on these results. If you need more tools, use <tool_call> again. Otherwise, provide your final answer.`,
   });
 
   return newMessages;
@@ -318,12 +343,17 @@ export async function runToolBridgeLoop(
   const maxRounds = config.maxRounds ?? MAX_TOOL_ROUNDS;
   const allToolCalls: ToolCall[] = [];
   const allToolResults: ToolResult[] = [];
-  let currentMessages = injectToolsIntoMessages(messages, config.toolDefinitions);
+  let currentMessages = injectToolsIntoMessages(
+    messages,
+    config.toolDefinitions,
+    config.workspaceDir
+  );
   let rounds = 0;
   let finalContent = '';
 
   for (let round = 0; round < maxRounds; round++) {
     rounds = round + 1;
+    config.onRoundStart?.(rounds);
 
     // Call the CLI
     log.info(`ToolBridge round ${rounds}: calling CLI...`);
@@ -340,6 +370,7 @@ export async function runToolBridgeLoop(
     }
 
     log.info(`ToolBridge round ${rounds}: found ${parsedCalls.length} tool call(s)`);
+    config.onToolCallsParsed?.(parsedCalls, rounds);
 
     // Execute the tools
     const { toolCalls, results } = await executeToolCalls(parsedCalls, config);
@@ -347,7 +378,7 @@ export async function runToolBridgeLoop(
     allToolResults.push(...results);
 
     // Build next round's messages with results
-    currentMessages = appendToolResults(currentMessages, rawOutput, results);
+    currentMessages = appendToolResults(currentMessages, rawOutput, results, config.workspaceDir);
 
     // If this is the last allowed round, the clean content is what we have
     if (round === maxRounds - 1) {

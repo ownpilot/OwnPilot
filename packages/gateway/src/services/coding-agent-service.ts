@@ -50,6 +50,8 @@ import {
   runCodex,
   runGeminiCli,
 } from './coding-agent-providers.js';
+import { isAcpSupported, buildAcpArgs } from '../acp/acp-provider-support.js';
+import type { AcpMcpServerConfig } from '../acp/types.js';
 
 const log = getLog('CodingAgent');
 
@@ -236,19 +238,21 @@ class CodingAgentService implements ICodingAgentService {
     const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
     // Build CLI args based on provider
+    // "default" is a sentinel — let the CLI pick its own model
+    const ptyModel = task.model && task.model !== 'default' ? task.model : undefined;
     let args: string[];
     switch (task.provider) {
       case 'claude-code':
         args = ['-p', task.prompt];
-        if (task.model) args.push('--model', task.model);
+        if (ptyModel) args.push('--model', ptyModel);
         break;
       case 'codex':
         args = ['exec', '--full-auto', '--skip-git-repo-check', task.prompt];
-        if (task.model) args.push('--model', task.model);
+        if (ptyModel) args.push('--model', ptyModel);
         break;
       case 'gemini-cli':
         args = ['-p', task.prompt, '--yolo'];
-        if (task.model) args.push('--model', task.model);
+        if (ptyModel) args.push('--model', ptyModel);
         break;
       default:
         args = [task.prompt];
@@ -344,6 +348,30 @@ class CodingAgentService implements ICodingAgentService {
         ? DISPLAY_NAMES[provider]
         : provider;
 
+    const { getCodingAgentSessionManager } = await import('./coding-agent-sessions.js');
+    const mgr = getCodingAgentSessionManager();
+    this.sessionManager = mgr; // Cache for sync methods (listSessions, getSession, etc.)
+
+    // Try ACP mode for supported providers (non-interactive, built-in only)
+    const useAcp =
+      input.mode !== 'interactive' && isBuiltinProvider(provider) && isAcpSupported(provider);
+    const acpModel = input.model && input.model !== 'default' ? input.model : undefined;
+    const acpArgs = useAcp ? buildAcpArgs(provider, { model: acpModel, cwd }) : null;
+
+    if (acpArgs) {
+      log.info(`Creating ACP session with ${displayName}`, {
+        provider,
+        cwd,
+        hasApiKey: !!apiKey,
+        acpArgs,
+      });
+
+      // Build MCP server config to inject OwnPilot's tools into the agent
+      const mcpServers = this.buildOwnPilotMcpConfig();
+
+      return mgr.createAcpSession(input, userId, env, binary, acpArgs, mcpServers);
+    }
+
     log.info(`Creating coding agent session with ${displayName}`, {
       provider,
       mode: input.mode ?? 'auto',
@@ -353,9 +381,6 @@ class CodingAgentService implements ICodingAgentService {
       permissions: input.permissions,
     });
 
-    const { getCodingAgentSessionManager } = await import('./coding-agent-sessions.js');
-    const mgr = getCodingAgentSessionManager();
-    this.sessionManager = mgr; // Cache for sync methods (listSessions, getSession, etc.)
     return mgr.createSession(input, userId, env, binary, cliArgs);
   }
 
@@ -393,12 +418,71 @@ class CodingAgentService implements ICodingAgentService {
     return mgr.waitForCompletion(sessionId, userId, timeoutMs);
   }
 
+  // ===========================================================================
+  // ACP Session Methods
+  // ===========================================================================
+
+  /**
+   * Send a follow-up prompt to an ACP session.
+   */
+  async promptAcpSession(
+    sessionId: string,
+    userId: string,
+    prompt: string
+  ): Promise<{ stopReason: string; output: string }> {
+    const mgr = this.getSessionManager();
+    if (!mgr) throw new Error('Session manager not available');
+    return mgr.promptAcpSession(sessionId, userId, prompt);
+  }
+
+  /**
+   * Cancel an ongoing ACP prompt turn.
+   */
+  async cancelAcpSession(sessionId: string, userId: string): Promise<boolean> {
+    const mgr = this.getSessionManager();
+    if (!mgr) return false;
+    return mgr.cancelAcpSession(sessionId, userId);
+  }
+
+  /**
+   * Get structured ACP data (tool calls, plan) for a session.
+   */
+  getAcpData(
+    sessionId: string,
+    userId: string
+  ): { toolCalls: unknown[]; plan: unknown; isAcp: boolean } | undefined {
+    return this.getSessionManager()?.getAcpData(sessionId, userId);
+  }
+
+  /**
+   * Build MCP server config so the ACP agent can call OwnPilot's tools.
+   * Uses the existing streamable HTTP MCP endpoint with auth headers.
+   */
+  private buildOwnPilotMcpConfig(): AcpMcpServerConfig[] {
+    const baseUrl = process.env.OWNPILOT_URL ?? 'http://localhost:8080';
+    const apiKey = process.env.API_KEYS?.split(',').filter(Boolean)[0];
+    const headers: Record<string, string> = {};
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    return [
+      {
+        name: 'ownpilot',
+        transport: 'http',
+        url: `${baseUrl}/api/v1/mcp/serve`,
+        ...(Object.keys(headers).length > 0 && { headers }),
+      },
+    ];
+  }
+
   /** Build CLI args for a session based on provider and mode */
   private buildSessionArgs(input: CreateCodingSessionInput): string[] {
     const isInteractive = input.mode === 'interactive';
     const perms = resolvePermissions(input.permissions);
-
     const prompt = input.prompt;
+    // "default" is a sentinel meaning "let the CLI pick its own model"
+    const model = input.model && input.model !== 'default' ? input.model : undefined;
 
     switch (input.provider) {
       case 'claude-code': {
@@ -409,7 +493,7 @@ class CodingAgentService implements ICodingAgentService {
           '--output-format',
           'stream-json',
           '--verbose',
-          ...(input.model ? ['--model', input.model] : []),
+          ...(model ? ['--model', model] : []),
         ];
 
         if (perms.autonomy === 'full-auto') {
@@ -433,11 +517,11 @@ class CodingAgentService implements ICodingAgentService {
           '--full-auto',
           '--skip-git-repo-check',
           prompt,
-          ...(input.model ? ['--model', input.model] : []),
+          ...(model ? ['--model', model] : []),
         ];
       case 'gemini-cli':
         if (isInteractive) return [];
-        return ['-p', prompt, '--yolo', ...(input.model ? ['--model', input.model] : [])];
+        return ['-p', prompt, '--yolo', ...(model ? ['--model', model] : [])];
       default:
         return [prompt];
     }
@@ -454,7 +538,7 @@ class CodingAgentService implements ICodingAgentService {
       const expanded = cp.promptTemplate
         .replace(/\{prompt\}/g, input.prompt)
         .replace(/\{cwd\}/g, input.cwd ?? process.cwd())
-        .replace(/\{model\}/g, input.model ?? '');
+        .replace(/\{model\}/g, (input.model && input.model !== 'default') ? input.model : '');
       args.push(expanded);
     } else {
       args.push(input.prompt);

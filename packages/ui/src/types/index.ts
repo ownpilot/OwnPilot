@@ -89,11 +89,25 @@ export interface TraceInfo {
   };
   triggersFired: string[];
   errors: string[];
+  mcpToolEvents?: Array<{
+    type: 'tool_start' | 'tool_end';
+    toolName: string;
+    arguments?: Record<string, unknown>;
+    result?: {
+      success: boolean;
+      preview: string;
+      durationMs?: number;
+    };
+    timestamp: string;
+  }>;
   events: Array<{
     type: string;
     name: string;
     duration?: number;
     success?: boolean;
+    arguments?: Record<string, unknown>;
+    result?: unknown;
+    timestamp?: string;
   }>;
   // Enhanced debug info
   request?: {

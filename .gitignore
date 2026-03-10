@@ -61,8 +61,10 @@ data/
 *.sqlite
 *.sqlite3
 
-# Claude Code (local settings only)
+# CLI session/config directories (auto-created by CLI tools)
 .claude/settings.local.json
+.gemini/
+.codex/
 
 # Misc
 *.bak

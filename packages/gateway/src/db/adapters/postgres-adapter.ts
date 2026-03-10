@@ -153,8 +153,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async close(): Promise<void> {
     if (this.pool) {
-      await this.pool.end();
+      const pool = this.pool;
       this.pool = null;
+      await pool.end();
       log.info('[PostgreSQL] Connection pool closed');
     }
   }

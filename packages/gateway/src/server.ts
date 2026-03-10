@@ -80,7 +80,6 @@ import { getTriggerService } from './services/trigger-service.js';
 import { getPlanService } from './services/plan-service.js';
 import { createResourceServiceImpl } from './services/resource-service-impl.js';
 import { stopAllRateLimiters } from './middleware/rate-limit.js';
-import { getAdapterSync } from './db/adapters/index.js';
 import { getApprovalManager } from './autonomy/approvals.js';
 import { getLog } from './services/log.js';
 import { getErrorMessage } from './routes/helpers.js';
@@ -664,8 +663,8 @@ async function main() {
 
     // 9. Close DB connection pool
     try {
-      const adapter = getAdapterSync();
-      await adapter.close();
+      const { closeAdapter } = await import('./db/adapters/index.js');
+      await closeAdapter();
     } catch (e) {
       log.warn('DB close error', { error: String(e) });
     }

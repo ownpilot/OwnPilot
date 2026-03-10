@@ -90,24 +90,29 @@ export interface CliChatProviderDefinition {
 // CLI Definitions
 // =============================================================================
 
-const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'installed' | 'authenticated'>> = {
+const CLI_DEFINITIONS: Record<
+  CliChatBinary,
+  Omit<CliChatProviderDefinition, 'installed' | 'authenticated'>
+> = {
   claude: {
     id: 'cli-claude',
     binary: 'claude',
     displayName: 'Claude (CLI)',
-    description: 'Use Claude via the Claude Code CLI. Requires Claude Max/Pro subscription or API key.',
+    description:
+      'Use Claude via the Claude Code CLI. Requires Claude Max/Pro subscription or API key.',
     coreProvider: 'anthropic',
-    models: ['default'],
-    defaultModel: 'default',
+    models: ['cli-default'],
+    defaultModel: '',
   },
   codex: {
     id: 'cli-codex',
     binary: 'codex',
     displayName: 'Codex (CLI)',
-    description: 'Use OpenAI models via the Codex CLI. Requires ChatGPT Pro/Plus subscription or API key.',
+    description:
+      'Use OpenAI models via the Codex CLI. Requires ChatGPT Pro/Plus subscription or API key.',
     coreProvider: 'openai',
-    models: ['default'],
-    defaultModel: 'default',
+    models: ['cli-default'],
+    defaultModel: '',
   },
   gemini: {
     id: 'cli-gemini',
@@ -115,8 +120,8 @@ const CLI_DEFINITIONS: Record<CliChatBinary, Omit<CliChatProviderDefinition, 'in
     displayName: 'Gemini (CLI)',
     description: 'Use Gemini models via the Gemini CLI. Requires Google account login or API key.',
     coreProvider: 'google',
-    models: ['default'],
-    defaultModel: 'default',
+    models: ['cli-default'],
+    defaultModel: '',
   },
 };
 
@@ -134,12 +139,13 @@ function messagesToPrompt(messages: readonly Message[]): { prompt: string; syste
   let systemPrompt = '';
 
   for (const msg of messages) {
-    const text = typeof msg.content === 'string'
-      ? msg.content
-      : msg.content
-          .filter((p) => p.type === 'text')
-          .map((p) => (p as { type: 'text'; text: string }).text)
-          .join('\n');
+    const text =
+      typeof msg.content === 'string'
+        ? msg.content
+        : msg.content
+            .filter((p) => p.type === 'text')
+            .map((p) => (p as { type: 'text'; text: string }).text)
+            .join('\n');
 
     if (msg.role === 'system') {
       systemPrompt = text;
@@ -160,7 +166,9 @@ function messagesToPrompt(messages: readonly Message[]): { prompt: string; syste
   // Multi-turn: include conversation history
   const sections: string[] = [];
   if (parts.length > 1) {
-    sections.push(`<conversation_history>\n${parts.slice(0, -1).join('\n\n')}\n</conversation_history>`);
+    sections.push(
+      `<conversation_history>\n${parts.slice(0, -1).join('\n\n')}\n</conversation_history>`
+    );
   }
   // Last message is the current request
   const lastPart = parts[parts.length - 1];
@@ -210,12 +218,68 @@ function parseClaudeOutput(stdout: string): string {
   return result.trim() || stdout.trim();
 }
 
+function extractJsonObjects(stdout: string): string[] {
+  const objects: string[] = [];
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < stdout.length; i += 1) {
+    const char = stdout[i];
+
+    if (start === -1) {
+      if (char === '{') {
+        start = i;
+        depth = 1;
+        inString = false;
+        escaped = false;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        objects.push(stdout.slice(start, i + 1));
+        start = -1;
+      }
+    }
+  }
+
+  return objects;
+}
+
 function parseCodexOutput(stdout: string): string {
-  const lines = stdout.trim().split('\n');
+  const lines = extractJsonObjects(stdout);
   let result = '';
 
   for (const line of lines) {
-    if (!line.trim()) continue;
     try {
       const parsed = JSON.parse(line) as Record<string, unknown>;
       // Standard message format
@@ -237,7 +301,9 @@ function parseCodexOutput(stdout: string): string {
       // item.completed with text content
       else if (parsed.type === 'item.completed' && parsed.item) {
         const item = parsed.item as Record<string, unknown>;
-        if (item.type === 'message' && Array.isArray(item.content)) {
+        if (item.type === 'agent_message' && typeof item.text === 'string') {
+          result = item.text;
+        } else if (item.type === 'message' && Array.isArray(item.content)) {
           const textParts = (item.content as Record<string, unknown>[])
             .filter((p) => p.type === 'output_text' || p.type === 'text')
             .map((p) => String(p.text ?? ''));
@@ -249,7 +315,7 @@ function parseCodexOutput(stdout: string): string {
         result = parsed.content;
       }
     } catch {
-      if (line.trim()) result += line + '\n';
+      // Ignore malformed JSON objects and fall back to raw stdout.
     }
   }
 
@@ -278,38 +344,91 @@ const OUTPUT_PARSERS: Record<CliChatBinary, (stdout: string) => string> = {
 /** Whether we're running on Windows */
 const IS_WIN = platform() === 'win32';
 
+/** MCP meta-tool names that Claude Code needs permission to call in print mode */
+const CLAUDE_MCP_ALLOWED_TOOLS = [
+  'mcp__ownpilot__search_tools',
+  'mcp__ownpilot__get_tool_help',
+  'mcp__ownpilot__use_tool',
+  'mcp__ownpilot__batch_use_tool',
+];
+
 /**
  * Build CLI args. Prompt is sent via stdin on Windows to avoid shell escaping issues.
  * On Unix, prompt is passed as an arg (safe since no shell involved).
  */
 function buildClaudeArgs(
   prompt: string,
-  _model?: string,
+  model?: string,
   streaming?: boolean,
   systemPrompt?: string
 ): string[] {
   const args = IS_WIN
-    ? ['--output-format', streaming ? 'stream-json' : 'json']
+    ? ['-p', '--output-format', streaming ? 'stream-json' : 'json']
     : ['-p', prompt, '--output-format', streaming ? 'stream-json' : 'json'];
   if (streaming) args.push('--verbose');
+  // In headless/print mode Claude Code may refuse MCP tool execution unless
+  // permissions are explicitly bypassed for the run.
+  args.push('--dangerously-skip-permissions');
   // Pass system prompt via --system-prompt to override Claude Code's default identity
   if (systemPrompt) args.push('--system-prompt', systemPrompt);
-  // No --model flag: CLI tools use their own default model.
+  if (model && model !== 'default') args.push('--model', model);
+  // Load MCP config from workspace (Claude Code doesn't auto-read .mcp.json in -p mode)
+  args.push('--mcp-config', '.mcp.json');
+  // Allow MCP meta-tools in print mode (without this, Claude sees tools but can't call them)
+  args.push('--allowedTools', CLAUDE_MCP_ALLOWED_TOOLS.join(','));
   return args;
 }
 
-function buildCodexArgs(prompt: string, _model?: string): string[] {
+function inlineSystemPrompt(prompt: string, systemPrompt?: string): string {
+  if (!systemPrompt) return prompt;
+  return `<system_prompt>\n${systemPrompt}\n</system_prompt>\n\n${prompt}`;
+}
+
+function injectWorkspaceGuidance(binary: CliChatBinary, prompt: string, cwd?: string): string {
+  if (!cwd) return prompt;
+
+  const common = [
+    `You are running inside the shared OwnPilot workspace at: ${cwd}`,
+    'Use only this workspace for chat tasks.',
+    'Read and follow the local instruction files in this workspace: AGENTS.md and .mcp.json.',
+    'Never call OwnPilot HTTP endpoints directly; use the provided tool flow instead.',
+  ];
+
+  if (binary === 'codex') {
+    common.push(
+      'Also read and follow CODEX.md before answering.',
+      'Do not switch to another directory unless the user explicitly asks.'
+    );
+  }
+
+  if (binary === 'gemini') {
+    common.push('Also read and follow GEMINI.md before answering.');
+  }
+
+  return `${common.join('\n')}\n\n${prompt}`;
+}
+
+function buildCodexArgs(prompt: string, model?: string, cwd?: string): string[] {
+  const effectivePrompt = injectWorkspaceGuidance('codex', prompt, cwd);
   const args = ['exec', '--json', '--full-auto'];
-  // No --model flag: CLI tools use their own default model.
-  if (!IS_WIN) args.push(prompt);
+  // Only pass --model when we have a REAL model name (not empty, not 'default', not 'cli-default')
+  if (model && model !== 'default' && model !== 'cli-default') {
+    args.push('--model', model);
+  }
+  if (!IS_WIN) args.push(effectivePrompt);
   return args;
 }
 
-function buildGeminiArgs(prompt: string, _model?: string): string[] {
+function buildGeminiArgs(prompt: string, model?: string, cwd?: string): string[] {
+  const effectivePrompt = injectWorkspaceGuidance('gemini', prompt, cwd);
+  // On Windows, use --prompt "" so Gemini enters headless mode and reads from stdin.
+  // Gemini's -p appends its value to stdin — empty string means stdin IS the prompt.
   const args = IS_WIN
-    ? ['--yolo', '--output-format', 'json']
-    : ['-p', prompt, '--yolo', '--output-format', 'json'];
-  // No --model flag: CLI tools use their own default model.
+    ? ['--prompt', '', '--yolo', '--output-format', 'json']
+    : ['-p', effectivePrompt, '--yolo', '--output-format', 'json'];
+  if (model && model !== 'default' && model !== 'cli-default') {
+    args.push('--model', model);
+  }
   return args;
 }
 
@@ -337,10 +456,12 @@ export class CliChatProvider implements IProvider {
     return isBinaryInstalled(this.config.binary);
   }
 
-  async complete(
-    request: CompletionRequest
-  ): Promise<Result<CompletionResponse, InternalError>> {
-    const model = request.model.model || this.config.model || this.definition.defaultModel;
+  async complete(request: CompletionRequest): Promise<Result<CompletionResponse, InternalError>> {
+    const raw = request.model.model || this.config.model || this.definition.defaultModel;
+    // Filter out sentinel values — CLI tools resolve their own model from config/login.
+    const SENTINEL_MODELS = ['default', 'cli-default', ''];
+    const model = SENTINEL_MODELS.includes(raw) ? '' : raw;
+    log.debug(`CLI complete: binary=${this.config.binary} raw="${raw}" model="${model}"`);
 
     // If ToolBridge is configured and tools are available, run the tool-calling loop
     if (this.config.toolBridge && this.config.toolBridge.toolDefinitions.length > 0) {
@@ -364,33 +485,52 @@ export class CliChatProvider implements IProvider {
       effectiveMessages = injectToolContext(messages) as readonly Message[];
     }
     const { prompt, systemPrompt } = messagesToPrompt(effectiveMessages);
+    const effectivePrompt =
+      this.config.binary === 'claude' && IS_WIN ? inlineSystemPrompt(prompt, systemPrompt) : prompt;
     const timeout = this.config.timeout ?? 120_000;
 
     let args: string[];
     switch (this.config.binary) {
       case 'claude':
-        args = buildClaudeArgs(prompt, model, false, systemPrompt || undefined);
+        args = buildClaudeArgs(
+          effectivePrompt,
+          model,
+          false,
+          IS_WIN ? undefined : systemPrompt || undefined
+        );
         break;
       case 'codex':
-        args = buildCodexArgs(prompt, model);
+        args = buildCodexArgs(prompt, model, this.config.cwd);
         break;
       case 'gemini':
-        args = buildGeminiArgs(prompt, model);
+        args = buildGeminiArgs(prompt, model, this.config.cwd);
         break;
     }
 
     const env = createSanitizedEnv(
-      this.config.binary === 'gemini' ? 'gemini-cli' : this.config.binary === 'claude' ? 'claude-code' : 'codex',
+      this.config.binary === 'gemini'
+        ? 'gemini-cli'
+        : this.config.binary === 'claude'
+          ? 'claude-code'
+          : 'codex',
       this.config.apiKey
     );
 
     try {
-      const result = await this.spawnAndCollect(this.config.binary, args, env, timeout, IS_WIN ? prompt : undefined);
+      const result = await this.spawnAndCollect(
+        this.config.binary,
+        args,
+        env,
+        timeout,
+        IS_WIN ? effectivePrompt : undefined
+      );
 
       if (result.exitCode !== 0 && !result.stdout.trim()) {
-        return err(new InternalError(
-          `CLI ${this.config.binary} exited with code ${result.exitCode}: ${result.stderr || 'Unknown error'}`
-        ));
+        return err(
+          new InternalError(
+            `CLI ${this.config.binary} exited with code ${result.exitCode}: ${result.stderr || 'Unknown error'}`
+          )
+        );
       }
 
       const parser = OUTPUT_PARSERS[this.config.binary];
@@ -400,12 +540,12 @@ export class CliChatProvider implements IProvider {
         id: `cli-${this.config.binary}-${Date.now()}`,
         content,
         finishReason: 'stop',
-        model,
+        model: model || `cli-${this.config.binary}`,
         createdAt: new Date(),
         usage: {
-          promptTokens: Math.ceil(prompt.length / 4),
+          promptTokens: Math.ceil(effectivePrompt.length / 4),
           completionTokens: Math.ceil(content.length / 4),
-          totalTokens: Math.ceil((prompt.length + content.length) / 4),
+          totalTokens: Math.ceil((effectivePrompt.length + content.length) / 4),
         },
       };
 
@@ -442,6 +582,7 @@ export class CliChatProvider implements IProvider {
           toolDefinitions: bridge.toolDefinitions,
           conversationId: bridge.conversationId,
           userId: bridge.userId,
+          workspaceDir: this.config.cwd,
           maxRounds: bridge.maxRounds,
         }
       );
@@ -473,13 +614,28 @@ export class CliChatProvider implements IProvider {
     request: CompletionRequest
   ): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
     const { prompt, systemPrompt } = messagesToPrompt(request.messages);
-    const model = request.model.model || this.config.model || this.definition.defaultModel;
+    const effectivePrompt =
+      this.config.binary === 'claude' && IS_WIN ? inlineSystemPrompt(prompt, systemPrompt) : prompt;
+    const rawModel = request.model.model || this.config.model || this.definition.defaultModel;
+    const SENTINEL_MODELS = ['default', 'cli-default', ''];
+    const model = SENTINEL_MODELS.includes(rawModel) ? '' : rawModel;
     const timeout = this.config.timeout ?? 120_000;
     const id = `cli-${this.config.binary}-${Date.now()}`;
 
     // Only Claude supports true streaming via stream-json
     if (this.config.binary === 'claude') {
-      yield* this.streamClaude(prompt, model, id, timeout, systemPrompt || undefined);
+      yield* this.streamClaude(
+        effectivePrompt,
+        model,
+        id,
+        timeout,
+        IS_WIN ? undefined : systemPrompt || undefined
+      );
+      return;
+    }
+
+    if (this.config.toolBridge && this.config.toolBridge.toolDefinitions.length > 0) {
+      yield* this.streamWithToolBridge(request, model, id);
       return;
     }
 
@@ -635,6 +791,144 @@ export class CliChatProvider implements IProvider {
     }
   }
 
+  private async *streamWithToolBridge(
+    request: CompletionRequest,
+    model: string,
+    id: string
+  ): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
+    const bridge = this.config.toolBridge!;
+    const queue: Array<Result<StreamChunk, InternalError> | null> = [];
+    let wake: (() => void) | null = null;
+
+    const push = (item: Result<StreamChunk, InternalError> | null) => {
+      queue.push(item);
+      wake?.();
+      wake = null;
+    };
+
+    const next = async (): Promise<Result<StreamChunk, InternalError> | null> => {
+      while (queue.length === 0) {
+        await new Promise<void>((resolve) => {
+          wake = resolve;
+        });
+      }
+      return queue.shift() ?? null;
+    };
+
+    void (async () => {
+      try {
+        const { runToolBridgeLoop } = await import('./cli-tool-bridge.js');
+        const bridgeResult = await runToolBridgeLoop(
+          request.messages,
+          async (msgs) => {
+            const result = await this.completeSingle(msgs, model);
+            if (!result.ok) throw new Error(result.error.message);
+            return result.value.content;
+          },
+          {
+            tools: bridge.tools,
+            toolDefinitions: bridge.toolDefinitions,
+            conversationId: bridge.conversationId,
+            userId: bridge.userId,
+            workspaceDir: this.config.cwd,
+            maxRounds: bridge.maxRounds,
+            onRoundStart: (round) => {
+              push(
+                ok({
+                  id,
+                  done: false,
+                  metadata: { type: 'tool_bridge_status', phase: 'round_start', round },
+                })
+              );
+            },
+            onToolCallsParsed: (calls, round) => {
+              push(
+                ok({
+                  id,
+                  done: false,
+                  toolCalls: calls.map((call, index) => ({
+                    id: `bridge_${round}_${index}_${Date.now()}`,
+                    name: call.name,
+                    arguments: JSON.stringify(call.arguments),
+                  })),
+                  metadata: {
+                    type: 'tool_bridge_status',
+                    phase: 'tool_calls_parsed',
+                    round,
+                    count: calls.length,
+                  },
+                })
+              );
+            },
+            onToolStart: (toolCall) => {
+              push(
+                ok({
+                  id,
+                  done: false,
+                  metadata: {
+                    type: 'tool_bridge_progress',
+                    phase: 'tool_start',
+                    toolCall: {
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      arguments: toolCall.arguments,
+                    },
+                  },
+                })
+              );
+            },
+            onToolEnd: (toolCall, result) => {
+              push(
+                ok({
+                  id,
+                  done: false,
+                  metadata: {
+                    type: 'tool_bridge_progress',
+                    phase: 'tool_end',
+                    toolCall: {
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      arguments: toolCall.arguments,
+                    },
+                    result: {
+                      success: !(result.isError ?? false),
+                      preview: result.content.substring(0, 500),
+                    },
+                  },
+                })
+              );
+            },
+          }
+        );
+
+        push(
+          ok({
+            id,
+            content: bridgeResult.content,
+            done: true,
+            finishReason: 'stop' as const,
+            usage: {
+              promptTokens: 0,
+              completionTokens: Math.ceil(bridgeResult.content.length / 4),
+              totalTokens: Math.ceil(bridgeResult.content.length / 4),
+            },
+          })
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        push(err(new InternalError(`ToolBridge completion failed: ${message}`)));
+      } finally {
+        push(null);
+      }
+    })();
+
+    while (true) {
+      const item = await next();
+      if (item === null) break;
+      yield item;
+    }
+  }
+
   private async *readStdoutChunks(proc: ChildProcess): AsyncGenerator<string> {
     const stdout = proc.stdout;
     if (!stdout) return;
@@ -690,7 +984,7 @@ export class CliChatProvider implements IProvider {
 
       // On Windows, join command+args into a single shell string to avoid DEP0190 warning
       const proc = IS_WIN
-        ? spawn([command, ...args].map(a => `"${a}"`).join(' '), [], {
+        ? spawn([command, ...args].map((a) => `"${a}"`).join(' '), [], {
             env,
             cwd: this.config.cwd,
             stdio: ['pipe', 'pipe', 'pipe'],

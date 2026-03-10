@@ -559,6 +559,81 @@ describe('createStreamCallbacks', () => {
       expect(tcs[0]!.arguments).toBeUndefined();
     });
 
+    it('emits progress for tool bridge round start without empty chunk SSE', () => {
+      const config = makeStreamingConfig();
+      const { callbacks } = createStreamCallbacks(config as never);
+
+      callbacks.onChunk!({
+        id: 'c1',
+        done: false,
+        metadata: { type: 'tool_bridge_status', phase: 'round_start', round: 2 },
+      });
+
+      expect(config.sseStream.writeSSE).toHaveBeenCalledTimes(1);
+      const { event, data } = parseWrittenSSE(config.sseStream.writeSSE);
+      expect(event).toBe('progress');
+      expect(data.type).toBe('status');
+      expect(data.message).toContain('ToolBridge round 2');
+    });
+
+    it('emits tool_start progress from tool bridge metadata', () => {
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+
+      callbacks.onChunk!({
+        id: 'c1',
+        done: false,
+        metadata: {
+          type: 'tool_bridge_progress',
+          phase: 'tool_start',
+          toolCall: {
+            id: 'tb-1',
+            name: 'use_tool',
+            arguments: '{"tool_name":"core.list_tasks","arguments":{"status":"pending"}}',
+          },
+        },
+      });
+
+      expect(config.sseStream.writeSSE).toHaveBeenCalledTimes(1);
+      const { event, data } = parseWrittenSSE(config.sseStream.writeSSE);
+      expect(event).toBe('progress');
+      expect(data.type).toBe('tool_start');
+      expect((data.tool as Record<string, unknown>).name).toBe('core.list_tasks');
+      expect(state.traceToolCalls[0]!.name).toBe('core.list_tasks');
+    });
+
+    it('emits tool_end progress from tool bridge metadata', () => {
+      const config = makeStreamingConfig();
+      const { callbacks, state } = createStreamCallbacks(config as never);
+
+      callbacks.onChunk!({
+        id: 'c1',
+        done: false,
+        metadata: {
+          type: 'tool_bridge_progress',
+          phase: 'tool_start',
+          toolCall: { id: 'tb-2', name: 'search', arguments: '{"q":"hi"}' },
+        },
+      });
+      callbacks.onChunk!({
+        id: 'c2',
+        done: false,
+        metadata: {
+          type: 'tool_bridge_progress',
+          phase: 'tool_end',
+          toolCall: { id: 'tb-2', name: 'search', arguments: '{"q":"hi"}' },
+          result: { success: true, preview: 'done', durationMs: 22 },
+        },
+      });
+
+      const { event, data } = parseWrittenSSE(config.sseStream.writeSSE, 1);
+      expect(event).toBe('progress');
+      expect(data.type).toBe('tool_end');
+      expect((data.result as Record<string, unknown>).preview).toBe('done');
+      expect(state.traceToolCalls[0]!.result).toBe('done');
+      expect(state.traceToolCalls[0]!.duration).toBe(22);
+    });
+
     it('stores usage in state.lastUsage when present', () => {
       const config = makeStreamingConfig();
       const { callbacks, state } = createStreamCallbacks(config as never);

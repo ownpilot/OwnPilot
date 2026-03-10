@@ -10,12 +10,15 @@
 
 /**
  * Build a minimal tool context hint for CLI providers.
- * Reinforces OwnPilot identity and reminds about MCP tools.
+ * Reinforces OwnPilot identity and reminds about MCP meta-tools.
  */
 export function buildToolContextBlock(): string {
   return `<ownpilot>
-You are OwnPilot, the user's personal assistant. Use your MCP tools to help.
-Common: add_task, list_tasks, search_memories, create_memory, search_web, send_email, create_goal.
+You are OwnPilot. Use your MCP tools (from the "ownpilot" server) to help.
+To execute any action, call use_tool with the tool name and arguments.
+Example: use_tool({"tool_name": "core.list_tasks", "arguments": {"status": "pending"}})
+If unsure which tool to use, call search_tools({"query": "keyword"}) first.
+Do NOT tell the user to use a different interface — you have full tool access right now.
 </ownpilot>`;
 }
 

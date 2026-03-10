@@ -543,10 +543,19 @@ export class WorkflowsRepository extends BaseRepository {
   /** Return all distinct tool names used by active workflows — avoids loading full node data. */
   async getActiveToolNames(): Promise<string[]> {
     const rows = await this.query<{ tool_name: string }>(
-      `SELECT DISTINCT jsonb_path_query(nodes, '$[*] ? (@.type == "tool").data.toolName') #>> '{}' AS tool_name
-       FROM workflows
-       WHERE user_id = $1 AND status = 'active'
-         AND nodes IS NOT NULL`,
+      `SELECT DISTINCT node->'data'->>'toolName' AS tool_name
+       FROM workflows,
+            LATERAL jsonb_array_elements(
+              CASE
+                WHEN jsonb_typeof(nodes) = 'array' THEN nodes
+                ELSE '[]'::jsonb
+              END
+            ) AS node
+       WHERE user_id = $1
+         AND status = 'active'
+         AND nodes IS NOT NULL
+         AND node->>'type' = 'tool'
+         AND COALESCE(node->'data'->>'toolName', '') <> ''`,
       [this.userId]
     );
     return rows.map((r) => r.tool_name).filter(Boolean);

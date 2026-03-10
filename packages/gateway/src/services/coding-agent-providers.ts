@@ -213,7 +213,7 @@ export async function runClaudeCode(
         permissionMode: perms.autonomy === 'full-auto' ? 'bypassPermissions' : 'bypassPermissions',
         allowDangerouslySkipPermissions: true,
         cwd,
-        model: task.model,
+        model: task.model && task.model !== 'default' ? task.model : undefined,
         maxTurns: task.maxTurns ?? DEFAULT_MAX_TURNS,
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
       },
@@ -254,7 +254,7 @@ export async function runCodex(
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['exec', '--json', '--full-auto'];
-  if (task.model) args.push('--model', task.model);
+  if (task.model && task.model !== 'default') args.push('--model', task.model);
   args.push(task.prompt);
 
   try {
@@ -317,7 +317,7 @@ export async function runGeminiCli(
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['-p', task.prompt, '--yolo', '--output-format', 'json'];
-  if (task.model) args.push('--model', task.model);
+  if (task.model && task.model !== 'default') args.push('--model', task.model);
 
   try {
     const result = await spawnCliProcess('gemini', args, {

@@ -34,6 +34,8 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { TraceDisplay } from '../components/TraceDisplay';
+import type { TraceInfo } from '../types';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -625,365 +627,371 @@ export function ChatHistoryPage() {
 
       {/* History Tab */}
       {activeTab === 'history' && (
-      <div className="flex-1 flex overflow-hidden">
-        {/* Conversation List Sidebar */}
-        <aside className="w-80 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
-          {/* Search + Select Mode Header */}
-          <div className="p-3 border-b border-border dark:border-dark-border">
-            {selectMode ? (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-text-secondary dark:text-dark-text-secondary">
+        <div className="flex-1 flex overflow-hidden">
+          {/* Conversation List Sidebar */}
+          <aside className="w-80 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
+            {/* Search + Select Mode Header */}
+            <div className="p-3 border-b border-border dark:border-dark-border">
+              {selectMode ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-text-secondary dark:text-dark-text-secondary">
+                    {selectedIds.size} selected
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={selectedIds.size === conversations.length ? deselectAll : selectAll}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {selectedIds.size === conversations.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <button
+                      onClick={exitSelectMode}
+                      className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                    >
+                      <X className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Conversation List */}
+            <div className="flex-1 overflow-y-auto">
+              {conversations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted p-4">
+                  <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
+                  <p className="text-sm">No conversations found</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border dark:divide-dark-border">
+                  {conversations.map((conv) => {
+                    const source = getSource(conv);
+                    const isSelected = selectedId === conv.id;
+                    const isChecked = selectedIds.has(conv.id);
+
+                    return (
+                      <button
+                        key={conv.id}
+                        onClick={() =>
+                          selectMode ? toggleSelection(conv.id) : selectConversation(conv.id)
+                        }
+                        className={`w-full text-left px-4 py-3 transition-colors ${
+                          selectMode && isChecked
+                            ? 'bg-primary/10'
+                            : isSelected && !selectMode
+                              ? 'bg-primary/10'
+                              : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {selectMode && (
+                            <div
+                              className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                                isChecked
+                                  ? 'bg-primary border-primary text-white'
+                                  : 'border-border dark:border-dark-border'
+                              }`}
+                            >
+                              {isChecked && <Check className="w-3 h-3" />}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4
+                                className={`text-sm font-medium truncate flex-1 ${
+                                  (selectMode ? isChecked : isSelected)
+                                    ? 'text-primary'
+                                    : 'text-text-primary dark:text-dark-text-primary'
+                                }`}
+                              >
+                                {conv.title || 'Untitled'}
+                              </h4>
+                              <span className="text-[10px] text-text-muted dark:text-dark-text-muted whitespace-nowrap flex-shrink-0">
+                                {formatDate(conv.updatedAt)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <SourceBadge source={source} />
+                              {conv.agentName && (
+                                <span className="text-[10px] text-text-muted dark:text-dark-text-muted truncate">
+                                  {conv.agentName}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-text-muted dark:text-dark-text-muted ml-auto flex-shrink-0">
+                                {conv.messageCount} msg{conv.messageCount !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+
+                            {conv.model && (
+                              <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1 truncate">
+                                {conv.provider}/{conv.model}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Floating Action Bar */}
+            {selectMode && selectedIds.size > 0 && (
+              <div className="border-t border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary px-4 py-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
                   {selectedIds.size} selected
                 </span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={selectedIds.size === conversations.length ? deselectAll : selectAll}
-                    className="text-xs text-primary hover:underline"
+                    onClick={() => handleBulkArchive(!showArchived)}
+                    className="px-3 py-1.5 text-xs rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary/80 transition-colors"
                   >
-                    {selectedIds.size === conversations.length ? 'Deselect All' : 'Select All'}
+                    <Archive className="w-3.5 h-3.5 inline mr-1" />
+                    {showArchived ? 'Unarchive' : 'Archive'}
                   </button>
                   <button
-                    onClick={exitSelectMode}
-                    className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                    onClick={handleBulkDelete}
+                    className="px-3 py-1.5 text-xs rounded-lg bg-error text-white hover:bg-error/90 transition-colors"
                   >
-                    <X className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                    <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                    Delete
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search conversations..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
             )}
-          </div>
+          </aside>
 
-          {/* Conversation List */}
-          <div className="flex-1 overflow-y-auto">
-            {conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted p-4">
-                <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
-                <p className="text-sm">No conversations found</p>
+          {/* Message Thread */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {!selectedId ? (
+              <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
+                <History className="w-16 h-16 mb-4 opacity-20" />
+                <p>Select a conversation to view</p>
+                <p className="text-sm mt-1">
+                  All conversations from Web UI and channels are shown here
+                </p>
               </div>
+            ) : isLoadingMessages ? (
+              <LoadingSpinner message="Loading messages..." />
             ) : (
-              <div className="divide-y divide-border dark:divide-dark-border">
-                {conversations.map((conv) => {
-                  const source = getSource(conv);
-                  const isSelected = selectedId === conv.id;
-                  const isChecked = selectedIds.has(conv.id);
-
-                  return (
+              <>
+                {/* Conversation Header */}
+                {selectedConv && (
+                  <div className="flex items-center gap-3 px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
                     <button
-                      key={conv.id}
-                      onClick={() =>
-                        selectMode ? toggleSelection(conv.id) : selectConversation(conv.id)
-                      }
-                      className={`w-full text-left px-4 py-3 transition-colors ${
-                        selectMode && isChecked
-                          ? 'bg-primary/10'
-                          : isSelected && !selectMode
-                            ? 'bg-primary/10'
-                            : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                      }`}
+                      onClick={() => {
+                        setSelectedId(null);
+                        setSelectedConv(null);
+                        setMessages([]);
+                      }}
+                      className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary lg:hidden"
                     >
-                      <div className="flex items-start gap-2">
-                        {selectMode && (
-                          <div
-                            className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
-                              isChecked
-                                ? 'bg-primary border-primary text-white'
-                                : 'border-border dark:border-dark-border'
-                            }`}
-                          >
-                            {isChecked && <Check className="w-3 h-3" />}
-                          </div>
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary truncate">
+                          {selectedConv.title || 'Untitled'}
+                        </h3>
+                        <SourceBadge source={getSource(selectedConv)} />
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-text-muted dark:text-dark-text-muted mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatFullDate(selectedConv.createdAt)}
+                        </span>
+                        {selectedConv.channelSenderName && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {selectedConv.channelSenderName}
+                          </span>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4
-                              className={`text-sm font-medium truncate flex-1 ${
-                                (selectMode ? isChecked : isSelected)
-                                  ? 'text-primary'
-                                  : 'text-text-primary dark:text-dark-text-primary'
+                        {selectedConv.model && (
+                          <span>
+                            {selectedConv.provider}/{selectedConv.model}
+                          </span>
+                        )}
+                        <span>{selectedConv.messageCount} messages</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleArchive(selectedConv.id, !selectedConv.isArchived)}
+                        className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted"
+                        title={selectedConv.isArchived ? 'Unarchive' : 'Archive'}
+                      >
+                        <Archive className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(selectedConv.id)}
+                        className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted dark:text-dark-text-muted hover:text-error"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-4 max-w-3xl mx-auto">
+                    {messages.map((msg) => {
+                      const unified = msg as UnifiedMessage;
+                      const isAssistant = msg.role === 'assistant';
+                      const isSystem = msg.role === 'system' || msg.role === 'tool';
+                      const senderName = unified.senderName;
+
+                      if (isSystem) {
+                        return (
+                          <div key={msg.id} className="flex justify-center">
+                            <div className="px-3 py-1.5 rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-[11px] text-text-muted dark:text-dark-text-muted max-w-[80%] truncate">
+                              {msg.role === 'tool'
+                                ? `Tool: ${msg.content.slice(0, 100)}`
+                                : msg.content.slice(0, 100)}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}
+                        >
+                          <div
+                            className={`flex gap-2 max-w-[80%] ${isAssistant ? 'flex-row' : 'flex-row-reverse'}`}
+                          >
+                            {/* Avatar */}
+                            <div
+                              className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
+                                isAssistant
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
                               }`}
                             >
-                              {conv.title || 'Untitled'}
-                            </h4>
-                            <span className="text-[10px] text-text-muted dark:text-dark-text-muted whitespace-nowrap flex-shrink-0">
-                              {formatDate(conv.updatedAt)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <SourceBadge source={source} />
-                            {conv.agentName && (
-                              <span className="text-[10px] text-text-muted dark:text-dark-text-muted truncate">
-                                {conv.agentName}
-                              </span>
-                            )}
-                            <span className="text-[10px] text-text-muted dark:text-dark-text-muted ml-auto flex-shrink-0">
-                              {conv.messageCount} msg{conv.messageCount !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-
-                          {conv.model && (
-                            <div className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1 truncate">
-                              {conv.provider}/{conv.model}
+                              {isAssistant ? (
+                                <Bot className="w-4 h-4" />
+                              ) : (
+                                <User className="w-4 h-4" />
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
-          {/* Floating Action Bar */}
-          {selectMode && selectedIds.size > 0 && (
-            <div className="border-t border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary px-4 py-3 flex items-center justify-between">
-              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                {selectedIds.size} selected
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleBulkArchive(!showArchived)}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary/80 transition-colors"
-                >
-                  <Archive className="w-3.5 h-3.5 inline mr-1" />
-                  {showArchived ? 'Unarchive' : 'Archive'}
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-error text-white hover:bg-error/90 transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5 inline mr-1" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          )}
-        </aside>
+                            {/* Bubble */}
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 ${
+                                isAssistant
+                                  ? 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-tl-md'
+                                  : 'bg-primary text-white rounded-tr-md'
+                              }`}
+                            >
+                              {/* Sender name for channel messages */}
+                              {senderName && (
+                                <p
+                                  className={`text-[10px] font-semibold mb-1 ${
+                                    isAssistant ? 'text-primary' : 'text-white/80'
+                                  }`}
+                                >
+                                  {senderName}
+                                </p>
+                              )}
 
-        {/* Message Thread */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {!selectedId ? (
-            <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
-              <History className="w-16 h-16 mb-4 opacity-20" />
-              <p>Select a conversation to view</p>
-              <p className="text-sm mt-1">
-                All conversations from Web UI and channels are shown here
-              </p>
-            </div>
-          ) : isLoadingMessages ? (
-            <LoadingSpinner message="Loading messages..." />
-          ) : (
-            <>
-              {/* Conversation Header */}
-              {selectedConv && (
-                <div className="flex items-center gap-3 px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-                  <button
-                    onClick={() => {
-                      setSelectedId(null);
-                      setSelectedConv(null);
-                      setMessages([]);
-                    }}
-                    className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary lg:hidden"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
+                              <MarkdownContent content={msg.content} compact className="text-sm" />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary truncate">
-                        {selectedConv.title || 'Untitled'}
-                      </h3>
-                      <SourceBadge source={getSource(selectedConv)} />
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] text-text-muted dark:text-dark-text-muted mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatFullDate(selectedConv.createdAt)}
-                      </span>
-                      {selectedConv.channelSenderName && (
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {selectedConv.channelSenderName}
-                        </span>
-                      )}
-                      {selectedConv.model && (
-                        <span>
-                          {selectedConv.provider}/{selectedConv.model}
-                        </span>
-                      )}
-                      <span>{selectedConv.messageCount} messages</span>
-                    </div>
-                  </div>
+                              {/* Tool calls indicator */}
+                              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                                <div
+                                  className={`mt-2 pt-2 border-t ${
+                                    isAssistant
+                                      ? 'border-border/50 dark:border-dark-border/50'
+                                      : 'border-white/20'
+                                  }`}
+                                >
+                                  <p
+                                    className={`text-[10px] ${isAssistant ? 'text-text-muted dark:text-dark-text-muted' : 'text-white/60'}`}
+                                  >
+                                    Used {msg.toolCalls.length} tool
+                                    {msg.toolCalls.length !== 1 ? 's' : ''}:{' '}
+                                    {(msg.toolCalls as Array<{ name: string }>)
+                                      .map((tc) => tc.name)
+                                      .join(', ')}
+                                  </p>
+                                </div>
+                              )}
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleArchive(selectedConv.id, !selectedConv.isArchived)}
-                      className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted"
-                      title={selectedConv.isArchived ? 'Unarchive' : 'Archive'}
-                    >
-                      <Archive className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(selectedConv.id)}
-                      className="p-1.5 rounded-lg hover:bg-error/10 text-text-muted dark:text-dark-text-muted hover:text-error"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
+                              {isAssistant && msg.trace && (
+                                <div className="mt-3">
+                                  <TraceDisplay trace={msg.trace as unknown as TraceInfo} />
+                                </div>
+                              )}
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-6 py-4">
-                <div className="space-y-4 max-w-3xl mx-auto">
-                  {messages.map((msg) => {
-                    const unified = msg as UnifiedMessage;
-                    const isAssistant = msg.role === 'assistant';
-                    const isSystem = msg.role === 'system' || msg.role === 'tool';
-                    const senderName = unified.senderName;
-
-                    if (isSystem) {
-                      return (
-                        <div key={msg.id} className="flex justify-center">
-                          <div className="px-3 py-1.5 rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary text-[11px] text-text-muted dark:text-dark-text-muted max-w-[80%] truncate">
-                            {msg.role === 'tool'
-                              ? `Tool: ${msg.content.slice(0, 100)}`
-                              : msg.content.slice(0, 100)}
+                              {/* Timestamp */}
+                              <div
+                                className={`mt-1 text-[10px] ${
+                                  isAssistant
+                                    ? 'text-text-muted dark:text-dark-text-muted'
+                                    : 'text-white/50'
+                                }`}
+                              >
+                                {formatDate(msg.createdAt)}
+                                {msg.model && <span className="ml-2">{msg.model}</span>}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
-                    }
-
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}
-                      >
-                        <div
-                          className={`flex gap-2 max-w-[80%] ${isAssistant ? 'flex-row' : 'flex-row-reverse'}`}
-                        >
-                          {/* Avatar */}
-                          <div
-                            className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${
-                              isAssistant
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
-                            }`}
-                          >
-                            {isAssistant ? (
-                              <Bot className="w-4 h-4" />
-                            ) : (
-                              <User className="w-4 h-4" />
-                            )}
-                          </div>
-
-                          {/* Bubble */}
-                          <div
-                            className={`rounded-2xl px-4 py-2.5 ${
-                              isAssistant
-                                ? 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary rounded-tl-md'
-                                : 'bg-primary text-white rounded-tr-md'
-                            }`}
-                          >
-                            {/* Sender name for channel messages */}
-                            {senderName && (
-                              <p
-                                className={`text-[10px] font-semibold mb-1 ${
-                                  isAssistant ? 'text-primary' : 'text-white/80'
-                                }`}
-                              >
-                                {senderName}
-                              </p>
-                            )}
-
-                            <MarkdownContent content={msg.content} compact className="text-sm" />
-
-                            {/* Tool calls indicator */}
-                            {msg.toolCalls && msg.toolCalls.length > 0 && (
-                              <div
-                                className={`mt-2 pt-2 border-t ${
-                                  isAssistant
-                                    ? 'border-border/50 dark:border-dark-border/50'
-                                    : 'border-white/20'
-                                }`}
-                              >
-                                <p
-                                  className={`text-[10px] ${isAssistant ? 'text-text-muted dark:text-dark-text-muted' : 'text-white/60'}`}
-                                >
-                                  Used {msg.toolCalls.length} tool
-                                  {msg.toolCalls.length !== 1 ? 's' : ''}:{' '}
-                                  {(msg.toolCalls as Array<{ name: string }>)
-                                    .map((tc) => tc.name)
-                                    .join(', ')}
-                                </p>
-                              </div>
-                            )}
-
-                            {/* Timestamp */}
-                            <div
-                              className={`mt-1 text-[10px] ${
-                                isAssistant
-                                  ? 'text-text-muted dark:text-dark-text-muted'
-                                  : 'text-white/50'
-                              }`}
-                            >
-                              {formatDate(msg.createdAt)}
-                              {msg.model && <span className="ml-2">{msg.model}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-
-              {/* Channel Reply Input */}
-              {channelInfo && (
-                <div className="border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary px-6 py-3">
-                  <div className="max-w-3xl mx-auto flex items-center gap-3">
-                    <input
-                      type="text"
-                      placeholder={`Reply to ${channelInfo.senderName ?? 'channel'}...`}
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleChannelReply();
-                        }
-                      }}
-                      disabled={isSendingReply}
-                      className="flex-1 px-4 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-                    />
-                    <button
-                      onClick={handleChannelReply}
-                      disabled={!replyText.trim() || isSendingReply}
-                      className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSendingReply ? 'Sending...' : 'Send'}
-                    </button>
+                    })}
+                    <div ref={messagesEndRef} />
                   </div>
                 </div>
-              )}
-            </>
-          )}
+
+                {/* Channel Reply Input */}
+                {channelInfo && (
+                  <div className="border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary px-6 py-3">
+                    <div className="max-w-3xl mx-auto flex items-center gap-3">
+                      <input
+                        type="text"
+                        placeholder={`Reply to ${channelInfo.senderName ?? 'channel'}...`}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleChannelReply();
+                          }
+                        }}
+                        disabled={isSendingReply}
+                        className="flex-1 px-4 py-2 rounded-lg bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                      />
+                      <button
+                        onClick={handleChannelReply}
+                        disabled={!replyText.trim() || isSendingReply}
+                        className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSendingReply ? 'Sending...' : 'Send'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
       )}
     </div>
   );

@@ -12,16 +12,16 @@ describe('buildToolContextBlock', () => {
     expect(block).toContain('</ownpilot>');
   });
 
-  it('should mention common tools', () => {
+  it('should mention MCP meta-tools', () => {
     const block = buildToolContextBlock();
-    expect(block).toContain('add_task');
-    expect(block).toContain('search_memories');
-    expect(block).toContain('search_web');
+    expect(block).toContain('use_tool');
+    expect(block).toContain('search_tools');
+    expect(block).toContain('core.list_tasks');
   });
 
-  it('should be concise (under 300 chars)', () => {
+  it('should be concise (under 500 chars)', () => {
     const block = buildToolContextBlock();
-    expect(block.length).toBeLessThan(300);
+    expect(block.length).toBeLessThan(500);
   });
 
   it('should mention MCP', () => {

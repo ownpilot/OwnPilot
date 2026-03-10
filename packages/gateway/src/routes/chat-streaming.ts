@@ -24,6 +24,7 @@ import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
 import type { getAgent } from './agent-service.js';
 import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
+import type { McpToolEvent } from '../mcp/mcp-events.js';
 
 /**
  * Extract display-friendly tool name and args from a ToolCall.
@@ -126,6 +127,13 @@ export interface StreamState {
   isThinking: boolean;
   /** Accumulated thinking content from extended thinking (Anthropic) */
   thinkingContent: string;
+  mcpToolEvents: Array<{
+    type: McpToolEvent['type'];
+    toolName: string;
+    arguments?: Record<string, unknown>;
+    result?: McpToolEvent['result'];
+    timestamp: string;
+  }>;
 }
 
 // Matches both <think>...</think> and <thinking>...</thinking> blocks (completed)
@@ -152,10 +160,98 @@ export function createStreamCallbacks(config: StreamingConfig): {
     sentContentLength: 0,
     isThinking: false,
     thinkingContent: '',
+    mcpToolEvents: [],
   };
 
   const callbacks: StreamCallbacks = {
     onChunk(chunk: StreamChunk) {
+      const metaType = chunk.metadata?.type;
+
+      if (metaType === 'tool_bridge_status') {
+        const phase = String(chunk.metadata?.phase ?? '');
+        if (phase === 'round_start') {
+          sseStream.writeSSE({
+            data: JSON.stringify({
+              type: 'status',
+              message: `ToolBridge round ${String(chunk.metadata?.round ?? '?')} in progress`,
+              data: { round: chunk.metadata?.round },
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        }
+
+        if (!chunk.content && !chunk.toolCalls?.length) return;
+      }
+
+      if (metaType === 'tool_bridge_progress') {
+        const phase = String(chunk.metadata?.phase ?? '');
+        const rawTool = (chunk.metadata?.toolCall ?? {}) as Record<string, unknown>;
+        const toolCall: ToolCall = {
+          id: String(rawTool.id ?? 'tool-bridge'),
+          name: String(rawTool.name ?? 'tool'),
+          arguments:
+            typeof rawTool.arguments === 'string'
+              ? rawTool.arguments
+              : JSON.stringify(rawTool.arguments ?? {}),
+        };
+
+        if (phase === 'tool_start') {
+          const { displayName, displayArgs } = extractToolDisplay(toolCall);
+          state.traceToolCalls.push({
+            name: displayName,
+            arguments: displayArgs,
+            success: true,
+            startTime: performance.now(),
+          });
+
+          sseStream.writeSSE({
+            data: JSON.stringify({
+              type: 'tool_start',
+              tool: { id: toolCall.id, name: displayName, arguments: displayArgs },
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        }
+
+        if (phase === 'tool_end') {
+          const { displayName } = extractToolDisplay(toolCall);
+          const result = (chunk.metadata?.result ?? {}) as Record<string, unknown>;
+          const traceEntry = state.traceToolCalls.find(
+            (tc) => tc.name === displayName && tc.result === undefined
+          );
+
+          if (traceEntry) {
+            traceEntry.result = String(result.preview ?? '');
+            traceEntry.success = result.success !== false;
+            traceEntry.duration =
+              typeof result.durationMs === 'number'
+                ? result.durationMs
+                : traceEntry.startTime
+                  ? Math.round(performance.now() - traceEntry.startTime)
+                  : undefined;
+            delete traceEntry.startTime;
+          }
+
+          sseStream.writeSSE({
+            data: JSON.stringify({
+              type: 'tool_end',
+              tool: { id: toolCall.id, name: displayName },
+              result: {
+                success: result.success !== false,
+                preview: String(result.preview ?? ''),
+                durationMs: typeof result.durationMs === 'number' ? result.durationMs : undefined,
+              },
+              timestamp: new Date().toISOString(),
+            }),
+            event: 'progress',
+          });
+        }
+
+        if (!chunk.content && !chunk.toolCalls?.length) return;
+      }
+
       // Handle extended thinking chunks (Anthropic) — separate path
       const isThinkingChunk = chunk.metadata?.type === 'thinking';
       if (isThinkingChunk && chunk.content) {
@@ -262,12 +358,21 @@ export function createStreamCallbacks(config: StreamingConfig): {
           memoryOps: { adds: 0, recalls: 0 },
           triggersFired: [],
           errors: [],
-          events: state.traceToolCalls.map((tc) => ({
-            type: 'tool_call',
-            name: tc.name,
-            duration: tc.duration,
-            success: tc.success,
-          })),
+          events: [
+            ...state.traceToolCalls.map((tc) => ({
+              type: 'tool_call',
+              name: tc.name,
+              duration: tc.duration,
+              success: tc.success,
+            })),
+            ...state.mcpToolEvents.map((event) => ({
+              type: event.type,
+              name: event.toolName,
+              arguments: event.arguments,
+              result: event.result,
+              timestamp: event.timestamp,
+            })),
+          ],
           request: {
             provider,
             model,

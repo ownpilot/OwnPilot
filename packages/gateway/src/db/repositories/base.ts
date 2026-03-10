@@ -23,7 +23,7 @@ export abstract class BaseRepository {
    * Get the database adapter (async)
    */
   protected async getAdapter(): Promise<DatabaseAdapter> {
-    if (!this.adapter) {
+    if (!this.adapter || !this.adapter.isConnected()) {
       this.adapter = await getAdapter();
     }
     return this.adapter;
@@ -33,7 +33,7 @@ export abstract class BaseRepository {
    * Get the database adapter (sync - must be initialized first)
    */
   protected getAdapterSync(): DatabaseAdapter {
-    if (!this.adapter) {
+    if (!this.adapter || !this.adapter.isConnected()) {
       this.adapter = getAdapterSync();
     }
     return this.adapter;

@@ -98,11 +98,11 @@ mcpRoutes.get('/serve/info', async (c) => {
         },
         claude_code: {
           label: 'Claude Code',
-          description: 'Add to .mcp.json in your project or ~/.claude/mcp.json globally',
+          description: 'Use --mcp-config .mcp.json flag or add to project .mcp.json',
           config: {
             mcpServers: {
               ownpilot: {
-                type: 'streamable-http',
+                type: 'http',
                 url: endpoint,
               },
             },

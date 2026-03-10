@@ -85,6 +85,14 @@ describe('buildToolPromptSection', () => {
     expect(section).toContain('</tool_call>');
     expect(section).toContain('Available Tools');
   });
+
+  it('should include workspace guidance when workspaceDir is provided', () => {
+    const section = buildToolPromptSection(SAMPLE_TOOLS, '/home/test/.ownpilot/workspace');
+    expect(section).toContain('/home/test/.ownpilot/workspace');
+    expect(section).toContain('AGENTS.md');
+    expect(section).toContain('.mcp.json');
+    expect(section).toContain('Never call OwnPilot HTTP endpoints directly');
+  });
 });
 
 // =============================================================================
@@ -171,9 +179,7 @@ describe('formatToolResults', () => {
   });
 
   it('should format error result with status', () => {
-    const results: ToolResult[] = [
-      { toolCallId: 'tc_2', content: 'Network error', isError: true },
-    ];
+    const results: ToolResult[] = [{ toolCallId: 'tc_2', content: 'Network error', isError: true }];
     const formatted = formatToolResults(results);
     expect(formatted).toContain('status="error"');
     expect(formatted).toContain('Network error');
@@ -209,9 +215,7 @@ describe('injectToolsIntoMessages', () => {
   });
 
   it('should create system message if none exists', () => {
-    const messages: Message[] = [
-      { role: 'user', content: 'Hello' },
-    ];
+    const messages: Message[] = [{ role: 'user', content: 'Hello' }];
     const result = injectToolsIntoMessages(messages, SAMPLE_TOOLS);
     expect(result).toHaveLength(2);
     expect(result[0]!.role).toBe('system');
@@ -219,9 +223,7 @@ describe('injectToolsIntoMessages', () => {
   });
 
   it('should return unchanged messages for empty tools', () => {
-    const messages: Message[] = [
-      { role: 'user', content: 'Hello' },
-    ];
+    const messages: Message[] = [{ role: 'user', content: 'Hello' }];
     const result = injectToolsIntoMessages(messages, []);
     expect(result).toEqual(messages);
   });
@@ -237,9 +239,7 @@ describe('appendToolResults', () => {
       { role: 'system', content: 'System prompt' },
       { role: 'user', content: 'Search for cats' },
     ];
-    const results: ToolResult[] = [
-      { toolCallId: 'tc_1', content: 'Found: cats are cute' },
-    ];
+    const results: ToolResult[] = [{ toolCallId: 'tc_1', content: 'Found: cats are cute' }];
 
     const newMessages = appendToolResults(messages, 'Let me search...', results);
     expect(newMessages).toHaveLength(4);
@@ -265,7 +265,11 @@ describe('runToolBridgeLoop', () => {
       {
         name: 'core.search_web',
         description: 'Search',
-        parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+        parameters: {
+          type: 'object',
+          properties: { query: { type: 'string' } },
+          required: ['query'],
+        },
       },
       async (args) => ({
         content: `Results for: ${args.query}`,
@@ -277,15 +281,11 @@ describe('runToolBridgeLoop', () => {
   it('should complete in one round when no tool calls', async () => {
     const completeFn = vi.fn().mockResolvedValue('Hello! I can help you.');
 
-    const result = await runToolBridgeLoop(
-      [{ role: 'user', content: 'Hi' }],
-      completeFn,
-      {
-        tools: mockRegistry,
-        toolDefinitions: SAMPLE_TOOLS,
-        conversationId: 'test-conv',
-      }
-    );
+    const result = await runToolBridgeLoop([{ role: 'user', content: 'Hi' }], completeFn, {
+      tools: mockRegistry,
+      toolDefinitions: SAMPLE_TOOLS,
+      conversationId: 'test-conv',
+    });
 
     expect(result.content).toBe('Hello! I can help you.');
     expect(result.toolCalls).toHaveLength(0);
@@ -355,7 +355,11 @@ describe('runToolBridgeLoop', () => {
       {
         name: 'core.add_memory',
         description: 'Save memory',
-        parameters: { type: 'object', properties: { content: { type: 'string' } }, required: ['content'] },
+        parameters: {
+          type: 'object',
+          properties: { content: { type: 'string' } },
+          required: ['content'],
+        },
       },
       async (args) => ({
         content: `Saved: ${args.content}`,
@@ -402,15 +406,11 @@ describe('runToolBridgeLoop', () => {
       )
       .mockResolvedValueOnce('Final answer.');
 
-    await runToolBridgeLoop(
-      [{ role: 'user', content: 'Search' }],
-      completeFn,
-      {
-        tools: mockRegistry,
-        toolDefinitions: SAMPLE_TOOLS,
-        conversationId: 'test-conv',
-      }
-    );
+    await runToolBridgeLoop([{ role: 'user', content: 'Search' }], completeFn, {
+      tools: mockRegistry,
+      toolDefinitions: SAMPLE_TOOLS,
+      conversationId: 'test-conv',
+    });
 
     // Verify second call received tool results in messages
     const secondCallMessages = completeFn.mock.calls[1]![0] as Message[];
@@ -418,6 +418,31 @@ describe('runToolBridgeLoop', () => {
     expect(lastUserMsg.role).toBe('user');
     expect(lastUserMsg.content as string).toContain('tool_result');
     expect(lastUserMsg.content as string).toContain('Results for: test');
+  });
+
+  it('should pass workspace guidance into injected and follow-up messages', async () => {
+    const completeFn = vi
+      .fn()
+      .mockResolvedValueOnce(
+        `<tool_call>
+{"name": "core.search_web", "arguments": {"query": "test"}}
+</tool_call>`
+      )
+      .mockResolvedValueOnce('Final answer.');
+
+    await runToolBridgeLoop([{ role: 'user', content: 'Search' }], completeFn, {
+      tools: mockRegistry,
+      toolDefinitions: SAMPLE_TOOLS,
+      conversationId: 'test-conv',
+      workspaceDir: '/home/test/.ownpilot/workspace',
+    });
+
+    const firstCallMessages = completeFn.mock.calls[0]![0] as Message[];
+    expect(firstCallMessages[0]!.content as string).toContain('/home/test/.ownpilot/workspace');
+
+    const secondCallMessages = completeFn.mock.calls[1]![0] as Message[];
+    const lastUserMsg = secondCallMessages[secondCallMessages.length - 1]!;
+    expect(lastUserMsg.content as string).toContain('/home/test/.ownpilot/workspace');
   });
 
   it('should inject tool definitions into first call messages', async () => {
@@ -473,7 +498,11 @@ describe('runToolBridgeLoop', () => {
       {
         tools: mockRegistry,
         toolDefinitions: [
-          { name: 'core.fail_tool', description: 'Fails', parameters: { type: 'object', properties: {} } },
+          {
+            name: 'core.fail_tool',
+            description: 'Fails',
+            parameters: { type: 'object', properties: {} },
+          },
         ],
         conversationId: 'test-conv',
       }
@@ -483,5 +512,45 @@ describe('runToolBridgeLoop', () => {
     expect(result.toolResults[0]!.isError).toBe(true);
     expect(result.content).toContain('try something else');
     expect(result.rounds).toBe(2);
+  });
+
+  it('emits round and tool lifecycle callbacks across rounds', async () => {
+    const onRoundStart = vi.fn();
+    const onToolCallsParsed = vi.fn();
+    const onToolStart = vi.fn();
+    const onToolEnd = vi.fn();
+
+    const completeFn = vi
+      .fn()
+      .mockResolvedValueOnce(
+        `<tool_call>
+{"name": "core.search_web", "arguments": {"query": "cats"}}
+</tool_call>`
+      )
+      .mockResolvedValueOnce('Done.');
+
+    await runToolBridgeLoop([{ role: 'user', content: 'Search cats' }], completeFn, {
+      tools: mockRegistry,
+      toolDefinitions: SAMPLE_TOOLS,
+      conversationId: 'test-conv',
+      onRoundStart,
+      onToolCallsParsed,
+      onToolStart,
+      onToolEnd,
+    });
+
+    expect(onRoundStart).toHaveBeenNthCalledWith(1, 1);
+    expect(onRoundStart).toHaveBeenNthCalledWith(2, 2);
+    expect(onToolCallsParsed).toHaveBeenCalledWith(
+      [{ name: 'core.search_web', arguments: { query: 'cats' } }],
+      1
+    );
+    expect(onToolStart).toHaveBeenCalledWith(expect.objectContaining({ name: 'core.search_web' }), {
+      query: 'cats',
+    });
+    expect(onToolEnd).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'core.search_web' }),
+      expect.objectContaining({ content: expect.stringContaining('Results for: cats') })
+    );
   });
 });

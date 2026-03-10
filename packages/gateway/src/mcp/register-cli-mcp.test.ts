@@ -47,7 +47,7 @@ describe('registerMcpForCli', () => {
     const writeCall = vi.mocked(writeFile).mock.calls[0]!;
     const written = JSON.parse(writeCall[1] as string);
     expect(written.mcpServers.ownpilot).toEqual({
-      type: 'streamable-http',
+      type: 'http',
       url: 'http://localhost:9090/api/v1/mcp/serve',
     });
   });
@@ -57,6 +57,13 @@ describe('registerMcpForCli', () => {
 
     expect(result.success).toBe(true);
     expect(result.configPath).toContain('.gemini');
+
+    const writeCall = vi.mocked(writeFile).mock.calls[0]!;
+    const written = JSON.parse(writeCall[1] as string);
+    expect(written.mcpServers.ownpilot).toEqual({
+      httpUrl: 'http://localhost:8080/api/v1/mcp/serve',
+      trust: true,
+    });
   });
 
   it('should register with Codex CLI', async () => {
@@ -64,6 +71,13 @@ describe('registerMcpForCli', () => {
 
     expect(result.success).toBe(true);
     expect(result.configPath).toContain('.codex');
+
+    const writeCall = vi.mocked(writeFile).mock.calls[0]!;
+    const written = JSON.parse(writeCall[1] as string);
+    expect(written.mcpServers.ownpilot).toEqual({
+      type: 'streamable-http',
+      url: 'http://localhost:8080/api/v1/mcp/serve',
+    });
   });
 
   it('should fail if CLI is not installed', async () => {
@@ -133,7 +147,7 @@ describe('unregisterMcpForCli', () => {
     vi.mocked(readFile).mockResolvedValue(
       JSON.stringify({
         mcpServers: {
-          ownpilot: { type: 'streamable-http', url: 'http://localhost:8080/api/v1/mcp/serve' },
+          ownpilot: { type: 'http', url: 'http://localhost:8080/api/v1/mcp/serve' },
           other: { type: 'stdio', command: 'other' },
         },
       })
@@ -173,7 +187,7 @@ describe('getMcpConfigSnippet', () => {
     expect(snippet).toEqual({
       mcpServers: {
         ownpilot: {
-          type: 'streamable-http',
+          type: 'http',
           url: 'http://myserver:8080/api/v1/mcp/serve',
         },
       },
@@ -184,6 +198,7 @@ describe('getMcpConfigSnippet', () => {
     const { snippet } = getMcpConfigSnippet('gemini');
 
     const entry = (snippet.mcpServers as Record<string, Record<string, string>>).ownpilot;
-    expect(entry.url).toContain('localhost:8080');
+    expect(entry.httpUrl).toContain('localhost:8080');
+    expect(entry.trust).toBe(true);
   });
 });

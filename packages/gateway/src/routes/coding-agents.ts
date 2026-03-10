@@ -293,6 +293,20 @@ codingAgentsRoutes.get('/sessions/:id', (c) => {
   if (!session) {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found' }, 404);
   }
+
+  // Enrich with ACP data if available
+  const acpData = service.getAcpData(sessionId, userId);
+  if (acpData?.isAcp) {
+    return apiResponse(c, {
+      ...session,
+      acp: {
+        enabled: true,
+        toolCalls: acpData.toolCalls,
+        plan: acpData.plan,
+      },
+    });
+  }
+
   return apiResponse(c, session);
 });
 
@@ -856,4 +870,78 @@ codingAgentsRoutes.delete('/orchestrate/:id', async (c) => {
     return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Run not found' }, 404);
   }
   return apiResponse(c, { deleted: true });
+});
+
+// =============================================================================
+// ACP (Agent Client Protocol) ENDPOINTS
+// =============================================================================
+
+/**
+ * GET /sessions/:id/acp - Get ACP-specific data (tool calls, plan)
+ */
+codingAgentsRoutes.get('/sessions/:id/acp', (c) => {
+  const userId = getUserId(c);
+  const sessionId = c.req.param('id');
+  const service = getCodingAgentService();
+
+  const acpData = service.getAcpData(sessionId, userId);
+  if (!acpData) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Session not found' }, 404);
+  }
+
+  return apiResponse(c, acpData);
+});
+
+/**
+ * POST /sessions/:id/acp/prompt - Send a follow-up prompt to an ACP session
+ */
+codingAgentsRoutes.post('/sessions/:id/acp/prompt', async (c) => {
+  const userId = getUserId(c);
+  const sessionId = c.req.param('id');
+
+  const body = await parseJsonBody(c);
+  if (!body || typeof (body as Record<string, unknown>).prompt !== 'string') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: '"prompt" string is required' },
+      400
+    );
+  }
+
+  try {
+    const service = getCodingAgentService();
+    const result = await service.promptAcpSession(
+      sessionId,
+      userId,
+      (body as Record<string, unknown>).prompt as string
+    );
+    return apiResponse(c, result);
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message }, 500);
+  }
+});
+
+/**
+ * POST /sessions/:id/acp/cancel - Cancel an ongoing ACP prompt turn
+ */
+codingAgentsRoutes.post('/sessions/:id/acp/cancel', async (c) => {
+  const userId = getUserId(c);
+  const sessionId = c.req.param('id');
+
+  try {
+    const service = getCodingAgentService();
+    const success = await service.cancelAcpSession(sessionId, userId);
+    if (!success) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'ACP session not found' },
+        404
+      );
+    }
+    return apiResponse(c, { cancelled: true });
+  } catch (err) {
+    const message = getErrorMessage(err);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message }, 500);
+  }
 });

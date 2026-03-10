@@ -417,8 +417,8 @@ export async function getOrCreateChatAgent(
   model: string,
   fallback?: { provider: string; model: string }
 ): Promise<Agent> {
-  // CLI providers are NOT cached — each request needs a fresh temp workspace
-  // with a unique correlationId for MCP tool call tracking.
+  // CLI providers are NOT cached — each request may need fresh MCP session state
+  // while still reusing the persistent ~/.ownpilot/workspace directory.
   if (isCliChatProvider(provider)) {
     return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback);
   }
@@ -583,24 +583,36 @@ async function createChatAgentInstance(
       throw new Error(`Unknown CLI chat provider: ${provider}`);
     }
 
-    // Create a temp workspace with MCP config pointing to our gateway.
-    // correlationId links MCP tool calls to the chat SSE stream for real-time tracking.
-    // sessionToken authenticates the MCP client against the gateway.
-    correlationId = crypto.randomUUID();
+    const useNativeMcp = cliBinary === 'claude';
+
+    // All CLI chat providers run from the persistent ~/.ownpilot/workspace directory.
+    // We always rewrite .mcp.json with a fresh session token/correlationId so any
+    // workspace MCP discovery is authenticated. Claude uses this as its native path;
+    // Gemini/Codex still rely primarily on ToolBridge.
     const { createTempWorkspace } = await import('../mcp/workspace.js');
+    correlationId = crypto.randomUUID();
     const { createMcpSession } = await import('../services/ui-session.js');
     const mcpSession = createMcpSession();
     const workspace = await createTempWorkspace({
       correlationId,
       sessionToken: mcpSession.token,
     });
+    const workspaceDir = workspace.dir;
 
     providerInstance = createCliChatProvider({
       binary: cliBinary,
       model,
       apiKey: apiKey ?? undefined,
-      mcpToolContext: true,
-      cwd: workspace.dir,
+      mcpToolContext: useNativeMcp,
+      toolBridge: useNativeMcp
+        ? undefined
+        : {
+            tools,
+            toolDefinitions: toolDefs,
+            conversationId: cacheKey,
+            userId,
+          },
+      cwd: workspaceDir,
       correlationId,
     });
     log.info(

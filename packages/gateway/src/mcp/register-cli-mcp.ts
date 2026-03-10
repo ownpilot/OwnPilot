@@ -63,11 +63,12 @@ function getConfigPath(cli: CliName): string {
 // MCP Config Builders
 // =============================================================================
 
-function buildMcpEntry(config: McpRegistrationConfig): Record<string, unknown> {
+function buildMcpEntry(cli: CliName, config: McpRegistrationConfig): Record<string, unknown> {
   const gatewayUrl = config.gatewayUrl || 'http://localhost:8080';
 
-  // Prefer streamable-http (direct connection to running gateway)
+  // Prefer HTTP (direct connection to running gateway via Streamable HTTP protocol)
   // Falls back to stdio (spawns the MCP server script)
+  // NOTE: Claude Code uses "http" as the type name for Streamable HTTP transport
   if (config.serverScript) {
     return {
       type: 'stdio',
@@ -79,8 +80,15 @@ function buildMcpEntry(config: McpRegistrationConfig): Record<string, unknown> {
     };
   }
 
+  if (cli === 'gemini') {
+    return {
+      httpUrl: `${gatewayUrl}/api/v1/mcp/serve`,
+      trust: true,
+    };
+  }
+
   return {
-    type: 'streamable-http',
+    type: cli === 'claude' ? 'http' : 'streamable-http',
     url: `${gatewayUrl}/api/v1/mcp/serve`,
   };
 }
@@ -117,7 +125,7 @@ async function registerClaude(config: McpRegistrationConfig): Promise<McpRegistr
     const existing = await readJsonFile(configPath);
     const servers = (existing.mcpServers ?? {}) as Record<string, unknown>;
 
-    servers.ownpilot = buildMcpEntry(config);
+    servers.ownpilot = buildMcpEntry('claude', config);
     existing.mcpServers = servers;
 
     await writeJsonFile(configPath, existing);
@@ -149,7 +157,7 @@ async function registerGemini(config: McpRegistrationConfig): Promise<McpRegistr
     const existing = await readJsonFile(configPath);
     const servers = (existing.mcpServers ?? {}) as Record<string, unknown>;
 
-    servers.ownpilot = buildMcpEntry(config);
+    servers.ownpilot = buildMcpEntry('gemini', config);
     existing.mcpServers = servers;
 
     await writeJsonFile(configPath, existing);
@@ -181,7 +189,7 @@ async function registerCodex(config: McpRegistrationConfig): Promise<McpRegistra
     const existing = await readJsonFile(configPath);
     const servers = (existing.mcpServers ?? {}) as Record<string, unknown>;
 
-    servers.ownpilot = buildMcpEntry(config);
+    servers.ownpilot = buildMcpEntry('codex', config);
     existing.mcpServers = servers;
 
     await writeJsonFile(configPath, existing);
@@ -202,7 +210,10 @@ async function registerCodex(config: McpRegistrationConfig): Promise<McpRegistra
   }
 }
 
-const REGISTRARS: Record<CliName, (config: McpRegistrationConfig) => Promise<McpRegistrationResult>> = {
+const REGISTRARS: Record<
+  CliName,
+  (config: McpRegistrationConfig) => Promise<McpRegistrationResult>
+> = {
   claude: registerClaude,
   gemini: registerGemini,
   codex: registerCodex,
@@ -284,7 +295,7 @@ export function getMcpConfigSnippet(
     configPath: getConfigPath(cli),
     snippet: {
       mcpServers: {
-        ownpilot: buildMcpEntry(config),
+        ownpilot: buildMcpEntry(cli, config),
       },
     },
   };

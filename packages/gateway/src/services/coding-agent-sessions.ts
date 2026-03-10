@@ -43,12 +43,18 @@ const OUTPUT_BUFFER_MAX = 102_400; // 100 KB ring buffer for reconnection
 interface ManagedSession {
   session: CodingAgentSession;
   pty: PtyHandle | null;
+  /** ACP client instance (if using ACP mode) */
+  acpClient: import('../acp/acp-client.js').AcpClient | null;
   /** Ring buffer of recent output (last ~100KB) for reconnection replay */
   outputBuffer: string;
   /** WS session IDs subscribed to this coding agent session's output */
   subscribers: Set<string>;
   /** Callbacks fired when the session completes (exit or error) */
   completionCallbacks: Array<(session: CodingAgentSession) => void>;
+  /** Structured tool calls from ACP (empty for non-ACP sessions) */
+  acpToolCalls: import('../acp/types.js').AcpToolCall[];
+  /** Current plan from ACP (null for non-ACP sessions) */
+  acpPlan: import('../acp/types.js').AcpPlan | null;
 }
 
 // =============================================================================
@@ -106,9 +112,12 @@ export class CodingAgentSessionManager {
     const managed: ManagedSession = {
       session,
       pty: null,
+      acpClient: null,
       outputBuffer: '',
       subscribers: new Set(),
       completionCallbacks: [],
+      acpToolCalls: [],
+      acpPlan: null,
     };
 
     this.sessions.set(sessionId, managed);
@@ -249,6 +258,272 @@ export class CodingAgentSessionManager {
     }
   }
 
+  /**
+   * Create an ACP-mode session: spawns the agent with ACP protocol
+   * for structured tool call, plan, and permission tracking.
+   */
+  async createAcpSession(
+    input: CreateCodingSessionInput,
+    userId: string,
+    env: Record<string, string>,
+    binary: string,
+    acpArgs: string[],
+    mcpServers?: import('../acp/types.js').AcpMcpServerConfig[]
+  ): Promise<CodingAgentSession> {
+    // Enforce max sessions per user
+    const userSet = this.userSessions.get(userId) ?? new Set<string>();
+    const activeCount = this.countActiveSessions(userSet);
+    if (activeCount >= MAX_SESSIONS_PER_USER) {
+      throw new Error(
+        `Maximum ${MAX_SESSIONS_PER_USER} concurrent sessions allowed. Terminate an existing session first.`
+      );
+    }
+
+    const sessionId = randomUUID();
+    const cwd = input.cwd ?? process.cwd();
+
+    const session: CodingAgentSession = {
+      id: sessionId,
+      provider: input.provider,
+      displayName: this.buildDisplayName(input.provider, input.prompt),
+      state: 'starting',
+      mode: 'auto',
+      cwd,
+      prompt: input.prompt,
+      model: input.model,
+      startedAt: new Date().toISOString(),
+      userId,
+      source: input.source,
+    };
+
+    const managed: ManagedSession = {
+      session,
+      pty: null,
+      acpClient: null,
+      outputBuffer: '',
+      subscribers: new Set(),
+      completionCallbacks: [],
+      acpToolCalls: [],
+      acpPlan: null,
+    };
+
+    this.sessions.set(sessionId, managed);
+    userSet.add(sessionId);
+    this.userSessions.set(userId, userSet);
+
+    try {
+      const { AcpClient } = await import('../acp/acp-client.js');
+
+      const acpClient = new AcpClient({
+        binary,
+        args: acpArgs,
+        cwd,
+        env,
+        ownerSessionId: sessionId,
+        mcpServers,
+        onUpdate: (eventType: string, payload: Record<string, unknown>) => {
+          // Forward all ACP events to WS subscribers in real-time
+          this.sendToSubscribers(managed, eventType, { sessionId, ...payload });
+
+          // Update tracked ACP data from streaming events
+          if (eventType === 'coding-agent:acp:tool-call') {
+            const tc = (payload as { toolCall?: import('../acp/types.js').AcpToolCall }).toolCall;
+            if (tc) managed.acpToolCalls.push(tc);
+          }
+          if (eventType === 'coding-agent:acp:plan') {
+            const plan = (payload as { plan?: import('../acp/types.js').AcpPlan }).plan;
+            if (plan) managed.acpPlan = plan;
+          }
+        },
+        onStateChange: (state) => {
+          log.debug(`ACP state change for session ${sessionId}: ${state}`);
+          if (state === 'closed' || state === 'error') {
+            const newState = state === 'error' ? 'failed' : 'completed';
+            session.state = newState as import('@ownpilot/core').CodingAgentSessionState;
+            session.completedAt = new Date().toISOString();
+            this.sendToSubscribers(managed, 'coding-agent:session:state', {
+              sessionId,
+              state: newState,
+            });
+            this.fireCompletionCallbacks(managed);
+            this.persistResult(managed, state === 'error' ? 1 : 0).catch((err) => {
+              log.warn(`Failed to persist ACP result for session ${sessionId}`, { error: String(err) });
+            });
+          }
+        },
+        onError: (err) => {
+          log.error(`ACP error for session ${sessionId}: ${err.message}`);
+          session.state = 'failed';
+          session.completedAt = new Date().toISOString();
+          this.sendToSubscribers(managed, 'coding-agent:session:error', {
+            sessionId,
+            error: err.message,
+          });
+          this.fireCompletionCallbacks(managed);
+        },
+      });
+
+      managed.acpClient = acpClient;
+
+      // Connect (spawn + initialize)
+      await acpClient.connect();
+      session.state = 'running';
+
+      // Create ACP session with MCP servers
+      await acpClient.createSession({ cwd, mcpServers });
+
+      // Broadcast session creation
+      wsSessionManager.broadcast(
+        'coding-agent:session:created' as never,
+        {
+          session: {
+            id: session.id,
+            provider: session.provider,
+            displayName: session.displayName,
+            state: session.state,
+            mode: session.mode,
+            cwd: session.cwd,
+            prompt: session.prompt,
+            startedAt: session.startedAt,
+            userId: session.userId,
+            acpEnabled: true,
+          },
+        } as never
+      );
+
+      log.info(`ACP session ${sessionId} created`, {
+        provider: input.provider,
+        pid: acpClient.pid,
+        cwd,
+        agentInfo: acpClient.currentSession?.agentInfo,
+      });
+
+      // Start the prompt turn (fire-and-forget — results stream via events)
+      this.runAcpPrompt(managed, input.prompt).catch((err) => {
+        log.error(`ACP prompt failed for session ${sessionId}`, { error: String(err) });
+      });
+
+      return session;
+    } catch (err) {
+      this.sessions.delete(sessionId);
+      userSet.delete(sessionId);
+      throw err;
+    }
+  }
+
+  /**
+   * Send a prompt to an existing ACP session.
+   * Returns the prompt result when the turn completes.
+   */
+  async promptAcpSession(
+    sessionId: string,
+    userId: string,
+    prompt: string
+  ): Promise<{ stopReason: string; output: string }> {
+    const managed = this.sessions.get(sessionId);
+    if (!managed || managed.session.userId !== userId) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+    if (!managed.acpClient) {
+      throw new Error(`Session ${sessionId} is not an ACP session`);
+    }
+
+    const result = await managed.acpClient.prompt(prompt);
+    // Update tracked data
+    managed.acpToolCalls = result.toolCalls;
+    managed.acpPlan = result.plan;
+    // Append text output to buffer
+    managed.outputBuffer += result.output;
+    if (managed.outputBuffer.length > OUTPUT_BUFFER_MAX) {
+      managed.outputBuffer = managed.outputBuffer.slice(-OUTPUT_BUFFER_MAX);
+    }
+
+    return { stopReason: result.stopReason, output: result.output };
+  }
+
+  /**
+   * Cancel an ongoing ACP prompt turn.
+   */
+  async cancelAcpSession(sessionId: string, userId: string): Promise<boolean> {
+    const managed = this.sessions.get(sessionId);
+    if (!managed || managed.session.userId !== userId || !managed.acpClient) return false;
+    await managed.acpClient.cancel();
+    return true;
+  }
+
+  /**
+   * Get ACP-specific data for a session (tool calls, plan).
+   */
+  getAcpData(sessionId: string, userId: string): {
+    toolCalls: import('../acp/types.js').AcpToolCall[];
+    plan: import('../acp/types.js').AcpPlan | null;
+    isAcp: boolean;
+  } | undefined {
+    const managed = this.sessions.get(sessionId);
+    if (!managed || managed.session.userId !== userId) return undefined;
+    return {
+      toolCalls: managed.acpToolCalls,
+      plan: managed.acpPlan,
+      isAcp: managed.acpClient !== null,
+    };
+  }
+
+  /** Run ACP prompt and handle streaming events */
+  private async runAcpPrompt(managed: ManagedSession, prompt: string): Promise<void> {
+    if (!managed.acpClient) return;
+
+    const sessionId = managed.session.id;
+    try {
+      managed.session.state = 'running';
+      const result = await managed.acpClient.prompt(prompt);
+
+      managed.acpToolCalls = result.toolCalls;
+      managed.acpPlan = result.plan;
+      managed.outputBuffer += result.output;
+      if (managed.outputBuffer.length > OUTPUT_BUFFER_MAX) {
+        managed.outputBuffer = managed.outputBuffer.slice(-OUTPUT_BUFFER_MAX);
+      }
+
+      // Send text output to legacy subscribers
+      if (result.output) {
+        this.sendToSubscribers(managed, 'coding-agent:session:output', {
+          sessionId,
+          data: result.output,
+        });
+      }
+
+      // Mark completed
+      managed.session.state = result.stopReason === 'cancelled' ? 'terminated' : 'completed';
+      managed.session.exitCode = 0;
+      managed.session.completedAt = new Date().toISOString();
+
+      this.sendToSubscribers(managed, 'coding-agent:session:exit', {
+        sessionId,
+        exitCode: 0,
+        stopReason: result.stopReason,
+      });
+      this.sendToSubscribers(managed, 'coding-agent:session:state', {
+        sessionId,
+        state: managed.session.state,
+      });
+
+      this.fireCompletionCallbacks(managed);
+      this.persistResult(managed, 0).catch((err) => {
+        log.warn(`Failed to persist ACP result for session ${sessionId}`, { error: String(err) });
+      });
+    } catch (err) {
+      managed.session.state = 'failed';
+      managed.session.completedAt = new Date().toISOString();
+
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.sendToSubscribers(managed, 'coding-agent:session:error', {
+        sessionId,
+        error: errorMsg,
+      });
+      this.fireCompletionCallbacks(managed);
+    }
+  }
+
   getSession(sessionId: string, userId: string): CodingAgentSession | undefined {
     const managed = this.sessions.get(sessionId);
     if (!managed || managed.session.userId !== userId) return undefined;
@@ -298,6 +573,12 @@ export class CodingAgentSessionManager {
   terminateSession(sessionId: string, userId: string): boolean {
     const managed = this.sessions.get(sessionId);
     if (!managed || managed.session.userId !== userId) return false;
+
+    // Close ACP client if present
+    if (managed.acpClient) {
+      managed.acpClient.close().catch(() => {});
+      managed.acpClient = null;
+    }
 
     if (managed.pty) {
       managed.pty.kill('SIGTERM');
@@ -367,6 +648,20 @@ export class CodingAgentSessionManager {
       } as never
     );
 
+    // Send ACP snapshot on reconnect (tool calls, plan)
+    if (managed.acpClient) {
+      wsSessionManager.send(
+        wsSessionId,
+        'coding-agent:acp:snapshot' as never,
+        {
+          sessionId: codingSessionId,
+          toolCalls: managed.acpToolCalls,
+          plan: managed.acpPlan,
+          acpEnabled: true,
+        } as never
+      );
+    }
+
     return true;
   }
 
@@ -408,6 +703,14 @@ export class CodingAgentSessionManager {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
       this.cleanupTimer = null;
+    }
+
+    // Close all ACP clients
+    for (const managed of this.sessions.values()) {
+      if (managed.acpClient) {
+        managed.acpClient.close().catch(() => {});
+        managed.acpClient = null;
+      }
     }
 
     // Terminate all active sessions with SIGTERM then SIGKILL fallback

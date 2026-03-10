@@ -169,11 +169,7 @@ export function PermissionsTab({ providers }: { providers: string[] }) {
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadPerms();
-  }, []); // eslint-disable-line
-
-  const loadPerms = async () => {
+  const loadPerms = useCallback(async () => {
     try {
       setIsLoading(true);
       const list = await codingAgentsApi.listPermissions();
@@ -185,7 +181,11 @@ export function PermissionsTab({ providers }: { providers: string[] }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPerms();
+  }, [loadPerms]);
 
   const savePerms = async (provider: string, data: Record<string, unknown>) => {
     setSaving(provider);
@@ -392,11 +392,7 @@ export function SkillsTab({ providers }: { providers: string[] }) {
   const [isLoading, setIsLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSkills();
-  }, [providers]); // eslint-disable-line
-
-  const loadSkills = async () => {
+  const loadSkills = useCallback(async () => {
     try {
       setIsLoading(true);
       const map: Record<string, SkillAttachment[]> = {};
@@ -411,7 +407,11 @@ export function SkillsTab({ providers }: { providers: string[] }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [providers]);
+
+  useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
 
   const addInlineSkill = async (provider: string, label: string, instructions: string) => {
     setAdding(provider);
@@ -618,11 +618,7 @@ export function BudgetTab({ providers }: { providers: string[] }) {
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSubs();
-  }, []); // eslint-disable-line
-
-  const loadSubs = async () => {
+  const loadSubs = useCallback(async () => {
     try {
       setIsLoading(true);
       const list = await codingAgentsApi.listSubscriptions();
@@ -634,7 +630,11 @@ export function BudgetTab({ providers }: { providers: string[] }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSubs();
+  }, [loadSubs]);
 
   const saveSub = async (provider: string, data: Record<string, unknown>) => {
     setSaving(provider);

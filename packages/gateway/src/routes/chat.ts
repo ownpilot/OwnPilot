@@ -66,8 +66,25 @@ import {
 } from './chat-prompt.js';
 import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
 import { handleLegacySend } from './chat-legacy-send.js';
+import type { McpToolEvent } from '../mcp/mcp-events.js';
 
 const log = getLog('Chat');
+
+function toMcpTraceEvent(event: McpToolEvent): {
+  type: McpToolEvent['type'];
+  toolName: string;
+  arguments?: Record<string, unknown>;
+  result?: McpToolEvent['result'];
+  timestamp: string;
+} {
+  return {
+    type: event.type,
+    toolName: event.toolName,
+    arguments: event.arguments,
+    result: event.result,
+    timestamp: event.timestamp,
+  };
+}
 
 // =============================================================================
 // Backward compatibility re-export
@@ -183,10 +200,12 @@ chatRoutes.post('/', async (c) => {
     }
   }
 
-  // CLI providers always use their own default model — ignore any model from the UI
+  // CLI providers always use their own default model — ignore any model from the UI.
+  // Set requestedModel to a sentinel so validation passes, but leave model empty
+  // so the CliChatProvider falls through to its own default (from config.toml / login).
   if (provider.startsWith('cli-')) {
-    model = 'default';
-    requestedModel = 'default';
+    model = '';
+    requestedModel = 'cli-default';
   }
 
   // Check for demo mode
@@ -422,6 +441,7 @@ chatRoutes.post('/', async (c) => {
       const cliCorrelationId = getCliCorrelationId(agent);
       if (cliCorrelationId) {
         unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
+          state.mcpToolEvents.push(toMcpTraceEvent(event));
           stream.writeSSE({
             data: JSON.stringify({
               type: event.type,
@@ -513,7 +533,15 @@ chatRoutes.post('/', async (c) => {
   const bus = tryGetMessageBus();
   if (bus) {
     let busResult;
+    const mcpToolEvents: Array<ReturnType<typeof toMcpTraceEvent>> = [];
+    let unsubMcp: (() => void) | undefined;
     try {
+      const cliCorrelationId = getCliCorrelationId(agent);
+      if (cliCorrelationId) {
+        unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
+          mcpToolEvents.push(toMcpTraceEvent(event));
+        });
+      }
       busResult = await processNonStreamingViaBus(bus, {
         agent,
         chatMessage,
@@ -529,6 +557,7 @@ chatRoutes.post('/', async (c) => {
       agent.setExecutionPermissions(undefined);
       agent.setRequestApproval(undefined);
       agent.setMaxToolCalls(undefined);
+      unsubMcp?.();
       return apiError(
         c,
         {
@@ -543,6 +572,7 @@ chatRoutes.post('/', async (c) => {
     agent.setExecutionPermissions(undefined);
     agent.setRequestApproval(undefined);
     agent.setMaxToolCalls(undefined);
+    unsubMcp?.();
 
     const processingTime = Math.round(performance.now() - startTime);
 
@@ -568,13 +598,23 @@ chatRoutes.post('/', async (c) => {
     const busTrace = {
       duration: processingTime,
       toolCalls: [],
+      mcpToolEvents,
       modelCalls: [{ provider, model, duration: processingTime }],
       autonomyChecks: [],
       dbOperations: { reads: 0, writes: 0 },
       memoryOps: { adds: 0, recalls: 0 },
       triggersFired: [],
       errors: busResult.warnings ?? [],
-      events: busResult.stages.map((s) => ({ type: 'stage', name: s })),
+      events: [
+        ...busResult.stages.map((s) => ({ type: 'stage', name: s })),
+        ...mcpToolEvents.map((event) => ({
+          type: event.type,
+          name: event.toolName,
+          arguments: event.arguments,
+          result: event.result,
+          timestamp: event.timestamp,
+        })),
+      ],
       routing: busResult.response.metadata.routing ?? undefined,
     };
 

@@ -36,6 +36,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
   const hasErrors = trace.errors.length > 0;
   const autonomyBlocked = trace.autonomyChecks.filter((a) => !a.approved).length;
   const hasRetries = (trace.retries?.length ?? 0) > 0;
+  const mcpEventCount = trace.mcpToolEvents?.length ?? 0;
 
   return (
     <>
@@ -100,6 +101,13 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                 <span className="flex items-center gap-1 text-amber-500">
                   <RefreshCw className="w-3 h-3" />
                   {trace.retries?.length} retries
+                </span>
+              )}
+
+              {mcpEventCount > 0 && (
+                <span className="flex items-center gap-1 text-orange-500">
+                  <Zap className="w-3 h-3" />
+                  {mcpEventCount} MCP
                 </span>
               )}
 
@@ -336,6 +344,53 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                     >
                       {trigger}
                     </span>
+                  ))}
+                </div>
+              </TraceSection>
+            )}
+
+            {/* MCP Tool Events */}
+            {trace.mcpToolEvents && trace.mcpToolEvents.length > 0 && (
+              <TraceSection title="MCP Tool Calls" icon={<Zap className="w-4 h-4" />}>
+                <div className="space-y-1">
+                  {trace.mcpToolEvents.map((event, i) => (
+                    <div
+                      key={`${event.toolName}-${event.timestamp}-${i}`}
+                      className="px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-xs"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            event.type === 'tool_end'
+                              ? event.result?.success === false
+                                ? 'bg-red-500'
+                                : 'bg-green-500'
+                              : 'bg-orange-500'
+                          }`}
+                        />
+                        <span className="px-1.5 py-0.5 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted">
+                          {event.type}
+                        </span>
+                        <span className="font-mono text-text-primary dark:text-dark-text-primary break-all">
+                          {event.toolName}
+                        </span>
+                        {event.result?.durationMs !== undefined && (
+                          <span className="text-text-muted dark:text-dark-text-muted ml-auto">
+                            {event.result.durationMs}ms
+                          </span>
+                        )}
+                      </div>
+                      {event.arguments && Object.keys(event.arguments).length > 0 && (
+                        <pre className="mt-2 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary p-2 rounded overflow-x-auto text-text-primary dark:text-dark-text-primary whitespace-pre-wrap break-all">
+                          {JSON.stringify(event.arguments, null, 2)}
+                        </pre>
+                      )}
+                      {event.result?.preview && (
+                        <div className="mt-2 text-text-muted dark:text-dark-text-muted whitespace-pre-wrap break-all">
+                          {event.result.preview}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </TraceSection>

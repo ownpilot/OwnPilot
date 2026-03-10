@@ -33,6 +33,7 @@ import {
 } from '../components/icons';
 import { XTerminal } from '../components/XTerminal';
 import { AutoModePanel } from '../components/AutoModePanel';
+import { AcpPanel } from '../components/AcpPanel';
 import { codingAgentsApi, fileWorkspacesApi } from '../api';
 import type {
   CodingAgentStatus,
@@ -146,7 +147,7 @@ export function CodingAgentsPage() {
   const [showNewSession, setShowNewSession] = useState(false);
   const [showProviders, setShowProviders] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [viewMode, setViewMode] = useState<'structured' | 'terminal'>('terminal');
+  const [viewMode, setViewMode] = useState<'structured' | 'terminal' | 'acp'>('terminal');
 
   // Fetch data
   const fetchAll = useCallback(async () => {
@@ -251,6 +252,14 @@ export function CodingAgentsPage() {
   );
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
+
+  // Auto-switch to ACP view when selecting an ACP-enabled session
+  useEffect(() => {
+    if (activeSession?.acp?.enabled && viewMode !== 'acp') {
+      setViewMode('acp');
+    }
+  }, [activeSession?.acp?.enabled, viewMode]);
+
   const activeSessions = sessions.filter(
     (s) => s.state === 'starting' || s.state === 'running' || s.state === 'waiting'
   );
@@ -277,7 +286,10 @@ export function CodingAgentsPage() {
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
           <button
-            onClick={() => { setTab('agents'); setShowNewSession(true); }}
+            onClick={() => {
+              setTab('agents');
+              setShowNewSession(true);
+            }}
             disabled={activeSessions.length >= 3}
             className="px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
             title={activeSessions.length >= 3 ? 'Maximum 3 concurrent sessions' : 'New session'}
@@ -344,190 +356,223 @@ export function CodingAgentsPage() {
             },
           ]}
           steps={[
-            { title: 'Configure a coding provider', detail: 'Set up Claude Code, Gemini CLI, or Codex.' },
-            { title: 'Start a coding session', detail: 'Launch a new terminal session with your chosen provider.' },
-            { title: 'Give instructions in natural language', detail: 'Describe what you want the agent to build or fix.' },
+            {
+              title: 'Configure a coding provider',
+              detail: 'Set up Claude Code, Gemini CLI, or Codex.',
+            },
+            {
+              title: 'Start a coding session',
+              detail: 'Launch a new terminal session with your chosen provider.',
+            },
+            {
+              title: 'Give instructions in natural language',
+              detail: 'Describe what you want the agent to build or fix.',
+            },
             { title: 'Review generated code', detail: 'Inspect the output and iterate as needed.' },
           ]}
           quickActions={[
-            { label: 'Manage Sessions', icon: Terminal, description: 'View active sessions and start new coding agents.', onClick: () => setTab('agents') },
+            {
+              label: 'Manage Sessions',
+              icon: Terminal,
+              description: 'View active sessions and start new coding agents.',
+              onClick: () => setTab('agents'),
+            },
           ]}
         />
       )}
 
       {/* Agents tab — Content: split panel */}
       {activeTab === 'agents' && (
-      <div className="flex-1 flex min-h-0">
-        {/* Left sidebar: session list */}
-        <div className="w-64 flex-shrink-0 border-r border-border dark:border-dark-border overflow-y-auto flex flex-col">
-          {/* Sessions */}
-          <div className="flex-1 p-3 space-y-1.5">
-            {sessions.length === 0 && !isLoading && (
-              <div className="text-center py-8 text-text-muted dark:text-dark-text-muted text-sm">
-                <Terminal className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p>No sessions yet</p>
-                <p className="text-xs mt-1">Click "New Session" to start</p>
-              </div>
-            )}
-
-            {sessions.map((session) => (
-              <SessionCard
-                key={session.id}
-                session={session}
-                active={session.id === activeSessionId}
-                onClick={() => setActiveSessionId(session.id)}
-                onTerminate={() => handleTerminate(session.id)}
-              />
-            ))}
-          </div>
-
-          {/* History (collapsible) */}
-          <div className="border-t border-border dark:border-dark-border">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="w-full px-3 py-2 flex items-center justify-between text-xs font-medium text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-            >
-              <span>History ({results.length})</span>
-              {showHistory ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5" />
-              )}
-            </button>
-
-            {showHistory && (
-              <div className="px-3 pb-3 space-y-1.5 max-h-48 overflow-y-auto">
-                {results.length === 0 ? (
-                  <p className="text-[10px] text-text-muted dark:text-dark-text-muted py-2 text-center">
-                    No results yet
-                  </p>
-                ) : (
-                  results.map((r) => <ResultCard key={r.id} result={r} />)
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Provider status (collapsible) */}
-          <div className="border-t border-border dark:border-dark-border">
-            <button
-              onClick={() => setShowProviders(!showProviders)}
-              className="w-full px-3 py-2 flex items-center justify-between text-xs font-medium text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-            >
-              <span>Provider Status</span>
-              {showProviders ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5" />
-              )}
-            </button>
-
-            {showProviders && (
-              <div className="px-3 pb-3 space-y-2">
-                {statuses.map((status) => (
-                  <ProviderStatusCard key={status.provider} status={status} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right panel: session view with toggle */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {activeSession ? (
-            <>
-              {/* Session header bar */}
-              <div className="px-4 py-2 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border flex items-center gap-3 text-sm shrink-0">
-                <div
-                  className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${PROVIDER_COLORS[activeSession.provider] ?? 'bg-gray-500/20'}`}
-                >
-                  {PROVIDER_META[activeSession.provider]?.icon ?? '?'}
+        <div className="flex-1 flex min-h-0">
+          {/* Left sidebar: session list */}
+          <div className="w-64 flex-shrink-0 border-r border-border dark:border-dark-border overflow-y-auto flex flex-col">
+            {/* Sessions */}
+            <div className="flex-1 p-3 space-y-1.5">
+              {sessions.length === 0 && !isLoading && (
+                <div className="text-center py-8 text-text-muted dark:text-dark-text-muted text-sm">
+                  <Terminal className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>No sessions yet</p>
+                  <p className="text-xs mt-1">Click "New Session" to start</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-text-primary dark:text-dark-text-primary truncate block">
-                    {activeSession.displayName}
-                  </span>
-                </div>
+              )}
 
-                {/* View toggle */}
-                {activeSession.mode === 'auto' && (
-                  <div className="flex items-center bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md p-0.5">
-                    <button
-                      onClick={() => setViewMode('terminal')}
-                      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                        viewMode === 'terminal'
-                          ? 'bg-primary/20 text-primary'
-                          : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-                      }`}
-                    >
-                      Terminal
-                    </button>
-                    <button
-                      onClick={() => setViewMode('structured')}
-                      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                        viewMode === 'structured'
-                          ? 'bg-primary/20 text-primary'
-                          : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-                      }`}
-                    >
-                      Structured
-                    </button>
-                  </div>
-                )}
-
-                <StateBadge state={activeSession.state} />
-                {(activeSession.state === 'running' || activeSession.state === 'starting') && (
-                  <button
-                    onClick={() => handleTerminate(activeSession.id)}
-                    className="p-1 rounded text-text-muted hover:text-error transition-colors"
-                    title="Terminate"
-                  >
-                    <StopCircle className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Content: terminal or structured view */}
-              {activeSession.mode === 'auto' && viewMode === 'structured' ? (
-                <AutoModePanel
-                  key={activeSession.id}
-                  sessionId={activeSession.id}
-                  session={activeSession}
-                  onTerminate={() => handleTerminate(activeSession.id)}
+              {sessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  active={session.id === activeSessionId}
+                  onClick={() => setActiveSessionId(session.id)}
+                  onTerminate={() => handleTerminate(session.id)}
                 />
-              ) : (
-                <div className="flex-1 min-h-0 relative">
-                  <div className="absolute inset-0">
-                    <XTerminal sessionId={activeSession.id} interactive={true} />
-                  </div>
+              ))}
+            </div>
+
+            {/* History (collapsible) */}
+            <div className="border-t border-border dark:border-dark-border">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="w-full px-3 py-2 flex items-center justify-between text-xs font-medium text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+              >
+                <span>History ({results.length})</span>
+                {showHistory ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </button>
+
+              {showHistory && (
+                <div className="px-3 pb-3 space-y-1.5 max-h-48 overflow-y-auto">
+                  {results.length === 0 ? (
+                    <p className="text-[10px] text-text-muted dark:text-dark-text-muted py-2 text-center">
+                      No results yet
+                    </p>
+                  ) : (
+                    results.map((r) => <ResultCard key={r.id} result={r} />)
+                  )}
                 </div>
               )}
-            </>
-          ) : (
-            /* Empty state */
-            <div className="flex-1 flex items-center justify-center text-text-muted dark:text-dark-text-muted">
-              <div className="text-center">
-                <Terminal className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium mb-2">No session selected</p>
-                <p className="text-sm mb-4">
-                  {sessions.length > 0
-                    ? 'Select a session from the sidebar'
-                    : 'Create a new session to get started'}
-                </p>
-                {sessions.length === 0 && (
-                  <button
-                    onClick={() => setShowNewSession(true)}
-                    className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Session
-                  </button>
-                )}
-              </div>
             </div>
-          )}
+
+            {/* Provider status (collapsible) */}
+            <div className="border-t border-border dark:border-dark-border">
+              <button
+                onClick={() => setShowProviders(!showProviders)}
+                className="w-full px-3 py-2 flex items-center justify-between text-xs font-medium text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+              >
+                <span>Provider Status</span>
+                {showProviders ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </button>
+
+              {showProviders && (
+                <div className="px-3 pb-3 space-y-2">
+                  {statuses.map((status) => (
+                    <ProviderStatusCard key={status.provider} status={status} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right panel: session view with toggle */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {activeSession ? (
+              <>
+                {/* Session header bar */}
+                <div className="px-4 py-2 bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border flex items-center gap-3 text-sm shrink-0">
+                  <div
+                    className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${PROVIDER_COLORS[activeSession.provider] ?? 'bg-gray-500/20'}`}
+                  >
+                    {PROVIDER_META[activeSession.provider]?.icon ?? '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-text-primary dark:text-dark-text-primary truncate block">
+                      {activeSession.displayName}
+                    </span>
+                  </div>
+
+                  {/* View toggle */}
+                  {activeSession.mode === 'auto' && (
+                    <div className="flex items-center bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md p-0.5">
+                      <button
+                        onClick={() => setViewMode('terminal')}
+                        className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                          viewMode === 'terminal'
+                            ? 'bg-primary/20 text-primary'
+                            : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                        }`}
+                      >
+                        Terminal
+                      </button>
+                      <button
+                        onClick={() => setViewMode('structured')}
+                        className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                          viewMode === 'structured'
+                            ? 'bg-primary/20 text-primary'
+                            : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                        }`}
+                      >
+                        Structured
+                      </button>
+                      {activeSession.acp?.enabled && (
+                        <button
+                          onClick={() => setViewMode('acp')}
+                          className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                            viewMode === 'acp'
+                              ? 'bg-violet-500/20 text-violet-400'
+                              : 'text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
+                          }`}
+                        >
+                          ACP
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <StateBadge state={activeSession.state} />
+                  {(activeSession.state === 'running' || activeSession.state === 'starting') && (
+                    <button
+                      onClick={() => handleTerminate(activeSession.id)}
+                      className="p-1 rounded text-text-muted hover:text-error transition-colors"
+                      title="Terminate"
+                    >
+                      <StopCircle className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Content: terminal, structured, or ACP view */}
+                {activeSession.mode === 'auto' && viewMode === 'acp' ? (
+                  <AcpPanel
+                    key={`acp-${activeSession.id}`}
+                    sessionId={activeSession.id}
+                    session={activeSession}
+                    onTerminate={() => handleTerminate(activeSession.id)}
+                  />
+                ) : activeSession.mode === 'auto' && viewMode === 'structured' ? (
+                  <AutoModePanel
+                    key={activeSession.id}
+                    sessionId={activeSession.id}
+                    session={activeSession}
+                    onTerminate={() => handleTerminate(activeSession.id)}
+                  />
+                ) : (
+                  <div className="flex-1 min-h-0 relative">
+                    <div className="absolute inset-0">
+                      <XTerminal sessionId={activeSession.id} interactive={true} />
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Empty state */
+              <div className="flex-1 flex items-center justify-center text-text-muted dark:text-dark-text-muted">
+                <div className="text-center">
+                  <Terminal className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <p className="text-lg font-medium mb-2">No session selected</p>
+                  <p className="text-sm mb-4">
+                    {sessions.length > 0
+                      ? 'Select a session from the sidebar'
+                      : 'Create a new session to get started'}
+                  </p>
+                  {sessions.length === 0 && (
+                    <button
+                      onClick={() => setShowNewSession(true)}
+                      className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors inline-flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create Session
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* New Session Modal */}
@@ -583,6 +628,11 @@ function SessionCard({
           {icon}
         </div>
         <StateBadge state={session.state} />
+        {session.acp?.enabled && (
+          <span className="text-[9px] font-medium px-1 py-0.5 rounded bg-violet-500/15 text-violet-400">
+            ACP
+          </span>
+        )}
         {isActive && (
           <button
             onClick={(e) => {

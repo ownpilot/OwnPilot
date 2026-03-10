@@ -21,6 +21,9 @@ const { mockCodingAgentService, mockResultsRepo } = vi.hoisted(() => {
     writeToSession: vi.fn(),
     getOutputBuffer: vi.fn(),
     resizeSession: vi.fn(),
+    getAcpData: vi.fn(),
+    promptAcpSession: vi.fn(),
+    cancelAcpSession: vi.fn(),
   };
   const mockResultsRepo = {
     list: vi.fn(),
@@ -685,6 +688,152 @@ describe('Coding Agents Routes', () => {
       const res = await app.request('/coding-agents/results/result-1');
 
       expect(res.status).toBe(500);
+    });
+  });
+
+  // ─── GET /sessions/:id/acp — get ACP data ──────────────────────────────
+
+  describe('GET /coding-agents/sessions/:id/acp - Get ACP data', () => {
+    it('should return ACP data when available', async () => {
+      mockCodingAgentService.getAcpData.mockReturnValue({
+        toolCalls: [{ toolCallId: 'tc-1', title: 'Read file', status: 'completed' }],
+        plan: { entries: [{ content: 'Step 1', status: 'completed' }], updatedAt: '2026-03-09T12:00:00Z' },
+        isAcp: true,
+      });
+
+      const res = await app.request('/coding-agents/sessions/sess-1/acp');
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.data.isAcp).toBe(true);
+      expect(data.data.toolCalls).toHaveLength(1);
+      expect(data.data.plan.entries).toHaveLength(1);
+    });
+
+    it('should return 404 when session not found', async () => {
+      mockCodingAgentService.getAcpData.mockReturnValue(undefined);
+
+      const res = await app.request('/coding-agents/sessions/nonexistent/acp');
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── POST /sessions/:id/acp/prompt — follow-up ACP prompt ─────────────
+
+  describe('POST /coding-agents/sessions/:id/acp/prompt - ACP prompt', () => {
+    it('should send prompt and return result', async () => {
+      mockCodingAgentService.promptAcpSession.mockResolvedValue({
+        stopReason: 'end_turn',
+        output: 'Done! Fixed the bug.',
+      });
+
+      const res = await app.request('/coding-agents/sessions/sess-1/acp/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: 'Fix the tests' }),
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.data.stopReason).toBe('end_turn');
+      expect(data.data.output).toBe('Done! Fixed the bug.');
+      expect(mockCodingAgentService.promptAcpSession).toHaveBeenCalledWith(
+        'sess-1',
+        'default',
+        'Fix the tests'
+      );
+    });
+
+    it('should return 400 when prompt is missing', async () => {
+      const res = await app.request('/coding-agents/sessions/sess-1/acp/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should return 500 on service error', async () => {
+      mockCodingAgentService.promptAcpSession.mockRejectedValue(
+        new Error('Session not found')
+      );
+
+      const res = await app.request('/coding-agents/sessions/sess-1/acp/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: 'test' }),
+      });
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ─── POST /sessions/:id/acp/cancel — cancel ACP prompt ────────────────
+
+  describe('POST /coding-agents/sessions/:id/acp/cancel - Cancel ACP', () => {
+    it('should cancel ACP session', async () => {
+      mockCodingAgentService.cancelAcpSession.mockResolvedValue(true);
+
+      const res = await app.request('/coding-agents/sessions/sess-1/acp/cancel', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.success).toBe(true);
+      expect(data.data.cancelled).toBe(true);
+    });
+
+    it('should return 404 when ACP session not found', async () => {
+      mockCodingAgentService.cancelAcpSession.mockResolvedValue(false);
+
+      const res = await app.request('/coding-agents/sessions/nonexistent/acp/cancel', {
+        method: 'POST',
+      });
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ─── GET /sessions/:id enriched with ACP data ──────────────────────────
+
+  describe('GET /coding-agents/sessions/:id - ACP enrichment', () => {
+    it('should include ACP data when session is ACP-enabled', async () => {
+      const session = mockSession('sess-1');
+      mockCodingAgentService.getSession.mockReturnValue(session);
+      mockCodingAgentService.getAcpData.mockReturnValue({
+        isAcp: true,
+        toolCalls: [{ toolCallId: 'tc-1', title: 'Edit', status: 'running' }],
+        plan: null,
+      });
+
+      const res = await app.request('/coding-agents/sessions/sess-1');
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.acp).toBeDefined();
+      expect(data.data.acp.enabled).toBe(true);
+      expect(data.data.acp.toolCalls).toHaveLength(1);
+    });
+
+    it('should not include ACP data for non-ACP sessions', async () => {
+      const session = mockSession('sess-1');
+      mockCodingAgentService.getSession.mockReturnValue(session);
+      mockCodingAgentService.getAcpData.mockReturnValue({
+        isAcp: false,
+        toolCalls: [],
+        plan: null,
+      });
+
+      const res = await app.request('/coding-agents/sessions/sess-1');
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.data.acp).toBeUndefined();
     });
   });
 });
