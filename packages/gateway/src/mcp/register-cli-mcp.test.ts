@@ -66,7 +66,7 @@ describe('registerMcpForCli', () => {
     });
   });
 
-  it('should register with Codex CLI', async () => {
+  it('should register with Codex CLI using stdio transport', async () => {
     const result = await registerMcpForCli('codex');
 
     expect(result.success).toBe(true);
@@ -74,9 +74,12 @@ describe('registerMcpForCli', () => {
 
     const writeCall = vi.mocked(writeFile).mock.calls[0]!;
     const written = JSON.parse(writeCall[1] as string);
+    // Codex uses stdio transport (not streamable-http)
     expect(written.mcpServers.ownpilot).toEqual({
-      type: 'streamable-http',
-      url: 'http://localhost:8080/api/v1/mcp/serve',
+      type: 'stdio',
+      command: 'node',
+      args: ['./cli-mcp-server.js'],
+      env: { OWNPILOT_URL: 'http://localhost:8080' },
     });
   });
 

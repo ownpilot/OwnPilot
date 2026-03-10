@@ -72,7 +72,9 @@ CREATE TABLE IF NOT EXISTS autonomy_log (
   actions       JSONB NOT NULL DEFAULT '[]',
   report_msg    TEXT,
   error         TEXT,
-  manual        BOOLEAN NOT NULL DEFAULT FALSE
+  manual        BOOLEAN NOT NULL DEFAULT FALSE,
+  signal_ids    JSONB NOT NULL DEFAULT '[]',
+  urgency_score REAL NOT NULL DEFAULT 0
 );
 
 -- MCP Servers (external MCP server connections)

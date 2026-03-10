@@ -87,8 +87,20 @@ function buildMcpEntry(cli: CliName, config: McpRegistrationConfig): Record<stri
     };
   }
 
+  // Codex only supports stdio transport (not HTTP)
+  if (cli === 'codex') {
+    return {
+      type: 'stdio',
+      command: 'node',
+      args: [config.serverScript || './cli-mcp-server.js'],
+      env: {
+        OWNPILOT_URL: gatewayUrl,
+      },
+    };
+  }
+
   return {
-    type: cli === 'claude' ? 'http' : 'streamable-http',
+    type: 'http',
     url: `${gatewayUrl}/api/v1/mcp/serve`,
   };
 }

@@ -25,6 +25,7 @@ const {
   mockSetConfigCenter,
   mockChatFn,
   mockSetDirectToolMode,
+  mockGetEventSystem,
 } = vi.hoisted(() => {
   const mockChatFn = vi.fn();
   const mockSetDirectToolMode = vi.fn();
@@ -32,12 +33,29 @@ const {
 
   const MockToolRegistry = vi.fn(function (this: any) {
     this.setConfigCenter = mockSetConfigCenter;
+    this.register = vi.fn();
+    this.has = vi.fn(() => true);
+    this.get = vi.fn();
+    this.getAll = vi.fn(() => []);
+    this.clear = vi.fn();
   });
 
   const MockAgent = vi.fn(function (this: any) {
     this.chat = mockChatFn;
     this.setDirectToolMode = mockSetDirectToolMode;
   });
+
+  const mockGetEventSystem = vi.fn(() => ({
+    emit: vi.fn(),
+    on: vi.fn(() => vi.fn()),
+    hooks: { tap: vi.fn(), tapAny: vi.fn(() => vi.fn()) },
+    scoped: vi.fn(() => ({
+      emit: vi.fn(),
+      on: vi.fn(() => vi.fn()),
+      off: vi.fn(),
+      hooks: { tap: vi.fn(), tapAny: vi.fn(() => vi.fn()) },
+    })),
+  }));
 
   return {
     MockAgent,
@@ -56,21 +74,21 @@ const {
     mockSetConfigCenter,
     mockChatFn,
     mockSetDirectToolMode,
+    mockGetEventSystem,
   };
 });
 
-vi.mock('@ownpilot/core', () => ({
-  Agent: MockAgent,
-  ToolRegistry: MockToolRegistry,
-  registerAllTools: mockRegisterAllTools,
-  getErrorMessage: mockGetErrorMessage,
-  DEFAULT_SUBAGENT_LIMITS: {
-    maxTurns: 10,
-    maxToolCalls: 50,
-    maxTokens: 4096,
-    timeoutMs: 60000,
-  },
-}));
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    Agent: MockAgent,
+    ToolRegistry: MockToolRegistry,
+    registerAllTools: mockRegisterAllTools,
+    getErrorMessage: mockGetErrorMessage,
+    getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
+  };
+});
 
 vi.mock('./log.js', () => ({
   getLog: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn() })),
@@ -98,9 +116,13 @@ vi.mock('./config-center-impl.js', () => ({
   gatewayConfigCenter: {},
 }));
 
-vi.mock('../config/defaults.js', () => ({
-  AGENT_DEFAULT_TEMPERATURE: 0.7,
-}));
+vi.mock('../config/defaults.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    AGENT_DEFAULT_TEMPERATURE: 0.7,
+  };
+});
 
 import { SubagentRunner } from './subagent-runner.js';
 

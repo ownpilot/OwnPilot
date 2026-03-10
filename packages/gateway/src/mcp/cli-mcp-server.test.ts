@@ -10,11 +10,13 @@ const mockConnect = vi.fn();
 const mockClose = vi.fn();
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn().mockImplementation(() => ({
-    setRequestHandler: mockSetRequestHandler,
-    connect: mockConnect,
-    close: mockClose,
-  })),
+  Server: vi.fn().mockImplementation(function () {
+    return {
+      setRequestHandler: mockSetRequestHandler,
+      connect: mockConnect,
+      close: mockClose,
+    };
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({

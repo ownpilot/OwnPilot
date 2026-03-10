@@ -17,6 +17,18 @@ const mockGetApiKey = vi.fn().mockResolvedValue(undefined);
 const mockGetApprovalManager = vi.fn();
 const mockCheckAutonomy = vi.fn();
 
+const mockGetEventSystem = vi.fn(() => ({
+  emit: vi.fn(),
+  on: vi.fn(() => vi.fn()),
+  hooks: { tap: vi.fn(), tapAny: vi.fn(() => vi.fn()) },
+  scoped: vi.fn(() => ({
+    emit: vi.fn(),
+    on: vi.fn(() => vi.fn()),
+    off: vi.fn(),
+    hooks: { tap: vi.fn(), tapAny: vi.fn(() => vi.fn()) },
+  })),
+}));
+
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -24,6 +36,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     generateId: (...args: unknown[]) => mockGenerateId(...args),
     getProviderConfig: (...args: unknown[]) => mockGetProviderConfig(...args),
     getModelPricing: (...args: unknown[]) => mockGetModelPricing(...args),
+    getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
     TOOL_GROUPS: mockToolGroups,
   };
 });
@@ -45,14 +58,18 @@ vi.mock('../autonomy/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../config/defaults.js', () => ({
-  MAX_AGENT_CACHE_SIZE: 50,
-  MAX_CHAT_AGENT_CACHE_SIZE: 10,
-  AGENT_CREATE_DEFAULT_MAX_TOKENS: 4096,
-  AGENT_DEFAULT_TEMPERATURE: 0.7,
-  AGENT_DEFAULT_MAX_TURNS: 25,
-  AGENT_DEFAULT_MAX_TOOL_CALLS: 200,
-}));
+vi.mock('../config/defaults.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    MAX_AGENT_CACHE_SIZE: 50,
+    MAX_CHAT_AGENT_CACHE_SIZE: 10,
+    AGENT_CREATE_DEFAULT_MAX_TOKENS: 4096,
+    AGENT_DEFAULT_TEMPERATURE: 0.7,
+    AGENT_DEFAULT_MAX_TURNS: 25,
+    AGENT_DEFAULT_MAX_TOOL_CALLS: 200,
+  };
+});
 
 vi.mock('./agent-tools.js', () => ({
   safeStringArray: (value: unknown) => {

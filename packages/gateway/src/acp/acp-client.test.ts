@@ -54,7 +54,7 @@ const mockConnection = {
 };
 
 vi.mock('@agentclientprotocol/sdk', () => ({
-  ClientSideConnection: vi.fn().mockImplementation((factory: any, _stream: any) => {
+  ClientSideConnection: vi.fn().mockImplementation(function (factory: any, _stream: any) {
     // Call factory to set up agent reference
     factory(mockAgent);
     return mockConnection;

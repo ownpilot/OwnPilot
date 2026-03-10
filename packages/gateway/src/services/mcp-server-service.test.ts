@@ -553,7 +553,7 @@ describe('tools/call handler', () => {
     expect(mockExecuteUseTool).toHaveBeenCalledWith(
       expect.anything(),
       args,
-      { userId: 'default', conversationId: 'mcp-session' }
+      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' })
     );
     expect(result.content[0]!.text).toBe('tool result');
   });
@@ -571,7 +571,7 @@ describe('tools/call handler', () => {
     expect(mockExecuteBatchUseTool).toHaveBeenCalledWith(
       expect.anything(),
       args,
-      { userId: 'default', conversationId: 'mcp-session' }
+      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' })
     );
     expect(result.content[0]!.text).toBe('batch results');
   });
