@@ -203,7 +203,8 @@ export function TasksPage() {
               icon: Target,
               color: 'text-primary bg-primary/10',
               title: 'Priority Levels',
-              description: 'Assign low, normal, high, or urgent priority to stay focused on what matters.',
+              description:
+                'Assign low, normal, high, or urgent priority to stay focused on what matters.',
             },
             {
               icon: Calendar,
@@ -227,8 +228,14 @@ export function TasksPage() {
           steps={[
             { title: 'Create a task', detail: 'Click "Add Task" and enter a title.' },
             { title: 'Set priority & due date', detail: 'Choose urgency and add a deadline.' },
-            { title: 'Track progress', detail: 'Filter by status to see pending or completed tasks.' },
-            { title: 'AI reminds you of deadlines', detail: 'Your assistant tracks due dates and nudges you.' },
+            {
+              title: 'Track progress',
+              detail: 'Filter by status to see pending or completed tasks.',
+            },
+            {
+              title: 'AI reminds you of deadlines',
+              detail: 'Your assistant tracks due dates and nudges you.',
+            },
           ]}
         />
       )}

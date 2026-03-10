@@ -145,109 +145,109 @@ export function CodingAgentSettingsPage() {
 
       {/* Tab Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-      {activeTab === 'home' && (
-        <PageHomeTab
-          heroIcons={[
-            { icon: Terminal, color: 'text-primary bg-primary/10' },
-            { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
-            { icon: DollarSign, color: 'text-emerald-500 bg-emerald-500/10' },
-          ]}
-          title="Configure Coding Agents"
-          subtitle="Set up providers, permissions, skills, budgets, and security rules for your AI coding assistants."
-          cta={{
-            label: 'View Providers',
-            icon: Terminal,
-            onClick: () => setActiveTab('providers'),
-          }}
-          features={[
-            {
-              icon: Layers,
-              color: 'text-primary bg-primary/10',
-              title: 'Provider Setup',
-              description: 'Install and configure coding agent providers.',
-            },
-            {
-              icon: Lock,
-              color: 'text-orange-500 bg-orange-500/10',
-              title: 'Permission Control',
-              description: 'Set boundaries for what agents can do.',
-            },
-            {
-              icon: BookOpen,
-              color: 'text-emerald-500 bg-emerald-500/10',
-              title: 'Skill Packs',
-              description: 'Enable relevant skill packs for your agents.',
-            },
-            {
-              icon: DollarSign,
-              color: 'text-violet-500 bg-violet-500/10',
-              title: 'Budget Limits',
-              description: 'Control spending and usage limits.',
-            },
-          ]}
-          steps={[
-            { title: 'Add coding providers', detail: 'Install and configure agent backends.' },
-            {
-              title: 'Set permission boundaries',
-              detail: 'Define what actions agents can take.',
-            },
-            { title: 'Enable relevant skills', detail: 'Choose skill packs for your workflow.' },
-            {
-              title: 'Configure budget & security',
-              detail: 'Set spending limits and security rules.',
-            },
-          ]}
-          quickActions={[
-            {
+        {activeTab === 'home' && (
+          <PageHomeTab
+            heroIcons={[
+              { icon: Terminal, color: 'text-primary bg-primary/10' },
+              { icon: Shield, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: DollarSign, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Configure Coding Agents"
+            subtitle="Set up providers, permissions, skills, budgets, and security rules for your AI coding assistants."
+            cta={{
+              label: 'View Providers',
               icon: Terminal,
-              label: 'Providers',
-              description: 'Manage coding agent providers.',
               onClick: () => setActiveTab('providers'),
-            },
-            {
-              icon: Shield,
-              label: 'Permissions',
-              description: 'Configure agent permissions.',
-              onClick: () => setActiveTab('permissions'),
-            },
-            {
-              icon: Puzzle,
-              label: 'Skills',
-              description: 'Manage skill packs.',
-              onClick: () => setActiveTab('skills'),
-            },
-            {
-              icon: DollarSign,
-              label: 'Budget',
-              description: 'Set budget and usage limits.',
-              onClick: () => setActiveTab('budget'),
-            },
-            {
-              icon: Lock,
-              label: 'Security',
-              description: 'Configure security rules.',
-              onClick: () => setActiveTab('security'),
-            },
-          ]}
-        />
-      )}
-      {activeTab !== 'home' && (
-        <div className="p-6 max-w-3xl mx-auto w-full space-y-6">
-          {activeTab === 'providers' && (
-            <ProvidersTab
-              statuses={statuses}
-              testResults={testResults}
-              testingProvider={testingProvider}
-              isLoading={isLoading}
-              onTest={handleTest}
-            />
-          )}
-          {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
-          {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
-          {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
-          {activeTab === 'security' && <SecurityTab />}
-        </div>
-      )}
+            }}
+            features={[
+              {
+                icon: Layers,
+                color: 'text-primary bg-primary/10',
+                title: 'Provider Setup',
+                description: 'Install and configure coding agent providers.',
+              },
+              {
+                icon: Lock,
+                color: 'text-orange-500 bg-orange-500/10',
+                title: 'Permission Control',
+                description: 'Set boundaries for what agents can do.',
+              },
+              {
+                icon: BookOpen,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Skill Packs',
+                description: 'Enable relevant skill packs for your agents.',
+              },
+              {
+                icon: DollarSign,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Budget Limits',
+                description: 'Control spending and usage limits.',
+              },
+            ]}
+            steps={[
+              { title: 'Add coding providers', detail: 'Install and configure agent backends.' },
+              {
+                title: 'Set permission boundaries',
+                detail: 'Define what actions agents can take.',
+              },
+              { title: 'Enable relevant skills', detail: 'Choose skill packs for your workflow.' },
+              {
+                title: 'Configure budget & security',
+                detail: 'Set spending limits and security rules.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Terminal,
+                label: 'Providers',
+                description: 'Manage coding agent providers.',
+                onClick: () => setActiveTab('providers'),
+              },
+              {
+                icon: Shield,
+                label: 'Permissions',
+                description: 'Configure agent permissions.',
+                onClick: () => setActiveTab('permissions'),
+              },
+              {
+                icon: Puzzle,
+                label: 'Skills',
+                description: 'Manage skill packs.',
+                onClick: () => setActiveTab('skills'),
+              },
+              {
+                icon: DollarSign,
+                label: 'Budget',
+                description: 'Set budget and usage limits.',
+                onClick: () => setActiveTab('budget'),
+              },
+              {
+                icon: Lock,
+                label: 'Security',
+                description: 'Configure security rules.',
+                onClick: () => setActiveTab('security'),
+              },
+            ]}
+          />
+        )}
+        {activeTab !== 'home' && (
+          <div className="p-6 max-w-3xl mx-auto w-full space-y-6">
+            {activeTab === 'providers' && (
+              <ProvidersTab
+                statuses={statuses}
+                testResults={testResults}
+                testingProvider={testingProvider}
+                isLoading={isLoading}
+                onTest={handleTest}
+              />
+            )}
+            {activeTab === 'permissions' && <PermissionsTab providers={providerNames} />}
+            {activeTab === 'skills' && <SkillsTab providers={providerNames} />}
+            {activeTab === 'budget' && <BudgetTab providers={providerNames} />}
+            {activeTab === 'security' && <SecurityTab />}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ const mockDeleteByChannel = vi.fn();
 const mockDeleteAll = vi.fn();
 
 vi.mock('../db/repositories/channel-messages.js', () => ({
-  ChannelMessagesRepository: vi.fn().mockImplementation(function() {
+  ChannelMessagesRepository: vi.fn().mockImplementation(function () {
     return {
       getAll: mockGetAll,
       count: mockCount,
@@ -45,9 +45,8 @@ vi.mock('../services/log.js', () => ({
 }));
 
 // Import after mocks
-const { channelInboxRoutes, addReadMessageId, readMessageIds } = await import(
-  './channels-inbox.js'
-);
+const { channelInboxRoutes, addReadMessageId, readMessageIds } =
+  await import('./channels-inbox.js');
 
 function createApp() {
   const app = new Hono();

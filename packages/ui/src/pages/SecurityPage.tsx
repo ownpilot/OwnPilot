@@ -6,15 +6,7 @@
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  AlertCircle,
-  Shield,
-  Lock,
-  Key,
-  Users,
-  FileText,
-  Home,
-} from '../components/icons';
+import { AlertCircle, Shield, Lock, Key, Users, FileText, Home } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
@@ -248,116 +240,122 @@ export function SecurityPage() {
       )}
 
       {activeTab === 'security' && (
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-2xl">
-        {/* Status Card */}
-        <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-          <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
-            Status
-          </h2>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-text-muted dark:text-dark-text-muted">Password Protection</span>
-              <span
-                className={
-                  passwordConfigured ? 'text-success font-medium' : 'text-warning font-medium'
-                }
-              >
-                {passwordConfigured ? 'Enabled' : 'Disabled'}
-              </span>
-            </div>
-            {passwordConfigured && (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-2xl">
+          {/* Status Card */}
+          <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
+            <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
+              Status
+            </h2>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-text-muted dark:text-dark-text-muted">Active Sessions</span>
-                <span className="text-text-primary dark:text-dark-text-primary">
-                  {isLoadingSessions ? <LoadingSpinner size="sm" /> : (activeSessions ?? '-')}
+                <span className="text-text-muted dark:text-dark-text-muted">
+                  Password Protection
+                </span>
+                <span
+                  className={
+                    passwordConfigured ? 'text-success font-medium' : 'text-warning font-medium'
+                  }
+                >
+                  {passwordConfigured ? 'Enabled' : 'Disabled'}
                 </span>
               </div>
-            )}
+              {passwordConfigured && (
+                <div className="flex justify-between">
+                  <span className="text-text-muted dark:text-dark-text-muted">Active Sessions</span>
+                  <span className="text-text-primary dark:text-dark-text-primary">
+                    {isLoadingSessions ? <LoadingSpinner size="sm" /> : (activeSessions ?? '-')}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Password Form */}
-        <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-          <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
-            {passwordConfigured ? 'Change Password' : 'Set Password'}
-          </h2>
-          <form onSubmit={handleSetPassword} className="space-y-3">
-            {passwordConfigured && (
+          {/* Password Form */}
+          <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
+            <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
+              {passwordConfigured ? 'Change Password' : 'Set Password'}
+            </h2>
+            <form onSubmit={handleSetPassword} className="space-y-3">
+              {passwordConfigured && (
+                <div>
+                  <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                  Current Password
+                  {passwordConfigured ? 'New Password' : 'Password'}
                 </label>
                 <input
                   type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  autoComplete="current-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Minimum 8 characters"
                   className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
-            )}
-            <div>
-              <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                {passwordConfigured ? 'New Password' : 'Password'}
-              </label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                placeholder="Minimum 8 characters"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-            </div>
-
-            {formError && (
-              <div className="flex items-center gap-2 text-sm text-error">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
+              <div>
+                <label className="block text-xs text-text-muted dark:text-dark-text-muted mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={!newPassword || !confirmPassword || isSubmitting}
-              className="px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? 'Saving...' : passwordConfigured ? 'Change Password' : 'Set Password'}
-            </button>
-          </form>
-        </div>
+              {formError && (
+                <div className="flex items-center gap-2 text-sm text-error">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
 
-        {/* Remove Password */}
-        {passwordConfigured && (
-          <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-error/30 p-4">
-            <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              Remove Password
-            </h2>
-            <p className="text-xs text-text-muted dark:text-dark-text-muted mb-3">
-              Disabling password protection will allow anyone with network access to your server to
-              use the dashboard.
-            </p>
-            <button
-              onClick={handleRemovePassword}
-              className="px-4 py-2 text-sm rounded-lg border border-error text-error hover:bg-error/10 transition-colors"
-            >
-              Remove Password
-            </button>
+              <button
+                type="submit"
+                disabled={!newPassword || !confirmPassword || isSubmitting}
+                className="px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting
+                  ? 'Saving...'
+                  : passwordConfigured
+                    ? 'Change Password'
+                    : 'Set Password'}
+              </button>
+            </form>
           </div>
-        )}
-      </div>
+
+          {/* Remove Password */}
+          {passwordConfigured && (
+            <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-error/30 p-4">
+              <h2 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                Remove Password
+              </h2>
+              <p className="text-xs text-text-muted dark:text-dark-text-muted mb-3">
+                Disabling password protection will allow anyone with network access to your server
+                to use the dashboard.
+              </p>
+              <button
+                onClick={handleRemovePassword}
+                className="px-4 py-2 text-sm rounded-lg border border-error text-error hover:bg-error/10 transition-colors"
+              >
+                Remove Password
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -382,9 +382,7 @@ describe('Dashboard Service', () => {
       const data = makeBriefingData();
 
       // Access private method via prototype trick
-      const briefing = generateFallbackBriefing(
-        data
-      );
+      const briefing = generateFallbackBriefing(data);
 
       expect(briefing.id).toContain('briefing_fallback_');
       expect(briefing.summary).toContain('2 tasks due');
@@ -450,10 +448,7 @@ describe('Dashboard Service', () => {
       const content =
         'Here is the briefing:\n```json\n{"summary": "A good day", "priorities": ["Do X"], "insights": ["Y is up"], "suggestedFocusAreas": ["Focus Z"]}\n```';
 
-      const briefing = parseAIResponse(
-        content,
-        'gpt-4o-mini'
-      );
+      const briefing = parseAIResponse(content, 'gpt-4o-mini');
 
       expect(briefing.summary).toBe('A good day');
       expect(briefing.priorities).toEqual(['Do X']);
@@ -468,10 +463,7 @@ describe('Dashboard Service', () => {
       const content =
         '{"summary": "Plain JSON", "priorities": [], "insights": [], "suggestedFocusAreas": []}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test-model'
-      );
+      const briefing = parseAIResponse(content, 'test-model');
 
       expect(briefing.summary).toBe('Plain JSON');
     });
@@ -480,10 +472,7 @@ describe('Dashboard Service', () => {
       const content =
         'Here is your briefing:\n\n{"summary": "Surrounded", "priorities": ["A"]}\n\nHope this helps!';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('Surrounded');
       expect(briefing.priorities).toEqual(['A']);
@@ -492,10 +481,7 @@ describe('Dashboard Service', () => {
     it('handles missing arrays gracefully', () => {
       const content = '{"summary": "Minimal"}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('Minimal');
       expect(briefing.priorities).toEqual([]);
@@ -505,10 +491,7 @@ describe('Dashboard Service', () => {
 
     it('throws when no JSON found', () => {
       expect(() => {
-        parseAIResponse(
-          'Just plain text with no JSON',
-          'test'
-        );
+        parseAIResponse('Just plain text with no JSON', 'test');
       }).toThrow('No JSON found');
     });
 
@@ -516,10 +499,7 @@ describe('Dashboard Service', () => {
       const content =
         '{"summary": "Test with {braces}", "priorities": ["Check {item}"], "insights": [], "suggestedFocusAreas": []}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('Test with {braces}');
     });
@@ -1672,10 +1652,7 @@ describe('Dashboard Service', () => {
     it('parses JSON from bare code fence (no json tag)', () => {
       const content = '```\n{"summary":"Bare fence","priorities":[]}\n```';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('Bare fence');
     });
@@ -1683,10 +1660,7 @@ describe('Dashboard Service', () => {
     it('handles missing summary gracefully', () => {
       const content = '{"priorities":["A"]}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('No summary available.');
     });
@@ -1694,10 +1668,7 @@ describe('Dashboard Service', () => {
     it('handles non-array priorities gracefully', () => {
       const content = '{"summary":"Test","priorities":"not an array"}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.priorities).toEqual([]);
     });
@@ -1705,10 +1676,7 @@ describe('Dashboard Service', () => {
     it('sets generatedAt and expiresAt', () => {
       const content = '{"summary":"Timed"}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.generatedAt).toBeTruthy();
       expect(briefing.expiresAt).toBeTruthy();
@@ -1721,10 +1689,7 @@ describe('Dashboard Service', () => {
     it('handles escaped quotes in JSON strings', () => {
       const content = '{"summary":"He said \\"hello\\"","priorities":[]}';
 
-      const briefing = parseAIResponse(
-        content,
-        'test'
-      );
+      const briefing = parseAIResponse(content, 'test');
 
       expect(briefing.summary).toBe('He said "hello"');
     });

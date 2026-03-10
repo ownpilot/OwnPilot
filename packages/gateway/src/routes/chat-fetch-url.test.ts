@@ -214,7 +214,9 @@ describe('chatFetchUrlRoutes', () => {
     it('respects URL encoding in query parameter', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
-        text: vi.fn().mockResolvedValue('<html><head><title>Test</title></head><body>Content</body></html>'),
+        text: vi
+          .fn()
+          .mockResolvedValue('<html><head><title>Test</title></head><body>Content</body></html>'),
       });
 
       const app = createApp();

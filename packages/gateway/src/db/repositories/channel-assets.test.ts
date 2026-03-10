@@ -37,9 +37,8 @@ vi.mock('../adapters/index.js', () => ({
 }));
 
 // Import after mocks are established
-const { ChannelAssetsRepository, createChannelAssetsRepository, channelAssetsRepo } = await import(
-  './channel-assets.js'
-);
+const { ChannelAssetsRepository, createChannelAssetsRepository, channelAssetsRepo } =
+  await import('./channel-assets.js');
 
 // ---------------------------------------------------------------------------
 // Test fixtures

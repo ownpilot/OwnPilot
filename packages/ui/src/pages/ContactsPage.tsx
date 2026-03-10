@@ -202,8 +202,7 @@ export function ContactsPage() {
               icon: Users,
               color: 'text-primary bg-primary/10',
               title: 'Contact Profiles',
-              description:
-                'Store names, emails, phones, companies, and notes for each contact.',
+              description: 'Store names, emails, phones, companies, and notes for each contact.',
             },
             {
               icon: Search,
@@ -226,7 +225,10 @@ export function ContactsPage() {
             },
           ]}
           steps={[
-            { title: 'Add your first contact', detail: 'Click "Add Contact" to create a new entry.' },
+            {
+              title: 'Add your first contact',
+              detail: 'Click "Add Contact" to create a new entry.',
+            },
             {
               title: 'Fill in details',
               detail: 'Add name, email, phone, company, and notes.',

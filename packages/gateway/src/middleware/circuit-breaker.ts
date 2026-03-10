@@ -105,7 +105,9 @@ function openCircuit(entry: CircuitBreakerEntry, config: CircuitBreakerConfig, k
   entry.state = 'OPEN';
   entry.nextAttemptTime = Date.now() + config.resetTimeoutMs;
   entry.successes = 0;
-  log.warn(`[CircuitBreaker] Circuit OPENED for "${key}". Blocking requests for ${config.resetTimeoutMs}ms`);
+  log.warn(
+    `[CircuitBreaker] Circuit OPENED for "${key}". Blocking requests for ${config.resetTimeoutMs}ms`
+  );
 }
 
 /**
@@ -131,7 +133,11 @@ function closeCircuit(entry: CircuitBreakerEntry, key: string): void {
 /**
  * Record a successful response
  */
-function recordSuccess(entry: CircuitBreakerEntry, config: CircuitBreakerConfig, key: string): void {
+function recordSuccess(
+  entry: CircuitBreakerEntry,
+  config: CircuitBreakerConfig,
+  key: string
+): void {
   if (entry.state === 'HALF_OPEN') {
     entry.successes++;
     if (entry.successes >= config.successThreshold) {
@@ -146,7 +152,11 @@ function recordSuccess(entry: CircuitBreakerEntry, config: CircuitBreakerConfig,
 /**
  * Record a failed response
  */
-function recordFailure(entry: CircuitBreakerEntry, config: CircuitBreakerConfig, key: string): void {
+function recordFailure(
+  entry: CircuitBreakerEntry,
+  config: CircuitBreakerConfig,
+  key: string
+): void {
   entry.failures++;
   entry.lastFailureTime = Date.now();
 
@@ -327,10 +337,7 @@ export function createServiceCircuitBreaker(
 
       // If circuit is HALF_OPEN, only allow limited traffic
       if (entry.state === 'HALF_OPEN' && !shouldAllowHalfOpenRequest(config)) {
-        throw new CircuitBreakerError(
-          `Service "${serviceName}" is recovering. Please retry.`,
-          1
-        );
+        throw new CircuitBreakerError(`Service "${serviceName}" is recovering. Please retry.`, 1);
       }
 
       try {

@@ -181,10 +181,19 @@ export function ToolsPage() {
             },
           ]}
           steps={[
-            { title: 'Browse available tools', detail: 'Explore tools by category and search by name.' },
-            { title: 'Check tool capabilities', detail: 'View parameters, descriptions, and examples.' },
+            {
+              title: 'Browse available tools',
+              detail: 'Explore tools by category and search by name.',
+            },
+            {
+              title: 'Check tool capabilities',
+              detail: 'View parameters, descriptions, and examples.',
+            },
             { title: 'Enable or configure', detail: 'Toggle tool groups or add custom tools.' },
-            { title: 'AI uses them automatically', detail: 'Your AI picks the right tool for each task.' },
+            {
+              title: 'AI uses them automatically',
+              detail: 'Your AI picks the right tool for each task.',
+            },
           ]}
         />
       )}

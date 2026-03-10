@@ -135,7 +135,11 @@ describe('coding-agent-providers', () => {
       const result = resolveCustomApiKey({
         authMethod: 'config_center',
         configServiceName: 'my-custom-service',
-      } as { authMethod: 'config_center'; configServiceName: string | null; apiKeyEnvVar?: string });
+      } as {
+        authMethod: 'config_center';
+        configServiceName: string | null;
+        apiKeyEnvVar?: string;
+      });
 
       expect(result).toBe('custom-config-key');
       expect(mockGetApiKey).toHaveBeenCalledWith('my-custom-service');

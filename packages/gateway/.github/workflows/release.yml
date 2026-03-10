@@ -48,7 +48,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          
+
           if [ -z "$PREV_TAG" ]; then
             # First release - get all commits
             CHANGELOG=$(git log --pretty=format:"- %s" --no-merges)
@@ -56,7 +56,7 @@ jobs:
             # Get commits since last tag
             CHANGELOG=$(git log --pretty=format:"- %s" --no-merges ${PREV_TAG}..HEAD)
           fi
-          
+
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -72,12 +72,12 @@ jobs:
           body: |
             ## Changes
             ${{ steps.changelog.outputs.changelog }}
-            
+
             ## Docker Image
             ```bash
             docker pull ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
             ```
-            
+
             ## Quick Start
             ```bash
             # Using Docker Compose

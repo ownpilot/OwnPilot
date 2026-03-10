@@ -267,9 +267,18 @@ export function ToolGroupsPage() {
           ]}
           steps={[
             { title: 'Create a group', detail: 'Groups are auto-detected from tool categories.' },
-            { title: 'Add tools to the group', detail: 'Each group contains related tools automatically.' },
-            { title: 'Assign to agents', detail: 'Control which agents have access to which groups.' },
-            { title: 'Control access', detail: 'Enable or disable groups to manage available tools.' },
+            {
+              title: 'Add tools to the group',
+              detail: 'Each group contains related tools automatically.',
+            },
+            {
+              title: 'Assign to agents',
+              detail: 'Control which agents have access to which groups.',
+            },
+            {
+              title: 'Control access',
+              detail: 'Enable or disable groups to manage available tools.',
+            },
           ]}
         />
       )}

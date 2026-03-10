@@ -226,9 +226,15 @@ export function ModelsPage() {
             },
           ]}
           steps={[
-            { title: 'Browse available models', detail: 'Explore models from all configured providers.' },
+            {
+              title: 'Browse available models',
+              detail: 'Explore models from all configured providers.',
+            },
             { title: 'Compare capabilities', detail: 'Check context size, pricing, and features.' },
-            { title: 'Select for your agents', detail: 'Assign models to agents in the Agents page.' },
+            {
+              title: 'Select for your agents',
+              detail: 'Assign models to agents in the Agents page.',
+            },
             { title: 'Monitor usage', detail: 'Track token consumption and costs over time.' },
           ]}
         />

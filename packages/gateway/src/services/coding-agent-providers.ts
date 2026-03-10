@@ -142,7 +142,9 @@ export function buildClaudeCodePermissionArgs(perms: CodingAgentPermissions): st
 /**
  * Merge user-supplied permissions with defaults.
  */
-export function resolvePermissions(perms?: CodingAgentPermissions): Required<CodingAgentPermissions> {
+export function resolvePermissions(
+  perms?: CodingAgentPermissions
+): Required<CodingAgentPermissions> {
   if (!perms) return { ...DEFAULT_CODING_AGENT_PERMISSIONS };
   return { ...DEFAULT_CODING_AGENT_PERMISSIONS, ...perms };
 }
@@ -245,10 +247,7 @@ export async function runClaudeCode(
  * Run a task using the OpenAI Codex CLI.
  * API key is optional — Codex supports ChatGPT account login.
  */
-export async function runCodex(
-  task: CodingAgentTask,
-  apiKey?: string
-): Promise<CodingAgentResult> {
+export async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
   const start = Date.now();
   const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);

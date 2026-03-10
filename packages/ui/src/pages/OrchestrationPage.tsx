@@ -607,7 +607,10 @@ export function OrchestrationPage() {
             <RefreshCw className="w-4 h-4 text-text-muted" />
           </button>
           <button
-            onClick={() => { setTab('orchestration'); setShowNewForm((s) => !s); }}
+            onClick={() => {
+              setTab('orchestration');
+              setShowNewForm((s) => !s);
+            }}
             className="flex items-center gap-1.5 px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Play className="w-4 h-4" />
@@ -656,7 +659,8 @@ export function OrchestrationPage() {
               icon: Shuffle,
               color: 'text-emerald-500 bg-emerald-500/10',
               title: 'Model Routing',
-              description: 'Route tasks to the best model for each step — Claude, Gemini, or Codex.',
+              description:
+                'Route tasks to the best model for each step — Claude, Gemini, or Codex.',
             },
             {
               icon: Layers,
@@ -672,13 +676,30 @@ export function OrchestrationPage() {
             },
           ]}
           steps={[
-            { title: 'Design your pipeline', detail: 'Define the sequence of steps your AI should execute.' },
-            { title: 'Configure model routing', detail: 'Pick the best CLI tool for each step in the pipeline.' },
-            { title: 'Set execution rules', detail: 'Choose auto-mode, analysis, and fallback behavior.' },
-            { title: 'Deploy & monitor', detail: 'Launch your pipeline and track progress in real time.' },
+            {
+              title: 'Design your pipeline',
+              detail: 'Define the sequence of steps your AI should execute.',
+            },
+            {
+              title: 'Configure model routing',
+              detail: 'Pick the best CLI tool for each step in the pipeline.',
+            },
+            {
+              title: 'Set execution rules',
+              detail: 'Choose auto-mode, analysis, and fallback behavior.',
+            },
+            {
+              title: 'Deploy & monitor',
+              detail: 'Launch your pipeline and track progress in real time.',
+            },
           ]}
           quickActions={[
-            { label: 'View Orchestration', icon: GitMerge, description: 'View and manage your orchestration pipelines.', onClick: () => setTab('orchestration') },
+            {
+              label: 'View Orchestration',
+              icon: GitMerge,
+              description: 'View and manage your orchestration pipelines.',
+              onClick: () => setTab('orchestration'),
+            },
           ]}
         />
       )}
@@ -850,8 +871,9 @@ export function OrchestrationPage() {
                       Select a run or start a new orchestration
                     </p>
                     <p className="text-xs text-text-muted/60 mt-1 max-w-sm mx-auto">
-                      Set a goal, pick a CLI tool (Claude Code, Codex, Gemini), and let OwnPilot chain
-                      sessions together — analyzing output and deciding next steps automatically.
+                      Set a goal, pick a CLI tool (Claude Code, Codex, Gemini), and let OwnPilot
+                      chain sessions together — analyzing output and deciding next steps
+                      automatically.
                     </p>
                   </div>
                 </div>

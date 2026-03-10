@@ -37,9 +37,7 @@ function hasGroups(api: unknown): api is ChannelAPIWithGroups {
 }
 
 /** Decode and normalize a group JID from a URL parameter. */
-function decodeGroupJid(
-  rawJid: string
-): { ok: true; jid: string } | { ok: false; error: string } {
+function decodeGroupJid(rawJid: string): { ok: true; jid: string } | { ok: false; error: string } {
   let jid: string;
   try {
     jid = decodeURIComponent(rawJid);

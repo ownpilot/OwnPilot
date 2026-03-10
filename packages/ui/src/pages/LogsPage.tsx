@@ -4,13 +4,7 @@ import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
-import {
-  Home,
-  FileText,
-  Activity,
-  Search,
-  Terminal,
-} from '../components/icons';
+import { Home, FileText, Activity, Search, Terminal } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';

@@ -73,16 +73,26 @@ export function mapSessionUpdate(
       return [mapToolCall(update as ToolCall & { sessionUpdate: 'tool_call' }, base)];
 
     case 'tool_call_update':
-      return [mapToolCallUpdate(update as ToolCallUpdate & { sessionUpdate: 'tool_call_update' }, base)];
+      return [
+        mapToolCallUpdate(update as ToolCallUpdate & { sessionUpdate: 'tool_call_update' }, base),
+      ];
 
     case 'plan':
       return [mapPlan(update as Plan & { sessionUpdate: 'plan' }, base)];
 
     case 'agent_message_chunk':
-      return [mapMessage(update as ContentChunk & { sessionUpdate: 'agent_message_chunk' }, base, 'assistant')];
+      return [
+        mapMessage(
+          update as ContentChunk & { sessionUpdate: 'agent_message_chunk' },
+          base,
+          'assistant'
+        ),
+      ];
 
     case 'user_message_chunk':
-      return [mapMessage(update as ContentChunk & { sessionUpdate: 'user_message_chunk' }, base, 'user')];
+      return [
+        mapMessage(update as ContentChunk & { sessionUpdate: 'user_message_chunk' }, base, 'user'),
+      ];
 
     case 'agent_thought_chunk':
       return [mapThought(update as ContentChunk & { sessionUpdate: 'agent_thought_chunk' }, base)];
@@ -140,7 +150,10 @@ function mapToolCall(
   };
 
   const event: AcpToolCallEvent = { ...base, toolCall };
-  return { type: 'coding-agent:acp:tool-call', payload: event as unknown as Record<string, unknown> };
+  return {
+    type: 'coding-agent:acp:tool-call',
+    payload: event as unknown as Record<string, unknown>,
+  };
 }
 
 function mapToolCallUpdate(
@@ -156,13 +169,13 @@ function mapToolCallUpdate(
     title: update.title ?? undefined,
   };
 
-  return { type: 'coding-agent:acp:tool-update', payload: event as unknown as Record<string, unknown> };
+  return {
+    type: 'coding-agent:acp:tool-update',
+    payload: event as unknown as Record<string, unknown>,
+  };
 }
 
-function mapPlan(
-  update: Plan,
-  base: { sessionId: string; timestamp: string }
-): MappedAcpEvent {
+function mapPlan(update: Plan, base: { sessionId: string; timestamp: string }): MappedAcpEvent {
   const plan: AcpPlan = {
     entries: (update.entries ?? []).map((entry) => ({
       content: entry.content,

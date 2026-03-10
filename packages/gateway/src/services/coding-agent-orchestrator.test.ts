@@ -180,9 +180,7 @@ describe('Coding Agent Orchestrator', () => {
 
       await startOrchestration({ goal: 'Fix bug', provider: 'codex', cwd: '/' }, USER_ID);
 
-      expect(mockRunsRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ maxSteps: 10 })
-      );
+      expect(mockRunsRepo.create).toHaveBeenCalledWith(expect.objectContaining({ maxSteps: 10 }));
     });
 
     it('broadcasts orchestration:created event', async () => {
@@ -190,10 +188,7 @@ describe('Coding Agent Orchestrator', () => {
       mockRunsRepo.create.mockResolvedValue(record);
       mockResultsRepo.getBySessionId.mockResolvedValue(null);
 
-      await startOrchestration(
-        { goal: 'Deploy', provider: 'claude-code', cwd: '/app' },
-        USER_ID
-      );
+      await startOrchestration({ goal: 'Deploy', provider: 'claude-code', cwd: '/app' }, USER_ID);
 
       expect(mockBroadcast).toHaveBeenCalledWith(
         'orchestration:created',
@@ -211,9 +206,7 @@ describe('Coding Agent Orchestrator', () => {
         USER_ID
       );
 
-      expect(mockRunsRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ maxSteps: 3 })
-      );
+      expect(mockRunsRepo.create).toHaveBeenCalledWith(expect.objectContaining({ maxSteps: 3 }));
     });
 
     it('passes skillIds and permissions through', async () => {
@@ -442,10 +435,7 @@ describe('Coding Agent Orchestrator', () => {
       mockRunsRepo.create.mockResolvedValue(record);
       mockService.createSession.mockRejectedValueOnce(new Error('Provider unavailable'));
 
-      await startOrchestration(
-        { goal: 'Task', provider: 'claude-code', cwd: '/' },
-        USER_ID
-      );
+      await startOrchestration({ goal: 'Task', provider: 'claude-code', cwd: '/' }, USER_ID);
 
       await vi.waitFor(
         () => {

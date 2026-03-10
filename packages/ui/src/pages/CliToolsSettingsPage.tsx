@@ -233,7 +233,9 @@ export function CliToolsSettingsPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
-          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">CLI Tools</h2>
+          <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+            CLI Tools
+          </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
             Manage CLI tools the AI can discover, execute, and install.{' '}
             <Link to="/autonomy" className="text-primary hover:underline">
@@ -264,11 +266,15 @@ export function CliToolsSettingsPage() {
       {/* URL-based tabs */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'settings'] as TabId[]).map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)}
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === t ? 'border-primary text-primary'
+              activeTab === t
+                ? 'border-primary text-primary'
                 : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
-            }`}>
+            }`}
+          >
             {t === 'home' && <Home className="w-3.5 h-3.5" />}
             {TAB_LABELS[t]}
           </button>
@@ -277,240 +283,280 @@ export function CliToolsSettingsPage() {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-      {/* Home Tab */}
-      {activeTab === 'home' && (
-        <PageHomeTab
-          heroIcons={[
-            { icon: Terminal, color: 'text-primary bg-primary/10' },
-            { icon: Wrench, color: 'text-orange-500 bg-orange-500/10' },
-            { icon: Settings, color: 'text-violet-500 bg-violet-500/10' },
-          ]}
-          title="Configure CLI Tools"
-          subtitle="Manage which command-line tools your AI can access — shells, package managers, system utilities, and custom scripts."
-          cta={{ label: 'View Settings', icon: Settings, onClick: () => setActiveTab('settings') }}
-          features={[
-            { icon: Terminal, color: 'text-blue-500 bg-blue-500/10', title: 'Tool Registry', description: 'Browse and manage all discovered CLI tools in one place.' },
-            { icon: Lock, color: 'text-violet-500 bg-violet-500/10', title: 'Permission Control', description: 'Set per-tool policies: allowed, prompt, or blocked.' },
-            { icon: Code, color: 'text-green-500 bg-green-500/10', title: 'Custom Scripts', description: 'Register your own CLI tools and custom scripts.' },
-            { icon: Shield, color: 'text-amber-500 bg-amber-500/10', title: 'Sandboxing', description: 'Risk-level classification ensures safe tool execution.' },
-          ]}
-          steps={[
-            { title: 'Browse available tools', detail: 'The system automatically discovers CLI tools installed on your machine.' },
-            { title: 'Enable or disable access', detail: 'Set each tool to allowed, prompt-before-use, or blocked.' },
-            { title: 'Set execution limits', detail: 'Configure risk levels and batch-apply policies by risk category.' },
-            { title: 'Test tool execution', detail: 'Verify tools work correctly before letting the AI use them.' },
-          ]}
-        />
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && (<>
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold">{tools.length}</div>
-          <div className="text-sm text-muted-foreground">Total Tools</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-green-400">{installed}</div>
-          <div className="text-sm text-muted-foreground">Installed</div>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-2xl font-bold text-blue-400">{npxOnly}</div>
-          <div className="text-sm text-muted-foreground">npx Available</div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-3">
-        <span className="text-xs font-medium text-muted-foreground">Quick actions:</span>
-        <button
-          onClick={() => handleBatchPolicy('low', 'allowed')}
-          className="rounded border border-green-500/30 px-2 py-1 text-xs text-green-400 hover:bg-green-500/10"
-        >
-          Allow All Low-Risk
-        </button>
-        <button
-          onClick={() => handleBatchPolicy('high', 'blocked')}
-          className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
-        >
-          Block All High-Risk
-        </button>
-        <button
-          onClick={() => handleBatchPolicy('critical', 'blocked')}
-          className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
-        >
-          Block All Critical
-        </button>
-      </div>
-
-      {/* Policy legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        {POLICY_OPTIONS.map((opt) => (
-          <span key={opt.value} className="flex items-center gap-1">
-            <span className={POLICY_INDICATOR[opt.value].color}>
-              {POLICY_INDICATOR[opt.value].icon}
-            </span>
-            <span className="font-medium">{opt.label}</span>
-            <span>&mdash; {opt.description}</span>
-          </span>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search tools..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-3 text-sm"
+        {/* Home Tab */}
+        {activeTab === 'home' && (
+          <PageHomeTab
+            heroIcons={[
+              { icon: Terminal, color: 'text-primary bg-primary/10' },
+              { icon: Wrench, color: 'text-orange-500 bg-orange-500/10' },
+              { icon: Settings, color: 'text-violet-500 bg-violet-500/10' },
+            ]}
+            title="Configure CLI Tools"
+            subtitle="Manage which command-line tools your AI can access — shells, package managers, system utilities, and custom scripts."
+            cta={{
+              label: 'View Settings',
+              icon: Settings,
+              onClick: () => setActiveTab('settings'),
+            }}
+            features={[
+              {
+                icon: Terminal,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Tool Registry',
+                description: 'Browse and manage all discovered CLI tools in one place.',
+              },
+              {
+                icon: Lock,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Permission Control',
+                description: 'Set per-tool policies: allowed, prompt, or blocked.',
+              },
+              {
+                icon: Code,
+                color: 'text-green-500 bg-green-500/10',
+                title: 'Custom Scripts',
+                description: 'Register your own CLI tools and custom scripts.',
+              },
+              {
+                icon: Shield,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'Sandboxing',
+                description: 'Risk-level classification ensures safe tool execution.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Browse available tools',
+                detail: 'The system automatically discovers CLI tools installed on your machine.',
+              },
+              {
+                title: 'Enable or disable access',
+                detail: 'Set each tool to allowed, prompt-before-use, or blocked.',
+              },
+              {
+                title: 'Set execution limits',
+                detail: 'Configure risk levels and batch-apply policies by risk category.',
+              },
+              {
+                title: 'Test tool execution',
+                detail: 'Verify tools work correctly before letting the AI use them.',
+              },
+            ]}
           />
-        </div>
-        <div className="flex items-center gap-1">
-          <Filter className="h-4 w-4 text-muted-foreground" />
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as CliToolCategory | 'all')}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
-          >
-            <option value="all">All Categories</option>
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        )}
 
-      {/* Tools by category */}
-      {categories.map((category) => (
-        <div key={category} className="space-y-2">
-          <h2 className="text-lg font-semibold">{CATEGORY_LABELS[category] || category}</h2>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-card/50">
-                  <th className="px-4 py-2 text-left font-medium">Tool</th>
-                  <th className="px-4 py-2 text-left font-medium">Status</th>
-                  <th className="px-4 py-2 text-left font-medium">Version</th>
-                  <th className="px-4 py-2 text-left font-medium">Risk</th>
-                  <th className="px-4 py-2 text-left font-medium">Policy</th>
-                  <th className="px-4 py-2 text-left font-medium">AI Behavior</th>
-                  <th className="px-4 py-2 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTools
-                  .filter((t) => t.category === category)
-                  .map((tool) => {
-                    const indicator = POLICY_INDICATOR[tool.policy];
-                    return (
-                      <tr key={tool.name} className="border-b border-border last:border-0">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{tool.displayName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {tool.name}
-                            {tool.source === 'custom' && (
-                              <span className="ml-1 rounded bg-blue-500/20 px-1 text-blue-400">
-                                custom
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          {tool.installed ? (
-                            <span className="inline-flex items-center gap-1 text-green-400">
-                              <CheckCircle2 className="h-4 w-4" />
-                              Installed
-                            </span>
-                          ) : tool.npxAvailable ? (
-                            <span className="inline-flex items-center gap-1 text-blue-400">
-                              <AlertCircle className="h-4 w-4" />
-                              npx
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-muted-foreground">
-                              <XCircle className="h-4 w-4" />
-                              Missing
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{tool.version || '-'}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${RISK_COLORS[tool.riskLevel]}`}
-                          >
-                            {tool.riskLevel}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <select
-                            value={tool.policy}
-                            onChange={(e) =>
-                              handlePolicyChange(tool.name, e.target.value as CliToolPolicy)
-                            }
-                            className="rounded border border-border bg-card px-2 py-1 text-xs"
-                          >
-                            {POLICY_OPTIONS.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs ${indicator.color}`}>
-                            {indicator.icon} {indicator.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {!tool.installed && tool.npxAvailable && (
-                              <button
-                                onClick={() => handleInstall(tool.name)}
-                                disabled={installingTool === tool.name}
-                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-accent"
-                              >
-                                {installingTool === tool.name ? (
-                                  <RefreshCw className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Download className="h-3 w-3" />
-                                )}
-                                Install
-                              </button>
-                            )}
-                            {tool.source === 'custom' && (
-                              <button
-                                onClick={() => handleDeleteCustom(tool.name)}
-                                className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <>
+            <div className="p-6 max-w-5xl mx-auto space-y-6">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="text-2xl font-bold">{tools.length}</div>
+                  <div className="text-sm text-muted-foreground">Total Tools</div>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="text-2xl font-bold text-green-400">{installed}</div>
+                  <div className="text-sm text-muted-foreground">Installed</div>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="text-2xl font-bold text-blue-400">{npxOnly}</div>
+                  <div className="text-sm text-muted-foreground">npx Available</div>
+                </div>
+              </div>
 
-      {filteredTools.length === 0 && (
-        <div className="flex flex-col items-center py-12 text-muted-foreground">
-          <Shield className="mb-2 h-8 w-8" />
-          <p>No tools match your filters</p>
-        </div>
-      )}
-      </div>
-      </>)}
+              {/* Quick Actions */}
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-3">
+                <span className="text-xs font-medium text-muted-foreground">Quick actions:</span>
+                <button
+                  onClick={() => handleBatchPolicy('low', 'allowed')}
+                  className="rounded border border-green-500/30 px-2 py-1 text-xs text-green-400 hover:bg-green-500/10"
+                >
+                  Allow All Low-Risk
+                </button>
+                <button
+                  onClick={() => handleBatchPolicy('high', 'blocked')}
+                  className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                >
+                  Block All High-Risk
+                </button>
+                <button
+                  onClick={() => handleBatchPolicy('critical', 'blocked')}
+                  className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                >
+                  Block All Critical
+                </button>
+              </div>
+
+              {/* Policy legend */}
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                {POLICY_OPTIONS.map((opt) => (
+                  <span key={opt.value} className="flex items-center gap-1">
+                    <span className={POLICY_INDICATOR[opt.value].color}>
+                      {POLICY_INDICATOR[opt.value].icon}
+                    </span>
+                    <span className="font-medium">{opt.label}</span>
+                    <span>&mdash; {opt.description}</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search tools..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-3 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value as CliToolCategory | 'all')}
+                    className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Categories</option>
+                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tools by category */}
+              {categories.map((category) => (
+                <div key={category} className="space-y-2">
+                  <h2 className="text-lg font-semibold">{CATEGORY_LABELS[category] || category}</h2>
+                  <div className="overflow-hidden rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-card/50">
+                          <th className="px-4 py-2 text-left font-medium">Tool</th>
+                          <th className="px-4 py-2 text-left font-medium">Status</th>
+                          <th className="px-4 py-2 text-left font-medium">Version</th>
+                          <th className="px-4 py-2 text-left font-medium">Risk</th>
+                          <th className="px-4 py-2 text-left font-medium">Policy</th>
+                          <th className="px-4 py-2 text-left font-medium">AI Behavior</th>
+                          <th className="px-4 py-2 text-right font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTools
+                          .filter((t) => t.category === category)
+                          .map((tool) => {
+                            const indicator = POLICY_INDICATOR[tool.policy];
+                            return (
+                              <tr key={tool.name} className="border-b border-border last:border-0">
+                                <td className="px-4 py-3">
+                                  <div className="font-medium">{tool.displayName}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {tool.name}
+                                    {tool.source === 'custom' && (
+                                      <span className="ml-1 rounded bg-blue-500/20 px-1 text-blue-400">
+                                        custom
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  {tool.installed ? (
+                                    <span className="inline-flex items-center gap-1 text-green-400">
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      Installed
+                                    </span>
+                                  ) : tool.npxAvailable ? (
+                                    <span className="inline-flex items-center gap-1 text-blue-400">
+                                      <AlertCircle className="h-4 w-4" />
+                                      npx
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                      <XCircle className="h-4 w-4" />
+                                      Missing
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-muted-foreground">
+                                  {tool.version || '-'}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${RISK_COLORS[tool.riskLevel]}`}
+                                  >
+                                    {tool.riskLevel}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <select
+                                    value={tool.policy}
+                                    onChange={(e) =>
+                                      handlePolicyChange(tool.name, e.target.value as CliToolPolicy)
+                                    }
+                                    className="rounded border border-border bg-card px-2 py-1 text-xs"
+                                  >
+                                    {POLICY_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs ${indicator.color}`}>
+                                    {indicator.icon} {indicator.label}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className="flex items-center justify-end gap-1">
+                                    {!tool.installed && tool.npxAvailable && (
+                                      <button
+                                        onClick={() => handleInstall(tool.name)}
+                                        disabled={installingTool === tool.name}
+                                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs hover:bg-accent"
+                                      >
+                                        {installingTool === tool.name ? (
+                                          <RefreshCw className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <Download className="h-3 w-3" />
+                                        )}
+                                        Install
+                                      </button>
+                                    )}
+                                    {tool.source === 'custom' && (
+                                      <button
+                                        onClick={() => handleDeleteCustom(tool.name)}
+                                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+
+              {filteredTools.length === 0 && (
+                <div className="flex flex-col items-center py-12 text-muted-foreground">
+                  <Shield className="mb-2 h-8 w-8" />
+                  <p>No tools match your filters</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Add Custom Tool Modal (portal to body to escape overflow clipping) */}

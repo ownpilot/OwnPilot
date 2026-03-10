@@ -88,13 +88,15 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
         priority: 10,
       };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow({
-        provider_ref: 'claude-code',
-        type: 'inline',
-        label: 'My Skill',
-        instructions: 'Do this and that',
-        priority: 10,
-      }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        createMockAttachmentRow({
+          provider_ref: 'claude-code',
+          type: 'inline',
+          label: 'My Skill',
+          instructions: 'Do this and that',
+          priority: 10,
+        })
+      );
 
       const result = await repo.create(input, 'default');
 
@@ -124,13 +126,15 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
         priority: 3,
       };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow({
-        type: 'extension',
-        extension_id: 'ext-123',
-        label: null,
-        instructions: null,
-        priority: 3,
-      }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        createMockAttachmentRow({
+          type: 'extension',
+          extension_id: 'ext-123',
+          label: null,
+          instructions: null,
+          priority: 3,
+        })
+      );
 
       const result = await repo.create(input);
 
@@ -150,12 +154,14 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
         type: 'inline' as const,
       };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow({
-        provider_ref: 'test',
-        type: 'inline',
-        priority: 0,
-        active: true,
-      }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        createMockAttachmentRow({
+          provider_ref: 'test',
+          type: 'inline',
+          priority: 0,
+          active: true,
+        })
+      );
 
       await repo.create(input);
 
@@ -236,9 +242,7 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
     });
 
     it('parses numeric priority to number', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockAttachmentRow({ priority: '15' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow({ priority: '15' }));
 
       const result = await repo.getById('attach-123');
 
@@ -247,9 +251,7 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
     });
 
     it('parses boolean active from numeric format', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockAttachmentRow({ active: 0 })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow({ active: 0 }));
 
       const result = await repo.getById('attach-123');
 
@@ -272,7 +274,12 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
       const mockRows = [
         createMockAttachmentRow({ id: 'attach-1', priority: 1, provider_ref: 'claude-code' }),
         createMockAttachmentRow({ id: 'attach-2', priority: 5, provider_ref: 'claude-code' }),
-        createMockAttachmentRow({ id: 'attach-3', priority: 1, provider_ref: 'claude-code', created_at: '2026-01-03T00:00:00Z' }),
+        createMockAttachmentRow({
+          id: 'attach-3',
+          priority: 1,
+          provider_ref: 'claude-code',
+          created_at: '2026-01-03T00:00:00Z',
+        }),
       ];
       mockAdapter.query.mockResolvedValueOnce(mockRows);
 
@@ -354,23 +361,23 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
       const result = await repo.update('attach-123', { label: 'Updated Label' });
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE coding_agent_skill_attachments SET label = $1, updated_at = $2'),
+        expect.stringContaining(
+          'UPDATE coding_agent_skill_attachments SET label = $1, updated_at = $2'
+        ),
         ['Updated Label', expect.any(String), 'attach-123', 'default']
       );
       expect(result?.label).toBe('Updated Label');
     });
 
     it('updates multiple fields', async () => {
-      mockAdapter.queryOne
-        .mockResolvedValueOnce(createMockAttachmentRow())
-        .mockResolvedValueOnce(
-          createMockAttachmentRow({
-            label: 'New Label',
-            instructions: 'New Instructions',
-            priority: 20,
-            active: false,
-          })
-        );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockAttachmentRow()).mockResolvedValueOnce(
+        createMockAttachmentRow({
+          label: 'New Label',
+          instructions: 'New Instructions',
+          priority: 20,
+          active: false,
+        })
+      );
 
       const result = await repo.update('attach-123', {
         label: 'New Label',
@@ -482,9 +489,7 @@ describe('CodingAgentSkillAttachmentsRepository', () => {
 
   describe('codingAgentSkillAttachmentsRepo singleton', () => {
     it('is exported as a singleton instance', () => {
-      expect(codingAgentSkillAttachmentsRepo).toBeInstanceOf(
-        CodingAgentSkillAttachmentsRepository
-      );
+      expect(codingAgentSkillAttachmentsRepo).toBeInstanceOf(CodingAgentSkillAttachmentsRepository);
     });
 
     it('createCodingAgentSkillAttachmentsRepository creates new instances', () => {

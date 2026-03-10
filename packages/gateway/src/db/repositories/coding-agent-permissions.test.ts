@@ -134,10 +134,10 @@ describe('CodingAgentPermissionsRepository', () => {
 
       await repo.getByProvider('claude-code');
 
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.any(String),
-        ['claude-code', 'default']
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.any(String), [
+        'claude-code',
+        'default',
+      ]);
     });
 
     it('handles different io formats', async () => {
@@ -145,9 +145,7 @@ describe('CodingAgentPermissionsRepository', () => {
 
       for (const format of formats) {
         vi.clearAllMocks();
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          createMockPermissionRow({ io_format: format })
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ io_format: format }));
 
         const result = await repo.getByProvider('test');
         expect(result?.ioFormat).toBe(format);
@@ -159,9 +157,7 @@ describe('CodingAgentPermissionsRepository', () => {
 
       for (const level of levels) {
         vi.clearAllMocks();
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          createMockPermissionRow({ fs_access: level })
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ fs_access: level }));
 
         const result = await repo.getByProvider('test');
         expect(result?.fsAccess).toBe(level);
@@ -173,9 +169,7 @@ describe('CodingAgentPermissionsRepository', () => {
 
       for (const level of levels) {
         vi.clearAllMocks();
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          createMockPermissionRow({ autonomy: level })
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ autonomy: level }));
 
         const result = await repo.getByProvider('test');
         expect(result?.autonomy).toBe(level);
@@ -199,9 +193,7 @@ describe('CodingAgentPermissionsRepository', () => {
     });
 
     it('handles empty allowed_dirs', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockPermissionRow({ allowed_dirs: '[]' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ allowed_dirs: '[]' }));
 
       const result = await repo.getByProvider('test');
 
@@ -209,9 +201,7 @@ describe('CodingAgentPermissionsRepository', () => {
     });
 
     it('handles null allowed_dirs', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockPermissionRow({ allowed_dirs: null })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ allowed_dirs: null }));
 
       const result = await repo.getByProvider('test');
 
@@ -361,9 +351,7 @@ describe('CodingAgentPermissionsRepository', () => {
 
     it('handles custom userId', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockPermissionRow({ user_id: 'user-456' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockPermissionRow({ user_id: 'user-456' }));
 
       await repo.upsert({ providerRef: 'test' }, 'user-456');
 

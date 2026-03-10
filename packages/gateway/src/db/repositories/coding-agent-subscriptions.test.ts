@@ -106,9 +106,7 @@ describe('CodingAgentSubscriptionsRepository', () => {
     });
 
     it('handles null tier as undefined', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockSubscriptionRow({ tier: null })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockSubscriptionRow({ tier: null }));
 
       const result = await repo.getByProvider('claude-code');
 
@@ -116,9 +114,7 @@ describe('CodingAgentSubscriptionsRepository', () => {
     });
 
     it('handles null reset_at as undefined', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockSubscriptionRow({ reset_at: null })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockSubscriptionRow({ reset_at: null }));
 
       const result = await repo.getByProvider('claude-code');
 
@@ -405,9 +401,7 @@ describe('CodingAgentSubscriptionsRepository', () => {
     });
 
     it('codingAgentSubscriptionsRepo is singleton', () => {
-      expect(codingAgentSubscriptionsRepo).toBeInstanceOf(
-        CodingAgentSubscriptionsRepository
-      );
+      expect(codingAgentSubscriptionsRepo).toBeInstanceOf(CodingAgentSubscriptionsRepository);
     });
   });
 
@@ -427,9 +421,7 @@ describe('CodingAgentSubscriptionsRepository', () => {
     it('propagates database errors on upsert', async () => {
       mockAdapter.execute.mockRejectedValueOnce(new Error('constraint violation'));
 
-      await expect(repo.upsert({ providerRef: 'test' })).rejects.toThrow(
-        'constraint violation'
-      );
+      await expect(repo.upsert({ providerRef: 'test' })).rejects.toThrow('constraint violation');
     });
 
     it('propagates database errors on addSpend', async () => {

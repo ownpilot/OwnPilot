@@ -430,22 +430,22 @@ export function ChannelsPage() {
 
       {/* Status summary bar */}
       <div className="flex items-center gap-4 px-6 py-2">
-          <div className="flex items-center gap-1.5 text-xs">
-            <div className="w-2 h-2 rounded-full bg-success" />
-            <span className="text-text-secondary dark:text-dark-text-secondary">
-              {summary.connected} Connected
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs">
-            <div className="w-2 h-2 rounded-full bg-text-muted" />
-            <span className="text-text-secondary dark:text-dark-text-secondary">
-              {summary.disconnected} Disconnected
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-text-muted dark:text-dark-text-muted">
-            <Activity className="w-3 h-3" />
-            {summary.total} Total
-          </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-2 h-2 rounded-full bg-success" />
+          <span className="text-text-secondary dark:text-dark-text-secondary">
+            {summary.connected} Connected
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <div className="w-2 h-2 rounded-full bg-text-muted" />
+          <span className="text-text-secondary dark:text-dark-text-secondary">
+            {summary.disconnected} Disconnected
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-text-muted dark:text-dark-text-muted">
+          <Activity className="w-3 h-3" />
+          {summary.total} Total
+        </div>
       </div>
 
       {/* Tab Bar */}
@@ -515,18 +515,15 @@ export function ChannelsPage() {
             steps={[
               {
                 title: 'Choose a platform',
-                detail:
-                  'Select Telegram, WhatsApp, or another supported messaging platform.',
+                detail: 'Select Telegram, WhatsApp, or another supported messaging platform.',
               },
               {
                 title: 'Configure bot tokens',
-                detail:
-                  'Enter your bot token or scan a QR code to authenticate with the platform.',
+                detail: 'Enter your bot token or scan a QR code to authenticate with the platform.',
               },
               {
                 title: 'Connect & test',
-                detail:
-                  'Activate the channel and send a test message to verify everything works.',
+                detail: 'Activate the channel and send a test message to verify everything works.',
               },
               {
                 title: 'Messages flow to your AI',
@@ -548,122 +545,124 @@ export function ChannelsPage() {
 
       {/* Channels Tab */}
       {activeTab === 'channels' && (
-      <>
-      {/* Pairing banner */}
-      <PairingBanner />
+        <>
+          {/* Pairing banner */}
+          <PairingBanner />
 
-      {/* Loading skeleton */}
-      {isLoading ? (
-        <div className="p-6 space-y-4">
-          <div className="flex gap-4">
-            <div className="w-72 space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-16 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse"
-                />
-              ))}
-            </div>
-            <div className="flex-1 h-96 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse" />
-          </div>
-        </div>
-      ) : (
-      /* Main content */
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar — channel list */}
-        <div className="w-72 border-r border-border dark:border-dark-border overflow-y-auto">
-          {channels.length === 0 ? (
-            <div className="p-6 text-center">
-              <Send className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted mb-2" />
-              <p className="text-sm text-text-muted dark:text-dark-text-muted">No channels yet</p>
-              <button
-                onClick={() => setShowSetup(true)}
-                className="mt-2 text-xs text-primary hover:underline"
-              >
-                Set up your first channel
-              </button>
+          {/* Loading skeleton */}
+          {isLoading ? (
+            <div className="p-6 space-y-4">
+              <div className="flex gap-4">
+                <div className="w-72 space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-16 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse"
+                    />
+                  ))}
+                </div>
+                <div className="flex-1 h-96 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg animate-pulse" />
+              </div>
             </div>
           ) : (
-            <div className="p-2 space-y-1">
-              {channels.map((ch) => (
-                <button
-                  key={ch.id}
-                  onClick={() => setSelectedId(ch.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                    selectedId === ch.id
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
-                  }`}
-                >
-                  <div
-                    className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
-                      ch.status === 'connected'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
-                    }`}
-                  >
-                    <PlatformIcon type={ch.type} />
+            /* Main content */
+            <div className="flex-1 flex overflow-hidden">
+              {/* Sidebar — channel list */}
+              <div className="w-72 border-r border-border dark:border-dark-border overflow-y-auto">
+                {channels.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Send className="w-8 h-8 mx-auto text-text-muted dark:text-dark-text-muted mb-2" />
+                    <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                      No channels yet
+                    </p>
+                    <button
+                      onClick={() => setShowSetup(true)}
+                      className="mt-2 text-xs text-primary hover:underline"
+                    >
+                      Set up your first channel
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">
-                        {ch.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full ${getStatusColor(ch.status).replace('text-', 'bg-')}`}
-                      />
-                      <span className="text-[10px] text-text-muted dark:text-dark-text-muted capitalize">
-                        {ch.status}
-                      </span>
-                      {ch.botInfo?.username && (
-                        <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
-                          @{ch.botInfo.username}
-                        </span>
-                      )}
-                    </div>
+                ) : (
+                  <div className="p-2 space-y-1">
+                    {channels.map((ch) => (
+                      <button
+                        key={ch.id}
+                        onClick={() => setSelectedId(ch.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                          selectedId === ch.id
+                            ? 'bg-primary/10 border border-primary/30'
+                            : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
+                        }`}
+                      >
+                        <div
+                          className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
+                            ch.status === 'connected'
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted'
+                          }`}
+                        >
+                          <PlatformIcon type={ch.type} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary truncate">
+                              {ch.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${getStatusColor(ch.status).replace('text-', 'bg-')}`}
+                            />
+                            <span className="text-[10px] text-text-muted dark:text-dark-text-muted capitalize">
+                              {ch.status}
+                            </span>
+                            {ch.botInfo?.username && (
+                              <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                                @{ch.botInfo.username}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+                )}
+              </div>
 
-        {/* Detail panel */}
-        <div className="flex-1 overflow-y-auto">
-          {selectedChannel ? (
-            <ChannelDetail
-              channel={selectedChannel}
-              users={users}
-              stats={stats}
-              isLoading={detailLoading}
-              actionLoading={actionLoading}
-              onConnect={handleConnect}
-              onDisconnect={handleDisconnect}
-              onLogout={handleLogout}
-              onReconnect={handleReconnect}
-              onClearMessages={handleClearMessages}
-              onSendTest={handleSendTest}
-              onApproveUser={handleApproveUser}
-              onBlockUser={handleBlockUser}
-              onUnblockUser={handleUnblockUser}
-              onDeleteUser={handleDeleteUser}
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <Send className="w-10 h-10 mx-auto text-text-muted dark:text-dark-text-muted mb-3" />
-                <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                  Select a channel to view details
-                </p>
+              {/* Detail panel */}
+              <div className="flex-1 overflow-y-auto">
+                {selectedChannel ? (
+                  <ChannelDetail
+                    channel={selectedChannel}
+                    users={users}
+                    stats={stats}
+                    isLoading={detailLoading}
+                    actionLoading={actionLoading}
+                    onConnect={handleConnect}
+                    onDisconnect={handleDisconnect}
+                    onLogout={handleLogout}
+                    onReconnect={handleReconnect}
+                    onClearMessages={handleClearMessages}
+                    onSendTest={handleSendTest}
+                    onApproveUser={handleApproveUser}
+                    onBlockUser={handleBlockUser}
+                    onUnblockUser={handleUnblockUser}
+                    onDeleteUser={handleDeleteUser}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <Send className="w-10 h-10 mx-auto text-text-muted dark:text-dark-text-muted mb-3" />
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                        Select a channel to view details
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
-        </div>
-      </div>
-      )}
-      </>
+        </>
       )}
 
       {/* Setup modal */}

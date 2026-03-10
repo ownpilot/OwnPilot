@@ -112,7 +112,6 @@ const TAB_LABELS: Record<TabId, string> = {
   activity: 'Activity',
 };
 
-
 export function TriggersPage() {
   const { confirm } = useDialog();
   const toast = useToast();
@@ -541,7 +540,9 @@ export function TriggersPage() {
       )}
 
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}>
+      <div
+        className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}
+      >
         {activeTab === 'triggers' ? (
           // Triggers List
           isLoading ? (

@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { mapSessionNotification, mapSessionUpdate, type MappedAcpEvent } from './acp-event-mapper.js';
+import {
+  mapSessionNotification,
+  mapSessionUpdate,
+  type MappedAcpEvent,
+} from './acp-event-mapper.js';
 
 // Freeze time for deterministic timestamps
 beforeEach(() => {
@@ -230,7 +234,9 @@ describe('acp-event-mapper', () => {
       };
       const [event] = mapSessionUpdate(update as any, SESSION_ID, ACP_SESSION_ID);
       expect(event.type).toBe('coding-agent:acp:config-update');
-      expect((event.payload as any).configOptions).toEqual([{ id: 'opt-1', name: 'Safety', value: 'on' }]);
+      expect((event.payload as any).configOptions).toEqual([
+        { id: 'opt-1', name: 'Safety', value: 'on' },
+      ]);
     });
   });
 
@@ -275,9 +281,7 @@ describe('acp-event-mapper', () => {
         sessionUpdate: 'tool_call',
         toolCallId: 'tc-diff',
         title: 'Edit file',
-        content: [
-          { type: 'diff', path: '/file.ts', oldText: null, newText: 'new content' },
-        ],
+        content: [{ type: 'diff', path: '/file.ts', oldText: null, newText: 'new content' }],
       };
       const [event] = mapSessionUpdate(update as any, SESSION_ID, ACP_SESSION_ID);
       const content = (event.payload as any).toolCall.content;
@@ -303,9 +307,7 @@ describe('acp-event-mapper', () => {
         sessionUpdate: 'tool_call',
         toolCallId: 'tc-content',
         title: 'Content',
-        content: [
-          { type: 'content', content: { type: 'text', text: 'hello' } },
-        ],
+        content: [{ type: 'content', content: { type: 'text', text: 'hello' } }],
       };
       const [event] = mapSessionUpdate(update as any, SESSION_ID, ACP_SESSION_ID);
       const content = (event.payload as any).toolCall.content;
@@ -341,10 +343,7 @@ describe('acp-event-mapper', () => {
         sessionUpdate: 'tool_call',
         toolCallId: 'tc-loc',
         title: 'Loc',
-        locations: [
-          { path: '/a.ts', line: 42 },
-          { path: '/b.ts' },
-        ],
+        locations: [{ path: '/a.ts', line: 42 }, { path: '/b.ts' }],
       };
       const [event] = mapSessionUpdate(update as any, SESSION_ID, ACP_SESSION_ID);
       const locations = (event.payload as any).toolCall.locations;

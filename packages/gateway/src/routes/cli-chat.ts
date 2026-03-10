@@ -36,7 +36,11 @@ app.get('/providers/:id', (c) => {
   const id = c.req.param('id');
   const def = getCliChatProviderDefinition(id);
   if (!def) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` },
+      404
+    );
   }
 
   const version = def.installed ? getBinaryVersion(def.binary) : undefined;
@@ -52,25 +56,40 @@ app.post('/test/:id', async (c) => {
   const id = c.req.param('id');
 
   if (!isCliChatProvider(id)) {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: `Not a CLI chat provider: ${id}` }, 400);
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: `Not a CLI chat provider: ${id}` },
+      400
+    );
   }
 
   const binary = getCliBinaryFromProviderId(id);
   if (!binary) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` },
+      404
+    );
   }
 
   if (!isBinaryInstalled(binary)) {
     return apiError(
       c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: `CLI binary "${binary}" is not installed. Install it first.` },
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: `CLI binary "${binary}" is not installed. Install it first.`,
+      },
       400
     );
   }
 
   const def = getCliChatProviderDefinition(id);
   if (!def) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` },
+      404
+    );
   }
 
   try {
@@ -82,7 +101,10 @@ app.post('/test/:id', async (c) => {
 
     const result = await provider.complete({
       messages: [
-        { role: 'user' as const, content: 'Say "CLI chat provider test successful" and nothing else.' },
+        {
+          role: 'user' as const,
+          content: 'Say "CLI chat provider test successful" and nothing else.',
+        },
       ],
       model: { model: def.defaultModel },
     });
@@ -118,7 +140,11 @@ app.get('/models/:id', (c) => {
   const id = c.req.param('id');
   const def = getCliChatProviderDefinition(id);
   if (!def) {
-    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` }, 404);
+    return apiError(
+      c,
+      { code: ERROR_CODES.NOT_FOUND, message: `Unknown CLI chat provider: ${id}` },
+      404
+    );
   }
 
   return apiResponse(

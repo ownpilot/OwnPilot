@@ -429,11 +429,15 @@ export function ApiKeysPage() {
       {/* URL-based tabs */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'keys'] as TabId[]).map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)}
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === t ? 'border-primary text-primary'
+              activeTab === t
+                ? 'border-primary text-primary'
                 : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
-            }`}>
+            }`}
+          >
             {t === 'home' && <Home className="w-3.5 h-3.5" />}
             {TAB_LABELS[t]}
           </button>
@@ -453,16 +457,48 @@ export function ApiKeysPage() {
             subtitle="Create and manage API keys for programmatic access to your OwnPilot instance. Each key has scoped permissions and usage tracking."
             cta={{ label: 'Manage Keys', icon: Key, onClick: () => setActiveTab('keys') }}
             features={[
-              { icon: Lock, color: 'text-violet-500 bg-violet-500/10', title: 'Scoped Permissions', description: 'Each API key can be restricted to specific actions and resources.' },
-              { icon: BarChart, color: 'text-blue-500 bg-blue-500/10', title: 'Usage Tracking', description: 'Monitor how each key is being used with detailed analytics.' },
-              { icon: RefreshCw, color: 'text-green-500 bg-green-500/10', title: 'Key Rotation', description: 'Rotate keys regularly to maintain security best practices.' },
-              { icon: Gauge, color: 'text-amber-500 bg-amber-500/10', title: 'Rate Limiting', description: 'Set per-key rate limits to prevent abuse and control costs.' },
+              {
+                icon: Lock,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Scoped Permissions',
+                description: 'Each API key can be restricted to specific actions and resources.',
+              },
+              {
+                icon: BarChart,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Usage Tracking',
+                description: 'Monitor how each key is being used with detailed analytics.',
+              },
+              {
+                icon: RefreshCw,
+                color: 'text-green-500 bg-green-500/10',
+                title: 'Key Rotation',
+                description: 'Rotate keys regularly to maintain security best practices.',
+              },
+              {
+                icon: Gauge,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'Rate Limiting',
+                description: 'Set per-key rate limits to prevent abuse and control costs.',
+              },
             ]}
             steps={[
-              { title: 'Generate a new key', detail: 'Create an API key with a descriptive name for easy identification.' },
-              { title: 'Set permission scope', detail: 'Choose which APIs and resources the key can access.' },
-              { title: 'Use in your applications', detail: 'Add the key to your application headers for authenticated requests.' },
-              { title: 'Monitor usage & rotate', detail: 'Track usage patterns and rotate keys periodically for security.' },
+              {
+                title: 'Generate a new key',
+                detail: 'Create an API key with a descriptive name for easy identification.',
+              },
+              {
+                title: 'Set permission scope',
+                detail: 'Choose which APIs and resources the key can access.',
+              },
+              {
+                title: 'Use in your applications',
+                detail: 'Add the key to your application headers for authenticated requests.',
+              },
+              {
+                title: 'Monitor usage & rotate',
+                detail: 'Track usage patterns and rotate keys periodically for security.',
+              },
             ]}
           />
         </div>
@@ -470,185 +506,186 @@ export function ApiKeysPage() {
 
       {/* Keys Tab */}
       {activeTab === 'keys' && (
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <LoadingSpinner message="Loading settings..." />
-        ) : (
-          <div className="space-y-8">
-            {/* Error message */}
-            {error && (
-              <div className="p-4 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">{error}</span>
-              </div>
-            )}
-
-            {/* Status banner */}
-            {configuredProviders.length === 0 && (
-              <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                <p className="text-sm text-warning">
-                  <strong>Demo Mode:</strong> No API keys configured. Add at least one API key to
-                  use AI features.
-                </p>
-              </div>
-            )}
-
-            {/* Configured providers summary */}
-            {configuredProviders.length > 0 && (
-              <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
-                <p className="text-sm text-success">
-                  <strong>
-                    {configuredProviders.length} provider{configuredProviders.length > 1 ? 's' : ''}{' '}
-                    configured:
-                  </strong>{' '}
-                  {configuredProviders.slice(0, 5).join(', ')}
-                  {configuredProviders.length > 5 && ` and ${configuredProviders.length - 5} more`}
-                </p>
-              </div>
-            )}
-
-            {/* Default Provider & Model Selection */}
-            {configuredProviders.length > 0 && (
-              <section className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-                <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4">
-                  Default AI Settings
-                </h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                      Default Provider
-                    </label>
-                    <select
-                      value={defaultProvider}
-                      onChange={(e) => handleDefaultProviderChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                      {configuredProviders.map((id) => {
-                        const provider = getProviderById(id);
-                        return (
-                          <option key={id} value={id}>
-                            {provider?.name || id}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
-                      Default Model
-                    </label>
-                    <select
-                      value={defaultModel}
-                      onChange={(e) => handleDefaultModelChange(e.target.value)}
-                      className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                      {providerModels.length > 0 ? (
-                        providerModels.map((model) => (
-                          <option key={model.id} value={model.id}>
-                            {model.name} {model.recommended ? '(Recommended)' : ''}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>
-                          No models available
-                        </option>
-                      )}
-                    </select>
-                  </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <LoadingSpinner message="Loading settings..." />
+          ) : (
+            <div className="space-y-8">
+              {/* Error message */}
+              {error && (
+                <div className="p-4 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">{error}</span>
                 </div>
-                <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-                  These settings are used as defaults when starting a new chat.
+              )}
+
+              {/* Status banner */}
+              {configuredProviders.length === 0 && (
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                  <p className="text-sm text-warning">
+                    <strong>Demo Mode:</strong> No API keys configured. Add at least one API key to
+                    use AI features.
+                  </p>
+                </div>
+              )}
+
+              {/* Configured providers summary */}
+              {configuredProviders.length > 0 && (
+                <div className="p-4 bg-success/10 border border-success/20 rounded-lg">
+                  <p className="text-sm text-success">
+                    <strong>
+                      {configuredProviders.length} provider
+                      {configuredProviders.length > 1 ? 's' : ''} configured:
+                    </strong>{' '}
+                    {configuredProviders.slice(0, 5).join(', ')}
+                    {configuredProviders.length > 5 &&
+                      ` and ${configuredProviders.length - 5} more`}
+                  </p>
+                </div>
+              )}
+
+              {/* Default Provider & Model Selection */}
+              {configuredProviders.length > 0 && (
+                <section className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+                  <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4">
+                    Default AI Settings
+                  </h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                        Default Provider
+                      </label>
+                      <select
+                        value={defaultProvider}
+                        onChange={(e) => handleDefaultProviderChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        {configuredProviders.map((id) => {
+                          const provider = getProviderById(id);
+                          return (
+                            <option key={id} value={id}>
+                              {provider?.name || id}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-2">
+                        Default Model
+                      </label>
+                      <select
+                        value={defaultModel}
+                        onChange={(e) => handleDefaultModelChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        {providerModels.length > 0 ? (
+                          providerModels.map((model) => (
+                            <option key={model.id} value={model.id}>
+                              {model.name} {model.recommended ? '(Recommended)' : ''}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>
+                            No models available
+                          </option>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-text-muted dark:text-dark-text-muted">
+                    These settings are used as defaults when starting a new chat.
+                  </p>
+                </section>
+              )}
+
+              {/* API Keys */}
+              <section>
+                <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  API Keys ({providers.length} providers available)
+                </h3>
+                <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
+                  Configure API keys for your preferred AI providers. Keys are stored locally and
+                  encrypted.
+                </p>
+
+                {/* Search */}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search providers..."
+                    className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+
+                {/* Categorized providers */}
+                <div className="space-y-4">
+                  {categorizedProviders.map((category) => (
+                    <div
+                      key={category.name}
+                      className="border border-border dark:border-dark-border rounded-lg overflow-hidden"
+                    >
+                      <button
+                        onClick={() => toggleCategory(category.name)}
+                        className="w-full px-4 py-3 bg-bg-secondary dark:bg-dark-bg-secondary flex items-center justify-between text-left hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                      >
+                        <span className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
+                          {expandedCategories.has(category.name) ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                          {category.name}
+                          <span className="text-xs text-text-muted dark:text-dark-text-muted font-normal">
+                            ({category.providers.length} providers)
+                          </span>
+                        </span>
+                        <span className="text-xs text-success">
+                          {
+                            category.providers.filter((p) => configuredProviders.includes(p.id))
+                              .length
+                          }{' '}
+                          configured
+                        </span>
+                      </button>
+                      {expandedCategories.has(category.name) && (
+                        <div className="p-4 space-y-4 bg-bg-primary dark:bg-dark-bg-primary">
+                          {category.providers.map(renderProviderCard)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Privacy Notice */}
+              <section className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
+                <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                  Privacy First
+                </h3>
+                <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                  OwnPilot is designed with privacy at its core. Your API keys are stored locally
+                  and encrypted with AES-256-GCM. All conversations can be encrypted and stored
+                  locally. You maintain full control over your data.
                 </p>
               </section>
-            )}
 
-            {/* API Keys */}
-            <section>
-              <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                API Keys ({providers.length} providers available)
-              </h3>
-              <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                Configure API keys for your preferred AI providers. Keys are stored locally and
-                encrypted.
-              </p>
-
-              {/* Search */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search providers..."
-                  className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
+              {/* Save Button */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || Object.keys(apiKeys).length === 0}
+                  className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isSaving ? 'Saving...' : 'Save API Keys'}
+                </button>
               </div>
-
-              {/* Categorized providers */}
-              <div className="space-y-4">
-                {categorizedProviders.map((category) => (
-                  <div
-                    key={category.name}
-                    className="border border-border dark:border-dark-border rounded-lg overflow-hidden"
-                  >
-                    <button
-                      onClick={() => toggleCategory(category.name)}
-                      className="w-full px-4 py-3 bg-bg-secondary dark:bg-dark-bg-secondary flex items-center justify-between text-left hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                    >
-                      <span className="font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
-                        {expandedCategories.has(category.name) ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                        {category.name}
-                        <span className="text-xs text-text-muted dark:text-dark-text-muted font-normal">
-                          ({category.providers.length} providers)
-                        </span>
-                      </span>
-                      <span className="text-xs text-success">
-                        {
-                          category.providers.filter((p) => configuredProviders.includes(p.id))
-                            .length
-                        }{' '}
-                        configured
-                      </span>
-                    </button>
-                    {expandedCategories.has(category.name) && (
-                      <div className="p-4 space-y-4 bg-bg-primary dark:bg-dark-bg-primary">
-                        {category.providers.map(renderProviderCard)}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Privacy Notice */}
-            <section className="p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-              <h3 className="text-base font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Privacy First
-              </h3>
-              <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                OwnPilot is designed with privacy at its core. Your API keys are stored locally and
-                encrypted with AES-256-GCM. All conversations can be encrypted and stored locally.
-                You maintain full control over your data.
-              </p>
-            </section>
-
-            {/* Save Button */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || Object.keys(apiKeys).length === 0}
-                className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isSaving ? 'Saving...' : 'Save API Keys'}
-              </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -4,8 +4,6 @@
  * These providers all use the OpenAI API format but with different base URLs.
  */
 
-
-
 /**
  * Provider preset configuration
  */
@@ -254,4 +252,3 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     docsUrl: 'https://docs.x.ai',
   },
 };
-

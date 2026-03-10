@@ -99,7 +99,7 @@ const TOOL_KIND_ICONS: Record<string, typeof FileText> = {
 const PLAN_STATUS_STYLE: Record<string, string> = {
   pending: 'text-zinc-500',
   'in-progress': 'text-amber-400',
-  'in_progress': 'text-amber-400',
+  in_progress: 'text-amber-400',
   completed: 'text-emerald-400',
   done: 'text-emerald-400',
   failed: 'text-red-400',
@@ -223,7 +223,9 @@ export function AcpPanel({ sessionId, session, onTerminate }: AcpPanelProps) {
   };
   const isActive =
     session.state === 'running' || session.state === 'starting' || session.state === 'waiting';
-  const runningTools = acp.toolCalls.filter((tc) => tc.status === 'running' || tc.status === 'in_progress');
+  const runningTools = acp.toolCalls.filter(
+    (tc) => tc.status === 'running' || tc.status === 'in_progress'
+  );
 
   // Tab counts
   const planCount = acp.plan?.entries.length ?? 0;
@@ -286,18 +288,13 @@ export function AcpPanel({ sessionId, session, onTerminate }: AcpPanelProps) {
       {isActive && runningTools.length > 0 && (
         <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-800/50 border-b border-zinc-700/30 text-xs text-zinc-400 shrink-0">
           <Zap className="w-3 h-3 text-amber-400 shrink-0 animate-pulse" />
-          <span className="truncate font-mono">
-            {runningTools[runningTools.length - 1]?.title}
-          </span>
+          <span className="truncate font-mono">{runningTools[runningTools.length - 1]?.title}</span>
         </div>
       )}
 
       {/* ---- Permission request banner ---- */}
       {acp.pendingPermission && (
-        <PermissionBanner
-          permission={acp.pendingPermission}
-          sessionId={sessionId}
-        />
+        <PermissionBanner permission={acp.pendingPermission} sessionId={sessionId} />
       )}
 
       {/* ---- Tabs ---- */}
@@ -386,7 +383,9 @@ export function AcpPanel({ sessionId, session, onTerminate }: AcpPanelProps) {
       <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-700/50 bg-zinc-800/30 shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${STATE_DOT[session.state as CodingAgentSessionState]}`} />
+            <span
+              className={`w-2 h-2 rounded-full ${STATE_DOT[session.state as CodingAgentSessionState]}`}
+            />
             <span className="text-xs text-zinc-400">
               {STATE_LABEL[session.state as CodingAgentSessionState]}
             </span>
@@ -394,13 +393,9 @@ export function AcpPanel({ sessionId, session, onTerminate }: AcpPanelProps) {
           <span className="text-xs text-zinc-500 font-mono tabular-nums">
             {formatDuration(elapsedMs)}
           </span>
-          <span className="text-xs text-zinc-600">
-            {acp.toolCalls.length} tool calls
-          </span>
+          <span className="text-xs text-zinc-600">{acp.toolCalls.length} tool calls</span>
           {acp.stopReason && (
-            <span className="text-xs text-zinc-500 font-mono">
-              stop: {acp.stopReason}
-            </span>
+            <span className="text-xs text-zinc-500 font-mono">stop: {acp.stopReason}</span>
           )}
         </div>
 
@@ -439,9 +434,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-        active
-          ? 'bg-zinc-700 text-zinc-200'
-          : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+        active ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
       }`}
     >
       {icon}
@@ -500,9 +493,7 @@ function ToolCallList({
                 <ChevronRight className="w-3 h-3 text-zinc-600 shrink-0" />
               )}
               <Icon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-              <span className="text-xs font-medium text-zinc-300 truncate flex-1">
-                {tc.title}
-              </span>
+              <span className="text-xs font-medium text-zinc-300 truncate flex-1">{tc.title}</span>
               <span className={`text-[10px] font-medium shrink-0 ${statusInfo.color}`}>
                 {tc.status === 'running' || tc.status === 'in_progress' ? (
                   <span className="inline-flex items-center gap-1">
@@ -556,11 +547,11 @@ function ToolCallList({
                     {tc.completedAt && (
                       <>
                         {' '}
-                        — Completed: {new Date(tc.completedAt).toLocaleTimeString()}
-                        {' '}
-                        ({formatDuration(
+                        — Completed: {new Date(tc.completedAt).toLocaleTimeString()} (
+                        {formatDuration(
                           new Date(tc.completedAt).getTime() - new Date(tc.startedAt).getTime()
-                        )})
+                        )}
+                        )
                       </>
                     )}
                   </div>
@@ -647,10 +638,7 @@ function PlanView({ plan }: { plan: import('../api/endpoints/coding-agents').Acp
       {plan.entries.map((entry, i) => {
         const statusStyle = PLAN_STATUS_STYLE[entry.status] ?? 'text-zinc-500';
         return (
-          <div
-            key={i}
-            className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30"
-          >
+          <div key={i} className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30">
             <div className="mt-0.5 shrink-0">
               {entry.status === 'completed' || entry.status === 'done' ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -708,17 +696,13 @@ function MessageList({ messages }: { messages: import('../hooks/useAcpSession').
             ) : (
               <Eye className="w-3 h-3 text-blue-400" />
             )}
-            <span className="text-[10px] text-zinc-500 font-medium uppercase">
-              {msg.role}
-            </span>
+            <span className="text-[10px] text-zinc-500 font-medium uppercase">{msg.role}</span>
             <span className="text-[10px] text-zinc-600 ml-auto">
               {new Date(msg.timestamp).toLocaleTimeString()}
             </span>
           </div>
           <div className="text-zinc-300 whitespace-pre-wrap break-words leading-relaxed">
-            {typeof msg.content === 'string'
-              ? msg.content
-              : JSON.stringify(msg.content, null, 2)}
+            {typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content, null, 2)}
           </div>
         </div>
       ))}
@@ -794,9 +778,7 @@ function PermissionBanner({
       <div className="flex items-start gap-2">
         <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-amber-300 mb-1.5">
-            Permission Required
-          </div>
+          <div className="text-xs font-medium text-amber-300 mb-1.5">Permission Required</div>
           <div className="text-xs text-zinc-300 mb-2">{permission.title}</div>
           <div className="flex flex-wrap gap-1.5">
             {permission.options.map((opt) => {

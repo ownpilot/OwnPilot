@@ -559,143 +559,142 @@ export function ConfigCenterPage() {
       )}
 
       {activeTab === 'config' && (
-      <div className="flex-1 overflow-y-auto p-6">
-        {/* Error banner */}
-        {error && (
-          <div className="mb-6 flex items-center gap-3 p-4 bg-error/10 border border-error/30 rounded-xl text-error">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="text-sm flex-1">{error}</p>
-            <button
-              onClick={() => setError(null)}
-              className="p-1 hover:bg-error/10 rounded transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Error banner */}
+          {error && (
+            <div className="mb-6 flex items-center gap-3 p-4 bg-error/10 border border-error/30 rounded-xl text-error">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p className="text-sm flex-1">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="p-1 hover:bg-error/10 rounded transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
-        {/* Loading state */}
-        {isLoading ? (
-          <LoadingSpinner message="Loading services..." />
-        ) : (
-          <>
-            {/* Unconfigured Required Services Warning */}
-            {unconfiguredNeeded.length > 0 && (
-              <div className="mb-6 flex items-start gap-3 p-4 bg-warning/10 border border-warning/30 rounded-xl">
-                <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                    {unconfiguredNeeded.length} service
-                    {unconfiguredNeeded.length > 1 ? 's' : ''} needed by your tools{' '}
-                    {unconfiguredNeeded.length > 1 ? 'are' : 'is'} not configured
-                  </p>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                    {unconfiguredNeeded.map((s) => s.displayName).join(', ')}
+          {/* Loading state */}
+          {isLoading ? (
+            <LoadingSpinner message="Loading services..." />
+          ) : (
+            <>
+              {/* Unconfigured Required Services Warning */}
+              {unconfiguredNeeded.length > 0 && (
+                <div className="mb-6 flex items-start gap-3 p-4 bg-warning/10 border border-warning/30 rounded-xl">
+                  <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      {unconfiguredNeeded.length} service
+                      {unconfiguredNeeded.length > 1 ? 's' : ''} needed by your tools{' '}
+                      {unconfiguredNeeded.length > 1 ? 'are' : 'is'} not configured
+                    </p>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                      {unconfiguredNeeded.map((s) => s.displayName).join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Stats Cards */}
+              {stats && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                  <StatsCard
+                    label="Total Services"
+                    value={stats.total}
+                    icon={<Server className="w-5 h-5 text-primary" />}
+                  />
+                  <StatsCard
+                    label="Configured"
+                    value={stats.configured}
+                    icon={<Key className="w-5 h-5 text-success" />}
+                  />
+                  <StatsCard
+                    label="Active"
+                    value={stats.active}
+                    icon={<CheckCircle2 className="w-5 h-5 text-success" />}
+                  />
+                  <StatsCard
+                    label="Needed by Tools"
+                    value={stats.neededByTools}
+                    icon={<Globe className="w-5 h-5 text-primary" />}
+                  />
+                  <StatsCard
+                    label="Missing Configs"
+                    value={stats.neededButUnconfigured}
+                    icon={
+                      <AlertCircle
+                        className={`w-5 h-5 ${stats.neededButUnconfigured > 0 ? 'text-warning' : 'text-success'}`}
+                      />
+                    }
+                  />
+                </div>
+              )}
+
+              {/* Search + Category Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                  <input
+                    type="text"
+                    placeholder="Search services..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-text-muted"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[160px]"
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Services Grid */}
+              {filteredServices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24">
+                  <Server className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
+                  <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                    {searchQuery || selectedCategory !== 'all'
+                      ? 'No services match your filters'
+                      : 'No services found'}
+                  </h3>
+                  <p className="text-text-muted dark:text-dark-text-muted text-sm">
+                    {searchQuery || selectedCategory !== 'all'
+                      ? 'Try adjusting your search or category filter.'
+                      : 'Configuration services will appear here once available.'}
                   </p>
                 </div>
-              </div>
-            )}
-
-            {/* Stats Cards */}
-            {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-                <StatsCard
-                  label="Total Services"
-                  value={stats.total}
-                  icon={<Server className="w-5 h-5 text-primary" />}
-                />
-                <StatsCard
-                  label="Configured"
-                  value={stats.configured}
-                  icon={<Key className="w-5 h-5 text-success" />}
-                />
-                <StatsCard
-                  label="Active"
-                  value={stats.active}
-                  icon={<CheckCircle2 className="w-5 h-5 text-success" />}
-                />
-                <StatsCard
-                  label="Needed by Tools"
-                  value={stats.neededByTools}
-                  icon={<Globe className="w-5 h-5 text-primary" />}
-                />
-                <StatsCard
-                  label="Missing Configs"
-                  value={stats.neededButUnconfigured}
-                  icon={
-                    <AlertCircle
-                      className={`w-5 h-5 ${stats.neededButUnconfigured > 0 ? 'text-warning' : 'text-success'}`}
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredServices.map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      onConfigure={() => openConfigModal(service)}
                     />
-                  }
-                />
-              </div>
-            )}
-
-            {/* Search + Category Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-text-muted"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[160px]"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Services Grid */}
-            {filteredServices.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24">
-                <Server className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                  {searchQuery || selectedCategory !== 'all'
-                    ? 'No services match your filters'
-                    : 'No services found'}
-                </h3>
-                <p className="text-text-muted dark:text-dark-text-muted text-sm">
-                  {searchQuery || selectedCategory !== 'all'
-                    ? 'Try adjusting your search or category filter.'
-                    : 'Configuration services will appear here once available.'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredServices.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    onConfigure={() => openConfigModal(service)}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* Configure Modal */}

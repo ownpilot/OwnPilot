@@ -241,10 +241,22 @@ export function CustomToolsPage() {
               },
             ]}
             steps={[
-              { title: 'Define tool name & description', detail: 'Give your tool a unique name and describe what it does for the AI.' },
-              { title: 'Set input parameters', detail: 'Define the JSON Schema for the arguments your tool accepts.' },
-              { title: 'Write execution logic', detail: 'Implement the tool in JavaScript — access arguments via the args object.' },
-              { title: 'Test & enable', detail: 'Run the tool with sample inputs, then enable it for AI use.' },
+              {
+                title: 'Define tool name & description',
+                detail: 'Give your tool a unique name and describe what it does for the AI.',
+              },
+              {
+                title: 'Set input parameters',
+                detail: 'Define the JSON Schema for the arguments your tool accepts.',
+              },
+              {
+                title: 'Write execution logic',
+                detail: 'Implement the tool in JavaScript — access arguments via the args object.',
+              },
+              {
+                title: 'Test & enable',
+                detail: 'Run the tool with sample inputs, then enable it for AI use.',
+              },
             ]}
             quickActions={[
               {

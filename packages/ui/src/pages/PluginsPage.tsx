@@ -96,7 +96,6 @@ const TAB_LABELS: Record<TabId, string> = {
   system: 'System',
 };
 
-
 export function PluginsPage() {
   const toast = useToast();
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
@@ -202,7 +201,11 @@ export function PluginsPage() {
             ]}
             title="Extend Your AI with Plugins"
             subtitle="Plugins add new capabilities — tools, routes, event handlers. Install system plugins or build your own."
-            cta={{ label: 'Browse Plugins', icon: Puzzle, onClick: () => setActiveTab('installed') }}
+            cta={{
+              label: 'Browse Plugins',
+              icon: Puzzle,
+              onClick: () => setActiveTab('installed'),
+            }}
             features={[
               {
                 icon: Layers,
@@ -234,7 +237,10 @@ export function PluginsPage() {
               },
             ]}
             steps={[
-              { title: 'Browse plugins', detail: 'Explore the installed and system plugin catalog.' },
+              {
+                title: 'Browse plugins',
+                detail: 'Explore the installed and system plugin catalog.',
+              },
               {
                 title: 'Enable & configure',
                 detail: 'Turn on plugins and adjust their settings to fit your needs.',

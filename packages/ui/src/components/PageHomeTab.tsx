@@ -245,9 +245,7 @@ export function PageHomeTab({
             <infoBox.icon className="w-4 h-4" />
             {infoBox.title}
           </p>
-          <p
-            className={`text-xs ${INFO_BOX_COLORS[infoBox.color].text} leading-relaxed`}
-          >
+          <p className={`text-xs ${INFO_BOX_COLORS[infoBox.color].text} leading-relaxed`}>
             {infoBox.description}
           </p>
         </div>

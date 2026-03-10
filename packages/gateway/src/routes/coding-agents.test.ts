@@ -697,7 +697,10 @@ describe('Coding Agents Routes', () => {
     it('should return ACP data when available', async () => {
       mockCodingAgentService.getAcpData.mockReturnValue({
         toolCalls: [{ toolCallId: 'tc-1', title: 'Read file', status: 'completed' }],
-        plan: { entries: [{ content: 'Step 1', status: 'completed' }], updatedAt: '2026-03-09T12:00:00Z' },
+        plan: {
+          entries: [{ content: 'Step 1', status: 'completed' }],
+          updatedAt: '2026-03-09T12:00:00Z',
+        },
         isAcp: true,
       });
 
@@ -758,9 +761,7 @@ describe('Coding Agents Routes', () => {
     });
 
     it('should return 500 on service error', async () => {
-      mockCodingAgentService.promptAcpSession.mockRejectedValue(
-        new Error('Session not found')
-      );
+      mockCodingAgentService.promptAcpSession.mockRejectedValue(new Error('Session not found'));
 
       const res = await app.request('/coding-agents/sessions/sess-1/acp/prompt', {
         method: 'POST',

@@ -214,10 +214,22 @@ export function ArtifactsPage() {
             },
           ]}
           steps={[
-            { title: 'Chat with your AI', detail: 'Ask it to create charts, forms, or visual content.' },
-            { title: 'AI generates artifacts', detail: 'Interactive content appears alongside the conversation.' },
-            { title: 'Browse & pin favorites', detail: 'Find all artifacts here and pin the best ones.' },
-            { title: 'Export or reuse', detail: 'Download, copy, or reference artifacts in future chats.' },
+            {
+              title: 'Chat with your AI',
+              detail: 'Ask it to create charts, forms, or visual content.',
+            },
+            {
+              title: 'AI generates artifacts',
+              detail: 'Interactive content appears alongside the conversation.',
+            },
+            {
+              title: 'Browse & pin favorites',
+              detail: 'Find all artifacts here and pin the best ones.',
+            },
+            {
+              title: 'Export or reuse',
+              detail: 'Download, copy, or reference artifacts in future chats.',
+            },
           ]}
         />
       )}

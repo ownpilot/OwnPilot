@@ -40,11 +40,7 @@ import {
   CODING_AGENTS_INDEXES_SQL,
 } from './coding-agents.js';
 import { SOULS_TABLES_SQL, SOULS_MIGRATIONS_SQL, SOULS_INDEXES_SQL } from './souls.js';
-import {
-  CHANNELS_TABLES_SQL,
-  CHANNELS_MIGRATIONS_SQL,
-  CHANNELS_INDEXES_SQL,
-} from './channels.js';
+import { CHANNELS_TABLES_SQL, CHANNELS_MIGRATIONS_SQL, CHANNELS_INDEXES_SQL } from './channels.js';
 
 const log = getLog('Schema');
 
@@ -101,9 +97,7 @@ export const INDEXES_SQL = [
 /**
  * Initialize PostgreSQL schema
  */
-export async function initializeSchema(
-  runSql: (sql: string) => Promise<void>,
-): Promise<void> {
+export async function initializeSchema(runSql: (sql: string) => Promise<void>): Promise<void> {
   log.info('[Schema] Initializing PostgreSQL schema...');
 
   // Create tables

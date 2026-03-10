@@ -79,7 +79,10 @@ class TerminalManager {
 
     const child = spawn(params.command, params.args ?? [], {
       cwd: params.cwd ?? cwd,
-      env: { ...process.env, ...(params.env ? Object.fromEntries(params.env.map((e) => [e.name, e.value])) : {}) },
+      env: {
+        ...process.env,
+        ...(params.env ? Object.fromEntries(params.env.map((e) => [e.name, e.value])) : {}),
+      },
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: process.platform === 'win32',
     });
@@ -151,8 +154,17 @@ class TerminalManager {
 // CLIENT HANDLER FACTORY
 // =============================================================================
 
-export function createAcpClientHandler(options: AcpClientHandlerOptions): Client & { dispose: () => void } {
-  const { ownerSessionId, cwd, allowedDirs = [], onEvent, onPermissionRequest, onTextOutput } = options;
+export function createAcpClientHandler(
+  options: AcpClientHandlerOptions
+): Client & { dispose: () => void } {
+  const {
+    ownerSessionId,
+    cwd,
+    allowedDirs = [],
+    onEvent,
+    onPermissionRequest,
+    onTextOutput,
+  } = options;
   const terminalManager = new TerminalManager();
 
   function validatePath(filePath: string): string {
@@ -160,7 +172,10 @@ export function createAcpClientHandler(options: AcpClientHandlerOptions): Client
     const normalized = normalize(filePath);
     const allAllowed = [cwd, ...allowedDirs];
     if (!allAllowed.some((dir) => normalized.startsWith(normalize(dir)))) {
-      throw RequestError.invalidParams(undefined, `Path '${filePath}' is outside allowed directories`);
+      throw RequestError.invalidParams(
+        undefined,
+        `Path '${filePath}' is outside allowed directories`
+      );
     }
     return normalized;
   }
@@ -228,7 +243,9 @@ export function createAcpClientHandler(options: AcpClientHandlerOptions): Client
         (o) => o.kind === 'allow_once' || o.kind === 'allow_always'
       );
       if (allowOption) {
-        log.info(`Auto-approving permission: ${allowOption.name}`, { optionId: allowOption.optionId });
+        log.info(`Auto-approving permission: ${allowOption.name}`, {
+          optionId: allowOption.optionId,
+        });
         return { outcome: { outcome: 'selected', optionId: allowOption.optionId } };
       }
 
@@ -247,7 +264,10 @@ export function createAcpClientHandler(options: AcpClientHandlerOptions): Client
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           throw RequestError.resourceNotFound(filePath);
         }
-        throw RequestError.internalError(undefined, `Failed to read file: ${(err as Error).message}`);
+        throw RequestError.internalError(
+          undefined,
+          `Failed to read file: ${(err as Error).message}`
+        );
       }
     },
 
@@ -261,7 +281,10 @@ export function createAcpClientHandler(options: AcpClientHandlerOptions): Client
         await writeFile(filePath, params.content, 'utf8');
         return {};
       } catch (err) {
-        throw RequestError.internalError(undefined, `Failed to write file: ${(err as Error).message}`);
+        throw RequestError.internalError(
+          undefined,
+          `Failed to write file: ${(err as Error).message}`
+        );
       }
     },
 
@@ -289,7 +312,9 @@ export function createAcpClientHandler(options: AcpClientHandlerOptions): Client
     },
 
     // terminal/wait_for_exit
-    async waitForTerminalExit(params: WaitForTerminalExitRequest): Promise<WaitForTerminalExitResponse> {
+    async waitForTerminalExit(
+      params: WaitForTerminalExitRequest
+    ): Promise<WaitForTerminalExitResponse> {
       const terminal = terminalManager.get(params.terminalId);
       if (!terminal) throw RequestError.resourceNotFound(params.terminalId);
       const result = await terminal.exitPromise;

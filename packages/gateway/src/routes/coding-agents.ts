@@ -933,11 +933,7 @@ codingAgentsRoutes.post('/sessions/:id/acp/cancel', async (c) => {
     const service = getCodingAgentService();
     const success = await service.cancelAcpSession(sessionId, userId);
     if (!success) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: 'ACP session not found' },
-        404
-      );
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'ACP session not found' }, 404);
     }
     return apiResponse(c, { cancelled: true });
   } catch (err) {

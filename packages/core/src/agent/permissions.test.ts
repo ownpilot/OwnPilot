@@ -987,4 +987,3 @@ describe('DEFAULT_TOOL_PERMISSIONS', () => {
     expect(DEFAULT_TOOL_PERMISSIONS['package_manager'].category).toBe('system');
   });
 });
-

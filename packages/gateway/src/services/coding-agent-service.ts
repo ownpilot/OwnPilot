@@ -32,7 +32,12 @@ import {
 } from '@ownpilot/core';
 import { tryImport } from '@ownpilot/core';
 import { cliProvidersRepo, type CliProviderRecord } from '../db/repositories/cli-providers.js';
-import { isBinaryInstalled, getBinaryVersion, validateCwd, createSanitizedEnv } from './binary-utils.js';
+import {
+  isBinaryInstalled,
+  getBinaryVersion,
+  validateCwd,
+  createSanitizedEnv,
+} from './binary-utils.js';
 import { getLog } from './log.js';
 import { getAllowedDirs } from '../routes/settings.js';
 import {
@@ -538,7 +543,7 @@ class CodingAgentService implements ICodingAgentService {
       const expanded = cp.promptTemplate
         .replace(/\{prompt\}/g, input.prompt)
         .replace(/\{cwd\}/g, input.cwd ?? process.cwd())
-        .replace(/\{model\}/g, (input.model && input.model !== 'default') ? input.model : '');
+        .replace(/\{model\}/g, input.model && input.model !== 'default' ? input.model : '');
       args.push(expanded);
     } else {
       args.push(input.prompt);

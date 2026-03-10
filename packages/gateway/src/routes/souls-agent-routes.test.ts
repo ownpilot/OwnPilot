@@ -161,7 +161,17 @@ describe('soulAgentRoutes', () => {
   describe('Reserved keyword validation', () => {
     it('returns 404 for reserved keywords', async () => {
       const app = createApp();
-      const keywords = ['test', 'tools', 'stats', 'command', 'deploy', 'logs', 'memories', 'goals', 'tasks'];
+      const keywords = [
+        'test',
+        'tools',
+        'stats',
+        'command',
+        'deploy',
+        'logs',
+        'memories',
+        'goals',
+        'tasks',
+      ];
 
       for (const keyword of keywords) {
         const res = await app.request(`/${keyword}/logs`);
@@ -384,7 +394,9 @@ describe('soulAgentRoutes', () => {
       const searchTool = body.data.tools.find((t: { name: string }) => t.name === 'search_tools');
       expect(searchTool?.status).toBe('allowed');
 
-      const blockedTool = body.data.tools.find((t: { name: string }) => t.name === 'dangerous_tool');
+      const blockedTool = body.data.tools.find(
+        (t: { name: string }) => t.name === 'dangerous_tool'
+      );
       expect(blockedTool?.status).toBe('blocked');
     });
   });
@@ -483,9 +495,7 @@ describe('soulAgentRoutes', () => {
         avgDurationMs: 3000,
         failureRate: 0.05,
       });
-      mockListByAgent.mockResolvedValue([
-        { createdAt: new Date('2026-03-10T12:00:00Z') },
-      ]);
+      mockListByAgent.mockResolvedValue([{ createdAt: new Date('2026-03-10T12:00:00Z') }]);
 
       const app = createApp();
       const res = await app.request('/agent-test/stats');

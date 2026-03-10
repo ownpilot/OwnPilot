@@ -212,27 +212,27 @@ export function ProfilePage() {
 
       {/* Tabs */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
-          {[
-            { id: 'home', label: 'Home', icon: Home },
-            { id: 'overview', label: 'Overview', icon: UserCircle },
-            { id: 'quick', label: 'Quick Setup', icon: Settings },
-            { id: 'instructions', label: 'AI Instructions', icon: Brain },
-            { id: 'advanced', label: 'Advanced', icon: Globe },
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id as typeof activeTab)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                activeTab === id
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+        {[
+          { id: 'home', label: 'Home', icon: Home },
+          { id: 'overview', label: 'Overview', icon: UserCircle },
+          { id: 'quick', label: 'Quick Setup', icon: Settings },
+          { id: 'instructions', label: 'AI Instructions', icon: Brain },
+          { id: 'advanced', label: 'Advanced', icon: Globe },
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id as typeof activeTab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === id
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
+            }`}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">

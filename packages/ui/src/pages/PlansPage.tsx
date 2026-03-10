@@ -279,8 +279,7 @@ export function PlansPage() {
                 icon: Sparkles,
                 color: 'text-violet-500 bg-violet-500/10',
                 title: 'AI Suggestions',
-                description:
-                  'Get intelligent recommendations for goals, steps, and optimizations.',
+                description: 'Get intelligent recommendations for goals, steps, and optimizations.',
               },
             ]}
             steps={[
@@ -328,21 +327,21 @@ export function PlansPage() {
       {/* Filters */}
       {activeTab !== 'home' && (
         <div className="flex gap-2 px-6 py-3 border-b border-border dark:border-dark-border overflow-x-auto">
-          {(['all', 'pending', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const).map(
-            (status) => (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors whitespace-nowrap ${
-                  statusFilter === status
-                    ? 'bg-primary text-white'
-                    : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
-                }`}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </button>
-            )
-          )}
+          {(
+            ['all', 'pending', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const
+          ).map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-3 py-1 text-sm rounded-full transition-colors whitespace-nowrap ${
+                statusFilter === status
+                  ? 'bg-primary text-white'
+                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
         </div>
       )}
 

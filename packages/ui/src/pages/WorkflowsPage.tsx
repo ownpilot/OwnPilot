@@ -53,7 +53,6 @@ const TAB_LABELS: Record<TabId, string> = {
   logs: 'Execution Logs',
 };
 
-
 export function WorkflowsPage() {
   const navigate = useNavigate();
   const { confirm } = useDialog();
@@ -293,7 +292,10 @@ export function WorkflowsPage() {
               },
             ]}
             steps={[
-              { title: 'Create workflow', detail: 'Start a new workflow with a name and description.' },
+              {
+                title: 'Create workflow',
+                detail: 'Start a new workflow with a name and description.',
+              },
               {
                 title: 'Add steps',
                 detail: 'Drag tool nodes, chat nodes, and condition nodes onto the canvas.',
@@ -304,7 +306,8 @@ export function WorkflowsPage() {
               },
               {
                 title: 'Run & monitor',
-                detail: 'Execute workflows manually or via triggers, and monitor results in real time.',
+                detail:
+                  'Execute workflows manually or via triggers, and monitor results in real time.',
               },
             ]}
             quickActions={[
@@ -329,7 +332,9 @@ export function WorkflowsPage() {
       )}
 
       {/* Content */}
-      <div className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}>
+      <div
+        className={`flex-1 overflow-y-auto p-6 animate-fade-in-up ${activeTab === 'home' ? 'hidden' : ''}`}
+      >
         {activeTab === 'workflows' ? (
           isLoading ? (
             <SkeletonCard count={4} />

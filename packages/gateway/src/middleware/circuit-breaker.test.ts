@@ -41,11 +41,14 @@ describe('Circuit Breaker Middleware', () => {
     it('should open circuit after failure threshold', async () => {
       let requestCount = 0;
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 3,
-        resetTimeoutMs: 10000,
-        failureStatusCodes: [500],
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 3,
+          resetTimeoutMs: 10000,
+          failureStatusCodes: [500],
+        })
+      );
       app.get('/test', (c) => {
         requestCount++;
         return c.json({ error: 'fail' }, 500);
@@ -69,22 +72,28 @@ describe('Circuit Breaker Middleware', () => {
 
     it('should transition to HALF_OPEN after reset timeout', async () => {
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 5000,
-        failureStatusCodes: [500],
-        halfOpenMaxRate: 1, // Allow all requests in HALF_OPEN for testing
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 5000,
+          failureStatusCodes: [500],
+          halfOpenMaxRate: 1, // Allow all requests in HALF_OPEN for testing
+        })
+      );
       app.get('/test', (c) => c.json({ success: true }));
 
       // Open the circuit
       const req1 = new Request('http://localhost/test');
       const appWithError = new Hono();
-      appWithError.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 5000,
-        failureStatusCodes: [500],
-      }));
+      appWithError.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 5000,
+          failureStatusCodes: [500],
+        })
+      );
       appWithError.get('/test', (c) => c.json({ error: 'fail' }, 500));
 
       await appWithError.fetch(req1);
@@ -102,13 +111,16 @@ describe('Circuit Breaker Middleware', () => {
     it('should close circuit after success threshold in HALF_OPEN', async () => {
       let shouldFail = true;
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 1000,
-        successThreshold: 2,
-        failureStatusCodes: [500],
-        halfOpenMaxRate: 1,
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 1000,
+          successThreshold: 2,
+          failureStatusCodes: [500],
+          halfOpenMaxRate: 1,
+        })
+      );
       app.get('/test', (c) => {
         if (shouldFail) {
           return c.json({ error: 'fail' }, 500);
@@ -134,12 +146,15 @@ describe('Circuit Breaker Middleware', () => {
 
     it('should reopen circuit immediately on failure in HALF_OPEN', async () => {
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 1000,
-        failureStatusCodes: [500],
-        halfOpenMaxRate: 1,
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 1000,
+          failureStatusCodes: [500],
+          halfOpenMaxRate: 1,
+        })
+      );
       app.get('/test', (c) => c.json({ error: 'fail' }, 500));
 
       // Open circuit
@@ -156,10 +171,13 @@ describe('Circuit Breaker Middleware', () => {
 
     it('should exclude specified paths', async () => {
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        excludePaths: ['/health'],
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          excludePaths: ['/health'],
+        })
+      );
       app.get('/health', (c) => c.json({ status: 'ok' }));
       app.get('/test', (c) => c.json({ error: 'fail' }, 500));
 
@@ -177,11 +195,14 @@ describe('Circuit Breaker Middleware', () => {
 
     it('should include Retry-After header when circuit is OPEN', async () => {
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 30000,
-        failureStatusCodes: [500],
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 30000,
+          failureStatusCodes: [500],
+        })
+      );
       app.get('/test', (c) => c.json({ error: 'fail' }, 500));
 
       await app.fetch(new Request('http://localhost/test'));
@@ -196,11 +217,14 @@ describe('Circuit Breaker Middleware', () => {
     it('should handle exceptions as failures', async () => {
       let requestCount = 0;
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 1,
-        resetTimeoutMs: 10000,
-        failureStatusCodes: [500],
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 1,
+          resetTimeoutMs: 10000,
+          failureStatusCodes: [500],
+        })
+      );
       app.get('/test', (c) => {
         requestCount++;
         return c.json({ error: 'fail' }, 500);
@@ -220,10 +244,13 @@ describe('Circuit Breaker Middleware', () => {
 
     it('should track successes correctly in CLOSED state', async () => {
       const app = new Hono();
-      app.use('/*', createCircuitBreakerMiddleware({
-        failureThreshold: 3,
-        failureStatusCodes: [500],
-      }));
+      app.use(
+        '/*',
+        createCircuitBreakerMiddleware({
+          failureThreshold: 3,
+          failureStatusCodes: [500],
+        })
+      );
       app.get('/test', (c) => c.json({ success: true }));
 
       // Send multiple successful requests
@@ -233,7 +260,7 @@ describe('Circuit Breaker Middleware', () => {
       }
 
       // Circuit should remain CLOSED
-      const stats = getCircuitBreakerStats().find(s => s.key === '/test');
+      const stats = getCircuitBreakerStats().find((s) => s.key === '/test');
       expect(stats?.state).toBe('CLOSED');
     });
   });
@@ -256,14 +283,12 @@ describe('Circuit Breaker Middleware', () => {
       });
 
       // Open the circuit
-      await expect(
-        cb.execute(() => Promise.reject(new Error('fail')))
-      ).rejects.toThrow();
+      await expect(cb.execute(() => Promise.reject(new Error('fail')))).rejects.toThrow();
 
       // Next call should throw CircuitBreakerError
-      await expect(
-        cb.execute(() => Promise.resolve('success'))
-      ).rejects.toThrow(CircuitBreakerError);
+      await expect(cb.execute(() => Promise.resolve('success'))).rejects.toThrow(
+        CircuitBreakerError
+      );
     });
 
     it('should provide retry after in error', async () => {
@@ -273,9 +298,7 @@ describe('Circuit Breaker Middleware', () => {
       });
 
       // Open the circuit
-      await expect(
-        cb.execute(() => Promise.reject(new Error('fail')))
-      ).rejects.toThrow();
+      await expect(cb.execute(() => Promise.reject(new Error('fail')))).rejects.toThrow();
 
       try {
         await cb.execute(() => Promise.resolve('success'));
@@ -305,9 +328,7 @@ describe('Circuit Breaker Middleware', () => {
       });
 
       // Open the circuit
-      await expect(
-        cb.execute(() => Promise.reject(new Error('fail')))
-      ).rejects.toThrow();
+      await expect(cb.execute(() => Promise.reject(new Error('fail')))).rejects.toThrow();
 
       expect(cb.getState()).toBe('OPEN');
 
@@ -332,8 +353,8 @@ describe('Circuit Breaker Middleware', () => {
 
       const stats = getCircuitBreakerStats();
       expect(stats).toHaveLength(2);
-      expect(stats.map(s => s.key)).toContain('service-1');
-      expect(stats.map(s => s.key)).toContain('service-2');
+      expect(stats.map((s) => s.key)).toContain('service-1');
+      expect(stats.map((s) => s.key)).toContain('service-2');
     });
   });
 

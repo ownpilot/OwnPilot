@@ -112,7 +112,7 @@ const STEPS: Step[] = [
     n: 3,
     title: 'Your AI gains new abilities',
     detail:
-      'Installed skills are injected into your AI agent\'s context automatically. Ask it to use the new capability — it just works.',
+      "Installed skills are injected into your AI agent's context automatically. Ask it to use the new capability — it just works.",
   },
   {
     n: 4,
@@ -189,9 +189,7 @@ export function HomeTab() {
               className="border border-border dark:border-dark-border rounded-xl p-4 space-y-1.5"
             >
               <div className="flex items-center gap-2">
-                <span
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${f.color}`}
-                >
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${f.color}`}>
                   <f.icon className="w-4 h-4" />
                 </span>
                 <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
@@ -289,11 +287,10 @@ export function HomeTab() {
           About the SKILL.md Format
         </p>
         <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-          Skills follow the open{' '}
-          <span className="font-semibold">AgentSkills.io</span> standard — a plain markdown file
-          with YAML frontmatter for metadata and markdown body for instructions. OwnPilot also
-          supports its own native format with richer tool definitions and multi-section layouts.
-          Both formats are fully supported.
+          Skills follow the open <span className="font-semibold">AgentSkills.io</span> standard — a
+          plain markdown file with YAML frontmatter for metadata and markdown body for instructions.
+          OwnPilot also supports its own native format with richer tool definitions and
+          multi-section layouts. Both formats are fully supported.
         </p>
       </div>
 

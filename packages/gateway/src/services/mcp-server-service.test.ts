@@ -533,10 +533,9 @@ describe('tools/call handler', () => {
       params: { name: 'get_tool_help', arguments: { tool_name: 'core.read_file' } },
     })) as { content: Array<{ type: string; text: string }> };
 
-    expect(mockExecuteGetToolHelp).toHaveBeenCalledWith(
-      expect.anything(),
-      { tool_name: 'core.read_file' }
-    );
+    expect(mockExecuteGetToolHelp).toHaveBeenCalledWith(expect.anything(), {
+      tool_name: 'core.read_file',
+    });
     expect(result.content[0]!.text).toBe('tool help text');
   });
 
@@ -634,10 +633,7 @@ describe('tools/call handler', () => {
 
     await handler({ params: { name: 'search_tools', arguments: undefined } });
 
-    expect(mockExecuteSearchTools).toHaveBeenCalledWith(
-      expect.anything(),
-      {}
-    );
+    expect(mockExecuteSearchTools).toHaveBeenCalledWith(expect.anything(), {});
   });
 
   it('JSON-stringifies object content from executor result', async () => {
@@ -808,7 +804,8 @@ describe('session cleanup timer', () => {
       await vi.advanceTimersByTimeAsync(35 * 60 * 1000 + 1);
 
       expect(mockTransportClose).toHaveBeenCalled();
-      expect(mockLogInfo).toHaveBeenCalledWith('Cleaned up stale MCP session',
+      expect(mockLogInfo).toHaveBeenCalledWith(
+        'Cleaned up stale MCP session',
         expect.objectContaining({ sessionId: 'stale-sid' })
       );
     } finally {

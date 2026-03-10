@@ -287,8 +287,7 @@ export function ExtensionsPage() {
               },
               {
                 title: 'Define triggers',
-                detail:
-                  'Set up event-based or scheduled triggers to automate actions.',
+                detail: 'Set up event-based or scheduled triggers to automate actions.',
               },
               {
                 title: 'Enable & use',
@@ -310,90 +309,90 @@ export function ExtensionsPage() {
 
       {/* Extensions Tab */}
       {activeTab === 'extensions' && (
-      <>
-      {/* Stats Bar */}
-      {stats.total > 0 && (
-        <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                {stats.total}
-              </span>
+        <>
+          {/* Stats Bar */}
+          {stats.total > 0 && (
+            <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-text-muted dark:text-dark-text-muted">Total:</span>
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    {stats.total}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-success" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Enabled:</span>
+                  <span className="font-medium text-success">{stats.enabled}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-text-muted" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
+                  <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
+                    {stats.disabled}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-primary" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Tools:</span>
+                  <span className="font-medium text-primary">{stats.totalTools}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-warning" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Triggers:</span>
+                  <span className="font-medium text-warning">{stats.totalTriggers}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              <span className="text-text-muted dark:text-dark-text-muted">Enabled:</span>
-              <span className="font-medium text-success">{stats.enabled}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-text-muted" />
-              <span className="text-text-muted dark:text-dark-text-muted">Disabled:</span>
-              <span className="font-medium text-text-secondary dark:text-dark-text-secondary">
-                {stats.disabled}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Wrench className="w-4 h-4 text-primary" />
-              <span className="text-text-muted dark:text-dark-text-muted">Tools:</span>
-              <span className="font-medium text-primary">{stats.totalTools}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-warning" />
-              <span className="text-text-muted dark:text-dark-text-muted">Triggers:</span>
-              <span className="font-medium text-warning">{stats.totalTriggers}</span>
+          )}
+
+          {/* Filter Tabs */}
+          <div className="px-6 py-3 border-b border-border dark:border-dark-border">
+            <div className="flex gap-2">
+              {(['all', 'enabled', 'disabled'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    filter === f
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                  }`}
+                >
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Filter Tabs */}
-      <div className="px-6 py-3 border-b border-border dark:border-dark-border">
-        <div className="flex gap-2">
-          {(['all', 'enabled', 'disabled'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filter === f
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-              }`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
-          <LoadingSpinner message="Loading extensions..." />
-        ) : filteredPackages.length === 0 ? (
-          <EmptyState
-            icon={Sparkles}
-            title={`No extensions ${filter !== 'all' ? filter : 'installed'}`}
-            description={
-              filter === 'all'
-                ? 'Click "Install" to add an extension from a JSON manifest, or "Scan" to discover packages from the extensions directory.'
-                : `No ${filter} extensions found.`
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPackages.map((pkg) => (
-              <ExtensionCard
-                key={pkg.id}
-                pkg={pkg}
-                onToggle={() => togglePackage(pkg)}
-                onClick={() => setSelectedPackage(pkg)}
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <LoadingSpinner message="Loading extensions..." />
+            ) : filteredPackages.length === 0 ? (
+              <EmptyState
+                icon={Sparkles}
+                title={`No extensions ${filter !== 'all' ? filter : 'installed'}`}
+                description={
+                  filter === 'all'
+                    ? 'Click "Install" to add an extension from a JSON manifest, or "Scan" to discover packages from the extensions directory.'
+                    : `No ${filter} extensions found.`
+                }
               />
-            ))}
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredPackages.map((pkg) => (
+                  <ExtensionCard
+                    key={pkg.id}
+                    pkg={pkg}
+                    onToggle={() => togglePackage(pkg)}
+                    onClick={() => setSelectedPackage(pkg)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      </>
+        </>
       )}
 
       {/* Detail Modal */}

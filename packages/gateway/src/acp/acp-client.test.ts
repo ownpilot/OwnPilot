@@ -198,15 +198,17 @@ describe('AcpClient', () => {
 
     it('passes MCP servers to agent', async () => {
       await client.createSession({
-        mcpServers: [
-          { name: 'ownpilot', transport: 'http', url: 'http://localhost:3000/mcp' },
-        ],
+        mcpServers: [{ name: 'ownpilot', transport: 'http', url: 'http://localhost:3000/mcp' }],
       });
 
       const callArgs = mockAgent.newSession.mock.calls[0][0];
       expect(callArgs.mcpServers).toHaveLength(1);
       expect(callArgs.mcpServers[0]).toEqual(
-        expect.objectContaining({ type: 'http', name: 'ownpilot', url: 'http://localhost:3000/mcp' })
+        expect.objectContaining({
+          type: 'http',
+          name: 'ownpilot',
+          url: 'http://localhost:3000/mcp',
+        })
       );
     });
 
@@ -376,9 +378,7 @@ describe('AcpClient', () => {
 
     it('converts sse transport', async () => {
       await client.createSession({
-        mcpServers: [
-          { name: 'sse-server', transport: 'sse', url: 'https://api.example.com/sse' },
-        ],
+        mcpServers: [{ name: 'sse-server', transport: 'sse', url: 'https://api.example.com/sse' }],
       });
 
       const servers = mockAgent.newSession.mock.calls[0][0].mcpServers;

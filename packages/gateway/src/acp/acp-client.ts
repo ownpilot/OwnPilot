@@ -152,13 +152,10 @@ export class AcpClient {
     });
 
     // Create ClientSideConnection — connects our Client handler to the agent
-    this.connection = new ClientSideConnection(
-      (agent: Agent) => {
-        this.agent = agent;
-        return this.clientHandler!;
-      },
-      stream
-    );
+    this.connection = new ClientSideConnection((agent: Agent) => {
+      this.agent = agent;
+      return this.clientHandler!;
+    }, stream);
 
     // Listen for connection close
     this.connection.closed.then(() => {
@@ -217,7 +214,10 @@ export class AcpClient {
    * Send a prompt to the agent and wait for the turn to complete.
    * Returns the stop reason.
    */
-  async prompt(prompt: string, context?: { files?: string[] }): Promise<{
+  async prompt(
+    prompt: string,
+    context?: { files?: string[] }
+  ): Promise<{
     stopReason: StopReason;
     output: string;
     toolCalls: AcpToolCall[];

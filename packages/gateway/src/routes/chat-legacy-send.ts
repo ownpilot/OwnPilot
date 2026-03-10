@@ -329,8 +329,7 @@ export async function handleLegacySend(params: LegacySendParams) {
               provider: (requestEntry.data as { provider?: string })?.provider ?? provider,
               model: (requestEntry.data as { model?: string })?.model ?? model,
               endpoint: (requestEntry.data as { endpoint?: string })?.endpoint ?? 'unknown',
-              messageCount:
-                (requestEntry.data as { messages?: unknown[] })?.messages?.length ?? 1,
+              messageCount: (requestEntry.data as { messages?: unknown[] })?.messages?.length ?? 1,
               tools: (requestEntry.data as { tools?: string[] })?.tools,
             }
           : {
@@ -341,8 +340,7 @@ export async function handleLegacySend(params: LegacySendParams) {
             },
         response: responseEntry
           ? {
-              status:
-                (responseEntry.data as { status?: 'success' | 'error' })?.status ?? 'success',
+              status: (responseEntry.data as { status?: 'success' | 'error' })?.status ?? 'success',
               contentLength: (responseEntry.data as { contentLength?: number })?.contentLength,
               finishReason: (responseEntry.data as { finishReason?: string })?.finishReason,
             }

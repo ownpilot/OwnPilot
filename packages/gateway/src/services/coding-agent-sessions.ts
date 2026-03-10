@@ -347,7 +347,9 @@ export class CodingAgentSessionManager {
             });
             this.fireCompletionCallbacks(managed);
             this.persistResult(managed, state === 'error' ? 1 : 0).catch((err) => {
-              log.warn(`Failed to persist ACP result for session ${sessionId}`, { error: String(err) });
+              log.warn(`Failed to persist ACP result for session ${sessionId}`, {
+                error: String(err),
+              });
             });
           }
         },
@@ -454,11 +456,16 @@ export class CodingAgentSessionManager {
   /**
    * Get ACP-specific data for a session (tool calls, plan).
    */
-  getAcpData(sessionId: string, userId: string): {
-    toolCalls: import('../acp/types.js').AcpToolCall[];
-    plan: import('../acp/types.js').AcpPlan | null;
-    isAcp: boolean;
-  } | undefined {
+  getAcpData(
+    sessionId: string,
+    userId: string
+  ):
+    | {
+        toolCalls: import('../acp/types.js').AcpToolCall[];
+        plan: import('../acp/types.js').AcpPlan | null;
+        isAcp: boolean;
+      }
+    | undefined {
     const managed = this.sessions.get(sessionId);
     if (!managed || managed.session.userId !== userId) return undefined;
     return {

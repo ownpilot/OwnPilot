@@ -339,229 +339,231 @@ export function EventMonitorPage() {
 
       {/* Monitor Tab */}
       {activeTab === 'monitor' && (
-      <>
-      {/* Stats Bar */}
-      <div className="flex items-center gap-4 px-6 py-2 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-xs shrink-0">
-        <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
-          <Activity className="w-3 h-3" />
-          {eventsPerSec.toFixed(1)} evt/s
-        </span>
-        <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
-          <Zap className="w-3 h-3" />
-          {events.length} total
-        </span>
-        <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
-          <Clock className="w-3 h-3" />
-          {status === 'connected' ? (
-            <span className="text-success">Connected</span>
-          ) : (
-            <span className="text-error">{status}</span>
-          )}
-        </span>
-        <label className="flex items-center gap-1.5 ml-auto cursor-pointer text-text-muted dark:text-dark-text-muted">
-          <input
-            type="checkbox"
-            checked={autoScroll}
-            onChange={(e) => setAutoScroll(e.target.checked)}
-            className="rounded border-border"
-          />
-          Auto-scroll
-        </label>
-      </div>
-
-      {/* Publish Panel (collapsible) */}
-      {showPublish && (
-        <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary shrink-0 animate-fade-in-up">
-          <div className="flex items-center gap-2 mb-2">
-            <Send className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-              Publish Event
+        <>
+          {/* Stats Bar */}
+          <div className="flex items-center gap-4 px-6 py-2 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-xs shrink-0">
+            <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
+              <Activity className="w-3 h-3" />
+              {eventsPerSec.toFixed(1)} evt/s
             </span>
-            <span className="text-xs text-text-muted dark:text-dark-text-muted">
-              (external.* or client.* only)
+            <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
+              <Zap className="w-3 h-3" />
+              {events.length} total
             </span>
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={publishType}
-              onChange={(e) => setPublishType(e.target.value)}
-              placeholder="external.my-event"
-              className="flex-1 px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
-            />
-            <input
-              type="text"
-              value={publishData}
-              onChange={(e) => setPublishData(e.target.value)}
-              placeholder='{"key": "value"}'
-              className="flex-[2] px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg font-mono text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
-            />
-            <button
-              onClick={handlePublish}
-              className="px-4 py-1.5 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex flex-1 min-h-0">
-        {/* Sidebar: Subscriptions */}
-        <div className="w-64 border-r border-border dark:border-dark-border flex flex-col shrink-0">
-          <div className="px-4 py-3 border-b border-border dark:border-dark-border">
-            <span className="text-xs font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider">
-              Subscriptions
+            <span className="flex items-center gap-1.5 text-text-muted dark:text-dark-text-muted">
+              <Clock className="w-3 h-3" />
+              {status === 'connected' ? (
+                <span className="text-success">Connected</span>
+              ) : (
+                <span className="text-error">{status}</span>
+              )}
             </span>
-          </div>
-
-          {/* Add pattern */}
-          <div className="px-3 py-2 border-b border-border dark:border-dark-border">
-            <div className="flex gap-1">
+            <label className="flex items-center gap-1.5 ml-auto cursor-pointer text-text-muted dark:text-dark-text-muted">
               <input
-                type="text"
-                value={newPattern}
-                onChange={(e) => setNewPattern(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddPattern()}
-                placeholder="agent.*"
-                className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+                type="checkbox"
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+                className="rounded border-border"
               />
-              <button
-                onClick={handleAddPattern}
-                className="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
+              Auto-scroll
+            </label>
           </div>
 
-          {/* Subscription list */}
-          <div className="flex-1 overflow-y-auto">
-            {subscriptions.length === 0 ? (
-              <div className="px-4 py-6 text-center text-xs text-text-muted dark:text-dark-text-muted">
-                No subscriptions yet
+          {/* Publish Panel (collapsible) */}
+          {showPublish && (
+            <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary shrink-0 animate-fade-in-up">
+              <div className="flex items-center gap-2 mb-2">
+                <Send className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  Publish Event
+                </span>
+                <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                  (external.* or client.* only)
+                </span>
               </div>
-            ) : (
-              subscriptions.map((sub) => (
-                <div
-                  key={sub.pattern}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary group"
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={publishType}
+                  onChange={(e) => setPublishType(e.target.value)}
+                  placeholder="external.my-event"
+                  className="flex-1 px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+                />
+                <input
+                  type="text"
+                  value={publishData}
+                  onChange={(e) => setPublishData(e.target.value)}
+                  placeholder='{"key": "value"}'
+                  className="flex-[2] px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg font-mono text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+                />
+                <button
+                  onClick={handlePublish}
+                  className="px-4 py-1.5 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
                 >
-                  <span className="text-xs font-mono text-text-primary dark:text-dark-text-primary truncate">
-                    {sub.pattern}
-                  </span>
+                  Send
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className="flex flex-1 min-h-0">
+            {/* Sidebar: Subscriptions */}
+            <div className="w-64 border-r border-border dark:border-dark-border flex flex-col shrink-0">
+              <div className="px-4 py-3 border-b border-border dark:border-dark-border">
+                <span className="text-xs font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider">
+                  Subscriptions
+                </span>
+              </div>
+
+              {/* Add pattern */}
+              <div className="px-3 py-2 border-b border-border dark:border-dark-border">
+                <div className="flex gap-1">
+                  <input
+                    type="text"
+                    value={newPattern}
+                    onChange={(e) => setNewPattern(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddPattern()}
+                    placeholder="agent.*"
+                    className="flex-1 px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+                  />
                   <button
-                    onClick={() => handleRemovePattern(sub.pattern)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-error/10 rounded transition-all"
+                    onClick={handleAddPattern}
+                    className="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded transition-colors"
                   >
-                    <X className="w-3 h-3 text-error" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
-              ))
-            )}
-          </div>
-
-          {/* Quick patterns */}
-          <div className="px-3 py-2 border-t border-border dark:border-dark-border">
-            <span className="text-[10px] font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1 block">
-              Quick Add
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {['agent.*', 'trigger.*', 'channel.**', 'gateway.**', 'external.**'].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => {
-                    if (!subscriptions.some((s) => s.pattern === p)) {
-                      send('event:subscribe', { pattern: p });
-                    }
-                  }}
-                  disabled={subscriptions.some((s) => s.pattern === p)}
-                  className="px-1.5 py-0.5 text-[10px] font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 disabled:opacity-40 text-text-secondary dark:text-dark-text-secondary transition-colors"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Event Stream */}
-        <div className="flex-1 flex flex-col min-w-0">
-          {/* Filter */}
-          <div className="px-4 py-2 border-b border-border dark:border-dark-border shrink-0">
-            <div className="relative">
-              <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
-              <input
-                type="text"
-                value={filterText}
-                onChange={(e) => setFilterText(e.target.value)}
-                placeholder="Filter by type or source..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
-              />
-            </div>
-          </div>
-
-          {/* Event List */}
-          <div className="flex-1 overflow-y-auto font-mono text-xs">
-            {filteredEvents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
-                <MonitorCheck className="w-8 h-8 mb-2 opacity-30" />
-                <span className="text-sm">
-                  {events.length === 0 ? 'Waiting for events...' : 'No events match the filter'}
-                </span>
-                {paused && <span className="text-xs text-warning mt-1">Stream paused</span>}
               </div>
-            ) : (
-              <div className="divide-y divide-border/50 dark:divide-dark-border/50">
-                {filteredEvents.map((event) => (
-                  <EventRow
-                    key={event.id}
-                    event={event}
-                    isSelected={selectedEvent?.id === event.id}
-                    onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
+
+              {/* Subscription list */}
+              <div className="flex-1 overflow-y-auto">
+                {subscriptions.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-xs text-text-muted dark:text-dark-text-muted">
+                    No subscriptions yet
+                  </div>
+                ) : (
+                  subscriptions.map((sub) => (
+                    <div
+                      key={sub.pattern}
+                      className="flex items-center justify-between px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary group"
+                    >
+                      <span className="text-xs font-mono text-text-primary dark:text-dark-text-primary truncate">
+                        {sub.pattern}
+                      </span>
+                      <button
+                        onClick={() => handleRemovePattern(sub.pattern)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-error/10 rounded transition-all"
+                      >
+                        <X className="w-3 h-3 text-error" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Quick patterns */}
+              <div className="px-3 py-2 border-t border-border dark:border-dark-border">
+                <span className="text-[10px] font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider mb-1 block">
+                  Quick Add
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {['agent.*', 'trigger.*', 'channel.**', 'gateway.**', 'external.**'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        if (!subscriptions.some((s) => s.pattern === p)) {
+                          send('event:subscribe', { pattern: p });
+                        }
+                      }}
+                      disabled={subscriptions.some((s) => s.pattern === p)}
+                      className="px-1.5 py-0.5 text-[10px] font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 disabled:opacity-40 text-text-secondary dark:text-dark-text-secondary transition-colors"
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Event Stream */}
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* Filter */}
+              <div className="px-4 py-2 border-b border-border dark:border-dark-border shrink-0">
+                <div className="relative">
+                  <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+                  <input
+                    type="text"
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    placeholder="Filter by type or source..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
                   />
-                ))}
-                <div ref={eventsEndRef} />
+                </div>
+              </div>
+
+              {/* Event List */}
+              <div className="flex-1 overflow-y-auto font-mono text-xs">
+                {filteredEvents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
+                    <MonitorCheck className="w-8 h-8 mb-2 opacity-30" />
+                    <span className="text-sm">
+                      {events.length === 0 ? 'Waiting for events...' : 'No events match the filter'}
+                    </span>
+                    {paused && <span className="text-xs text-warning mt-1">Stream paused</span>}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border/50 dark:divide-dark-border/50">
+                    {filteredEvents.map((event) => (
+                      <EventRow
+                        key={event.id}
+                        event={event}
+                        isSelected={selectedEvent?.id === event.id}
+                        onClick={() =>
+                          setSelectedEvent(selectedEvent?.id === event.id ? null : event)
+                        }
+                      />
+                    ))}
+                    <div ref={eventsEndRef} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Detail Panel */}
+            {selectedEvent && (
+              <div className="w-80 border-l border-border dark:border-dark-border flex flex-col shrink-0">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-dark-border">
+                  <span className="text-xs font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider">
+                    Event Detail
+                  </span>
+                  <button
+                    onClick={() => setSelectedEvent(null)}
+                    className="p-0.5 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded"
+                  >
+                    <X className="w-3.5 h-3.5 text-text-muted" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <DetailField label="Type" value={selectedEvent.type} mono />
+                  <DetailField label="Source" value={selectedEvent.source} />
+                  <DetailField
+                    label="Timestamp"
+                    value={new Date(selectedEvent.timestamp).toLocaleString()}
+                  />
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider block mb-1">
+                      Data
+                    </span>
+                    <pre className="p-2 bg-bg-primary dark:bg-dark-bg-primary rounded text-[11px] text-text-primary dark:text-dark-text-primary overflow-x-auto whitespace-pre-wrap break-words max-h-96">
+                      {JSON.stringify(selectedEvent.data, null, 2)}
+                    </pre>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Detail Panel */}
-        {selectedEvent && (
-          <div className="w-80 border-l border-border dark:border-dark-border flex flex-col shrink-0">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-dark-border">
-              <span className="text-xs font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider">
-                Event Detail
-              </span>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="p-0.5 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded"
-              >
-                <X className="w-3.5 h-3.5 text-text-muted" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <DetailField label="Type" value={selectedEvent.type} mono />
-              <DetailField label="Source" value={selectedEvent.source} />
-              <DetailField
-                label="Timestamp"
-                value={new Date(selectedEvent.timestamp).toLocaleString()}
-              />
-              <div>
-                <span className="text-[10px] font-semibold uppercase text-text-muted dark:text-dark-text-muted tracking-wider block mb-1">
-                  Data
-                </span>
-                <pre className="p-2 bg-bg-primary dark:bg-dark-bg-primary rounded text-[11px] text-text-primary dark:text-dark-text-primary overflow-x-auto whitespace-pre-wrap break-words max-h-96">
-                  {JSON.stringify(selectedEvent.data, null, 2)}
-                </pre>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      </>
+        </>
       )}
     </div>
   );

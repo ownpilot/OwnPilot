@@ -192,9 +192,9 @@ describe('acp-handlers', () => {
     it('throws for paths outside cwd', async () => {
       // Use a path that is definitely outside CWD on any platform
       const outsidePath = resolve('/', 'etc', 'passwd');
-      await expect(
-        handler.readTextFile({ path: outsidePath } as any)
-      ).rejects.toThrow(/outside allowed directories/);
+      await expect(handler.readTextFile({ path: outsidePath } as any)).rejects.toThrow(
+        /outside allowed directories/
+      );
     });
 
     it('throws for ENOENT', async () => {
@@ -202,9 +202,7 @@ describe('acp-handlers', () => {
       err.code = 'ENOENT';
       vi.mocked(readFile).mockRejectedValueOnce(err);
       const filePath = resolve(CWD, 'missing.ts');
-      await expect(
-        handler.readTextFile({ path: filePath } as any)
-      ).rejects.toThrow();
+      await expect(handler.readTextFile({ path: filePath } as any)).rejects.toThrow();
     });
   });
 
@@ -287,9 +285,7 @@ describe('acp-handlers', () => {
       } as any);
 
       // Simulate stdout data
-      const stdoutCb = mockChild.stdout.on.mock.calls.find(
-        (c: any[]) => c[0] === 'data'
-      )?.[1];
+      const stdoutCb = mockChild.stdout.on.mock.calls.find((c: any[]) => c[0] === 'data')?.[1];
       if (stdoutCb) stdoutCb(Buffer.from('output text'));
 
       const output = await handler.terminalOutput({ terminalId } as any);
@@ -298,9 +294,7 @@ describe('acp-handlers', () => {
     });
 
     it('throws for unknown terminal id', async () => {
-      await expect(
-        handler.terminalOutput({ terminalId: 'nonexistent' } as any)
-      ).rejects.toThrow();
+      await expect(handler.terminalOutput({ terminalId: 'nonexistent' } as any)).rejects.toThrow();
     });
 
     it('kills a terminal', async () => {
@@ -321,9 +315,7 @@ describe('acp-handlers', () => {
       expect(result).toEqual({});
 
       // After release, getting output should throw
-      await expect(
-        handler.terminalOutput({ terminalId } as any)
-      ).rejects.toThrow();
+      await expect(handler.terminalOutput({ terminalId } as any)).rejects.toThrow();
     });
   });
 

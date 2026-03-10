@@ -411,10 +411,11 @@ export class PlanExecutor extends EventEmitter {
             (s) => s.status === 'pending' && s.dependencies.length > 0
           );
           const allBlocked = blockedSteps.every(
-            (s) => !s.dependencies.some((depId) => {
-              const depStep = allSteps.find((step) => step.id === depId);
-              return depStep?.status === 'completed';
-            })
+            (s) =>
+              !s.dependencies.some((depId) => {
+                const depStep = allSteps.find((step) => step.id === depId);
+                return depStep?.status === 'completed';
+              })
           );
           if (allBlocked && blockedSteps.length > 0) {
             for (const s of blockedSteps) {

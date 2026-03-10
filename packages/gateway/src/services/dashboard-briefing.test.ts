@@ -316,7 +316,7 @@ describe('BriefingCache', () => {
 });
 
 describe('buildBriefingPrompt', () => {
-  it('includes today\'s date in the prompt', () => {
+  it("includes today's date in the prompt", () => {
     const data = createMockBriefingData();
     const prompt = buildBriefingPrompt(data);
 

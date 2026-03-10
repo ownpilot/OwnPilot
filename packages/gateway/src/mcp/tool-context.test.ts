@@ -61,9 +61,7 @@ describe('injectToolContext', () => {
   });
 
   it('should not modify messages without user role', () => {
-    const messages = [
-      { role: 'system', content: 'System prompt' },
-    ];
+    const messages = [{ role: 'system', content: 'System prompt' }];
 
     const result = injectToolContext(messages);
 

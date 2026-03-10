@@ -98,9 +98,7 @@ async function testCliInWorkspace(binary: CliChatBinary, workspaceDir: string): 
   log(`  ${C.cyan}Test A: Basic response...${C.reset}`);
   const start = Date.now();
   const result = await provider.complete({
-    messages: [
-      { role: 'user', content: 'Reply with exactly one word: WORKSPACE_OK' },
-    ],
+    messages: [{ role: 'user', content: 'Reply with exactly one word: WORKSPACE_OK' }],
     model: { model: '' }, // use CLI default
   });
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -130,7 +128,9 @@ async function testCliInWorkspace(binary: CliChatBinary, workspaceDir: string): 
   if (result2.ok) {
     const content = result2.value.content.trim();
     const seesFile = content.toUpperCase().includes('YES');
-    log(`  ${seesFile ? C.green + '✓' : C.yellow + '~'} ${C.reset} Context awareness (${elapsed2}s): ${content.slice(0, 100)}`);
+    log(
+      `  ${seesFile ? C.green + '✓' : C.yellow + '~'} ${C.reset} Context awareness (${elapsed2}s): ${content.slice(0, 100)}`
+    );
   } else {
     log(`  ${C.red}✗${C.reset} Failed (${elapsed2}s): ${result2.error.message}`);
   }
@@ -152,10 +152,17 @@ async function testCliInWorkspace(binary: CliChatBinary, workspaceDir: string): 
 
   if (result3.ok) {
     const content = result3.value.content.trim();
-    const hasMcp = content.toLowerCase().includes('search_tools') || content.toLowerCase().includes('use_tool') || content.toUpperCase().includes('YES');
-    log(`  ${hasMcp ? C.green + '✓' : C.yellow + '~'} ${C.reset} MCP discovery (${elapsed3}s): ${content.slice(0, 200)}`);
+    const hasMcp =
+      content.toLowerCase().includes('search_tools') ||
+      content.toLowerCase().includes('use_tool') ||
+      content.toUpperCase().includes('YES');
+    log(
+      `  ${hasMcp ? C.green + '✓' : C.yellow + '~'} ${C.reset} MCP discovery (${elapsed3}s): ${content.slice(0, 200)}`
+    );
     if (!hasMcp) {
-      log(`  ${C.dim}  (MCP tools not found — is OwnPilot gateway running on localhost:8080?)${C.reset}`);
+      log(
+        `  ${C.dim}  (MCP tools not found — is OwnPilot gateway running on localhost:8080?)${C.reset}`
+      );
     }
   } else {
     log(`  ${C.red}✗${C.reset} Failed (${elapsed3}s): ${result3.error.message}`);

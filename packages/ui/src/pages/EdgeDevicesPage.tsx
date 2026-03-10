@@ -263,10 +263,22 @@ export function EdgeDevicesPage() {
               },
             ]}
             steps={[
-              { title: 'Set up MQTT broker', detail: 'Configure your Mosquitto or other MQTT broker and connect it to OwnPilot.' },
-              { title: 'Register your device', detail: 'Add a new device with its type, capabilities, and MQTT topic.' },
-              { title: 'Flash client code', detail: 'Upload the OwnPilot client library to your microcontroller or SBC.' },
-              { title: 'Watch data flow in', detail: 'See live sensor readings and control your device from the dashboard.' },
+              {
+                title: 'Set up MQTT broker',
+                detail: 'Configure your Mosquitto or other MQTT broker and connect it to OwnPilot.',
+              },
+              {
+                title: 'Register your device',
+                detail: 'Add a new device with its type, capabilities, and MQTT topic.',
+              },
+              {
+                title: 'Flash client code',
+                detail: 'Upload the OwnPilot client library to your microcontroller or SBC.',
+              },
+              {
+                title: 'Watch data flow in',
+                detail: 'See live sensor readings and control your device from the dashboard.',
+              },
             ]}
             quickActions={[
               {

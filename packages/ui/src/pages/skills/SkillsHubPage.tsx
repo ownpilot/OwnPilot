@@ -40,9 +40,7 @@ export function SkillsHubPage() {
 
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
-    tabParam && ['home', 'installed', 'discover', 'create'].includes(tabParam)
-      ? tabParam
-      : 'home';
+    tabParam && ['home', 'installed', 'discover', 'create'].includes(tabParam) ? tabParam : 'home';
 
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);

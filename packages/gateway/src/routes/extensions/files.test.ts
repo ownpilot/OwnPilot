@@ -346,10 +346,7 @@ describe('Extension File Routes', () => {
 
       const res = await putRequest('sub/dir/file.md', { content: '# New file' });
       expect(res.status).toBe(200);
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.any(String),
-        { recursive: true }
-      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
       expect(mockWriteFileSync).toHaveBeenCalled();
     });
 

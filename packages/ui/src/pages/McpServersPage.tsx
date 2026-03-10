@@ -1089,8 +1089,8 @@ export function McpServersPage() {
             MCP Integration
           </h2>
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
-            Use OwnPilot as an MCP server for external AI clients, or connect to external MCP servers
-            for additional tools.
+            Use OwnPilot as an MCP server for external AI clients, or connect to external MCP
+            servers for additional tools.
           </p>
         </div>
       </header>
@@ -1136,8 +1136,7 @@ export function McpServersPage() {
               icon: Search,
               color: 'text-emerald-500 bg-emerald-500/10',
               title: 'Tool Discovery',
-              description:
-                'Automatically discover and register tools from connected MCP servers.',
+              description: 'Automatically discover and register tools from connected MCP servers.',
             },
             {
               icon: Layers,
@@ -1150,18 +1149,31 @@ export function McpServersPage() {
               icon: Activity,
               color: 'text-purple-500 bg-purple-500/10',
               title: 'Live Connection',
-              description:
-                'Monitor server connections in real time with automatic reconnection.',
+              description: 'Monitor server connections in real time with automatic reconnection.',
             },
           ]}
           steps={[
             { title: 'Add a server URL', detail: 'Enter the MCP server endpoint to connect.' },
-            { title: 'AI discovers available tools', detail: 'Your AI automatically detects tools the server provides.' },
-            { title: 'Use tools in conversations', detail: 'Reference discovered tools naturally in your chats.' },
-            { title: 'Monitor connections', detail: 'Track connection status and health in real time.' },
+            {
+              title: 'AI discovers available tools',
+              detail: 'Your AI automatically detects tools the server provides.',
+            },
+            {
+              title: 'Use tools in conversations',
+              detail: 'Reference discovered tools naturally in your chats.',
+            },
+            {
+              title: 'Monitor connections',
+              detail: 'Track connection status and health in real time.',
+            },
           ]}
           quickActions={[
-            { label: 'Manage Servers', icon: Server, description: 'Add, edit, and monitor your MCP server connections.', onClick: () => setTab('servers') },
+            {
+              label: 'Manage Servers',
+              icon: Server,
+              description: 'Add, edit, and monitor your MCP server connections.',
+              onClick: () => setTab('servers'),
+            },
           ]}
           infoBox={{
             icon: Globe,

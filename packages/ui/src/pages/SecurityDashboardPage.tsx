@@ -325,23 +325,23 @@ export function SecurityDashboardPage() {
             Unified vulnerability analysis across all platform components
           </p>
         </div>
-          <button
-            onClick={runScan}
-            disabled={isScanning}
-            className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isScanning ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Scanning...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4" />
-                Scan Now
-              </>
-            )}
-          </button>
+        <button
+          onClick={runScan}
+          disabled={isScanning}
+          className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isScanning ? (
+            <>
+              <LoadingSpinner size="sm" />
+              Scanning...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              Scan Now
+            </>
+          )}
+        </button>
       </header>
 
       {/* Tab bar */}
@@ -373,7 +373,11 @@ export function SecurityDashboardPage() {
             ]}
             title="Security at a Glance"
             subtitle="Monitor security events, review permissions, track authentication activity, and ensure your AI assistant operates safely."
-            cta={{ label: 'View Security Dashboard', icon: Shield, onClick: () => setActiveTab('dashboard') }}
+            cta={{
+              label: 'View Security Dashboard',
+              icon: Shield,
+              onClick: () => setActiveTab('dashboard'),
+            }}
             features={[
               {
                 icon: Activity,
@@ -405,10 +409,22 @@ export function SecurityDashboardPage() {
               },
             ]}
             steps={[
-              { title: 'Review security score', detail: 'Run a scan to get an overall health score across all platform components.' },
-              { title: 'Check recent events', detail: 'Examine the top risks and per-section breakdowns for issues.' },
-              { title: 'Audit permissions', detail: 'Review extension and tool permissions to reduce attack surface.' },
-              { title: 'Set up alerts', detail: 'Follow recommendations to harden your platform configuration.' },
+              {
+                title: 'Review security score',
+                detail: 'Run a scan to get an overall health score across all platform components.',
+              },
+              {
+                title: 'Check recent events',
+                detail: 'Examine the top risks and per-section breakdowns for issues.',
+              },
+              {
+                title: 'Audit permissions',
+                detail: 'Review extension and tool permissions to reduce attack surface.',
+              },
+              {
+                title: 'Set up alerts',
+                detail: 'Follow recommendations to harden your platform configuration.',
+              },
             ]}
             quickActions={[
               {
@@ -424,128 +440,128 @@ export function SecurityDashboardPage() {
 
       {/* Content */}
       {activeTab === 'dashboard' && (
-      <div className="flex-1 overflow-y-auto p-6">
-        {!result && !isScanning && (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <ShieldCheck className="w-12 h-12 text-text-muted dark:text-dark-text-muted mb-4" />
-            <h2 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-2">
-              No scan results yet
-            </h2>
-            <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 max-w-md">
-              Run a security scan to analyze your extensions, custom tools, triggers, workflows, and
-              CLI tool policies for potential vulnerabilities.
-            </p>
-            <button
-              onClick={runScan}
-              className="px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
-            >
-              Run First Scan
-            </button>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6">
+          {!result && !isScanning && (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <ShieldCheck className="w-12 h-12 text-text-muted dark:text-dark-text-muted mb-4" />
+              <h2 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                No scan results yet
+              </h2>
+              <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4 max-w-md">
+                Run a security scan to analyze your extensions, custom tools, triggers, workflows,
+                and CLI tool policies for potential vulnerabilities.
+              </p>
+              <button
+                onClick={runScan}
+                className="px-4 py-2 text-sm rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
+              >
+                Run First Scan
+              </button>
+            </div>
+          )}
 
-        {isScanning && !result && (
-          <div className="flex flex-col items-center justify-center h-64">
-            <LoadingSpinner size="md" />
-            <p className="text-sm text-text-muted dark:text-dark-text-muted mt-4">
-              Scanning all platform components...
-            </p>
-          </div>
-        )}
+          {isScanning && !result && (
+            <div className="flex flex-col items-center justify-center h-64">
+              <LoadingSpinner size="md" />
+              <p className="text-sm text-text-muted dark:text-dark-text-muted mt-4">
+                Scanning all platform components...
+              </p>
+            </div>
+          )}
 
-        {result && (
-          <div className="max-w-4xl mx-auto space-y-6">
-            {/* Overall Score */}
-            <div className="flex items-center gap-6 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-6">
-              <ScoreGauge score={result.overallScore} />
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
-                  Overall Health Score
-                </h2>
-                <div className="mt-1">
-                  {(() => {
-                    const badge = levelBadge(result.overallLevel);
-                    return (
-                      <span className={`text-sm px-2 py-1 rounded ${badge.color}`}>
-                        {badge.text}
-                      </span>
-                    );
-                  })()}
+          {result && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Overall Score */}
+              <div className="flex items-center gap-6 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-6">
+                <ScoreGauge score={result.overallScore} />
+                <div>
+                  <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                    Overall Health Score
+                  </h2>
+                  <div className="mt-1">
+                    {(() => {
+                      const badge = levelBadge(result.overallLevel);
+                      return (
+                        <span className={`text-sm px-2 py-1 rounded ${badge.color}`}>
+                          {badge.text}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted mt-2">
+                    Scanned at {new Date(result.scannedAt).toLocaleString('en-US')}
+                  </p>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                    {result.topRisks.length} risk{result.topRisks.length !== 1 ? 's' : ''} detected
+                    across {Object.values(result.sections).reduce((a, s) => a + s.count, 0)} items
+                  </p>
                 </div>
-                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-2">
-                  Scanned at {new Date(result.scannedAt).toLocaleString('en-US')}
-                </p>
-                <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                  {result.topRisks.length} risk{result.topRisks.length !== 1 ? 's' : ''} detected
-                  across {Object.values(result.sections).reduce((a, s) => a + s.count, 0)} items
-                </p>
               </div>
-            </div>
 
-            {/* Section Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SectionCard
-                title="Extensions"
-                section={result.sections.extensions}
-                expanded={expandedSections.has('extensions')}
-                onToggle={() => toggleSection('extensions')}
-              />
-              <SectionCard
-                title="Custom Tools"
-                section={result.sections.customTools}
-                expanded={expandedSections.has('customTools')}
-                onToggle={() => toggleSection('customTools')}
-              />
-              <SectionCard
-                title="Triggers"
-                section={result.sections.triggers}
-                expanded={expandedSections.has('triggers')}
-                onToggle={() => toggleSection('triggers')}
-              />
-              <SectionCard
-                title="Workflows"
-                section={result.sections.workflows}
-                expanded={expandedSections.has('workflows')}
-                onToggle={() => toggleSection('workflows')}
-              />
-              <SectionCard
-                title="CLI Tools"
-                section={result.sections.cliTools}
-                expanded={expandedSections.has('cliTools')}
-                onToggle={() => toggleSection('cliTools')}
-              />
-            </div>
+              {/* Section Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SectionCard
+                  title="Extensions"
+                  section={result.sections.extensions}
+                  expanded={expandedSections.has('extensions')}
+                  onToggle={() => toggleSection('extensions')}
+                />
+                <SectionCard
+                  title="Custom Tools"
+                  section={result.sections.customTools}
+                  expanded={expandedSections.has('customTools')}
+                  onToggle={() => toggleSection('customTools')}
+                />
+                <SectionCard
+                  title="Triggers"
+                  section={result.sections.triggers}
+                  expanded={expandedSections.has('triggers')}
+                  onToggle={() => toggleSection('triggers')}
+                />
+                <SectionCard
+                  title="Workflows"
+                  section={result.sections.workflows}
+                  expanded={expandedSections.has('workflows')}
+                  onToggle={() => toggleSection('workflows')}
+                />
+                <SectionCard
+                  title="CLI Tools"
+                  section={result.sections.cliTools}
+                  expanded={expandedSections.has('cliTools')}
+                  onToggle={() => toggleSection('cliTools')}
+                />
+              </div>
 
-            {/* Top Risks */}
-            <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-              <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
-                Top Risks
-              </h3>
-              <RiskList risks={result.topRisks} />
-            </div>
-
-            {/* Recommendations */}
-            {result.recommendations.length > 0 && (
+              {/* Top Risks */}
               <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
                 <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
-                  Recommendations
+                  Top Risks
                 </h3>
-                <ul className="space-y-2">
-                  {result.recommendations.map((rec, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary"
-                    >
-                      <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                      {rec}
-                    </li>
-                  ))}
-                </ul>
+                <RiskList risks={result.topRisks} />
               </div>
-            )}
-          </div>
-        )}
-      </div>
+
+              {/* Recommendations */}
+              {result.recommendations.length > 0 && (
+                <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
+                  <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-3">
+                    Recommendations
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.recommendations.map((rec, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-text-secondary dark:text-dark-text-secondary"
+                      >
+                        <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

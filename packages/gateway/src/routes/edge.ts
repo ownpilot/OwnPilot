@@ -26,12 +26,15 @@ export const edgeRoutes = new Hono();
 
 // Apply circuit breaker to MQTT-dependent routes
 // Protects against cascading failures when MQTT broker is unavailable
-edgeRoutes.use('/mqtt/*', createCircuitBreakerMiddleware({
-  failureThreshold: 3,
-  resetTimeoutMs: 30000,
-  successThreshold: 2,
-  failureStatusCodes: [500, 502, 503, 504],
-}));
+edgeRoutes.use(
+  '/mqtt/*',
+  createCircuitBreakerMiddleware({
+    failureThreshold: 3,
+    resetTimeoutMs: 30000,
+    successThreshold: 2,
+    failureStatusCodes: [500, 502, 503, 504],
+  })
+);
 
 const VALID_TYPES = ['raspberry-pi', 'esp32', 'arduino', 'custom'] as const;
 const VALID_STATUSES = ['online', 'offline', 'error'] as const;

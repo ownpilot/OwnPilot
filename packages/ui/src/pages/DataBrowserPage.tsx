@@ -369,7 +369,10 @@ export function DataBrowserPage() {
             },
           ]}
           steps={[
-            { title: 'Select a category', detail: 'Choose from tasks, bookmarks, notes, and more.' },
+            {
+              title: 'Select a category',
+              detail: 'Choose from tasks, bookmarks, notes, and more.',
+            },
             { title: 'Browse entries', detail: 'View all records in a table layout.' },
             { title: 'Search by keyword', detail: 'Use the search bar to find specific entries.' },
             { title: 'View full details', detail: 'Click any entry to inspect its complete data.' },
@@ -378,148 +381,150 @@ export function DataBrowserPage() {
       )}
 
       {activeTab === 'browser' && (
-      <>
-      {/* Click outside handler for type selector */}
-      {showTypeSelector && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowTypeSelector(false)} />
-      )}
+        <>
+          {/* Click outside handler for type selector */}
+          {showTypeSelector && (
+            <div className="fixed inset-0 z-40" onClick={() => setShowTypeSelector(false)} />
+          )}
 
-      {/* Data Type Tabs (alternative navigation) */}
-      <div className="flex gap-1 px-6 py-2 border-b border-border dark:border-dark-border overflow-x-auto">
-        {(Object.entries(DATA_TYPES) as [DataType, DataTypeConfig][]).map(([type, typeConfig]) => {
-          const Icon = typeConfig.icon;
-          return (
-            <button
-              key={type}
-              onClick={() => setSelectedType(type)}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
-                selectedType === type
-                  ? 'bg-primary text-white'
-                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {typeConfig.name}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Table Content */}
-      <div className="flex-1 overflow-auto animate-fade-in-up">
-        {isLoading ? (
-          <LoadingSpinner message="Loading..." />
-        ) : records.length === 0 ? (
-          <EmptyState
-            icon={Table}
-            title={searchQuery ? 'No records found' : `No ${config.name.toLowerCase()} yet`}
-            description={
-              searchQuery
-                ? 'Try a different search term.'
-                : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`
-            }
-          />
-        ) : (
-          <div className="p-6">
-            <div className="overflow-x-auto border border-border dark:border-dark-border rounded-lg">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border">
-                    {config.columns.map((col) => (
-                      <th
-                        key={col.key}
-                        className="text-left px-4 py-3 font-medium text-text-secondary dark:text-dark-text-secondary"
-                      >
-                        {col.label}
-                      </th>
-                    ))}
-                    <th className="w-24 px-4 py-3 text-right font-medium text-text-secondary dark:text-dark-text-secondary">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {records.map((record) => (
-                    <tr
-                      key={record.id as string}
-                      className="border-b border-border dark:border-dark-border last:border-b-0 hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50"
-                    >
-                      {config.columns.map((col) => (
-                        <td
-                          key={col.key}
-                          className="px-4 py-3 text-text-primary dark:text-dark-text-primary"
-                        >
-                          {col.key === 'url' && record[col.key] ? (
-                            <a
-                              href={record[col.key] as string}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline truncate block max-w-xs"
-                            >
-                              {formatCellValue(record[col.key], col.type)}
-                            </a>
-                          ) : (
-                            <span
-                              className={
-                                col.type === 'text' && col.key === 'title' ? 'font-medium' : ''
-                              }
-                            >
-                              {formatCellValue(record[col.key], col.type)}
-                            </span>
-                          )}
-                        </td>
-                      ))}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => setEditingRecord(record)}
-                            className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
-                            title="Edit"
-                            aria-label="Edit record"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(record.id as string)}
-                            className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-error rounded transition-colors"
-                            title="Delete"
-                            aria-label="Delete record"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="mt-4 text-sm text-text-muted dark:text-dark-text-muted">
-              Showing {records.length} record{records.length !== 1 ? 's' : ''}
-            </p>
+          {/* Data Type Tabs (alternative navigation) */}
+          <div className="flex gap-1 px-6 py-2 border-b border-border dark:border-dark-border overflow-x-auto">
+            {(Object.entries(DATA_TYPES) as [DataType, DataTypeConfig][]).map(
+              ([type, typeConfig]) => {
+                const Icon = typeConfig.icon;
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedType(type)}
+                    className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors whitespace-nowrap ${
+                      selectedType === type
+                        ? 'bg-primary text-white'
+                        : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {typeConfig.name}
+                  </button>
+                );
+              }
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Add/Edit Modal */}
-      {(showAddModal || editingRecord) && (
-        <RecordModal
-          dataType={selectedType}
-          config={config}
-          record={editingRecord}
-          onClose={() => {
-            setShowAddModal(false);
-            setEditingRecord(null);
-          }}
-          onSave={() => {
-            setShowAddModal(false);
-            setEditingRecord(null);
-            fetchRecords();
-          }}
-        />
-      )}
-      </>
+          {/* Table Content */}
+          <div className="flex-1 overflow-auto animate-fade-in-up">
+            {isLoading ? (
+              <LoadingSpinner message="Loading..." />
+            ) : records.length === 0 ? (
+              <EmptyState
+                icon={Table}
+                title={searchQuery ? 'No records found' : `No ${config.name.toLowerCase()} yet`}
+                description={
+                  searchQuery
+                    ? 'Try a different search term.'
+                    : `Add your first ${config.name.toLowerCase().replace(/s$/, '')} to get started.`
+                }
+              />
+            ) : (
+              <div className="p-6">
+                <div className="overflow-x-auto border border-border dark:border-dark-border rounded-lg">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border">
+                        {config.columns.map((col) => (
+                          <th
+                            key={col.key}
+                            className="text-left px-4 py-3 font-medium text-text-secondary dark:text-dark-text-secondary"
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                        <th className="w-24 px-4 py-3 text-right font-medium text-text-secondary dark:text-dark-text-secondary">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.map((record) => (
+                        <tr
+                          key={record.id as string}
+                          className="border-b border-border dark:border-dark-border last:border-b-0 hover:bg-bg-tertiary/50 dark:hover:bg-dark-bg-tertiary/50"
+                        >
+                          {config.columns.map((col) => (
+                            <td
+                              key={col.key}
+                              className="px-4 py-3 text-text-primary dark:text-dark-text-primary"
+                            >
+                              {col.key === 'url' && record[col.key] ? (
+                                <a
+                                  href={record[col.key] as string}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline truncate block max-w-xs"
+                                >
+                                  {formatCellValue(record[col.key], col.type)}
+                                </a>
+                              ) : (
+                                <span
+                                  className={
+                                    col.type === 'text' && col.key === 'title' ? 'font-medium' : ''
+                                  }
+                                >
+                                  {formatCellValue(record[col.key], col.type)}
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setEditingRecord(record)}
+                                className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-primary rounded transition-colors"
+                                title="Edit"
+                                aria-label="Edit record"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(record.id as string)}
+                                className="p-1.5 text-text-muted dark:text-dark-text-muted hover:text-error rounded transition-colors"
+                                title="Delete"
+                                aria-label="Delete record"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="mt-4 text-sm text-text-muted dark:text-dark-text-muted">
+                  Showing {records.length} record{records.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Add/Edit Modal */}
+          {(showAddModal || editingRecord) && (
+            <RecordModal
+              dataType={selectedType}
+              config={config}
+              record={editingRecord}
+              onClose={() => {
+                setShowAddModal(false);
+                setEditingRecord(null);
+              }}
+              onSave={() => {
+                setShowAddModal(false);
+                setEditingRecord(null);
+                fetchRecords();
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );

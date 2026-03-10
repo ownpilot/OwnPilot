@@ -147,11 +147,15 @@ export function MemoriesPage() {
       {/* URL-based tabs */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'memories'] as TabId[]).map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)}
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === t ? 'border-primary text-primary'
+              activeTab === t
+                ? 'border-primary text-primary'
                 : 'border-transparent text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary hover:border-border dark:hover:border-dark-border'
-            }`}>
+            }`}
+          >
             {t === 'home' && <Home className="w-3.5 h-3.5" />}
             {TAB_LABELS[t]}
           </button>
@@ -171,90 +175,132 @@ export function MemoriesPage() {
             subtitle="Memories let your AI remember facts, preferences, and context across conversations — so it gets better over time."
             cta={{ label: 'View Memories', icon: Brain, onClick: () => setActiveTab('memories') }}
             features={[
-              { icon: Sparkles, color: 'text-amber-500 bg-amber-500/10', title: 'Auto-Capture', description: 'The AI automatically identifies and saves important facts from conversations.' },
-              { icon: Edit2, color: 'text-blue-500 bg-blue-500/10', title: 'Manual Memories', description: 'Add your own memories manually for things the AI should know.' },
-              { icon: Heart, color: 'text-pink-500 bg-pink-500/10', title: 'Favorites', description: 'Mark important memories as favorites for quick access.' },
-              { icon: Search, color: 'text-green-500 bg-green-500/10', title: 'Semantic Search', description: 'Find memories using natural language — not just keyword matching.' },
+              {
+                icon: Sparkles,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'Auto-Capture',
+                description:
+                  'The AI automatically identifies and saves important facts from conversations.',
+              },
+              {
+                icon: Edit2,
+                color: 'text-blue-500 bg-blue-500/10',
+                title: 'Manual Memories',
+                description: 'Add your own memories manually for things the AI should know.',
+              },
+              {
+                icon: Heart,
+                color: 'text-pink-500 bg-pink-500/10',
+                title: 'Favorites',
+                description: 'Mark important memories as favorites for quick access.',
+              },
+              {
+                icon: Search,
+                color: 'text-green-500 bg-green-500/10',
+                title: 'Semantic Search',
+                description: 'Find memories using natural language — not just keyword matching.',
+              },
             ]}
             steps={[
-              { title: 'AI captures key facts automatically', detail: 'During conversations, the AI identifies important information and saves it as memories.' },
-              { title: 'Review saved memories', detail: 'Browse all captured memories, edit them, or remove ones that are no longer relevant.' },
-              { title: 'Mark important ones as favorites', detail: 'Star key memories so they are prioritized in future conversations.' },
-              { title: 'AI recalls them in future conversations', detail: 'The AI uses stored memories to provide more personalized and contextual responses.' },
+              {
+                title: 'AI captures key facts automatically',
+                detail:
+                  'During conversations, the AI identifies important information and saves it as memories.',
+              },
+              {
+                title: 'Review saved memories',
+                detail:
+                  'Browse all captured memories, edit them, or remove ones that are no longer relevant.',
+              },
+              {
+                title: 'Mark important ones as favorites',
+                detail: 'Star key memories so they are prioritized in future conversations.',
+              },
+              {
+                title: 'AI recalls them in future conversations',
+                detail:
+                  'The AI uses stored memories to provide more personalized and contextual responses.',
+              },
             ]}
           />
         </div>
       )}
 
       {/* Memories Tab */}
-      {activeTab === 'memories' && (<>
-      {/* Search and Filters */}
-      <div className="flex gap-4 px-6 py-3 border-b border-border dark:border-dark-border">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search memories..."
-              className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-            />
+      {activeTab === 'memories' && (
+        <>
+          {/* Search and Filters */}
+          <div className="flex gap-4 px-6 py-3 border-b border-border dark:border-dark-border">
+            <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search memories..."
+                  className="w-full pl-10 pr-4 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+              >
+                Search
+              </button>
+            </form>
+
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+              <select
+                aria-label="Filter by memory type"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as Memory['type'] | 'all')}
+                className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="all">All Types</option>
+                <option value="fact">Facts</option>
+                <option value="preference">Preferences</option>
+                <option value="conversation">Conversations</option>
+                <option value="event">Events</option>
+              </select>
+            </div>
           </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-          >
-            Search
-          </button>
-        </form>
 
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-          <select
-            aria-label="Filter by memory type"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as Memory['type'] | 'all')}
-            className="px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-          >
-            <option value="all">All Types</option>
-            <option value="fact">Facts</option>
-            <option value="preference">Preferences</option>
-            <option value="conversation">Conversations</option>
-            <option value="event">Events</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
-        {isLoading ? (
-          <LoadingSpinner message="Loading memories..." />
-        ) : memories.length === 0 ? (
-          <EmptyState
-            icon={Brain}
-            title={searchQuery ? 'No memories found' : 'No memories yet'}
-            description={
-              searchQuery
-                ? 'No memories match your search.'
-                : 'The AI will automatically remember important information from conversations.'
-            }
-            action={{ label: 'Add Memory', onClick: () => setShowCreateModal(true), icon: Plus }}
-          />
-        ) : (
-          <div className="space-y-3">
-            {memories.map((memory) => (
-              <MemoryItem
-                key={memory.id}
-                memory={memory}
-                onEdit={() => setEditingMemory(memory)}
-                onDelete={() => handleDelete(memory.id)}
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
+            {isLoading ? (
+              <LoadingSpinner message="Loading memories..." />
+            ) : memories.length === 0 ? (
+              <EmptyState
+                icon={Brain}
+                title={searchQuery ? 'No memories found' : 'No memories yet'}
+                description={
+                  searchQuery
+                    ? 'No memories match your search.'
+                    : 'The AI will automatically remember important information from conversations.'
+                }
+                action={{
+                  label: 'Add Memory',
+                  onClick: () => setShowCreateModal(true),
+                  icon: Plus,
+                }}
               />
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {memories.map((memory) => (
+                  <MemoryItem
+                    key={memory.id}
+                    memory={memory}
+                    onEdit={() => setEditingMemory(memory)}
+                    onDelete={() => handleDelete(memory.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      </>)}
+        </>
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingMemory) && (

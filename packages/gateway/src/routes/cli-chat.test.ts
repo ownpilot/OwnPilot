@@ -263,7 +263,12 @@ describe('cliChatRoutes', () => {
 
       const body = await res.json();
       expect(body.data).toEqual([
-        { id: 'claude-3-5-sonnet', name: 'claude-3-5-sonnet', provider: 'claude-code', isDefault: true },
+        {
+          id: 'claude-3-5-sonnet',
+          name: 'claude-3-5-sonnet',
+          provider: 'claude-code',
+          isDefault: true,
+        },
         { id: 'claude-3-opus', name: 'claude-3-opus', provider: 'claude-code', isDefault: false },
         { id: 'claude-3-haiku', name: 'claude-3-haiku', provider: 'claude-code', isDefault: false },
       ]);

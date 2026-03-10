@@ -184,7 +184,11 @@ export function sanitizeProviderName(provider: string): string {
 /**
  * Clamp a value between min and max bounds, with fallback for non-numeric input.
  */
-export function clamp(val: unknown, limits: { min: number; max: number }, fallback: number): number {
+export function clamp(
+  val: unknown,
+  limits: { min: number; max: number },
+  fallback: number
+): number {
   return typeof val === 'number' && !Number.isNaN(val)
     ? Math.max(limits.min, Math.min(limits.max, val))
     : fallback;

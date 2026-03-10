@@ -57,11 +57,13 @@ PostgreSQL via pg adapter. Repositories in `packages/gateway/src/db/repositories
 **Critical:** All migrations must be idempotent (`IF NOT EXISTS` / `IF EXISTS`).
 
 **Pattern for new tables:**
+
 1. Add `CREATE TABLE IF NOT EXISTS` to `001_initial_schema.sql` (for fresh installs)
 2. Add same `CREATE TABLE IF NOT EXISTS` to your migration file (for existing installs)
 3. Never assume table exists - always use `IF NOT EXISTS`
 
 **Example (009_skills_platform.sql):**
+
 ```sql
 -- Create table if not exists (idempotent)
 CREATE TABLE IF NOT EXISTS user_extensions (...);
@@ -71,6 +73,7 @@ ALTER TABLE user_extensions ADD COLUMN IF NOT EXISTS npm_package TEXT;
 ```
 
 **Testing migrations:**
+
 ```bash
 # Fresh install test
 docker run -d --name test-db -p 35432:5432 \

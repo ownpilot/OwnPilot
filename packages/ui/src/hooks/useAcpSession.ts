@@ -8,11 +8,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useGateway } from './useWebSocket';
-import type {
-  AcpToolCall,
-  AcpPlan,
-  AcpToolCallContent,
-} from '../api/endpoints/coding-agents';
+import type { AcpToolCall, AcpPlan, AcpToolCallContent } from '../api/endpoints/coding-agents';
 
 // =============================================================================
 // Types
@@ -144,13 +140,10 @@ export function useAcpSession(sessionId: string | null): AcpSessionState {
 
     // Plan update
     unsubs.push(
-      subscribe<{ sessionId: string; plan: AcpPlan }>(
-        'coding-agent:acp:plan',
-        (data) => {
-          if (data.sessionId !== sessionId) return;
-          setPlan(data.plan);
-        }
-      )
+      subscribe<{ sessionId: string; plan: AcpPlan }>('coding-agent:acp:plan', (data) => {
+        if (data.sessionId !== sessionId) return;
+        setPlan(data.plan);
+      })
     );
 
     // Agent message
@@ -169,16 +162,13 @@ export function useAcpSession(sessionId: string | null): AcpSessionState {
 
     // Agent thought
     unsubs.push(
-      subscribe<{ sessionId: string; content: unknown }>(
-        'coding-agent:acp:thought',
-        (data) => {
-          if (data.sessionId !== sessionId) return;
-          setThoughts((prev) => [
-            ...prev,
-            { content: data.content, timestamp: new Date().toISOString() },
-          ]);
-        }
-      )
+      subscribe<{ sessionId: string; content: unknown }>('coding-agent:acp:thought', (data) => {
+        if (data.sessionId !== sessionId) return;
+        setThoughts((prev) => [
+          ...prev,
+          { content: data.content, timestamp: new Date().toISOString() },
+        ]);
+      })
     );
 
     // Permission request
@@ -201,25 +191,19 @@ export function useAcpSession(sessionId: string | null): AcpSessionState {
 
     // Mode change
     unsubs.push(
-      subscribe<{ sessionId: string; mode: string }>(
-        'coding-agent:acp:mode-change',
-        (data) => {
-          if (data.sessionId !== sessionId) return;
-          setMode(data.mode);
-        }
-      )
+      subscribe<{ sessionId: string; mode: string }>('coding-agent:acp:mode-change', (data) => {
+        if (data.sessionId !== sessionId) return;
+        setMode(data.mode);
+      })
     );
 
     // Completion
     unsubs.push(
-      subscribe<{ sessionId: string; stopReason: string }>(
-        'coding-agent:acp:complete',
-        (data) => {
-          if (data.sessionId !== sessionId) return;
-          setStopReason(data.stopReason);
-          setPendingPermission(null);
-        }
-      )
+      subscribe<{ sessionId: string; stopReason: string }>('coding-agent:acp:complete', (data) => {
+        if (data.sessionId !== sessionId) return;
+        setStopReason(data.stopReason);
+        setPendingPermission(null);
+      })
     );
 
     return () => {

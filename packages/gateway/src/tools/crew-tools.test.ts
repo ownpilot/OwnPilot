@@ -308,9 +308,7 @@ describe('crew-tools', () => {
     });
 
     it('resolves agent name to ID via crew lookup', async () => {
-      mockCrewRepo.getMembers.mockResolvedValue([
-        { agentId: 'agent_abc123', role: 'worker' },
-      ]);
+      mockCrewRepo.getMembers.mockResolvedValue([{ agentId: 'agent_abc123', role: 'worker' }]);
       mockSoulsRepo.getByAgentId.mockResolvedValue({
         identity: { name: 'TargetAgent' },
       });

@@ -362,285 +362,284 @@ export function WorkspacesPage() {
       )}
 
       {activeTab === 'workspaces' && (
-      <>
-      {/* Stats Bar */}
-      {stats && (
-        <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-          <div className="flex items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Folder className="w-4 h-4 text-primary" />
-              <span className="text-text-muted dark:text-dark-text-muted">Workspaces:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                {stats.total}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-primary" />
-              <span className="text-text-muted dark:text-dark-text-muted">Total Size:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                {formatBytes(stats.totalSize)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <File className="w-4 h-4 text-primary" />
-              <span className="text-text-muted dark:text-dark-text-muted">Files:</span>
-              <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                {stats.totalFiles}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Workspace List */}
-        <div className="w-80 border-r border-border dark:border-dark-border overflow-y-auto">
-          {isLoading ? (
-            <LoadingSpinner message="Loading workspaces..." />
-          ) : workspaces.length === 0 ? (
-            <EmptyState
-              icon={Folder}
-              title="No workspaces yet"
-              description="They will be created automatically during chat sessions."
-            />
-          ) : (
-            <div className="p-2">
-              {workspaces.map((workspace) => (
-                <div
-                  key={workspace.id}
-                  className={`group p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedWorkspace?.id === workspace.id
-                      ? 'bg-primary/10 border border-primary/30'
-                      : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
-                  }`}
-                  onClick={() => handleSelectWorkspace(workspace)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-2 min-w-0 flex-1">
-                      <FolderOpen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-text-primary dark:text-dark-text-primary text-sm truncate">
-                          {workspace.name || workspace.id.slice(0, 8)}
-                        </p>
-                        <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">
-                          {workspace.sessionId || workspace.id}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(workspace.id);
-                        }}
-                        className="p-1.5 text-text-muted hover:text-primary rounded transition-colors"
-                        title="Download as ZIP"
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteConfirm(workspace.id);
-                        }}
-                        className="p-1.5 text-text-muted hover:text-error rounded transition-colors"
-                        title="Delete workspace"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(workspace.updatedAt)}
-                    </span>
-                    {workspace.fileCount !== undefined && (
-                      <span className="flex items-center gap-1">
-                        <File className="w-3 h-3" />
-                        {workspace.fileCount} files
-                      </span>
-                    )}
-                    {workspace.fileCount !== undefined && workspace.fileCount === 0 && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning">
-                        Empty
-                      </span>
-                    )}
-                  </div>
-                  {workspace.tags && workspace.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {workspace.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+        <>
+          {/* Stats Bar */}
+          {stats && (
+            <div className="px-6 py-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-primary" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Workspaces:</span>
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    {stats.total}
+                  </span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <HardDrive className="w-4 h-4 text-primary" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Total Size:</span>
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    {formatBytes(stats.totalSize)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <File className="w-4 h-4 text-primary" />
+                  <span className="text-text-muted dark:text-dark-text-muted">Files:</span>
+                  <span className="font-medium text-text-primary dark:text-dark-text-primary">
+                    {stats.totalFiles}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* File Browser */}
-        <div className="flex-1 overflow-y-auto">
-          {selectedWorkspace ? (
-            <div className="h-full flex flex-col">
-              {/* Workspace Header */}
-              <div className="px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-text-primary dark:text-dark-text-primary">
-                      {selectedWorkspace.name || selectedWorkspace.id}
-                    </h3>
-                    {selectedWorkspace.description && (
-                      <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-                        {selectedWorkspace.description}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDownload(selectedWorkspace.id)}
-                    className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download ZIP
-                  </button>
-                </div>
-
-                {/* Breadcrumb */}
-                {currentPath && (
-                  <div className="flex items-center gap-1 mt-3 text-sm">
-                    <button
-                      onClick={() => navigateToPath('')}
-                      className="text-primary hover:underline"
+          {/* Content */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Workspace List */}
+            <div className="w-80 border-r border-border dark:border-dark-border overflow-y-auto">
+              {isLoading ? (
+                <LoadingSpinner message="Loading workspaces..." />
+              ) : workspaces.length === 0 ? (
+                <EmptyState
+                  icon={Folder}
+                  title="No workspaces yet"
+                  description="They will be created automatically during chat sessions."
+                />
+              ) : (
+                <div className="p-2">
+                  {workspaces.map((workspace) => (
+                    <div
+                      key={workspace.id}
+                      className={`group p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedWorkspace?.id === workspace.id
+                          ? 'bg-primary/10 border border-primary/30'
+                          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border border-transparent'
+                      }`}
+                      onClick={() => handleSelectWorkspace(workspace)}
                     >
-                      Root
-                    </button>
-                    {currentPath
-                      .split('/')
-                      .filter(Boolean)
-                      .map((part, idx, arr) => (
-                        <span key={idx} className="flex items-center gap-1">
-                          <ChevronRight className="w-4 h-4 text-text-muted" />
-                          <button
-                            onClick={() => navigateToPath(arr.slice(0, idx + 1).join('/'))}
-                            className="text-primary hover:underline"
-                          >
-                            {part}
-                          </button>
-                        </span>
-                      ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Files List */}
-              <div className="flex-1 overflow-y-auto p-4">
-                {isLoadingFiles ? (
-                  <LoadingSpinner size="sm" message="Loading files..." />
-                ) : workspaceFiles.length === 0 ? (
-                  <EmptyState
-                    icon={File}
-                    title={`No files in this ${currentPath ? 'folder' : 'workspace'}`}
-                  />
-                ) : (
-                  <div className="space-y-1">
-                    {workspaceFiles.map((file) => (
-                      <div
-                        key={file.path}
-                        className="flex items-center justify-between p-3 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          {file.isDirectory ? (
-                            <button
-                              onClick={() => toggleFolder(file.path)}
-                              className="flex items-center gap-2"
-                            >
-                              {expandedFolders.has(file.path) ? (
-                                <ChevronDown className="w-4 h-4 text-text-muted" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4 text-text-muted" />
-                              )}
-                              <FolderOpen className="w-5 h-5 text-primary" />
-                            </button>
-                          ) : (
-                            <File className="w-5 h-5 text-text-muted dark:text-dark-text-muted ml-6" />
-                          )}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                          <FolderOpen className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                           <div className="min-w-0">
-                            <p className="text-sm text-text-primary dark:text-dark-text-primary truncate">
-                              {file.name}
+                            <p className="font-medium text-text-primary dark:text-dark-text-primary text-sm truncate">
+                              {workspace.name || workspace.id.slice(0, 8)}
                             </p>
-                            <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                              {formatDate(file.modifiedAt)}
+                            <p className="text-xs text-text-muted dark:text-dark-text-muted truncate">
+                              {workspace.sessionId || workspace.id}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                            {file.isDirectory ? '--' : formatBytes(file.size)}
-                          </span>
-                          {!file.isDirectory && (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const hdrs: Record<string, string> = {};
-                                  try {
-                                    const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-                                    if (t) hdrs['X-Session-Token'] = t;
-                                  } catch {
-                                    /* */
-                                  }
-                                  const res = await fetch(
-                                    `/api/v1/file-workspaces/${selectedWorkspace.id}/file/${file.path}?download=true`,
-                                    { headers: hdrs }
-                                  );
-                                  if (!res.ok) throw new Error('Download failed');
-                                  const blob = await res.blob();
-                                  const url = window.URL.createObjectURL(blob);
-                                  const a = document.createElement('a');
-                                  a.href = url;
-                                  a.download = file.name;
-                                  document.body.appendChild(a);
-                                  a.click();
-                                  window.URL.revokeObjectURL(url);
-                                  document.body.removeChild(a);
-                                } catch {
-                                  toast.error('Failed to download file');
-                                }
-                              }}
-                              className="p-1.5 text-text-muted hover:text-primary rounded transition-colors"
-                              title="Download file"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          )}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(workspace.id);
+                            }}
+                            className="p-1.5 text-text-muted hover:text-primary rounded transition-colors"
+                            title="Download as ZIP"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(workspace.id);
+                            }}
+                            className="p-1.5 text-text-muted hover:text-error rounded transition-colors"
+                            title="Delete workspace"
+                          >
+                            <Trash className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(workspace.updatedAt)}
+                        </span>
+                        {workspace.fileCount !== undefined && (
+                          <span className="flex items-center gap-1">
+                            <File className="w-3 h-3" />
+                            {workspace.fileCount} files
+                          </span>
+                        )}
+                        {workspace.fileCount !== undefined && workspace.fileCount === 0 && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning">
+                            Empty
+                          </span>
+                        )}
+                      </div>
+                      {workspace.tags && workspace.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {workspace.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <Folder className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-              <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Select a Workspace
-              </h3>
-              <p className="text-text-muted dark:text-dark-text-muted">
-                Choose a workspace from the list to view its files
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
 
-      </>
+            {/* File Browser */}
+            <div className="flex-1 overflow-y-auto">
+              {selectedWorkspace ? (
+                <div className="h-full flex flex-col">
+                  {/* Workspace Header */}
+                  <div className="px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-text-primary dark:text-dark-text-primary">
+                          {selectedWorkspace.name || selectedWorkspace.id}
+                        </h3>
+                        {selectedWorkspace.description && (
+                          <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
+                            {selectedWorkspace.description}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDownload(selectedWorkspace.id)}
+                        className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Download ZIP
+                      </button>
+                    </div>
+
+                    {/* Breadcrumb */}
+                    {currentPath && (
+                      <div className="flex items-center gap-1 mt-3 text-sm">
+                        <button
+                          onClick={() => navigateToPath('')}
+                          className="text-primary hover:underline"
+                        >
+                          Root
+                        </button>
+                        {currentPath
+                          .split('/')
+                          .filter(Boolean)
+                          .map((part, idx, arr) => (
+                            <span key={idx} className="flex items-center gap-1">
+                              <ChevronRight className="w-4 h-4 text-text-muted" />
+                              <button
+                                onClick={() => navigateToPath(arr.slice(0, idx + 1).join('/'))}
+                                className="text-primary hover:underline"
+                              >
+                                {part}
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Files List */}
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {isLoadingFiles ? (
+                      <LoadingSpinner size="sm" message="Loading files..." />
+                    ) : workspaceFiles.length === 0 ? (
+                      <EmptyState
+                        icon={File}
+                        title={`No files in this ${currentPath ? 'folder' : 'workspace'}`}
+                      />
+                    ) : (
+                      <div className="space-y-1">
+                        {workspaceFiles.map((file) => (
+                          <div
+                            key={file.path}
+                            className="flex items-center justify-between p-3 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              {file.isDirectory ? (
+                                <button
+                                  onClick={() => toggleFolder(file.path)}
+                                  className="flex items-center gap-2"
+                                >
+                                  {expandedFolders.has(file.path) ? (
+                                    <ChevronDown className="w-4 h-4 text-text-muted" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-text-muted" />
+                                  )}
+                                  <FolderOpen className="w-5 h-5 text-primary" />
+                                </button>
+                              ) : (
+                                <File className="w-5 h-5 text-text-muted dark:text-dark-text-muted ml-6" />
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm text-text-primary dark:text-dark-text-primary truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                                  {formatDate(file.modifiedAt)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                                {file.isDirectory ? '--' : formatBytes(file.size)}
+                              </span>
+                              {!file.isDirectory && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const hdrs: Record<string, string> = {};
+                                      try {
+                                        const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+                                        if (t) hdrs['X-Session-Token'] = t;
+                                      } catch {
+                                        /* */
+                                      }
+                                      const res = await fetch(
+                                        `/api/v1/file-workspaces/${selectedWorkspace.id}/file/${file.path}?download=true`,
+                                        { headers: hdrs }
+                                      );
+                                      if (!res.ok) throw new Error('Download failed');
+                                      const blob = await res.blob();
+                                      const url = window.URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = file.name;
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      window.URL.revokeObjectURL(url);
+                                      document.body.removeChild(a);
+                                    } catch {
+                                      toast.error('Failed to download file');
+                                    }
+                                  }}
+                                  className="p-1.5 text-text-muted hover:text-primary rounded transition-colors"
+                                  title="Download file"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <Folder className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
+                  <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                    Select a Workspace
+                  </h3>
+                  <p className="text-text-muted dark:text-dark-text-muted">
+                    Choose a workspace from the list to view its files
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Delete Confirmation Modal */}

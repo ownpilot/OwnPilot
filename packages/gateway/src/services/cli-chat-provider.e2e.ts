@@ -9,7 +9,11 @@
  *   npx tsx packages/gateway/src/services/cli-chat-provider.e2e.ts all
  */
 
-import { CliChatProvider, type CliChatBinary, detectCliChatProviders } from './cli-chat-provider.js';
+import {
+  CliChatProvider,
+  type CliChatBinary,
+  detectCliChatProviders,
+} from './cli-chat-provider.js';
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -38,9 +42,7 @@ async function testProvider(binary: CliChatBinary): Promise<boolean> {
 
   const start = Date.now();
   const result = await provider.complete({
-    messages: [
-      { role: 'user', content: 'Reply with exactly: SMOKE_TEST_OK' },
-    ],
+    messages: [{ role: 'user', content: 'Reply with exactly: SMOKE_TEST_OK' }],
     model: { model: '' }, // use default
   });
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -49,10 +51,14 @@ async function testProvider(binary: CliChatBinary): Promise<boolean> {
     const content = result.value.content.trim();
     const passed = content.includes('SMOKE_TEST_OK');
     if (passed) {
-      log(`${COLORS.green}✓ ${label} — OK (${elapsed}s) model=${result.value.model}${COLORS.reset}`);
+      log(
+        `${COLORS.green}✓ ${label} — OK (${elapsed}s) model=${result.value.model}${COLORS.reset}`
+      );
       log(`  ${COLORS.dim}Response: ${content.slice(0, 120)}${COLORS.reset}`);
     } else {
-      log(`${COLORS.yellow}~ ${label} — responded but didn't follow instruction (${elapsed}s)${COLORS.reset}`);
+      log(
+        `${COLORS.yellow}~ ${label} — responded but didn't follow instruction (${elapsed}s)${COLORS.reset}`
+      );
       log(`  ${COLORS.dim}Response: ${content.slice(0, 200)}${COLORS.reset}`);
     }
     return true;
@@ -69,7 +75,9 @@ async function main() {
   log(`${COLORS.bold}CLI Chat Provider Detection${COLORS.reset}`);
   const providers = detectCliChatProviders();
   for (const p of providers) {
-    const status = p.installed ? `${COLORS.green}installed${COLORS.reset}` : `${COLORS.red}not found${COLORS.reset}`;
+    const status = p.installed
+      ? `${COLORS.green}installed${COLORS.reset}`
+      : `${COLORS.red}not found${COLORS.reset}`;
     log(`  ${p.id}: ${status} (${p.binary})`);
   }
   console.log();
@@ -94,7 +102,9 @@ async function main() {
     try {
       results[binary] = await testProvider(binary);
     } catch (e) {
-      log(`${COLORS.red}✗ ${binary} — EXCEPTION: ${e instanceof Error ? e.message : String(e)}${COLORS.reset}`);
+      log(
+        `${COLORS.red}✗ ${binary} — EXCEPTION: ${e instanceof Error ? e.message : String(e)}${COLORS.reset}`
+      );
       results[binary] = false;
     }
     console.log();

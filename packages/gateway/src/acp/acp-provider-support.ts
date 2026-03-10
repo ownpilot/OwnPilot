@@ -47,10 +47,7 @@ export function buildAcpArgs(
 
   switch (provider) {
     case 'gemini-cli':
-      return [
-        '--experimental-acp',
-        ...(options?.model ? ['--model', options.model] : []),
-      ];
+      return ['--experimental-acp', ...(options?.model ? ['--model', options.model] : [])];
 
     case 'claude-code':
       // Future: when Claude Code supports --acp

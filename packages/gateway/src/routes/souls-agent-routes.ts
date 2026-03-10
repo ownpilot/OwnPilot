@@ -12,7 +12,13 @@ import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { runAgentHeartbeat } from '../services/soul-heartbeat-service.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getPaginationParams } from './helpers.js';
+import {
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  getErrorMessage,
+  getPaginationParams,
+} from './helpers.js';
 
 export const soulAgentRoutes = new Hono();
 

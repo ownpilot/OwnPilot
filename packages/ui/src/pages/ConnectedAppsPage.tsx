@@ -491,14 +491,14 @@ export function ConnectedAppsPage() {
             Manage 500+ app integrations via Composio
           </p>
         </div>
-          <button
-            onClick={loadData}
-            disabled={isLoading}
-            className="p-2 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+        <button
+          onClick={loadData}
+          disabled={isLoading}
+          className="p-2 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
       </header>
 
       {/* Tab Bar */}
@@ -601,104 +601,104 @@ export function ConnectedAppsPage() {
 
       {/* Apps Tab */}
       {activeTab === 'apps' && (
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
 
-        {!isLoading && (
-          <section>
-            {/* Not configured warning */}
-            {composioConfigured === false && (
-              <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl mb-4">
-                <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="font-medium text-text-primary dark:text-dark-text-primary text-sm">
-                    Composio API key not configured
+          {!isLoading && (
+            <section>
+              {/* Not configured warning */}
+              {composioConfigured === false && (
+                <div className="flex items-start gap-3 p-4 bg-warning/10 border border-warning/20 rounded-xl mb-4">
+                  <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-text-primary dark:text-dark-text-primary text-sm">
+                      Composio API key not configured
+                    </div>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                      Set your Composio API key in{' '}
+                      <a href="/settings/config-center" className="text-primary hover:underline">
+                        Config Center
+                      </a>{' '}
+                      to connect these apps. Get a free key at{' '}
+                      <a
+                        href="https://composio.dev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-0.5"
+                      >
+                        composio.dev <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </p>
                   </div>
-                  <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                    Set your Composio API key in{' '}
-                    <a href="/settings/config-center" className="text-primary hover:underline">
-                      Config Center
-                    </a>{' '}
-                    to connect these apps. Get a free key at{' '}
-                    <a
-                      href="https://composio.dev"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline inline-flex items-center gap-0.5"
-                    >
-                      composio.dev <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </p>
+                </div>
+              )}
+
+              {/* Connected Apps */}
+              {connections.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">
+                    Connected ({connections.length})
+                  </div>
+                  <div className="space-y-2">
+                    {connections.map((conn) => (
+                      <ConnectedAppCard
+                        key={conn.id}
+                        connection={conn}
+                        onDisconnect={() => handleDisconnect(conn.id, conn.appName)}
+                        onRefresh={() => handleRefresh(conn.id)}
+                        isRefreshing={refreshingId === conn.id}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Available Apps — always shown */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-medium text-text-muted dark:text-dark-text-muted">
+                  Available Apps {apps.length > 0 && `(${filteredApps.length})`}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                  <input
+                    type="text"
+                    placeholder="Search apps..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-48 pl-8 pr-3 py-1.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
                 </div>
               </div>
-            )}
-
-            {/* Connected Apps */}
-            {connections.length > 0 && (
-              <div className="mb-4">
-                <div className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">
-                  Connected ({connections.length})
-                </div>
-                <div className="space-y-2">
-                  {connections.map((conn) => (
-                    <ConnectedAppCard
-                      key={conn.id}
-                      connection={conn}
-                      onDisconnect={() => handleDisconnect(conn.id, conn.appName)}
-                      onRefresh={() => handleRefresh(conn.id)}
-                      isRefreshing={refreshingId === conn.id}
+              {filteredApps.length === 0 ? (
+                <p className="text-sm text-text-muted dark:text-dark-text-muted text-center py-8">
+                  {search ? `No apps matching "${search}"` : 'No apps available'}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {filteredApps.slice(0, 50).map((app) => (
+                    <AvailableAppCard
+                      key={app.slug}
+                      app={app}
+                      isConnecting={connectingApp === app.slug}
+                      disabled={!composioConfigured}
+                      onConnect={() => handleConnect(app.slug)}
                     />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Available Apps — always shown */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-xs font-medium text-text-muted dark:text-dark-text-muted">
-                Available Apps {apps.length > 0 && `(${filteredApps.length})`}
-              </div>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search apps..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-48 pl-8 pr-3 py-1.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-            </div>
-            {filteredApps.length === 0 ? (
-              <p className="text-sm text-text-muted dark:text-dark-text-muted text-center py-8">
-                {search ? `No apps matching "${search}"` : 'No apps available'}
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {filteredApps.slice(0, 50).map((app) => (
-                  <AvailableAppCard
-                    key={app.slug}
-                    app={app}
-                    isConnecting={connectingApp === app.slug}
-                    disabled={!composioConfigured}
-                    onConnect={() => handleConnect(app.slug)}
-                  />
-                ))}
-              </div>
-            )}
-            {filteredApps.length > 50 && (
-              <p className="text-xs text-text-muted dark:text-dark-text-muted text-center mt-3">
-                Showing 50 of {filteredApps.length} apps. Use search to find specific apps.
-              </p>
-            )}
-          </section>
-        )}
-      </div>
+              )}
+              {filteredApps.length > 50 && (
+                <p className="text-xs text-text-muted dark:text-dark-text-muted text-center mt-3">
+                  Showing 50 of {filteredApps.length} apps. Use search to find specific apps.
+                </p>
+              )}
+            </section>
+          )}
+        </div>
       )}
     </div>
   );

@@ -174,7 +174,8 @@ export function AgentsPage() {
               icon: Layers,
               color: 'text-primary bg-primary/10',
               title: 'Multi-Provider',
-              description: 'Connect to OpenAI, Anthropic, Google, and more providers simultaneously.',
+              description:
+                'Connect to OpenAI, Anthropic, Google, and more providers simultaneously.',
             },
             {
               icon: Brain,
@@ -192,14 +193,24 @@ export function AgentsPage() {
               icon: Gauge,
               color: 'text-amber-500 bg-amber-500/10',
               title: 'Temperature Control',
-              description: 'Fine-tune creativity vs. precision with temperature and other parameters.',
+              description:
+                'Fine-tune creativity vs. precision with temperature and other parameters.',
             },
           ]}
           steps={[
             { title: 'Create an agent', detail: 'Click "New Agent" and give it a name.' },
-            { title: 'Choose provider & model', detail: 'Select from your configured AI providers.' },
-            { title: 'Customize system prompt', detail: 'Define the agent personality and instructions.' },
-            { title: 'Start using the agent', detail: 'Chat with your agent or assign it to automations.' },
+            {
+              title: 'Choose provider & model',
+              detail: 'Select from your configured AI providers.',
+            },
+            {
+              title: 'Customize system prompt',
+              detail: 'Define the agent personality and instructions.',
+            },
+            {
+              title: 'Start using the agent',
+              detail: 'Chat with your agent or assign it to automations.',
+            },
           ]}
         />
       )}
@@ -215,7 +226,11 @@ export function AgentsPage() {
                 icon={Bot}
                 title="No agents yet"
                 description="Create your first AI agent to get started. Agents can use different models and tools to help with various tasks."
-                action={{ label: 'Create Agent', onClick: () => setShowCreateModal(true), icon: Plus }}
+                action={{
+                  label: 'Create Agent',
+                  onClick: () => setShowCreateModal(true),
+                  icon: Plus,
+                }}
               />
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

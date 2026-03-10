@@ -242,7 +242,10 @@ export function ExpensesPage() {
           ]}
           steps={[
             { title: 'Add an expense', detail: 'Click "Add Expense" and fill in the details.' },
-            { title: 'Categorize it', detail: 'Choose a category like food, transport, or shopping.' },
+            {
+              title: 'Categorize it',
+              detail: 'Choose a category like food, transport, or shopping.',
+            },
             {
               title: 'View spending trends',
               detail: 'Check the monthly chart and category breakdown.',

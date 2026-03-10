@@ -168,7 +168,11 @@ mcpRoutes.post('/tool-call', async (c) => {
 
     const { tool_name: toolName, arguments: toolArgs } = body;
     if (!toolName) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'tool_name is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'tool_name is required' },
+        400
+      );
     }
 
     const registry = getSharedToolRegistry();
@@ -180,12 +184,8 @@ mcpRoutes.post('/tool-call', async (c) => {
     };
 
     // Import executors dynamically to avoid circular deps
-    const {
-      executeSearchTools,
-      executeGetToolHelp,
-      executeUseTool,
-      executeBatchUseTool,
-    } = await import('../tools/agent-tool-registry.js');
+    const { executeSearchTools, executeGetToolHelp, executeUseTool, executeBatchUseTool } =
+      await import('../tools/agent-tool-registry.js');
 
     let result: { content: unknown; isError?: boolean };
 
@@ -203,7 +203,10 @@ mcpRoutes.post('/tool-call', async (c) => {
         result = await executeBatchUseTool(registry, toolArgs ?? {}, context);
         break;
       default:
-        result = { content: `Unknown meta-tool: ${toolName}. Use search_tools, get_tool_help, use_tool, or batch_use_tool.`, isError: true };
+        result = {
+          content: `Unknown meta-tool: ${toolName}. Use search_tools, get_tool_help, use_tool, or batch_use_tool.`,
+          isError: true,
+        };
     }
 
     return apiResponse(c, { content: String(result.content), isError: result.isError ?? false });

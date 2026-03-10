@@ -256,7 +256,9 @@ describe('createApp', () => {
     it('calls createAuthMiddleware when auth type is not none', () => {
       vi.clearAllMocks();
       createApp({ auth: { type: 'api-key' } });
-      expect(mockCreateAuthMiddleware).toHaveBeenCalledWith(expect.objectContaining({ type: 'api-key' }));
+      expect(mockCreateAuthMiddleware).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'api-key' })
+      );
     });
 
     it('does not call createAuthMiddleware when auth type is none', () => {

@@ -307,248 +307,250 @@ export function AutonomousHubPage() {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-      {activeTab === 'home' && (
-        <PageHomeTab
-          heroIcons={[
-            { icon: Bot, color: 'text-primary bg-primary/10' },
-            { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
-            { icon: Users, color: 'text-emerald-500 bg-emerald-500/10' },
-          ]}
-          title="Command Your Autonomous Agents"
-          subtitle="Create AI agents that work independently — with their own goals, tools, budgets, and crew coordination."
-          cta={{ label: 'View Agents', icon: Bot, onClick: () => handleTabChange('agents') }}
-          features={[
-            {
-              icon: Bot,
-              color: 'text-primary bg-primary/10',
-              title: 'Independent Agents',
-              description:
-                'Create agents that run on their own schedule — monitoring, researching, and completing tasks autonomously.',
-            },
-            {
-              icon: Users,
-              color: 'text-emerald-500 bg-emerald-500/10',
-              title: 'Crew Collaboration',
-              description:
-                'Organize agents into crews for coordinated multi-agent workflows and task delegation.',
-            },
-            {
-              icon: DollarSign,
-              color: 'text-amber-500 bg-amber-500/10',
-              title: 'Budget Control',
-              description:
-                'Set spending limits per agent and monitor API costs to keep your autonomous operations within budget.',
-            },
-            {
-              icon: Activity,
-              color: 'text-violet-500 bg-violet-500/10',
-              title: 'Activity Monitoring',
-              description:
-                'Track every heartbeat, message, and action across all your agents in real time.',
-            },
-          ]}
-          steps={[
-            {
-              title: 'Create an agent',
-              detail: 'Use templates, AI chat, or manual setup to define your agent.',
-            },
-            {
-              title: 'Assign tools & budget',
-              detail: 'Give your agent the tools it needs and set spending limits.',
-            },
-            {
-              title: 'Let it work autonomously',
-              detail: 'Your agent runs on a schedule, completing tasks on its own.',
-            },
-            {
-              title: 'Monitor activity & messages',
-              detail: 'Review logs, messages, and results from the activity feed.',
-            },
-          ]}
-          quickActions={[
-            {
-              icon: Bot,
-              label: 'View Agents',
-              description: 'Browse and manage all agents',
-              onClick: () => handleTabChange('agents'),
-            },
-            {
-              icon: Users,
-              label: 'Manage Crews',
-              description: 'Organize agents into teams',
-              onClick: () => handleTabChange('crews'),
-            },
-            {
-              icon: ListChecks,
-              label: 'Browse Plans',
-              description: 'View autonomous execution plans',
-              onClick: () => handleTabChange('plans'),
-            },
-            {
-              icon: MessageSquare,
-              label: 'View Messages',
-              description: 'Read inter-agent communications',
-              onClick: () => handleTabChange('messages'),
-            },
-            {
-              icon: Activity,
-              label: 'Activity Log',
-              description: 'Monitor real-time agent activity',
-              onClick: () => handleTabChange('activity'),
-            },
-          ]}
-        />
-      )}
+        {activeTab === 'home' && (
+          <PageHomeTab
+            heroIcons={[
+              { icon: Bot, color: 'text-primary bg-primary/10' },
+              { icon: Brain, color: 'text-violet-500 bg-violet-500/10' },
+              { icon: Users, color: 'text-emerald-500 bg-emerald-500/10' },
+            ]}
+            title="Command Your Autonomous Agents"
+            subtitle="Create AI agents that work independently — with their own goals, tools, budgets, and crew coordination."
+            cta={{ label: 'View Agents', icon: Bot, onClick: () => handleTabChange('agents') }}
+            features={[
+              {
+                icon: Bot,
+                color: 'text-primary bg-primary/10',
+                title: 'Independent Agents',
+                description:
+                  'Create agents that run on their own schedule — monitoring, researching, and completing tasks autonomously.',
+              },
+              {
+                icon: Users,
+                color: 'text-emerald-500 bg-emerald-500/10',
+                title: 'Crew Collaboration',
+                description:
+                  'Organize agents into crews for coordinated multi-agent workflows and task delegation.',
+              },
+              {
+                icon: DollarSign,
+                color: 'text-amber-500 bg-amber-500/10',
+                title: 'Budget Control',
+                description:
+                  'Set spending limits per agent and monitor API costs to keep your autonomous operations within budget.',
+              },
+              {
+                icon: Activity,
+                color: 'text-violet-500 bg-violet-500/10',
+                title: 'Activity Monitoring',
+                description:
+                  'Track every heartbeat, message, and action across all your agents in real time.',
+              },
+            ]}
+            steps={[
+              {
+                title: 'Create an agent',
+                detail: 'Use templates, AI chat, or manual setup to define your agent.',
+              },
+              {
+                title: 'Assign tools & budget',
+                detail: 'Give your agent the tools it needs and set spending limits.',
+              },
+              {
+                title: 'Let it work autonomously',
+                detail: 'Your agent runs on a schedule, completing tasks on its own.',
+              },
+              {
+                title: 'Monitor activity & messages',
+                detail: 'Review logs, messages, and results from the activity feed.',
+              },
+            ]}
+            quickActions={[
+              {
+                icon: Bot,
+                label: 'View Agents',
+                description: 'Browse and manage all agents',
+                onClick: () => handleTabChange('agents'),
+              },
+              {
+                icon: Users,
+                label: 'Manage Crews',
+                description: 'Organize agents into teams',
+                onClick: () => handleTabChange('crews'),
+              },
+              {
+                icon: ListChecks,
+                label: 'Browse Plans',
+                description: 'View autonomous execution plans',
+                onClick: () => handleTabChange('plans'),
+              },
+              {
+                icon: MessageSquare,
+                label: 'View Messages',
+                description: 'Read inter-agent communications',
+                onClick: () => handleTabChange('messages'),
+              },
+              {
+                icon: Activity,
+                label: 'Activity Log',
+                description: 'Monitor real-time agent activity',
+                onClick: () => handleTabChange('activity'),
+              },
+            ]}
+          />
+        )}
 
-      {activeTab === 'agents' && (
-        <div className="p-6 max-w-6xl mx-auto space-y-4 min-w-[800px]">
-          {/* Search + Filters */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search agents..."
-                className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary pl-8 pr-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-2 py-1.5"
-            >
-              <option value="all">All Status</option>
-              <option value="running">Running</option>
-              <option value="starting">Starting</option>
-              <option value="waiting">Waiting</option>
-              <option value="paused">Paused</option>
-              <option value="idle">Idle</option>
-              <option value="error">Error</option>
-              <option value="stopped">Stopped</option>
-            </select>
-            <select
-              value={kindFilter}
-              onChange={(e) => setKindFilter(e.target.value)}
-              className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-2 py-1.5"
-            >
-              <option value="all">All Types</option>
-              <option value="soul">Soul Agents</option>
-              <option value="background">Background Agents</option>
-            </select>
-            <span className="text-xs text-text-muted dark:text-dark-text-muted ml-auto">
-              {filteredAgents.length} agent{filteredAgents.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          {/* Agent grid */}
-          {filteredAgents.length === 0 ? (
-            <div className="text-center py-12 space-y-6">
-              <div>
-                <Bot className="w-12 h-12 text-text-muted dark:text-dark-text-muted mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
-                  {agents.length === 0 ? 'Create your first agent' : 'No agents match your filters'}
-                </h3>
-                <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1 max-w-md mx-auto">
-                  {agents.length === 0
-                    ? 'Agents run autonomously on a schedule — scanning news, summarizing data, tracking goals, and more. Choose how to get started:'
-                    : 'Try adjusting the status or type filters above.'}
-                </p>
-              </div>
-              {agents.length === 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setWizardInitialStep('templates');
-                      setShowWizard(true);
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
-                  >
-                    <BookOpen className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                        Browse Templates
-                      </div>
-                      <div className="text-xs text-text-muted dark:text-dark-text-muted">
-                        Pick from 16+ ready-made agents
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setShowAICreator(true)}
-                    className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
-                  >
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                        Chat with AI
-                      </div>
-                      <div className="text-xs text-text-muted dark:text-dark-text-muted">
-                        Describe what you need in plain words
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setWizardInitialStep('type');
-                      setShowWizard(true);
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
-                  >
-                    <Plus className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                        Create Manually
-                      </div>
-                      <div className="text-xs text-text-muted dark:text-dark-text-muted">
-                        Full control over every setting
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredAgents.map((agent) => (
-                <AgentCard
-                  key={agent.id}
-                  agent={agent}
-                  onPause={handlePause}
-                  onResume={handleResume}
-                  onDelete={handleDelete}
-                  onTestRun={handleTestRun}
+        {activeTab === 'agents' && (
+          <div className="p-6 max-w-6xl mx-auto space-y-4 min-w-[800px]">
+            {/* Search + Filters */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search agents..."
+                  className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary pl-8 pr-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-              ))}
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-2 py-1.5"
+              >
+                <option value="all">All Status</option>
+                <option value="running">Running</option>
+                <option value="starting">Starting</option>
+                <option value="waiting">Waiting</option>
+                <option value="paused">Paused</option>
+                <option value="idle">Idle</option>
+                <option value="error">Error</option>
+                <option value="stopped">Stopped</option>
+              </select>
+              <select
+                value={kindFilter}
+                onChange={(e) => setKindFilter(e.target.value)}
+                className="text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary px-2 py-1.5"
+              >
+                <option value="all">All Types</option>
+                <option value="soul">Soul Agents</option>
+                <option value="background">Background Agents</option>
+              </select>
+              <span className="text-xs text-text-muted dark:text-dark-text-muted ml-auto">
+                {filteredAgents.length} agent{filteredAgents.length !== 1 ? 's' : ''}
+              </span>
             </div>
-          )}
-        </div>
-      )}
 
-      {activeTab === 'crews' && (
-        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
-          <CrewSection crews={crews} templates={templates} onRefresh={refresh} />
-        </div>
-      )}
+            {/* Agent grid */}
+            {filteredAgents.length === 0 ? (
+              <div className="text-center py-12 space-y-6">
+                <div>
+                  <Bot className="w-12 h-12 text-text-muted dark:text-dark-text-muted mx-auto mb-3" />
+                  <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
+                    {agents.length === 0
+                      ? 'Create your first agent'
+                      : 'No agents match your filters'}
+                  </h3>
+                  <p className="text-sm text-text-muted dark:text-dark-text-muted mt-1 max-w-md mx-auto">
+                    {agents.length === 0
+                      ? 'Agents run autonomously on a schedule — scanning news, summarizing data, tracking goals, and more. Choose how to get started:'
+                      : 'Try adjusting the status or type filters above.'}
+                  </p>
+                </div>
+                {agents.length === 0 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        setWizardInitialStep('templates');
+                        setShowWizard(true);
+                      }}
+                      className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
+                    >
+                      <BookOpen className="w-5 h-5 text-primary" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                          Browse Templates
+                        </div>
+                        <div className="text-xs text-text-muted dark:text-dark-text-muted">
+                          Pick from 16+ ready-made agents
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setShowAICreator(true)}
+                      className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
+                    >
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                          Chat with AI
+                        </div>
+                        <div className="text-xs text-text-muted dark:text-dark-text-muted">
+                          Describe what you need in plain words
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setWizardInitialStep('type');
+                        setShowWizard(true);
+                      }}
+                      className="flex items-center gap-2 px-5 py-3 border border-border dark:border-dark-border rounded-xl hover:border-primary hover:bg-primary/5 transition-colors w-full sm:w-auto"
+                    >
+                      <Plus className="w-5 h-5 text-primary" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                          Create Manually
+                        </div>
+                        <div className="text-xs text-text-muted dark:text-dark-text-muted">
+                          Full control over every setting
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredAgents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onPause={handlePause}
+                    onResume={handleResume}
+                    onDelete={handleDelete}
+                    onTestRun={handleTestRun}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-      {activeTab === 'plans' && (
-        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
-          <PlansTab />
-        </div>
-      )}
+        {activeTab === 'crews' && (
+          <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
+            <CrewSection crews={crews} templates={templates} onRefresh={refresh} />
+          </div>
+        )}
 
-      {activeTab === 'messages' && (
-        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
-          <CommsPanel agents={agents} />
-        </div>
-      )}
+        {activeTab === 'plans' && (
+          <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
+            <PlansTab />
+          </div>
+        )}
 
-      {activeTab === 'activity' && (
-        <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
-          <ActivityFeed agents={agents} refreshTrigger={activityRefreshTrigger} />
-        </div>
-      )}
+        {activeTab === 'messages' && (
+          <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
+            <CommsPanel agents={agents} />
+          </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <div className="p-6 max-w-6xl mx-auto w-full min-h-[400px] min-w-[800px]">
+            <ActivityFeed agents={agents} refreshTrigger={activityRefreshTrigger} />
+          </div>
+        )}
       </div>
 
       {/* Create wizard modal */}

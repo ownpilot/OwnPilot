@@ -96,4 +96,3 @@ describe('PROVIDER_PRESETS', () => {
     expect(PROVIDER_PRESETS['google']!.openaiCompatible).toBe(false);
   });
 });
-

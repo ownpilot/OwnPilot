@@ -32,11 +32,8 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-const {
-  OrchestrationRunsRepository,
-  createOrchestrationRunsRepository,
-  orchestrationRunsRepo,
-} = await import('./orchestration-runs.js');
+const { OrchestrationRunsRepository, createOrchestrationRunsRepository, orchestrationRunsRepo } =
+  await import('./orchestration-runs.js');
 
 // Test fixtures
 function createMockRunRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -87,17 +84,19 @@ describe('OrchestrationRunsRepository', () => {
         permissions: { fs: 'read-write', network: true },
       };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({
-        id: 'run-123',
-        goal: 'Create a React component',
-        provider: 'claude-code',
-        model: 'claude-3-5-sonnet',
-        max_steps: 15,
-        auto_mode: true,
-        enable_analysis: true,
-        skill_ids: JSON.stringify(['skill-1', 'skill-2']),
-        permissions: JSON.stringify({ fs: 'read-write', network: true }),
-      }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        createMockRunRow({
+          id: 'run-123',
+          goal: 'Create a React component',
+          provider: 'claude-code',
+          model: 'claude-3-5-sonnet',
+          max_steps: 15,
+          auto_mode: true,
+          enable_analysis: true,
+          skill_ids: JSON.stringify(['skill-1', 'skill-2']),
+          permissions: JSON.stringify({ fs: 'read-write', network: true }),
+        })
+      );
 
       const result = await repo.create(input);
 
@@ -135,16 +134,18 @@ describe('OrchestrationRunsRepository', () => {
         cwd: '/home/user',
       };
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({
-        id: 'run-789',
-        goal: 'Simple task',
-        model: null,
-        max_steps: 10,
-        auto_mode: false,
-        enable_analysis: true,
-        skill_ids: '[]',
-        permissions: null,
-      }));
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        createMockRunRow({
+          id: 'run-789',
+          goal: 'Simple task',
+          model: null,
+          max_steps: 10,
+          auto_mode: false,
+          enable_analysis: true,
+          skill_ids: '[]',
+          permissions: null,
+        })
+      );
 
       const result = await repo.create(input);
 
@@ -251,9 +252,7 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('handles numeric boolean for auto_mode', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockRunRow({ auto_mode: 1 })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({ auto_mode: 1 }));
 
       const result = await repo.getById('run-123', 'user-456');
 
@@ -261,9 +260,7 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('handles zero value for enable_analysis', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockRunRow({ enable_analysis: 0 })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({ enable_analysis: 0 }));
 
       const result = await repo.getById('run-123', 'user-456');
 
@@ -271,9 +268,7 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('converts numeric current_step to number', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockRunRow({ current_step: '5' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({ current_step: '5' }));
 
       const result = await repo.getById('run-123', 'user-456');
 
@@ -282,9 +277,7 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('converts total_duration_ms to number', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        createMockRunRow({ total_duration_ms: '12345' })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({ total_duration_ms: '12345' }));
 
       const result = await repo.getById('run-123', 'user-456');
 
@@ -292,13 +285,19 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('handles different status values', async () => {
-      const statuses = ['planning', 'running', 'waiting_user', 'paused', 'completed', 'failed', 'aborted'];
+      const statuses = [
+        'planning',
+        'running',
+        'waiting_user',
+        'paused',
+        'completed',
+        'failed',
+        'aborted',
+      ];
 
       for (const status of statuses) {
         vi.clearAllMocks();
-        mockAdapter.queryOne.mockResolvedValueOnce(
-          createMockRunRow({ status })
-        );
+        mockAdapter.queryOne.mockResolvedValueOnce(createMockRunRow({ status }));
 
         const result = await repo.getById('run-123', 'user-456');
         expect(result?.status).toBe(status);
@@ -361,7 +360,9 @@ describe('OrchestrationRunsRepository', () => {
 
       const result = await repo.listActive('user-456');
 
-      expect(result.every(r => !['completed', 'failed', 'aborted'].includes(r.status))).toBe(true);
+      expect(result.every((r) => !['completed', 'failed', 'aborted'].includes(r.status))).toBe(
+        true
+      );
     });
   });
 
@@ -417,7 +418,15 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('handles all status transitions', async () => {
-      const statuses = ['planning', 'running', 'waiting_user', 'paused', 'completed', 'failed', 'aborted'] as const;
+      const statuses = [
+        'planning',
+        'running',
+        'waiting_user',
+        'paused',
+        'completed',
+        'failed',
+        'aborted',
+      ] as const;
 
       for (const status of statuses) {
         vi.clearAllMocks();
@@ -442,7 +451,9 @@ describe('OrchestrationRunsRepository', () => {
       await repo.updateSteps('run-123', 'user-456', steps, 1);
 
       expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE orchestration_runs SET steps = $3, current_step = $4, updated_at = NOW()'),
+        expect.stringContaining(
+          'UPDATE orchestration_runs SET steps = $3, current_step = $4, updated_at = NOW()'
+        ),
         ['run-123', 'user-456', JSON.stringify(steps), 1]
       );
     });

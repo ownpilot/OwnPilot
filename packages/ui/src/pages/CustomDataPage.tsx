@@ -259,215 +259,215 @@ export function CustomDataPage() {
       )}
 
       {activeTab === 'data' && (
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Table List */}
-        <aside className="w-64 border-r border-border dark:border-dark-border overflow-y-auto">
-          <div className="p-3">
-            <h3 className="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wide mb-2">
-              Tables
-            </h3>
-            {isLoading ? (
-              <LoadingSpinner size="sm" message="Loading..." />
-            ) : tables.length === 0 ? (
-              <p className="text-sm text-text-muted dark:text-dark-text-muted p-2">
-                No tables yet. Ask AI to create one!
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {tables.map((table) => (
-                  <li key={table.id}>
-                    <button
-                      onClick={() => handleSelectTable(table)}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-                        selectedTable?.id === table.id
-                          ? 'bg-primary text-white'
-                          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Table className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate text-sm">{table.displayName}</span>
-                        {table.isProtected && (
-                          <Lock
-                            className={`w-3 h-3 flex-shrink-0 ${
-                              selectedTable?.id === table.id
-                                ? 'text-white/70'
-                                : 'text-text-muted dark:text-dark-text-muted'
-                            }`}
-                          />
-                        )}
-                      </div>
-                      <span
-                        className={`text-xs ${selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'}`}
-                      >
-                        {table.recordCount ?? 0}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {selectedTable ? (
-            <>
-              {/* Table Header */}
-              <div className="flex items-center justify-between px-6 py-3 border-b border-border dark:border-dark-border">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-text-primary dark:text-dark-text-primary">
-                      {selectedTable.displayName}
-                    </h3>
-                    {selectedTable.isProtected ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                        <Lock className="w-3 h-3" />
-                        {selectedTable.ownerPluginId ?? 'Plugin'}
-                      </span>
-                    ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar - Table List */}
+          <aside className="w-64 border-r border-border dark:border-dark-border overflow-y-auto">
+            <div className="p-3">
+              <h3 className="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wide mb-2">
+                Tables
+              </h3>
+              {isLoading ? (
+                <LoadingSpinner size="sm" message="Loading..." />
+              ) : tables.length === 0 ? (
+                <p className="text-sm text-text-muted dark:text-dark-text-muted p-2">
+                  No tables yet. Ask AI to create one!
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {tables.map((table) => (
+                    <li key={table.id}>
                       <button
-                        onClick={() => handleDeleteTable(selectedTable.id)}
-                        className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
-                        title="Delete table"
+                        onClick={() => handleSelectTable(table)}
+                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
+                          selectedTable?.id === table.id
+                            ? 'bg-primary text-white'
+                            : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary'
+                        }`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Table className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate text-sm">{table.displayName}</span>
+                          {table.isProtected && (
+                            <Lock
+                              className={`w-3 h-3 flex-shrink-0 ${
+                                selectedTable?.id === table.id
+                                  ? 'text-white/70'
+                                  : 'text-text-muted dark:text-dark-text-muted'
+                              }`}
+                            />
+                          )}
+                        </div>
+                        <span
+                          className={`text-xs ${selectedTable?.id === table.id ? 'text-white/70' : 'text-text-muted dark:text-dark-text-muted'}`}
+                        >
+                          {table.recordCount ?? 0}
+                        </span>
                       </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col overflow-hidden">
+            {selectedTable ? (
+              <>
+                {/* Table Header */}
+                <div className="flex items-center justify-between px-6 py-3 border-b border-border dark:border-dark-border">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-text-primary dark:text-dark-text-primary">
+                        {selectedTable.displayName}
+                      </h3>
+                      {selectedTable.isProtected ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                          <Lock className="w-3 h-3" />
+                          {selectedTable.ownerPluginId ?? 'Plugin'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteTable(selectedTable.id)}
+                          className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+                          title="Delete table"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    {selectedTable.description && (
+                      <p className="text-sm text-text-muted dark:text-dark-text-muted">
+                        {selectedTable.description}
+                      </p>
                     )}
                   </div>
-                  {selectedTable.description && (
-                    <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                      {selectedTable.description}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-4 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setShowAddRecordModal(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Record
+                    </button>
+                  </div>
+                </div>
+
+                {/* Records Table */}
+                <div className="flex-1 overflow-auto p-6 animate-fade-in-up">
+                  {isLoadingRecords ? (
+                    <LoadingSpinner message="Loading records..." />
+                  ) : records.length === 0 ? (
+                    <EmptyState
+                      icon={Database}
+                      title={searchQuery ? 'No records found' : 'No records yet'}
+                      description={
+                        searchQuery
+                          ? 'Try a different search term.'
+                          : 'Add your first record or ask AI to add data.'
+                      }
+                    />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border dark:border-dark-border">
+                            {selectedTable.columns.map((col) => (
+                              <th
+                                key={col.name}
+                                className="text-left p-3 font-medium text-text-secondary dark:text-dark-text-secondary"
+                              >
+                                {col.name}
+                                <span className="ml-1 text-xs text-text-muted dark:text-dark-text-muted">
+                                  ({col.type})
+                                </span>
+                              </th>
+                            ))}
+                            <th className="w-20"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {records.map((record) => (
+                            <tr
+                              key={record.id}
+                              className="border-b border-border dark:border-dark-border hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary"
+                            >
+                              {selectedTable.columns.map((col) => (
+                                <td
+                                  key={col.name}
+                                  className="p-3 text-text-primary dark:text-dark-text-primary"
+                                >
+                                  {formatCellValue(record.data[col.name], col.type)}
+                                </td>
+                              ))}
+                              <td className="p-3">
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => setEditingRecord(record)}
+                                    className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRecord(record.id)}
+                                    className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <p className="mt-4 text-sm text-text-muted dark:text-dark-text-muted">
+                        Showing {records.length} of {totalRecords} record
+                        {totalRecords !== 1 ? 's' : ''}
+                      </p>
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted dark:text-dark-text-muted" />
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-4 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    />
-                  </div>
-                  <button
-                    onClick={() => setShowAddRecordModal(true)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Record
-                  </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <Database className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
+                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
+                  Select a table
+                </h3>
+                <p className="text-text-muted dark:text-dark-text-muted mb-4">
+                  Choose a table from the sidebar or ask AI to create one.
+                </p>
+                <div className="text-sm text-text-muted dark:text-dark-text-muted max-w-md text-center">
+                  <p className="mb-2">Try asking the AI:</p>
+                  <ul className="space-y-1 text-left">
+                    <li className="flex items-center gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary" />
+                      "Create a table to track my favorite movies"
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary" />
+                      "Store my book reading list"
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight className="w-4 h-4 text-primary" />
+                      "Keep track of my project ideas"
+                    </li>
+                  </ul>
                 </div>
               </div>
-
-              {/* Records Table */}
-              <div className="flex-1 overflow-auto p-6 animate-fade-in-up">
-                {isLoadingRecords ? (
-                  <LoadingSpinner message="Loading records..." />
-                ) : records.length === 0 ? (
-                  <EmptyState
-                    icon={Database}
-                    title={searchQuery ? 'No records found' : 'No records yet'}
-                    description={
-                      searchQuery
-                        ? 'Try a different search term.'
-                        : 'Add your first record or ask AI to add data.'
-                    }
-                  />
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border dark:border-dark-border">
-                          {selectedTable.columns.map((col) => (
-                            <th
-                              key={col.name}
-                              className="text-left p-3 font-medium text-text-secondary dark:text-dark-text-secondary"
-                            >
-                              {col.name}
-                              <span className="ml-1 text-xs text-text-muted dark:text-dark-text-muted">
-                                ({col.type})
-                              </span>
-                            </th>
-                          ))}
-                          <th className="w-20"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {records.map((record) => (
-                          <tr
-                            key={record.id}
-                            className="border-b border-border dark:border-dark-border hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary"
-                          >
-                            {selectedTable.columns.map((col) => (
-                              <td
-                                key={col.name}
-                                className="p-3 text-text-primary dark:text-dark-text-primary"
-                              >
-                                {formatCellValue(record.data[col.name], col.type)}
-                              </td>
-                            ))}
-                            <td className="p-3">
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => setEditingRecord(record)}
-                                  className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteRecord(record.id)}
-                                  className="p-1 text-text-muted dark:text-dark-text-muted hover:text-error transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <p className="mt-4 text-sm text-text-muted dark:text-dark-text-muted">
-                      Showing {records.length} of {totalRecords} record
-                      {totalRecords !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full">
-              <Database className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-              <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                Select a table
-              </h3>
-              <p className="text-text-muted dark:text-dark-text-muted mb-4">
-                Choose a table from the sidebar or ask AI to create one.
-              </p>
-              <div className="text-sm text-text-muted dark:text-dark-text-muted max-w-md text-center">
-                <p className="mb-2">Try asking the AI:</p>
-                <ul className="space-y-1 text-left">
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-primary" />
-                    "Create a table to track my favorite movies"
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-primary" />
-                    "Store my book reading list"
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <ChevronRight className="w-4 h-4 text-primary" />
-                    "Keep track of my project ideas"
-                  </li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+            )}
+          </main>
+        </div>
       )}
 
       {/* Create Table Modal */}
