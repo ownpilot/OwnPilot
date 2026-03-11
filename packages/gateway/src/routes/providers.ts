@@ -365,6 +365,37 @@ app.get('/categories', (c) => {
 app.get('/:id', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+
+  // Check CLI chat providers first (cli-claude, cli-codex, cli-gemini)
+  const cliProviders = detectCliChatProviders();
+  const cliProvider = cliProviders.find((p) => p.id === id);
+  if (cliProvider) {
+    const cliProviderColors: Record<string, string> = {
+      'cli-claude': '#d4a27f',
+      'cli-codex': '#10a37f',
+      'cli-gemini': '#4285f4',
+    };
+    return apiResponse(c, {
+      id: cliProvider.id,
+      name: cliProvider.displayName,
+      type: 'cli',
+      baseUrl: '',
+      apiKeyEnv: '',
+      models: cliProvider.models.map((m) => ({ id: m, name: m })),
+      isConfigured: cliProvider.authenticated,
+      isEnabled: cliProvider.installed,
+      hasOverride: false,
+      color: cliProviderColors[cliProvider.id] ?? '#666666',
+      features: {
+        streaming: cliProvider.binary === 'claude',
+        toolUse: true,
+        vision: false,
+        jsonMode: false,
+        systemMessage: true,
+      },
+    });
+  }
+
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -412,6 +443,19 @@ app.get('/:id', async (c) => {
  */
 app.get('/:id/models', (c) => {
   const id = c.req.param('id');
+
+  // Check CLI chat providers first (cli-claude, cli-codex, cli-gemini)
+  const cliProviders = detectCliChatProviders();
+  const cliProvider = cliProviders.find((p) => p.id === id);
+  if (cliProvider) {
+    return apiResponse(c, {
+      provider: cliProvider.id,
+      providerName: cliProvider.displayName,
+      models: cliProvider.models.map((m) => ({ id: m, name: m })),
+      isConfigured: cliProvider.authenticated,
+    });
+  }
+
   const config = loadProviderConfig(id);
 
   if (!config) {
