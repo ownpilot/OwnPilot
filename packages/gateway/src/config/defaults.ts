@@ -291,3 +291,112 @@ export const PULSE_QUIET_HOURS_END = 7;
 
 /** Days to retain autonomy log entries */
 export const PULSE_LOG_RETENTION_DAYS = 30;
+
+// ============================================================================
+// HTTP / Security
+// ============================================================================
+
+/** HSTS max-age with preload (2 years, seconds) */
+export const HSTS_MAX_AGE_PRELOAD = 63_072_000;
+
+/** HSTS max-age without preload (1 year, seconds) */
+export const HSTS_MAX_AGE = 31_536_000;
+
+/** Default HTTP request body size limit (bytes) — 1 MB */
+export const DEFAULT_BODY_LIMIT_BYTES = 1_048_576;
+
+/** HTTP 413 Payload Too Large status code */
+export const HTTP_PAYLOAD_TOO_LARGE = 413;
+
+/** Cache-Control max-age for immutable hashed assets (seconds) — 1 year */
+export const STATIC_ASSET_MAX_AGE = 31_536_000;
+
+// ============================================================================
+// Browser Service
+// ============================================================================
+
+/** Maximum concurrent pages per user */
+export const BROWSER_MAX_PAGES = 5;
+
+/** Browser session idle timeout before cleanup (ms) — 10 minutes */
+export const BROWSER_SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+
+/** Browser session cleanup interval (ms) — 5 minutes */
+export const BROWSER_CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
+/** Default page navigation timeout (ms) */
+export const BROWSER_NAVIGATION_TIMEOUT_MS = 30_000;
+
+/** Default DOM action timeout (ms) */
+export const BROWSER_ACTION_TIMEOUT_MS = 10_000;
+
+/** Maximum extracted text length (chars) */
+export const BROWSER_MAX_TEXT_LENGTH = 50_000;
+
+// ============================================================================
+// CLI Tool Service
+// ============================================================================
+
+/** Default CLI tool execution timeout (ms) — 1 minute */
+export const CLI_TOOL_DEFAULT_TIMEOUT_MS = 60_000;
+
+/** Maximum CLI tool execution timeout (ms) — 5 minutes */
+export const CLI_TOOL_MAX_TIMEOUT_MS = 300_000;
+
+// ============================================================================
+// Embedding Service (retry logic)
+// ============================================================================
+
+/** Default retry-after delay when rate-limited (seconds) */
+export const EMBEDDING_RETRY_AFTER_DEFAULT_S = 5;
+
+/** Retry delay on transient server errors (ms) */
+export const EMBEDDING_SERVER_ERROR_RETRY_MS = 2_000;
+
+// ============================================================================
+// Rate Limiting (internal)
+// ============================================================================
+
+/** Maximum unique key entries in rate-limit store (prevents OOM) */
+export const RATE_LIMIT_MAX_STORE_SIZE = 10_000;
+
+// ============================================================================
+// Channel Assets
+// ============================================================================
+
+/** Default asset TTL before cleanup (ms) — 72 hours */
+export const CHANNEL_ASSET_TTL_MS = 72 * 60 * 60 * 1000;
+
+/** Maximum filename segment length (chars) */
+export const CHANNEL_ASSET_MAX_FILENAME_LENGTH = 120;
+
+// ============================================================================
+// Risk Assessment
+// ============================================================================
+
+/** Risk score threshold: critical (>= this) */
+export const RISK_THRESHOLD_CRITICAL = 75;
+
+/** Risk score threshold: high (>= this) */
+export const RISK_THRESHOLD_HIGH = 50;
+
+/** Risk score threshold: medium (>= this) */
+export const RISK_THRESHOLD_MEDIUM = 25;
+
+/** Factor weight threshold for compound risk detection */
+export const RISK_COMPOUND_WEIGHT_THRESHOLD = 0.7;
+
+/** Minimum high-severity factors for compound risk */
+export const RISK_COMPOUND_FACTOR_COUNT = 3;
+
+/** Score floor when compound risk is detected */
+export const RISK_COMPOUND_SCORE_FLOOR = 75;
+
+/** Bulk operation item count threshold */
+export const RISK_BULK_OPERATION_THRESHOLD = 10;
+
+/** High-cost threshold (currency units) */
+export const RISK_HIGH_COST_THRESHOLD = 1000;
+
+/** High-token-usage threshold */
+export const RISK_HIGH_TOKEN_THRESHOLD = 5000;

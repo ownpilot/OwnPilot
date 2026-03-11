@@ -8,6 +8,7 @@
  */
 
 import { Hono } from 'hono';
+import type { SoulFeedback } from '@ownpilot/core';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -19,6 +20,14 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import {
+  validateBody,
+  soulGoalSchema,
+  soulMissionSchema,
+  soulToolsSchema,
+  soulCommandSchema,
+  soulFeedbackSchema,
+} from '../middleware/validation.js';
 
 export const soulAgentRoutes = new Hono();
 
@@ -167,10 +176,7 @@ soulAgentRoutes.post('/:agentId/goals', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
     }
 
-    const body = await c.req.json<{ goal: string }>();
-    if (!body.goal) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'goal is required' }, 400);
-    }
+    const body = validateBody(soulGoalSchema, await c.req.json());
 
     const repo = getSoulsRepository();
 
@@ -192,6 +198,8 @@ soulAgentRoutes.post('/:agentId/goals', async (c) => {
       201
     );
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -236,20 +244,8 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
     }
 
-    const body = await c.req.json<{
-      mission: string;
-      priority?: 'low' | 'medium' | 'high' | 'critical';
-      deadline?: string;
-      autoPlan?: boolean;
-    }>();
-
-    if (!body.mission) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
-        400
-      );
-    }
+    const rawBody = await c.req.json();
+    const body = validateBody(soulMissionSchema, rawBody);
 
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
@@ -260,7 +256,7 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
     soul.purpose.mission = body.mission;
     soul.updatedAt = new Date();
 
-    if (body.autoPlan) {
+    if (rawBody.autoPlan) {
       soul.bootSequence.onHeartbeat = [
         'analyze_mission',
         'gather_context',
@@ -274,10 +270,12 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
     return apiResponse(c, {
       agentId,
       mission: soul.purpose.mission,
-      priority: body.priority ?? 'medium',
+      priority: rawBody.priority ?? 'medium',
       status: 'accepted',
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -405,7 +403,7 @@ soulAgentRoutes.put('/:agentId/tools', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
     }
 
-    const body = await c.req.json<{ allowed?: string[]; blocked?: string[] }>();
+    const body = validateBody(soulToolsSchema, await c.req.json());
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
     if (!soul) {
@@ -426,6 +424,8 @@ soulAgentRoutes.put('/:agentId/tools', async (c) => {
       blocked: soul.autonomy.blockedActions,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -439,15 +439,7 @@ soulAgentRoutes.post('/:agentId/command', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
     }
 
-    const body = await c.req.json<{ command: string; params?: Record<string, unknown> }>();
-
-    if (!body.command) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Missing required field: command' },
-        400
-      );
-    }
+    const body = validateBody(soulCommandSchema, await c.req.json());
 
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
@@ -491,6 +483,8 @@ soulAgentRoutes.post('/:agentId/command', async (c) => {
       agentId,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -584,14 +578,8 @@ soulAgentRoutes.get('/:agentId/versions/:v', async (c) => {
 soulAgentRoutes.post('/:agentId/feedback', async (c) => {
   try {
     const agentId = c.req.param('agentId');
-    const body = await c.req.json();
-    if (!body.type || !body.content) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Missing required fields: type, content' },
-        400
-      );
-    }
+    const rawBody = await c.req.json();
+    const body = validateBody(soulFeedbackSchema, rawBody);
 
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
@@ -600,15 +588,15 @@ soulAgentRoutes.post('/:agentId/feedback', async (c) => {
     }
 
     // Create version snapshot
-    await repo.createVersion(soul, body.content, body.source || 'user');
+    await repo.createVersion(soul, body.content, rawBody.source || 'user');
 
-    const feedback = {
+    const feedback: SoulFeedback = {
       id: crypto.randomUUID(),
       timestamp: new Date(),
       type: body.type,
       content: body.content,
       appliedToVersion: soul.evolution.version,
-      source: body.source || 'user',
+      source: (rawBody.source || 'user') as SoulFeedback['source'],
     };
 
     switch (feedback.type) {
@@ -641,6 +629,8 @@ soulAgentRoutes.post('/:agentId/feedback', async (c) => {
 
     return apiResponse(c, soul);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

@@ -12,6 +12,7 @@
 import { Hono } from 'hono';
 import { getVoiceService } from '../services/voice-service.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { validateBody, synthesizeVoiceSchema } from '../middleware/validation.js';
 
 export const voiceRoutes = new Hono();
 
@@ -108,29 +109,10 @@ voiceRoutes.post('/synthesize', async (c) => {
       );
     }
 
-    const body = await c.req.json<{
-      text?: string;
-      voice?: string;
-      model?: string;
-      speed?: number;
-      format?: string;
-    }>();
-
-    if (!body.text?.trim()) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'text is required' }, 400);
-    }
-
-    if (body.text.length > 4096) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Text exceeds 4096 character limit' },
-        400
-      );
-    }
+    const body = validateBody(synthesizeVoiceSchema, await c.req.json());
 
     const result = await service.synthesize(body.text, {
       voice: body.voice,
-      model: body.model,
       speed: body.speed,
       format: body.format,
     });
@@ -145,6 +127,8 @@ voiceRoutes.post('/synthesize', async (c) => {
       },
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

@@ -39,8 +39,10 @@ const log = getLog('CliToolService');
 // CONSTANTS
 // =============================================================================
 
-const DEFAULT_TIMEOUT_MS = 60_000; // 1 minute (shorter than coding agents)
-const MAX_TIMEOUT_MS = 300_000; // 5 minutes
+import { CLI_TOOL_DEFAULT_TIMEOUT_MS, CLI_TOOL_MAX_TIMEOUT_MS } from '../config/defaults.js';
+
+const DEFAULT_TIMEOUT_MS = CLI_TOOL_DEFAULT_TIMEOUT_MS;
+const MAX_TIMEOUT_MS = CLI_TOOL_MAX_TIMEOUT_MS;
 
 // =============================================================================
 // SERVICE

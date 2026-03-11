@@ -437,3 +437,14 @@ export {
   buildResponseDebugInfo,
   getDebugInfo,
 } from './debug.js';
+
+// Agent Lifecycle Abstraction (unified interface for all 6 agent types)
+export type {
+  AgentType,
+  UnifiedAgentState,
+  ResourceMetrics,
+  AgentInput,
+  AgentResult,
+  IAgentLifecycle,
+} from './lifecycle.js';
+export { BaseAgentLifecycle } from './lifecycle.js';

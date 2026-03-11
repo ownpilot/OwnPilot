@@ -21,6 +21,13 @@ import {
   getPaginationParams,
   getUserId,
 } from './helpers.js';
+import {
+  validateBody,
+  crewDeploySchema,
+  crewMessageSchema,
+  crewDelegateSchema,
+  crewSyncSchema,
+} from '../middleware/validation.js';
 
 export const crewRoutes = new Hono();
 
@@ -63,19 +70,12 @@ crewRoutes.get('/templates/:id', (c) => {
 crewRoutes.post('/deploy', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      templateId: string;
-      provider?: string;
-      model?: string;
-    }>();
-    const { templateId, provider, model } = body;
-    if (!templateId) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'templateId is required' },
-        400
-      );
-    }
+    const rawBody = await c.req.json();
+    const body = validateBody(crewDeploySchema, rawBody);
+    const { templateId } = body;
+    // provider and model are pass-through fields not in the schema
+    const provider = (rawBody as Record<string, unknown>).provider as string | undefined;
+    const model = (rawBody as Record<string, unknown>).model as string | undefined;
 
     const template = getCrewTemplate(templateId);
     if (!template) {
@@ -229,6 +229,7 @@ crewRoutes.post('/deploy', async (c) => {
       201
     );
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -377,19 +378,7 @@ crewRoutes.post('/:id/message', async (c) => {
   try {
     const crewId = c.req.param('id');
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      from?: string;
-      message: string;
-      priority?: 'low' | 'normal' | 'high';
-    }>();
-
-    if (!body.message) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
-        400
-      );
-    }
+    const body = validateBody(crewMessageSchema, await c.req.json());
 
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
@@ -409,13 +398,13 @@ crewRoutes.post('/:id/message', async (c) => {
         const soul = await soulRepo.getByAgentId(member.agentId);
         await msgRepo.create({
           id: crypto.randomUUID(),
-          from: body.from ?? 'crew-commander',
+          from: 'crew-commander',
           to: member.agentId,
           type: 'coordination',
           subject: `Crew Message: ${crew.name}`,
           content: `[Crew ${crew.name}] ${body.message}`,
           attachments: [],
-          priority: (body.priority ?? 'normal') as 'low' | 'normal' | 'high' | 'urgent',
+          priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
           requiresResponse: false,
           status: 'sent',
           crewId: crew.id,
@@ -439,6 +428,7 @@ crewRoutes.post('/:id/message', async (c) => {
       recipients: sent,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -449,24 +439,7 @@ crewRoutes.post('/:id/delegate', async (c) => {
   try {
     const crewId = c.req.param('id');
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      fromAgentId: string;
-      toAgentId: string;
-      task: string;
-      context?: string;
-      deadline?: string;
-    }>();
-
-    if (!body.fromAgentId || !body.toAgentId || !body.task) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'fromAgentId, toAgentId, and task are required',
-        },
-        400
-      );
-    }
+    const body = validateBody(crewDelegateSchema, await c.req.json());
 
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
@@ -492,7 +465,7 @@ crewRoutes.post('/:id/delegate', async (c) => {
       to: body.toAgentId,
       type: 'task_delegation',
       subject: 'Task Delegation',
-      content: `DELEGATION: ${body.task}${body.context ? `\nContext: ${body.context}` : ''}${body.deadline ? `\nDeadline: ${body.deadline}` : ''}`,
+      content: `DELEGATION: ${body.task}${body.context ? `\nContext: ${JSON.stringify(body.context)}` : ''}`,
       attachments: [],
       priority: 'high',
       requiresResponse: true,
@@ -509,6 +482,7 @@ crewRoutes.post('/:id/delegate', async (c) => {
       status: 'delegated',
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -583,15 +557,7 @@ crewRoutes.post('/:id/sync', async (c) => {
   try {
     const crewId = c.req.param('id');
     const userId = getUserId(c);
-    const body = await c.req.json<{ context: string; importance?: 'low' | 'medium' | 'high' }>();
-
-    if (!body.context) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'context is required' },
-        400
-      );
-    }
+    const body = validateBody(crewSyncSchema, await c.req.json());
 
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
@@ -620,9 +586,10 @@ crewRoutes.post('/:id/sync', async (c) => {
       crewId,
       syncedTo: members.length,
       context: body.context,
-      importance: body.importance ?? 'medium',
+      importance: 'medium',
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

@@ -639,6 +639,389 @@ export const workflowCopilotSchema = z.object({
   model: z.string().max(200).optional(),
 });
 
+// ─── Agent Command Center Schemas ───────────────────────────────
+
+const commandTargetSchema = z.object({
+  type: z.enum(['soul', 'background', 'crew']),
+  id: z.string().min(1).max(200),
+});
+
+export const agentCommandSchema = z.object({
+  targets: z.array(commandTargetSchema).min(1).max(100),
+  command: z.string().min(1).max(100),
+  params: z.record(z.string(), z.unknown()).optional(),
+  timeoutMs: z.number().int().positive().max(300000).optional(),
+});
+
+export const deployFleetSchema = z.object({
+  name: z.string().min(1).max(200),
+  mission: z.string().min(1).max(5000),
+  agentCount: z.number().int().min(1).max(10).optional(),
+  roles: z.array(z.string().max(100)).max(10).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
+  coordinationPattern: z.enum(['hub_spoke', 'peer_to_peer', 'pipeline']).optional(),
+});
+
+export const agentMissionSchema = z.object({
+  agentIds: z.array(z.string().max(200)).max(100).optional(),
+  crewIds: z.array(z.string().max(200)).max(50).optional(),
+  mission: z.string().min(1).max(5000),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  deadline: z.string().max(100).optional(),
+});
+
+const executeTargetSchema = z.object({
+  type: z.enum(['soul', 'background']),
+  id: z.string().min(1).max(200),
+  task: z.string().max(5000).optional(),
+});
+
+export const agentExecuteSchema = z.object({
+  targets: z.array(executeTargetSchema).min(1).max(100),
+  parallel: z.boolean().optional(),
+});
+
+export const agentToolsBatchUpdateSchema = z.object({
+  agentIds: z.array(z.string().max(200)).min(1).max(100),
+  addAllowed: z.array(z.string().max(200)).max(200).optional(),
+  addBlocked: z.array(z.string().max(200)).max(200).optional(),
+  removeAllowed: z.array(z.string().max(200)).max(200).optional(),
+  removeBlocked: z.array(z.string().max(200)).max(200).optional(),
+});
+
+// ─── Agent Message Schemas ──────────────────────────────────────
+
+const agentAttachmentSchema = z.object({
+  type: z.enum(['note', 'task', 'memory', 'data', 'artifact']),
+  id: z.string().min(1).max(200),
+  title: z.string().max(500).optional(),
+});
+
+export const sendAgentMessageSchema = z.object({
+  to: z.string().min(1).max(200),
+  content: z.string().min(1).max(50000),
+  from: z.string().max(200).optional(),
+  type: z.enum(['task_delegation', 'task_result', 'status_update', 'question', 'feedback', 'alert', 'coordination', 'knowledge_share']).optional(),
+  subject: z.string().max(500).optional(),
+  attachments: z.array(agentAttachmentSchema).max(20).optional(),
+  priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
+  threadId: z.string().max(200).optional(),
+  requiresResponse: z.boolean().optional(),
+  deadline: z.string().max(100).optional(),
+  crewId: z.string().max(200).optional(),
+});
+
+// ─── Artifact Schemas ───────────────────────────────────────────
+
+export const createArtifactSchema = z.object({
+  title: z.string().min(1).max(500),
+  type: z.enum(['html', 'svg', 'markdown', 'form', 'chart', 'react']),
+  content: z.string().min(1).max(500000),
+  conversationId: z.string().max(200).optional(),
+  dataBindings: z.array(z.record(z.string(), z.unknown())).max(50).optional(),
+  pinToDashboard: z.boolean().optional(),
+  dashboardSize: z.string().max(50).optional(),
+  tags: z.array(z.string().max(100)).max(50).optional(),
+});
+
+// ─── Browser Schemas ────────────────────────────────────────────
+
+export const browserNavigateSchema = z.object({
+  url: z.string().min(1).max(2048),
+});
+
+export const browserActionSchema = z.object({
+  type: z.enum(['click', 'type', 'scroll', 'select', 'wait', 'fill_form', 'extract']),
+  selector: z.string().max(2000).optional(),
+  text: z.string().max(50000).optional(),
+  direction: z.enum(['up', 'down', 'left', 'right']).optional(),
+  pixels: z.number().int().positive().max(10000).optional(),
+  value: z.string().max(5000).optional(),
+  fields: z.array(z.record(z.string(), z.unknown())).max(100).optional(),
+  dataSelectors: z.record(z.string(), z.unknown()).optional(),
+  timeout: z.number().int().positive().max(60000).optional(),
+});
+
+export const createBrowserWorkflowSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  steps: z.array(z.record(z.string(), z.unknown())).min(1).max(100),
+  parameters: z.record(z.string(), z.unknown()).optional(),
+  triggerId: z.string().max(200).optional(),
+});
+
+// ─── Config Service Schemas ─────────────────────────────────────
+
+export const createConfigServiceSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z][a-z0-9_]*$/, 'Must start with lowercase letter, only lowercase/numbers/underscores'),
+  displayName: z.string().min(1).max(200),
+  category: z.string().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  configSchema: z.array(z.record(z.string(), z.unknown())).optional(),
+  requiredBy: z.array(z.string().max(200)).optional(),
+  docsUrl: z.string().max(2000).optional(),
+});
+
+// ─── Cost Schemas ───────────────────────────────────────────────
+
+export const costEstimateSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  inputTokens: z.number().int().min(0).optional(),
+  outputTokens: z.number().int().min(0).optional(),
+  text: z.string().max(200000).optional(),
+});
+
+export const costBudgetSchema = z.object({
+  dailyLimit: z.number().positive().optional(),
+  weeklyLimit: z.number().positive().optional(),
+  monthlyLimit: z.number().positive().optional(),
+  alertThresholds: z.array(z.number().min(0).max(100)).max(10).optional(),
+  limitAction: z.enum(['warn', 'block']).optional(),
+});
+
+export const costRecordSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  inputTokens: z.number().int().min(0).optional(),
+  outputTokens: z.number().int().min(0).optional(),
+  totalTokens: z.number().int().min(0).optional(),
+  latencyMs: z.number().int().min(0).optional(),
+  requestType: z.enum(['chat', 'completion', 'embedding', 'image', 'audio', 'tool']).optional(),
+  sessionId: z.string().max(200).optional(),
+  cached: z.boolean().optional(),
+  error: z.string().max(5000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ─── Crew Schemas ───────────────────────────────────────────────
+
+export const crewDeploySchema = z.object({
+  templateId: z.string().min(1).max(200),
+  name: z.string().max(200).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const crewMessageSchema = z.object({
+  message: z.string().min(1).max(50000),
+});
+
+export const crewDelegateSchema = z.object({
+  fromAgentId: z.string().min(1).max(200),
+  toAgentId: z.string().min(1).max(200),
+  task: z.string().min(1).max(5000),
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const crewSyncSchema = z.object({
+  context: z.string().min(1).max(50000),
+});
+
+// ─── Edge Device Schemas ────────────────────────────────────────
+
+export const createEdgeDeviceSchema = z.object({
+  name: z.string().min(1).max(200),
+  type: z.string().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const edgeDeviceCommandSchema = z.object({
+  commandType: z.string().min(1).max(100),
+  payload: z.record(z.string(), z.unknown()).optional(),
+  timeout: z.number().int().positive().max(120000).optional(),
+});
+
+// ─── MCP Schemas ────────────────────────────────────────────────
+
+export const mcpToolCallSchema = z.object({
+  tool_name: z.string().min(1).max(200),
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const createMcpServerSchema = z.object({
+  name: z.string().min(1).max(200),
+  displayName: z.string().min(1).max(200),
+  transport: z.enum(['stdio', 'sse', 'streamable-http']),
+  command: z.string().max(2000).optional(),
+  args: z.array(z.string().max(2000)).max(50).optional(),
+  url: z.string().max(2048).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+  description: z.string().max(5000).optional(),
+  autoConnect: z.boolean().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+});
+
+export const mcpToolSettingsSchema = z.object({
+  toolName: z.string().min(1).max(200),
+  workflowUsable: z.boolean(),
+});
+
+// ─── Plugin Schemas ─────────────────────────────────────────────
+
+export const pluginSettingsSchema = z.object({
+  settings: z.record(z.string(), z.unknown()),
+});
+
+// ─── Productivity Schemas ───────────────────────────────────────
+
+export const startPomodoroSchema = z.object({
+  type: z.enum(['work', 'short_break', 'long_break']),
+  durationMinutes: z.number().int().min(1).max(120),
+  taskDescription: z.string().max(500).optional(),
+});
+
+export const createHabitSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  frequency: z.enum(['daily', 'weekly', 'weekdays', 'custom']).optional(),
+  targetDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  targetCount: z.number().int().min(1).max(100).optional(),
+  unit: z.string().max(50).optional(),
+  category: z.string().max(100).optional(),
+  color: z.string().max(50).optional(),
+  icon: z.string().max(50).optional(),
+  reminderTime: z.string().max(10).optional(),
+});
+
+export const createCaptureSchema = z.object({
+  content: z.string().min(1).max(50000),
+  type: z.enum(['idea', 'thought', 'todo', 'link', 'quote', 'snippet', 'question', 'other']).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  source: z.string().max(200).optional(),
+});
+
+export const processCaptureSchema = z.object({
+  processedAsType: z.enum(['note', 'task', 'bookmark', 'discarded']),
+  processedAsId: z.string().max(200).optional(),
+});
+
+// ─── Settings Schemas ───────────────────────────────────────────
+
+export const setDefaultProviderSchema = z.object({
+  provider: z.string().min(1).max(64),
+});
+
+export const setDefaultModelSchema = z.object({
+  model: z.string().min(1).max(128),
+});
+
+export const setApiKeySchema = z.object({
+  provider: z.string().min(1).max(100),
+  apiKey: z.string().min(1).max(1000),
+});
+
+export const setAllowedDirsSchema = z.object({
+  dirs: z.array(z.string().max(1000)).min(1).max(50),
+});
+
+export const setToolGroupsSchema = z.object({
+  enabledGroupIds: z.array(z.string().max(200)).max(100),
+});
+
+// ─── Soul Schemas ───────────────────────────────────────────────
+
+export const createSoulSchema = z.object({
+  agentId: z.string().min(1).max(200),
+  identity: z.record(z.string(), z.unknown()),
+  purpose: z.record(z.string(), z.unknown()),
+  autonomy: z.object({
+    level: z.number().int().min(0).max(4).optional(),
+  }).passthrough(),
+  heartbeat: z.object({
+    enabled: z.boolean(),
+    interval: z.string().min(1).max(100),
+    checklist: z.array(z.object({
+      id: z.string().optional(),
+      task: z.string().min(1),
+      type: z.string().optional(),
+      priority: z.string().optional(),
+    }).passthrough()).default([]),
+    quietHours: z.object({
+      start: z.string(),
+      end: z.string(),
+      timezone: z.string().optional(),
+    }).optional(),
+    selfHealingEnabled: z.boolean().default(false),
+    maxDurationMs: z.number().int().positive().default(120000),
+  }),
+  evolution: z.record(z.string(), z.unknown()),
+  relationships: z.record(z.string(), z.unknown()).optional(),
+  bootSequence: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ─── Soul Agent Sub-Route Schemas ───────────────────────────────
+
+export const soulGoalSchema = z.object({
+  goal: z.string().min(1).max(5000),
+});
+
+export const soulMissionSchema = z.object({
+  mission: z.string().min(1).max(5000),
+});
+
+export const soulToolsSchema = z.object({
+  allowed: z.array(z.string().max(200)).max(200).optional(),
+  blocked: z.array(z.string().max(200)).max(200).optional(),
+});
+
+export const soulCommandSchema = z.object({
+  command: z.string().min(1).max(5000),
+  params: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const soulFeedbackSchema = z.object({
+  type: z.enum(['praise', 'correction', 'directive', 'personality_tweak']),
+  content: z.string().min(1).max(5000),
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
+// ─── Subagent Schemas ───────────────────────────────────────────
+
+export const spawnSubagentSchema = z.object({
+  name: z.string().min(1).max(200),
+  task: z.string().min(1).max(50000),
+  parentId: z.string().max(200).optional(),
+  parentType: z.enum(['chat', 'background-agent', 'subagent']).optional(),
+  context: z.string().max(50000).optional(),
+  allowedTools: z.array(z.string().max(200)).max(200).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
+  limits: z.object({
+    maxTokens: z.number().int().min(1).max(128000).optional(),
+    maxTurns: z.number().int().min(1).max(100).optional(),
+    maxToolCalls: z.number().int().min(1).max(500).optional(),
+    timeout: z.number().int().min(1000).max(600000).optional(),
+  }).optional(),
+});
+
+// ─── Tool Execution Schemas ─────────────────────────────────────
+
+export const executeToolSchema = z.object({
+  arguments: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const batchExecuteToolsSchema = z.object({
+  executions: z.array(z.object({
+    tool: z.string().min(1).max(200),
+    arguments: z.record(z.string(), z.unknown()).optional(),
+  })).min(1).max(20),
+});
+
+// ─── Voice Schemas ──────────────────────────────────────────────
+
+export const synthesizeVoiceSchema = z.object({
+  text: z.string().min(1).max(4096),
+  voice: z.string().max(100).optional(),
+  speed: z.number().min(0.25).max(4).optional(),
+  format: z.enum(['mp3', 'wav', 'opus', 'aac', 'flac']).optional(),
+});
+
 // ─── Validation Helper ──────────────────────────────────────────
 
 /**

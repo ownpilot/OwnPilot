@@ -19,6 +19,7 @@ import {
 } from '@ownpilot/core';
 import type { ToolInfo } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
+import { validateBody, executeToolSchema, batchExecuteToolsSchema } from '../middleware/validation.js';
 import { getAgent } from './agents.js';
 import { gatewayConfigCenter } from '../services/config-center-impl.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -365,9 +366,10 @@ toolsRoutes.get('/:name', async (c) => {
  */
 toolsRoutes.post('/:name/execute', async (c) => {
   const name = c.req.param('name');
-  const body = await c.req.json<{ arguments: Record<string, unknown> }>();
 
   try {
+    const raw = await c.req.json().catch(() => ({}));
+    const body = validateBody(executeToolSchema, raw);
     const startTime = Date.now();
     const result = await resolveAndExecuteTool(name, body.arguments ?? {}, 'direct-execution');
     const duration = Date.now() - startTime;
@@ -379,6 +381,8 @@ toolsRoutes.post('/:name/execute', async (c) => {
       duration,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     const message = getErrorMessage(err);
     if (message.startsWith('Tool not found:')) {
       return notFoundError(c, 'Tool', name);
@@ -392,7 +396,16 @@ toolsRoutes.post('/:name/execute', async (c) => {
  */
 toolsRoutes.post('/:name/stream', async (c) => {
   const name = c.req.param('name');
-  const body = await c.req.json<{ arguments: Record<string, unknown> }>();
+  const raw = await c.req.json().catch(() => ({}));
+
+  let body: { arguments?: Record<string, unknown> };
+  try {
+    body = validateBody(executeToolSchema, raw);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
+  }
 
   return streamSSE(c, async (stream) => {
     const startTime = Date.now();
@@ -450,77 +463,66 @@ toolsRoutes.post('/:name/stream', async (c) => {
  * Batch execute multiple tools
  */
 toolsRoutes.post('/batch', async (c) => {
-  const body = await c.req.json<{
-    executions: Array<{ tool: string; arguments: Record<string, unknown> }>;
-    parallel?: boolean;
-  }>();
+  try {
+    const raw = await c.req.json();
+    const body = validateBody(batchExecuteToolsSchema, raw);
+    const parallel = (raw as Record<string, unknown>).parallel;
 
-  if (!body.executions || !Array.isArray(body.executions)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Missing required field: executions (array)' },
-      400
-    );
-  }
+    const startTime = Date.now();
 
-  if (body.executions.length > 20) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Batch size exceeds maximum of 20 executions' },
-      400
-    );
-  }
+    const executeOne = async (exec: { tool: string; arguments?: Record<string, unknown> }) => {
+      const toolStartTime = Date.now();
 
-  const startTime = Date.now();
+      try {
+        const result = await resolveAndExecuteTool(
+          exec.tool,
+          exec.arguments ?? {},
+          'batch-execution'
+        );
+        return {
+          tool: exec.tool,
+          success: true,
+          result: result.content,
+          isError: result.isError,
+          duration: Date.now() - toolStartTime,
+        };
+      } catch (err: unknown) {
+        return {
+          tool: exec.tool,
+          success: false,
+          result: null,
+          error: getErrorMessage(err),
+          duration: Date.now() - toolStartTime,
+        };
+      }
+    };
 
-  const executeOne = async (exec: { tool: string; arguments: Record<string, unknown> }) => {
-    const toolStartTime = Date.now();
+    let results;
 
-    try {
-      const result = await resolveAndExecuteTool(
-        exec.tool,
-        exec.arguments ?? {},
-        'batch-execution'
-      );
-      return {
-        tool: exec.tool,
-        success: true,
-        result: result.content,
-        isError: result.isError,
-        duration: Date.now() - toolStartTime,
-      };
-    } catch (err: unknown) {
-      return {
-        tool: exec.tool,
-        success: false,
-        result: null,
-        error: getErrorMessage(err),
-        duration: Date.now() - toolStartTime,
-      };
+    if (parallel !== false) {
+      // Execute in parallel (default)
+      results = await Promise.all(body.executions.map(executeOne));
+    } else {
+      // Execute sequentially
+      results = [];
+      for (const exec of body.executions) {
+        results.push(await executeOne(exec));
+      }
     }
-  };
 
-  let results;
+    const totalDuration = Date.now() - startTime;
 
-  if (body.parallel !== false) {
-    // Execute in parallel (default)
-    results = await Promise.all(body.executions.map(executeOne));
-  } else {
-    // Execute sequentially
-    results = [];
-    for (const exec of body.executions) {
-      results.push(await executeOne(exec));
-    }
+    return apiResponse(c, {
+      results,
+      totalDuration,
+      successCount: results.filter((r) => r.success).length,
+      failureCount: results.filter((r) => !r.success).length,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-
-  const totalDuration = Date.now() - startTime;
-
-  return apiResponse(c, {
-    results,
-    totalDuration,
-    successCount: results.filter((r) => r.success).length,
-    failureCount: results.filter((r) => !r.success).length,
-  });
 });
 
 /**

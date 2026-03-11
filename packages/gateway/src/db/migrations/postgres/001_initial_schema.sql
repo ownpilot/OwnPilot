@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- DEPRECATED: No repository or routes implemented. Overlaps with Workspaces. Candidate for removal.
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -244,6 +245,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- DEPRECATED: No repository or routes implemented. Overlaps with Triggers system. Candidate for removal.
 CREATE TABLE IF NOT EXISTS reminders (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -258,6 +260,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- DEPRECATED: Backend-only (no UI page). Overlaps with Notes. Candidate for removal.
 CREATE TABLE IF NOT EXISTS captures (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -274,9 +277,10 @@ CREATE TABLE IF NOT EXISTS captures (
 );
 
 -- =====================================================
--- PRODUCTIVITY PLUGIN TABLES
+-- PRODUCTIVITY PLUGIN TABLES (DEPRECATED — Backend-only, no UI pages)
 -- =====================================================
 
+-- DEPRECATED: Backend-only (no UI page). Candidate for removal.
 CREATE TABLE IF NOT EXISTS pomodoro_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -312,6 +316,7 @@ CREATE TABLE IF NOT EXISTS pomodoro_daily_stats (
   UNIQUE(user_id, date)
 );
 
+-- DEPRECATED: Backend-only (no UI page). Candidate for removal.
 CREATE TABLE IF NOT EXISTS habits (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',

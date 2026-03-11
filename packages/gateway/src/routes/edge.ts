@@ -21,6 +21,11 @@ import {
   sanitizeId,
   validateQueryEnum,
 } from './helpers.js';
+import {
+  validateBody,
+  createEdgeDeviceSchema,
+  edgeDeviceCommandSchema,
+} from '../middleware/validation.js';
 
 export const edgeRoutes = new Hono();
 
@@ -87,29 +92,18 @@ edgeRoutes.get('/', async (c) => {
 edgeRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    if (!body.name || !body.type) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'name and type are required' },
-        400
-      );
-    }
+    const body = validateBody(createEdgeDeviceSchema, await c.req.json());
 
     const service = getEdgeService();
     const device = await service.registerDevice(userId, {
       name: body.name,
-      type: body.type,
-      protocol: body.protocol,
-      sensors: body.sensors,
-      actuators: body.actuators,
-      firmwareVersion: body.firmwareVersion ?? body.firmware_version,
+      type: body.type as EdgeDeviceType,
       metadata: body.metadata,
     });
 
     return apiResponse(c, device, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -188,24 +182,18 @@ edgeRoutes.post('/:id/command', async (c) => {
   const id = sanitizeId(c.req.param('id'));
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    if (!body.commandType && !body.command_type) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'commandType is required' },
-        400
-      );
-    }
+    const body = validateBody(edgeDeviceCommandSchema, await c.req.json());
+    const commandType = body.commandType;
 
     const service = getEdgeService();
     const command = await service.sendCommand(userId, id, {
-      commandType: body.commandType ?? body.command_type,
+      commandType,
       payload: body.payload,
     });
 
     return apiResponse(c, command, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     if (err instanceof Error && err.message.includes('not found')) {
       return notFoundError(c, 'Device', id);
     }

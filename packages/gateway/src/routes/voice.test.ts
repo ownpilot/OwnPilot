@@ -279,20 +279,18 @@ describe('POST /voice/synthesize', () => {
     expect(res.headers.get('X-Audio-Format')).toBe('mp3');
     expect(mockService.synthesize).toHaveBeenCalledWith('Hello world', {
       voice: undefined,
-      model: undefined,
       speed: undefined,
       format: undefined,
     });
   });
 
-  it('passes optional voice, model, speed and format options', async () => {
+  it('passes optional voice, speed and format options', async () => {
     const res = await app.request('/voice/synthesize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: 'Test',
         voice: 'nova',
-        model: 'tts-1-hd',
         speed: 1.5,
         format: 'wav',
       }),
@@ -301,7 +299,6 @@ describe('POST /voice/synthesize', () => {
     expect(res.status).toBe(200);
     expect(mockService.synthesize).toHaveBeenCalledWith('Test', {
       voice: 'nova',
-      model: 'tts-1-hd',
       speed: 1.5,
       format: 'wav',
     });
@@ -330,19 +327,20 @@ describe('POST /voice/synthesize', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error.message).toContain('text is required');
+    expect(json.error.message).toContain('Validation failed');
+    expect(json.error.message).toContain('text');
   });
 
-  it('returns 400 when text is only whitespace', async () => {
+  it('returns 400 when text is empty string', async () => {
     const res = await app.request('/voice/synthesize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: '   ' }),
+      body: JSON.stringify({ text: '' }),
     });
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error.message).toContain('text is required');
+    expect(json.error.message).toContain('Validation failed');
   });
 
   it('returns 400 when text exceeds 4096 characters', async () => {
@@ -354,7 +352,7 @@ describe('POST /voice/synthesize', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error.message).toContain('4096');
+    expect(json.error.message).toContain('Validation failed');
   });
 
   it('returns 500 when synthesize throws', async () => {

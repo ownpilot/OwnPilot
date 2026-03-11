@@ -7,19 +7,13 @@
 import { Hono } from 'hono';
 import {
   PomodoroRepository,
-  type CreateSessionInput,
   type UpdateSettingsInput,
 } from '../db/repositories/pomodoro.js';
 import {
   HabitsRepository,
-  type CreateHabitInput,
   type UpdateHabitInput,
 } from '../db/repositories/habits.js';
-import {
-  CapturesRepository,
-  type CreateCaptureInput,
-  type ProcessCaptureInput,
-} from '../db/repositories/captures.js';
+import { CapturesRepository } from '../db/repositories/captures.js';
 import {
   apiResponse,
   apiError,
@@ -29,6 +23,13 @@ import {
   validateQueryEnum,
   notFoundError,
 } from './helpers.js';
+import {
+  validateBody,
+  startPomodoroSchema,
+  createHabitSchema,
+  createCaptureSchema,
+  processCaptureSchema,
+} from '../middleware/validation.js';
 import { wsGateway } from '../ws/server.js';
 import { pagination } from '../middleware/pagination.js';
 
@@ -60,34 +61,32 @@ pomodoroRoutes.get('/session', async (c) => {
  * POST /pomodoro/session/start - Start a new session
  */
 pomodoroRoutes.post('/session/start', async (c) => {
-  const userId = getUserId(c);
-  const body = await c.req.json<CreateSessionInput>();
+  try {
+    const userId = getUserId(c);
+    const body = validateBody(startPomodoroSchema, await c.req.json());
 
-  if (!body.type || !body.durationMinutes) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_REQUEST, message: 'type and durationMinutes are required' },
-      400
-    );
+    const repo = getPomodoroRepo(userId);
+
+    // Check for active session
+    const active = await repo.getActiveSession();
+    if (active) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' },
+        400
+      );
+    }
+
+    const session = await repo.startSession(body);
+
+    wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'created', id: session.id });
+
+    return apiResponse(c, { session, message: `${body.type} session started!` }, 201);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  const repo = getPomodoroRepo(userId);
-
-  // Check for active session
-  const active = await repo.getActiveSession();
-  if (active) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.SESSION_ACTIVE, message: 'A session is already running' },
-      400
-    );
-  }
-
-  const session = await repo.startSession(body);
-
-  wsGateway.broadcast('data:changed', { entity: 'pomodoro', action: 'created', id: session.id });
-
-  return apiResponse(c, { session, message: `${body.type} session started!` }, 201);
 });
 
 /**
@@ -235,19 +234,21 @@ habitsRoutes.get('/', async (c) => {
  * POST /habits - Create a habit
  */
 habitsRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
-  const body = await c.req.json<CreateHabitInput>();
+  try {
+    const userId = getUserId(c);
+    const body = validateBody(createHabitSchema, await c.req.json());
 
-  if (!body.name) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'name is required' }, 400);
+    const repo = getHabitsRepo(userId);
+    const habit = await repo.create(body);
+
+    wsGateway.broadcast('data:changed', { entity: 'habit', action: 'created', id: habit.id });
+
+    return apiResponse(c, { habit, message: 'Habit created!' }, 201);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  const repo = getHabitsRepo(userId);
-  const habit = await repo.create(body);
-
-  wsGateway.broadcast('data:changed', { entity: 'habit', action: 'created', id: habit.id });
-
-  return apiResponse(c, { habit, message: 'Habit created!' }, 201);
 });
 
 /**
@@ -437,28 +438,30 @@ capturesRoutes.get('/', pagination(), async (c) => {
  * POST /captures - Create a capture
  */
 capturesRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
-  const body = await c.req.json<CreateCaptureInput>();
+  try {
+    const userId = getUserId(c);
+    const body = validateBody(createCaptureSchema, await c.req.json());
 
-  if (!body.content) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'content is required' }, 400);
+    const repo = getCapturesRepo(userId);
+    const capture = await repo.create(body);
+    const inboxCount = await repo.getInboxCount();
+
+    wsGateway.broadcast('data:changed', { entity: 'capture', action: 'created', id: capture.id });
+
+    return apiResponse(
+      c,
+      {
+        capture,
+        inboxCount,
+        message: 'Captured!',
+      },
+      201
+    );
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  const repo = getCapturesRepo(userId);
-  const capture = await repo.create(body);
-  const inboxCount = await repo.getInboxCount();
-
-  wsGateway.broadcast('data:changed', { entity: 'capture', action: 'created', id: capture.id });
-
-  return apiResponse(
-    c,
-    {
-      capture,
-      inboxCount,
-      message: 'Captured!',
-    },
-    201
-  );
 });
 
 /**
@@ -522,34 +525,32 @@ capturesRoutes.get('/:id', async (c) => {
  * POST /captures/:id/process - Process a capture
  */
 capturesRoutes.post('/:id/process', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
-  const body = await c.req.json<ProcessCaptureInput>();
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    const body = validateBody(processCaptureSchema, await c.req.json());
 
-  if (!body.processedAsType) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_REQUEST, message: 'processedAsType is required' },
-      400
-    );
+    const repo = getCapturesRepo(userId);
+    const capture = await repo.process(id, body);
+
+    if (!capture) {
+      return notFoundError(c, 'Capture', id);
+    }
+
+    wsGateway.broadcast('data:changed', { entity: 'capture', action: 'updated', id });
+
+    return apiResponse(c, {
+      capture,
+      message:
+        body.processedAsType === 'discarded'
+          ? 'Capture discarded.'
+          : `Capture marked as ${body.processedAsType}.`,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  const repo = getCapturesRepo(userId);
-  const capture = await repo.process(id, body);
-
-  if (!capture) {
-    return notFoundError(c, 'Capture', id);
-  }
-
-  wsGateway.broadcast('data:changed', { entity: 'capture', action: 'updated', id });
-
-  return apiResponse(c, {
-    capture,
-    message:
-      body.processedAsType === 'discarded'
-        ? 'Capture discarded.'
-        : `Capture marked as ${body.processedAsType}.`,
-  });
 });
 
 /**

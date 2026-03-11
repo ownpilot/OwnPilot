@@ -3,6 +3,7 @@
  */
 
 import { Hono } from 'hono';
+import type { AgentMessageType } from '@ownpilot/core';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
 import {
   apiResponse,
@@ -11,6 +12,7 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import { validateBody, sendAgentMessageSchema } from '../middleware/validation.js';
 
 export const agentMessageRoutes = new Hono();
 
@@ -69,20 +71,13 @@ agentMessageRoutes.get('/crew/:id', async (c) => {
 
 agentMessageRoutes.post('/', async (c) => {
   try {
-    const body = await c.req.json();
-    if (!body.to || !body.content) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Missing required fields: to, content' },
-        400
-      );
-    }
+    const body = validateBody(sendAgentMessageSchema, await c.req.json());
 
     const message = {
       id: crypto.randomUUID(),
       from: body.from || 'user',
       to: body.to,
-      type: body.type || 'coordination',
+      type: (body.type || 'coordination') as AgentMessageType,
       subject: body.subject || '',
       content: body.content,
       attachments: body.attachments || [],
@@ -99,6 +94,8 @@ agentMessageRoutes.post('/', async (c) => {
     await getAgentMessagesRepository().create(message);
     return apiResponse(c, message, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

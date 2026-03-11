@@ -8,6 +8,7 @@ import type { Context } from 'hono';
 import type { RateLimitConfig } from '../types/index.js';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
+import { RATE_LIMIT_MAX_STORE_SIZE } from '../config/defaults.js';
 
 const log = getLog('RateLimit');
 
@@ -76,7 +77,7 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
   const store = new Map<string, RateLimitEntry>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
-  const maxStoreSize = 10_000;
+  const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up expired entries periodically
   const cleanupInterval = setInterval(() => {
@@ -196,7 +197,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   const requests = new Map<string, number[]>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
-  const maxStoreSize = 10_000;
+  const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up old entries
   const cleanupInterval = setInterval(() => {

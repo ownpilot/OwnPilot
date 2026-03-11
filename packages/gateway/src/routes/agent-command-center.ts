@@ -23,6 +23,14 @@ import { getBackgroundAgentService } from '../services/background-agent-service.
 import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { agentsRepo } from '../db/repositories/agents.js';
+import {
+  validateBody,
+  agentCommandSchema,
+  deployFleetSchema,
+  agentMissionSchema,
+  agentExecuteSchema,
+  agentToolsBatchUpdateSchema,
+} from '../middleware/validation.js';
 
 export const agentCommandCenterRoutes = new Hono();
 
@@ -35,28 +43,7 @@ export const agentCommandCenterRoutes = new Hono();
 agentCommandCenterRoutes.post('/command', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      targets: { type: 'soul' | 'background' | 'crew'; id: string }[];
-      command: string;
-      params?: Record<string, unknown>;
-      timeoutMs?: number;
-    }>();
-
-    if (!body.targets || !Array.isArray(body.targets) || body.targets.length === 0) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' },
-        400
-      );
-    }
-
-    if (!body.command) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'command is required' },
-        400
-      );
-    }
+    const body = validateBody(agentCommandSchema, await c.req.json());
 
     const results: {
       target: { type: string; id: string };
@@ -184,6 +171,8 @@ agentCommandCenterRoutes.post('/command', async (c) => {
       results,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -192,23 +181,7 @@ agentCommandCenterRoutes.post('/command', async (c) => {
 
 agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
   try {
-    const body = await c.req.json<{
-      name: string;
-      mission: string;
-      agentCount: number;
-      roles?: string[];
-      provider?: string;
-      model?: string;
-      coordinationPattern?: 'hub_spoke' | 'peer_to_peer' | 'pipeline';
-    }>();
-
-    if (!body.name || !body.mission) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'name and mission are required' },
-        400
-      );
-    }
+    const body = validateBody(deployFleetSchema, await c.req.json());
 
     const count = Math.min(body.agentCount ?? 1, 10); // Max 10 agents per fleet
     const { settingsRepo } = await import('../db/repositories/index.js');
@@ -349,6 +322,8 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
       201
     );
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -435,21 +410,7 @@ agentCommandCenterRoutes.get('/status', async (c) => {
 
 agentCommandCenterRoutes.post('/mission', async (c) => {
   try {
-    const body = await c.req.json<{
-      agentIds?: string[];
-      crewIds?: string[];
-      mission: string;
-      priority?: 'low' | 'medium' | 'high' | 'critical';
-      deadline?: string;
-    }>();
-
-    if (!body.mission) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
-        400
-      );
-    }
+    const body = validateBody(agentMissionSchema, await c.req.json());
 
     if (
       (!body.agentIds || body.agentIds.length === 0) &&
@@ -519,6 +480,8 @@ agentCommandCenterRoutes.post('/mission', async (c) => {
       results,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -602,18 +565,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      targets: { type: 'soul' | 'background'; id: string; task?: string }[];
-      parallel?: boolean;
-    }>();
-
-    if (!body.targets || !Array.isArray(body.targets) || body.targets.length === 0) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'targets array is required' },
-        400
-      );
-    }
+    const body = validateBody(agentExecuteSchema, await c.req.json());
 
     const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
     const bgService = getBackgroundAgentService();
@@ -663,6 +615,8 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
       results,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -734,21 +688,7 @@ agentCommandCenterRoutes.get('/analytics', async (c) => {
 
 agentCommandCenterRoutes.post('/tools/batch-update', async (c) => {
   try {
-    const body = await c.req.json<{
-      agentIds: string[];
-      addAllowed?: string[];
-      addBlocked?: string[];
-      removeAllowed?: string[];
-      removeBlocked?: string[];
-    }>();
-
-    if (!body.agentIds || body.agentIds.length === 0) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'agentIds is required' },
-        400
-      );
-    }
+    const body = validateBody(agentToolsBatchUpdateSchema, await c.req.json());
 
     const soulRepo = getSoulsRepository();
     const results: { agentId: string; success: boolean; error?: string }[] = [];
@@ -788,6 +728,8 @@ agentCommandCenterRoutes.post('/tools/batch-update', async (c) => {
       results,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

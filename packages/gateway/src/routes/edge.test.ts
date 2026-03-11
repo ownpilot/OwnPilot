@@ -252,10 +252,6 @@ describe('Edge Routes', () => {
         body: JSON.stringify({
           name: 'Arduino',
           type: 'arduino',
-          protocol: 'mqtt',
-          sensors: ['temp'],
-          actuators: ['led'],
-          firmwareVersion: '1.2.3',
           metadata: { location: 'lab' },
         }),
       });
@@ -265,10 +261,6 @@ describe('Edge Routes', () => {
         expect.objectContaining({
           name: 'Arduino',
           type: 'arduino',
-          protocol: 'mqtt',
-          sensors: ['temp'],
-          actuators: ['led'],
-          firmwareVersion: '1.2.3',
           metadata: { location: 'lab' },
         })
       );
@@ -284,7 +276,7 @@ describe('Edge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('name and type are required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 when type is missing', async () => {
@@ -297,7 +289,7 @@ describe('Edge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('name and type are required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 when both name and type are missing', async () => {
@@ -327,7 +319,7 @@ describe('Edge Routes', () => {
       expect(json.error.message).toContain('Duplicate device ID');
     });
 
-    it('accepts firmware_version snake_case alias', async () => {
+    it('ignores extra fields not in the schema', async () => {
       mockEdgeService.registerDevice.mockResolvedValue(sampleDevice);
 
       await app.request('/edge', {
@@ -336,9 +328,10 @@ describe('Edge Routes', () => {
         body: JSON.stringify({ name: 'My Pi', type: 'raspberry-pi', firmware_version: '2.0.0' }),
       });
 
+      // Zod strips unknown fields; only name, type, and metadata are passed through
       expect(mockEdgeService.registerDevice).toHaveBeenCalledWith(
         'user-1',
-        expect.objectContaining({ firmwareVersion: '2.0.0' })
+        expect.objectContaining({ name: 'My Pi', type: 'raspberry-pi' })
       );
     });
   });
@@ -523,20 +516,18 @@ describe('Edge Routes', () => {
       expect(json.data.commandType).toBe('reboot');
     });
 
-    it('accepts command_type snake_case alias', async () => {
-      mockEdgeService.sendCommand.mockResolvedValue(sampleCommand);
-
-      await app.request('/edge/dev-1/command', {
+    it('rejects command_type snake_case (only commandType accepted)', async () => {
+      const res = await app.request('/edge/dev-1/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command_type: 'reboot' }),
       });
 
-      expect(mockEdgeService.sendCommand).toHaveBeenCalledWith(
-        'user-1',
-        'dev-1',
-        expect.objectContaining({ commandType: 'reboot' })
-      );
+      // Zod schema requires commandType (camelCase); snake_case is not recognized
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 when commandType is missing', async () => {
@@ -549,7 +540,7 @@ describe('Edge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('commandType is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 404 when service throws a "not found" error', async () => {

@@ -24,6 +24,7 @@ import {
   maskSecret,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
+import { validateBody, createConfigServiceSchema } from '../middleware/validation.js';
 
 export const configServicesRoutes = new Hono();
 
@@ -154,54 +155,36 @@ configServicesRoutes.get('/:name', async (c) => {
  * POST / - Create new config service
  */
 configServicesRoutes.post('/', async (c) => {
-  const body = await c.req.json<CreateConfigServiceInput>();
+  try {
+    const body = validateBody(createConfigServiceSchema, await c.req.json()) as CreateConfigServiceInput;
 
-  if (!body.name || !body.displayName || !body.category) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_INPUT,
-        message: 'Missing required fields: name, displayName, category',
-      },
-      400
-    );
+    // Check for duplicate
+    const existing = configServicesRepo.getByName(body.name);
+    if (existing) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.ALREADY_EXISTS,
+          message: `Config service '${sanitizeId(body.name)}' already exists`,
+        },
+        409
+      );
+    }
+
+    const service = await configServicesRepo.create(body);
+
+    wsGateway.broadcast('data:changed', {
+      entity: 'config_service',
+      action: 'created',
+      id: service.name,
+    });
+
+    return apiResponse(c, sanitizeService(service), 201);
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  // Validate name format
-  if (!/^[a-z][a-z0-9_]*$/.test(body.name)) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_INPUT,
-        message:
-          'Invalid service name. Must start with lowercase letter and contain only lowercase letters, numbers, and underscores.',
-      },
-      400
-    );
-  }
-
-  // Check for duplicate
-  const existing = configServicesRepo.getByName(body.name);
-  if (existing) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.ALREADY_EXISTS,
-        message: `Config service '${sanitizeId(body.name)}' already exists`,
-      },
-      409
-    );
-  }
-
-  const service = await configServicesRepo.create(body);
-
-  wsGateway.broadcast('data:changed', {
-    entity: 'config_service',
-    action: 'created',
-    id: service.name,
-  });
-
-  return apiResponse(c, sanitizeService(service), 201);
 });
 
 /**

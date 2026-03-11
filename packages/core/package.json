@@ -46,6 +46,54 @@
         "types": "./dist/gateway/index.d.ts",
         "default": "./dist/gateway/index.js"
       }
+    },
+    "./agent": {
+      "import": {
+        "types": "./dist/agent/index.d.ts",
+        "default": "./dist/agent/index.js"
+      }
+    },
+    "./events": {
+      "import": {
+        "types": "./dist/events/index.d.ts",
+        "default": "./dist/events/index.js"
+      }
+    },
+    "./tools": {
+      "import": {
+        "types": "./dist/agent/tools/index.d.ts",
+        "default": "./dist/agent/tools/index.js"
+      }
+    },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins/index.d.ts",
+        "default": "./dist/plugins/index.js"
+      }
+    },
+    "./services": {
+      "import": {
+        "types": "./dist/services/index.d.ts",
+        "default": "./dist/services/index.js"
+      }
+    },
+    "./memory": {
+      "import": {
+        "types": "./dist/memory/index.d.ts",
+        "default": "./dist/memory/index.js"
+      }
+    },
+    "./sandbox": {
+      "import": {
+        "types": "./dist/sandbox/index.d.ts",
+        "default": "./dist/sandbox/index.js"
+      }
+    },
+    "./channels": {
+      "import": {
+        "types": "./dist/channels/index.d.ts",
+        "default": "./dist/channels/index.js"
+      }
     }
   },
   "files": [

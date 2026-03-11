@@ -307,7 +307,7 @@ describe('Agent Messages Routes', () => {
           from: 'agent-a',
           to: 'agent-b',
           content: 'Urgent task.',
-          type: 'task',
+          type: 'task_delegation',
           priority: 'high',
           subject: 'Urgent',
           threadId: 'thread-99',
@@ -319,7 +319,7 @@ describe('Agent Messages Routes', () => {
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.data.from).toBe('agent-a');
-      expect(json.data.type).toBe('task');
+      expect(json.data.type).toBe('task_delegation');
       expect(json.data.priority).toBe('high');
       expect(json.data.subject).toBe('Urgent');
       expect(json.data.threadId).toBe('thread-99');

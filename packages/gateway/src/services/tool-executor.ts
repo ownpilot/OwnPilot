@@ -28,23 +28,7 @@ import type {
 } from '@ownpilot/core';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { registerToolConfigRequirements } from './api-service-registrar.js';
-import {
-  createMemoryToolProvider,
-  createGoalToolProvider,
-  createCustomDataToolProvider,
-  createPersonalDataToolProvider,
-  createTriggerToolProvider,
-  createPlanToolProvider,
-  createConfigToolProvider,
-  createHeartbeatToolProvider,
-  createExtensionToolProvider,
-  createCodingAgentToolProvider,
-  createCliToolProvider,
-  createBackgroundAgentToolProvider,
-  createBrowserToolProvider,
-  createEdgeToolProvider,
-  createSkillToolProvider,
-} from './tool-providers/index.js';
+import { registerAllGatewayProviders } from '../tools/provider-manifest.js';
 import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import {
   getCustomToolDynamicRegistry,
@@ -122,22 +106,8 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
 
   tools.setConfigCenter(gatewayConfigCenter);
 
-  // Register gateway tool providers (source: 'gateway')
-  tools.registerProvider(createMemoryToolProvider(userId));
-  tools.registerProvider(createGoalToolProvider(userId));
-  tools.registerProvider(createCustomDataToolProvider());
-  tools.registerProvider(createPersonalDataToolProvider());
-  tools.registerProvider(createTriggerToolProvider());
-  tools.registerProvider(createPlanToolProvider());
-  tools.registerProvider(createConfigToolProvider());
-  tools.registerProvider(createHeartbeatToolProvider(userId));
-  tools.registerProvider(createExtensionToolProvider(userId));
-  tools.registerProvider(createCodingAgentToolProvider(userId));
-  tools.registerProvider(createCliToolProvider(userId));
-  tools.registerProvider(createBackgroundAgentToolProvider(userId));
-  tools.registerProvider(createBrowserToolProvider(userId));
-  tools.registerProvider(createEdgeToolProvider(userId));
-  tools.registerProvider(createSkillToolProvider(userId));
+  // Register all gateway tool providers from declarative manifest (source: 'gateway')
+  registerAllGatewayProviders(tools, userId);
 
   // Register plugin tools into the shared registry (source: 'plugin')
   initPluginToolsIntoRegistry(tools);

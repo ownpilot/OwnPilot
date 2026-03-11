@@ -47,12 +47,16 @@ vi.mock('../db/repositories/embedding-cache.js', () => ({
   },
 }));
 
-vi.mock('../config/defaults.js', () => ({
-  EMBEDDING_MODEL: 'text-embedding-3-small',
-  EMBEDDING_DIMENSIONS: 1536,
-  EMBEDDING_MAX_BATCH_SIZE: 100,
-  EMBEDDING_RATE_LIMIT_DELAY_MS: 100,
-}));
+vi.mock('../config/defaults.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    EMBEDDING_MODEL: 'text-embedding-3-small',
+    EMBEDDING_DIMENSIONS: 1536,
+    EMBEDDING_MAX_BATCH_SIZE: 100,
+    EMBEDDING_RATE_LIMIT_DELAY_MS: 100,
+  };
+});
 
 // Mock fetch globally
 const mockFetch = vi.fn();

@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import type { ArtifactType } from '@ownpilot/core';
+import type { ArtifactType, DataBinding, DashboardSize } from '@ownpilot/core';
 import { getArtifactService } from '../services/artifact-service.js';
 import {
   getUserId,
@@ -16,9 +16,9 @@ import {
   getErrorMessage,
   getPaginationParams,
   notFoundError,
-  sanitizeId,
   validateQueryEnum,
 } from './helpers.js';
+import { validateBody, createArtifactSchema } from '../middleware/validation.js';
 
 export const artifactsRoutes = new Hono();
 
@@ -81,26 +81,7 @@ artifactsRoutes.get('/:id', async (c) => {
 artifactsRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    if (!body.title || !body.type || !body.content) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'title, type, and content are required' },
-        400
-      );
-    }
-
-    if (!VALID_TYPES.includes(body.type)) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: `Invalid type: ${sanitizeId(body.type)}. Valid: ${VALID_TYPES.join(', ')}`,
-        },
-        400
-      );
-    }
+    const body = validateBody(createArtifactSchema, await c.req.json());
 
     const service = getArtifactService();
     const artifact = await service.createArtifact(userId, {
@@ -108,14 +89,16 @@ artifactsRoutes.post('/', async (c) => {
       type: body.type,
       title: body.title,
       content: body.content,
-      dataBindings: body.dataBindings,
+      dataBindings: body.dataBindings as DataBinding[] | undefined,
       pinToDashboard: body.pinToDashboard,
-      dashboardSize: body.dashboardSize,
+      dashboardSize: body.dashboardSize as DashboardSize | undefined,
       tags: body.tags,
     });
 
     return apiResponse(c, artifact, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

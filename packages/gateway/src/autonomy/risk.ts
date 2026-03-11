@@ -14,6 +14,17 @@ import {
   AutonomyLevel,
 } from './types.js';
 import { CLI_TOOLS_BY_NAME } from '../services/cli-tools-catalog.js';
+import {
+  RISK_THRESHOLD_CRITICAL,
+  RISK_THRESHOLD_HIGH,
+  RISK_THRESHOLD_MEDIUM,
+  RISK_COMPOUND_WEIGHT_THRESHOLD,
+  RISK_COMPOUND_FACTOR_COUNT,
+  RISK_COMPOUND_SCORE_FLOOR,
+  RISK_BULK_OPERATION_THRESHOLD,
+  RISK_HIGH_COST_THRESHOLD,
+  RISK_HIGH_TOKEN_THRESHOLD,
+} from '../config/defaults.js';
 
 // ============================================================================
 // Risk Factors
@@ -268,10 +279,12 @@ export function assessRisk(
   const factorScore = totalWeight > 0 ? (presentWeight / totalWeight) * 100 : 0;
   let score = Math.min(100, Math.round((baseRisk + factorScore) / 2));
 
-  // Compound risk detection: when 3+ high-severity factors combine, floor score at 75
-  const highWeightFactors = factors.filter((f) => f.present && f.weight >= 0.7);
-  if (highWeightFactors.length >= 3) {
-    score = Math.max(score, 75);
+  // Compound risk detection: when multiple high-severity factors combine, floor score
+  const highWeightFactors = factors.filter(
+    (f) => f.present && f.weight >= RISK_COMPOUND_WEIGHT_THRESHOLD
+  );
+  if (highWeightFactors.length >= RISK_COMPOUND_FACTOR_COUNT) {
+    score = Math.max(score, RISK_COMPOUND_SCORE_FLOOR);
   }
 
   // Determine risk level
@@ -310,7 +323,7 @@ function evaluateFactor(
   switch (factorId) {
     case 'bulk_operation':
       return (
-        (Array.isArray(params.items) && params.items.length > 10) ||
+        (Array.isArray(params.items) && params.items.length > RISK_BULK_OPERATION_THRESHOLD) ||
         params.bulk === true ||
         params.all === true
       );
@@ -320,8 +333,8 @@ function evaluateFactor(
 
     case 'high_cost':
       return (
-        (typeof params.cost === 'number' && params.cost > 1000) ||
-        (typeof params.tokens === 'number' && params.tokens > 5000)
+        (typeof params.cost === 'number' && params.cost > RISK_HIGH_COST_THRESHOLD) ||
+        (typeof params.tokens === 'number' && params.tokens > RISK_HIGH_TOKEN_THRESHOLD)
       );
 
     case 'irreversible':
@@ -367,9 +380,9 @@ function containsSensitiveKeywords(params: Record<string, unknown>): boolean {
  * Convert risk score to level
  */
 function scoreToLevel(score: number): RiskLevel {
-  if (score >= 75) return 'critical';
-  if (score >= 50) return 'high';
-  if (score >= 25) return 'medium';
+  if (score >= RISK_THRESHOLD_CRITICAL) return 'critical';
+  if (score >= RISK_THRESHOLD_HIGH) return 'high';
+  if (score >= RISK_THRESHOLD_MEDIUM) return 'medium';
   return 'low';
 }
 

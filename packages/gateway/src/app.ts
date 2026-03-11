@@ -25,72 +25,21 @@ import {
   auditMiddleware,
   uiSessionMiddleware,
 } from './middleware/index.js';
-import {
-  healthRoutes,
-  agentRoutes,
-  chatRoutes,
-  toolsRoutes,
-  settingsRoutes,
-  channelRoutes,
-  costRoutes,
-  modelsRoutes,
-  providersRoutes,
-  profileRoutes,
-  personalDataRoutes,
-  customDataRoutes,
-  memoriesRoutes,
-  goalsRoutes,
-  triggersRoutes,
-  plansRoutes,
-  autonomyRoutes,
-  auditRoutes,
-  workspaceRoutes,
-  fileWorkspaceRoutes,
-  pluginsRoutes,
-  productivityRoutes,
-  modelConfigsRoutes,
-  dashboardRoutes,
-  customToolsRoutes,
-  databaseRoutes,
-  expensesRoutes,
-  configServicesRoutes,
-  localProvidersRoutes,
-  channelAuthRoutes,
-  debugRoutes,
-  executionPermissionsRoutes,
-  heartbeatsRoutes,
-  extensionsRoutes,
-  mcpRoutes,
-  webhookRoutes,
-  workflowRoutes,
-  composioRoutes,
-  uiAuthRoutes,
-  modelRoutingRoutes,
-  codingAgentsRoutes,
-  cliProvidersRoutes,
-  cliToolsRoutes,
-  securityRoutes,
-  backgroundAgentsRoutes,
-  subagentRoutes,
-  bridgeRoutes,
-  orchestraRoutes,
-  artifactsRoutes,
-  voiceRoutes,
-  browserRoutes,
-  skillsRoutes,
-  edgeRoutes,
-  soulRoutes,
-  crewRoutes,
-  agentMessageRoutes,
-  heartbeatLogRoutes,
-  agentCommandCenterRoutes,
-  cliChatRoutes,
-} from './routes/index.js';
+import { registerPlatformRoutes } from './routes/register-platform-routes.js';
+import { registerAgentRoutes } from './routes/register-agent-routes.js';
+import { registerDataRoutes } from './routes/register-data-routes.js';
+import { registerAutomationRoutes } from './routes/register-automation-routes.js';
+import { registerIntegrationRoutes } from './routes/register-integration-routes.js';
 import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
   RATE_LIMIT_BURST,
   SECONDS_PER_DAY,
+  HSTS_MAX_AGE_PRELOAD,
+  HSTS_MAX_AGE,
+  DEFAULT_BODY_LIMIT_BYTES,
+  HTTP_PAYLOAD_TOO_LARGE,
+  STATIC_ASSET_MAX_AGE,
 } from './config/defaults.js';
 
 // Resolve UI dist path relative to this file (works in both dev and Docker)
@@ -149,8 +98,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       // Only add preload when HTTPS_ONLY=true is explicitly set.
       strictTransportSecurity:
         process.env.HTTPS_ONLY === 'true'
-          ? 'max-age=63072000; includeSubDomains; preload'
-          : 'max-age=31536000; includeSubDomains',
+          ? `max-age=${HSTS_MAX_AGE_PRELOAD}; includeSubDomains; preload`
+          : `max-age=${HSTS_MAX_AGE}; includeSubDomains`,
       // Prevent MIME type sniffing
       xContentTypeOptions: 'nosniff',
       // Prevent clickjacking - only allow same origin framing
@@ -241,7 +190,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   );
 
   // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB)
-  const maxBodySize = parseInt(process.env.BODY_SIZE_LIMIT ?? '1048576', 10) || 1048576;
+  const maxBodySize =
+    parseInt(process.env.BODY_SIZE_LIMIT ?? String(DEFAULT_BODY_LIMIT_BYTES), 10) ||
+    DEFAULT_BODY_LIMIT_BYTES;
   app.use(
     '/api/*',
     bodyLimit({
@@ -254,7 +205,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
               message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit`,
             },
           },
-          413
+          HTTP_PAYLOAD_TOO_LARGE
         ),
     })
   );
@@ -292,155 +243,12 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Audit logging (fire-and-forget, logs method/path/status/duration)
   app.use('/api/*', auditMiddleware);
 
-  // Mount routes
-
-  // Webhooks - mounted outside /api/v1 since external services (e.g. Telegram) cannot send API keys.
-  // Secret path segment provides authentication.
-  app.route('/webhooks', webhookRoutes);
-
-  app.route('/health', healthRoutes);
-  app.route('/api/v1/auth', uiAuthRoutes);
-  app.route('/api/v1/health', healthRoutes); // Also mount at /api/v1 for API consistency
-  app.route('/api/v1/agents', agentRoutes);
-  app.route('/api/v1/chat', chatRoutes);
-  app.route('/api/v1/tools', toolsRoutes);
-  app.route('/api/v1/settings', settingsRoutes);
-  app.route('/api/v1/channels', channelRoutes);
-  app.route('/api/v1/channels/auth', channelAuthRoutes);
-  app.route('/api/v1/costs', costRoutes);
-  app.route('/api/v1/models', modelsRoutes);
-  app.route('/api/v1/providers', providersRoutes);
-  app.route('/api/v1/profile', profileRoutes);
-
-  // Personal data routes (tasks, bookmarks, notes, calendar, contacts)
-  app.route('/api/v1', personalDataRoutes);
-
-  // Custom data routes (dynamic tables with AI-decided schemas)
-  app.route('/api/v1/custom-data', customDataRoutes);
-
-  // Memory routes (persistent AI memory)
-  app.route('/api/v1/memories', memoriesRoutes);
-
-  // Goals routes (long-term objectives tracking)
-  app.route('/api/v1/goals', goalsRoutes);
-
-  // Triggers routes (proactive automation)
-  app.route('/api/v1/triggers', triggersRoutes);
-
-  // Plans routes (autonomous plan execution)
-  app.route('/api/v1/plans', plansRoutes);
-
-  // Autonomy routes (risk assessment, approvals)
-  app.route('/api/v1/autonomy', autonomyRoutes);
-
-  // Audit logs (tool executions, agent activities, errors)
-  app.route('/api/v1/audit', auditRoutes);
-
-  // Debug info (AI request/response logs, tool calls)
-  app.route('/api/v1/debug', debugRoutes);
-
-  // Workspaces (isolated user sandboxes)
-  app.route('/api/v1/workspaces', workspaceRoutes);
-
-  // File Workspaces (session-based file storage)
-  app.route('/api/v1/file-workspaces', fileWorkspaceRoutes);
-
-  // Plugins (extensible plugin system)
-  app.route('/api/v1/plugins', pluginsRoutes);
-
-  // Productivity (Pomodoro, Habits, Captures)
-  app.route('/api/v1', productivityRoutes);
-
-  // AI Model Configs (model management, custom providers)
-  app.route('/api/v1/model-configs', modelConfigsRoutes);
-  app.route('/api/v1/model-routing', modelRoutingRoutes);
-
-  // Dashboard (AI-powered daily briefing)
-  app.route('/api/v1/dashboard', dashboardRoutes);
-
-  // Custom Tools (LLM-created and user-defined tools)
-  app.route('/api/v1/custom-tools', customToolsRoutes);
-
-  // Database Admin (migration, status, backup, restore)
-  app.route('/api/v1/db', databaseRoutes);
-
-  // Expenses
-  app.route('/api/v1/expenses', expensesRoutes);
-
-  // Config Center (centralized config management)
-  app.route('/api/v1/config-services', configServicesRoutes);
-
-  // Execution Permissions (granular code execution security)
-  app.route('/api/v1/execution-permissions', executionPermissionsRoutes);
-
-  // Heartbeats (NL-to-cron periodic tasks)
-  app.route('/api/v1/heartbeats', heartbeatsRoutes);
-
-  // User Extensions (shareable tool + prompt + trigger bundles)
-  app.route('/api/v1/extensions', extensionsRoutes);
-
-  // MCP (Model Context Protocol — external server connections + tool exposure)
-  app.route('/api/v1/mcp', mcpRoutes);
-
-  // Local AI Providers (LM Studio, Ollama, etc.)
-  app.route('/api/v1/local-providers', localProvidersRoutes);
-
-  // Workflows (visual DAG tool pipelines)
-  app.route('/api/v1/workflows', workflowRoutes);
-
-  // Composio (OAuth app integrations — Gmail, GitHub, Slack, etc.)
-  app.route('/api/v1/composio', composioRoutes);
-
-  // Coding Agents (external AI coding CLI orchestration)
-  app.route('/api/v1/coding-agents', codingAgentsRoutes);
-
-  // CLI Providers (custom coding agent provider registry)
-  app.route('/api/v1/cli-providers', cliProvidersRoutes);
-
-  // CLI Tools (discovery, policies, installation for all CLI tools)
-  app.route('/api/v1/cli-tools', cliToolsRoutes);
-
-  // CLI Chat Providers (use CLI subscriptions as chat providers)
-  app.route('/api/v1/cli-chat', cliChatRoutes);
-
-  // Security Scanner (unified vulnerability analysis)
-  app.route('/api/v1/security', securityRoutes);
-
-  // Background Agents (persistent, long-running autonomous agents)
-  app.route('/api/v1/background-agents', backgroundAgentsRoutes);
-
-  // Subagents (ephemeral, task-oriented child agents)
-  app.route('/api/v1/subagents', subagentRoutes);
-
-  // Channel Bridges (UCP cross-channel bridging)
-  app.route('/api/v1/bridges', bridgeRoutes);
-
-  // Agent Orchestra (multi-agent collaboration & delegation)
-  app.route('/api/v1/orchestra', orchestraRoutes);
-
-  // Artifacts (AI-generated interactive content)
-  app.route('/api/v1/artifacts', artifactsRoutes);
-
-  // Voice (STT/TTS REST API)
-  app.route('/api/v1/voice', voiceRoutes);
-
-  // Browser (headless browser automation)
-  app.route('/api/v1/browser', browserRoutes);
-
-  // Skills (npm discovery, install, permissions)
-  app.route('/api/v1/skills', skillsRoutes);
-
-  // Edge devices (IoT/MQTT delegation)
-  app.route('/api/v1/edge', edgeRoutes);
-
-  // Agent Souls & Crews
-  app.route('/api/v1/souls', soulRoutes);
-  app.route('/api/v1/crews', crewRoutes);
-  app.route('/api/v1/agent-messages', agentMessageRoutes);
-  app.route('/api/v1/heartbeat-logs', heartbeatLogRoutes);
-
-  // Agent Command Center (unified control for all agents)
-  app.route('/api/v1/agent-command', agentCommandCenterRoutes);
+  // Mount routes (grouped by domain — see register-*-routes.ts files)
+  registerPlatformRoutes(app);
+  registerAgentRoutes(app);
+  registerDataRoutes(app);
+  registerAutomationRoutes(app);
+  registerIntegrationRoutes(app);
 
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
@@ -556,7 +364,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       serveStatic({
         root: UI_DIST_PATH,
         onFound: (_path, c) => {
-          c.header('Cache-Control', 'public, immutable, max-age=31536000');
+          c.header('Cache-Control', `public, immutable, max-age=${STATIC_ASSET_MAX_AGE}`);
         },
       })
     );

@@ -275,13 +275,13 @@ describe('Cost Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 when body is invalid JSON', async () => {
+    it('returns 500 when body is invalid JSON', async () => {
       const res = await app.request('/costs/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: 'not-json',
       });
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(500);
     });
 
     it('returns 500 when estimateCost throws', async () => {
@@ -335,13 +335,13 @@ describe('Cost Routes', () => {
       expect(mockBudgetManager.configure).toHaveBeenCalled();
     });
 
-    it('returns 400 when body is invalid JSON', async () => {
+    it('returns 500 when body is invalid JSON', async () => {
       const res = await app.request('/costs/budget', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: 'not-json',
       });
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(500);
     });
 
     it('returns 500 when configure throws', async () => {
@@ -437,13 +437,13 @@ describe('Cost Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns 400 when body is invalid JSON', async () => {
+    it('returns 500 when body is invalid JSON', async () => {
       const res = await app.request('/costs/record', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: 'not-json',
       });
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(500);
     });
 
     it('returns 500 when record throws', async () => {

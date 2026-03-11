@@ -22,6 +22,7 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import { validateBody, createSoulSchema } from '../middleware/validation.js';
 
 // Import sub-routes
 import { soulDeployRoutes } from './souls-deploy.js';
@@ -100,56 +101,26 @@ soulRoutes.get('/', async (c) => {
 
 soulRoutes.post('/', async (c) => {
   try {
-    const body = await c.req.json();
-    if (
-      !body.agentId ||
-      !body.identity ||
-      !body.purpose ||
-      !body.autonomy ||
-      !body.heartbeat ||
-      !body.evolution
-    ) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message:
-            'Missing required fields: agentId, identity, purpose, autonomy, heartbeat, evolution',
-        },
-        400
-      );
-    }
-    const autonomyLevel = (body as Record<string, unknown> & { autonomy?: { level?: unknown } })
-      .autonomy?.level;
-    if (
-      autonomyLevel !== undefined &&
-      (typeof autonomyLevel !== 'number' ||
-        !Number.isInteger(autonomyLevel) ||
-        autonomyLevel < 0 ||
-        autonomyLevel > 4)
-    ) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'autonomy.level must be an integer 0–4' },
-        400
-      );
-    }
+    const rawBody = await c.req.json();
+    const body = validateBody(createSoulSchema, rawBody);
 
     const soulData = {
-      agentId: body.agentId as string,
+      agentId: body.agentId,
       identity: body.identity,
       purpose: body.purpose,
       autonomy: body.autonomy,
       heartbeat: body.heartbeat,
-      relationships: body.relationships,
+      relationships: body.relationships ?? {},
       evolution: body.evolution,
-      bootSequence: body.bootSequence,
-      provider: body.provider,
-      skillAccess: body.skillAccess,
-    };
+      bootSequence: body.bootSequence ?? {},
+      provider: rawBody.provider,
+      skillAccess: rawBody.skillAccess,
+    } as unknown as Parameters<ReturnType<typeof getSoulsRepository>['create']>[0];
     const soul = await getSoulsRepository().create(soulData);
     return apiResponse(c, soul, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

@@ -657,7 +657,7 @@ describe('Agent Command Center Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toMatch(/name and mission/i);
+      expect(json.error.message).toMatch(/Validation failed:.*name/i);
     });
 
     it('returns 400 when mission is missing', async () => {
@@ -704,17 +704,7 @@ describe('Agent Command Center Routes', () => {
       expect(Array.isArray(json.data.agents)).toBe(true);
     });
 
-    it('caps agentCount at 10', async () => {
-      const crew = makeCrew('crew-fleet-2', { name: 'Big Fleet' });
-      mockCrewsRepo.create.mockResolvedValue(crew);
-      mockAgentsRepo.create.mockResolvedValue({ id: 'a', name: 'A' });
-      mockSoulsRepo.create.mockResolvedValue(makeSoul('a'));
-      mockCrewsRepo.addMember.mockResolvedValue(undefined);
-      mockSoulsRepo.getByAgentId.mockResolvedValue(
-        makeSoul('a', { relationships: { peers: [], delegates: [], channels: [] } })
-      );
-      mockSoulsRepo.update.mockResolvedValue(undefined);
-
+    it('returns 400 when agentCount exceeds max of 10', async () => {
       const res = await app.request('/acc/deploy-fleet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -725,11 +715,10 @@ describe('Agent Command Center Routes', () => {
         }),
       });
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(400);
       const json = await res.json();
-      // Count should be capped: 10 agents created = addMember called 10 times
-      expect(mockCrewsRepo.addMember).toHaveBeenCalledTimes(10);
-      expect(json.data.agents).toHaveLength(10);
+      expect(json.success).toBe(false);
+      expect(json.error.message).toMatch(/Validation failed:.*agentCount/i);
     });
 
     it('uses default hub_spoke pattern when not specified', async () => {

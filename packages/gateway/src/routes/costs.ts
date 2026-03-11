@@ -24,6 +24,7 @@ import {
   validateQueryEnum,
 } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
+import { validateBody, costEstimateSchema, costBudgetSchema, costRecordSchema } from '../middleware/validation.js';
 
 export const costRoutes = new Hono();
 
@@ -241,33 +242,13 @@ costRoutes.get('/models', (c) => {
  * POST /costs/estimate - Estimate cost for a request
  */
 costRoutes.post('/estimate', async (c) => {
-  const body = await c.req
-    .json<{
-      provider: AIProvider;
-      model: string;
-      inputTokens?: number;
-      outputTokens?: number;
-      text?: string;
-    }>()
-    .catch(() => null);
-
-  if (!body) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-
   try {
-    if (!body.provider || !body.model) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' },
-        400
-      );
-    }
+    const body = validateBody(costEstimateSchema, await c.req.json());
 
     // Estimate tokens from text if provided
     const inputText = body.text ?? '';
 
-    const estimate = estimateCost(body.provider, body.model, inputText, body.outputTokens ?? 500);
+    const estimate = estimateCost(body.provider as AIProvider, body.model, inputText, body.outputTokens ?? 500);
 
     return apiResponse(c, {
       provider: estimate.provider,
@@ -279,6 +260,8 @@ costRoutes.post('/estimate', async (c) => {
       note: 'This is an estimate. Actual costs may vary.',
     });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: error.message }, 400);
     return apiError(
       c,
       {
@@ -305,21 +288,9 @@ costRoutes.get('/budget', async (c) => {
  * POST /costs/budget - Set budget configuration
  */
 costRoutes.post('/budget', async (c) => {
-  const body = await c.req
-    .json<{
-      dailyLimit?: number;
-      weeklyLimit?: number;
-      monthlyLimit?: number;
-      alertThresholds?: number[];
-      limitAction?: 'warn' | 'block';
-    }>()
-    .catch(() => null);
-
-  if (!body) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-
   try {
+    const body = validateBody(costBudgetSchema, await c.req.json());
+
     const config: Partial<BudgetConfig> = {};
 
     const isPositiveFinite = (v: unknown): v is number =>
@@ -345,6 +316,8 @@ costRoutes.post('/budget', async (c) => {
       status,
     });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: error.message }, 400);
     return apiError(
       c,
       { code: ERROR_CODES.BUDGET_FAILED, message: getErrorMessage(error, 'Failed to set budget') },
@@ -428,35 +401,8 @@ costRoutes.get('/expensive', async (c) => {
  * POST /costs/record - Record a usage (called internally after each API call)
  */
 costRoutes.post('/record', async (c) => {
-  const body = await c.req
-    .json<{
-      userId: string;
-      sessionId?: string;
-      provider: AIProvider;
-      model: string;
-      inputTokens: number;
-      outputTokens: number;
-      totalTokens?: number;
-      latencyMs: number;
-      requestType?: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
-      cached?: boolean;
-      error?: string;
-      metadata?: Record<string, unknown>;
-    }>()
-    .catch(() => null);
-
-  if (!body) {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-
   try {
-    if (!body.provider || !body.model) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.INVALID_REQUEST, message: 'provider and model are required' },
-        400
-      );
-    }
+    const body = validateBody(costRecordSchema, await c.req.json());
 
     const userId = getUserId(c);
 
@@ -464,7 +410,7 @@ costRoutes.post('/record', async (c) => {
     const record = await usageTracker.record({
       userId,
       sessionId: body.sessionId,
-      provider: body.provider,
+      provider: body.provider as AIProvider,
       model: body.model,
       inputTokens: body.inputTokens ?? 0,
       outputTokens: body.outputTokens ?? 0,
@@ -489,6 +435,8 @@ costRoutes.post('/record', async (c) => {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: error.message }, 400);
     return apiError(
       c,
       {

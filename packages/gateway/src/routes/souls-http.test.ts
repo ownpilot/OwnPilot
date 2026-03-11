@@ -135,7 +135,7 @@ const mockSoul = {
   heartbeat: {
     enabled: true,
     interval: '0 */6 * * *',
-    checklist: ['check_inbox'],
+    checklist: [{ task: 'check_inbox' }],
     selfHealingEnabled: false,
     maxDurationMs: 120000,
   },
@@ -364,7 +364,7 @@ describe('Soul Routes — HTTP-level', () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.data.bootTasks).toEqual(['read_inbox']);
-      expect(data.data.checklist).toEqual(['check_inbox']);
+      expect(data.data.checklist).toEqual([{ task: 'check_inbox' }]);
       expect(data.data.isRunning).toBe(true);
     });
 

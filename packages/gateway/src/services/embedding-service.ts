@@ -17,6 +17,8 @@ import {
   EMBEDDING_DIMENSIONS,
   EMBEDDING_MAX_BATCH_SIZE,
   EMBEDDING_RATE_LIMIT_DELAY_MS,
+  EMBEDDING_RETRY_AFTER_DEFAULT_S,
+  EMBEDDING_SERVER_ERROR_RETRY_MS,
 } from '../config/defaults.js';
 
 const log = getLog('EmbeddingService');
@@ -182,8 +184,11 @@ export class EmbeddingService implements IEmbeddingService {
 
       // Handle rate limiting with retry-after (one retry)
       if (response.status === 429 && !retried) {
-        const parsed = parseInt(response.headers.get('retry-after') ?? '5', 10);
-        const retryAfter = Number.isNaN(parsed) ? 5 : parsed;
+        const parsed = parseInt(
+          response.headers.get('retry-after') ?? String(EMBEDDING_RETRY_AFTER_DEFAULT_S),
+          10
+        );
+        const retryAfter = Number.isNaN(parsed) ? EMBEDDING_RETRY_AFTER_DEFAULT_S : parsed;
         log.warn(`Rate limited, retrying after ${retryAfter}s`);
         await sleep(retryAfter * 1000);
         return this.callEmbeddingAPI(inputs, true);
@@ -191,8 +196,8 @@ export class EmbeddingService implements IEmbeddingService {
 
       // Retry on transient server errors (5xx) once
       if (response.status >= 500 && !retried) {
-        log.warn(`Server error ${response.status}, retrying after 2s`);
-        await sleep(2000);
+        log.warn(`Server error ${response.status}, retrying after ${EMBEDDING_SERVER_ERROR_RETRY_MS}ms`);
+        await sleep(EMBEDDING_SERVER_ERROR_RETRY_MS);
         return this.callEmbeddingAPI(inputs, true);
       }
 

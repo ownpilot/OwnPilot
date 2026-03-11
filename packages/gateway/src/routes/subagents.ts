@@ -14,6 +14,7 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import { validateBody, spawnSubagentSchema } from '../middleware/validation.js';
 
 export const subagentRoutes = new Hono();
 
@@ -46,16 +47,8 @@ subagentRoutes.get('/', (c) => {
 subagentRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
+    const body = validateBody(spawnSubagentSchema, await c.req.json());
     const service = getSubagentService();
-
-    if (!body.name || !body.task) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'name and task are required' },
-        400
-      );
-    }
 
     const session = await service.spawn({
       parentId: body.parentId ?? 'api',
@@ -67,11 +60,18 @@ subagentRoutes.post('/', async (c) => {
       allowedTools: body.allowedTools,
       provider: body.provider,
       model: body.model,
-      limits: body.limits,
+      limits: body.limits ? {
+        maxTokens: body.limits.maxTokens,
+        maxTurns: body.limits.maxTurns,
+        maxToolCalls: body.limits.maxToolCalls,
+        timeoutMs: body.limits.timeout,
+      } : undefined,
     });
 
     return apiResponse(c, session, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

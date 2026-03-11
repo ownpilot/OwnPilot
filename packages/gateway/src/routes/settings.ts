@@ -13,6 +13,14 @@ import {
   getErrorMessage,
   sanitizeProviderName,
 } from './helpers.js';
+import {
+  validateBody,
+  setDefaultProviderSchema,
+  setDefaultModelSchema,
+  setApiKeySchema,
+  setAllowedDirsSchema,
+  setToolGroupsSchema,
+} from '../middleware/validation.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
 import {
   getAvailableProviders,
@@ -97,90 +105,65 @@ settingsRoutes.get('/data-info', async (c) => {
  * Set default AI provider
  */
 settingsRoutes.post('/default-provider', async (c) => {
-  const body = await c.req.json<{ provider: string }>();
+  try {
+    const body = validateBody(setDefaultProviderSchema, await c.req.json());
 
-  if (!body.provider || typeof body.provider !== 'string') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider is required' }, 400);
+    await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
+
+    return apiResponse(c, {
+      defaultProvider: body.provider,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-
-  if (body.provider.length > 64) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' },
-      400
-    );
-  }
-
-  await settingsRepo.set(DEFAULT_PROVIDER_KEY, body.provider);
-
-  return apiResponse(c, {
-    defaultProvider: body.provider,
-  });
 });
 
 /**
  * Set default AI model
  */
 settingsRoutes.post('/default-model', async (c) => {
-  const body = await c.req.json<{ model: string }>();
+  try {
+    const body = validateBody(setDefaultModelSchema, await c.req.json());
 
-  if (!body.model || typeof body.model !== 'string') {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Model is required' }, 400);
+    await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
+
+    return apiResponse(c, {
+      defaultModel: body.model,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-
-  if (body.model.length > 128) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Model name too long (max 128 characters)' },
-      400
-    );
-  }
-
-  await settingsRepo.set(DEFAULT_MODEL_KEY, body.model);
-
-  return apiResponse(c, {
-    defaultModel: body.model,
-  });
 });
 
 /**
  * Set API key for a provider
  */
 settingsRoutes.post('/api-keys', async (c) => {
-  const body = await c.req.json<{ provider: string; apiKey: string }>();
+  try {
+    const body = validateBody(setApiKeySchema, await c.req.json());
 
-  if (!body.provider || !body.apiKey) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_REQUEST, message: 'Provider and apiKey are required' },
-      400
-    );
+    // Store API key in database
+    const key = `${API_KEY_PREFIX}${body.provider}`;
+    await settingsRepo.set(key, body.apiKey);
+
+    // Also set as environment variable for the current process
+    // This allows providers to work immediately without restart
+    const sanitizedProvider = sanitizeProviderName(body.provider);
+    if (sanitizedProvider) {
+      const envVarName = `${sanitizedProvider}_API_KEY`;
+      process.env[envVarName] = body.apiKey;
+    }
+
+    return apiResponse(c, {
+      provider: body.provider,
+      configured: true,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-
-  if (body.provider.length > 64) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'Provider name too long (max 64 characters)' },
-      400
-    );
-  }
-
-  // Store API key in database
-  const key = `${API_KEY_PREFIX}${body.provider}`;
-  await settingsRepo.set(key, body.apiKey);
-
-  // Also set as environment variable for the current process
-  // This allows providers to work immediately without restart
-  const sanitizedProvider = sanitizeProviderName(body.provider);
-  if (sanitizedProvider) {
-    const envVarName = `${sanitizedProvider}_API_KEY`;
-    process.env[envVarName] = body.apiKey;
-  }
-
-  return apiResponse(c, {
-    provider: body.provider,
-    configured: true,
-  });
 });
 
 /**
@@ -396,20 +379,17 @@ settingsRoutes.get('/coding-agents/allowed-dirs', async (c) => {
  * PUT /coding-agents/allowed-dirs
  */
 settingsRoutes.put('/coding-agents/allowed-dirs', async (c) => {
-  const body = await c.req.json();
-  if (!Array.isArray(body.dirs)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.VALIDATION_ERROR, message: '"dirs" must be an array of paths' },
-      400
+  try {
+    const body = validateBody(setAllowedDirsSchema, await c.req.json());
+    const dirs = body.dirs.filter(
+      (d: string): d is string => d.trim().length > 0
     );
+    await setAllowedDirs(dirs);
+    return apiResponse(c, { dirs });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-  // Validate each dir is a string
-  const dirs = body.dirs.filter(
-    (d: unknown): d is string => typeof d === 'string' && d.trim().length > 0
-  );
-  await setAllowedDirs(dirs);
-  return apiResponse(c, { dirs });
 });
 
 // ============================================
@@ -703,41 +683,38 @@ settingsRoutes.get('/tool-groups', (c) => {
  * PUT /tool-groups - Save enabled tool group IDs
  */
 settingsRoutes.put('/tool-groups', async (c) => {
-  const body = await c.req.json<{ enabledGroupIds: string[] }>();
+  try {
+    const body = validateBody(setToolGroupsSchema, await c.req.json());
 
-  if (!Array.isArray(body.enabledGroupIds)) {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_REQUEST, message: 'enabledGroupIds must be an array' },
-      400
-    );
-  }
-
-  // Validate all IDs reference real groups
-  const invalidIds = body.enabledGroupIds.filter((id) => !TOOL_GROUPS[id]);
-  if (invalidIds.length > 0) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_INPUT,
-        message: `Unknown tool group IDs: ${invalidIds.join(', ')}`,
-      },
-      400
-    );
-  }
-
-  // Ensure always-on groups are included
-  const enabledSet = new Set(body.enabledGroupIds);
-  for (const group of Object.values(TOOL_GROUPS)) {
-    if (group.alwaysOn) {
-      enabledSet.add(group.id);
+    // Validate all IDs reference real groups
+    const invalidIds = body.enabledGroupIds.filter((id) => !TOOL_GROUPS[id]);
+    if (invalidIds.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_INPUT,
+          message: `Unknown tool group IDs: ${invalidIds.join(', ')}`,
+        },
+        400
+      );
     }
+
+    // Ensure always-on groups are included
+    const enabledSet = new Set(body.enabledGroupIds);
+    for (const group of Object.values(TOOL_GROUPS)) {
+      if (group.alwaysOn) {
+        enabledSet.add(group.id);
+      }
+    }
+
+    const enabledGroupIds = [...enabledSet];
+    await settingsRepo.set(TOOL_GROUPS_KEY, enabledGroupIds);
+
+    return apiResponse(c, { enabledGroupIds });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
-
-  const enabledGroupIds = [...enabledSet];
-  await settingsRepo.set(TOOL_GROUPS_KEY, enabledGroupIds);
-
-  return apiResponse(c, { enabledGroupIds });
 });
 
 /**

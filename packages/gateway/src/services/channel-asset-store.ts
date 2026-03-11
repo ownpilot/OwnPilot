@@ -9,10 +9,12 @@ import {
 import { getLog } from './log.js';
 
 const log = getLog('ChannelAssetStore');
-const DEFAULT_TTL_MS = 72 * 60 * 60 * 1000;
+import { CHANNEL_ASSET_TTL_MS, CHANNEL_ASSET_MAX_FILENAME_LENGTH } from '../config/defaults.js';
+
+const DEFAULT_TTL_MS = CHANNEL_ASSET_TTL_MS;
 
 function safeSegment(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'unknown';
+  return value.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, CHANNEL_ASSET_MAX_FILENAME_LENGTH) || 'unknown';
 }
 
 function extensionForAttachment(attachment: ChannelAttachment): string {

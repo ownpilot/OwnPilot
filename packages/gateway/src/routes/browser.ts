@@ -9,6 +9,12 @@ import { getBrowserService } from '../services/browser-service.js';
 import { BrowserWorkflowsRepository } from '../db/repositories/browser-workflows.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
 import { getErrorMessage } from '@ownpilot/core';
+import {
+  validateBody,
+  browserNavigateSchema,
+  browserActionSchema,
+  createBrowserWorkflowSchema,
+} from '../middleware/validation.js';
 
 export const browserRoutes = new Hono();
 
@@ -37,17 +43,14 @@ browserRoutes.get('/config', async (c) => {
 browserRoutes.post('/navigate', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-    const url = body.url as string;
-
-    if (!url) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'url is required' }, 400);
-    }
+    const body = validateBody(browserNavigateSchema, await c.req.json());
 
     const service = getBrowserService();
-    const result = await service.navigate(userId, url);
+    const result = await service.navigate(userId, body.url);
     return apiResponse(c, result);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -55,16 +58,11 @@ browserRoutes.post('/navigate', async (c) => {
 browserRoutes.post('/action', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-    const actionType = body.type as string;
-
-    if (!actionType) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'type is required' }, 400);
-    }
+    const body = validateBody(browserActionSchema, await c.req.json());
 
     const service = getBrowserService();
 
-    switch (actionType) {
+    switch (body.type) {
       case 'click': {
         if (!body.selector)
           return apiError(
@@ -91,7 +89,7 @@ browserRoutes.post('/action', async (c) => {
       case 'scroll': {
         const result = await service.scroll(
           userId,
-          body.direction ?? 'down',
+          (body.direction ?? 'down') as 'up' | 'down',
           body.pixels as number | undefined
         );
         return apiResponse(c, result);
@@ -127,12 +125,12 @@ browserRoutes.post('/action', async (c) => {
             },
             400
           );
-        const result = await service.fillForm(userId, body.fields);
+        const result = await service.fillForm(userId, body.fields as unknown as import('../services/browser-service.js').FormField[]);
         return apiResponse(c, result);
       }
       case 'extract': {
         if (body.dataSelectors) {
-          const result = await service.extractData(userId, body.dataSelectors);
+          const result = await service.extractData(userId, body.dataSelectors as Record<string, string>);
           return apiResponse(c, result);
         }
         const result = await service.extractText(userId, body.selector);
@@ -141,11 +139,13 @@ browserRoutes.post('/action', async (c) => {
       default:
         return apiError(
           c,
-          { code: ERROR_CODES.VALIDATION_ERROR, message: `Unknown action type: ${actionType}` },
+          { code: ERROR_CODES.VALIDATION_ERROR, message: `Unknown action type: ${body.type}` },
           400
         );
     }
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -195,32 +195,20 @@ browserRoutes.get('/workflows', async (c) => {
 browserRoutes.post('/workflows', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    if (!body.name) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
-    }
-    if (!Array.isArray(body.steps) || body.steps.length === 0) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'steps array is required and must not be empty',
-        },
-        400
-      );
-    }
+    const body = validateBody(createBrowserWorkflowSchema, await c.req.json());
 
     const repo = getWorkflowRepo();
     const workflow = await repo.create(userId, {
       name: body.name,
       description: body.description,
-      steps: body.steps,
-      parameters: body.parameters,
+      steps: body.steps as unknown as import('../services/browser-service.js').BrowserAction[],
+      parameters: body.parameters as unknown as import('../db/repositories/browser-workflows.js').WorkflowParameter[] | undefined,
       triggerId: body.triggerId,
     });
     return apiResponse(c, workflow, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

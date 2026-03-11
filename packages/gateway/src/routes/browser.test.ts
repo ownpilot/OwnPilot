@@ -179,7 +179,7 @@ describe('Browser Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(false);
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('url is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 500 when service throws', async () => {
@@ -213,7 +213,7 @@ describe('Browser Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('type is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('performs click action with selector', async () => {
@@ -308,7 +308,7 @@ describe('Browser Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('fields array is required for fill_form');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 for unknown action type', async () => {
@@ -320,7 +320,7 @@ describe('Browser Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('Unknown action type: teleport');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 500 when service throws during action', async () => {
@@ -500,7 +500,7 @@ describe('Browser Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('name is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 when steps is empty', async () => {
@@ -512,7 +512,7 @@ describe('Browser Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('steps array is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 400 when steps is not an array', async () => {
@@ -524,7 +524,7 @@ describe('Browser Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('steps array is required');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('returns 500 on repository error', async () => {

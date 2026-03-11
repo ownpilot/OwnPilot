@@ -306,7 +306,7 @@ describe('Crew Routes', () => {
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.success).toBe(false);
-      expect(data.error.message).toContain('templateId is required');
+      expect(data.error.message).toContain('Validation failed');
     });
 
     it('should return 404 when template not found', async () => {
@@ -657,7 +657,7 @@ describe('Crew Routes', () => {
       expect(res.status).toBe(400);
       const data = await res.json();
       expect(data.success).toBe(false);
-      expect(data.error.message).toContain('message is required');
+      expect(data.error.message).toContain('Validation failed');
     });
 
     it('should return 404 when crew not found', async () => {
@@ -691,7 +691,7 @@ describe('Crew Routes', () => {
           fromAgentId: 'agent-1',
           toAgentId: 'agent-2',
           task: 'Write unit tests',
-          context: 'Use vitest',
+          context: { details: 'Use vitest' },
         }),
       });
 
@@ -713,7 +713,7 @@ describe('Crew Routes', () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error.message).toContain('fromAgentId, toAgentId, and task are required');
+      expect(data.error.message).toContain('Validation failed');
     });
 
     it('should return 404 when crew not found', async () => {
@@ -812,7 +812,7 @@ describe('Crew Routes', () => {
       const res = await app.request('/crews/crew-1/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ context: 'New shared knowledge', importance: 'high' }),
+        body: JSON.stringify({ context: 'New shared knowledge' }),
       });
 
       expect(res.status).toBe(200);
@@ -820,7 +820,7 @@ describe('Crew Routes', () => {
       expect(data.success).toBe(true);
       expect(data.data.syncedTo).toBe(2);
       expect(data.data.context).toBe('New shared knowledge');
-      expect(data.data.importance).toBe('high');
+      expect(data.data.importance).toBe('medium');
       expect(mockSoulsRepo.update).toHaveBeenCalledTimes(2);
     });
 
@@ -833,7 +833,7 @@ describe('Crew Routes', () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error.message).toContain('context is required');
+      expect(data.error.message).toContain('Validation failed');
     });
 
     it('should return 404 when crew not found', async () => {

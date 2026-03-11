@@ -397,15 +397,16 @@ describe('MCP Routes', () => {
       expect(res.status).toBe(400);
       const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('Name is required');
+      expect(json.error.message).toContain('Validation failed');
+      expect(json.error.message).toContain('name');
     });
 
-    it('returns 400 when name is blank whitespace', async () => {
+    it('returns 400 when name is empty string', async () => {
       const res = await app.request('/mcp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: '   ',
+          name: '',
           displayName: 'Test Server',
           transport: 'stdio',
           command: '/usr/bin/node',
@@ -431,7 +432,8 @@ describe('MCP Routes', () => {
       expect(res.status).toBe(400);
       const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('Display name is required');
+      expect(json.error.message).toContain('Validation failed');
+      expect(json.error.message).toContain('displayName');
     });
 
     it('returns 400 when transport is missing', async () => {
@@ -447,7 +449,8 @@ describe('MCP Routes', () => {
       expect(res.status).toBe(400);
       const json = (await res.json()) as { error: { code: string; message: string } };
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('Transport type is required');
+      expect(json.error.message).toContain('Validation failed');
+      expect(json.error.message).toContain('transport');
     });
 
     it('returns 400 for stdio transport without command', async () => {

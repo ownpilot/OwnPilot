@@ -218,7 +218,7 @@ describe('Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('too long');
+      expect(json.error.message).toContain('Validation failed');
     });
   });
 
@@ -920,7 +920,7 @@ describe('Settings Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('too long');
+      expect(json.error.message).toContain('Validation failed');
     });
   });
 
@@ -933,12 +933,12 @@ describe('Settings Routes', () => {
       const res = await app.request('/settings/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: 'x'.repeat(65), apiKey: 'key' }),
+        body: JSON.stringify({ provider: 'x'.repeat(101), apiKey: 'key' }),
       });
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('too long');
+      expect(json.error.message).toContain('Validation failed');
     });
   });
 

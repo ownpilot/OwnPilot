@@ -20,6 +20,12 @@ import {
   sanitizeId,
   getUserId,
 } from './helpers.js';
+import {
+  validateBody,
+  mcpToolCallSchema,
+  createMcpServerSchema,
+  mcpToolSettingsSchema,
+} from '../middleware/validation.js';
 
 const log = getLog('McpRoutes');
 
@@ -161,19 +167,9 @@ mcpRoutes.get('/serve/info', async (c) => {
  */
 mcpRoutes.post('/tool-call', async (c) => {
   try {
-    const body = await c.req.json<{
-      tool_name: string;
-      arguments: Record<string, unknown>;
-    }>();
+    const body = validateBody(mcpToolCallSchema, await c.req.json());
 
     const { tool_name: toolName, arguments: toolArgs } = body;
-    if (!toolName) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'tool_name is required' },
-        400
-      );
-    }
 
     const registry = getSharedToolRegistry();
     const context = {
@@ -211,6 +207,7 @@ mcpRoutes.post('/tool-call', async (c) => {
 
     return apiResponse(c, { content: String(result.content), isError: result.isError ?? false });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     log.error('MCP tool-call failed:', err);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
@@ -249,36 +246,10 @@ mcpRoutes.get('/', async (c) => {
 mcpRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json<{
-      name: string;
-      displayName: string;
-      transport: 'stdio' | 'sse' | 'streamable-http';
-      command?: string;
-      args?: string[];
-      env?: Record<string, string>;
-      url?: string;
-      headers?: Record<string, string>;
-      enabled?: boolean;
-      autoConnect?: boolean;
-    }>();
-
-    if (!body.name?.trim()) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Name is required' }, 400);
-    }
-    if (!body.displayName?.trim()) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Display name is required' },
-        400
-      );
-    }
-    if (!body.transport) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Transport type is required' },
-        400
-      );
-    }
+    const rawBody = await c.req.json();
+    const body = validateBody(createMcpServerSchema, rawBody);
+    // enabled is a pass-through field not in the schema
+    const enabled = typeof (rawBody as Record<string, unknown>).enabled === 'boolean' ? (rawBody as Record<string, unknown>).enabled as boolean : undefined;
 
     // Validate transport-specific fields
     if (body.transport === 'stdio' && !body.command?.trim()) {
@@ -317,7 +288,7 @@ mcpRoutes.post('/', async (c) => {
       env: body.env,
       url: body.url?.trim(),
       headers: body.headers,
-      enabled: body.enabled,
+      enabled,
       autoConnect: body.autoConnect,
       userId,
     });
@@ -325,6 +296,7 @@ mcpRoutes.post('/', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'created', id: server.id });
     return apiResponse(c, server, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     log.error('Failed to create MCP server:', err);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
@@ -496,25 +468,7 @@ mcpRoutes.patch('/:id/tool-settings', async (c) => {
   try {
     const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
-    const body = await c.req.json<{
-      toolName: string;
-      workflowUsable: boolean;
-    }>();
-
-    if (!body.toolName || typeof body.toolName !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'toolName is required' },
-        400
-      );
-    }
-    if (typeof body.workflowUsable !== 'boolean') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'workflowUsable (boolean) is required' },
-        400
-      );
-    }
+    const body = validateBody(mcpToolSettingsSchema, await c.req.json());
 
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
@@ -543,6 +497,7 @@ mcpRoutes.patch('/:id/tool-settings', async (c) => {
     wsGateway.broadcast('data:changed', { entity: 'mcp_server', action: 'updated', id });
     return apiResponse(c, { toolName: body.toolName, workflowUsable: body.workflowUsable });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:')) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     log.error('Failed to update MCP tool settings:', err);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }

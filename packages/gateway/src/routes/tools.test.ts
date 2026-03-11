@@ -376,7 +376,7 @@ describe('Tools Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.code).toBe('INVALID_INPUT');
+      expect(json.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('returns 400 when batch size exceeds 20', async () => {
@@ -393,7 +393,7 @@ describe('Tools Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('maximum');
+      expect(json.error.message).toContain('Validation failed');
     });
 
     it('handles mixed success and failure in batch', async () => {

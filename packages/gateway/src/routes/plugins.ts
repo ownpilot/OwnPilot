@@ -22,6 +22,7 @@ import {
   notFoundError,
   validateQueryEnum,
 } from './helpers.js';
+import { validateBody, pluginSettingsSchema } from '../middleware/validation.js';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
@@ -376,45 +377,44 @@ pluginsRoutes.get('/:id/settings', async (c) => {
  * Update plugin settings
  */
 pluginsRoutes.put('/:id/settings', async (c) => {
-  const id = c.req.param('id');
-  const registry = getPluginService();
-  const plugin = registry.get(id);
+  try {
+    const id = c.req.param('id');
+    const registry = getPluginService();
+    const plugin = registry.get(id);
 
-  if (!plugin) {
-    return notFoundError(c, 'Plugin', id);
-  }
-
-  const body = await c.req.json<{ settings: Record<string, unknown> }>();
-  if (!body.settings || typeof body.settings !== 'object') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.INVALID_INPUT, message: 'settings object required' },
-      400
-    );
-  }
-
-  // Merge with existing settings
-  const mergedSettings = { ...plugin.config.settings, ...body.settings };
-
-  // Persist to DB
-  await pluginsRepo.updateSettings(id, mergedSettings);
-
-  // Update in-memory
-  plugin.config.settings = mergedSettings;
-  plugin.config.updatedAt = new Date().toISOString();
-
-  // Notify plugin via lifecycle hook
-  if (plugin.lifecycle.onConfigChange) {
-    try {
-      await plugin.lifecycle.onConfigChange(mergedSettings);
-    } catch (err) {
-      log.error(`onConfigChange hook failed for ${sanitizeId(id)}:`, err);
+    if (!plugin) {
+      return notFoundError(c, 'Plugin', id);
     }
+
+    const body = validateBody(pluginSettingsSchema, await c.req.json());
+
+    // Merge with existing settings
+    const mergedSettings = { ...plugin.config.settings, ...body.settings };
+
+    // Persist to DB
+    await pluginsRepo.updateSettings(id, mergedSettings);
+
+    // Update in-memory
+    plugin.config.settings = mergedSettings;
+    plugin.config.updatedAt = new Date().toISOString();
+
+    // Notify plugin via lifecycle hook
+    if (plugin.lifecycle.onConfigChange) {
+      try {
+        await plugin.lifecycle.onConfigChange(mergedSettings);
+      } catch (err) {
+        log.error(`onConfigChange hook failed for ${sanitizeId(id)}:`, err);
+      }
+    }
+
+    wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
+
+    return apiResponse(c, { settings: mergedSettings });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    throw err;
   }
-
-  wsGateway.broadcast('data:changed', { entity: 'plugin', action: 'updated', id });
-
-  return apiResponse(c, { settings: mergedSettings });
 });
 
 /**

@@ -99,12 +99,16 @@ vi.mock('./routes/index.js', () => ({
 }));
 
 // Mock defaults
-vi.mock('./config/defaults.js', () => ({
-  RATE_LIMIT_WINDOW_MS: 60000,
-  RATE_LIMIT_MAX_REQUESTS: 100,
-  RATE_LIMIT_BURST: 10,
-  SECONDS_PER_DAY: 86400,
-}));
+vi.mock('./config/defaults.js', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    RATE_LIMIT_WINDOW_MS: 60000,
+    RATE_LIMIT_MAX_REQUESTS: 100,
+    RATE_LIMIT_BURST: 10,
+    SECONDS_PER_DAY: 86400,
+  };
+});
 
 // Mock core VERSION
 vi.mock('@ownpilot/core', () => ({

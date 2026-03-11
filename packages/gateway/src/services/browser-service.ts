@@ -13,13 +13,22 @@ import { isBlockedUrl } from '../utils/ssrf.js';
 
 const log = getLog('BrowserService');
 
+import {
+  BROWSER_MAX_PAGES,
+  BROWSER_SESSION_TIMEOUT_MS,
+  BROWSER_CLEANUP_INTERVAL_MS,
+  BROWSER_NAVIGATION_TIMEOUT_MS,
+  BROWSER_ACTION_TIMEOUT_MS,
+  BROWSER_MAX_TEXT_LENGTH,
+} from '../config/defaults.js';
+
 const BROWSER_SERVICE = 'browser_service';
-const MAX_PAGES_PER_USER = 5;
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const DEFAULT_NAVIGATION_TIMEOUT = 30_000;
-const DEFAULT_ACTION_TIMEOUT = 10_000;
-const MAX_TEXT_LENGTH = 50_000;
+const MAX_PAGES_PER_USER = BROWSER_MAX_PAGES;
+const SESSION_TIMEOUT_MS = BROWSER_SESSION_TIMEOUT_MS;
+const CLEANUP_INTERVAL_MS = BROWSER_CLEANUP_INTERVAL_MS;
+const DEFAULT_NAVIGATION_TIMEOUT = BROWSER_NAVIGATION_TIMEOUT_MS;
+const DEFAULT_ACTION_TIMEOUT = BROWSER_ACTION_TIMEOUT_MS;
+const MAX_TEXT_LENGTH = BROWSER_MAX_TEXT_LENGTH;
 
 // ============================================================================
 // Types
