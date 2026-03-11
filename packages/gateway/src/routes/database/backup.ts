@@ -8,7 +8,8 @@
 
 import { Hono } from 'hono';
 import { spawn } from 'child_process';
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync, unlinkSync, readdirSync, statSync } from 'fs';
+import { createReadStream } from 'node:fs';
 import { join, basename } from 'path';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from '../helpers.js';
 import { getDatabaseConfig } from '../../db/adapters/types.js';
@@ -19,6 +20,53 @@ import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
 const log = getLog('Database');
 
 export const backupRoutes = new Hono();
+
+/**
+ * GET /backups - List all backup files
+ */
+backupRoutes.get('/backups', (c) => {
+  try {
+    const backupDir = getBackupDir();
+    const files = readdirSync(backupDir)
+      .filter((f) => f.endsWith('.sql') || f.endsWith('.dump') || f.endsWith('.json'))
+      .map((filename) => {
+        const filepath = join(backupDir, filename);
+        const stats = statSync(filepath);
+        return {
+          filename,
+          size: stats.size,
+          sizeHuman: formatBytes(stats.size),
+          createdAt: stats.birthtime.toISOString(),
+          modifiedAt: stats.mtime.toISOString(),
+          type: filename.endsWith('.dump') ? 'custom' : filename.endsWith('.json') ? 'json' : 'sql',
+        };
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return apiResponse(c, {
+      backups: files,
+      count: files.length,
+      backupDir,
+    });
+  } catch (err) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list backups') },
+      500
+    );
+  }
+});
+
+/**
+ * Format bytes to human readable string
+ */
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
 
 /**
  * Create a database backup using pg_dump
@@ -302,4 +350,35 @@ backupRoutes.delete('/backup/:filename', (c) => {
       500
     );
   }
+});
+
+/**
+ * Download a backup file
+ */
+backupRoutes.get('/backups/:filename/download', (c) => {
+  const filename = c.req.param('filename');
+  const backupPath = join(getBackupDir(), basename(filename));
+
+  if (!existsSync(backupPath)) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.BACKUP_NOT_FOUND,
+        message: `Backup file not found: ${sanitizeId(basename(filename))}`,
+      },
+      404
+    );
+  }
+
+  const contentType = filename.endsWith('.json')
+    ? 'application/json'
+    : filename.endsWith('.dump')
+      ? 'application/octet-stream'
+      : 'application/sql';
+
+  const stream = createReadStream(backupPath);
+  c.header('Content-Type', contentType);
+  c.header('Content-Disposition', `attachment; filename="${basename(filename)}"`);
+
+  return new Response(stream as unknown as ReadableStream);
 });
