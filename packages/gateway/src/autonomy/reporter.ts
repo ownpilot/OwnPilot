@@ -33,8 +33,19 @@ export async function reportPulseResult(
   try {
     const eventSystem = getEventSystem();
 
+    const successActions = result.actionsExecuted.filter((a) => a.success && !a.skipped);
+    const failedActions = result.actionsExecuted.filter((a) => !a.success && !a.skipped);
+    const skippedActions = result.actionsExecuted.filter((a) => a.skipped);
+
+    log.info(`[PulseReport] Pulse ${result.pulseId} — ${successActions.length} succeeded, ${failedActions.length} failed, ${skippedActions.length} skipped`, {
+      durationMs: result.durationMs,
+      signalsFound: result.signalsFound,
+      urgencyScore: result.urgencyScore,
+      error: result.error ?? undefined,
+    });
+
     // Broadcast completion notification
-    if (result.reportMessage || result.actionsExecuted.some((a) => a.success && !a.skipped)) {
+    if (result.reportMessage || successActions.length > 0) {
       eventSystem.emit('gateway.system.notification', 'pulse-reporter', {
         type: 'info' as const,
         message: result.reportMessage || 'Pulse cycle completed.',
@@ -56,6 +67,11 @@ export async function reportPulseResult(
         modifiedTypes.add('notifications');
       }
     }
+
+    if (modifiedTypes.size > 0) {
+      log.info(`[PulseReport] Data changed: ${[...modifiedTypes].join(', ')}`);
+    }
+
     for (const entityType of modifiedTypes) {
       eventSystem.emitRaw({
         type: 'gateway.data.changed',
@@ -66,6 +82,6 @@ export async function reportPulseResult(
       });
     }
   } catch (error) {
-    log.debug('EventBus emission failed', { error: String(error) });
+    log.warn('EventBus emission failed', { error: String(error) });
   }
 }

@@ -127,9 +127,12 @@ export class BackgroundAgentRunner {
 
       const response = chatResult.value;
 
-      log.info(
-        `[${this.config.id}] Cycle ${cycleNumber} completed: ${toolCalls.length} tool calls, ${durationMs}ms`
-      );
+      log.info(`[${this.config.id}] Cycle ${cycleNumber} completed`, {
+        toolCalls: toolCalls.length,
+        tools: toolCalls.map((tc) => tc.tool),
+        durationMs,
+        outputLength: response.content?.length ?? 0,
+      });
 
       return {
         success: true,

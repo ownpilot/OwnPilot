@@ -66,8 +66,15 @@ export class HeartbeatRunner {
       };
     }
 
+    log.info(`[Heartbeat ${agentId}] Starting cycle${force ? ' (forced)' : ''}`, {
+      soulName: soul.identity.name,
+      version: soul.evolution.version,
+      taskCount: soul.heartbeat.checklist.length,
+    });
+
     // Quiet hours check (bypassed when force=true for manual test runs)
     if (!force && this.isQuietHours(soul)) {
+      log.info(`[Heartbeat ${agentId}] Skipped: quiet hours active`);
       return {
         ok: true,
         value: this.createSkippedResult(agentId, soul, 'quiet_hours'),
@@ -77,6 +84,7 @@ export class HeartbeatRunner {
     // Budget check
     const budgetOk = await this.budgetTracker.checkBudget(agentId, soul.autonomy);
     if (!budgetOk) {
+      log.warn(`[Heartbeat ${agentId}] Skipped: daily budget exceeded`);
       await this.handleBudgetExceeded(agentId, soul);
       // Log the skipped run so history is complete
       await this.heartbeatLogRepo.create({
@@ -108,6 +116,11 @@ export class HeartbeatRunner {
 
     // Filter tasks that should run this cycle (force=true runs all tasks regardless of schedule)
     const tasksToRun = this.filterTasksToRun(soul.heartbeat.checklist, force);
+    const skippedCount = soul.heartbeat.checklist.length - tasksToRun.length;
+
+    log.info(`[Heartbeat ${agentId}] ${tasksToRun.length} task(s) due, ${skippedCount} skipped by schedule`, {
+      tasks: tasksToRun.map((t) => t.name),
+    });
 
     // Keep an in-memory copy of the checklist to batch all status updates in one DB write.
     const updatedChecklist = soul.heartbeat.checklist.map((t) => ({ ...t }));
@@ -128,14 +141,25 @@ export class HeartbeatRunner {
         continue;
       }
 
+      log.info(`[Heartbeat ${agentId}] Running task "${task.name}" (${task.id})`);
       const taskResult = await this.executeTask(agentId, soul, task);
       result.tasks.push(taskResult);
       result.totalTokens.input += taskResult.tokenUsage.input;
       result.totalTokens.output += taskResult.tokenUsage.output;
       result.totalCost += taskResult.cost;
 
+      if (taskResult.status === 'success') {
+        log.info(`[Heartbeat ${agentId}] Task "${task.name}" succeeded in ${taskResult.durationMs}ms`, {
+          cost: taskResult.cost,
+          outputLength: taskResult.output?.length ?? 0,
+        });
+      } else {
+        log.warn(`[Heartbeat ${agentId}] Task "${task.name}" ${taskResult.status}: ${taskResult.error}`);
+      }
+
       // Route output
       if (taskResult.status === 'success' && task.outputTo) {
+        log.info(`[Heartbeat ${agentId}] Routing output to ${task.outputTo.type}`);
         await this.routeOutput(agentId, soul, task, taskResult.output || '');
       }
 
@@ -168,6 +192,7 @@ export class HeartbeatRunner {
 
     // Auto-pause agent if any task crossed the consecutiveFailures threshold
     if (pauseTriggered) {
+      log.warn(`[Heartbeat ${agentId}] AUTO-PAUSED: consecutive failure threshold (${soul.autonomy.pauseOnConsecutiveErrors}) reached`);
       await this.soulRepo.setHeartbeatEnabled(agentId, false);
       this.eventBus?.emit('soul.heartbeat.auto_paused', {
         agentId,
@@ -178,6 +203,18 @@ export class HeartbeatRunner {
 
     result.completedAt = new Date();
     result.durationMs = result.completedAt.getTime() - result.startedAt.getTime();
+
+    const succeeded = result.tasks.filter((t) => t.status === 'success').length;
+    const failed = result.tasks.filter((t) => t.status === 'failure').length;
+    const skipped = result.tasks.filter((t) => t.status === 'skipped').length;
+
+    log.info(`[Heartbeat ${agentId}] Cycle complete in ${result.durationMs}ms`, {
+      succeeded,
+      failed,
+      skipped,
+      totalCost: result.totalCost,
+      tokens: result.totalTokens,
+    });
 
     // Log to DB
     await this.heartbeatLogRepo.create({

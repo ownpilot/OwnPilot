@@ -166,6 +166,7 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
       const crewId = request.context?.crewId as string | undefined;
       let taskMessage = request.message;
       if (crewId) {
+        log.info(`[Heartbeat ${request.agentId}] Injecting crew context (crew: ${crewId})`);
         const crewSection = await buildCrewContextForHeartbeat(request.agentId, crewId);
         if (crewSection) {
           taskMessage = `${crewSection}\n${taskMessage}`;
@@ -311,7 +312,7 @@ function createEventBusAdapter(): IHeartbeatEventBus {
       } catch {
         // EventSystem may not be initialized in tests — fall through to log
       }
-      log.debug(`[HeartbeatEvent] ${event}`, payload as Record<string, unknown>);
+      log.info(`[HeartbeatEvent] ${event}`, payload as Record<string, unknown>);
     },
   };
 }

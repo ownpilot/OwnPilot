@@ -96,6 +96,7 @@ export async function executePulseActions(
 
     // Check if action type is blocked by user directives
     if (blockedActions.includes(action.type)) {
+      log.info(`Action "${action.type}" blocked by user directives`);
       results.push({
         type: action.type,
         success: false,
@@ -112,11 +113,13 @@ export async function executePulseActions(
       if (lastTime) {
         const elapsed = (Date.now() - new Date(lastTime).getTime()) / 60_000;
         if (elapsed < cooldownMinutes) {
+          const remaining = Math.ceil(cooldownMinutes - elapsed);
+          log.info(`Action "${action.type}" in cooldown (${remaining}min remaining)`);
           results.push({
             type: action.type,
             success: false,
             skipped: true,
-            error: `Action in cooldown (${Math.ceil(cooldownMinutes - elapsed)} min remaining)`,
+            error: `Action in cooldown (${remaining} min remaining)`,
           });
           continue;
         }
@@ -140,12 +143,15 @@ export async function executePulseActions(
     }
 
     // Execute the action
+    log.info(`Executing action "${action.type}"`, { params: Object.keys(action.params) });
     const result = await executeAction(action, userId);
     results.push(result);
 
-    // Update last action time on success
     if (result.success) {
+      log.info(`Action "${action.type}" succeeded`, { output: result.output });
       updatedActionTimes[action.type] = new Date().toISOString();
+    } else {
+      log.warn(`Action "${action.type}" failed`, { error: result.error });
     }
   }
 

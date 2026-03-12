@@ -15,7 +15,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { PulseResult } from '@ownpilot/core';
 
 // ============================================================================
-// Mock log so we can assert on log.debug in the error branch
+// Mock log so we can assert on log.warn in the error branch
 // ============================================================================
 
 const mockLog = {
@@ -335,7 +335,7 @@ describe('reportPulseResult', () => {
   // Error handling
   // --------------------------------------------------------------------------
 
-  it('catches errors from EventBus and logs them via log.debug', async () => {
+  it('catches errors from EventBus and logs them via log.warn', async () => {
     mockEventEmit.mockImplementation(() => {
       throw new Error('EventBus closed');
     });
@@ -348,7 +348,7 @@ describe('reportPulseResult', () => {
     // Should NOT throw
     await reportPulseResult(result);
 
-    expect(mockLog.debug).toHaveBeenCalledWith('EventBus emission failed', {
+    expect(mockLog.warn).toHaveBeenCalledWith('EventBus emission failed', {
       error: 'Error: EventBus closed',
     });
   });
@@ -365,7 +365,7 @@ describe('reportPulseResult', () => {
 
     await reportPulseResult(result);
 
-    expect(mockLog.debug).toHaveBeenCalledWith('EventBus emission failed', {
+    expect(mockLog.warn).toHaveBeenCalledWith('EventBus emission failed', {
       error: 'plain string error',
     });
   });

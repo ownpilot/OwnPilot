@@ -157,6 +157,8 @@ export class AutonomyEngine implements IPulseService {
     this.activePulse = { pulseId, stage: 'starting', startedAt: startTime };
     this.broadcastActivity('started', 'starting');
 
+    log.info(`[Pulse ${pulseId}] Starting ${manual ? '(manual)' : '(scheduled)'}`, { userId });
+
     try {
       // Load user directives
       const directives = this.getDirectives();
@@ -164,6 +166,13 @@ export class AutonomyEngine implements IPulseService {
       // 1. Gather rich context
       this.setStage('gathering');
       const ctx = await gatherPulseContext(userId);
+      log.info(`[Pulse ${pulseId}] Context gathered`, {
+        goals: ctx.goals.active.length,
+        staleGoals: ctx.goals.stale.length,
+        memories: ctx.memories.total,
+        pendingApprovals: ctx.systemHealth.pendingApprovals,
+        triggerErrors: ctx.systemHealth.triggerErrors,
+      });
 
       // 2. Evaluate signals (skip disabled rules, apply thresholds)
       this.setStage('evaluating');
@@ -172,6 +181,12 @@ export class AutonomyEngine implements IPulseService {
         directives.disabledRules,
         directives.ruleThresholds
       );
+
+      log.info(`[Pulse ${pulseId}] Evaluation complete`, {
+        signalsFound: evaluation.signals.length,
+        signals: evaluation.signals.map((s) => `${s.id}(${s.severity})`).join(', ') || 'none',
+        urgencyScore: evaluation.urgencyScore,
+      });
 
       // Compute cooldown status for the agent prompt
       const lastActionTimes = this.getLastActionTimes();
@@ -192,6 +207,7 @@ export class AutonomyEngine implements IPulseService {
 
       // 3. Run agent pulse — real agent with tools
       this.setStage('deciding');
+      log.info(`[Pulse ${pulseId}] Running agent pulse (LLM decision)...`);
       const agentResult = await this.runAgentPulse(
         userId,
         ctx,
@@ -210,6 +226,11 @@ export class AutonomyEngine implements IPulseService {
       // If agent didn't use any tools, log a skip
       if (actionResults.length === 0) {
         actionResults.push({ type: 'skip', success: true, skipped: true });
+        log.info(`[Pulse ${pulseId}] Agent decided: no actions needed`);
+      } else {
+        log.info(`[Pulse ${pulseId}] Agent executed ${agentResult.toolCalls.length} action(s)`, {
+          actions: agentResult.toolCalls.map((tc) => tc.name).filter(Boolean),
+        });
       }
 
       // Update last action times for tool calls
@@ -245,6 +266,14 @@ export class AutonomyEngine implements IPulseService {
 
       this.lastPulseResult = result;
 
+      log.info(`[Pulse ${pulseId}] Completed in ${result.durationMs}ms`, {
+        signalsFound: result.signalsFound,
+        actionsExecuted: result.actionsExecuted.filter((a) => a.success && !a.skipped).length,
+        actionsSkipped: result.actionsExecuted.filter((a) => a.skipped).length,
+        urgencyScore: result.urgencyScore,
+        reportMessage: result.reportMessage?.slice(0, 200) || '(none)',
+      });
+
       this.broadcastActivity('completed', 'done', {
         signalsFound: result.signalsFound,
         actionsExecuted: result.actionsExecuted.length,
@@ -258,12 +287,14 @@ export class AutonomyEngine implements IPulseService {
           this.config.minIntervalMs,
           this.config.maxIntervalMs
         );
+        log.info(`[Pulse] Next pulse in ${Math.round(nextMs / 60_000)}min (urgency: ${evaluation.urgencyScore})`);
         this.scheduleNext(nextMs);
       }
 
       return result;
     } catch (error) {
       const errorMsg = getErrorMessage(error);
+      log.error(`[Pulse ${pulseId}] Failed: ${errorMsg}`);
       this.broadcastActivity('error', 'error', { error: errorMsg });
 
       const result: PulseResult = {
@@ -491,7 +522,7 @@ export class AutonomyEngine implements IPulseService {
     // Quiet hours check
     const hour = new Date().getHours();
     if (this.isQuietHours(hour)) {
-      log.debug('Quiet hours, skipping pulse.');
+      log.info('Quiet hours active, skipping pulse cycle.');
       this.scheduleNext(this.config.maxIntervalMs);
       return;
     }
@@ -541,7 +572,7 @@ export class AutonomyEngine implements IPulseService {
         await repo.cleanup(PULSE_LOG_RETENTION_DAYS);
       }
     } catch (error) {
-      log.debug('Failed to log pulse result', { error: String(error) });
+      log.warn('Failed to persist pulse result to DB', { error: String(error) });
     }
   }
 }
