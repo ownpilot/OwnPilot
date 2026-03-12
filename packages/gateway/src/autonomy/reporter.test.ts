@@ -160,20 +160,6 @@ describe('reportPulseResult', () => {
   });
 
   // --------------------------------------------------------------------------
-  // Legacy broadcaster parameter is ignored
-  // --------------------------------------------------------------------------
-
-  it('ignores legacy broadcaster parameter', async () => {
-    const mockBroadcaster = vi.fn();
-    const result = makeResult({ reportMessage: 'test' });
-
-    await reportPulseResult(result, mockBroadcaster);
-
-    expect(mockBroadcaster).not.toHaveBeenCalled();
-    expect(mockEventEmit).toHaveBeenCalled();
-  });
-
-  // --------------------------------------------------------------------------
   // data:changed events — entity type mapping via emitRaw
   // --------------------------------------------------------------------------
 

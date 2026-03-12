@@ -70,7 +70,7 @@ export {
   type PulseAction,
 } from './executor.js';
 
-export { reportPulseResult, type Broadcaster } from './reporter.js';
+export { reportPulseResult } from './reporter.js';
 
 // Autonomy Guard (Soul Agent Enforcement)
 export {
