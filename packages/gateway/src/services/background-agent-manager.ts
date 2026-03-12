@@ -60,6 +60,7 @@ interface ManagedAgent {
   cyclesThisHour: number;
   hourWindow: number; // hour timestamp for rate limiting
   persistTimer: ReturnType<typeof setInterval> | null;
+  lastCycleToolCalls: number; // tool calls in the most recent cycle (for scheduling)
 }
 
 // ============================================================================
@@ -205,6 +206,7 @@ export class BackgroundAgentManager {
       cyclesThisHour: 0,
       hourWindow: this.getCurrentHour(),
       persistTimer: null,
+      lastCycleToolCalls: 0,
     };
 
     this.agents.set(config.id, managed);
@@ -427,8 +429,8 @@ export class BackgroundAgentManager {
       if (lastResult) {
         // Backoff on error
         delay = CONTINUOUS_MAX_DELAY_MS;
-      } else if (managed.session.totalToolCalls === 0) {
-        // No activity yet — use idle delay
+      } else if (managed.lastCycleToolCalls === 0) {
+        // Last cycle was idle (no tool calls) — slow down
         delay = CONTINUOUS_IDLE_DELAY_MS;
       } else {
         // Active — fast delay
@@ -571,6 +573,7 @@ export class BackgroundAgentManager {
     session.lastCycleAt = new Date();
     session.lastCycleDurationMs = result.durationMs;
     session.lastCycleError = result.error ?? null;
+    managed.lastCycleToolCalls = result.toolCalls.length;
 
     // Clear inbox after cycle (messages were included in the cycle prompt)
     session.inbox = [];

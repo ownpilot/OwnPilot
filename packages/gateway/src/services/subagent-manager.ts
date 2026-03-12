@@ -197,7 +197,8 @@ export class SubagentManager {
     managed.session.state = 'cancelled';
     managed.session.completedAt = new Date();
     managed.session.durationMs =
-      managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
+      managed.session.completedAt.getTime() -
+      (managed.session.startedAt ?? managed.session.spawnedAt).getTime();
 
     log.info(`Cancelled subagent "${managed.session.name}" [${subagentId}]`);
 
@@ -348,7 +349,8 @@ export class SubagentManager {
         managed.session.error = getErrorMessage(err);
         managed.session.completedAt = new Date();
         managed.session.durationMs =
-          managed.session.completedAt.getTime() - managed.session.spawnedAt.getTime();
+          managed.session.completedAt.getTime() -
+          (managed.session.startedAt ?? managed.session.spawnedAt).getTime();
 
         log.error('Subagent execution error', {
           subagentId: id,

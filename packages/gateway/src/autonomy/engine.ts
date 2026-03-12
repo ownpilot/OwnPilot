@@ -471,8 +471,13 @@ export class AutonomyEngine implements IPulseService {
       const { getOrCreateChatAgent } = await import('../routes/agent-service.js');
       const { resolveForProcess } = await import('../services/model-routing.js');
       const resolved = await resolveForProcess('pulse');
-      const provider = resolved.provider ?? 'openai';
-      const model = resolved.model ?? 'gpt-4o-mini';
+      if (!resolved.provider || !resolved.model) {
+        throw new Error(
+          'No AI provider configured for autonomous pulse. Set a default provider in Settings → AI Models.'
+        );
+      }
+      const provider = resolved.provider;
+      const model = resolved.model;
       const fallback =
         resolved.fallbackProvider && resolved.fallbackModel
           ? { provider: resolved.fallbackProvider, model: resolved.fallbackModel }

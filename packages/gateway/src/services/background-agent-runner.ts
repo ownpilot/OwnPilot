@@ -88,8 +88,15 @@ export class BackgroundAgentRunner {
         model = this.config.model;
       } else {
         const resolved = await resolveForProcess('pulse');
-        provider = this.config.provider ?? resolved.provider ?? 'openai';
-        model = this.config.model ?? resolved.model ?? 'gpt-4o-mini';
+        const resolvedProvider = this.config.provider ?? resolved.provider;
+        const resolvedModel = this.config.model ?? resolved.model;
+        if (!resolvedProvider || !resolvedModel) {
+          throw new Error(
+            'No AI provider configured. Set provider/model on the agent or configure a default in Settings.'
+          );
+        }
+        provider = resolvedProvider;
+        model = resolvedModel;
       }
 
       // 2. Create agent with full tool access

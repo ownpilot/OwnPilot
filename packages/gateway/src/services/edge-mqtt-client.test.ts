@@ -130,6 +130,7 @@ describe('EdgeMqttClient', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     delete process.env.MQTT_BROKER_URL;
   });
 
