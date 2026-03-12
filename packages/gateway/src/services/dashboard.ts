@@ -163,7 +163,7 @@ export class DashboardService {
     let triggerHistory: TriggerHistory[] = [];
     try {
       const [triggers, historyResult] = await Promise.all([
-        triggerService.listTriggers(this.userId, { limit: 100 }),
+        triggerService.listTriggers(this.userId),
         triggerService.getRecentHistory(this.userId, { limit: 10 }),
       ]);
       allTriggers = triggers;

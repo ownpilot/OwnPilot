@@ -674,6 +674,14 @@ async function main() {
       log.warn('Circuit breaker stop error', { error: String(e) });
     }
 
+    // 5.6. Stop coding agent sessions (terminate PTY processes and ACP clients)
+    try {
+      const { getCodingAgentSessionManager } = await import('./services/coding-agent-sessions.js');
+      getCodingAgentSessionManager().stop();
+    } catch (e) {
+      log.warn('Coding agent sessions stop error', { error: String(e) });
+    }
+
     // 6. Cleanup webhook handler (if Telegram is in webhook mode)
     try {
       const { getWebhookHandler, unregisterWebhookHandler } =

@@ -146,7 +146,7 @@ describe('Proactive Triggers', () => {
 
       await initializeDefaultTriggers();
 
-      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('default', { limit: 100 });
+      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('default');
     });
   });
 
