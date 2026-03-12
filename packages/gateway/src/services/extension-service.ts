@@ -6,7 +6,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, resolve, relative } from 'path';
 import { fileURLToPath } from 'url';
 import {
   getEventBus,
@@ -420,10 +420,8 @@ export class ExtensionService implements IExtensionService {
           // Path traversal protection: resolve and verify path is within skillDir
           const fullPath = resolve(skillDir, scriptPath);
           const resolvedSkillDir = resolve(skillDir);
-          if (
-            !fullPath.startsWith(resolvedSkillDir + '/') &&
-            !fullPath.startsWith(resolvedSkillDir + '\\')
-          ) {
+          const rel = relative(resolvedSkillDir, fullPath);
+          if (rel.startsWith('..') || resolve(fullPath) !== fullPath) {
             log.warn(`Path traversal detected for ${pkg.id}: ${scriptPath}`);
             continue; // Skip this script
           }

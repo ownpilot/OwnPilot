@@ -634,6 +634,46 @@ async function main() {
       log.warn('ApprovalManager stop error', { error: String(e) });
     }
 
+    // 5.1. Stop autonomy engine
+    try {
+      const { stopAutonomyEngine } = await import('./autonomy/engine.js');
+      stopAutonomyEngine();
+    } catch (e) {
+      log.warn('Autonomy engine stop error', { error: String(e) });
+    }
+
+    // 5.2. Stop scheduler
+    try {
+      const { stopScheduler } = await import('./scheduler/index.js');
+      stopScheduler();
+    } catch (e) {
+      log.warn('Scheduler stop error', { error: String(e) });
+    }
+
+    // 5.3. Stop embedding queue
+    try {
+      const { getEmbeddingQueue } = await import('./services/embedding-queue.js');
+      getEmbeddingQueue().stop();
+    } catch (e) {
+      log.warn('Embedding queue stop error', { error: String(e) });
+    }
+
+    // 5.4. Stop heartbeat runner
+    try {
+      const { resetHeartbeatRunner } = await import('./services/soul-heartbeat-service.js');
+      resetHeartbeatRunner();
+    } catch (e) {
+      log.warn('Heartbeat runner stop error', { error: String(e) });
+    }
+
+    // 5.5. Stop circuit breaker cleanup intervals
+    try {
+      const { stopAllCircuitBreakers } = await import('./middleware/circuit-breaker.js');
+      stopAllCircuitBreakers();
+    } catch (e) {
+      log.warn('Circuit breaker stop error', { error: String(e) });
+    }
+
     // 6. Cleanup webhook handler (if Telegram is in webhook mode)
     try {
       const { getWebhookHandler, unregisterWebhookHandler } =

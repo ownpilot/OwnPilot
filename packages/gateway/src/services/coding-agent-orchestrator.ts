@@ -207,6 +207,7 @@ export async function startOrchestration(
   activeRuns.set(runId, { abort: false });
   runOrchestrationLoop(run, userId).catch((err) => {
     log.error(`Orchestration ${runId} crashed`, err);
+    activeRuns.delete(runId);
   });
 
   broadcast('orchestration:created', { id: runId, goal: input.goal });
@@ -243,6 +244,7 @@ export async function continueOrchestration(
   activeRuns.set(runId, { abort: false });
   runOrchestrationLoop(run, userId).catch((err) => {
     log.error(`Orchestration ${runId} crashed on continue`, err);
+    activeRuns.delete(runId);
   });
 
   broadcast('orchestration:continued', { id: runId });

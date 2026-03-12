@@ -12,6 +12,9 @@ import type {
   ConfigEntry,
 } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
+import { getLog } from './log.js';
+
+const log = getLog('ConfigCenter');
 
 // =============================================================================
 // HELPER
@@ -62,8 +65,8 @@ export class GatewayConfigCenter implements ConfigCenter {
           category: 'general',
           description: 'Auto-discovered service',
         })
-        .catch(() => {
-          /* ignore - best effort */
+        .catch((err) => {
+          log.warn(`Auto-register service "${serviceName}" failed`, { error: String(err) });
         });
     }
 

@@ -118,10 +118,9 @@ skillsRoutes.post('/check-updates', async (c) => {
     const updates: { id: string; name: string; current: string; latest: string }[] = [];
 
     for (const ext of allExtensions) {
-      const npmPkg =
-        ext.manifest.npm_package ?? (ext.settings as Record<string, unknown>).npmPackage;
-      const npmVersion =
-        ext.manifest.npm_version ?? (ext.settings as Record<string, unknown>).npmVersion;
+      const settings = (ext.settings ?? {}) as Record<string, unknown>;
+      const npmPkg = ext.manifest.npm_package ?? settings.npmPackage;
+      const npmVersion = ext.manifest.npm_version ?? settings.npmVersion;
       if (typeof npmPkg === 'string' && typeof npmVersion === 'string') {
         const check = await installer.checkForUpdate(npmPkg, npmVersion);
         if (check.hasUpdate) {
@@ -169,8 +168,8 @@ skillsRoutes.get('/permissions/:id', (c) => {
     }
 
     const declaredPermissions = ext.manifest.permissions ?? { required: [], optional: [] };
-    const grantedPermissions =
-      ((ext.settings as Record<string, unknown>).grantedPermissions as SkillPermission[]) ?? [];
+    const settings = (ext.settings ?? {}) as Record<string, unknown>;
+    const grantedPermissions = (settings.grantedPermissions as SkillPermission[]) ?? [];
 
     return apiResponse(c, {
       declared: declaredPermissions,

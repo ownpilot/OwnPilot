@@ -179,8 +179,8 @@ export function scanSkillDirectory(skillDir: string): {
           scriptPaths.push(`scripts/${entry.name}`);
         }
       }
-    } catch {
-      /* skip unreadable */
+    } catch (err) {
+      log.warn(`Failed to read scripts directory: ${scriptsDir}`, { error: String(err) });
     }
   }
 
@@ -192,8 +192,8 @@ export function scanSkillDirectory(skillDir: string): {
           referencePaths.push(`references/${entry.name}`);
         }
       }
-    } catch {
-      /* skip unreadable */
+    } catch (err) {
+      log.warn(`Failed to read references directory: ${refsDir}`, { error: String(err) });
     }
   }
 
@@ -205,8 +205,8 @@ export function scanSkillDirectory(skillDir: string): {
           assetPaths.push(`assets/${entry.name}`);
         }
       }
-    } catch {
-      /* skip unreadable */
+    } catch (err) {
+      log.warn(`Failed to read assets directory: ${assetsDir}`, { error: String(err) });
     }
   }
 

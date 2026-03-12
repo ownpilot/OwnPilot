@@ -193,28 +193,28 @@ export class BackgroundAgentRunner {
     try {
       await registerDynamicTools(tools, userId, conversationId, false);
     } catch (err) {
-      log.debug(`[${this.config.id}] Dynamic tools registration failed: ${getErrorMessage(err)}`);
+      log.warn(`[${this.config.id}] Dynamic tools registration failed: ${getErrorMessage(err)}`);
     }
 
     // 4. Plugin tools
     try {
       registerPluginTools(tools, false);
     } catch (err) {
-      log.debug(`[${this.config.id}] Plugin tools registration failed: ${getErrorMessage(err)}`);
+      log.warn(`[${this.config.id}] Plugin tools registration failed: ${getErrorMessage(err)}`);
     }
 
     // 5. Extension/Skill tools
     try {
       registerExtensionTools(tools, userId, false);
     } catch (err) {
-      log.debug(`[${this.config.id}] Extension tools registration failed: ${getErrorMessage(err)}`);
+      log.warn(`[${this.config.id}] Extension tools registration failed: ${getErrorMessage(err)}`);
     }
 
     // 6. MCP tools (external MCP servers)
     try {
       registerMcpTools(tools, false);
     } catch (err) {
-      log.debug(`[${this.config.id}] MCP tools registration failed: ${getErrorMessage(err)}`);
+      log.warn(`[${this.config.id}] MCP tools registration failed: ${getErrorMessage(err)}`);
     }
 
     // Build enhanced system prompt with memories + goals injected
@@ -228,7 +228,7 @@ export class BackgroundAgentRunner {
       });
       systemPrompt = enhanced.prompt;
     } catch (err) {
-      log.debug(
+      log.warn(
         `[${this.config.id}] Enhanced prompt build failed, using base: ${getErrorMessage(err)}`
       );
     }
@@ -251,7 +251,7 @@ export class BackgroundAgentRunner {
           }
         }
       } catch (err) {
-        log.debug(`[${this.config.id}] Skills filter build failed: ${getErrorMessage(err)}`);
+        log.warn(`[${this.config.id}] Skills filter build failed: ${getErrorMessage(err)}`);
       }
     }
 
