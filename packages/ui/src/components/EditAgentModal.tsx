@@ -6,9 +6,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
-import { agentsApi, modelsApi, toolsApi } from '../api';
+import { GroupedToolSelector } from './GroupedToolSelector';
+import { agentsApi, modelsApi } from '../api';
 import { useModalClose } from '../hooks';
-import type { Agent, Tool, ModelInfo, AgentDetail } from '../types';
+import type { Agent, ModelInfo, AgentDetail } from '../types';
 
 export interface EditAgentModalProps {
   agentId: string;
@@ -28,7 +29,6 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
   const [maxTurns, setMaxTurns] = useState(50);
   const [maxToolCalls, setMaxToolCalls] = useState(200);
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [tools, setTools] = useState<Tool[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +36,7 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
   const [step, setStep] = useState<'info' | 'model' | 'tools' | 'config'>('info');
 
   useEffect(() => {
-    Promise.all([fetchAgentDetail(), fetchModels(), fetchTools()]).finally(() =>
+    Promise.all([fetchAgentDetail(), fetchModels()]).finally(() =>
       setIsLoading(false)
     );
   }, [agentId]);
@@ -62,15 +62,6 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
       const data = await modelsApi.list();
       setModels(data.models);
       setConfiguredProviders(data.configuredProviders);
-    } catch {
-      // API client handles error reporting
-    }
-  };
-
-  const fetchTools = async () => {
-    try {
-      const data = await toolsApi.list();
-      setTools(data);
     } catch {
       // API client handles error reporting
     }
@@ -113,12 +104,6 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const toggleTool = (toolName: string) => {
-    setSelectedTools((prev) =>
-      prev.includes(toolName) ? prev.filter((t) => t !== toolName) : [...prev, toolName]
-    );
   };
 
   // Group models by provider
@@ -256,42 +241,10 @@ export function EditAgentModal({ agentId, onClose, onUpdated }: EditAgentModalPr
               )}
             </div>
           ) : step === 'tools' ? (
-            <div className="space-y-4">
-              <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                Select tools this agent can use:
-              </p>
-              {tools.length === 0 ? (
-                <p className="text-text-muted dark:text-dark-text-muted text-center py-8">
-                  No tools available.
-                </p>
-              ) : (
-                <div className="grid gap-2">
-                  {tools.map((tool) => (
-                    <button
-                      key={tool.name}
-                      onClick={() => toggleTool(tool.name)}
-                      className={`p-3 rounded-lg border text-left transition-all ${
-                        selectedTools.includes(tool.name)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border dark:border-dark-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                          {tool.name}
-                        </span>
-                        {selectedTools.includes(tool.name) && (
-                          <span className="text-xs text-primary">Selected</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                        {tool.description}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <GroupedToolSelector
+              selectedTools={selectedTools}
+              onSelectionChange={setSelectedTools}
+            />
           ) : (
             <div className="space-y-4">
               <div>
