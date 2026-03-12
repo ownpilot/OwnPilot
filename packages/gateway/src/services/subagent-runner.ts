@@ -241,7 +241,7 @@ export class SubagentRunner {
     try {
       await registerDynamicTools(tools, userId, conversationId, false);
     } catch (err) {
-      log.debug(
+      log.warn(
         `[subagent:${this.input.name}] Dynamic tools registration failed: ${getErrorMessage(err)}`
       );
     }
@@ -250,7 +250,7 @@ export class SubagentRunner {
     try {
       registerPluginTools(tools, false);
     } catch (err) {
-      log.debug(
+      log.warn(
         `[subagent:${this.input.name}] Plugin tools registration failed: ${getErrorMessage(err)}`
       );
     }
@@ -259,7 +259,7 @@ export class SubagentRunner {
     try {
       registerExtensionTools(tools, userId, false);
     } catch (err) {
-      log.debug(
+      log.warn(
         `[subagent:${this.input.name}] Extension tools registration failed: ${getErrorMessage(err)}`
       );
     }
@@ -268,7 +268,7 @@ export class SubagentRunner {
     try {
       registerMcpTools(tools, false);
     } catch (err) {
-      log.debug(
+      log.warn(
         `[subagent:${this.input.name}] MCP tools registration failed: ${getErrorMessage(err)}`
       );
     }

@@ -11,6 +11,9 @@ import { agentsRepo } from '../db/repositories/agents.js';
 import { createTriggersRepository } from '../db/repositories/triggers.js';
 import { getAdapterSync } from '../db/adapters/index.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('SoulDeploy');
 
 export const soulDeployRoutes = new Hono();
 
@@ -243,8 +246,12 @@ soulDeployRoutes.post('/deploy', async (c) => {
           enabled: true,
         });
         triggerCreated = true;
-      } catch (_triggerError) {
+      } catch (triggerError) {
         // Trigger creation failure is non-fatal — agent still deployed
+        log.warn('Heartbeat trigger creation failed (non-fatal)', {
+          agentId,
+          error: getErrorMessage(triggerError),
+        });
       }
     }
 

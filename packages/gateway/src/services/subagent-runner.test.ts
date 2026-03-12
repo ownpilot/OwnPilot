@@ -91,7 +91,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 vi.mock('./log.js', () => ({
-  getLog: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn() })),
+  getLog: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() })),
 }));
 
 vi.mock('./model-routing.js', () => ({
