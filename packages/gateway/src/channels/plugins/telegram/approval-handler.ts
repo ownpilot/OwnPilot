@@ -176,31 +176,6 @@ export class TelegramApprovalHandler {
 }
 
 // ---------------------------------------------------------------------------
-// Module-level singleton — kept for backward compatibility with existing tests
-// ---------------------------------------------------------------------------
-
-const _defaultHandler = new TelegramApprovalHandler();
-
-/** @deprecated Use TelegramApprovalHandler instance methods instead. */
-export function registerApprovalHandler(bot: Bot): void {
-  _defaultHandler.register(bot);
-}
-
-/** @deprecated Use TelegramApprovalHandler instance methods instead. */
-export async function requestTelegramApproval(
-  bot: Bot,
-  chatId: string,
-  params: { toolName: string; description: string; riskLevel?: string }
-): Promise<boolean> {
-  return _defaultHandler.request(bot, chatId, params);
-}
-
-/** @deprecated Use TelegramApprovalHandler instance methods instead. */
-export function clearPendingApprovals(): void {
-  _defaultHandler.clearAll();
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

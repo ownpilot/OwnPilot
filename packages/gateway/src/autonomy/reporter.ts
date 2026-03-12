@@ -13,22 +13,14 @@ import type { PulseResult } from '@ownpilot/core';
 const log = getLog('PulseReporter');
 
 // ============================================================================
-// Types (kept for backward compatibility — unused internally now)
-// ============================================================================
-
-export type Broadcaster = (event: string, data: unknown) => void;
-
-// ============================================================================
 // Reporter
 // ============================================================================
 
 /**
  * Report pulse results via EventBus.
- * Legacy broadcaster parameter is ignored — all delivery goes through EventBus.
  */
 export async function reportPulseResult(
-  result: PulseResult,
-  _broadcaster?: Broadcaster
+  result: PulseResult
 ): Promise<void> {
   try {
     const eventSystem = getEventSystem();
