@@ -173,12 +173,15 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
         }
       }
 
+      // Claw mode (autonomy level 5) — bypass all tool restrictions
+      const clawMode = request.context?.clawMode === true;
+
       // Enforce allowedTools (task-level) and skillAccess (soul-level) restrictions.
       const allowedTools = request.context?.allowedTools as string[] | undefined;
       const skillAccessAllowed = request.context?.skillAccessAllowed as string[] | undefined;
       const skillAccessBlocked = request.context?.skillAccessBlocked as string[] | undefined;
 
-      const hasToolFilter = !!(
+      const hasToolFilter = !clawMode && !!(
         allowedTools?.length ||
         skillAccessAllowed?.length ||
         skillAccessBlocked?.length

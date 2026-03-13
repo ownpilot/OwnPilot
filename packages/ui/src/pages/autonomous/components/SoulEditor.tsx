@@ -305,16 +305,103 @@ export function SoulEditor({ agentId }: Props) {
 
       {activeTab === 'autonomy' && (
         <div className="space-y-3">
-          <FieldGroup label={`Autonomy Level: ${edited.autonomy.level}`}>
+          <FieldGroup label={`Autonomy Level: ${edited.autonomy.level}${edited.autonomy.level === 5 ? ' (Claw)' : ''}`}>
             <input
               type="range"
               min={0}
-              max={4}
+              max={5}
               value={edited.autonomy.level}
-              onChange={(e) => updateField('autonomy', 'level', Number(e.target.value))}
+              onChange={(e) => {
+                const newLevel = Number(e.target.value);
+                updateField('autonomy', 'level', newLevel);
+                // Auto-initialize clawMode when level reaches 5
+                if (newLevel === 5 && !edited.autonomy.clawMode) {
+                  updateField('autonomy', 'clawMode', {
+                    enabled: true,
+                    canManageAgents: false,
+                    canCreateTools: false,
+                    selfImprovement: 'disabled',
+                  });
+                }
+              }}
               className="w-full"
             />
+            <div className="flex justify-between text-xs text-text-muted dark:text-dark-text-muted mt-1">
+              <span>0 - Manual</span>
+              <span>5 - Claw</span>
+            </div>
           </FieldGroup>
+          {/* Claw mode settings — visible when level === 5 */}
+          {edited.autonomy.level === 5 && (
+            <div className="border border-orange-500/30 rounded-lg p-3 bg-orange-500/5 space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-orange-500">CLAW MODE</span>
+                <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                  Unrestricted tool access and elevated autonomy
+                </span>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={edited.autonomy.clawMode?.enabled ?? false}
+                  onChange={(e) =>
+                    updateField('autonomy', 'clawMode', {
+                      ...(edited.autonomy.clawMode ?? {
+                        enabled: false,
+                        canManageAgents: false,
+                        canCreateTools: false,
+                        selfImprovement: 'disabled' as const,
+                      }),
+                      enabled: e.target.checked,
+                    })
+                  }
+                />
+                Enable Claw Mode
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={edited.autonomy.clawMode?.canManageAgents ?? false}
+                  onChange={(e) =>
+                    updateField('autonomy', 'clawMode', {
+                      ...edited.autonomy.clawMode!,
+                      canManageAgents: e.target.checked,
+                    })
+                  }
+                />
+                Can manage agents (spawn subagents, fleets)
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={edited.autonomy.clawMode?.canCreateTools ?? false}
+                  onChange={(e) =>
+                    updateField('autonomy', 'clawMode', {
+                      ...edited.autonomy.clawMode!,
+                      canCreateTools: e.target.checked,
+                    })
+                  }
+                />
+                Can create tools at runtime
+              </label>
+              <FieldGroup label="Self-Improvement">
+                <select
+                  value={edited.autonomy.clawMode?.selfImprovement ?? 'disabled'}
+                  onChange={(e) =>
+                    updateField('autonomy', 'clawMode', {
+                      ...edited.autonomy.clawMode!,
+                      selfImprovement: e.target.value,
+                    })
+                  }
+                  className={inputClass}
+                >
+                  <option value="disabled">Disabled</option>
+                  <option value="suggest">Suggest (needs approval)</option>
+                  <option value="auto">Auto (applies learnings automatically)</option>
+                </select>
+              </FieldGroup>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-3">
             <FieldGroup label="Max $/cycle">
               <input

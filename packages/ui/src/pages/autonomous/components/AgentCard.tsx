@@ -79,6 +79,15 @@ export function AgentCard({ agent, onPause, onResume, onDelete, onTestRun }: Pro
         >
           {agent.kind === 'soul' ? 'Soul Agent' : 'Background'}
         </span>
+        {/* Claw mode badge */}
+        {agent.soul?.autonomy.level === 5 && agent.soul.autonomy.clawMode?.enabled && (
+            <span
+              className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 font-medium"
+              title="Claw Mode: Unrestricted tool access and elevated autonomy"
+            >
+              CLAW
+            </span>
+          )}
         {/* Schedule */}
         {agent.soul?.heartbeat.enabled && agent.soul.heartbeat.interval && (
           <span

@@ -12,6 +12,7 @@ export type {
   SoulVoice,
   SoulPurpose,
   SoulAutonomy,
+  ClawModeConfig,
   SoulHeartbeat,
   QuietHours,
   HeartbeatTask,

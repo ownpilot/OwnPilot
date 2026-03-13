@@ -93,8 +93,8 @@ export interface SoulPurpose {
 // ── Autonomy ────────────────────────────────────────
 
 export interface SoulAutonomy {
-  /** Autonomy level (maps to existing 5-level system) */
-  level: 0 | 1 | 2 | 3 | 4;
+  /** Autonomy level: 0-4 standard, 5 = claw mode (unrestricted) */
+  level: 0 | 1 | 2 | 3 | 4 | 5;
 
   /** Actions the agent can perform freely */
   allowedActions: string[];
@@ -116,6 +116,21 @@ export interface SoulAutonomy {
   pauseOnBudgetExceeded: boolean;
   /** Notify user on pause (default: true) */
   notifyUserOnPause: boolean;
+
+  /** Claw mode config — only active when level === 5 */
+  clawMode?: ClawModeConfig;
+}
+
+/** Claw mode configuration for unrestricted autonomous agents (autonomy level 5) */
+export interface ClawModeConfig {
+  /** Whether claw mode is active */
+  enabled: boolean;
+  /** Can spawn/manage other agents (subagents, fleets) */
+  canManageAgents: boolean;
+  /** Can create tools at runtime */
+  canCreateTools: boolean;
+  /** Self-improvement strategy after each heartbeat cycle */
+  selfImprovement: 'disabled' | 'suggest' | 'auto';
 }
 
 // ── Heartbeat ───────────────────────────────────────

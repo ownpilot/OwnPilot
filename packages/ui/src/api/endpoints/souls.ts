@@ -32,7 +32,7 @@ export interface AgentSoul {
     knowledgeDomains?: string[];
   };
   autonomy: {
-    level: number; // 0-4
+    level: number; // 0-5 (5 = claw mode)
     allowedActions: string[];
     blockedActions: string[];
     requiresApproval: string[];
@@ -42,6 +42,12 @@ export interface AgentSoul {
     pauseOnConsecutiveErrors: number;
     pauseOnBudgetExceeded: boolean;
     notifyUserOnPause: boolean;
+    clawMode?: {
+      enabled: boolean;
+      canManageAgents: boolean;
+      canCreateTools: boolean;
+      selfImprovement: 'disabled' | 'suggest' | 'auto';
+    };
   };
   heartbeat: {
     enabled: boolean;
@@ -394,6 +400,36 @@ export const soulsApi = {
 // Crews API
 // =============================================================================
 
+export interface CrewMemoryEntry {
+  id: string;
+  crewId: string;
+  agentId: string;
+  category: string;
+  title: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrewTask {
+  id: string;
+  crewId: string;
+  createdBy: string;
+  claimedBy: string | null;
+  taskName: string;
+  description: string;
+  context: string | null;
+  expectedOutput: string | null;
+  priority: string;
+  status: string;
+  result: string | null;
+  deadline: string | null;
+  createdAt: string;
+  claimedAt: string | null;
+  completedAt: string | null;
+}
+
 export const crewsApi = {
   list: async () => {
     const data = await apiClient.get<{ items: AgentCrew[]; total: number }>('/crews');
@@ -407,6 +443,29 @@ export const crewsApi = {
   disband: (id: string) => apiClient.delete<void>(`/crews/${id}`),
   getTemplates: () => apiClient.get<CrewTemplate[]>('/crews/templates'),
   getTemplate: (id: string) => apiClient.get<CrewTemplate>(`/crews/templates/${id}`),
+
+  // Crew shared memory
+  getMemory: (id: string, category?: string, query?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (query) params.set('query', query);
+    params.set('limit', String(limit));
+    params.set('offset', String(offset));
+    return apiClient.get<{ entries: CrewMemoryEntry[]; total: number }>(
+      `/crews/${id}/memory?${params}`
+    );
+  },
+  deleteMemory: (crewId: string, memoryId: string) =>
+    apiClient.delete<void>(`/crews/${crewId}/memory/${memoryId}`),
+
+  // Crew task queue
+  getTasks: (id: string, status?: string, limit = 20, offset = 0) => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    params.set('limit', String(limit));
+    params.set('offset', String(offset));
+    return apiClient.get<{ tasks: CrewTask[]; total: number }>(`/crews/${id}/tasks?${params}`);
+  },
 };
 
 // =============================================================================

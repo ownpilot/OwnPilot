@@ -80,7 +80,7 @@ export function buildCrewContextSection(ctx: CrewContextInfo): string {
     '',
     `**Coordination:** ${guidance}`,
     '',
-    '> Available crew tools: `get_crew_members`, `delegate_task`, `broadcast_to_crew`, `send_agent_message`, `read_agent_inbox`',
+    '> Available crew tools: `get_crew_members`, `delegate_task`, `broadcast_to_crew`, `claim_task`, `submit_result`, `request_review`, `share_knowledge`, `get_crew_memory`, `coordinate`, `send_agent_message`, `read_agent_inbox`',
     '',
     '---',
     '',

@@ -551,6 +551,91 @@ crewRoutes.get('/:id/status', async (c) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CREW SHARED MEMORY & TASK QUEUE
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── GET /:id/memory — list/search crew shared memory ──────────────────────
+
+crewRoutes.get('/:id/memory', async (c) => {
+  try {
+    const crewId = c.req.param('id');
+    const userId = getUserId(c);
+    const repo = getCrewsRepository();
+    const crew = await repo.getById(crewId, userId);
+    if (!crew) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
+    }
+
+    const { getCrewMemoryRepository } = await import('../db/repositories/crew-memory.js');
+    const memRepo = getCrewMemoryRepository();
+
+    const category = c.req.query('category');
+    const query = c.req.query('query');
+    const { limit, offset } = getPaginationParams(c);
+
+    if (query) {
+      const entries = await memRepo.search(crewId, query, limit);
+      return apiResponse(c, { entries, total: entries.length });
+    }
+
+    const result = await memRepo.list(crewId, category, limit, offset);
+    return apiResponse(c, result);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ── DELETE /:id/memory/:memoryId — delete a crew memory entry ─────────────
+
+crewRoutes.delete('/:id/memory/:memoryId', async (c) => {
+  try {
+    const crewId = c.req.param('id');
+    const memoryId = c.req.param('memoryId');
+    const userId = getUserId(c);
+    const repo = getCrewsRepository();
+    const crew = await repo.getById(crewId, userId);
+    if (!crew) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
+    }
+
+    const { getCrewMemoryRepository } = await import('../db/repositories/crew-memory.js');
+    const memRepo = getCrewMemoryRepository();
+    const deleted = await memRepo.delete(memoryId);
+    if (!deleted) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Memory entry not found' }, 404);
+    }
+    return apiResponse(c, { status: 'deleted' });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ── GET /:id/tasks — list crew task queue ──────────────────────────────────
+
+crewRoutes.get('/:id/tasks', async (c) => {
+  try {
+    const crewId = c.req.param('id');
+    const userId = getUserId(c);
+    const repo = getCrewsRepository();
+    const crew = await repo.getById(crewId, userId);
+    if (!crew) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Crew not found' }, 404);
+    }
+
+    const { getCrewTasksRepository } = await import('../db/repositories/crew-tasks.js');
+    const taskRepo = getCrewTasksRepository();
+
+    const status = c.req.query('status') as 'pending' | 'in_progress' | 'completed' | 'failed' | undefined;
+    const { limit, offset } = getPaginationParams(c);
+
+    const result = await taskRepo.listByCrew(crewId, status, limit, offset);
+    return apiResponse(c, result);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // ── POST /:id/sync — synchronize knowledge/context across crew ───────────
 
 crewRoutes.post('/:id/sync', async (c) => {

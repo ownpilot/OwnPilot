@@ -73,9 +73,13 @@ describe('crew-tools', () => {
   });
 
   describe('CREW_TOOLS definitions', () => {
-    it('exports three crew tools', () => {
-      expect(CREW_TOOLS).toHaveLength(3);
-      expect(CREW_TOOL_NAMES).toEqual(['get_crew_members', 'delegate_task', 'broadcast_to_crew']);
+    it('exports nine crew tools', () => {
+      expect(CREW_TOOLS).toHaveLength(9);
+      expect(CREW_TOOL_NAMES).toEqual([
+        'get_crew_members', 'delegate_task', 'broadcast_to_crew',
+        'claim_task', 'submit_result', 'request_review',
+        'share_knowledge', 'get_crew_memory', 'coordinate',
+      ]);
     });
 
     it('defines get_crew_members tool', () => {

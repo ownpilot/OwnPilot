@@ -70,6 +70,28 @@ ${soul.identity.boundaries.map((b) => `- ${b}`).join('\n')}`
 - **Budget:** $${soul.autonomy.maxCostPerDay}/day`
   );
 
+  // ── Claw Mode (autonomy level 5)
+  if (soul.autonomy.level === 5 && soul.autonomy.clawMode?.enabled) {
+    const caps: string[] = ['All tools available (unrestricted access)'];
+    if (soul.autonomy.clawMode.canManageAgents) {
+      caps.push('Can spawn subagents and manage fleets');
+    }
+    if (soul.autonomy.clawMode.canCreateTools) {
+      caps.push('Can create tools at runtime');
+    }
+    if (soul.autonomy.clawMode.selfImprovement !== 'disabled') {
+      caps.push(`Self-improvement: ${soul.autonomy.clawMode.selfImprovement}`);
+    }
+
+    sections.push(
+      `## Claw Mode — ACTIVE
+You are operating with elevated autonomy. Capabilities:
+${caps.map((c) => `- ${c}`).join('\n')}
+
+Budget limits still apply. Use capabilities responsibly and efficiently.`
+    );
+  }
+
   // ── Relationships
   if (
     soul.relationships.reportsTo ||

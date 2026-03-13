@@ -8,6 +8,7 @@
 
 import type { AgentSoul, HeartbeatTask, HeartbeatResult, HeartbeatTaskResult } from './types.js';
 import type { IAgentCommunicationBus } from './communication.js';
+import { SoulEvolutionEngine } from './evolution.js';
 import type { ISoulRepository, IHeartbeatLogRepository } from './evolution.js';
 import type { BudgetTracker } from './budget-tracker.js';
 import type { Result } from '../../types/result.js';
@@ -238,6 +239,11 @@ export class HeartbeatRunner {
     // BudgetTracker reads from heartbeat_log, so no need to record separately.
     // await this.budgetTracker.recordSpend(agentId, result.totalCost);
 
+    // Claw mode: post-cycle self-reflection
+    if (soul.autonomy.level === 5 && soul.autonomy.clawMode?.selfImprovement !== 'disabled') {
+      await this.runClawReflection(agentId, soul);
+    }
+
     // Emit event
     this.eventBus?.emit('soul.heartbeat.completed', {
       agentId,
@@ -268,13 +274,16 @@ export class HeartbeatRunner {
 ${task.tools.length ? `Available tools: ${task.tools.join(', ')}` : ''}
 Be concise and focused. Report your findings clearly.`.trim();
 
+      const isClawMode = soul.autonomy.level === 5 && soul.autonomy.clawMode?.enabled === true;
+
       const responsePromise = this.agentEngine.processMessage({
         agentId,
         message: taskPrompt,
         context: {
           isHeartbeat: true,
           heartbeatTaskId: task.id,
-          allowedTools: task.tools.length > 0 ? task.tools : undefined,
+          // Claw mode: all tools available (task.tools becomes advisory, not enforced)
+          allowedTools: isClawMode ? undefined : (task.tools.length > 0 ? task.tools : undefined),
           // Pass soul's provider preference so the engine can use it
           provider: soul.provider?.providerId,
           model: soul.provider?.modelId,
@@ -286,6 +295,10 @@ Be concise and focused. Report your findings clearly.`.trim();
           // Pass crew ID so the service layer can inject crew context and communication
           // tools can resolve the correct soul identity via AsyncLocalStorage
           crewId: soul.relationships?.crewId,
+          // Claw mode flags
+          clawMode: isClawMode,
+          clawCanManageAgents: soul.autonomy.clawMode?.canManageAgents,
+          clawCanCreateTools: soul.autonomy.clawMode?.canCreateTools,
         },
       });
 
@@ -473,6 +486,29 @@ Be concise and focused. Report your findings clearly.`.trim();
         'telegram',
         `${soul.identity.name} ${soul.identity.emoji} paused — daily budget ($${soul.autonomy.maxCostPerDay}) exceeded.`
       );
+    }
+  }
+
+  /**
+   * Claw mode post-cycle self-reflection.
+   * Uses the existing SoulEvolutionEngine.selfReflect() which handles
+   * supervised (suggest only) vs autonomous (auto-apply learnings) modes.
+   */
+  private async runClawReflection(agentId: string, _soul: AgentSoul): Promise<void> {
+    try {
+      log.info(`[Heartbeat ${agentId}] Running claw self-reflection`);
+      const evolutionEngine = new SoulEvolutionEngine(
+        this.soulRepo,
+        this.heartbeatLogRepo,
+        this.agentEngine
+      );
+      const { suggestions, applied } = await evolutionEngine.selfReflect(agentId);
+      if (suggestions.length > 0) {
+        log.info(`[Heartbeat ${agentId}] Claw reflection: ${suggestions.length} suggestion(s)${applied ? ' (applied)' : ' (pending review)'}`);
+      }
+    } catch (err) {
+      // Self-reflection failure should not break the heartbeat cycle
+      log.warn(`[Heartbeat ${agentId}] Claw reflection failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
