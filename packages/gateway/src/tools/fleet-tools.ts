@@ -212,6 +212,51 @@ const getFleetStatusDef: ToolDefinition = {
   tags: ['fleet', 'status', 'detail'],
 };
 
+const pauseFleetDef: ToolDefinition = {
+  name: 'pause_fleet',
+  workflowUsable: true,
+  description: 'Pause a running fleet. Workers finish their current tasks but no new cycles start. Use resume_fleet to continue.',
+  parameters: {
+    type: 'object',
+    properties: {
+      fleet_id: { type: 'string', description: 'Fleet ID to pause' },
+    },
+    required: ['fleet_id'],
+  },
+  category: 'Fleet',
+  tags: ['fleet', 'pause'],
+};
+
+const resumeFleetDef: ToolDefinition = {
+  name: 'resume_fleet',
+  workflowUsable: true,
+  description: 'Resume a paused fleet.',
+  parameters: {
+    type: 'object',
+    properties: {
+      fleet_id: { type: 'string', description: 'Fleet ID to resume' },
+    },
+    required: ['fleet_id'],
+  },
+  category: 'Fleet',
+  tags: ['fleet', 'resume'],
+};
+
+const deleteFleetDef: ToolDefinition = {
+  name: 'delete_fleet',
+  workflowUsable: true,
+  description: 'Delete a fleet permanently. Stops it first if running. All tasks and history are removed.',
+  parameters: {
+    type: 'object',
+    properties: {
+      fleet_id: { type: 'string', description: 'Fleet ID to delete' },
+    },
+    required: ['fleet_id'],
+  },
+  category: 'Fleet',
+  tags: ['fleet', 'delete', 'remove'],
+};
+
 const broadcastToFleetDef: ToolDefinition = {
   name: 'broadcast_to_fleet',
   workflowUsable: true,
@@ -232,7 +277,10 @@ const broadcastToFleetDef: ToolDefinition = {
 export const FLEET_TOOLS: ToolDefinition[] = [
   createFleetDef,
   startFleetDef,
+  pauseFleetDef,
+  resumeFleetDef,
   stopFleetDef,
+  deleteFleetDef,
   addFleetTaskDef,
   listFleetsDef,
   getFleetStatusDef,
@@ -298,10 +346,9 @@ export async function executeFleetTool(
           model: defaultModel,
         });
 
-        let session = null;
-        if (autoStart) {
-          session = await service.startFleet(config.id, effectiveUserId);
-        }
+        // Note: createFleet() already calls manager.startFleet() when autoStart=true,
+        // so we just check the session state here (no double-start).
+        const session = autoStart ? await service.getSession(config.id) : null;
 
         return {
           success: true,
@@ -337,6 +384,45 @@ export async function executeFleetTool(
         return {
           success: true,
           result: { message: `Fleet ${fleetId} stopped.` },
+        };
+      }
+
+      case 'pause_fleet': {
+        const fleetId = args.fleet_id as string;
+        if (!fleetId) return { success: false, error: 'fleet_id is required' };
+
+        const paused = await service.pauseFleet(fleetId, effectiveUserId);
+        if (!paused) return { success: false, error: `Fleet ${fleetId} is not running` };
+
+        return {
+          success: true,
+          result: { message: `Fleet ${fleetId} paused. Use resume_fleet to continue.` },
+        };
+      }
+
+      case 'resume_fleet': {
+        const fleetId = args.fleet_id as string;
+        if (!fleetId) return { success: false, error: 'fleet_id is required' };
+
+        const resumed = await service.resumeFleet(fleetId, effectiveUserId);
+        if (!resumed) return { success: false, error: `Fleet ${fleetId} is not paused` };
+
+        return {
+          success: true,
+          result: { message: `Fleet ${fleetId} resumed.` },
+        };
+      }
+
+      case 'delete_fleet': {
+        const fleetId = args.fleet_id as string;
+        if (!fleetId) return { success: false, error: 'fleet_id is required' };
+
+        const deleted = await service.deleteFleet(fleetId, effectiveUserId);
+        if (!deleted) return { success: false, error: `Fleet ${fleetId} not found` };
+
+        return {
+          success: true,
+          result: { message: `Fleet ${fleetId} deleted.` },
         };
       }
 

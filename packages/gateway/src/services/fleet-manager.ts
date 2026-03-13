@@ -53,6 +53,8 @@ interface ManagedFleet {
   cyclesThisHour: number;
   hourWindow: number;
   activeWorkerCount: number;
+  /** Guard against concurrent runCycle invocations */
+  cycleInProgress: boolean;
 }
 
 // ============================================================================
@@ -125,6 +127,7 @@ export class FleetManager {
       cyclesThisHour: 0,
       hourWindow: Math.floor(Date.now() / 3_600_000),
       activeWorkerCount: 0,
+      cycleInProgress: false,
     };
 
     this.fleets.set(config.id, managed);
@@ -353,6 +356,21 @@ export class FleetManager {
     const managed = this.fleets.get(fleetId);
     if (!managed || managed.session.state !== 'running') return;
 
+    // Prevent concurrent cycles (e.g. executeNow() while a cycle is in progress)
+    if (managed.cycleInProgress) {
+      log.debug?.(`[${fleetId}] Cycle already in progress, skipping`);
+      return;
+    }
+    managed.cycleInProgress = true;
+
+    try {
+      await this.runCycleInner(fleetId, managed);
+    } finally {
+      managed.cycleInProgress = false;
+    }
+  }
+
+  private async runCycleInner(fleetId: string, managed: ManagedFleet): Promise<void> {
     // Rate limiting
     const currentHour = Math.floor(Date.now() / 3_600_000);
     if (currentHour !== managed.hourWindow) {
@@ -369,7 +387,7 @@ export class FleetManager {
 
     // Budget check
     const maxCost = managed.config.budget?.maxCostUsd;
-    if (maxCost && managed.session.totalCostUsd >= maxCost) {
+    if (maxCost !== undefined && maxCost >= 0 && managed.session.totalCostUsd >= maxCost) {
       log.warn(`[${fleetId}] Budget exceeded ($${managed.session.totalCostUsd}/$${maxCost})`);
       await this.pauseFleet(fleetId);
       return;
@@ -377,7 +395,7 @@ export class FleetManager {
 
     // Total cycles check
     const maxTotal = managed.config.budget?.maxTotalCycles;
-    if (maxTotal && managed.session.cyclesCompleted >= maxTotal) {
+    if (maxTotal !== undefined && maxTotal >= 0 && managed.session.cyclesCompleted >= maxTotal) {
       log.info(`[${fleetId}] Max total cycles reached (${maxTotal})`);
       await this.stopFleet(fleetId, 'max_cycles_reached');
       return;

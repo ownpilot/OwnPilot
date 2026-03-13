@@ -525,10 +525,23 @@ export class FleetWorker {
     if (provider && model) return { provider, model };
 
     const resolved = await resolveForProcess('pulse');
-    return {
-      provider: provider ?? resolved.provider ?? '',
-      model: model ?? resolved.model ?? '',
-    };
+    const finalProvider = provider || resolved.provider;
+    const finalModel = model || resolved.model;
+
+    if (!finalProvider) {
+      throw new Error(
+        `No AI provider configured for worker "${this.config.name}". ` +
+        'Set provider on the worker, fleet, or configure a default provider.'
+      );
+    }
+    if (!finalModel) {
+      throw new Error(
+        `No model configured for worker "${this.config.name}". ` +
+        'Set model on the worker, fleet, or configure a default model.'
+      );
+    }
+
+    return { provider: finalProvider, model: finalModel };
   }
 
   private buildDefaultSystemPrompt(): string {
