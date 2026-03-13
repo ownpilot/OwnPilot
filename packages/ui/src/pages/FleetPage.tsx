@@ -279,6 +279,11 @@ function CreateFleetModal({
   const [scheduleType, setScheduleType] = useState<FleetScheduleType>('on-demand');
   const [concurrencyLimit, setConcurrencyLimit] = useState(5);
   const [autoStart, setAutoStart] = useState(true);
+  const [intervalMs, setIntervalMs] = useState(60000);
+  const [cronExpr, setCronExpr] = useState('');
+  const [maxCostUsd, setMaxCostUsd] = useState('');
+  const [maxCyclesPerHour, setMaxCyclesPerHour] = useState('');
+  const [maxTotalCycles, setMaxTotalCycles] = useState('');
   interface WorkerFormState {
     name: string;
     type: FleetWorkerType;
@@ -363,6 +368,18 @@ function CreateFleetModal({
           mcp_tools: w.mcpTools.trim() ? w.mcpTools.split(',').map((t) => t.trim()) : undefined,
         })),
         schedule_type: scheduleType,
+        schedule_config: scheduleType === 'interval'
+          ? { intervalMs }
+          : scheduleType === 'cron' && cronExpr.trim()
+          ? { cron: cronExpr.trim() }
+          : undefined,
+        budget: (maxCostUsd || maxCyclesPerHour || maxTotalCycles)
+          ? {
+              maxCostUsd: maxCostUsd ? parseFloat(maxCostUsd) : undefined,
+              maxCyclesPerHour: maxCyclesPerHour ? parseInt(maxCyclesPerHour) : undefined,
+              maxTotalCycles: maxTotalCycles ? parseInt(maxTotalCycles) : undefined,
+            }
+          : undefined,
         concurrency_limit: concurrencyLimit,
         auto_start: autoStart,
       };
@@ -531,6 +548,88 @@ function CreateFleetModal({
                   />
                 </div>
               </div>
+
+              {/* Schedule-specific config */}
+              {scheduleType === 'interval' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Interval (seconds)
+                  </label>
+                  <input
+                    type="number"
+                    min={5}
+                    value={Math.round(intervalMs / 1000)}
+                    onChange={(e) => setIntervalMs(Number(e.target.value) * 1000)}
+                    className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary"
+                  />
+                  <p className="text-xs text-text-tertiary dark:text-dark-text-tertiary mt-1">
+                    How often to run a new cycle ({intervalMs >= 60000 ? `${Math.round(intervalMs / 60000)}m` : `${Math.round(intervalMs / 1000)}s`})
+                  </p>
+                </div>
+              )}
+              {scheduleType === 'cron' && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Cron Expression
+                  </label>
+                  <input
+                    type="text"
+                    value={cronExpr}
+                    onChange={(e) => setCronExpr(e.target.value)}
+                    placeholder="e.g. 0 */6 * * * (every 6 hours)"
+                    className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary font-mono text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Budget limits (collapsible) */}
+              <details className="group">
+                <summary className="text-sm font-medium text-text-secondary dark:text-dark-text-secondary cursor-pointer hover:text-text-primary dark:hover:text-dark-text-primary">
+                  Budget Limits <span className="text-text-tertiary">(optional)</span>
+                </summary>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  <div>
+                    <label className="block text-xs text-text-tertiary dark:text-dark-text-tertiary mb-1">
+                      Max Cost ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={maxCostUsd}
+                      onChange={(e) => setMaxCostUsd(e.target.value)}
+                      placeholder="10.00"
+                      className="w-full px-2 py-1.5 text-sm rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-text-tertiary dark:text-dark-text-tertiary mb-1">
+                      Max Cycles/hr
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={maxCyclesPerHour}
+                      onChange={(e) => setMaxCyclesPerHour(e.target.value)}
+                      placeholder="10"
+                      className="w-full px-2 py-1.5 text-sm rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-text-tertiary dark:text-dark-text-tertiary mb-1">
+                      Max Total Cycles
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={maxTotalCycles}
+                      onChange={(e) => setMaxTotalCycles(e.target.value)}
+                      placeholder="100"
+                      className="w-full px-2 py-1.5 text-sm rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-tertiary"
+                    />
+                  </div>
+                </div>
+              </details>
 
               {/* Auto-start */}
               <label className="flex items-center gap-2 cursor-pointer">
@@ -756,12 +855,12 @@ function AddTasksModal({
 }) {
   const toast = useToast();
   const [isAdding, setIsAdding] = useState(false);
-  const [tasks, setTasks] = useState<Array<{ title: string; description: string; priority: string }>>([
-    { title: '', description: '', priority: 'normal' },
+  const [tasks, setTasks] = useState<Array<{ title: string; description: string; priority: string; assignedWorker: string }>>([
+    { title: '', description: '', priority: 'normal', assignedWorker: '' },
   ]);
 
   const addTask = () => {
-    setTasks((prev) => [...prev, { title: '', description: '', priority: 'normal' }]);
+    setTasks((prev) => [...prev, { title: '', description: '', priority: 'normal', assignedWorker: '' }]);
   };
 
   const removeTask = (index: number) => {
@@ -787,6 +886,7 @@ function AddTasksModal({
         title: t.title.trim(),
         description: t.description.trim(),
         priority: t.priority as 'low' | 'normal' | 'high' | 'critical',
+        assigned_worker: t.assignedWorker || undefined,
       }));
       await fleetApi.addTasks(fleet.id, taskInputs);
       toast.success(`Added ${validTasks.length} task(s) to "${fleet.name}"`);
@@ -841,6 +941,20 @@ function AddTasksModal({
                   </button>
                 )}
               </div>
+              {fleet.workers.length > 0 && (
+                <select
+                  value={task.assignedWorker}
+                  onChange={(e) => updateTask(idx, 'assignedWorker', e.target.value)}
+                  className="w-full px-2 py-1.5 text-sm rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary"
+                >
+                  <option value="">Auto-assign worker</option>
+                  {fleet.workers.map((w) => (
+                    <option key={w.name} value={w.name}>
+                      {w.name} ({getWorkerTypeLabel(w.type)})
+                    </option>
+                  ))}
+                </select>
+              )}
               <textarea
                 value={task.description}
                 onChange={(e) => updateTask(idx, 'description', e.target.value)}
@@ -950,9 +1064,11 @@ function BroadcastModal({
 function FleetDetailPanel({
   fleet,
   onClose,
+  onAction,
 }: {
   fleet: FleetConfig;
   onClose: () => void;
+  onAction: (action: string, fleet: FleetConfig) => void;
 }) {
   const { subscribe } = useGateway();
   const [tasks, setTasks] = useState<FleetTask[]>([]);
@@ -1080,6 +1196,64 @@ function FleetDetailPanel({
               {fleet.workers.length} worker(s)
             </span>
           </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-1.5 mt-3">
+            {state !== 'running' && state !== 'paused' && (
+              <button
+                onClick={() => onAction('start', fleet)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
+              >
+                <Play className="w-3 h-3" /> Start
+              </button>
+            )}
+            {state === 'running' && (
+              <>
+                <button
+                  onClick={() => onAction('pause', fleet)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-warning/10 text-warning hover:bg-warning/20 transition-colors"
+                >
+                  <Pause className="w-3 h-3" /> Pause
+                </button>
+                <button
+                  onClick={() => onAction('stop', fleet)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-error/10 text-error hover:bg-error/20 transition-colors"
+                >
+                  <Square className="w-3 h-3" /> Stop
+                </button>
+              </>
+            )}
+            {state === 'paused' && (
+              <>
+                <button
+                  onClick={() => onAction('resume', fleet)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-success/10 text-success hover:bg-success/20 transition-colors"
+                >
+                  <Play className="w-3 h-3" /> Resume
+                </button>
+                <button
+                  onClick={() => onAction('stop', fleet)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-error/10 text-error hover:bg-error/20 transition-colors"
+                >
+                  <Square className="w-3 h-3" /> Stop
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => onAction('addTasks', fleet)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Tasks
+            </button>
+            {state === 'running' && (
+              <button
+                onClick={() => onAction('broadcast', fleet)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-info/10 text-info hover:bg-info/20 transition-colors"
+              >
+                <Send className="w-3 h-3" /> Broadcast
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Session Stats */}
@@ -1105,6 +1279,23 @@ function FleetDetailPanel({
               </div>
               <div className="text-xs text-text-tertiary dark:text-dark-text-tertiary">Cost</div>
             </div>
+          </div>
+        )}
+
+        {/* Budget Info */}
+        {fleet.budget && (fleet.budget.maxCostUsd || fleet.budget.maxCyclesPerHour || fleet.budget.maxTotalCycles) && (
+          <div className="flex items-center gap-3 px-4 py-2 border-b border-border dark:border-dark-border text-xs text-text-tertiary dark:text-dark-text-tertiary">
+            <Gauge className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Budget:</span>
+            {fleet.budget.maxCostUsd != null && (
+              <span>max ${fleet.budget.maxCostUsd.toFixed(2)}</span>
+            )}
+            {fleet.budget.maxCyclesPerHour != null && (
+              <span>{fleet.budget.maxCyclesPerHour} cycles/hr</span>
+            )}
+            {fleet.budget.maxTotalCycles != null && (
+              <span>{fleet.budget.maxTotalCycles} total cycles</span>
+            )}
           </div>
         )}
 
@@ -1983,6 +2174,7 @@ export function FleetPage() {
         <FleetDetailPanel
           fleet={selectedFleet}
           onClose={() => setSelectedFleet(null)}
+          onAction={handleAction}
         />
       )}
     </div>
