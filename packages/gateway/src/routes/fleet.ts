@@ -20,6 +20,7 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 
 export const fleetRoutes = new Hono();
 
@@ -134,6 +135,7 @@ fleetRoutes.post('/', async (c) => {
       sharedContext: shared_context as Record<string, unknown> | undefined,
     });
 
+    wsGateway.broadcast('data:changed', { entity: 'fleet', action: 'created', id: config.id });
     return apiResponse(c, config, 201);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -435,6 +437,7 @@ fleetRoutes.put('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Fleet not found' }, 404);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'fleet', action: 'updated', id: fleetId });
     return apiResponse(c, updated);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -453,6 +456,7 @@ fleetRoutes.delete('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Fleet not found' }, 404);
     }
 
+    wsGateway.broadcast('data:changed', { entity: 'fleet', action: 'deleted', id: fleetId });
     return apiResponse(c, { deleted: true });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);

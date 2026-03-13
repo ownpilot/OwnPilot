@@ -45,6 +45,17 @@ export class FleetServiceImpl implements IFleetService {
     });
 
     log.info(`Created fleet: ${config.name} [${config.id}]`);
+
+    // Auto-start the fleet immediately if requested
+    if (input.autoStart) {
+      try {
+        await this.manager.startFleet(config);
+        log.info(`Auto-started fleet on creation: ${config.name} [${config.id}]`);
+      } catch (err) {
+        log.warn(`Failed to auto-start fleet on creation: ${getErrorMessage(err)}`);
+      }
+    }
+
     return config;
   }
 

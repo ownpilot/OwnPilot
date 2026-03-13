@@ -549,6 +549,20 @@ export class FleetManager {
     }
 
     // Schedule next cycle
+    // For on-demand/event: auto-schedule follow-up if queued tasks remain
+    const { scheduleType } = managed.config;
+    if (scheduleType === 'on-demand' || scheduleType === 'event') {
+      try {
+        const remainingTasks = await repo.getReadyTasks(fleetId, 1);
+        if (remainingTasks.length > 0) {
+          // More tasks waiting — schedule another cycle immediately
+          this.scheduleImmediate(fleetId);
+          return;
+        }
+      } catch {
+        // Non-critical: if check fails, just don't auto-schedule
+      }
+    }
     this.scheduleNextCycle(fleetId);
   }
 

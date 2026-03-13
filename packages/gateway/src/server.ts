@@ -502,6 +502,15 @@ async function main() {
     log.warn('Background Agent Service failed to start', { error: String(error) });
   }
 
+  // Start Fleet Service (resume autoStart fleets)
+  try {
+    const { getFleetService } = await import('./services/fleet-service.js');
+    await getFleetService().start();
+    log.info('Fleet Service started.');
+  } catch (error) {
+    log.warn('Fleet Service failed to start', { error: String(error) });
+  }
+
   // Seed example plans (only creates if not already present)
   try {
     const planSeed = await seedExamplePlans('default');
@@ -625,6 +634,14 @@ async function main() {
       await getBgSvc().stop();
     } catch (e) {
       log.warn('Background agent service stop error', { error: String(e) });
+    }
+
+    // 4.8. Stop fleet service (persist all sessions)
+    try {
+      const { getFleetService: getFleetSvc } = await import('./services/fleet-service.js');
+      await getFleetSvc().stop();
+    } catch (e) {
+      log.warn('Fleet service stop error', { error: String(e) });
     }
 
     // 5. Stop approval manager cleanup
