@@ -309,6 +309,51 @@ export class WSGateway {
       })
     );
 
+    // fleet.* → fleet:* (started, stopped, paused, resumed, cycle, worker)
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.started', (event) => {
+        this.broadcast('fleet:started', event.data as ServerEvents['fleet:started']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.stopped', (event) => {
+        this.broadcast('fleet:stopped', event.data as ServerEvents['fleet:stopped']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.paused', (event) => {
+        this.broadcast('fleet:paused', event.data as ServerEvents['fleet:paused']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.resumed', (event) => {
+        this.broadcast('fleet:resumed', event.data as ServerEvents['fleet:resumed']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.cycle.start', (event) => {
+        this.broadcast('fleet:cycle:start', event.data as ServerEvents['fleet:cycle:start']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.cycle.end', (event) => {
+        this.broadcast('fleet:cycle:end', event.data as ServerEvents['fleet:cycle:end']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.worker.started', (event) => {
+        this.broadcast('fleet:worker:started', event.data as ServerEvents['fleet:worker:started']);
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('fleet.worker.completed', (event) => {
+        this.broadcast(
+          'fleet:worker:completed',
+          event.data as ServerEvents['fleet:worker:completed']
+        );
+      })
+    );
+
     // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {

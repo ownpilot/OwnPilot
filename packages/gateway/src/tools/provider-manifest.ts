@@ -23,6 +23,7 @@ import {
   createBrowserToolProvider,
   createEdgeToolProvider,
   createSkillToolProvider,
+  createFleetToolProvider,
 } from '../services/tool-providers/index.js';
 
 export interface ProviderEntry {
@@ -55,6 +56,7 @@ export const GATEWAY_PROVIDER_MANIFEST: ProviderEntry[] = [
   { name: 'browser', factory: createBrowserToolProvider },
   { name: 'edge', factory: createEdgeToolProvider },
   { name: 'skill', factory: createSkillToolProvider },
+  { name: 'fleet', factory: createFleetToolProvider },
 ];
 
 /**

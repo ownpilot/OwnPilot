@@ -62,3 +62,4 @@ export { agentMessageRoutes } from './agent-messages.js';
 export { heartbeatLogRoutes } from './heartbeat-logs.js';
 export { agentCommandCenterRoutes } from './agent-command-center.js';
 export { cliChatRoutes } from './cli-chat.js';
+export { fleetRoutes } from './fleet.js';
