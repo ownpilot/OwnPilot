@@ -430,6 +430,33 @@ export interface CrewTask {
   completedAt: string | null;
 }
 
+export interface CrewStatusMetrics {
+  totalAgents: number;
+  activeAgents: number;
+  pausedAgents: number;
+  unreadMessages: number;
+  health: number;
+}
+
+export interface CrewStatus {
+  id: string;
+  name: string;
+  status: string;
+  pattern: string;
+  metrics: CrewStatusMetrics;
+  agents: Array<{
+    agentId: string;
+    role: string;
+    name: string;
+    emoji: string;
+    status: string;
+    lastHeartbeat: string | null;
+    unreadMessages: number;
+    mission: string;
+    peers: string[];
+  }>;
+}
+
 export const crewsApi = {
   list: async () => {
     const data = await apiClient.get<{ items: AgentCrew[]; total: number }>('/crews');
@@ -466,6 +493,9 @@ export const crewsApi = {
     params.set('offset', String(offset));
     return apiClient.get<{ tasks: CrewTask[]; total: number }>(`/crews/${id}/tasks?${params}`);
   },
+
+  // Crew status with metrics
+  getStatus: (id: string) => apiClient.get<CrewStatus>(`/crews/${id}/status`),
 };
 
 // =============================================================================

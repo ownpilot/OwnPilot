@@ -8,7 +8,7 @@ import {
   Users,
   AlertCircle,
 } from '../icons';
-import { crewsApi, type AgentCrew } from '../../api';
+import { crewsApi, type AgentCrew, type CrewStatusMetrics } from '../../api';
 import { Skeleton } from '../Skeleton';
 
 function getStatusColor(status: string): string {
@@ -30,6 +30,7 @@ interface CrewsWidgetProps {
 
 export function CrewsWidget({ limit = 6 }: CrewsWidgetProps) {
   const [crews, setCrews] = useState<AgentCrew[]>([]);
+  const [crewMetrics, setCrewMetrics] = useState<Record<string, CrewStatusMetrics>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +40,21 @@ export function CrewsWidget({ limit = 6 }: CrewsWidgetProps) {
         setError(null);
         const result = await crewsApi.list();
         setCrews(result.items);
+
+        // Fetch status metrics for each crew in parallel
+        const crewItems = result.items;
+        const statusResults = await Promise.allSettled(
+          crewItems.map((crew) => crewsApi.getStatus(crew.id))
+        );
+
+        const metricsMap: Record<string, CrewStatusMetrics> = {};
+        statusResults.forEach((settledResult, i) => {
+          const crewItem = crewItems[i];
+          if (settledResult.status === 'fulfilled' && settledResult.value?.metrics && crewItem) {
+            metricsMap[crewItem.id] = settledResult.value.metrics;
+          }
+        });
+        setCrewMetrics(metricsMap);
       } catch {
         setError('Failed to load crews');
       } finally {
@@ -132,6 +148,7 @@ export function CrewsWidget({ limit = 6 }: CrewsWidgetProps) {
       <div className="space-y-2">
         {displayCrews.map((crew) => {
           const statusColor = getStatusColor(crew.status);
+          const metrics = crewMetrics[crew.id];
 
           return (
             <Link
@@ -166,11 +183,33 @@ export function CrewsWidget({ limit = 6 }: CrewsWidgetProps) {
                   <span className="capitalize">{crew.coordinationPattern}</span>
                   {crew.agents && (
                     <>
-                      <span>•</span>
+                      <span>·</span>
                       <span>{crew.agents.length} members</span>
                     </>
                   )}
                 </div>
+                {metrics && (
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    {metrics.activeAgents > 0 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-success/10 text-success">
+                        {metrics.activeAgents} running
+                      </span>
+                    )}
+                    {metrics.pausedAgents > 0 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning/10 text-warning">
+                        {metrics.pausedAgents} paused
+                      </span>
+                    )}
+                    {metrics.unreadMessages > 0 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-500/10 text-blue-500">
+                        {metrics.unreadMessages} unread
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/10 text-purple-500">
+                      {metrics.health}% health
+                    </span>
+                  </div>
+                )}
               </div>
             </Link>
           );
