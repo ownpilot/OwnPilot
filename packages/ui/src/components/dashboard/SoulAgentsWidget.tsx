@@ -17,7 +17,7 @@ import { soulsApi, type AgentSoul, type HeartbeatLog } from '../../api';
 import { Skeleton } from '../Skeleton';
 
 function getAutonomyLabel(level: number): string {
-  const labels = ['Manual', 'Guided', 'Supervised', 'Autonomous', 'Fully Autonomous'];
+  const labels = ['Manual', 'Guided', 'Supervised', 'Autonomous', 'Fully Autonomous', 'Unrestricted'];
   return labels[level] || 'Unknown';
 }
 
@@ -25,6 +25,7 @@ function getAutonomyColor(level: number): string {
   if (level <= 1) return 'text-text-muted dark:text-dark-text-muted';
   if (level <= 2) return 'text-blue-500';
   if (level <= 3) return 'text-warning';
+  if (level === 5) return 'text-orange-500';
   return 'text-success';
 }
 
@@ -179,12 +180,28 @@ export function SoulAgentsWidget({ limit = 6 }: SoulAgentsWidgetProps) {
                     {soul.identity.name}
                   </span>
                   <StatusBadge enabled={soul.heartbeat.enabled} />
+                  {soul.autonomy.level === 5 && soul.autonomy.clawMode?.enabled && (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 font-medium"
+                      title="Claw Mode: Unrestricted tool access and elevated autonomy"
+                    >
+                      CLAW
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
                   <span className={getAutonomyColor(soul.autonomy.level)}>
                     <Zap className="w-3 h-3 inline mr-0.5" />
                     {getAutonomyLabel(soul.autonomy.level)}
                   </span>
+                  {soul.autonomy.level === 5 && soul.autonomy.clawMode?.enabled && soul.autonomy.clawMode.selfImprovement !== 'disabled' && (
+                    <>
+                      <span>•</span>
+                      <span className="text-orange-500">
+                        Self-improve: {soul.autonomy.clawMode.selfImprovement}
+                      </span>
+                    </>
+                  )}
                   {lastHeartbeat && (
                     <>
                       <span>•</span>

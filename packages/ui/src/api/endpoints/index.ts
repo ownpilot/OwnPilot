@@ -152,6 +152,10 @@ export type {
   HeartbeatLog,
   HeartbeatStats,
   CrewTemplate,
+  CrewStatusMetrics,
+  CrewStatus,
+  CrewMemoryEntry,
+  CrewTask,
 } from './souls';
 export { fleetApi } from './fleet';
 export type {
