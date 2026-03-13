@@ -417,6 +417,27 @@ export type { CrewMemberInfo, CrewContextInfo } from './soul/index.js';
 // Crew Orchestrator helpers (values — not types)
 export { buildCrewContextSection, COORDINATION_GUIDANCE } from './soul/index.js';
 
+// Fleet System (coordinated background agent army)
+export type {
+  FleetWorkerType,
+  FleetScheduleType,
+  FleetTaskPriority,
+  FleetTaskStatus,
+  FleetSessionState,
+  FleetWorkerConfig,
+  FleetBudget,
+  FleetScheduleConfig,
+  FleetConfig,
+  FleetTask,
+  FleetSession,
+  FleetWorkerResult,
+  CreateFleetInput,
+  UpdateFleetInput,
+  CreateFleetTaskInput,
+  IFleetService,
+} from './fleet/index.js';
+export { DEFAULT_FLEET_LIMITS } from './fleet/index.js';
+
 // Debug logging for AI interactions
 export {
   // Types

@@ -20,6 +20,7 @@ import {
   backgroundAgentsRoutes,
   subagentRoutes,
   orchestraRoutes,
+  fleetRoutes,
 } from './index.js';
 
 export function registerAgentRoutes(app: Hono): void {
@@ -50,4 +51,7 @@ export function registerAgentRoutes(app: Hono): void {
 
   // Agent Orchestra (multi-agent collaboration & delegation)
   app.route('/api/v1/orchestra', orchestraRoutes);
+
+  // Fleet (coordinated background agent army)
+  app.route('/api/v1/fleet', fleetRoutes);
 }

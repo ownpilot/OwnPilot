@@ -41,6 +41,7 @@ import {
 } from './coding-agents.js';
 import { SOULS_TABLES_SQL, SOULS_MIGRATIONS_SQL, SOULS_INDEXES_SQL } from './souls.js';
 import { CHANNELS_TABLES_SQL, CHANNELS_MIGRATIONS_SQL, CHANNELS_INDEXES_SQL } from './channels.js';
+import { FLEET_TABLES_SQL, FLEET_MIGRATIONS_SQL, FLEET_INDEXES_SQL } from './fleet.js';
 
 const log = getLog('Schema');
 
@@ -59,6 +60,7 @@ export const SCHEMA_SQL = [
   CODING_AGENTS_TABLES_SQL,
   SOULS_TABLES_SQL,
   CHANNELS_TABLES_SQL,
+  FLEET_TABLES_SQL,
 ].join('\n');
 
 /**
@@ -76,6 +78,7 @@ export const MIGRATIONS_SQL = [
   CODING_AGENTS_MIGRATIONS_SQL,
   SOULS_MIGRATIONS_SQL,
   CHANNELS_MIGRATIONS_SQL,
+  FLEET_MIGRATIONS_SQL,
 ].join('\n');
 
 /**
@@ -92,6 +95,7 @@ export const INDEXES_SQL = [
   CODING_AGENTS_INDEXES_SQL,
   SOULS_INDEXES_SQL,
   CHANNELS_INDEXES_SQL,
+  FLEET_INDEXES_SQL,
 ].join('\n');
 
 /**

@@ -153,6 +153,22 @@ export type {
   HeartbeatStats,
   CrewTemplate,
 } from './souls';
+export { fleetApi } from './fleet';
+export type {
+  FleetConfig,
+  FleetSession,
+  FleetTask,
+  FleetWorkerConfig,
+  FleetWorkerResult,
+  FleetWorkerType,
+  FleetScheduleType,
+  FleetSessionState,
+  FleetTaskPriority,
+  FleetTaskStatus,
+  FleetBudget,
+  CreateFleetInput,
+  CreateFleetTaskInput,
+} from './fleet';
 export { edgeApi } from './edge';
 export type {
   EdgeDevice,
