@@ -519,4 +519,78 @@ describe('Config Services Routes', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // ========================================================================
+  // Required field validation
+  // ========================================================================
+
+  describe('required field validation', () => {
+    const serviceWithRequired = {
+      ...sampleService,
+      configSchema: [
+        { name: 'api_key', type: 'secret', label: 'API Key', required: true },
+        { name: 'region', type: 'text', label: 'Region', required: false },
+      ],
+    };
+
+    it('POST entry returns 400 when required field missing', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { region: 'us-east-1' } }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('API Key');
+    });
+
+    it('POST entry allows when required field present', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
+      mockConfigServicesRepo.createEntry.mockResolvedValue(sampleEntry);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { api_key: 'sk-test' } }),
+      });
+
+      expect(res.status).toBe(201);
+    });
+
+    it('PUT entry returns 400 when required field cleared', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { ...sampleEntry, data: { api_key: 'sk-old', region: 'us-east-1' } },
+      ]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { api_key: '' } }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('API Key');
+    });
+
+    it('PUT entry allows partial update with required field intact', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { ...sampleEntry, data: { api_key: 'sk-old', region: 'us-east-1' } },
+      ]);
+      mockConfigServicesRepo.updateEntry.mockResolvedValue(sampleEntry);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { region: 'eu-west-1' } }),
+      });
+
+      expect(res.status).toBe(200);
+    });
+  });
 });

@@ -56,18 +56,9 @@ export class GatewayConfigCenter implements ConfigCenter {
   getApiKey(serviceName: string): string | undefined {
     const key = configServicesRepo.getApiKey(serviceName);
 
-    // Runtime auto-detection: if service doesn't exist at all, register it (fire-and-forget)
-    if (!configServicesRepo.getByName(serviceName)) {
-      configServicesRepo
-        .upsert({
-          name: serviceName,
-          displayName: serviceName,
-          category: 'general',
-          description: 'Auto-discovered service',
-        })
-        .catch((err) => {
-          log.warn(`Auto-register service "${serviceName}" failed`, { error: String(err) });
-        });
+    // Log when unknown service is accessed — tools should register via registerToolConfigRequirements
+    if (!key && !configServicesRepo.getByName(serviceName)) {
+      log.debug(`getApiKey called for unregistered service "${serviceName}"`);
     }
 
     return key;

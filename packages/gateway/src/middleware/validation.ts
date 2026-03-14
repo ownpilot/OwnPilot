@@ -761,7 +761,23 @@ export const createConfigServiceSchema = z.object({
   displayName: z.string().min(1).max(200),
   category: z.string().min(1).max(100),
   description: z.string().max(2000).optional(),
-  configSchema: z.array(z.record(z.string(), z.unknown())).optional(),
+  configSchema: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        label: z.string().max(200).optional(),
+        type: z.enum(['string', 'secret', 'url', 'number', 'boolean', 'select', 'json']),
+        description: z.string().max(1000).optional(),
+        required: z.boolean().optional(),
+        defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+        envVar: z.string().max(200).optional(),
+        placeholder: z.string().max(500).optional(),
+        options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+        order: z.number().int().min(0).max(1000).optional(),
+      })
+    )
+    .max(50)
+    .optional(),
   requiredBy: z.array(z.string().max(200)).optional(),
   docsUrl: z.string().max(2000).optional(),
 });

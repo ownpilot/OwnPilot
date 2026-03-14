@@ -1268,13 +1268,14 @@ describe('ConfigServicesRepository', () => {
       expect(repo.isAvailable('openai')).toBe(false);
     });
 
-    it('should return false when no default entry', async () => {
+    it('should return true when non-default entry has data', async () => {
       mockAdapter.query
         .mockResolvedValueOnce([makeServiceRow()])
         .mockResolvedValueOnce([makeEntryRow({ is_default: false })]);
       await repo.initialize();
 
-      expect(repo.isAvailable('openai')).toBe(false);
+      // isAvailable checks ANY entry with data, not just default
+      expect(repo.isAvailable('openai')).toBe(true);
     });
 
     it('should return false when service not found', () => {

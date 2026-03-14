@@ -81,27 +81,15 @@ describe('GatewayConfigCenter', () => {
       expect(center.getApiKey('openai')).toBeUndefined();
     });
 
-    it('auto-registers unknown service via upsert', () => {
+    it('returns undefined for unregistered service without throwing', () => {
       mockConfigServicesRepo.getApiKey.mockReturnValue(undefined);
       mockConfigServicesRepo.getByName.mockReturnValue(null);
-      mockConfigServicesRepo.upsert.mockResolvedValue({});
 
-      center.getApiKey('new-service');
+      const key = center.getApiKey('unknown-service');
 
-      expect(mockConfigServicesRepo.upsert).toHaveBeenCalledWith({
-        name: 'new-service',
-        displayName: 'new-service',
-        category: 'general',
-        description: 'Auto-discovered service',
-      });
-    });
-
-    it('does not throw when upsert fails', () => {
-      mockConfigServicesRepo.getApiKey.mockReturnValue(undefined);
-      mockConfigServicesRepo.getByName.mockReturnValue(null);
-      mockConfigServicesRepo.upsert.mockRejectedValue(new Error('DB error'));
-
-      expect(() => center.getApiKey('failing-service')).not.toThrow();
+      expect(key).toBeUndefined();
+      // Should NOT auto-register — tools register via registerToolConfigRequirements
+      expect(mockConfigServicesRepo.upsert).not.toHaveBeenCalled();
     });
   });
 

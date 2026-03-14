@@ -685,21 +685,22 @@ export class ConfigServicesRepository extends BaseRepository {
   /**
    * Check whether a service is configured and available.
    *
-   * A service is available when it has a default entry whose data
-   * contains at least one non-empty value.
+   * A service is available when it is active and has ANY entry (default
+   * or otherwise) whose data contains at least one non-empty value.
    */
   isAvailable(serviceName: string): boolean {
     const svc = cache.services.get(serviceName);
     if (!svc || !svc.isActive) return false;
 
-    const defaultEntry = this.getDefaultEntry(serviceName);
-    if (!defaultEntry) return false;
+    const entries = cache.entries.get(serviceName);
+    if (!entries || entries.length === 0) return false;
 
-    // Check if any data field has a non-empty value
-    const data = defaultEntry.data;
-    for (const key of Object.keys(data)) {
-      const val = data[key];
-      if (val !== null && val !== undefined && val !== '') return true;
+    // Check if any entry has at least one non-empty data field
+    for (const entry of entries) {
+      for (const key of Object.keys(entry.data)) {
+        const val = entry.data[key];
+        if (val !== null && val !== undefined && val !== '') return true;
+      }
     }
 
     return false;
