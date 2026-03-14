@@ -58,6 +58,72 @@ webhookRoutes.post('/telegram/:secret', async (c) => {
 // WhatsApp webhook routes removed — Baileys uses direct WebSocket connection, no webhooks needed.
 
 /**
+ * POST /webhooks/sms
+ *
+ * Receives inbound SMS messages from Twilio.
+ * Validates X-Twilio-Signature and routes through the channel service pipeline.
+ */
+webhookRoutes.post('/sms', async (c) => {
+  const { createSmsWebhookRoute } = await import('../channels/plugins/sms/webhook.js');
+  const smsApp = createSmsWebhookRoute();
+  return smsApp.fetch(c.req.raw);
+});
+
+/**
+ * POST /webhooks/email/inbound
+ *
+ * Receives inbound emails via webhook (SendGrid Inbound Parse, Mailgun, or generic JSON).
+ */
+webhookRoutes.post('/email/inbound', async (c) => {
+  try {
+    let from = '';
+    let to = '';
+    let subject = '';
+    let text = '';
+    let messageId = '';
+    let inReplyTo = '';
+
+    const contentType = c.req.header('Content-Type') ?? '';
+
+    if (contentType.includes('application/json')) {
+      const body = (await c.req.json()) as Record<string, unknown>;
+      from = String(body.from ?? '');
+      to = String(body.to ?? '');
+      subject = String(body.subject ?? '');
+      text = String(body.text ?? body.body ?? '');
+      messageId = String(body.messageId ?? body.message_id ?? '');
+      inReplyTo = String(body.inReplyTo ?? body.in_reply_to ?? '');
+    } else {
+      const formData = await c.req.parseBody();
+      from = String(formData.from ?? formData.sender ?? '');
+      to = String(formData.to ?? formData.recipient ?? '');
+      subject = String(formData.subject ?? '');
+      text = String(formData.text ?? formData['stripped-text'] ?? '');
+      messageId = String(formData['Message-Id'] ?? formData.message_id ?? '');
+      inReplyTo = String(formData['In-Reply-To'] ?? '');
+    }
+
+    if (!from || !text.trim()) {
+      return apiResponse(c, { status: 'ignored', message: 'Missing sender or empty body' });
+    }
+
+    const { processInboundEmail } = await import('../channels/plugins/email/webhook.js');
+    processInboundEmail({ from, to, subject, text, messageId, inReplyTo }).catch((error) => {
+      log.error('Failed to process inbound email', { error: getErrorMessage(error), from });
+    });
+
+    return apiResponse(c, { status: 'ok' });
+  } catch (error) {
+    log.error('Email webhook error', { error: getErrorMessage(error) });
+    return apiError(
+      c,
+      { code: ERROR_CODES.INTERNAL_ERROR, message: 'Email webhook processing failed' },
+      500
+    );
+  }
+});
+
+/**
  * POST /webhooks/slack/events
  *
  * Receives Slack Events API messages.

@@ -29,6 +29,9 @@ import { buildDiscordChannelPlugin } from '../channels/plugins/discord/index.js'
 import { buildWhatsAppChannelPlugin } from '../channels/plugins/whatsapp/index.js';
 import { buildSlackChannelPlugin } from '../channels/plugins/slack/index.js';
 import { buildWebChatChannelPlugin } from '../channels/plugins/webchat/index.js';
+import { buildSmsChannelPlugin } from '../channels/plugins/sms/index.js';
+import { buildEmailChannelPlugin } from '../channels/plugins/email/index.js';
+import { buildMatrixChannelPlugin } from '../channels/plugins/matrix/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
 import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
@@ -626,6 +629,9 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildWhatsAppChannelPlugin(),
     buildSlackChannelPlugin(),
     buildWebChatChannelPlugin(),
+    buildSmsChannelPlugin(),
+    buildEmailChannelPlugin(),
+    buildMatrixChannelPlugin(),
   ];
 }
 
