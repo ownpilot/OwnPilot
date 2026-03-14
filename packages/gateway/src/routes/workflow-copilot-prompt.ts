@@ -586,6 +586,11 @@ export function buildCopilotSystemPrompt(
 ): string {
   const parts = [STATIC_PROMPT];
 
+  // Add workflow ideas as inspiration when creating new workflows
+  if (!currentWorkflow) {
+    parts.push(buildWorkflowIdeasSection());
+  }
+
   if (availableTools && availableTools.length > 0) {
     parts.push(
       `\n\n## Available Tools\nThese tools can be used as tool nodes in the workflow. Use the EXACT name (including dots) as the \`tool\` field value:\n${availableTools.join(', ')}`
@@ -600,4 +605,28 @@ export function buildCopilotSystemPrompt(
   }
 
   return parts.join('');
+}
+
+/**
+ * Build a compact workflow ideas section for the copilot prompt.
+ * Loaded lazily to avoid bloating the static prompt string.
+ */
+function buildWorkflowIdeasSection(): string {
+  try {
+    // Dynamic import to keep template ideas separate
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { WORKFLOW_TEMPLATE_IDEAS } = require('./workflow-template-ideas.js');
+    if (!WORKFLOW_TEMPLATE_IDEAS?.length) return '';
+
+    const lines = (WORKFLOW_TEMPLATE_IDEAS as Array<{ name: string; nodes: string; category: string }>)
+      .map((t) => `- **${t.name}** (${t.category}): ${t.nodes}`)
+      .join('\n');
+
+    return `\n\n## Workflow Ideas (suggest these when users ask for ideas or are unsure what to build)
+When users ask "what can I build?" or need inspiration, suggest workflows from this list. Adapt the tool names to match the Available Tools list.
+
+${lines}`;
+  } catch {
+    return ''; // Template ideas not available — non-critical
+  }
 }
