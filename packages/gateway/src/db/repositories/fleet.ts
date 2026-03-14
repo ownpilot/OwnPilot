@@ -485,7 +485,7 @@ export class FleetRepository extends BaseRepository {
     return rows.length > 0;
   }
 
-  /** Get tasks ready to run: queued, dependencies met */
+  /** Get tasks ready to run: queued, dependencies met (completed or no deps) */
   async getReadyTasks(fleetId: string, limit: number): Promise<FleetTask[]> {
     // Tasks where all depends_on are completed
     const rows = await this.query<TaskRow>(
@@ -507,13 +507,61 @@ export class FleetRepository extends BaseRepository {
     return rows.map(rowToTask);
   }
 
+  /**
+   * Fail all queued tasks that depend on a given failed task.
+   * Cascades recursively: if task B depends on A, and C depends on B,
+   * failing A will also fail B and C.
+   */
+  async failDependentTasks(fleetId: string, failedTaskId: string): Promise<number> {
+    // Find all queued tasks in this fleet whose depends_on array contains failedTaskId
+    const rows = await this.query<TaskRow>(
+      `UPDATE fleet_tasks
+       SET status = 'failed',
+           error = 'Dependency task failed',
+           completed_at = $3
+       WHERE fleet_id = $1
+         AND status = 'queued'
+         AND depends_on::jsonb @> $2::jsonb
+       RETURNING *`,
+      [fleetId, JSON.stringify([failedTaskId]), new Date().toISOString()]
+    );
+
+    // Recursively fail tasks that depend on the newly-failed tasks
+    let totalFailed = rows.length;
+    for (const row of rows) {
+      const cascaded = await this.failDependentTasks(fleetId, row.id);
+      totalFailed += cascaded;
+    }
+
+    return totalFailed;
+  }
+
+  /**
+   * Re-queue tasks stuck in 'running' status (orphaned from a previous crash).
+   */
+  async requeueOrphanedTasks(sessionId: string): Promise<number> {
+    const rows = await this.query(
+      `UPDATE fleet_tasks
+       SET status = 'queued',
+           started_at = NULL,
+           assigned_worker = NULL
+       WHERE fleet_id = (
+         SELECT fleet_id FROM fleet_sessions WHERE id = $1
+       )
+         AND status = 'running'
+       RETURNING id`,
+      [sessionId]
+    );
+    return rows.length;
+  }
+
   // ---- Worker History ----
 
   async saveWorkerResult(result: FleetWorkerResult): Promise<void> {
     await this.query(
       `INSERT INTO fleet_worker_history (id, session_id, worker_id, worker_name, worker_type,
-        task_id, success, output, tool_calls, tokens_used, cost_usd, duration_ms, error)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        task_id, success, output, tool_calls, tokens_used, cost_usd, duration_ms, error, executed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         result.id,
         result.sessionId,
@@ -528,6 +576,7 @@ export class FleetRepository extends BaseRepository {
         result.costUsd ?? 0,
         result.durationMs,
         result.error ?? null,
+        result.executedAt.toISOString(),
       ]
     );
   }

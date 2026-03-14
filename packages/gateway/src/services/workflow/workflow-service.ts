@@ -587,6 +587,30 @@ export class WorkflowService implements IWorkflowService {
                     };
                   }
 
+                  // Verify ownership — prevent cross-user sub-workflow execution
+                  if (subWorkflow.userId && subWorkflow.userId !== userId) {
+                    return {
+                      nodeId,
+                      status: 'error' as const,
+                      error: `Sub-workflow ${subWorkflowId} belongs to a different user`,
+                      startedAt: new Date(startTime).toISOString(),
+                      completedAt: new Date().toISOString(),
+                      durationMs: Date.now() - startTime,
+                    };
+                  }
+
+                  // Check parent abort signal before starting sub-workflow
+                  if (abortController.signal.aborted) {
+                    return {
+                      nodeId,
+                      status: 'error' as const,
+                      error: 'Workflow execution cancelled',
+                      startedAt: new Date(startTime).toISOString(),
+                      completedAt: new Date().toISOString(),
+                      durationMs: Date.now() - startTime,
+                    };
+                  }
+
                   // Merge parent variables with input mapping
                   const mergedVars = { ...subWorkflow.variables, ...subVars };
 
@@ -594,10 +618,22 @@ export class WorkflowService implements IWorkflowService {
                   const origVars = subWorkflow.variables;
                   subWorkflow.variables = mergedVars;
 
-                  const subLog = await this.executeWorkflow(subWorkflowId, userId, undefined, {
-                    dryRun,
-                    depth: depth + 1,
-                  });
+                  // Propagate parent abort signal: if the parent is cancelled,
+                  // listen and cancel the child execution as well.
+                  const onParentAbort = () => {
+                    this.cancelExecution(subWorkflowId);
+                  };
+                  abortController.signal.addEventListener('abort', onParentAbort, { once: true });
+
+                  let subLog;
+                  try {
+                    subLog = await this.executeWorkflow(subWorkflowId, userId, undefined, {
+                      dryRun,
+                      depth: depth + 1,
+                    });
+                  } finally {
+                    abortController.signal.removeEventListener('abort', onParentAbort);
+                  }
 
                   // Restore original variables
                   subWorkflow.variables = origVars;

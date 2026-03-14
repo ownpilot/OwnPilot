@@ -39,6 +39,7 @@ import {
   createTimeoutPromise,
   createToolCallCollector,
   buildDateTimeContext,
+  calculateExecutionCost,
 } from './agent-runner-utils.js';
 
 const log = getLog('SubagentRunner');
@@ -54,6 +55,7 @@ export interface SubagentExecutionResult {
   turnsUsed: number;
   toolCallsUsed: number;
   tokensUsed: { prompt: number; completion: number } | null;
+  costUsd: number;
   durationMs: number;
   error: string | null;
   provider: string;
@@ -156,6 +158,7 @@ export class SubagentRunner {
               completion: response.usage.completionTokens ?? 0,
             }
           : null,
+        costUsd: calculateExecutionCost(provider, model, response.usage),
         durationMs,
         error: null,
         provider,
@@ -179,6 +182,7 @@ export class SubagentRunner {
         turnsUsed: 0,
         toolCallsUsed: 0,
         tokensUsed: null,
+        costUsd: 0,
         durationMs,
         error: errorMsg,
         provider: this.input.provider ?? 'unknown',
@@ -288,6 +292,7 @@ export class SubagentRunner {
       turnsUsed: 0,
       toolCallsUsed: toolCalls.length,
       tokensUsed: null,
+      costUsd: 0,
       durationMs,
       error: 'Subagent cancelled',
       provider,

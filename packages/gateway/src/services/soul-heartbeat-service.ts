@@ -18,8 +18,10 @@ import {
   AgentCommunicationBus,
   BudgetTracker,
   getEventSystem,
+  calculateCost,
 } from '@ownpilot/core';
 import type {
+  AIProvider,
   IHeartbeatAgentEngine,
   IHeartbeatEventBus,
   ISoulRepository,
@@ -122,6 +124,25 @@ async function buildCrewContextForHeartbeat(
 }
 
 // ============================================================
+// Crew context cache — avoid re-fetching crew membership for every task
+// within the same heartbeat cycle (typically completes within seconds).
+// ============================================================
+
+const CREW_CONTEXT_CACHE_TTL_MS = 30_000; // 30 seconds
+const crewContextCache = new Map<string, { value: string | null; expiresAt: number }>();
+
+async function getCachedCrewContext(agentId: string, crewId: string): Promise<string | null> {
+  const cacheKey = `${agentId}:${crewId}`;
+  const cached = crewContextCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+  const value = await buildCrewContextForHeartbeat(agentId, crewId);
+  crewContextCache.set(cacheKey, { value, expiresAt: Date.now() + CREW_CONTEXT_CACHE_TTL_MS });
+  return value;
+}
+
+// ============================================================
 // Minimal Agent Engine (sends heartbeat prompt to the agent)
 // ============================================================
 
@@ -163,11 +184,13 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
       const agent = await getOrCreateChatAgent(provider, model, fallback);
 
       // Inject crew context at the top of the task prompt when the soul is in a crew.
+      // Uses a short-lived cache to avoid re-fetching crew membership for every task
+      // within the same heartbeat cycle.
       const crewId = request.context?.crewId as string | undefined;
       let taskMessage = request.message;
       if (crewId) {
         log.info(`[Heartbeat ${request.agentId}] Injecting crew context (crew: ${crewId})`);
-        const crewSection = await buildCrewContextForHeartbeat(request.agentId, crewId);
+        const crewSection = await getCachedCrewContext(request.agentId, crewId);
         if (crewSection) {
           taskMessage = `${crewSection}\n${taskMessage}`;
         }
@@ -240,12 +263,22 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
         throw result.error;
       }
 
+      const usage = result.value.usage;
+      const cost = usage
+        ? calculateCost(
+            provider as AIProvider,
+            model,
+            usage.promptTokens ?? 0,
+            usage.completionTokens ?? 0
+          )
+        : undefined;
+
       return {
         content: result.value.content,
-        tokenUsage: result.value.usage
-          ? { input: result.value.usage.promptTokens, output: result.value.usage.completionTokens }
+        tokenUsage: usage
+          ? { input: usage.promptTokens, output: usage.completionTokens }
           : undefined,
-        cost: undefined,
+        cost,
       };
     },
 

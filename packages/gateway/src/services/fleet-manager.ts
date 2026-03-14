@@ -13,7 +13,7 @@
  * Actual task execution is delegated to FleetWorker.
  */
 
-import { getEventSystem, getErrorMessage } from '@ownpilot/core';
+import { getEventSystem, getErrorMessage, getNextRunTime } from '@ownpilot/core';
 import type { FleetConfig, FleetSession, FleetTask, FleetWorkerConfig } from '@ownpilot/core';
 import { FleetWorker } from './fleet-worker.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
@@ -106,6 +106,12 @@ export class FleetManager {
 
     const repo = getFleetRepository();
     const session = await repo.createSession(config.id, config.sharedContext);
+
+    // Re-queue any tasks stuck in 'running' from a previous crash
+    const requeued = await repo.requeueOrphanedTasks(session.id);
+    if (requeued > 0) {
+      log.info(`[${config.id}] Re-queued ${requeued} orphaned task(s) from previous session`);
+    }
 
     const managed: ManagedFleet = {
       config,
@@ -304,10 +310,18 @@ export class FleetManager {
     }, delay);
   }
 
-  private scheduleCron(fleetId: string, managed: ManagedFleet, _cron?: string): void {
-    // Simplified: parse cron-like interval. For full cron, use a library.
-    // Fall back to 60s interval.
-    const delay = DEFAULT_INTERVAL_MS;
+  private scheduleCron(fleetId: string, managed: ManagedFleet, cron?: string): void {
+    let delay = DEFAULT_INTERVAL_MS;
+
+    if (cron) {
+      const nextRun = getNextRunTime(cron);
+      if (nextRun) {
+        delay = Math.max(nextRun.getTime() - Date.now(), 1000);
+      } else {
+        log.warn(`[${fleetId}] Invalid cron expression "${cron}", falling back to default interval`);
+      }
+    }
+
     managed.timer = setTimeout(() => {
       this.runCycle(fleetId).catch((err) =>
         log.error(`Fleet cycle error: ${getErrorMessage(err)}`)
@@ -412,7 +426,16 @@ export class FleetManager {
         const workerConfig = this.resolveWorker(managed.config, task);
         if (!workerConfig) {
           log.warn(`[${fleetId}] No suitable worker for task ${task.id}`);
-          await repo.updateTask(task.id, { status: 'failed', error: 'No suitable worker' });
+          await repo.updateTask(task.id, {
+            status: 'failed',
+            error: 'No suitable worker',
+            completedAt: new Date(),
+          });
+          // Cascade failure to dependent tasks
+          const cascaded = await repo.failDependentTasks(fleetId, task.id);
+          if (cascaded > 0) {
+            log.info(`[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`);
+          }
           return null;
         }
 
@@ -444,7 +467,9 @@ export class FleetManager {
         });
 
         try {
-          const result = await worker.execute(task, managed.session.sharedContext);
+          // Deep copy shared context to prevent workers from mutating each other's state
+          const contextSnapshot = structuredClone(managed.session.sharedContext);
+          const result = await worker.execute(task, contextSnapshot);
 
           // Update task status
           if (result.success) {
@@ -468,6 +493,11 @@ export class FleetManager {
                 retries,
                 completedAt: new Date(),
               });
+              // Cascade failure to dependent tasks
+              const cascaded = await repo.failDependentTasks(fleetId, task.id);
+              if (cascaded > 0) {
+                log.info(`[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`);
+              }
             }
           }
 

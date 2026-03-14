@@ -51,6 +51,7 @@ interface ManagedAgent {
   hourWindow: number; // hour timestamp for rate limiting
   persistTimer: ReturnType<typeof setInterval> | null;
   lastCycleToolCalls: number; // tool calls in the most recent cycle (for scheduling)
+  cycleInProgress: boolean; // guard against concurrent cycle execution
 }
 
 // ============================================================================
@@ -197,6 +198,7 @@ export class BackgroundAgentManager {
       hourWindow: this.getCurrentHour(),
       persistTimer: null,
       lastCycleToolCalls: 0,
+      cycleInProgress: false,
     };
 
     this.agents.set(config.id, managed);
@@ -505,6 +507,15 @@ export class BackgroundAgentManager {
 
     const { session, runner } = managed;
 
+    // Guard against concurrent cycle execution
+    if (managed.cycleInProgress) {
+      log.debug(`[${agentId}] Cycle already in progress, skipping`);
+      return;
+    }
+    managed.cycleInProgress = true;
+
+    try {
+
     // Check if agent should still be running
     if (session.state !== 'running' && session.state !== 'waiting') return;
 
@@ -513,10 +524,14 @@ export class BackgroundAgentManager {
     if (!this.canExecuteCycle(managed)) {
       // Wait and try again later
       if (session.config.mode !== 'event') {
-        managed.timer = setTimeout(() => {
-          this.executeCycle(agentId).catch((err) => {
+        managed.timer = setTimeout(async () => {
+          try {
+            await this.executeCycle(agentId);
+          } catch (err) {
             log.error('Rate-limited cycle retry error', { agentId, error: getErrorMessage(err) });
-          });
+            // Re-schedule with backoff
+            this.scheduleNext(agentId, managed);
+          }
         }, 60_000); // Retry in 1 minute
       }
       return;
@@ -646,6 +661,10 @@ export class BackgroundAgentManager {
       session.state = 'waiting';
     }
     this.scheduleNext(agentId, managed);
+
+    } finally {
+      managed.cycleInProgress = false;
+    }
   }
 
   // ============================================================================

@@ -35,6 +35,7 @@ import {
   resolveToolFilter,
   createToolCallCollector,
   createTimeoutPromise,
+  calculateExecutionCost,
 } from './agent-runner-utils.js';
 
 const log = getLog('FleetWorker');
@@ -117,6 +118,7 @@ export class FleetWorker {
         success: false,
         output: '',
         toolCalls: [],
+        costUsd: 0,
         durationMs,
         error: errorMsg,
         executedAt: new Date(),
@@ -223,6 +225,7 @@ export class FleetWorker {
             completion: response.usage.completionTokens ?? 0,
           }
         : undefined,
+      costUsd: calculateExecutionCost(provider, model, response.usage),
       durationMs,
       executedAt: new Date(),
     };
@@ -320,6 +323,7 @@ export class FleetWorker {
       success,
       output: outputSummary,
       toolCalls: [],
+      costUsd: 0,
       durationMs,
       error: success ? undefined : `Orchestration ${finalRun.status}`,
       executedAt: new Date(),
@@ -404,6 +408,7 @@ export class FleetWorker {
             completion: result.value.usage.completionTokens ?? 0,
           }
         : undefined,
+      costUsd: calculateExecutionCost(provider, model, result.value.usage),
       durationMs,
       executedAt: new Date(),
     };
@@ -456,6 +461,7 @@ export class FleetWorker {
         args,
         result: r.output,
       })),
+      costUsd: 0,
       durationMs,
       executedAt: new Date(),
     };

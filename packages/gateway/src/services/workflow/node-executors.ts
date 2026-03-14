@@ -890,7 +890,39 @@ export function executeMergeNode(
 // In-memory data store for DataStore nodes (namespace → key → value)
 // ============================================================================
 
+const MAX_DATASTORE_ENTRIES = 10_000;
 const workflowDataStore = new Map<string, Map<string, unknown>>();
+
+/** Evict the oldest namespace when the total entry count exceeds the limit. */
+function evictOldest(): void {
+  // Map iteration order is insertion order — first key is the oldest namespace
+  const firstKey = workflowDataStore.keys().next().value;
+  if (firstKey !== undefined) {
+    workflowDataStore.delete(firstKey);
+    log.info('DataStore evicted oldest namespace due to size limit', { namespace: firstKey });
+  }
+}
+
+/** Get the total number of entries across all namespaces. */
+function getDataStoreSize(): number {
+  let total = 0;
+  for (const store of workflowDataStore.values()) {
+    total += store.size;
+  }
+  return total;
+}
+
+/**
+ * Clear the data store. If a namespace is provided, only that namespace is
+ * cleared; otherwise the entire store is wiped.
+ */
+export function clearDataStore(namespace?: string): void {
+  if (namespace) {
+    workflowDataStore.delete(namespace);
+  } else {
+    workflowDataStore.clear();
+  }
+}
 
 /**
  * Execute a DataStore node: get/set/delete/list/has on a namespace-scoped in-memory Map.
@@ -924,6 +956,10 @@ export function executeDataStoreNode(
       case 'set': {
         const prev = store.get(key) ?? null;
         store.set(key, resolved._value);
+        // Evict oldest namespace when total entries exceed the limit
+        while (getDataStoreSize() > MAX_DATASTORE_ENTRIES) {
+          evictOldest();
+        }
         output = { previousValue: prev };
         break;
       }

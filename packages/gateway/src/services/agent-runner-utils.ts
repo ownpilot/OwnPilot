@@ -18,6 +18,7 @@ import {
   qualifyToolName,
   getServiceRegistry,
   Services,
+  calculateCost,
 } from '@ownpilot/core';
 import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
 import { getLog } from './log.js';
@@ -274,4 +275,22 @@ export function buildDateTimeContext(): string {
   const now = new Date();
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return `${days[now.getDay()]} ${now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}`;
+}
+
+/**
+ * Calculate cost from provider/model and token usage.
+ * Returns 0 if usage data is unavailable.
+ */
+export function calculateExecutionCost(
+  provider: string,
+  model: string,
+  usage?: { promptTokens?: number; completionTokens?: number } | null
+): number {
+  if (!usage) return 0;
+  return calculateCost(
+    provider as AIProvider,
+    model,
+    usage.promptTokens ?? 0,
+    usage.completionTokens ?? 0
+  );
 }

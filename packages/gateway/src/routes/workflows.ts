@@ -46,9 +46,16 @@ type WfEdge = ValidationEdge;
  * Validate workflow-level semantic constraints that Zod can't express.
  * Returns an array of error messages (empty = valid).
  */
+const MAX_WORKFLOW_NODES = 500;
+
 function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
   const errors: string[] = [];
   const nodeIds = new Set(nodes.map((n) => n.id));
+
+  // ── Max node count ──
+  if (nodes.length > MAX_WORKFLOW_NODES) {
+    errors.push(`Workflow exceeds maximum node count (${nodes.length}/${MAX_WORKFLOW_NODES})`);
+  }
 
   // ── Max 1 trigger ──
   const triggers = nodes.filter((n) => n.type === 'triggerNode');

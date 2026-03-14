@@ -35,6 +35,7 @@ import {
   createTimeoutPromise,
   createToolCallCollector,
   buildDateTimeContext,
+  calculateExecutionCost,
 } from './agent-runner-utils.js';
 
 const log = getLog('BackgroundAgentRunner');
@@ -113,6 +114,7 @@ export class BackgroundAgentRunner {
       });
 
       const outputText = response.content ?? '';
+      const costUsd = calculateExecutionCost(provider, model, response.usage);
       return {
         success: true,
         toolCalls,
@@ -124,6 +126,7 @@ export class BackgroundAgentRunner {
               completion: response.usage.completionTokens ?? 0,
             }
           : undefined,
+        costUsd,
         durationMs,
         turns: 1,
       };
