@@ -508,6 +508,16 @@ export interface ServerEvents {
     costUsd: number;
   };
 
+  // WebChat events
+  'webchat:response': {
+    id: string;
+    text: string;
+    timestamp: string;
+    replyToId?: string;
+    sessionId?: string;
+  };
+  'webchat:typing': { typing: boolean; sessionId?: string };
+
   // EventBus bridge events
   'event:subscribed': { pattern: string; success: boolean; error?: string };
   'event:unsubscribed': { pattern: string };
@@ -554,6 +564,9 @@ export interface ClientEvents {
   'coding-agent:input': { sessionId: string; data: string };
   'coding-agent:resize': { sessionId: string; cols: number; rows: number };
   'coding-agent:subscribe': { sessionId: string };
+
+  // WebChat
+  'webchat:message': { text: string; sessionId: string; displayName?: string; replyToId?: string };
 
   // EventBus bridge events
   'event:subscribe': { pattern: string };

@@ -28,6 +28,7 @@ import { buildTelegramChannelPlugin } from '../channels/plugins/telegram/index.j
 import { buildDiscordChannelPlugin } from '../channels/plugins/discord/index.js';
 import { buildWhatsAppChannelPlugin } from '../channels/plugins/whatsapp/index.js';
 import { buildSlackChannelPlugin } from '../channels/plugins/slack/index.js';
+import { buildWebChatChannelPlugin } from '../channels/plugins/webchat/index.js';
 import { buildGatewayPlugin } from './gateway-plugin.js';
 import { buildComposioPlugin } from './composio.js';
 import { getLog } from '../services/log.js';
@@ -624,6 +625,7 @@ function getAllBuiltinPlugins(): BuiltinPluginEntry[] {
     buildDiscordChannelPlugin(),
     buildWhatsAppChannelPlugin(),
     buildSlackChannelPlugin(),
+    buildWebChatChannelPlugin(),
   ];
 }
 
