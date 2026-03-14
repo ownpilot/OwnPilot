@@ -375,6 +375,16 @@ export function validateAgentSkillsFrontmatter(fm: unknown): ValidationResult {
     }
   }
 
+  // Instructions size limit — prevents oversized context injection
+  if (f.instructions !== undefined && typeof f.instructions === 'string') {
+    const MAX_INSTRUCTIONS_LENGTH = 100_000; // ~25K tokens
+    if (f.instructions.length > MAX_INSTRUCTIONS_LENGTH) {
+      errors.push(
+        `"instructions" exceeds ${MAX_INSTRUCTIONS_LENGTH} characters: ${f.instructions.length}`
+      );
+    }
+  }
+
   // Coerce non-object metadata instead of rejecting (e.g. OpenClaw skills may use string metadata)
   if (f.metadata !== undefined && f.metadata !== null) {
     if (typeof f.metadata === 'string') {

@@ -288,8 +288,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
       // Look up the extension record for runtime/permissions config
       const extRecord = extensionsRepo.getById(def.extensionId);
       const useSandbox = extRecord?.manifest?.runtime?.sandbox === 'worker';
-      const grantedPermissions = (extRecord?.settings as Record<string, unknown>)
-        ?.grantedPermissions as SkillPermission[] | undefined;
+      const grantedPermissions = extRecord?.grantedPermissions as
+        | SkillPermission[]
+        | undefined;
 
       registry.register(
         toolDef,
@@ -372,9 +373,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 
             const rec = extensionsRepo.getById(d.extensionId);
             const sandbox = rec?.manifest?.runtime?.sandbox === 'worker';
-            const perms = (rec?.settings as Record<string, unknown>)?.grantedPermissions as
-              | SkillPermission[]
-              | undefined;
+            const perms = rec?.grantedPermissions as SkillPermission[] | undefined;
 
             registry.register(
               {

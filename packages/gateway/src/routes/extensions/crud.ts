@@ -264,6 +264,38 @@ crudRoutes.post('/:id/disable', async (c) => {
 });
 
 /**
+ * POST /:id/recover - Recover from error status
+ */
+crudRoutes.post('/:id/recover', async (c) => {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  try {
+    const service = getExtService();
+    const pkg = await service.recover(id, userId);
+
+    if (!pkg) {
+      return notFoundError(c, 'Extension', id);
+    }
+
+    wsGateway.broadcast('data:changed', { entity: 'extension', action: 'updated', id });
+    return apiResponse(c, { package: pkg, message: 'Extension recovered from error state.' });
+  } catch (error) {
+    if (error instanceof ExtensionError) {
+      return apiError(c, { code: error.code, message: error.message }, 400);
+    }
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.UPDATE_FAILED,
+        message: getErrorMessage(error, 'Failed to recover extension'),
+      },
+      500
+    );
+  }
+});
+
+/**
  * POST /:id/reload - Reload manifest from disk
  */
 crudRoutes.post('/:id/reload', async (c) => {

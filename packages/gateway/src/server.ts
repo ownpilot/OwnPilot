@@ -246,6 +246,9 @@ async function main() {
       log.info(`Extensions: ${totalExtensions} installed`);
     }
 
+    // Clean up orphan triggers from uninstalled extensions
+    await extService.cleanupOrphanTriggers('default');
+
     // 8. Extension Service
     registry.register(Services.Extension, extService);
   } catch (error) {

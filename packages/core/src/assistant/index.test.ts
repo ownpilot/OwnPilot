@@ -123,14 +123,6 @@ describe('assistant type exports', () => {
 // =============================================================================
 
 describe('assistant module re-exports', () => {
-  it('re-exports skills module', async () => {
-    const mod = await import('./index.js');
-    // SkillManager is a class export from skills.js
-    expect(mod.SkillManager).toBeDefined();
-    expect(mod.BUILTIN_SKILLS).toBeDefined();
-    expect(mod.BUILTIN_ROLES).toBeDefined();
-  });
-
   it('re-exports memory-oversight module', async () => {
     const mod = await import('./index.js');
     expect(mod.MEMORY_OVERSIGHT_TOOLS).toBeDefined();

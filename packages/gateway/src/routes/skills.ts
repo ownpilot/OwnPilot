@@ -168,12 +168,10 @@ skillsRoutes.get('/permissions/:id', (c) => {
     }
 
     const declaredPermissions = ext.manifest.permissions ?? { required: [], optional: [] };
-    const settings = (ext.settings ?? {}) as Record<string, unknown>;
-    const grantedPermissions = (settings.grantedPermissions as SkillPermission[]) ?? [];
 
     return apiResponse(c, {
       declared: declaredPermissions,
-      granted: grantedPermissions,
+      granted: ext.grantedPermissions ?? [],
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -204,9 +202,8 @@ skillsRoutes.post('/permissions/:id', async (c) => {
       );
     }
 
-    // Store granted permissions in settings
-    const updatedSettings = { ...ext.settings, grantedPermissions };
-    await extensionsRepo.updateSettings(id, updatedSettings);
+    // Store granted permissions in dedicated DB column
+    await extensionsRepo.updatePermissions(id, grantedPermissions);
 
     return apiResponse(c, { grantedPermissions });
   } catch (err) {

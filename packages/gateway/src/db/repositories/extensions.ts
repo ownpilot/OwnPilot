@@ -33,6 +33,7 @@ interface ExtensionRow {
   error_message: string | null;
   tool_count: number;
   trigger_count: number;
+  granted_permissions: string; // JSONB string
   installed_at: string;
   updated_at: string;
 }
@@ -56,6 +57,8 @@ export interface ExtensionRecord {
   status: 'enabled' | 'disabled' | 'error';
   sourcePath?: string;
   settings: Record<string, unknown>;
+  /** Granted permission categories (e.g. ['memories', 'network']) */
+  grantedPermissions: string[];
   errorMessage?: string;
   toolCount: number;
   triggerCount: number;
@@ -77,6 +80,7 @@ export interface UpsertExtensionInput {
   status?: string;
   sourcePath?: string;
   settings?: Record<string, unknown>;
+  grantedPermissions?: string[];
   toolCount?: number;
   triggerCount?: number;
 }
@@ -113,6 +117,14 @@ function rowToRecord(row: ExtensionRow): ExtensionRecord {
     status: row.status as ExtensionRecord['status'],
     sourcePath: row.source_path ?? undefined,
     settings: parseJsonField<Record<string, unknown>>(row.settings, {}),
+    grantedPermissions: (() => {
+      // Prefer the dedicated DB column; fall back to settings.grantedPermissions for legacy data
+      const fromColumn = parseJsonField<string[]>(row.granted_permissions, []);
+      if (fromColumn.length > 0) return fromColumn;
+      const settings = parseJsonField<Record<string, unknown>>(row.settings, {});
+      const fromSettings = settings.grantedPermissions;
+      return Array.isArray(fromSettings) ? (fromSettings as string[]) : [];
+    })(),
     errorMessage: row.error_message ?? undefined,
     toolCount: row.tool_count,
     triggerCount: row.trigger_count,
@@ -181,8 +193,8 @@ export class ExtensionsRepository extends BaseRepository {
 
   async upsert(input: UpsertExtensionInput): Promise<ExtensionRecord> {
     await this.execute(
-      `INSERT INTO user_extensions (id, user_id, name, version, description, category, format, icon, author_name, manifest, status, source_path, settings, tool_count, trigger_count, installed_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+      `INSERT INTO user_extensions (id, user_id, name, version, description, category, format, icon, author_name, manifest, status, source_path, settings, granted_permissions, tool_count, trigger_count, installed_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          version = EXCLUDED.version,
@@ -193,6 +205,7 @@ export class ExtensionsRepository extends BaseRepository {
          author_name = EXCLUDED.author_name,
          manifest = EXCLUDED.manifest,
          source_path = EXCLUDED.source_path,
+         granted_permissions = EXCLUDED.granted_permissions,
          tool_count = EXCLUDED.tool_count,
          trigger_count = EXCLUDED.trigger_count,
          updated_at = NOW()`,
@@ -210,6 +223,7 @@ export class ExtensionsRepository extends BaseRepository {
         input.status ?? 'enabled',
         input.sourcePath ?? null,
         JSON.stringify(input.settings ?? {}),
+        JSON.stringify(input.grantedPermissions ?? []),
         input.toolCount ?? input.manifest.tools.length,
         input.triggerCount ?? input.manifest.triggers?.length ?? 0,
       ]
@@ -246,6 +260,22 @@ export class ExtensionsRepository extends BaseRepository {
     await this.execute(
       'UPDATE user_extensions SET settings = $1, updated_at = NOW() WHERE id = $2',
       [JSON.stringify(settings), id]
+    );
+
+    await this.refreshRecordCache(id);
+    return cache.get(id) ?? null;
+  }
+
+  async updatePermissions(
+    id: string,
+    grantedPermissions: string[]
+  ): Promise<ExtensionRecord | null> {
+    const existing = cache.get(id);
+    if (!existing) return null;
+
+    await this.execute(
+      'UPDATE user_extensions SET granted_permissions = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(grantedPermissions), id]
     );
 
     await this.refreshRecordCache(id);

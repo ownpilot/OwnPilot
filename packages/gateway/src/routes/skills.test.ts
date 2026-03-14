@@ -49,6 +49,7 @@ const mockExtensionsRepo = {
   getAll: vi.fn(() => []),
   getById: vi.fn(),
   updateSettings: vi.fn(),
+  updatePermissions: vi.fn(),
 };
 
 vi.mock('../db/repositories/extensions.js', () => ({
@@ -246,7 +247,8 @@ describe('Skills Routes', () => {
       id: 'ext-1',
       userId: USER_ID,
       manifest: { permissions: { required: ['network'], optional: [] } },
-      settings: { grantedPermissions: ['network'] },
+      settings: {},
+      grantedPermissions: ['network'],
       ...overrides,
     });
 
@@ -316,7 +318,7 @@ describe('Skills Routes', () => {
 
     it('stores granted permissions and returns them', async () => {
       mockExtensionsRepo.getById.mockReturnValue(makeExtRecord());
-      mockExtensionsRepo.updateSettings.mockResolvedValue(undefined);
+      mockExtensionsRepo.updatePermissions.mockResolvedValue(undefined);
 
       const res = await app.request('/skills/permissions/ext-1', {
         method: 'POST',
@@ -327,9 +329,9 @@ describe('Skills Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.grantedPermissions).toEqual(['network', 'filesystem']);
-      expect(mockExtensionsRepo.updateSettings).toHaveBeenCalledWith(
+      expect(mockExtensionsRepo.updatePermissions).toHaveBeenCalledWith(
         'ext-1',
-        expect.objectContaining({ grantedPermissions: ['network', 'filesystem'] })
+        ['network', 'filesystem']
       );
     });
 

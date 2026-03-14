@@ -356,6 +356,67 @@ export class ExtensionService implements IExtensionService {
   }
 
   // --------------------------------------------------------------------------
+  // Recover (clear error status)
+  // --------------------------------------------------------------------------
+
+  async recover(id: string, userId = 'default'): Promise<ExtensionRecord | null> {
+    const record = extensionsRepo.getById(id);
+    if (!record || record.userId !== userId) return null;
+
+    if (record.status !== 'error') return record;
+
+    // Try to reload from disk if source path exists
+    if (record.sourcePath && existsSync(record.sourcePath)) {
+      try {
+        return await this.install(record.sourcePath, userId);
+      } catch (e) {
+        log.warn(`Recovery reload failed for ${id}, resetting to disabled`, { error: String(e) });
+      }
+    }
+
+    // Fall back to disabling (clear error state)
+    const updated = await extensionsRepo.updateStatus(id, 'disabled');
+    if (updated) {
+      getEventSystem().emit('extension.enabled', 'extension-service', {
+        extensionId: id,
+        userId,
+        triggers: 0,
+      });
+      log.info(`Recovered extension "${record.name}" from error state`, { id });
+    }
+
+    return updated;
+  }
+
+  // --------------------------------------------------------------------------
+  // Cleanup orphan triggers (call on startup)
+  // --------------------------------------------------------------------------
+
+  async cleanupOrphanTriggers(userId = 'default'): Promise<number> {
+    let cleaned = 0;
+    try {
+      const triggerService = getServiceRegistry().get(Services.Trigger);
+      const triggers = await triggerService.listTriggers(userId);
+      const extensionIds = new Set(extensionsRepo.getAll().map((e) => e.id));
+
+      for (const trigger of triggers) {
+        const match = trigger.name.match(/^\[Ext:([^\]]+)\]/);
+        if (match?.[1] && !extensionIds.has(match[1])) {
+          await triggerService.deleteTrigger(userId, trigger.id);
+          cleaned++;
+        }
+      }
+
+      if (cleaned > 0) {
+        log.info(`Cleaned up ${cleaned} orphan extension triggers`);
+      }
+    } catch (e) {
+      log.warn('Failed to clean orphan triggers', { error: String(e) });
+    }
+    return cleaned;
+  }
+
+  // --------------------------------------------------------------------------
   // Read
   // --------------------------------------------------------------------------
 
@@ -682,11 +743,24 @@ export class ExtensionService implements IExtensionService {
     if (!manifest.triggers?.length) return;
 
     const triggerService = getServiceRegistry().get(Services.Trigger);
+    const prefix = `[Ext:${manifest.id}]`;
+
+    // De-duplicate: remove existing triggers for this extension before creating new ones
+    try {
+      const existing = await triggerService.listTriggers(userId);
+      for (const trigger of existing) {
+        if (trigger.name.startsWith(prefix)) {
+          await triggerService.deleteTrigger(userId, trigger.id);
+        }
+      }
+    } catch (e) {
+      log.warn(`Failed to clean existing triggers for ${manifest.id}`, { error: String(e) });
+    }
 
     for (const trigger of manifest.triggers) {
       try {
         await triggerService.createTrigger(userId, {
-          name: `[Ext:${manifest.id}] ${trigger.name}`,
+          name: `${prefix} ${trigger.name}`,
           description: trigger.description ?? `Auto-managed by extension: ${manifest.name}`,
           type: trigger.type,
           config: trigger.config,
