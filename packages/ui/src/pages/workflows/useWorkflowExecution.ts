@@ -3,7 +3,7 @@
  * helpers for the workflow editor.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 
 import { workflowsApi, triggersApi } from '../../api';
@@ -79,6 +79,18 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
     syncTrigger,
     toast,
   } = params;
+
+  // ========================================================================
+  // Execution progress tracking
+  // ========================================================================
+
+  const [executionProgress, setExecutionProgress] = useState<{
+    total: number;
+    completed: number;
+    running: string | null;
+    failed: number;
+    retries: number;
+  } | null>(null);
 
   // ========================================================================
   // Save
@@ -461,14 +473,41 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
   // SSE progress event handler
   // ========================================================================
 
+  /** Resolve a node label from the current nodes array */
+  const getNodeLabel = useCallback(
+    (nodeId: string | undefined): string | null => {
+      if (!nodeId) return null;
+      const node = nodes.find((n) => n.id === nodeId);
+      if (!node) return nodeId;
+      const label = (node.data as Record<string, unknown>).label;
+      return typeof label === 'string' && label ? label : nodeId;
+    },
+    [nodes]
+  );
+
   const handleProgressEvent = useCallback(
     (event: WorkflowProgressEvent) => {
       switch (event.type) {
+        case 'started':
+          setExecutionProgress({
+            total: nodes.length,
+            completed: 0,
+            running: null,
+            failed: 0,
+            retries: 0,
+          });
+          break;
+
         case 'node_start':
           setNodes((nds) =>
             nds.map((n) =>
               n.id === event.nodeId ? { ...n, data: { ...n.data, executionStatus: 'running' } } : n
             )
+          );
+          setExecutionProgress((prev) =>
+            prev
+              ? { ...prev, running: getNodeLabel(event.nodeId) }
+              : null
           );
           break;
 
@@ -490,6 +529,11 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
                 : n
             )
           );
+          setExecutionProgress((prev) =>
+            prev
+              ? { ...prev, completed: prev.completed + 1, running: null }
+              : null
+          );
           break;
 
         case 'node_error':
@@ -507,6 +551,11 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
                 : n
             )
           );
+          setExecutionProgress((prev) =>
+            prev
+              ? { ...prev, failed: prev.failed + 1, running: null }
+              : null
+          );
           break;
 
         case 'node_retry':
@@ -523,6 +572,11 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
                   }
                 : n
             )
+          );
+          setExecutionProgress((prev) =>
+            prev
+              ? { ...prev, retries: prev.retries + 1 }
+              : null
           );
           break;
 
@@ -545,6 +599,9 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
           break;
 
         case 'done':
+          setExecutionProgress((prev) =>
+            prev ? { ...prev, running: null } : null
+          );
           toast.success(
             event.logStatus === 'completed'
               ? `Workflow completed in ${event.durationMs ? `${(event.durationMs / 1000).toFixed(1)}s` : 'N/A'}`
@@ -557,7 +614,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
           break;
       }
     },
-    [setNodes, toast]
+    [setNodes, toast, nodes, getNodeLabel]
   );
 
   // ========================================================================
@@ -637,6 +694,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
       } finally {
         setIsExecuting(false);
         setIsDryRun(false);
+        setExecutionProgress(null);
         abortRef.current = null;
         setEdges((eds) => eds.map((e) => ({ ...e, animated: false })));
       }
@@ -671,5 +729,6 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
     handleSave,
     handleExecute,
     handleCancel,
+    executionProgress,
   };
 }

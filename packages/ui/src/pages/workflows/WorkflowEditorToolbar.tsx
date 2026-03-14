@@ -52,6 +52,13 @@ export interface WorkflowEditorToolbarProps {
   handleArrange: () => void;
   handleExecute: (dryRun: boolean) => void;
   handleCancel: () => void;
+  executionProgress: {
+    total: number;
+    completed: number;
+    running: string | null;
+    failed: number;
+    retries: number;
+  } | null;
 }
 
 export function WorkflowEditorToolbar({
@@ -81,8 +88,10 @@ export function WorkflowEditorToolbar({
   handleArrange,
   handleExecute,
   handleCancel,
+  executionProgress,
 }: WorkflowEditorToolbarProps) {
   return (
+    <div>
     <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
       <button
         onClick={() => navigate('/workflows')}
@@ -263,5 +272,30 @@ export function WorkflowEditorToolbar({
         </>
       )}
     </header>
+
+    {isExecuting && executionProgress && (
+      <div className="flex items-center gap-3 px-4 py-2 bg-warning/10 border-b border-warning/20">
+        <div className="flex-1">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="font-medium text-warning">
+              {executionProgress.running
+                ? `Running: ${executionProgress.running}`
+                : 'Processing...'}
+            </span>
+            <span className="text-text-muted">
+              {executionProgress.completed}/{executionProgress.total} nodes
+              {executionProgress.retries > 0 ? ` (${executionProgress.retries} retries)` : ''}
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-warning/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-warning rounded-full transition-all duration-300"
+              style={{ width: `${(executionProgress.completed / Math.max(executionProgress.total, 1)) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    )}
+    </div>
   );
 }

@@ -118,7 +118,7 @@ export function useWorkflowEditor() {
     toast,
   });
 
-  const { handleSave, handleExecute, handleCancel } = useWorkflowExecution({
+  const { handleSave, handleExecute, handleCancel, executionProgress } = useWorkflowExecution({
     id,
     workflow,
     nodes,
@@ -457,6 +457,9 @@ export function useWorkflowEditor() {
     onPaneClick,
     onDragOver,
     onDrop,
+
+    // Execution progress
+    executionProgress,
 
     // Actions
     handleSave,
