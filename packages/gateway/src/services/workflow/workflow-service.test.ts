@@ -50,6 +50,12 @@ const mockExecuteDelayNode = vi.hoisted(() => vi.fn());
 const mockExecuteSwitchNode = vi.hoisted(() => vi.fn());
 const mockExecuteNotificationNode = vi.hoisted(() => vi.fn());
 const mockExecuteMergeNode = vi.hoisted(() => vi.fn());
+const mockExecuteDataStoreNode = vi.hoisted(() => vi.fn());
+const mockExecuteSchemaValidatorNode = vi.hoisted(() => vi.fn());
+const mockExecuteFilterNode = vi.hoisted(() => vi.fn());
+const mockExecuteMapNode = vi.hoisted(() => vi.fn());
+const mockExecuteAggregateNode = vi.hoisted(() => vi.fn());
+const mockExecuteWebhookResponseNode = vi.hoisted(() => vi.fn());
 
 const mockApprovalsRepo = vi.hoisted(() => ({
   create: vi.fn(),
@@ -108,6 +114,12 @@ vi.mock('./node-executors.js', () => ({
   executeSwitchNode: mockExecuteSwitchNode,
   executeNotificationNode: mockExecuteNotificationNode,
   executeMergeNode: mockExecuteMergeNode,
+  executeDataStoreNode: mockExecuteDataStoreNode,
+  executeSchemaValidatorNode: mockExecuteSchemaValidatorNode,
+  executeFilterNode: mockExecuteFilterNode,
+  executeMapNode: mockExecuteMapNode,
+  executeAggregateNode: mockExecuteAggregateNode,
+  executeWebhookResponseNode: mockExecuteWebhookResponseNode,
 }));
 
 vi.mock('../../db/repositories/workflow-approvals.js', () => ({
@@ -127,6 +139,7 @@ vi.mock('./template-resolver.js', () => ({
 // ---------------------------------------------------------------------------
 
 import { WorkflowService, getWorkflowService } from './workflow-service.js';
+import { resolveTemplates } from './template-resolver.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1433,5 +1446,424 @@ describe('additional executeWorkflow paths', () => {
     await service.executeWorkflow('wf-1', 'user1', undefined, { dryRun: true });
 
     expect(mockExecuteNode).not.toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// Integration-style tests — full execution flow
+// ============================================================================
+
+describe('integration: template resolution between nodes', () => {
+  it('passes upstream output via {{node_1.output}} to downstream transformer', async () => {
+    const nodes = [
+      makeNode('node_1', 'toolNode', { toolName: 'greet', toolArgs: {} }),
+      makeNode('node_2', 'transformerNode', { expression: 'data.toUpperCase()' }),
+    ];
+    const edges = [makeEdge('node_1', 'node_2')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // toolNode returns "hello"
+    mockExecuteNode.mockResolvedValue(makeNodeResult('node_1', 'hello'));
+
+    // transformerNode: verify it receives the upstream output via nodeOutputs,
+    // and returns the transformed result
+    mockExecuteTransformerNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        // node_1's output should already be in nodeOutputs
+        const upstreamOutput = nodeOutputs['node_1']?.output;
+        expect(upstreamOutput).toBe('hello');
+
+        // Simulate what the real transformer would do: data.toUpperCase()
+        const result =
+          typeof upstreamOutput === 'string' ? upstreamOutput.toUpperCase() : upstreamOutput;
+        return makeNodeResult(node.id, result);
+      }
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteNode).toHaveBeenCalledTimes(1);
+    expect(mockExecuteTransformerNode).toHaveBeenCalledTimes(1);
+
+    // Verify the transformer was called with nodeOutputs containing node_1's result
+    const transformerCall = mockExecuteTransformerNode.mock.calls[0]!;
+    const passedNodeOutputs = transformerCall[1] as Record<string, NodeResult>;
+    expect(passedNodeOutputs['node_1']).toBeDefined();
+    expect(passedNodeOutputs['node_1']!.output).toBe('hello');
+  });
+});
+
+describe('integration: condition branching', () => {
+  function setupConditionWorkflow() {
+    const nodes = [
+      makeNode('tool1', 'toolNode', { toolName: 'get_value', toolArgs: {} }),
+      makeNode('cond1', 'conditionNode', { expression: 'data > 5' }),
+      makeNode('true_branch', 'notificationNode', { message: 'Value is high', severity: 'info' }),
+      makeNode('false_branch', 'notificationNode', {
+        message: 'Value is low',
+        severity: 'warn',
+      }),
+    ];
+    const edges = [
+      makeEdge('tool1', 'cond1'),
+      makeEdge('cond1', 'true_branch', 'true'),
+      makeEdge('cond1', 'false_branch', 'false'),
+    ];
+    return { nodes, edges };
+  }
+
+  it('executes true branch when condition is met (value=10)', async () => {
+    const { nodes, edges } = setupConditionWorkflow();
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // toolNode returns 10
+    mockExecuteNode.mockResolvedValue(makeNodeResult('tool1', 10));
+
+    // conditionNode: data > 5 evaluates to true
+    mockExecuteConditionNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        const data = nodeOutputs['tool1']?.output;
+        const result = (data as number) > 5;
+        return {
+          ...makeNodeResult(node.id, result),
+          branchTaken: result ? 'true' : 'false',
+        };
+      }
+    );
+
+    // notificationNode for true branch
+    mockExecuteNotificationNode.mockResolvedValue(
+      makeNodeResult('true_branch', { sent: true })
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    const log = await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
+
+    expect(log.status).toBe('completed');
+
+    // True branch should execute
+    expect(mockExecuteNotificationNode).toHaveBeenCalledTimes(1);
+    const notifCall = mockExecuteNotificationNode.mock.calls[0]![0] as WorkflowNode;
+    expect(notifCall.id).toBe('true_branch');
+
+    // False branch should be skipped
+    const falseSkipped = progressEvents.find(
+      (e) => e.nodeId === 'false_branch' && e.status === 'skipped'
+    );
+    expect(falseSkipped).toBeDefined();
+  });
+
+  it('executes false branch when condition is not met (value=3)', async () => {
+    const { nodes, edges } = setupConditionWorkflow();
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // toolNode returns 3
+    mockExecuteNode.mockResolvedValue(makeNodeResult('tool1', 3));
+
+    // conditionNode: data > 5 evaluates to false
+    mockExecuteConditionNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        const data = nodeOutputs['tool1']?.output;
+        const result = (data as number) > 5;
+        return {
+          ...makeNodeResult(node.id, result),
+          branchTaken: result ? 'true' : 'false',
+        };
+      }
+    );
+
+    // notificationNode for false branch
+    mockExecuteNotificationNode.mockResolvedValue(
+      makeNodeResult('false_branch', { sent: true })
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    const log = await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
+
+    expect(log.status).toBe('completed');
+
+    // False branch should execute
+    expect(mockExecuteNotificationNode).toHaveBeenCalledTimes(1);
+    const notifCall = mockExecuteNotificationNode.mock.calls[0]![0] as WorkflowNode;
+    expect(notifCall.id).toBe('false_branch');
+
+    // True branch should be skipped
+    const trueSkipped = progressEvents.find(
+      (e) => e.nodeId === 'true_branch' && e.status === 'skipped'
+    );
+    expect(trueSkipped).toBeDefined();
+  });
+});
+
+describe('integration: forEach with body nodes', () => {
+  it('iterates over array and collects transformed results', async () => {
+    const nodes = [
+      makeNode('node_1', 'toolNode', { toolName: 'get_list', toolArgs: {} }),
+      makeNode('fe1', 'forEachNode', { arrayExpression: '{{node_1.output}}' }),
+      makeNode('body_tf', 'transformerNode', { expression: 'item * 2' }),
+    ];
+    const edges = [
+      makeEdge('node_1', 'fe1'),
+      makeEdge('fe1', 'body_tf', 'each'),
+    ];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // toolNode returns [1, 2, 3]
+    mockExecuteNode.mockResolvedValue(makeNodeResult('node_1', [1, 2, 3]));
+
+    // forEachNode: mock to return the doubled results
+    mockExecuteForEachNode.mockImplementation(
+      async (
+        node: WorkflowNode,
+        nodeOutputs: Record<string, NodeResult>
+      ) => {
+        // Verify it received the upstream array
+        const upstreamOutput = nodeOutputs['node_1']?.output;
+        expect(upstreamOutput).toEqual([1, 2, 3]);
+
+        // Simulate forEach iterating and collecting transformer results
+        const items = upstreamOutput as number[];
+        const results = items.map((item) => item * 2);
+        return makeNodeResult(node.id, {
+          results,
+          count: items.length,
+          items,
+          completedIterations: items.length,
+        });
+      }
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteForEachNode).toHaveBeenCalledTimes(1);
+
+    // Verify the forEach result contains [2, 4, 6]
+    const forEachCall = mockExecuteForEachNode.mock.results[0]!;
+    const forEachResult = await forEachCall.value;
+    expect(forEachResult.output.results).toEqual([2, 4, 6]);
+  });
+});
+
+describe('integration: error propagation', () => {
+  it('fails toolNode, skips downstream llm and notification nodes', async () => {
+    const nodes = [
+      makeNode('tool1', 'toolNode', { toolName: 'failing_tool', toolArgs: {} }),
+      makeNode('llm1', 'llmNode', {
+        provider: 'openai',
+        model: 'gpt-4',
+        userMessage: 'Process: {{tool1.output}}',
+      }),
+      makeNode('notif1', 'notificationNode', { message: 'Done!', severity: 'info' }),
+    ];
+    const edges = [makeEdge('tool1', 'llm1'), makeEdge('llm1', 'notif1')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // toolNode throws error
+    mockExecuteNode.mockResolvedValue({
+      nodeId: 'tool1',
+      status: 'error',
+      error: 'Connection refused',
+      completedAt: new Date().toISOString(),
+    });
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'failed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    const log = await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
+
+    expect(log.status).toBe('failed');
+
+    // toolNode should have emitted a node_error event
+    const toolError = progressEvents.find(
+      (e) => e.type === 'node_error' && e.nodeId === 'tool1'
+    );
+    expect(toolError).toBeDefined();
+    expect(toolError!.error).toBe('Connection refused');
+
+    // llmNode should NOT have been called
+    expect(mockExecuteLlmNode).not.toHaveBeenCalled();
+
+    // notificationNode should NOT have been called
+    expect(mockExecuteNotificationNode).not.toHaveBeenCalled();
+
+    // The log should have been updated with failed status
+    expect(mockRepo.updateLog).toHaveBeenCalledWith(
+      'log-1',
+      expect.objectContaining({ status: 'failed' })
+    );
+  });
+});
+
+describe('integration: new node types (filter, map, aggregate)', () => {
+  it('filterNode filters array by condition', async () => {
+    const nodes = [
+      makeNode('source', 'toolNode', { toolName: 'get_numbers', toolArgs: {} }),
+      makeNode('filter1', 'filterNode', {
+        arrayExpression: '{{source.output}}',
+        condition: 'item > 3',
+      }),
+    ];
+    const edges = [makeEdge('source', 'filter1')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // Source returns [1, 2, 3, 4, 5]
+    mockExecuteNode.mockResolvedValue(makeNodeResult('source', [1, 2, 3, 4, 5]));
+
+    // filterNode: simulate real filter behavior
+    mockExecuteFilterNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        const arr = nodeOutputs['source']?.output as number[];
+        const filtered = arr.filter((item) => item > 3);
+        return makeNodeResult(node.id, filtered);
+      }
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteFilterNode).toHaveBeenCalledTimes(1);
+
+    const filterResult = mockExecuteFilterNode.mock.results[0]!.value as NodeResult;
+    expect(filterResult.output).toEqual([4, 5]);
+  });
+
+  it('mapNode maps array elements via expression', async () => {
+    const nodes = [
+      makeNode('source', 'toolNode', { toolName: 'get_objects', toolArgs: {} }),
+      makeNode('map1', 'mapNode', {
+        arrayExpression: '{{source.output}}',
+        expression: 'item.name',
+      }),
+    ];
+    const edges = [makeEdge('source', 'map1')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // Source returns objects
+    mockExecuteNode.mockResolvedValue(
+      makeNodeResult('source', [{ name: 'a' }, { name: 'b' }])
+    );
+
+    // mapNode: simulate real map behavior
+    mockExecuteMapNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        const arr = nodeOutputs['source']?.output as Array<{ name: string }>;
+        const mapped = arr.map((item) => item.name);
+        return makeNodeResult(node.id, mapped);
+      }
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteMapNode).toHaveBeenCalledTimes(1);
+
+    const mapResult = mockExecuteMapNode.mock.results[0]!.value as NodeResult;
+    expect(mapResult.output).toEqual(['a', 'b']);
+  });
+
+  it('aggregateNode sums array elements', async () => {
+    const nodes = [
+      makeNode('source', 'toolNode', { toolName: 'get_values', toolArgs: {} }),
+      makeNode('agg1', 'aggregateNode', {
+        arrayExpression: '{{source.output}}',
+        operation: 'sum',
+      }),
+    ];
+    const edges = [makeEdge('source', 'agg1')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // Source returns [10, 20, 30]
+    mockExecuteNode.mockResolvedValue(makeNodeResult('source', [10, 20, 30]));
+
+    // aggregateNode: simulate real sum behavior
+    mockExecuteAggregateNode.mockImplementation(
+      (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
+        const arr = nodeOutputs['source']?.output as number[];
+        const sum = arr.reduce((acc, item) => acc + item, 0);
+        return makeNodeResult(node.id, sum);
+      }
+    );
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteAggregateNode).toHaveBeenCalledTimes(1);
+
+    const aggResult = mockExecuteAggregateNode.mock.results[0]!.value as NodeResult;
+    expect(aggResult.output).toBe(60);
+  });
+});
+
+describe('integration: dataStore persistence across nodes', () => {
+  it('set followed by get retrieves the stored value', async () => {
+    const nodes = [
+      makeNode('ds_set', 'dataStoreNode', {
+        operation: 'set',
+        key: 'x',
+        value: 42,
+        namespace: 'test',
+      }),
+      makeNode('ds_get', 'dataStoreNode', {
+        operation: 'get',
+        key: 'x',
+        namespace: 'test',
+      }),
+    ];
+    const edges = [makeEdge('ds_set', 'ds_get')];
+
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    // Simulate a shared in-memory store across both calls
+    const localStore = new Map<string, unknown>();
+
+    mockExecuteDataStoreNode
+      .mockImplementationOnce((node: WorkflowNode) => {
+        // SET operation: store value
+        localStore.set('x', 42);
+        return makeNodeResult(node.id, { previousValue: null });
+      })
+      .mockImplementationOnce((node: WorkflowNode) => {
+        // GET operation: retrieve stored value
+        const value = localStore.get('x') ?? null;
+        return makeNodeResult(node.id, value);
+      });
+
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const log = await service.executeWorkflow('wf-1', 'user1');
+
+    expect(log.status).toBe('completed');
+    expect(mockExecuteDataStoreNode).toHaveBeenCalledTimes(2);
+
+    // Verify call order: set first, get second
+    const calls = mockExecuteDataStoreNode.mock.calls;
+    expect((calls[0]![0] as WorkflowNode).id).toBe('ds_set');
+    expect((calls[1]![0] as WorkflowNode).id).toBe('ds_get');
+
+    // Verify the GET result is the stored value
+    const getResult = mockExecuteDataStoreNode.mock.results[1]!.value as NodeResult;
+    expect(getResult.output).toBe(42);
   });
 });

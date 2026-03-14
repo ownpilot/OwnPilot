@@ -788,6 +788,7 @@ export class WorkflowService implements IWorkflowService {
               resolvedArgs: nodeResult.resolvedArgs,
               branchTaken: nodeResult.branchTaken,
               durationMs: nodeResult.durationMs,
+              retryAttempts: nodeResult.retryAttempts,
             });
 
             // Condition branching: skip nodes on the not-taken branch
@@ -869,9 +870,13 @@ export class WorkflowService implements IWorkflowService {
 
       const totalDuration = Date.now() - startTime;
       const errorMsg = getErrorMessage(error, 'Workflow execution failed');
+      const isCancelled =
+        abortController.signal.aborted ||
+        (error instanceof Error && error.message === 'Workflow execution cancelled');
+      const logStatus: WorkflowLogStatus = isCancelled ? 'cancelled' : 'failed';
 
       await repo.updateLog(wfLog.id, {
-        status: 'failed',
+        status: logStatus,
         error: errorMsg,
         completedAt: new Date().toISOString(),
         durationMs: totalDuration,
@@ -1363,6 +1368,7 @@ export class WorkflowService implements IWorkflowService {
               resolvedArgs: nodeResult.resolvedArgs,
               branchTaken: nodeResult.branchTaken,
               durationMs: nodeResult.durationMs,
+              retryAttempts: nodeResult.retryAttempts,
             });
 
             const node = nodeMap.get(nodeId);
@@ -1440,9 +1446,13 @@ export class WorkflowService implements IWorkflowService {
 
       const totalDuration = Date.now() - startTime + (pausedLog.durationMs ?? 0);
       const errorMsg = getErrorMessage(error, 'Workflow resume failed');
+      const isCancelled =
+        abortController.signal.aborted ||
+        (error instanceof Error && error.message === 'Workflow execution cancelled');
+      const logStatus: WorkflowLogStatus = isCancelled ? 'cancelled' : 'failed';
 
       await repo.updateLog(logId, {
-        status: 'failed',
+        status: logStatus,
         error: errorMsg,
         completedAt: new Date().toISOString(),
         durationMs: totalDuration,
