@@ -505,6 +505,28 @@ export function LlmConfigPanel({
               </div>
             </div>
 
+            {/* Response Format */}
+            <div>
+              <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
+                Response Format
+              </label>
+              <select
+                value={(data.responseFormat as string) ?? 'text'}
+                onChange={(e) =>
+                  pushUpdate({
+                    responseFormat: e.target.value === 'text' ? undefined : (e.target.value as 'json'),
+                  })
+                }
+                className={INPUT_CLS}
+              >
+                <option value="text">Text (default)</option>
+                <option value="json">JSON (auto-parsed)</option>
+              </select>
+              <p className="text-[10px] text-text-muted mt-0.5">
+                JSON mode instructs the LLM to return valid JSON and auto-parses the output
+              </p>
+            </div>
+
             {/* Advanced: custom API key + base URL */}
             <div>
               <button

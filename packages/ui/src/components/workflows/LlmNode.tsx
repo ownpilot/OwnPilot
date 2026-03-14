@@ -28,6 +28,10 @@ export interface LlmNodeData extends Record<string, unknown> {
   apiKey?: string;
   /** Optional custom base URL (for self-hosted / proxy) */
   baseUrl?: string;
+  /** Response format: 'text' (default) or 'json' (auto-parsed) */
+  responseFormat?: 'text' | 'json';
+  /** Multi-turn context messages before the main userMessage */
+  conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   /** Runtime execution state */
   executionStatus?: NodeExecutionStatus;
   executionError?: string;
@@ -109,6 +113,13 @@ function LlmNodeComponent({ data, selected }: NodeProps<LlmNodeType>) {
             {data.model && data.model !== 'default' ? ` / ${data.model}` : ''}
           </p>
         </div>
+
+        {/* Response format badge */}
+        {data.responseFormat === 'json' && (
+          <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[9px] font-bold rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 uppercase">
+            JSON
+          </span>
+        )}
 
         {/* System prompt preview */}
         {data.systemPrompt && (
