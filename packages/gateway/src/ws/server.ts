@@ -40,6 +40,7 @@ function escapeHtml(unsafe: string): string {
 }
 import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
 import { getErrorMessage } from '../routes/helpers.js';
+import { handleWebChatMessage } from './webchat-handler.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
@@ -128,6 +129,7 @@ const VALID_CLIENT_EVENTS = new Set<string>([
   'event:subscribe',
   'event:unsubscribe',
   'event:publish',
+  'webchat:message',
 ]);
 
 export interface WSGatewayConfig {
@@ -1126,6 +1128,19 @@ export class WSGateway {
     this.clientHandler.handle('event:publish', async (data, wsSessionId) => {
       if (!wsSessionId || !this.eventBridge) return;
       this.eventBridge.publish(wsSessionId, data.type, data.data);
+    });
+
+    // =========================================================================
+    // WebChat events
+    // =========================================================================
+
+    this.clientHandler.handle('webchat:message', async (data, wsSessionId) => {
+      if (!wsSessionId) return;
+      try {
+        await handleWebChatMessage(data, wsSessionId);
+      } catch (err) {
+        log.error('WebChat message error', { error: String(err) });
+      }
     });
   }
 

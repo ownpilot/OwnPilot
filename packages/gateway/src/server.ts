@@ -573,6 +573,15 @@ async function main() {
   wsGateway.startEventBridge();
   log.info('EventBusBridge started — WS clients can subscribe/publish events');
 
+  // Initialize WebChat handler (bridges WS webchat events to channel system)
+  try {
+    const { initWebChatHandler } = await import('./ws/webchat-handler.js');
+    initWebChatHandler();
+    log.info('WebChat handler initialized.');
+  } catch (error) {
+    log.warn('WebChat handler failed to initialize', { error: String(error) });
+  }
+
   // Wire debug log entries to WebSocket broadcast
   const { debugLog } = await import('@ownpilot/core');
   debugLog.onEntry = (entry) => {
