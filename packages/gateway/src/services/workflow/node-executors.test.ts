@@ -476,21 +476,16 @@ describe('executeCodeNode', () => {
     );
   });
 
-  it('falls back to execute_javascript for unknown language', async () => {
-    vi.mocked(resolveTemplates).mockReturnValue({ _code: 'code' });
-    mockToolService.execute.mockResolvedValue({ content: '"ok"', isError: false });
-
+  it('returns error for unsupported language', async () => {
     const node = makeNode('code1', 'codeNode', {
       language: 'ruby',
       code: 'code',
     });
-    await executeCodeNode(node, {}, {}, 'user1', mockToolService);
+    const result = await executeCodeNode(node, {}, {}, 'user1', mockToolService);
 
-    expect(mockToolService.execute).toHaveBeenCalledWith(
-      'execute_javascript',
-      { code: 'code' },
-      { userId: 'user1', execSource: 'workflow' }
-    );
+    expect(result.status).toBe('error');
+    expect(result.error).toBe('Unsupported language: "ruby". Supported: javascript, python, shell');
+    expect(mockToolService.execute).not.toHaveBeenCalled();
   });
 
   it('returns error result when tool execution fails', async () => {

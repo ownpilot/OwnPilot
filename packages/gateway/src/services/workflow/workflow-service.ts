@@ -27,6 +27,7 @@ import {
 } from '@ownpilot/core';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflow-approvals.js';
 import { getErrorMessage } from '../../routes/helpers.js';
+import { getLog } from '../log.js';
 import {
   topologicalSort,
   getDownstreamNodes,
@@ -48,6 +49,8 @@ import {
 } from './node-executors.js';
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
+
+const log = getLog('WorkflowService');
 
 export class WorkflowService implements IWorkflowService {
   private activeExecutions = new Map<string, AbortController>();
@@ -315,9 +318,12 @@ export class WorkflowService implements IWorkflowService {
               }
 
               try {
-                // Parallel node: execute all branch downstream nodes concurrently.
-                // Each branch is identified by 'branch-0', 'branch-1', etc. sourceHandle.
+                // Parallel node: signals branch fan-out. Actual parallelism is provided by
+                // the DAG engine's topological sort — nodes at the same level within
+                // Promise.allSettled run concurrently. The parallel node identifies branch
+                // targets so downstream edges are correctly resolved.
                 const branchResults: Record<string, unknown> = {};
+                const allTargetNodeIds: string[] = [];
 
                 // Identify direct targets for each branch handle
                 const branchPromises = Array.from({ length: branchCount }, async (_, i) => {
@@ -325,12 +331,13 @@ export class WorkflowService implements IWorkflowService {
                   const directTargets = workflow.edges
                     .filter((e) => e.source === nodeId && e.sourceHandle === handle)
                     .map((e) => e.target);
-                  // For now, the parallel node just signals which branches exist.
-                  // Downstream nodes will be executed naturally by topological sort.
+                  allTargetNodeIds.push(...directTargets);
                   branchResults[handle] = { targets: directTargets };
                 });
 
                 await Promise.all(branchPromises);
+
+                log.info('Parallel branching', { nodeId, branchCount, targets: allTargetNodeIds });
 
                 const result: NodeResult = {
                   nodeId,

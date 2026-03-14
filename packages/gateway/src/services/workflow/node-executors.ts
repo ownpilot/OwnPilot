@@ -310,6 +310,19 @@ export async function executeCodeNode(
   try {
     const data = node.data as CodeNodeData;
 
+    // Validate language
+    const SUPPORTED_LANGUAGES = ['javascript', 'python', 'shell'] as const;
+    if (!SUPPORTED_LANGUAGES.includes(data.language as (typeof SUPPORTED_LANGUAGES)[number])) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `Unsupported language: "${data.language}". Supported: javascript, python, shell`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
     // Resolve templates in the code string
     const resolvedCode = resolveTemplates({ _code: data.code }, nodeOutputs, variables)
       ._code as string;
@@ -320,7 +333,7 @@ export async function executeCodeNode(
       python: 'execute_python',
       shell: 'execute_shell',
     };
-    const toolName = toolMap[data.language] ?? 'execute_javascript';
+    const toolName = toolMap[data.language]!;
 
     const toolResult = await toolService.execute(
       toolName,
@@ -628,14 +641,19 @@ export async function executeDelayNode(
     const delayMs = durationValue * multiplier;
 
     // Safety cap: max 1 hour
-    const cappedMs = Math.min(delayMs, 3_600_000);
-    const wasCapped = delayMs > 3_600_000;
+    const MAX_DELAY_MS = 3_600_000;
+    const actualDelay = Math.min(delayMs, MAX_DELAY_MS);
+    const resolvedUnit = data.unit ?? 'seconds';
 
-    log.info('Delay started', { nodeId: node.id, delayMs: cappedMs, ...(wasCapped ? { requestedMs: delayMs, capped: true } : {}) });
+    if (delayMs > MAX_DELAY_MS) {
+      log.warn('Delay capped to maximum 1 hour', { nodeId: node.id, requestedMs: delayMs, cappedMs: MAX_DELAY_MS });
+    }
+
+    log.info('Delay applied', { nodeId: node.id, delayMs: actualDelay, unit: resolvedUnit });
 
     // Wait with abort support
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, cappedMs);
+      const timer = setTimeout(resolve, actualDelay);
       if (abortSignal) {
         if (abortSignal.aborted) {
           clearTimeout(timer);
@@ -656,7 +674,7 @@ export async function executeDelayNode(
     return {
       nodeId: node.id,
       status: 'success',
-      output: { delayMs: cappedMs, unit: data.unit, value: durationValue },
+      output: { delayMs: actualDelay, unit: data.unit, value: durationValue },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
