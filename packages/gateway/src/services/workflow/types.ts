@@ -35,6 +35,8 @@ export interface WorkflowProgressEvent {
   iterationTotal?: number;
   /** Retry: current attempt number (1-based) */
   retryAttempt?: number;
+  /** Retry: total retry attempts on this node (0 = succeeded on first try) */
+  retryAttempts?: number;
 }
 
 /** Result of a tool execution within a workflow node. */
