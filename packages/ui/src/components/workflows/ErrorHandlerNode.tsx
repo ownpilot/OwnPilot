@@ -1,7 +1,7 @@
 /**
  * ErrorHandlerNode — ReactFlow node for error handling in workflows.
- * Catches errors from upstream nodes and defines recovery behavior.
- * Red color theme.
+ * Safety/recovery focused design with red gradient header, dashed border,
+ * warning-stripe aesthetic, and continueOnSuccess toggle badge.
  */
 
 import { memo } from 'react';
@@ -40,12 +40,13 @@ function ErrorHandlerNodeComponent({ data, selected }: NodeProps<ErrorHandlerNod
   const status = (data.executionStatus as NodeExecutionStatus | undefined) ?? 'pending';
   const style = statusStyles[status];
   const StatusIcon = statusIcons[status];
+  const continueOnSuccess = data.continueOnSuccess as boolean | undefined;
 
   return (
     <div
       className={`
-        relative min-w-[180px] max-w-[260px] rounded-lg border-2 shadow-sm
-        bg-red-50 dark:bg-red-950/30
+        relative min-w-[200px] max-w-[280px] rounded-lg border-2 border-dashed shadow-md overflow-hidden
+        bg-white dark:bg-gray-900
         ${style.border} ${style.bg}
         ${selected ? 'ring-2 ring-red-500 ring-offset-1' : ''}
         ${status === 'running' ? 'animate-pulse' : ''}
@@ -59,56 +60,84 @@ function ErrorHandlerNodeComponent({ data, selected }: NodeProps<ErrorHandlerNod
         className="!w-3 !h-3 !bg-red-500 !border-2 !border-white dark:!border-red-950"
       />
 
-      {/* Content */}
-      <div className="px-3 py-2.5">
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-          </div>
-          <span className="font-medium text-sm text-red-900 dark:text-red-100 truncate flex-1">
+      {/* Warning stripe accent at very top */}
+      <div className="h-1 w-full" style={{
+        background: 'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
+      }} />
+
+      {/* Gradient Header Bar */}
+      <div className="bg-gradient-to-r from-red-500 to-rose-500 px-3 py-2 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <ShieldAlert className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="font-semibold text-sm text-white truncate block">
             {(data.label as string) || 'Error Handler'}
           </span>
-          {StatusIcon && (
-            <StatusIcon
-              className={`w-4 h-4 shrink-0 ${
-                status === 'success'
-                  ? 'text-success'
-                  : status === 'error'
-                    ? 'text-error'
-                    : status === 'running'
-                      ? 'text-warning'
-                      : 'text-text-muted'
-              }`}
-            />
-          )}
+          <span className="text-[9px] text-red-200/80 font-medium">Global Error Handler</span>
+        </div>
+        {StatusIcon && (
+          <StatusIcon
+            className={`w-4 h-4 shrink-0 ${
+              status === 'success'
+                ? 'text-emerald-200'
+                : status === 'error'
+                  ? 'text-red-200'
+                  : status === 'running'
+                    ? 'text-amber-200'
+                    : 'text-white/60'
+            }`}
+          />
+        )}
+      </div>
+
+      {/* Body Content */}
+      <div className="px-3 py-2 space-y-1.5">
+        {/* Continue on success toggle badge */}
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-gray-500 dark:text-gray-400">Continue on success:</span>
+          <span
+            className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded ${
+              continueOnSuccess
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                : 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+            }`}
+          >
+            {continueOnSuccess ? 'ON' : 'OFF'}
+          </span>
         </div>
 
-        {/* Description badge */}
+        {/* Description */}
         {data.description && (
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-red-500/20 text-red-700 dark:text-red-300 truncate">
-              {data.description as string}
-            </span>
-          </div>
+          <p
+            className="text-[10px] text-gray-500 dark:text-gray-400 truncate"
+            title={data.description as string}
+          >
+            {data.description as string}
+          </p>
         )}
 
         {/* Error message */}
         {status === 'error' && data.executionError && (
-          <p className="text-xs text-error mt-1 truncate" title={data.executionError as string}>
+          <p className="text-xs text-error truncate" title={data.executionError as string}>
             {data.executionError as string}
           </p>
         )}
 
         {/* Duration */}
         {data.executionDuration != null && (
-          <p className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1">
+          <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
             {(data.executionDuration as number) < 1000
               ? `${data.executionDuration}ms`
               : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
           </p>
         )}
       </div>
+
+      {/* Warning stripe accent at bottom */}
+      <div className="h-1 w-full" style={{
+        background: 'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
+      }} />
     </div>
   );
 }

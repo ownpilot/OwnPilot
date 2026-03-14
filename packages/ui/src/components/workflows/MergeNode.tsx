@@ -1,6 +1,7 @@
 /**
  * MergeNode — Waits for multiple incoming branches to complete before continuing.
- * Teal color theme, multiple input handles.
+ * Convergence visual with teal gradient header, mode badge,
+ * and converging arrows indicator. Compact layout.
  */
 
 import { memo } from 'react';
@@ -46,57 +47,79 @@ function MergeNodeComponent({ data, selected }: NodeProps<MergeNodeType>) {
   return (
     <div
       className={`
-        relative min-w-[180px] max-w-[260px] rounded-lg border-2 shadow-sm
-        bg-teal-50 dark:bg-teal-950/30
+        relative min-w-[180px] max-w-[260px] rounded-lg border-2 shadow-md overflow-hidden
+        bg-white dark:bg-gray-900
         ${style.border} ${style.bg}
         ${selected ? 'ring-2 ring-teal-500 ring-offset-1' : ''}
         ${status === 'running' ? 'animate-pulse' : ''}
         transition-all duration-200
       `}
     >
+      {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
         className="!w-3 !h-3 !bg-teal-500 !border-2 !border-white dark:!border-teal-950"
       />
 
-      <div className="px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center shrink-0">
-            <GitMerge className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-          </div>
-          <span className="font-medium text-sm text-teal-900 dark:text-teal-100 truncate flex-1">
-            {(data.label as string) || 'Merge'}
-          </span>
-          {StatusIcon && (
-            <StatusIcon
-              className={`w-4 h-4 shrink-0 ${
-                status === 'success'
-                  ? 'text-success'
-                  : status === 'error'
-                    ? 'text-error'
-                    : status === 'running'
-                      ? 'text-warning'
-                      : 'text-text-muted'
-              }`}
-            />
-          )}
+      {/* Gradient Header Bar */}
+      <div className="bg-gradient-to-r from-teal-600 to-teal-400 px-3 py-2 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <GitMerge className="w-3.5 h-3.5 text-white" />
+        </div>
+        <span className="font-semibold text-sm text-white truncate flex-1">
+          {(data.label as string) || 'Merge'}
+        </span>
+        {StatusIcon && (
+          <StatusIcon
+            className={`w-4 h-4 shrink-0 ${
+              status === 'success'
+                ? 'text-emerald-200'
+                : status === 'error'
+                  ? 'text-red-200'
+                  : status === 'running'
+                    ? 'text-amber-200'
+                    : 'text-white/60'
+            }`}
+          />
+        )}
+      </div>
+
+      {/* Body Content */}
+      <div className="px-3 py-2 space-y-1.5">
+        {/* Converging arrows visual */}
+        <div className="flex items-center justify-center py-1">
+          <svg className="w-10 h-5 text-teal-400 dark:text-teal-600" viewBox="0 0 40 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M5 2 L20 16" />
+            <path d="M20 2 L20 16" />
+            <path d="M35 2 L20 16" />
+            <circle cx="20" cy="16" r="2" fill="currentColor" stroke="none" />
+          </svg>
         </div>
 
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-teal-500/20 text-teal-700 dark:text-teal-300">
+        {/* Mode badge */}
+        <div className="flex items-center justify-center">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 text-[9px] font-bold rounded-full uppercase tracking-wider ${
+              mode === 'waitAll'
+                ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300'
+                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+            }`}
+          >
             {mode === 'waitAll' ? 'Wait All' : 'First Completed'}
           </span>
         </div>
 
+        {/* Error message */}
         {status === 'error' && data.executionError && (
-          <p className="text-xs text-error mt-1 truncate" title={data.executionError as string}>
+          <p className="text-xs text-error truncate" title={data.executionError as string}>
             {data.executionError as string}
           </p>
         )}
 
+        {/* Duration */}
         {data.executionDuration != null && (
-          <p className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1">
+          <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
             {(data.executionDuration as number) < 1000
               ? `${data.executionDuration}ms`
               : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
@@ -104,6 +127,7 @@ function MergeNodeComponent({ data, selected }: NodeProps<MergeNodeType>) {
         )}
       </div>
 
+      {/* Output Handle */}
       <Handle
         type="source"
         position={Position.Bottom}

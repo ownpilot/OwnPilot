@@ -1,6 +1,7 @@
 /**
  * MapNode — Maps/transforms each item in a collection using an expression.
- * Sky/blue color theme.
+ * Transform visual with sky gradient header, expression in dark code block,
+ * "item -> result" flow indicator, and array brackets visual.
  */
 
 import { memo } from 'react';
@@ -41,61 +42,83 @@ function MapNodeComponent({ data, selected }: NodeProps<MapNodeType>) {
   const status = (data.executionStatus as NodeExecutionStatus | undefined) ?? 'pending';
   const style = statusStyles[status];
   const StatusIcon = statusIcons[status];
+  const expression = (data.expression as string) ?? '';
 
   return (
     <div
       className={`
-        relative min-w-[180px] max-w-[260px] rounded-lg border-2 shadow-sm
-        bg-sky-50 dark:bg-sky-950/30
+        relative min-w-[200px] max-w-[280px] rounded-lg border-2 shadow-md overflow-hidden
+        bg-white dark:bg-gray-900
         ${style.border} ${style.bg}
         ${selected ? 'ring-2 ring-sky-500 ring-offset-1' : ''}
         ${status === 'running' ? 'animate-pulse' : ''}
         transition-all duration-200
       `}
     >
+      {/* Input Handle */}
       <Handle
         type="target"
         position={Position.Top}
         className="!w-3 !h-3 !bg-sky-500 !border-2 !border-white dark:!border-sky-950"
       />
 
-      <div className="px-3 py-2.5">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-sky-500/20 flex items-center justify-center shrink-0">
-            <Repeat className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-          </div>
-          <span className="font-medium text-sm text-sky-900 dark:text-sky-100 truncate flex-1">
-            {(data.label as string) || 'Map'}
-          </span>
-          {StatusIcon && (
-            <StatusIcon
-              className={`w-4 h-4 shrink-0 ${
-                status === 'success'
-                  ? 'text-success'
-                  : status === 'error'
-                    ? 'text-error'
-                    : status === 'running'
-                      ? 'text-warning'
-                      : 'text-text-muted'
-              }`}
-            />
-          )}
+      {/* Gradient Header Bar */}
+      <div className="bg-gradient-to-r from-sky-500 to-blue-400 px-3 py-2 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <Repeat className="w-3.5 h-3.5 text-white" />
+        </div>
+        <span className="font-semibold text-sm text-white truncate flex-1">
+          {(data.label as string) || 'Map'}
+        </span>
+        {StatusIcon && (
+          <StatusIcon
+            className={`w-4 h-4 shrink-0 ${
+              status === 'success'
+                ? 'text-emerald-200'
+                : status === 'error'
+                  ? 'text-red-200'
+                  : status === 'running'
+                    ? 'text-amber-200'
+                    : 'text-white/60'
+            }`}
+          />
+        )}
+      </div>
+
+      {/* Body Content */}
+      <div className="px-3 py-2 space-y-2">
+        {/* Array brackets flow visual: [ ] -> [ ] */}
+        <div className="flex items-center justify-center gap-1.5 text-sky-400 dark:text-sky-600">
+          <span className="text-lg font-bold font-mono">[</span>
+          <span className="text-[9px] text-sky-500 dark:text-sky-400 italic">item</span>
+          <span className="text-lg font-bold font-mono">]</span>
+          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 8h10M10 5l3 3-3 3" />
+          </svg>
+          <span className="text-lg font-bold font-mono">[</span>
+          <span className="text-[9px] text-sky-500 dark:text-sky-400 italic">result</span>
+          <span className="text-lg font-bold font-mono">]</span>
         </div>
 
-        {data.expression && (
-          <p className="text-[10px] text-sky-600/70 dark:text-sky-400/50 mt-1 truncate font-mono">
-            {data.expression as string}
-          </p>
+        {/* Expression in dark code block */}
+        {expression && (
+          <div className="bg-gray-900 dark:bg-gray-950 rounded px-2 py-1.5 overflow-hidden">
+            <p className="text-[10px] text-sky-300 font-mono truncate" title={expression}>
+              {expression}
+            </p>
+          </div>
         )}
 
+        {/* Error message */}
         {status === 'error' && data.executionError && (
-          <p className="text-xs text-error mt-1 truncate" title={data.executionError as string}>
+          <p className="text-xs text-error truncate" title={data.executionError as string}>
             {data.executionError as string}
           </p>
         )}
 
+        {/* Duration */}
         {data.executionDuration != null && (
-          <p className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1">
+          <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
             {(data.executionDuration as number) < 1000
               ? `${data.executionDuration}ms`
               : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
@@ -103,6 +126,7 @@ function MapNodeComponent({ data, selected }: NodeProps<MapNodeType>) {
         )}
       </div>
 
+      {/* Output Handle */}
       <Handle
         type="source"
         position={Position.Bottom}
