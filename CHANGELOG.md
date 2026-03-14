@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2026-03-14
+
+### Added
+
+- **6 Workflow Node UI Components** — DataStore (cyan), SchemaValidator (orange), Filter (emerald), Map (sky), Aggregate (amber), WebhookResponse (rose) with color-coded canvas nodes, status indicators, and execution timing
+- **6 Node Config Panels** — Full right-panel editors for each new node type with field editors, template validation, output alias, retry/timeout
+- **LLM Conversation Context Editor** — Add/edit/remove multi-turn messages with role selector before main user message
+- **LLM Response Format UI** — Text/JSON selector with JSON badge on canvas node
+- **Execution Progress Bar** — Real-time toolbar showing running node name, completed/total count, retry counter
+- **Execution Timeline Labels** — Node labels instead of raw IDs in both live and historical log views
+- **9 Workflow Integration Tests** — Template resolution, condition branching, ForEach body, error propagation, filter/map/aggregate, DataStore persistence
+
+### Fixed
+
+- **Workflow Execution** — `node_complete` event now includes `retryAttempts`; cancelled workflows logged as 'cancelled' instead of 'failed'
+- **Circular Dependencies (core)** — Broke fragile `tool-validation ↔ tools` cycle with lazy import (was last remaining dangerous cycle)
+- **Circular Dependencies (gateway)** — Broke 45+ cycles across 4 root causes: `agents↔ws/server` (lazy import), `tool-providers↔routes` (cached lazy executors), `webchat-handler↔server` (lazy import), `normalizers barrel` (extracted types.ts)
+
+### Changed
+
+- ToolPalette sidebar now shows all 23 node types
+- NodeSearchPalette includes 6 new node types
+- Node config router dispatches to 23 panel types
+- All normalizers import from `types.ts` instead of barrel `index.ts`
+
+### Removed
+
+- Deleted orphan `services/_gen.js` (console.log stub, unused)
+
 ## [0.1.9] - 2026-03-14
 
 ### Added
@@ -355,6 +384,7 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.10]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.10
 [0.1.9]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.9
 [0.1.8]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.8
 [0.1.6]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.6
