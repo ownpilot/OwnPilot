@@ -33,6 +33,11 @@ import {
   Bell,
   Columns,
   GitMerge,
+  Database,
+  Shield,
+  Filter,
+  BarChart,
+  Send,
 } from '../icons';
 
 // ============================================================================
@@ -202,6 +207,54 @@ const NODE_TYPES: Array<{
     bg: 'bg-teal-100 dark:bg-teal-900/30',
     text: 'text-teal-700 dark:text-teal-300',
     border: 'border-teal-300 dark:border-teal-700',
+  },
+  {
+    type: 'dataStoreNode',
+    label: 'Data Store',
+    icon: Database,
+    bg: 'bg-cyan-100 dark:bg-cyan-900/30',
+    text: 'text-cyan-700 dark:text-cyan-300',
+    border: 'border-cyan-300 dark:border-cyan-700',
+  },
+  {
+    type: 'schemaValidatorNode',
+    label: 'Validator',
+    icon: Shield,
+    bg: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-700 dark:text-orange-300',
+    border: 'border-orange-300 dark:border-orange-700',
+  },
+  {
+    type: 'filterNode',
+    label: 'Filter',
+    icon: Filter,
+    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-300 dark:border-emerald-700',
+  },
+  {
+    type: 'mapNode',
+    label: 'Map',
+    icon: Repeat,
+    bg: 'bg-sky-100 dark:bg-sky-900/30',
+    text: 'text-sky-700 dark:text-sky-300',
+    border: 'border-sky-300 dark:border-sky-700',
+  },
+  {
+    type: 'aggregateNode',
+    label: 'Aggregate',
+    icon: BarChart,
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-300',
+    border: 'border-amber-300 dark:border-amber-700',
+  },
+  {
+    type: 'webhookResponseNode',
+    label: 'Webhook Resp.',
+    icon: Send,
+    bg: 'bg-rose-100 dark:bg-rose-900/30',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-300 dark:border-rose-700',
   },
 ];
 
