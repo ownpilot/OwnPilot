@@ -334,7 +334,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
  * Shared handler for approve/reject shorthand endpoints
  */
 async function handleApprovalShorthand(c: Context, decision: 'approve' | 'reject') {
-  const id = c.req.param('id');
+  const id = c.req.param('id') ?? '';
   const userId = getUserId(c);
   const rawBody = (await parseJsonBody<Record<string, unknown>>(c)) ?? {};
   const { validateBody, autonomyApproveRejectSchema } = await import('../middleware/validation.js');

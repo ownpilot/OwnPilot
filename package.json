@@ -43,7 +43,7 @@
     "overrides": {
       "@isaacs/brace-expansion": ">=5.0.1",
       "esbuild": ">=0.25.0",
-      "undici": ">=6.23.0",
+      "undici": ">=6.24.1",
       "minimatch": ">=10.2.3"
     }
   },
