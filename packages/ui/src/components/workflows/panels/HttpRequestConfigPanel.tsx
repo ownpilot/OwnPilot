@@ -75,6 +75,32 @@ const BODY_TYPES: { value: BodyType; label: string }[] = [
 ];
 const METHODS_WITH_BODY: HttpMethod[] = ['POST', 'PUT', 'PATCH'];
 
+/**
+ * Normalize headers/queryParams from DB format (Record<string,string>)
+ * or UI format (KeyValuePair[]) into consistent KeyValuePair[].
+ */
+function toKeyValuePairs(input: unknown): KeyValuePair[] {
+  if (Array.isArray(input)) return input as KeyValuePair[];
+  if (input && typeof input === 'object' && !Array.isArray(input)) {
+    return Object.entries(input as Record<string, string>).map(([key, value]) => ({
+      key,
+      value: String(value ?? ''),
+    }));
+  }
+  return [];
+}
+
+/**
+ * Convert KeyValuePair[] back to Record<string,string> for DB storage.
+ */
+function toRecord(pairs: KeyValuePair[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const pair of pairs) {
+    if (pair.key) result[pair.key] = pair.value;
+  }
+  return result;
+}
+
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
   POST: 'bg-green-500/20 text-green-600 dark:text-green-400',
@@ -170,8 +196,8 @@ export function HttpRequestConfigPanel({
   const [authUsername, setAuthUsername] = useState(data.authUsername ?? '');
   const [authPassword, setAuthPassword] = useState(data.authPassword ?? '');
   const [authHeaderName, setAuthHeaderName] = useState(data.authHeaderName ?? '');
-  const [headers, setHeaders] = useState<KeyValuePair[]>(data.headers ?? []);
-  const [queryParams, setQueryParams] = useState<KeyValuePair[]>(data.queryParams ?? []);
+  const [headers, setHeaders] = useState<KeyValuePair[]>(toKeyValuePairs(data.headers));
+  const [queryParams, setQueryParams] = useState<KeyValuePair[]>(toKeyValuePairs(data.queryParams));
   const [body, setBody] = useState(data.body ?? '');
   const [bodyType, setBodyType] = useState<BodyType>(data.bodyType ?? 'json');
   const [description, setDescription] = useState(data.description ?? '');
@@ -190,8 +216,8 @@ export function HttpRequestConfigPanel({
     setAuthUsername(data.authUsername ?? '');
     setAuthPassword(data.authPassword ?? '');
     setAuthHeaderName(data.authHeaderName ?? '');
-    setHeaders(data.headers ?? []);
-    setQueryParams(data.queryParams ?? []);
+    setHeaders(toKeyValuePairs(data.headers));
+    setQueryParams(toKeyValuePairs(data.queryParams));
     setBody(data.body ?? '');
     setBodyType(data.bodyType ?? 'json');
     setDescription(data.description ?? '');
@@ -532,7 +558,7 @@ export function HttpRequestConfigPanel({
               pairs={headers}
               onChange={(next) => {
                 setHeaders(next);
-                pushUpdate({ headers: next });
+                pushUpdate({ headers: toRecord(next) as unknown as KeyValuePair[] });
               }}
             />
 
@@ -542,7 +568,7 @@ export function HttpRequestConfigPanel({
               pairs={queryParams}
               onChange={(next) => {
                 setQueryParams(next);
-                pushUpdate({ queryParams: next });
+                pushUpdate({ queryParams: toRecord(next) as unknown as KeyValuePair[] });
               }}
             />
 
