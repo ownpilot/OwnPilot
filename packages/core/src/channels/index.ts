@@ -102,3 +102,9 @@ export {
   detectLanguage,
   type LanguageDetection,
 } from './ucp/index.js';
+
+// SDK
+export {
+  createChannelAdapter,
+  type ChannelAdapterConfig,
+} from './sdk.js';
