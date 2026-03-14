@@ -50,7 +50,7 @@ export function GoalWizard({ onComplete, onCancel }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
-  const [result, setResult] = useState<{ ok: boolean; goalId?: string; error?: string } | null>(
+  const [result, setResult] = useState<{ ok: boolean; goalId?: string; error?: string; stepsError?: boolean } | null>(
     null
   );
 
@@ -127,17 +127,23 @@ Return ONLY the JSON array, nothing else.`;
           status: 'active',
         });
 
-        // Add steps if any
+        // Add steps in a single batch update
         const validSteps = goalSteps.filter((s) => s.title.trim());
-        for (const gs of validSteps) {
-          await goalsApi
-            .update(goal.id, {
-              steps: [
-                ...(goal.steps ?? []),
-                { title: gs.title.trim(), description: gs.description.trim(), completed: false },
-              ],
-            })
-            .catch(() => {});
+        if (validSteps.length > 0) {
+          try {
+            await goalsApi.update(goal.id, {
+              steps: validSteps.map((gs) => ({
+                title: gs.title.trim(),
+                description: gs.description.trim(),
+                completed: false,
+              })),
+            });
+          } catch {
+            // Goal was created but steps failed — still show success with warning
+            setResult({ ok: true, goalId: goal.id, stepsError: true });
+            setStep(3);
+            return;
+          }
         }
 
         setResult({ ok: true, goalId: goal.id });
@@ -385,6 +391,11 @@ Return ONLY the JSON array, nothing else.`;
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
                 <strong>{title}</strong> is now being tracked.
               </p>
+              {result.stepsError && (
+                <p className="text-xs text-warning mt-2">
+                  Goal created but some steps could not be saved. You can add them manually in the Goals page.
+                </p>
+              )}
             </>
           )}
 

@@ -180,26 +180,44 @@ Return a JSON object with "nodes" and "edges" arrays.
 Each node must have: { "id": "node_1", "type": "<nodeType>", "position": { "x": 300, "y": <increment by 150> }, "data": { "label": "...", ...type-specific fields } }
 
 Valid node types and their data fields:
-- "triggerNode": data: { "label": "...", "triggerType": "manual"|"schedule"|"event"|"webhook" }
-- "toolNode": data: { "label": "...", "toolName": "core.tool_name", "toolArgs": {} }
-- "llmNode": data: { "label": "...", "provider": "default", "model": "default", "systemPrompt": "...", "userMessage": "..." }
-- "conditionNode": data: { "label": "...", "expression": "data.value > 0" }
-- "codeNode": data: { "label": "...", "language": "javascript", "code": "return data;" }
-- "transformerNode": data: { "label": "...", "expression": "data.items.map(i => i.name)" }
-- "httpRequestNode": data: { "label": "...", "method": "GET", "url": "https://..." }
-- "delayNode": data: { "label": "...", "duration": "5", "unit": "seconds" }
-- "notificationNode": data: { "label": "...", "message": "...", "severity": "info" }
+- "triggerNode": { "label", "triggerType": "manual"|"schedule"|"event"|"webhook", "cron"?: "0 8 * * *" }
+- "toolNode": { "label", "toolName": "core.tool_name", "toolArgs": {} }
+- "llmNode": { "label", "provider": "default", "model": "default", "systemPrompt", "userMessage", "responseFormat"?: "json" }
+- "conditionNode": { "label", "expression": "data.value > 0" } — edges need sourceHandle "true"/"false"
+- "codeNode": { "label", "language": "javascript", "code": "return data;" }
+- "transformerNode": { "label", "expression": "data.items.map(i => i.name)" }
+- "httpRequestNode": { "label", "method": "GET"|"POST"|"PUT"|"DELETE", "url", "headers"?: {}, "body"?: "", "auth"?: { "type": "bearer", "token": "..." } }
+- "delayNode": { "label", "duration": "5", "unit": "seconds"|"minutes"|"hours" }
+- "notificationNode": { "label", "message", "severity": "info"|"warning"|"error"|"success" }
+- "switchNode": { "label", "expression": "data.status", "cases": [{ "label": "Active", "value": "active" }] } — edges need sourceHandle per case label or "default"
+- "forEachNode": { "label", "arrayExpression": "{{node_2.output}}", "itemVariable"?: "item" } — edges: "each" (loop body) + "done" (after)
+- "parallelNode": { "label", "branchCount": 3, "branchLabels"?: ["A","B","C"] } — edges: "branch-0", "branch-1", etc.
+- "mergeNode": { "label", "mode": "waitAll"|"firstCompleted" } — collects parallel branches
+- "filterNode": { "label", "arrayExpression": "{{node_2.output}}", "condition": "item.active === true" }
+- "mapNode": { "label", "arrayExpression": "{{node_2.output}}", "expression": "item.name" }
+- "aggregateNode": { "label", "arrayExpression": "{{node_2.output}}", "operation": "sum"|"count"|"avg"|"min"|"max", "field"?: "amount" }
+- "dataStoreNode": { "label", "operation": "get"|"set"|"delete", "key", "value"?: "{{node_2.output}}" }
+- "approvalNode": { "label", "approvalMessage": "Please review...", "timeoutMinutes"?: 60 }
+- "subWorkflowNode": { "label", "subWorkflowId": "wf_id", "inputMapping"?: {} }
+- "errorHandlerNode": { "label", "continueOnSuccess"?: false } — max ONE per workflow
+- "schemaValidatorNode": { "label", "schema": { "required": ["name"], "properties": { "name": { "type": "string" } } }, "strict"?: true }
+- "stickyNoteNode": { "label", "text": "...", "color"?: "yellow" } — annotation only, no connections
+- "webhookResponseNode": { "label", "statusCode"?: 200, "body": "{{node_3.output}}" }
 
 Each edge: { "source": "node_1", "target": "node_2" }
-For conditionNode edges, add "sourceHandle": "true" or "false".
+For conditionNode: add "sourceHandle": "true" or "false"
+For forEachNode: add "sourceHandle": "each" or "done"
+For switchNode: add "sourceHandle": case label or "default"
+For parallelNode: add "sourceHandle": "branch-0", "branch-1", etc.
 
 Rules:
 - First node should be a triggerNode
 - Use toolNode for calling tools, llmNode for AI processing
-- Use notificationNode for output/notifications (NOT a generic "end" node)
+- Use notificationNode for output/notifications
 - Create 3-6 nodes typically
 - IDs must be sequential: node_1, node_2, node_3...
 - Positions: start at y=50, increment by ~150 for each level
+- Use {{node_N.output}} for referencing upstream node results
 
 Return ONLY the JSON object, no explanations.`;
 
