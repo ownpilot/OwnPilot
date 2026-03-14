@@ -50,3 +50,17 @@ export { CronBuilder } from './CronBuilder';
 export { InputParametersPanel, type InputParameter } from './InputParametersPanel';
 export { TemplateGallery, type WorkflowTemplate } from './TemplateGallery';
 export { ExecutionTimeline } from './ExecutionTimeline';
+export { DataStoreNode, type DataStoreNodeData, type DataStoreNodeType } from './DataStoreNode';
+export {
+  SchemaValidatorNode,
+  type SchemaValidatorNodeData,
+  type SchemaValidatorNodeType,
+} from './SchemaValidatorNode';
+export { FilterNode, type FilterNodeData, type FilterNodeType } from './FilterNode';
+export { MapNode, type MapNodeData, type MapNodeType } from './MapNode';
+export { AggregateNode, type AggregateNodeData, type AggregateNodeType } from './AggregateNode';
+export {
+  WebhookResponseNode,
+  type WebhookResponseNodeData,
+  type WebhookResponseNodeType,
+} from './WebhookResponseNode';

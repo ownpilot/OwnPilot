@@ -23,6 +23,11 @@ import {
   Columns,
   GitMerge,
   Wrench,
+  Database,
+  Shield,
+  Filter,
+  BarChart,
+  Send,
 } from '../icons';
 
 export interface SearchableItem {
@@ -124,6 +129,48 @@ const NODE_ITEMS: SearchableItem[] = [
     label: 'Merge / Wait',
     icon: GitMerge,
     color: 'text-teal-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'dataStoreNode',
+    label: 'Data Store',
+    icon: Database,
+    color: 'text-cyan-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'schemaValidatorNode',
+    label: 'Schema Validator',
+    icon: Shield,
+    color: 'text-orange-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'filterNode',
+    label: 'Filter',
+    icon: Filter,
+    color: 'text-emerald-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'mapNode',
+    label: 'Map',
+    icon: Repeat,
+    color: 'text-sky-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'aggregateNode',
+    label: 'Aggregate',
+    icon: BarChart,
+    color: 'text-amber-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'webhookResponseNode',
+    label: 'Webhook Response',
+    icon: Send,
+    color: 'text-rose-500',
   },
 ];
 

@@ -280,6 +280,120 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
     setHasUnsavedChanges(true);
   }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
 
+  /** Add a Data Store node */
+  const addDataStoreNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'dataStoreNode',
+        position: { x, y },
+        data: { label: 'Data Store', operation: 'get', key: '', namespace: '' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Schema Validator node */
+  const addSchemaValidatorNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'schemaValidatorNode',
+        position: { x, y },
+        data: { label: 'Schema Validator', schema: '', strict: false, requiredFields: 0 },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Filter node */
+  const addFilterNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'filterNode',
+        position: { x, y },
+        data: { label: 'Filter', condition: '' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Map node */
+  const addMapNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'mapNode',
+        position: { x, y },
+        data: { label: 'Map', expression: '' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add an Aggregate node */
+  const addAggregateNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'aggregateNode',
+        position: { x, y },
+        data: { label: 'Aggregate', operation: 'count', field: '' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Webhook Response node */
+  const addWebhookResponseNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'webhookResponseNode',
+        position: { x, y },
+        data: { label: 'Webhook Response', statusCode: 200, contentType: 'application/json' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
   /** Add a Sticky Note node from the toolbar button */
   const addStickyNoteNode = useCallback(() => {
     nodeIdCounter.current += 1;
@@ -400,6 +514,24 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         case 'mergeNode':
           addMergeNode();
           break;
+        case 'dataStoreNode':
+          addDataStoreNode();
+          break;
+        case 'schemaValidatorNode':
+          addSchemaValidatorNode();
+          break;
+        case 'filterNode':
+          addFilterNode();
+          break;
+        case 'mapNode':
+          addMapNode();
+          break;
+        case 'aggregateNode':
+          addAggregateNode();
+          break;
+        case 'webhookResponseNode':
+          addWebhookResponseNode();
+          break;
       }
     },
     [
@@ -416,6 +548,12 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
       addNotificationNode,
       addParallelNode,
       addMergeNode,
+      addDataStoreNode,
+      addSchemaValidatorNode,
+      addFilterNode,
+      addMapNode,
+      addAggregateNode,
+      addWebhookResponseNode,
     ]
   );
 

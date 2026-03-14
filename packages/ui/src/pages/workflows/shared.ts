@@ -21,6 +21,12 @@ import {
   NotificationNode,
   ParallelNode,
   MergeNode,
+  DataStoreNode,
+  SchemaValidatorNode,
+  FilterNode,
+  MapNode,
+  AggregateNode,
+  WebhookResponseNode,
 } from '../../components/workflows';
 
 // Register custom node types
@@ -42,6 +48,12 @@ export const nodeTypes = {
   notificationNode: NotificationNode,
   parallelNode: ParallelNode,
   mergeNode: MergeNode,
+  dataStoreNode: DataStoreNode,
+  schemaValidatorNode: SchemaValidatorNode,
+  filterNode: FilterNode,
+  mapNode: MapNode,
+  aggregateNode: AggregateNode,
+  webhookResponseNode: WebhookResponseNode,
 };
 
 // Default edge options — arrow markers for flow direction
