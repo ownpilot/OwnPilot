@@ -3,13 +3,8 @@
  */
 
 import { Bot, Context, webhookCallback } from 'grammy';
-import type {
-  TelegramConfig,
-  IncomingMessage,
-  OutgoingMessage,
-  ChannelHandler,
-} from '../types/index.js';
-import { getLog } from '../log.js';
+import { getLog } from '@ownpilot/core';
+import type { TelegramConfig, IncomingMessage, OutgoingMessage } from './types.js';
 
 const log = getLog('Telegram');
 
@@ -24,7 +19,7 @@ const DEFAULT_CONFIG: Partial<TelegramConfig> = {
 /**
  * Telegram bot handler
  */
-export class TelegramBot implements ChannelHandler {
+export class TelegramBot {
   readonly type = 'telegram';
   private bot: Bot<Context>;
   private config: TelegramConfig;

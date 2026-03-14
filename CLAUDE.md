@@ -10,7 +10,6 @@ packages/
   gateway/   - Hono HTTP API server, routes, services, DB, channels, triggers, WebSocket
   ui/        - React 19 + Vite + Tailwind frontend (55+ pages, code-split)
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
-  channels/  - Channel manager + Telegram bot
 ```
 
 ## Key Patterns
@@ -23,7 +22,7 @@ packages/
 - **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
 - **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
 - **Edge/IoT**: MQTT broker (Mosquitto) integration for edge device management. Types: `packages/core/src/edge/`. Service: `packages/gateway/src/services/edge-service.ts`. Routes: `/api/v1/edge`
-- **Test framework**: Vitest across all packages. 26,650+ tests total (gateway: 16,236; core: 9,832; cli: 293; channels: 148; ui: 141)
+- **Test framework**: Vitest across all packages. 26,500+ tests total (gateway: 16,236; core: 9,832; cli: 293; ui: 141)
 - **Autonomous Agent Runners**: Shared utilities in `packages/gateway/src/services/agent-runner-utils.ts` — `createConfiguredAgent()`, `registerAllToolSources()`, `resolveProviderAndModel()`, `calculateExecutionCost()`, `createToolCallCollector()`, `resolveToolFilter()`
 - **Cost tracking**: `calculateExecutionCost(provider, model, usage)` in `agent-runner-utils.ts` — wraps `@ownpilot/core` `calculateCost()`. Used by BackgroundAgentRunner, SubagentRunner, FleetWorker, SoulHeartbeatService
 - **Workflow system**: 23 node types, copilot prompt in `routes/workflow-copilot-prompt.ts`, executors in `services/workflow/node-executors.ts`, service in `services/workflow/workflow-service.ts`. Copilot uses short type names (e.g. `"llm"`, `"condition"`) — UI's `convertDefinitionToReactFlow()` converts to `*Node` suffix

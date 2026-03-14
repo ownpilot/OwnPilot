@@ -22,7 +22,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/cli/package.json ./packages/cli/
-COPY packages/channels/package.json ./packages/channels/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -36,7 +35,7 @@ FROM dependencies AS builder
 COPY . .
 
 # Build only necessary packages (exclude UI)
-RUN pnpm run build --filter=@ownpilot/core --filter=@ownpilot/gateway --filter=@ownpilot/channels --filter=@ownpilot/cli
+RUN pnpm run build --filter=@ownpilot/core --filter=@ownpilot/gateway --filter=@ownpilot/cli
 
 # ============================================================================
 # Stage 4: Production
@@ -48,7 +47,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
 COPY packages/cli/package.json ./packages/cli/
-COPY packages/channels/package.json ./packages/channels/
 
 RUN pnpm install --frozen-lockfile --prod
 
@@ -56,7 +54,6 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
 COPY --from=builder /app/packages/cli/dist ./packages/cli/dist
-COPY --from=builder /app/packages/channels/dist ./packages/channels/dist
 
 # Copy necessary non-code files
 COPY packages/gateway/src/db/migrations ./packages/gateway/src/db/migrations

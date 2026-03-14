@@ -6,7 +6,7 @@
  */
 
 import { createSimpleAgent } from '@ownpilot/core';
-import { createTelegramBot, type TelegramConfig } from '@ownpilot/channels';
+import { createTelegramBot, type TelegramConfig } from '../telegram/index.js';
 import {
   loadApiKeysToEnvironment,
   getDefaultProvider,

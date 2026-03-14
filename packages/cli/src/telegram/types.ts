@@ -1,26 +1,18 @@
 /**
- * Channel types for messaging integrations
+ * Telegram bot types for CLI standalone bot
  */
-
-/**
- * Base channel configuration
- */
-export interface ChannelConfig {
-  /** Channel type identifier */
-  type: string;
-  /** Whether the channel is enabled */
-  enabled: boolean;
-  /** Optional webhook URL for receiving messages */
-  webhookUrl?: string;
-}
 
 /**
  * Telegram-specific configuration
  */
-export interface TelegramConfig extends ChannelConfig {
+export interface TelegramConfig {
   type: 'telegram';
+  /** Whether the channel is enabled */
+  enabled: boolean;
   /** Bot token from @BotFather */
   botToken: string;
+  /** Optional webhook URL for receiving messages */
+  webhookUrl?: string;
   /** Allowed chat IDs (empty = allow all) */
   allowedChatIds?: number[];
   /** Allowed user IDs (empty = allow all) */
@@ -32,7 +24,7 @@ export interface TelegramConfig extends ChannelConfig {
 }
 
 /**
- * Incoming message from any channel
+ * Incoming message from Telegram
  */
 export interface IncomingMessage {
   /** Unique message ID */
@@ -54,7 +46,7 @@ export interface IncomingMessage {
 }
 
 /**
- * Outgoing message to any channel
+ * Outgoing message to Telegram
  */
 export interface OutgoingMessage {
   /** Chat/conversation ID to send to */
@@ -66,30 +58,3 @@ export interface OutgoingMessage {
   /** Parse mode for formatting */
   parseMode?: 'HTML' | 'Markdown' | 'MarkdownV2';
 }
-
-/**
- * Channel handler interface
- */
-export interface ChannelHandler {
-  /** Channel type identifier */
-  readonly type: string;
-  /** Whether the channel is ready */
-  isReady(): boolean;
-  /** Start the channel (bot, webhook, etc.) */
-  start(): Promise<void>;
-  /** Stop the channel */
-  stop(): Promise<void>;
-  /** Send a message */
-  sendMessage(message: OutgoingMessage): Promise<void>;
-  /** Set message handler */
-  onMessage(handler: (message: IncomingMessage) => Promise<void>): void;
-}
-
-/**
- * Channel events
- */
-export type ChannelEvent =
-  | { type: 'message'; message: IncomingMessage }
-  | { type: 'error'; error: Error }
-  | { type: 'connected' }
-  | { type: 'disconnected' };

@@ -36,12 +36,11 @@
    - 7.2 [Pages and Routing](#72-pages-and-routing)
    - 7.3 [Components](#73-components)
    - 7.4 [Hooks and State](#74-hooks-and-state)
-8. [Channels Package (`@ownpilot/channels`)](#8-channels-package-ownpilotchannels)
-9. [CLI Package (`@ownpilot/cli`)](#9-cli-package-ownpilotcli)
-10. [Data Flow](#10-data-flow)
-11. [Key Design Patterns](#11-key-design-patterns)
-12. [Deployment Architecture](#12-deployment-architecture)
-13. [Security Architecture](#13-security-architecture)
+8. [CLI Package (`@ownpilot/cli`)](#8-cli-package-ownpilotcli)
+9. [Data Flow](#9-data-flow)
+10. [Key Design Patterns](#10-key-design-patterns)
+11. [Deployment Architecture](#11-deployment-architecture)
+12. [Security Architecture](#12-security-architecture)
 14. [Environment and Configuration](#14-environment-and-configuration)
 15. [Build System](#15-build-system)
 16. [Testing Strategy](#16-testing-strategy)
@@ -224,14 +223,6 @@ ownpilot/
 |   |   |   +-- main.tsx          # Application entry point
 |   |   +-- package.json
 |   |
-|   |-- channels/                 # @ownpilot/channels - Communication channels
-|   |   |-- src/
-|   |   |   |-- telegram/         # Telegram bot via grammy
-|   |   |   |-- types/            # Channel type definitions
-|   |   |   |-- manager.ts        # Channel lifecycle manager
-|   |   |   +-- index.ts
-|   |   +-- package.json
-|   |
 |   +-- cli/                      # @ownpilot/cli - Command-line interface
 |       |-- src/
 |       |   |-- commands/          # CLI commands
@@ -255,25 +246,24 @@ Internal workspace dependencies flow strictly downward. No circular dependencies
 
 ```
                      @ownpilot/cli
-                    /      |      \
-                   /       |       \
-                  v        v        v
-      @ownpilot/core  @ownpilot/gateway  @ownpilot/channels
-                  \        |              /
-                   \       |             /
-                    v      v            v
+                    /      |
+                   /       |
+                  v        v
+      @ownpilot/core  @ownpilot/gateway
+                  \        |
+                   \       |
+                    v      v
                      @ownpilot/core
 ```
 
 Detailed dependency table:
 
-| Package              | Depends On                                                                       |
-| -------------------- | -------------------------------------------------------------------------------- |
-| `@ownpilot/core`     | (none -- zero external dependencies)                                             |
-| `@ownpilot/gateway`  | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ...                                |
-| `@ownpilot/ui`       | `@ownpilot/gateway` (types only), react, vite                                    |
-| `@ownpilot/channels` | `@ownpilot/core`, grammy                                                         |
-| `@ownpilot/cli`      | `@ownpilot/core`, `@ownpilot/gateway`, `@ownpilot/channels`, commander, inquirer |
+| Package             | Depends On                                                        |
+| ------------------- | ----------------------------------------------------------------- |
+| `@ownpilot/core`    | (none -- zero external dependencies)                              |
+| `@ownpilot/gateway` | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ...                 |
+| `@ownpilot/ui`      | `@ownpilot/gateway` (types only), react, vite                     |
+| `@ownpilot/cli`     | `@ownpilot/core`, `@ownpilot/gateway`, grammy, commander, inquirer |
 
 ### Key External Dependencies
 
@@ -1090,7 +1080,7 @@ The `ChannelManager` (`packages/gateway/src/channels/manager.ts`) provides a uni
 
 | Channel  | Library | Adapter Location                        |
 | -------- | ------- | --------------------------------------- |
-| Telegram | grammy  | `packages/channels/src/telegram/bot.ts` |
+| Telegram | grammy  | `packages/gateway/src/channels/plugins/telegram/` |
 
 **Architecture:**
 
@@ -1296,34 +1286,7 @@ Key reusable components in `packages/ui/src/components/`:
 
 ---
 
-## 8. Channels Package (`@ownpilot/channels`)
-
-The channels package provides standalone bot implementations for messaging platforms.
-
-### Telegram Bot
-
-The primary channel implementation uses **grammy** (Telegram Bot Framework):
-
-```
-packages/channels/src/
-|-- index.ts              # Package entry
-|-- manager.ts            # Channel lifecycle manager
-|-- types/index.ts        # Channel type definitions
-+-- telegram/
-    |-- bot.ts            # Telegram bot implementation
-    +-- bot.test.ts       # Tests
-```
-
-The Telegram bot:
-
-- Receives messages via long polling or webhook.
-- Forwards them to the gateway's agent system.
-- Streams back AI responses to the Telegram chat.
-- Access control via `TELEGRAM_ALLOWED_USERS` and `TELEGRAM_ALLOWED_CHATS`.
-
----
-
-## 9. CLI Package (`@ownpilot/cli`)
+## 8. CLI Package (`@ownpilot/cli`)
 
 The CLI provides a terminal interface for managing OwnPilot. It uses **commander** for command parsing and **@inquirer/prompts** for interactive input.
 
@@ -1349,7 +1312,7 @@ The Docker container starts via `node packages/cli/dist/index.js start`.
 
 ---
 
-## 10. Data Flow
+## 9. Data Flow
 
 ### Chat Request Flow (Primary Path)
 
@@ -1473,7 +1436,7 @@ The Docker container starts via `node packages/cli/dist/index.js start`.
 
 ---
 
-## 11. Key Design Patterns
+## 10. Key Design Patterns
 
 ### 11.1 Event-Driven Architecture (EventBus)
 
@@ -1654,7 +1617,7 @@ tools.registerProvider(new CustomDataToolProvider(userId));
 
 ---
 
-## 12. Deployment Architecture
+## 11. Deployment Architecture
 
 ### Docker Multi-Stage Build
 
@@ -1724,7 +1687,7 @@ pnpm --filter @ownpilot/cli start
 
 ---
 
-## 13. Security Architecture
+## 12. Security Architecture
 
 ```
                      Security Layers
@@ -1887,7 +1850,6 @@ packages/core/src/agent/agent.test.ts
 packages/gateway/src/routes/*.test.ts        # 27 route integration tests
 packages/gateway/src/services/*.test.ts      # Service unit tests
 packages/gateway/src/middleware/*.test.ts     # Middleware tests
-packages/channels/src/telegram/bot.test.ts
 packages/cli/src/index.test.ts
 packages/ui/src/App.test.tsx
 ```
@@ -1898,7 +1860,6 @@ packages/ui/src/App.test.tsx
 | -------------------- | :--------: | :----: | -------------------------------------- |
 | `@ownpilot/gateway`  |     50     | 1,075+ | Route integration, service, middleware |
 | `@ownpilot/core`     |     11     |  ~100  | Types, crypto, privacy, agent          |
-| `@ownpilot/channels` |     1      |  ~10   | Telegram bot                           |
 | `@ownpilot/ui`       |     1      |   ~5   | App rendering                          |
 | `@ownpilot/cli`      |     1      |   ~5   | CLI commands                           |
 

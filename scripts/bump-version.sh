@@ -62,8 +62,7 @@ for pkg in \
   packages/core/package.json \
   packages/gateway/package.json \
   packages/cli/package.json \
-  packages/ui/package.json \
-  packages/channels/package.json; do
+  packages/ui/package.json; do
 
   if [[ -f "$pkg" ]]; then
     sed -i "s/\"version\": \"${CURRENT_VERSION}\"/\"version\": \"${NEW_VERSION}\"/" "$pkg"

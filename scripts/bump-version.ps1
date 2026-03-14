@@ -55,8 +55,7 @@ $packageFiles = @(
     "packages/core/package.json",
     "packages/gateway/package.json",
     "packages/cli/package.json",
-    "packages/ui/package.json",
-    "packages/channels/package.json"
+    "packages/ui/package.json"
 )
 
 foreach ($pkg in $packageFiles) {

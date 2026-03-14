@@ -53,7 +53,7 @@ vi.mock('@ownpilot/core', () => ({
   createSimpleAgent: mockCreateSimpleAgent,
 }));
 
-vi.mock('@ownpilot/channels', () => ({
+vi.mock('../telegram/index.js', () => ({
   createTelegramBot: mockCreateTelegramBot,
 }));
 

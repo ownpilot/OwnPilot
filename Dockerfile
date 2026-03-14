@@ -15,7 +15,6 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
-COPY packages/channels/package.json ./packages/channels/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/ui/package.json ./packages/ui/
 
@@ -26,7 +25,6 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.base.json turbo.json ./
 COPY packages/core/ ./packages/core/
 COPY packages/gateway/ ./packages/gateway/
-COPY packages/channels/ ./packages/channels/
 COPY packages/cli/ ./packages/cli/
 COPY packages/ui/ ./packages/ui/
 
@@ -50,7 +48,6 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/core/package.json ./packages/core/
 COPY packages/gateway/package.json ./packages/gateway/
-COPY packages/channels/package.json ./packages/channels/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/ui/package.json ./packages/ui/
 
@@ -62,7 +59,6 @@ COPY --from=builder /app/packages/core/dist ./packages/core/dist
 COPY --from=builder /app/packages/core/data ./packages/core/data
 COPY --from=builder /app/packages/gateway/dist ./packages/gateway/dist
 COPY --from=builder /app/packages/gateway/data ./packages/gateway/data
-COPY --from=builder /app/packages/channels/dist ./packages/channels/dist
 COPY --from=builder /app/packages/cli/dist ./packages/cli/dist
 
 # Copy UI static assets (no node_modules needed — pre-built by Vite)

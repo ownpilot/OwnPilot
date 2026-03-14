@@ -23,7 +23,6 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
   - [Core](#core-ownpilotcore)
   - [Gateway](#gateway-ownpilotgateway)
   - [UI](#ui-ownpilotui)
-  - [Channels](#channels-ownpilotchannels)
   - [CLI](#cli-ownpilotcli)
 - [AI Providers](#ai-providers)
 - [Agent System](#agent-system)
@@ -372,7 +371,7 @@ AI provider API keys are configured via the **Config Center UI** (Settings page)
 # Initialize database
 ownpilot setup
 
-# Start server + channels
+# Start server
 ownpilot start
 
 # Configure API keys (stored in database, not .env)
@@ -440,13 +439,6 @@ ownpilot/
 │   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
 │   │   │   ├── types/           # UI type definitions
 │   │   │   └── App.tsx          # Route definitions with lazy loading
-│   │   └── package.json
-│   │
-│   ├── channels/                # Channel plugins (Telegram + WhatsApp)
-│   │   ├── src/
-│   │   │   ├── telegram/        # Telegram Bot API wrapper (Grammy)
-│   │   │   ├── manager.ts       # Channel orchestration
-│   │   │   └── types/           # Channel type definitions
 │   │   └── package.json
 │   │
 │   └── cli/                     # Commander.js CLI
@@ -576,28 +568,13 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 - `useTheme` — Dark/light/system theme with localStorage persistence
 - `useWebSocket` — WebSocket connection with auto-reconnect and event subscriptions
 
-### Channels (`@ownpilot/channels`)
-
-Multi-platform messaging with Telegram and WhatsApp support. Channel plugins use a builder pattern with unified conversation tracking through the MessageBus pipeline.
-
-| Feature                  | Details                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| **Telegram**             | Grammy bot with long polling or webhook mode, user/chat filtering                    |
-| **WhatsApp (Baileys)**   | QR code auth (no Meta Business account), self-chat mode, group support, history sync |
-| **User Approval**        | Multi-step verification: approval code, manual admin approval, blocking              |
-| **Pairing Keys**         | Per-channel rotating ownership keys with revoke support                              |
-| **Message Splitting**    | Intelligent splitting at newlines/spaces for messages > 4096 chars                   |
-| **Soft/Hard Disconnect** | `disconnect()` preserves session; `logout()` clears session data                     |
-| **Event Integration**    | Channel events forwarded via EventBus → WebSocket for real-time UI                   |
-| **Channel Manager**      | Orchestrates multiple channels, routes messages through the MessageBus               |
-
 ### CLI (`@ownpilot/cli`)
 
 Command-line interface built with Commander.js and @inquirer/prompts.
 
 ```bash
 ownpilot setup                    # Initialize database
-ownpilot start                    # Start server + channels
+ownpilot start                    # Start server + bot
 ownpilot server                   # Start HTTP API server only
 ownpilot bot                      # Start Telegram bot only
 
@@ -1683,7 +1660,7 @@ Health check endpoint: `GET /health`
 # Build all packages
 pnpm build
 
-# Start production server (gateway + channels)
+# Start production server
 ownpilot start
 
 # Or start gateway only
