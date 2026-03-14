@@ -1293,11 +1293,11 @@ describe('executeNotificationNode', () => {
   beforeEach(() => {
     // Mock the wsGateway import
     vi.doMock('../../ws/server.js', () => ({
-      wsGateway: { broadcast: vi.fn() },
+      wsGateway: { broadcast: vi.fn().mockResolvedValue(undefined) },
     }));
   });
 
-  it('returns success immediately with notification metadata', () => {
+  it('returns success with notification metadata after broadcast', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Task completed!' });
 
     const node = makeNode('notif1', 'notificationNode', {
@@ -1305,7 +1305,7 @@ describe('executeNotificationNode', () => {
       severity: 'success',
     });
 
-    const result = executeNotificationNode(node, {}, {});
+    const result = await executeNotificationNode(node, {}, {});
 
     expect(result.status).toBe('success');
     expect((result.output as Record<string, unknown>).sent).toBe(true);
@@ -1313,37 +1313,56 @@ describe('executeNotificationNode', () => {
     expect((result.output as Record<string, unknown>).severity).toBe('success');
   });
 
-  it('defaults to info severity when not specified', () => {
+  it('defaults to info severity when not specified', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Info message' });
 
     const node = makeNode('notif1', 'notificationNode', {
       message: 'Info message',
     });
 
-    const result = executeNotificationNode(node, {}, {});
+    const result = await executeNotificationNode(node, {}, {});
 
     expect(result.status).toBe('success');
     expect((result.output as Record<string, unknown>).severity).toBe('info');
   });
 
-  it('includes timing information', () => {
+  it('includes timing information', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Test' });
 
     const node = makeNode('notif1', 'notificationNode', { message: 'Test' });
-    const result = executeNotificationNode(node, {}, {});
+    const result = await executeNotificationNode(node, {}, {});
 
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.startedAt).toBeDefined();
     expect(result.completedAt).toBeDefined();
   });
 
-  it('resolves message templates', () => {
+  it('resolves message templates', async () => {
     vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Hello, resolved!' });
 
     const node = makeNode('notif1', 'notificationNode', { message: '{{greeting}}' });
-    const result = executeNotificationNode(node, {}, { greeting: 'Hello, resolved!' });
+    const result = await executeNotificationNode(node, {}, { greeting: 'Hello, resolved!' });
 
     expect((result.output as Record<string, unknown>).message).toBe('Hello, resolved!');
+  });
+
+  it('returns success with warning when broadcast fails', async () => {
+    vi.doMock('../../ws/server.js', () => ({
+      wsGateway: { broadcast: vi.fn().mockRejectedValue(new Error('WS down')) },
+    }));
+    vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Notify!' });
+
+    const node = makeNode('notif1', 'notificationNode', {
+      message: 'Notify!',
+      severity: 'info',
+    });
+
+    const result = await executeNotificationNode(node, {}, {});
+
+    expect(result.status).toBe('success');
+    const output = result.output as Record<string, unknown>;
+    expect(output.sent).toBe(false);
+    expect(output.warning).toBe('WebSocket broadcast failed — delivery not confirmed');
   });
 });
 
@@ -1406,6 +1425,54 @@ describe('executeMergeNode', () => {
 
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.startedAt).toBeDefined();
+  });
+
+  it('firstCompleted mode returns only the first non-null result', () => {
+    const nodeOutputs = {
+      n1: makeResult('n1', null),
+      n2: makeResult('n2', 'second-output'),
+      n3: makeResult('n3', 'third-output'),
+    };
+
+    const node = makeNode('merge1', 'mergeNode', { mode: 'firstCompleted' });
+    const result = executeMergeNode(node, nodeOutputs, {}, ['n1', 'n2', 'n3']);
+
+    expect(result.status).toBe('success');
+    const output = result.output as Record<string, unknown>;
+    expect(output.mode).toBe('firstCompleted');
+    expect(output.results).toEqual({ n2: 'second-output' });
+    expect(output.count).toBe(1);
+    expect(output.selectedNode).toBe('n2');
+  });
+
+  it('firstCompleted mode returns empty when all outputs are null/undefined', () => {
+    const nodeOutputs = {
+      n1: makeResult('n1', null),
+      n2: makeResult('n2', undefined),
+    };
+
+    const node = makeNode('merge1', 'mergeNode', { mode: 'firstCompleted' });
+    const result = executeMergeNode(node, nodeOutputs, {}, ['n1', 'n2']);
+
+    expect(result.status).toBe('success');
+    const output = result.output as Record<string, unknown>;
+    expect(output.mode).toBe('firstCompleted');
+    expect(output.results).toEqual({});
+    expect(output.count).toBe(0);
+  });
+
+  it('firstCompleted mode selects first available node in order', () => {
+    const nodeOutputs = {
+      n1: makeResult('n1', 'first-output'),
+      n2: makeResult('n2', 'second-output'),
+    };
+
+    const node = makeNode('merge1', 'mergeNode', { mode: 'firstCompleted' });
+    const result = executeMergeNode(node, nodeOutputs, {}, ['n1', 'n2']);
+
+    const output = result.output as Record<string, unknown>;
+    expect(output.selectedNode).toBe('n1');
+    expect(output.results).toEqual({ n1: 'first-output' });
   });
 });
 

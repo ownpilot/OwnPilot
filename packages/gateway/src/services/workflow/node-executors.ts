@@ -29,7 +29,7 @@ import { resolveTemplates } from './template-resolver.js';
 import type { ToolExecutionResult } from './types.js';
 import vm from 'node:vm';
 
-const _log = getLog('WorkflowService');
+const log = getLog('WorkflowService');
 
 /** Convert ToolServiceResult to ToolExecutionResult. */
 export function toToolExecResult(r: ToolServiceResult): ToolExecutionResult {
@@ -61,7 +61,7 @@ export function resolveWorkflowToolName(name: string, toolService: IToolService)
   for (const def of toolService.getDefinitions()) {
     const defNormalized = def.name.replace(/\./g, '').toLowerCase();
     if (defNormalized === normalized) {
-      _log.info(`Resolved workflow tool name "${name}" -> "${def.name}"`);
+      log.info(`Resolved workflow tool name "${name}" -> "${def.name}"`);
       return def.name;
     }
   }
@@ -271,13 +271,16 @@ export function executeConditionNode(
     const vmTimeout = (node.data as ConditionNodeData).timeoutMs || 5000;
     const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
     const branch = Boolean(result);
+    const durationMs = Date.now() - startTime;
+
+    log.info('Condition evaluated', { nodeId: node.id, result: branch ? 'true' : 'false', durationMs });
 
     return {
       nodeId: node.id,
       status: 'success',
       output: branch,
       branchTaken: branch ? 'true' : 'false',
-      durationMs: Date.now() - startTime,
+      durationMs,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
     };
@@ -378,13 +381,16 @@ export function executeTransformerNode(
 
     const vmTimeout = (node.data as TransformerNodeData).timeoutMs || 5000;
     const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
+    const durationMs = Date.now() - startTime;
+
+    log.info('Transformer completed', { nodeId: node.id, durationMs });
 
     return {
       nodeId: node.id,
       status: 'success',
       output: result,
       resolvedArgs: { expression: resolvedExpr },
-      durationMs: Date.now() - startTime,
+      durationMs,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
     };
@@ -464,7 +470,7 @@ export async function executeHttpRequestNode(
 
     // SSRF protection
     if (isSsrfTarget(url)) {
-      _log.warn(`HTTP node ${node.id}: blocked request to private/internal address: ${url}`);
+      log.warn(`HTTP node ${node.id}: blocked request to private/internal address: ${url}`);
       return {
         nodeId: node.id,
         status: 'error',
@@ -623,6 +629,9 @@ export async function executeDelayNode(
 
     // Safety cap: max 1 hour
     const cappedMs = Math.min(delayMs, 3_600_000);
+    const wasCapped = delayMs > 3_600_000;
+
+    log.info('Delay started', { nodeId: node.id, delayMs: cappedMs, ...(wasCapped ? { requestedMs: delayMs, capped: true } : {}) });
 
     // Wait with abort support
     await new Promise<void>((resolve, reject) => {
@@ -670,11 +679,11 @@ export async function executeDelayNode(
 /**
  * Execute a Notification node: resolve message template, broadcast via WebSocket.
  */
-export function executeNotificationNode(
+export async function executeNotificationNode(
   node: WorkflowNode,
   nodeOutputs: Record<string, NodeResult>,
   variables: Record<string, unknown>
-): NodeResult {
+): Promise<NodeResult> {
   const startTime = Date.now();
   try {
     const data = node.data as unknown as Record<string, unknown>;
@@ -684,23 +693,31 @@ export function executeNotificationNode(
     const resolvedMsg = resolveTemplates({ _msg: data.message as string }, nodeOutputs, variables)
       ._msg as string;
 
-    // Lazy-import wsGateway to avoid circular deps
-    import('../../ws/server.js')
-      .then(({ wsGateway }) => {
-        wsGateway.broadcast('system:notification', {
-          type: severity as 'info' | 'warning' | 'error' | 'success',
-          message: resolvedMsg,
-          source: 'workflow',
-        });
-      })
-      .catch(() => {
-        _log.warn(`Notification node ${node.id}: failed to broadcast via WebSocket`);
+    // Lazy-import wsGateway to avoid circular deps and await broadcast
+    let warning: string | undefined;
+    try {
+      const { wsGateway } = await import('../../ws/server.js');
+      await wsGateway.broadcast('system:notification', {
+        type: severity as 'info' | 'warning' | 'error' | 'success',
+        message: resolvedMsg,
+        source: 'workflow',
       });
+      log.info('Notification broadcast sent', { nodeId: node.id, severity });
+    } catch {
+      warning = 'WebSocket broadcast failed — delivery not confirmed';
+      log.warn(`Notification node ${node.id}: failed to broadcast via WebSocket`);
+    }
 
     return {
       nodeId: node.id,
       status: 'success',
-      output: { sent: true, channel: 'websocket', message: resolvedMsg, severity },
+      output: {
+        sent: !warning,
+        channel: 'websocket',
+        message: resolvedMsg,
+        severity,
+        ...(warning ? { warning } : {}),
+      },
       resolvedArgs: { message: resolvedMsg, severity },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
@@ -741,10 +758,34 @@ export function executeMergeNode(
       }
     }
 
-    const output =
-      mode === 'waitAll'
-        ? { mode, results: collected, count: Object.keys(collected).length }
-        : { mode, results: collected, count: Object.keys(collected).length };
+    let output: Record<string, unknown>;
+    if (mode === 'firstCompleted') {
+      // Return only the first non-null/non-undefined upstream result
+      let firstNodeId: string | undefined;
+      let firstOutput: unknown;
+      for (const nid of incomingNodeIds) {
+        const val = collected[nid];
+        if (val !== null && val !== undefined) {
+          firstNodeId = nid;
+          firstOutput = val;
+          break;
+        }
+      }
+      if (firstNodeId !== undefined) {
+        output = {
+          mode,
+          results: { [firstNodeId]: firstOutput },
+          count: 1,
+          selectedNode: firstNodeId,
+        };
+      } else {
+        output = { mode, results: {}, count: 0 };
+      }
+    } else {
+      output = { mode, results: collected, count: Object.keys(collected).length };
+    }
+
+    log.info('Merge completed', { nodeId: node.id, mode, inputCount: Object.keys(collected).length });
 
     return {
       nodeId: node.id,
@@ -795,6 +836,8 @@ export function executeSwitchNode(
     // Match against cases
     const matchedCase = data.cases.find((c) => c.value === resultStr);
     const branchTaken = matchedCase ? matchedCase.label : 'default';
+
+    log.info('Switch evaluated', { nodeId: node.id, matchedCase: branchTaken, value: resultStr });
 
     return {
       nodeId: node.id,

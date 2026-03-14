@@ -29,25 +29,46 @@ const WORKFLOW_TEMPLATES = [
     name: 'Daily Summary',
     desc: 'Summarize recent activity and create a daily briefing',
     nodes: [
-      { id: 'n1', type: 'start', label: 'Trigger', config: {} },
       {
-        id: 'n2',
-        type: 'tool',
-        label: 'Get Recent Activity',
-        config: { toolName: 'get_recent_conversations' },
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Manual Trigger', triggerType: 'manual' },
       },
       {
-        id: 'n3',
-        type: 'ai',
-        label: 'Summarize',
-        config: { prompt: 'Summarize the recent activity into a brief daily summary' },
+        id: 'node_2',
+        type: 'toolNode',
+        position: { x: 300, y: 200 },
+        data: {
+          label: 'Get Recent Activity',
+          toolName: 'core.get_recent_conversations',
+          toolArgs: {},
+        },
       },
-      { id: 'n4', type: 'end', label: 'Output', config: {} },
+      {
+        id: 'node_3',
+        type: 'llmNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Summarize',
+          provider: 'default',
+          model: 'default',
+          systemPrompt: 'You are a concise summarizer.',
+          userMessage:
+            'Summarize the recent activity into a brief daily summary:\n{{node_2.output}}',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'notificationNode',
+        position: { x: 300, y: 500 },
+        data: { label: 'Send Summary', message: '{{node_3.output}}', severity: 'info' },
+      },
     ],
     edges: [
-      { source: 'n1', target: 'n2' },
-      { source: 'n2', target: 'n3' },
-      { source: 'n3', target: 'n4' },
+      { source: 'node_1', target: 'node_2' },
+      { source: 'node_2', target: 'node_3' },
+      { source: 'node_3', target: 'node_4' },
     ],
   },
   {
@@ -55,20 +76,42 @@ const WORKFLOW_TEMPLATES = [
     name: 'Web Research Pipeline',
     desc: 'Search the web, extract content, and summarize findings',
     nodes: [
-      { id: 'n1', type: 'start', label: 'Input Query', config: {} },
-      { id: 'n2', type: 'tool', label: 'Web Search', config: { toolName: 'web_search' } },
       {
-        id: 'n3',
-        type: 'ai',
-        label: 'Analyze & Summarize',
-        config: { prompt: 'Analyze the search results and create a comprehensive summary' },
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Manual Trigger', triggerType: 'manual' },
       },
-      { id: 'n4', type: 'end', label: 'Report', config: {} },
+      {
+        id: 'node_2',
+        type: 'toolNode',
+        position: { x: 300, y: 200 },
+        data: { label: 'Web Search', toolName: 'core.web_search', toolArgs: {} },
+      },
+      {
+        id: 'node_3',
+        type: 'llmNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Analyze & Summarize',
+          provider: 'default',
+          model: 'default',
+          systemPrompt: 'You are a research analyst. Provide comprehensive, well-structured summaries.',
+          userMessage:
+            'Analyze the search results and create a comprehensive summary:\n{{node_2.output}}',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'notificationNode',
+        position: { x: 300, y: 500 },
+        data: { label: 'Report', message: '{{node_3.output}}', severity: 'info' },
+      },
     ],
     edges: [
-      { source: 'n1', target: 'n2' },
-      { source: 'n2', target: 'n3' },
-      { source: 'n3', target: 'n4' },
+      { source: 'node_1', target: 'node_2' },
+      { source: 'node_2', target: 'node_3' },
+      { source: 'node_3', target: 'node_4' },
     ],
   },
 ];
@@ -133,16 +176,30 @@ export function WorkflowWizard({ onComplete, onCancel }: Props) {
 Workflow name: "${name.trim()}"
 
 Return a JSON object with "nodes" and "edges" arrays.
-Each node: { "id": "n1", "type": "start"|"tool"|"ai"|"condition"|"end", "label": "short label", "config": {} }
-Each edge: { "source": "n1", "target": "n2" }
+
+Each node must have: { "id": "node_1", "type": "<nodeType>", "position": { "x": 300, "y": <increment by 150> }, "data": { "label": "...", ...type-specific fields } }
+
+Valid node types and their data fields:
+- "triggerNode": data: { "label": "...", "triggerType": "manual"|"schedule"|"event"|"webhook" }
+- "toolNode": data: { "label": "...", "toolName": "core.tool_name", "toolArgs": {} }
+- "llmNode": data: { "label": "...", "provider": "default", "model": "default", "systemPrompt": "...", "userMessage": "..." }
+- "conditionNode": data: { "label": "...", "expression": "data.value > 0" }
+- "codeNode": data: { "label": "...", "language": "javascript", "code": "return data;" }
+- "transformerNode": data: { "label": "...", "expression": "data.items.map(i => i.name)" }
+- "httpRequestNode": data: { "label": "...", "method": "GET", "url": "https://..." }
+- "delayNode": data: { "label": "...", "duration": "5", "unit": "seconds" }
+- "notificationNode": data: { "label": "...", "message": "...", "severity": "info" }
+
+Each edge: { "source": "node_1", "target": "node_2" }
+For conditionNode edges, add "sourceHandle": "true" or "false".
 
 Rules:
-- First node must be type "start", last must be type "end"
-- Use "tool" type for calling tools (set config.toolName)
-- Use "ai" type for AI processing (set config.prompt)
-- Use "condition" type for branching (set config.condition)
+- First node should be a triggerNode
+- Use toolNode for calling tools, llmNode for AI processing
+- Use notificationNode for output/notifications (NOT a generic "end" node)
 - Create 3-6 nodes typically
-- IDs must be sequential: n1, n2, n3...
+- IDs must be sequential: node_1, node_2, node_3...
+- Positions: start at y=50, increment by ~150 for each level
 
 Return ONLY the JSON object, no explanations.`;
 

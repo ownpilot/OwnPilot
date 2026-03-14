@@ -2,7 +2,7 @@
  * Workflow Copilot — System prompt builder.
  *
  * Constructs a system prompt that teaches the AI how to generate valid
- * OwnPilot workflow JSON definitions (all 10 node types, edges, templates).
+ * OwnPilot workflow JSON definitions (all 17 node types, edges, templates).
  */
 
 interface WorkflowState {
@@ -50,7 +50,7 @@ Briefly explain what you built or changed before the JSON block.
 \`\`\`
 - \`tool\` (required): EXACT tool name including dots (e.g. \`mcp.github.list_repositories\`, \`core.get_time\`). Use the name EXACTLY as listed in Available Tools — do NOT strip dots or merge name segments.
 - \`args\` (optional): arguments passed to the tool — can use template expressions
-- Tool nodes have NO \`type\` field (that's how they're distinguished from other nodes)
+- Tool nodes do NOT have a \`type\` field — they are identified by their \`tool\` field
 
 ### 2. Trigger Node — defines when the workflow starts (max ONE per workflow)
 \`\`\`
@@ -64,6 +64,7 @@ Briefly explain what you built or changed before the JSON block.
 \`\`\`
 - \`triggerType\` (required): \`"manual"\` | \`"schedule"\` | \`"event"\` | \`"condition"\` | \`"webhook"\`
 - Schedule: add \`"cron": "0 8 * * *"\` (cron expression)
+  - Optionally add \`"timezone": "America/New_York"\` for timezone-aware schedules
 - Event: add \`"eventType": "email_received"\`
 - Condition: add \`"condition": "expression"\`, \`"threshold": number\`
 - Webhook: add \`"webhookPath": "/hooks/deploy"\`
@@ -278,6 +279,62 @@ Briefly explain what you built or changed before the JSON block.
 - Output: \`{ mode, results: { [nodeId]: output }, count }\`
 - Commonly used after a Parallel node to collect all branch results
 
+### 15. Approval Node — pauses workflow for human approval
+\`\`\`
+{
+  "id": "node_N",
+  "type": "approval",
+  "label": "Require Approval",
+  "approvalMessage": "Please review the results of {{node_3.output}}",
+  "timeoutMinutes": 60,
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`approvalMessage\` (optional): message shown to approver — supports template expressions
+- \`timeoutMinutes\` (optional): approval window timeout in minutes
+- Pauses workflow execution until approved via API
+- Has single input and single output
+
+### 16. Sub-Workflow Node — runs another workflow as a sub-process
+\`\`\`
+{
+  "id": "node_N",
+  "type": "subWorkflow",
+  "label": "Run Data Pipeline",
+  "subWorkflowId": "wf_abc123",
+  "inputMapping": { "query": "{{node_2.output}}" },
+  "maxDepth": 5,
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`subWorkflowId\` (required): ID of the workflow to execute
+- \`subWorkflowName\` (optional): display name for logging
+- \`inputMapping\` (optional): map of variable names to template expressions passed as sub-workflow variables
+- \`maxDepth\` (optional): max recursion depth, default 5
+- Output: the last successful node output from the sub-workflow
+
+### 17. Error Handler Node — global error fallback (max ONE per workflow)
+\`\`\`
+{
+  "id": "node_N",
+  "type": "errorHandler",
+  "label": "Handle Error",
+  "continueOnSuccess": false,
+  "position": { "x": 600, "y": 100 }
+}
+\`\`\`
+- \`continueOnSuccess\` (optional): if true, continue executing other branches after handling error
+- \`outputAlias\` (optional): alias for the error output
+- When any node fails, this node receives the error and can decide recovery strategy
+- Max ONE error handler per workflow — place it off to the side (higher x) as it's not in the main flow
+
+## Retry & Timeout (optional on most nodes)
+Most nodes support optional retry and timeout configuration:
+- \`retryCount\` (optional): 0-5, number of retries on failure (default: 0)
+- \`timeoutMs\` (optional): 0-300000, timeout in milliseconds (default: none)
+Retry uses exponential backoff (100ms, 200ms, 400ms...). Supported by: toolNode, llmNode, conditionNode, codeNode, transformerNode, forEachNode, httpRequestNode, switchNode, notificationNode.
+Not supported by: triggerNode, delayNode, stickyNoteNode, approvalNode, parallelNode, mergeNode, errorHandlerNode.
+
 ## Edges
 
 Basic edge (single-output nodes):
@@ -367,6 +424,8 @@ Add \`"outputAlias": "weather"\` to any node to create a readable alias:
 | ForEach | \`arrayExpression\` |
 | Delay | \`duration\` |
 | Sub-Workflow | \`inputMapping\` values |
+| Approval | \`approvalMessage\` |
+| Error Handler | (no template fields) |
 
 ### Expression nodes (use \`data\` variable, NOT templates)
 Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions where \`data\` holds the most recent upstream output. Do NOT use \`{{}}\` templates inside these expressions:
@@ -403,7 +462,10 @@ Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions w
 11. Always include \`edges\` array even if empty: \`"edges": []\`
 12. Notification nodes MUST include \`message\`
 13. Parallel nodes MUST include \`branchCount\` >= 2 and edges MUST use \`sourceHandle: "branch-0"\`, \`"branch-1"\`, etc.
-14. Merge nodes should be placed downstream of Parallel nodes to collect branch results`;
+14. Merge nodes should be placed downstream of Parallel nodes to collect branch results
+15. Approval nodes need a clear \`approvalMessage\` describing what needs to be approved
+16. Error handler nodes should be placed off the main flow — they only activate on errors
+17. Sub-workflow nodes MUST include \`subWorkflowId\` — the ID of the workflow to call`;
 
 /**
  * Build the full system prompt for the workflow copilot, optionally
