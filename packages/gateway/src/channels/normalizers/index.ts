@@ -5,41 +5,15 @@
  * to/from the internal chat format.
  */
 
-import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
 import { telegramNormalizer } from './telegram.js';
 import { discordNormalizer } from './discord.js';
 import { whatsappNormalizer } from './whatsapp.js';
 import { slackNormalizer } from './slack.js';
 import { baseNormalizer } from './base.js';
+import type { ChannelNormalizer } from './types.js';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface NormalizedIncoming {
-  /** Cleaned text content */
-  text: string;
-  /** Normalized attachments (base64-encoded data URIs) */
-  attachments?: NormalizedAttachment[];
-}
-
-export interface ChannelNormalizer {
-  /** Platform identifier */
-  platform: string;
-
-  /**
-   * Normalize an incoming channel message into a clean text + attachments pair.
-   * Handles platform-specific HTML entities, command prefixes, etc.
-   */
-  normalizeIncoming(msg: ChannelIncomingMessage): NormalizedIncoming | Promise<NormalizedIncoming>;
-
-  /**
-   * Normalize the outgoing agent response for the target platform.
-   * Strips internal tags, converts markdown, enforces length limits, etc.
-   * Returns an array of message parts (split if necessary).
-   */
-  normalizeOutgoing(response: string): string[];
-}
+// Re-export types from types.ts for backward compatibility
+export type { NormalizedIncoming, ChannelNormalizer } from './types.js';
 
 // ============================================================================
 // Registry

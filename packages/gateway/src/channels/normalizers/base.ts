@@ -7,7 +7,7 @@
  */
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
-import type { ChannelNormalizer, NormalizedIncoming } from './index.js';
+import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 
 /** Internal tags that should never leak to channel users */
 const INTERNAL_TAG_PATTERNS = [

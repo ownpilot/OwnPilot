@@ -12,10 +12,8 @@ import type {
   ToolContext,
 } from '@ownpilot/core';
 import { MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS } from '@ownpilot/core';
-import { executeMemoryTool } from '../../routes/memories.js';
-import { executeGoalTool } from '../../routes/goals.js';
-import { executeCustomDataTool } from '../../routes/custom-data.js';
-import { executePersonalDataTool } from '../../routes/personal-data-tools.js';
+// Route executor imports are lazy to break the circular dependency:
+// tool-providers/index.ts → routes/*.ts → tool-executor.ts → provider-manifest.ts → tool-providers/index.ts
 import {
   TRIGGER_TOOLS,
   executeTriggerTool,
@@ -102,6 +100,25 @@ function wrapGatewayExecutor(
 }
 
 // ============================================================================
+// Lazy executor helpers (break circular dependency with route files)
+// ============================================================================
+
+function lazyRouteExecutor(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  importFn: () => Promise<any>,
+  exportName: string
+): GatewayExecutor {
+  let importPromise: Promise<GatewayExecutor> | undefined;
+  return async (toolName, args, userId) => {
+    if (!importPromise) {
+      importPromise = importFn().then((mod) => mod[exportName] as GatewayExecutor);
+    }
+    const executor = await importPromise;
+    return executor(toolName, args, userId);
+  };
+}
+
+// ============================================================================
 // Concrete Providers
 // ============================================================================
 
@@ -109,12 +126,16 @@ function wrapGatewayExecutor(
  * Create a provider for memory tools (requires userId)
  */
 export function createMemoryToolProvider(userId: string): ToolProvider {
+  const executor = lazyRouteExecutor(
+    () => import('../../routes/memories.js'),
+    'executeMemoryTool'
+  );
   return {
     name: 'memory',
     getTools: () =>
       MEMORY_TOOLS.map((def) => ({
         definition: def,
-        executor: wrapGatewayExecutor(def, executeMemoryTool, userId),
+        executor: wrapGatewayExecutor(def, executor, userId),
       })),
   };
 }
@@ -123,12 +144,16 @@ export function createMemoryToolProvider(userId: string): ToolProvider {
  * Create a provider for goal tools (requires userId)
  */
 export function createGoalToolProvider(userId: string): ToolProvider {
+  const executor = lazyRouteExecutor(
+    () => import('../../routes/goals.js'),
+    'executeGoalTool'
+  );
   return {
     name: 'goal',
     getTools: () =>
       GOAL_TOOLS.map((def) => ({
         definition: def,
-        executor: wrapGatewayExecutor(def, executeGoalTool, userId),
+        executor: wrapGatewayExecutor(def, executor, userId),
       })),
   };
 }
@@ -137,12 +162,16 @@ export function createGoalToolProvider(userId: string): ToolProvider {
  * Create a provider for custom data tools
  */
 export function createCustomDataToolProvider(): ToolProvider {
+  const executor = lazyRouteExecutor(
+    () => import('../../routes/custom-data.js'),
+    'executeCustomDataTool'
+  );
   return {
     name: 'custom-data',
     getTools: () =>
       CUSTOM_DATA_TOOLS.map((def) => ({
         definition: def,
-        executor: wrapGatewayExecutor(def, executeCustomDataTool),
+        executor: wrapGatewayExecutor(def, executor),
       })),
   };
 }
@@ -151,12 +180,16 @@ export function createCustomDataToolProvider(): ToolProvider {
  * Create a provider for personal data tools
  */
 export function createPersonalDataToolProvider(): ToolProvider {
+  const executor = lazyRouteExecutor(
+    () => import('../../routes/personal-data-tools.js'),
+    'executePersonalDataTool'
+  );
   return {
     name: 'personal-data',
     getTools: () =>
       PERSONAL_DATA_TOOLS.map((def) => ({
         definition: def,
-        executor: wrapGatewayExecutor(def, executePersonalDataTool),
+        executor: wrapGatewayExecutor(def, executor),
       })),
   };
 }

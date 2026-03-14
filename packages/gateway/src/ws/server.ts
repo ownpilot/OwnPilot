@@ -38,7 +38,7 @@ function escapeHtml(unsafe: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-import { getOrCreateDefaultAgent, isDemoMode } from '../routes/agents.js';
+// Lazy-imported to break circular dependency: routes/agents.ts ↔ ws/server.ts
 import { getErrorMessage } from '../routes/helpers.js';
 import { handleWebChatMessage } from './webchat-handler.js';
 import { getLog } from '../services/log.js';
@@ -637,6 +637,7 @@ export class WSGateway {
 
       try {
         // Get or create default agent
+        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
         const agent = await getOrCreateDefaultAgent();
 
         // Generate message ID
@@ -651,6 +652,7 @@ export class WSGateway {
         }
 
         // Check demo mode
+        const { isDemoMode } = await import('../routes/agents.js');
         if (await isDemoMode()) {
           // Demo mode: send simulated response
           const safeContent = escapeHtml(String(data.content ?? '').slice(0, 500));

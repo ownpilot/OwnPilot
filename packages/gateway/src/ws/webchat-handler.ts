@@ -12,7 +12,7 @@ import { getChannelService } from '@ownpilot/core';
 import type { WebChatChannelAPI } from '../channels/plugins/webchat/webchat-api.js';
 import { getChannelServiceImpl } from '../channels/service-impl.js';
 import { sessionManager } from './session.js';
-import { wsGateway } from './server.js';
+// Lazy-imported to break circular dependency: ws/webchat-handler.ts ↔ ws/server.ts
 import { getLog } from '../services/log.js';
 
 const log = getLog('WebChatHandler');
@@ -40,7 +40,7 @@ export function initWebChatHandler(): void {
   }
 
   // Wire the send function: sends a WS message to a specific session
-  api.setSendFunction((sessionId: string, event: string, data: unknown) => {
+  api.setSendFunction(async (sessionId: string, event: string, data: unknown) => {
     const session = sessionManager.get(sessionId);
     if (session) {
       // Use sessionManager.send for typed events that exist in ServerEvents,
@@ -52,6 +52,7 @@ export function initWebChatHandler(): void {
       );
     } else {
       // Fallback: broadcast to all (widget will filter by sessionId)
+      const { wsGateway } = await import('./server.js');
       wsGateway.broadcast(
         event as keyof import('./types.js').ServerEvents,
         {
