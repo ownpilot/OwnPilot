@@ -173,24 +173,18 @@ export interface BackgroundAgentSession {
 // Cycle Result Types
 // ============================================================================
 
+import type { AutonomousAgentResult } from './agent-execution-result.js';
+
 /** Result of a single execution cycle */
-export interface BackgroundAgentCycleResult {
-  /** Whether the cycle completed successfully */
-  success: boolean;
+export interface BackgroundAgentCycleResult extends AutonomousAgentResult {
   /** Tool calls made during the cycle */
   toolCalls: BackgroundAgentToolCall[];
-  /** Output message from the LLM */
+  /** Output message from the LLM (alias for base `output` field) */
   outputMessage: string;
-  /** Token usage (if available) */
-  tokensUsed?: { prompt: number; completion: number };
   /** Estimated cost in USD */
   costUsd?: number;
-  /** Total cycle duration in ms */
-  durationMs: number;
   /** Number of LLM turns taken */
   turns: number;
-  /** Error message if failed */
-  error?: string;
 }
 
 /** Individual tool call within a cycle */

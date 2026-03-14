@@ -18,22 +18,16 @@ import type { FleetConfig, FleetSession, FleetTask, FleetWorkerConfig } from '@o
 import { FleetWorker } from './fleet-worker.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { getLog } from './log.js';
+import {
+  MANAGER_MAX_CONSECUTIVE_ERRORS as MAX_CONSECUTIVE_ERRORS,
+  MANAGER_SESSION_PERSIST_INTERVAL_MS as SESSION_PERSIST_INTERVAL_MS,
+  FLEET_CONTINUOUS_MIN_DELAY_MS as CONTINUOUS_MIN_DELAY_MS,
+  FLEET_CONTINUOUS_MAX_DELAY_MS as CONTINUOUS_MAX_DELAY_MS,
+  FLEET_CONTINUOUS_IDLE_DELAY_MS as CONTINUOUS_IDLE_DELAY_MS,
+  FLEET_DEFAULT_INTERVAL_MS as DEFAULT_INTERVAL_MS,
+} from '../config/defaults.js';
 
 const log = getLog('FleetManager');
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const CONTINUOUS_MIN_DELAY_MS = 1_000;
-const CONTINUOUS_MAX_DELAY_MS = 10_000;
-const CONTINUOUS_IDLE_DELAY_MS = 5_000;
-
-const DEFAULT_INTERVAL_MS = 60_000; // 1 minute
-
-const MAX_CONSECUTIVE_ERRORS = 5;
-
-const SESSION_PERSIST_INTERVAL_MS = 30_000;
 
 // ============================================================================
 // Types
@@ -527,6 +521,19 @@ export class FleetManager {
       managed.session.activeWorkers = managed.activeWorkerCount;
       managed.cyclesThisHour++;
       managed.consecutiveErrors = 0;
+
+      // Post-cycle budget enforcement
+      const postMaxCost = managed.config.budget?.maxCostUsd;
+      if (postMaxCost !== undefined && postMaxCost > 0) {
+        const budgetRatio = managed.session.totalCostUsd / postMaxCost;
+        if (budgetRatio >= 1) {
+          log.warn(`[${fleetId}] Budget exceeded after cycle ($${managed.session.totalCostUsd}/$${postMaxCost})`);
+          await this.pauseFleet(fleetId);
+          return;
+        } else if (budgetRatio >= 0.8) {
+          log.warn(`[${fleetId}] Approaching budget limit ($${managed.session.totalCostUsd}/$${postMaxCost}, ${Math.round(budgetRatio * 100)}% used)`);
+        }
+      }
 
       this.emitEvent('fleet.cycle.end', {
         fleetId,

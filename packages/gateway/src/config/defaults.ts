@@ -293,6 +293,28 @@ export const PULSE_QUIET_HOURS_END = 7;
 export const PULSE_LOG_RETENTION_DAYS = 30;
 
 // ============================================================================
+// Autonomous Agent Scheduling (shared by BackgroundAgentManager & FleetManager)
+// ============================================================================
+
+/** Max consecutive errors before auto-pause */
+export const MANAGER_MAX_CONSECUTIVE_ERRORS = 5;
+
+/** Session persist interval — save to DB periodically (ms) */
+export const MANAGER_SESSION_PERSIST_INTERVAL_MS = 30_000; // 30 seconds
+
+/** Background Agent: adaptive delay bounds for continuous mode (ms) */
+export const BG_AGENT_CONTINUOUS_MIN_DELAY_MS = 500;
+export const BG_AGENT_CONTINUOUS_MAX_DELAY_MS = 5_000;
+export const BG_AGENT_CONTINUOUS_IDLE_DELAY_MS = 3_000;
+export const BG_AGENT_DEFAULT_INTERVAL_MS = 300_000; // 5 minutes
+
+/** Fleet: adaptive delay bounds for continuous mode (ms) */
+export const FLEET_CONTINUOUS_MIN_DELAY_MS = 1_000;
+export const FLEET_CONTINUOUS_MAX_DELAY_MS = 10_000;
+export const FLEET_CONTINUOUS_IDLE_DELAY_MS = 5_000;
+export const FLEET_DEFAULT_INTERVAL_MS = 60_000; // 1 minute
+
+// ============================================================================
 // HTTP / Security
 // ============================================================================
 

@@ -11,41 +11,31 @@
  */
 
 import {
-  Agent,
-  ToolRegistry,
-  registerAllTools,
   createProvider,
   generateId,
   getErrorMessage,
-  qualifyToolName,
-  getServiceRegistry,
-  Services,
 } from '@ownpilot/core';
 import type {
   AIProvider,
   FleetWorkerConfig,
   FleetWorkerResult,
   FleetTask,
-  ToolCall,
   ToolId,
   CodingAgentProvider,
 } from '@ownpilot/core';
 import { getLog } from './log.js';
-import { resolveForProcess } from './model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
-import {
-  registerGatewayTools,
-  registerDynamicTools,
-  registerPluginTools,
-  registerExtensionTools,
-  registerMcpTools,
-} from '../tools/agent-tool-registry.js';
-import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
 import { startOrchestration } from './coding-agent-orchestrator.js';
 import { mcpClientService } from './mcp-client-service.js';
-import type { ExtensionService } from './extension-service.js';
+import {
+  createConfiguredAgent,
+  resolveProviderAndModel,
+  resolveToolFilter,
+  createToolCallCollector,
+  createTimeoutPromise,
+} from './agent-runner-utils.js';
 
 const log = getLog('FleetWorker');
 
@@ -126,6 +116,7 @@ export class FleetWorker {
         taskId: task.id,
         success: false,
         output: '',
+        toolCalls: [],
         durationMs,
         error: errorMsg,
         executedAt: new Date(),
@@ -141,40 +132,13 @@ export class FleetWorker {
     workerId: string,
     startTime: number
   ): Promise<FleetWorkerResult> {
-    const { provider, model } = await this.resolveProvider();
-    const apiKey = await getProviderApiKey(provider);
-    if (!apiKey) throw new Error(`API key not configured for provider: ${provider}`);
-
-    const providerConfig = loadProviderConfig(provider);
-    const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
+    const { provider, model } = await resolveProviderAndModel(
+      this.config.provider ?? this.defaultProvider,
+      this.config.model ?? this.defaultModel,
+      'pulse',
+      `worker "${this.config.name}"`
+    );
     const conversationId = `fleet-${this.fleetId}-${this.config.name}`;
-
-    // Create a fresh ToolRegistry with ALL tool sources
-    const tools = new ToolRegistry();
-    registerAllTools(tools);
-    tools.setConfigCenter(gatewayConfigCenter);
-    registerGatewayTools(tools, this.userId, false);
-
-    try {
-      await registerDynamicTools(tools, this.userId, conversationId, false);
-    } catch (err) {
-      log.warn(`Dynamic tools registration failed: ${getErrorMessage(err)}`);
-    }
-    try {
-      registerPluginTools(tools, false);
-    } catch (err) {
-      log.warn(`Plugin tools registration failed: ${getErrorMessage(err)}`);
-    }
-    try {
-      registerExtensionTools(tools, this.userId, false);
-    } catch (err) {
-      log.warn(`Extension tools registration failed: ${getErrorMessage(err)}`);
-    }
-    try {
-      registerMcpTools(tools, false);
-    } catch (err) {
-      log.warn(`MCP tools registration failed: ${getErrorMessage(err)}`);
-    }
 
     // Build system prompt
     const basePrompt = this.config.systemPrompt ?? this.buildDefaultSystemPrompt();
@@ -191,71 +155,35 @@ export class FleetWorker {
     }
 
     // Tool filter
-    let toolFilter: ToolId[] | undefined;
-    if (this.config.allowedTools?.length || this.config.skills?.length) {
-      const allowedSet = new Set(this.config.allowedTools ?? []);
-      if (this.config.skills?.length) {
-        try {
-          const extService = getServiceRegistry().get(Services.Extension) as ExtensionService;
-          const allowedSkillIds = new Set(this.config.skills);
-          for (const def of extService.getToolDefinitions()) {
-            if (allowedSkillIds.has(def.extensionId)) {
-              const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
-              allowedSet.add(
-                qualifyToolName(def.name, nsPrefix as 'skill' | 'ext', def.extensionId)
-              );
-            }
-          }
-        } catch (err) {
-          log.warn(`Skills filter build failed: ${getErrorMessage(err)}`);
-        }
-      }
-      if (allowedSet.size > 0) toolFilter = [...allowedSet] as ToolId[];
-    }
+    const toolFilter = (this.config.allowedTools?.length || this.config.skills?.length)
+      ? resolveToolFilter(this.config.allowedTools, this.config.skills, `${this.fleetId}:${this.config.name}`)
+      : undefined;
 
-    // Create agent
-    const agent = new Agent(
-      {
-        name: `fleet-${this.config.name}`,
-        systemPrompt,
-        provider: {
-          provider: providerType as AIProvider,
-          apiKey,
-          baseUrl: providerConfig?.baseUrl,
-        },
-        model: {
-          model,
-          maxTokens: this.config.maxTokens ?? AGENT_DEFAULT_MAX_TOKENS,
-          temperature: AGENT_DEFAULT_TEMPERATURE,
-        },
-        tools: toolFilter as ToolId[] | undefined,
-        maxTurns: this.config.maxTurns ?? 10,
-        maxToolCalls: 50,
-      },
-      { tools }
-    );
+    // Create agent with all tool sources
+    const agent = await createConfiguredAgent({
+      name: `fleet-${this.config.name}`,
+      provider,
+      model,
+      systemPrompt,
+      userId: this.userId,
+      conversationId,
+      maxTokens: this.config.maxTokens,
+      maxTurns: this.config.maxTurns ?? 10,
+      maxToolCalls: 50,
+      toolFilter: toolFilter as ToolId[] | undefined,
+    });
 
     // Build message with task + shared context
     const message = this.buildTaskMessage(task, sharedContext);
 
     // Collect tool calls
-    const toolCalls: Array<{ name: string; args: unknown; result: unknown }> = [];
-    const onToolEnd = (
-      tc: ToolCall,
-      result: { content: string; isError: boolean; durationMs: number }
-    ) => {
-      toolCalls.push({
-        name: tc.name,
-        args: safeParseJson(tc.arguments),
-        result: result.content,
-      });
-    };
+    const collector = createToolCallCollector();
 
     // Execute with timeout
     const timeoutMs = this.config.timeoutMs ?? 300_000;
     const chatResult = await Promise.race([
-      agent.chat(message, { onToolEnd }),
-      timeoutPromise(timeoutMs),
+      agent.chat(message, { onToolEnd: collector.onToolEnd }),
+      createTimeoutPromise(timeoutMs, 'Worker'),
     ]);
 
     if (!chatResult.ok) {
@@ -264,6 +192,14 @@ export class FleetWorker {
 
     const response = chatResult.value;
     const durationMs = Date.now() - startTime;
+
+    // Map collector format to fleet's { tool, name, args, result } format
+    const toolCalls = collector.toolCalls.map((tc) => ({
+      tool: tc.tool,
+      name: tc.tool,
+      args: tc.args as unknown,
+      result: tc.result as unknown,
+    }));
 
     log.info(`[${this.fleetId}:${this.config.name}] ai-chat completed`, {
       taskId: task.id,
@@ -383,6 +319,7 @@ export class FleetWorker {
       taskId: task.id,
       success,
       output: outputSummary,
+      toolCalls: [],
       durationMs,
       error: success ? undefined : `Orchestration ${finalRun.status}`,
       executedAt: new Date(),
@@ -397,7 +334,12 @@ export class FleetWorker {
     workerId: string,
     startTime: number
   ): Promise<FleetWorkerResult> {
-    const { provider, model } = await this.resolveProvider();
+    const { provider, model } = await resolveProviderAndModel(
+      this.config.provider ?? this.defaultProvider,
+      this.config.model ?? this.defaultModel,
+      'pulse',
+      `worker "${this.config.name}"`
+    );
     const apiKey = await getProviderApiKey(provider);
     if (!apiKey) throw new Error(`API key not configured for provider: ${provider}`);
 
@@ -455,6 +397,7 @@ export class FleetWorker {
       taskId: task.id,
       success: true,
       output: content,
+      toolCalls: [],
       tokensUsed: result.value.usage
         ? {
             prompt: result.value.usage.promptTokens ?? 0,
@@ -508,6 +451,7 @@ export class FleetWorker {
       success: true,
       output,
       toolCalls: results.map((r) => ({
+        tool: r.tool,
         name: r.tool,
         args,
         result: r.output,
@@ -518,32 +462,6 @@ export class FleetWorker {
   }
 
   // ---------- Helpers ----------
-
-  private async resolveProvider(): Promise<{ provider: string; model: string }> {
-    const provider = this.config.provider ?? this.defaultProvider;
-    const model = this.config.model ?? this.defaultModel;
-
-    if (provider && model) return { provider, model };
-
-    const resolved = await resolveForProcess('pulse');
-    const finalProvider = provider || resolved.provider;
-    const finalModel = model || resolved.model;
-
-    if (!finalProvider) {
-      throw new Error(
-        `No AI provider configured for worker "${this.config.name}". ` +
-          'Set provider on the worker, fleet, or configure a default provider.'
-      );
-    }
-    if (!finalModel) {
-      throw new Error(
-        `No model configured for worker "${this.config.name}". ` +
-          'Set model on the worker, fleet, or configure a default model.'
-      );
-    }
-
-    return { provider: finalProvider, model: finalModel };
-  }
 
   private buildDefaultSystemPrompt(): string {
     return `You are "${this.config.name}", a fleet worker agent.
@@ -576,20 +494,3 @@ When your task is complete, summarize what you accomplished.`;
   }
 }
 
-// ============================================================================
-// Utilities
-// ============================================================================
-
-function timeoutPromise(ms: number): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`Worker timed out after ${ms}ms`)), ms)
-  );
-}
-
-function safeParseJson(str: string): unknown {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return str;
-  }
-}

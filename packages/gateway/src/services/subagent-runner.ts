@@ -23,9 +23,8 @@
  * - MCP tools
  */
 
-import { Agent, ToolRegistry, registerAllTools, getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core';
 import type {
-  AIProvider,
   SpawnSubagentInput,
   SubagentLimits,
   SubagentToolCall,
@@ -34,17 +33,13 @@ import type {
 } from '@ownpilot/core';
 import { DEFAULT_SUBAGENT_LIMITS } from '@ownpilot/core';
 import { getLog } from './log.js';
-import { resolveForProcess } from './model-routing.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
 import {
-  registerGatewayTools,
-  registerDynamicTools,
-  registerPluginTools,
-  registerExtensionTools,
-  registerMcpTools,
-} from '../tools/agent-tool-registry.js';
-import { gatewayConfigCenter } from './config-center-impl.js';
-import { AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
+  createConfiguredAgent,
+  resolveProviderAndModel,
+  createTimeoutPromise,
+  createToolCallCollector,
+  buildDateTimeContext,
+} from './agent-runner-utils.js';
 
 const log = getLog('SubagentRunner');
 
@@ -101,16 +96,12 @@ export class SubagentRunner {
       }
 
       // 1. Resolve AI provider/model (input override or system model routing)
-      let provider: string;
-      let model: string;
-      if (this.input.provider && this.input.model) {
-        provider = this.input.provider;
-        model = this.input.model;
-      } else {
-        const resolved = await resolveForProcess('subagent');
-        provider = this.input.provider ?? resolved.provider ?? 'openai';
-        model = this.input.model ?? resolved.model ?? 'gpt-4o-mini';
-      }
+      const { provider, model } = await resolveProviderAndModel(
+        this.input.provider,
+        this.input.model,
+        'subagent',
+        `subagent:${this.input.name}`
+      );
 
       // 2. Create agent with full tool access
       const agent = await this.createAgent(provider, model);
@@ -119,25 +110,19 @@ export class SubagentRunner {
       const taskMessage = this.buildTaskMessage();
 
       // 4. Collect tool calls via callback
-      const toolCalls: SubagentToolCall[] = [];
+      const collector = createToolCallCollector();
       const wrappedOnToolEnd = (
         tc: ToolCall,
         result: { content: string; isError: boolean; durationMs: number }
       ) => {
-        toolCalls.push({
-          tool: tc.name,
-          args: safeParseJson(tc.arguments),
-          result: result.content,
-          success: !result.isError,
-          durationMs: result.durationMs,
-        });
+        collector.onToolEnd(tc, result);
         onToolEnd?.(tc, result);
       };
 
       // 5. Execute agent.chat() with timeout and cancellation
       const chatResult = await Promise.race([
         agent.chat(taskMessage, { onToolEnd: wrappedOnToolEnd }),
-        this.timeoutPromise(this.limits.timeoutMs),
+        createTimeoutPromise(this.limits.timeoutMs, 'Subagent'),
         this.cancellationPromise(),
       ]);
 
@@ -145,7 +130,7 @@ export class SubagentRunner {
 
       // Check if cancelled during execution
       if (this.abortController.signal.aborted) {
-        return this.cancelledResult(durationMs, toolCalls, provider, model);
+        return this.cancelledResult(durationMs, collector.toolCalls, provider, model);
       }
 
       // 6. Unwrap Result type
@@ -156,15 +141,15 @@ export class SubagentRunner {
       const response = chatResult.value;
 
       log.info(
-        `[subagent:${this.input.name}] Completed: ${toolCalls.length} tool calls, ${durationMs}ms`
+        `[subagent:${this.input.name}] Completed: ${collector.toolCalls.length} tool calls, ${durationMs}ms`
       );
 
       return {
         success: true,
         result: response.content ?? '',
-        toolCalls,
+        toolCalls: collector.toolCalls,
         turnsUsed: 1,
-        toolCallsUsed: toolCalls.length,
+        toolCallsUsed: collector.toolCalls.length,
         tokensUsed: response.usage
           ? {
               prompt: response.usage.promptTokens ?? 0,
@@ -214,100 +199,26 @@ export class SubagentRunner {
 
   // ---------- Private Helpers ----------
 
-  private async createAgent(provider: string, model: string): Promise<Agent> {
-    const apiKey = await getProviderApiKey(provider);
-    if (!apiKey) {
-      throw new Error(`API key not configured for provider: ${provider}`);
-    }
-
-    const providerConfig = loadProviderConfig(provider);
-    const baseUrl = providerConfig?.baseUrl;
-    const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
-
-    const userId = this.input.userId;
-    const conversationId = `subagent-${Date.now()}`;
-
-    // Create a fresh ToolRegistry with ALL tool sources (same as chat agents)
-    const tools = new ToolRegistry();
-
-    // 1. Core tools (built-in utilities, file, code, web, etc.)
-    registerAllTools(tools);
-    tools.setConfigCenter(gatewayConfigCenter);
-
-    // 2. Gateway domain tools (memory, goals, custom data, triggers, plans, etc.)
-    registerGatewayTools(tools, userId, false);
-
-    // 3. Dynamic tools (custom tools, CRUD meta-tools, user-created tools)
-    try {
-      await registerDynamicTools(tools, userId, conversationId, false);
-    } catch (err) {
-      log.warn(
-        `[subagent:${this.input.name}] Dynamic tools registration failed: ${getErrorMessage(err)}`
-      );
-    }
-
-    // 4. Plugin tools
-    try {
-      registerPluginTools(tools, false);
-    } catch (err) {
-      log.warn(
-        `[subagent:${this.input.name}] Plugin tools registration failed: ${getErrorMessage(err)}`
-      );
-    }
-
-    // 5. Extension/Skill tools
-    try {
-      registerExtensionTools(tools, userId, false);
-    } catch (err) {
-      log.warn(
-        `[subagent:${this.input.name}] Extension tools registration failed: ${getErrorMessage(err)}`
-      );
-    }
-
-    // 6. MCP tools (external MCP servers)
-    try {
-      registerMcpTools(tools, false);
-    } catch (err) {
-      log.warn(
-        `[subagent:${this.input.name}] MCP tools registration failed: ${getErrorMessage(err)}`
-      );
-    }
-
-    // Build system prompt
+  private async createAgent(provider: string, model: string) {
     const systemPrompt = this.buildSystemPrompt();
 
-    // Use allowedTools filter if configured
     const toolFilter =
       this.input.allowedTools && this.input.allowedTools.length > 0
         ? this.input.allowedTools.map((t) => t as ToolId)
         : undefined;
 
-    const agent = new Agent(
-      {
-        name: `subagent-${this.input.name}`,
-        systemPrompt,
-        provider: {
-          provider: providerType as AIProvider,
-          apiKey,
-          baseUrl,
-          headers: providerConfig?.headers,
-        },
-        model: {
-          model,
-          maxTokens: this.limits.maxTokens,
-          temperature: AGENT_DEFAULT_TEMPERATURE,
-        },
-        maxTurns: this.limits.maxTurns,
-        maxToolCalls: this.limits.maxToolCalls,
-        tools: toolFilter,
-      },
-      { tools }
-    );
-
-    // Enable direct tool mode (no meta-tool indirection)
-    agent.setDirectToolMode(true);
-
-    return agent;
+    return createConfiguredAgent({
+      name: `subagent-${this.input.name}`,
+      provider,
+      model,
+      systemPrompt,
+      userId: this.input.userId,
+      conversationId: `subagent-${Date.now()}`,
+      maxTokens: this.limits.maxTokens,
+      maxTurns: this.limits.maxTurns,
+      maxToolCalls: this.limits.maxToolCalls,
+      toolFilter,
+    });
   }
 
   private buildSystemPrompt(): string {
@@ -334,11 +245,7 @@ export class SubagentRunner {
     const parts: string[] = [];
 
     // Current date/time context
-    const now = new Date();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    parts.push(
-      `Current date: ${days[now.getDay()]} ${now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}`
-    );
+    parts.push(`Current date: ${buildDateTimeContext()}`);
     parts.push('');
 
     parts.push('## Task');
@@ -354,12 +261,6 @@ export class SubagentRunner {
     parts.push('Complete this task now. Provide a thorough response.');
 
     return parts.join('\n');
-  }
-
-  private timeoutPromise(ms: number): Promise<never> {
-    return new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Subagent timed out after ${ms}ms`)), ms)
-    );
   }
 
   private cancellationPromise(): Promise<never> {
@@ -392,17 +293,5 @@ export class SubagentRunner {
       provider,
       model,
     };
-  }
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function safeParseJson(str: string): Record<string, unknown> {
-  try {
-    return JSON.parse(str || '{}');
-  } catch {
-    return { _raw: str };
   }
 }

@@ -9,6 +9,8 @@
  * - mcp-bridge: MCP server tool calls
  */
 
+import type { AutonomousAgentResult } from '../../services/agent-execution-result.js';
+
 // ============================================================================
 // Worker Types
 // ============================================================================
@@ -160,20 +162,16 @@ export interface FleetSession {
 // Fleet Worker Result
 // ============================================================================
 
-export interface FleetWorkerResult {
+export interface FleetWorkerResult extends AutonomousAgentResult {
   id: string;
   sessionId: string;
   workerId: string;
   workerName: string;
   workerType: FleetWorkerType;
   taskId?: string;
-  success: boolean;
-  output: string;
-  toolCalls?: Array<{ name: string; args: unknown; result: unknown }>;
-  tokensUsed?: { prompt: number; completion: number };
+  /** Tool calls with both `tool` (base) and `name` (fleet-specific) identifiers */
+  toolCalls: Array<{ tool: string; name: string; args: unknown; result: unknown }>;
   costUsd?: number;
-  durationMs: number;
-  error?: string;
   executedAt: Date;
 }
 

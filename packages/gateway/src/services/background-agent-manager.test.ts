@@ -20,6 +20,7 @@ const { mockOnAny, mockOff, mockEmit, mockEmitRaw, mockOn } = vi.hoisted(() => (
 const mockRunCycle = vi.fn<[], Promise<BackgroundAgentCycleResult>>().mockResolvedValue({
   success: true,
   toolCalls: [{ tool: 'test', args: {}, result: 'ok', duration: 50 }],
+  output: 'Done',
   outputMessage: 'Done',
   tokensUsed: { prompt: 100, completion: 50 },
   durationMs: 500,
@@ -136,6 +137,7 @@ describe('BackgroundAgentManager', () => {
     mockRunCycle.mockReset().mockResolvedValue({
       success: true,
       toolCalls: [{ tool: 'test', args: {}, result: 'ok', duration: 50 }],
+      output: 'Done',
       outputMessage: 'Done',
       tokensUsed: { prompt: 100, completion: 50 },
       durationMs: 500,
@@ -412,6 +414,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValueOnce({
         success: true,
         toolCalls: [],
+        output: 'Cycle 1',
         outputMessage: 'Cycle 1',
         durationMs: 100,
         turns: 1,
@@ -446,6 +449,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValueOnce({
         success: true,
         toolCalls: [],
+        output: 'Cycle 1',
         outputMessage: 'Cycle 1',
         durationMs: 100,
         turns: 1,
@@ -500,6 +504,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValueOnce({
         success: true,
         toolCalls: [],
+        output: 'Cycle 1',
         outputMessage: 'Cycle 1',
         durationMs: 100,
         turns: 1,
@@ -573,6 +578,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValueOnce({
         success: true,
         toolCalls: [],
+        output: 'All tasks done. MISSION_COMPLETE',
         outputMessage: 'All tasks done. MISSION_COMPLETE',
         durationMs: 100,
         turns: 1,
@@ -791,6 +797,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValue({
         success: false,
         toolCalls: [],
+        output: '',
         outputMessage: '',
         durationMs: 100,
         turns: 0,
@@ -971,6 +978,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValue({
         success: false,
         toolCalls: [],
+        output: '',
         outputMessage: '',
         durationMs: 100,
         turns: 0,
@@ -1022,6 +1030,7 @@ describe('BackgroundAgentManager', () => {
       mockRunCycle.mockResolvedValueOnce({
         success: true,
         toolCalls: [],
+        output: 'All done. MISSION_COMPLETE',
         outputMessage: 'All done. MISSION_COMPLETE',
         durationMs: 100,
         turns: 1,

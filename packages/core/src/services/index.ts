@@ -242,6 +242,9 @@ export type {
   CliInstallMethod,
 } from './cli-tool-service.js';
 
+// Autonomous Agent Result (shared base for all autonomous agent runners)
+export type { AutonomousAgentResult } from './agent-execution-result.js';
+
 // Background Agent Service
 export type {
   IBackgroundAgentService,

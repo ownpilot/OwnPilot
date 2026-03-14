@@ -26,26 +26,16 @@ import { BackgroundAgentRunner } from './background-agent-runner.js';
 import { getBackgroundAgentsRepository } from '../db/repositories/background-agents.js';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { getLog } from './log.js';
+import {
+  MANAGER_MAX_CONSECUTIVE_ERRORS as MAX_CONSECUTIVE_ERRORS,
+  MANAGER_SESSION_PERSIST_INTERVAL_MS as SESSION_PERSIST_INTERVAL_MS,
+  BG_AGENT_CONTINUOUS_MIN_DELAY_MS as CONTINUOUS_MIN_DELAY_MS,
+  BG_AGENT_CONTINUOUS_MAX_DELAY_MS as CONTINUOUS_MAX_DELAY_MS,
+  BG_AGENT_CONTINUOUS_IDLE_DELAY_MS as CONTINUOUS_IDLE_DELAY_MS,
+  BG_AGENT_DEFAULT_INTERVAL_MS as DEFAULT_INTERVAL_MS,
+} from '../config/defaults.js';
 
 const log = getLog('BackgroundAgentManager');
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** Adaptive delay bounds for continuous mode */
-const CONTINUOUS_MIN_DELAY_MS = 500;
-const CONTINUOUS_MAX_DELAY_MS = 5_000;
-const CONTINUOUS_IDLE_DELAY_MS = 3_000;
-
-/** Default interval for interval mode */
-const DEFAULT_INTERVAL_MS = 300_000; // 5 minutes
-
-/** Session persist interval (save to DB periodically) */
-const SESSION_PERSIST_INTERVAL_MS = 30_000; // 30 seconds
-
-/** Max consecutive errors before auto-pause */
-const MAX_CONSECUTIVE_ERRORS = 5;
 
 // ============================================================================
 // Types
@@ -559,6 +549,7 @@ export class BackgroundAgentManager {
       result = {
         success: false,
         toolCalls: [],
+        output: '',
         outputMessage: '',
         durationMs: 0,
         turns: 0,
@@ -580,6 +571,27 @@ export class BackgroundAgentManager {
 
     // Track rate limiting
     managed.cyclesThisHour++;
+
+    // Post-cycle budget enforcement
+    if (session.config.limits.totalBudgetUsd !== undefined && session.config.limits.totalBudgetUsd > 0) {
+      const budgetRatio = session.totalCostUsd / session.config.limits.totalBudgetUsd;
+      if (budgetRatio >= 1) {
+        log.warn('Agent budget exceeded after cycle', {
+          agentId,
+          totalCostUsd: session.totalCostUsd,
+          budgetUsd: session.config.limits.totalBudgetUsd,
+        });
+        await this.stopAgent(agentId, 'budget_exceeded');
+        return;
+      } else if (budgetRatio >= 0.8) {
+        log.warn('Agent approaching budget limit', {
+          agentId,
+          totalCostUsd: session.totalCostUsd,
+          budgetUsd: session.config.limits.totalBudgetUsd,
+          percentUsed: Math.round(budgetRatio * 100),
+        });
+      }
+    }
 
     // Track consecutive errors
     if (result.success) {

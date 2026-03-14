@@ -19,37 +19,23 @@
  * - MCP tools
  */
 
-import {
-  Agent,
-  ToolRegistry,
-  registerAllTools,
-  getErrorMessage,
-  qualifyToolName,
-} from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core';
 import type {
-  AIProvider,
   BackgroundAgentConfig,
   BackgroundAgentSession,
   BackgroundAgentCycleResult,
   BackgroundAgentToolCall,
-  ToolCall,
-  ToolId,
 } from '@ownpilot/core';
 import { getLog } from './log.js';
-import { resolveForProcess } from './model-routing.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
-import {
-  registerGatewayTools,
-  registerDynamicTools,
-  registerPluginTools,
-  registerExtensionTools,
-  registerMcpTools,
-} from '../tools/agent-tool-registry.js';
-import { gatewayConfigCenter } from './config-center-impl.js';
-import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
-import { getServiceRegistry, Services } from '@ownpilot/core';
-import type { ExtensionService } from '../services/extension-service.js';
+import {
+  resolveProviderAndModel,
+  createConfiguredAgent,
+  resolveToolFilter,
+  createTimeoutPromise,
+  createToolCallCollector,
+  buildDateTimeContext,
+} from './agent-runner-utils.js';
 
 const log = getLog('BackgroundAgentRunner');
 
@@ -81,23 +67,11 @@ export class BackgroundAgentRunner {
 
     try {
       // 1. Resolve AI provider/model (config override or system model routing)
-      let provider: string;
-      let model: string;
-      if (this.config.provider && this.config.model) {
-        provider = this.config.provider;
-        model = this.config.model;
-      } else {
-        const resolved = await resolveForProcess('pulse');
-        const resolvedProvider = this.config.provider ?? resolved.provider;
-        const resolvedModel = this.config.model ?? resolved.model;
-        if (!resolvedProvider || !resolvedModel) {
-          throw new Error(
-            'No AI provider configured. Set provider/model on the agent or configure a default in Settings.'
-          );
-        }
-        provider = resolvedProvider;
-        model = resolvedModel;
-      }
+      const { provider, model } = await resolveProviderAndModel(
+        this.config.provider,
+        this.config.model,
+        'pulse'
+      );
 
       // 2. Create agent with full tool access
       const agent = await this.createAgent(provider, model);
@@ -106,23 +80,12 @@ export class BackgroundAgentRunner {
       const cycleMessage = this.buildCycleMessage(session, cycleNumber);
 
       // 4. Collect tool calls via callback
-      const toolCalls: BackgroundAgentToolCall[] = [];
-      const onToolEnd = (
-        tc: ToolCall,
-        result: { content: string; isError: boolean; durationMs: number }
-      ) => {
-        toolCalls.push({
-          tool: tc.name,
-          args: safeParseJson(tc.arguments),
-          result: result.content,
-          duration: result.durationMs,
-        });
-      };
+      const { toolCalls: collectedCalls, onToolEnd } = createToolCallCollector();
 
       // 5. Execute agent.chat() with timeout
       const chatResult = await Promise.race([
         agent.chat(cycleMessage, { onToolEnd }),
-        this.timeoutPromise(this.config.limits.cycleTimeoutMs),
+        createTimeoutPromise(this.config.limits.cycleTimeoutMs, 'Cycle'),
       ]);
 
       const durationMs = Date.now() - startTime;
@@ -134,6 +97,14 @@ export class BackgroundAgentRunner {
 
       const response = chatResult.value;
 
+      // Map CollectedToolCall[] to BackgroundAgentToolCall[]
+      const toolCalls: BackgroundAgentToolCall[] = collectedCalls.map((tc) => ({
+        tool: tc.tool,
+        args: tc.args,
+        result: tc.result,
+        duration: tc.durationMs,
+      }));
+
       log.info(`[${this.config.id}] Cycle ${cycleNumber} completed`, {
         toolCalls: toolCalls.length,
         tools: toolCalls.map((tc) => tc.tool),
@@ -141,10 +112,12 @@ export class BackgroundAgentRunner {
         outputLength: response.content?.length ?? 0,
       });
 
+      const outputText = response.content ?? '';
       return {
         success: true,
         toolCalls,
-        outputMessage: response.content ?? '',
+        output: outputText,
+        outputMessage: outputText,
         tokensUsed: response.usage
           ? {
               prompt: response.usage.promptTokens ?? 0,
@@ -163,6 +136,7 @@ export class BackgroundAgentRunner {
       return {
         success: false,
         toolCalls: [],
+        output: '',
         outputMessage: '',
         durationMs,
         turns: 0,
@@ -173,56 +147,9 @@ export class BackgroundAgentRunner {
 
   // ---------- Private Helpers ----------
 
-  private async createAgent(provider: string, model: string): Promise<Agent> {
-    const apiKey = await getProviderApiKey(provider);
-    if (!apiKey) {
-      throw new Error(`API key not configured for provider: ${provider}`);
-    }
-
-    const providerConfig = loadProviderConfig(provider);
-    const baseUrl = providerConfig?.baseUrl;
-    const providerType = NATIVE_PROVIDERS.has(provider) ? provider : 'openai';
-
+  private async createAgent(provider: string, model: string) {
     const userId = this.config.userId;
     const conversationId = `bg-${this.config.id}`;
-
-    // Create a fresh ToolRegistry with ALL tool sources (same as chat agents)
-    const tools = new ToolRegistry();
-
-    // 1. Core tools (built-in utilities, file, code, web, etc.)
-    registerAllTools(tools);
-    tools.setConfigCenter(gatewayConfigCenter);
-
-    // 2. Gateway domain tools (memory, goals, custom data, triggers, plans, etc.)
-    registerGatewayTools(tools, userId, false);
-
-    // 3. Dynamic tools (custom tools, CRUD meta-tools, user-created tools)
-    try {
-      await registerDynamicTools(tools, userId, conversationId, false);
-    } catch (err) {
-      log.warn(`[${this.config.id}] Dynamic tools registration failed: ${getErrorMessage(err)}`);
-    }
-
-    // 4. Plugin tools
-    try {
-      registerPluginTools(tools, false);
-    } catch (err) {
-      log.warn(`[${this.config.id}] Plugin tools registration failed: ${getErrorMessage(err)}`);
-    }
-
-    // 5. Extension/Skill tools
-    try {
-      registerExtensionTools(tools, userId, false);
-    } catch (err) {
-      log.warn(`[${this.config.id}] Extension tools registration failed: ${getErrorMessage(err)}`);
-    }
-
-    // 6. MCP tools (external MCP servers)
-    try {
-      registerMcpTools(tools, false);
-    } catch (err) {
-      log.warn(`[${this.config.id}] MCP tools registration failed: ${getErrorMessage(err)}`);
-    }
 
     // Build enhanced system prompt with memories + goals injected
     const basePrompt = this.buildSystemPrompt();
@@ -240,58 +167,24 @@ export class BackgroundAgentRunner {
       );
     }
 
-    // Build tool filter:
-    // - allowedTools: explicit tool name list (exact match)
-    // - skills: extension/skill IDs whose tools should be accessible
-    // When skills are specified, compute their qualified tool names and merge.
-    let toolFilter: ToolId[] | undefined;
-    const allowedSet = new Set(this.config.allowedTools);
-
-    if (this.config.skills && this.config.skills.length > 0) {
-      try {
-        const extService = getServiceRegistry().get(Services.Extension) as ExtensionService;
-        const allowedSkillIds = new Set(this.config.skills);
-        for (const def of extService.getToolDefinitions()) {
-          if (allowedSkillIds.has(def.extensionId)) {
-            const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
-            allowedSet.add(qualifyToolName(def.name, nsPrefix as 'skill' | 'ext', def.extensionId));
-          }
-        }
-      } catch (err) {
-        log.warn(`[${this.config.id}] Skills filter build failed: ${getErrorMessage(err)}`);
-      }
-    }
-
-    if (allowedSet.size > 0) {
-      toolFilter = [...allowedSet].map((t) => t as ToolId);
-    }
-
-    const agent = new Agent(
-      {
-        name: `bg-agent-${this.config.id}`,
-        systemPrompt,
-        provider: {
-          provider: providerType as AIProvider,
-          apiKey,
-          baseUrl,
-          headers: providerConfig?.headers,
-        },
-        model: {
-          model,
-          maxTokens: AGENT_DEFAULT_MAX_TOKENS,
-          temperature: AGENT_DEFAULT_TEMPERATURE,
-        },
-        maxTurns: this.config.limits.maxTurnsPerCycle,
-        maxToolCalls: this.config.limits.maxToolCallsPerCycle,
-        tools: toolFilter,
-      },
-      { tools }
+    // Build tool filter from allowedTools + skills
+    const toolFilter = resolveToolFilter(
+      this.config.allowedTools,
+      this.config.skills,
+      this.config.id
     );
 
-    // Enable direct tool mode for background agents (no meta-tool indirection)
-    agent.setDirectToolMode(true);
-
-    return agent;
+    return createConfiguredAgent({
+      name: `bg-agent-${this.config.id}`,
+      provider,
+      model,
+      systemPrompt,
+      userId,
+      conversationId,
+      maxTurns: this.config.limits.maxTurnsPerCycle,
+      maxToolCalls: this.config.limits.maxToolCallsPerCycle,
+      toolFilter,
+    });
   }
 
   private buildSystemPrompt(): string {
@@ -329,11 +222,7 @@ export class BackgroundAgentRunner {
     parts.push(`--- Cycle ${cycleNumber} ---`);
 
     // Current date/time context
-    const now = new Date();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    parts.push(
-      `\n## Current Time\n${days[now.getDay()]} ${now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}`
-    );
+    parts.push(`\n## Current Time\n${buildDateTimeContext()}`);
 
     // Include persistent context if non-empty
     if (Object.keys(session.persistentContext).length > 0) {
@@ -361,23 +250,5 @@ export class BackgroundAgentRunner {
     parts.push('\nContinue your mission. What actions will you take this cycle?');
 
     return parts.join('\n');
-  }
-
-  private timeoutPromise(ms: number): Promise<never> {
-    return new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`Cycle timed out after ${ms}ms`)), ms)
-    );
-  }
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function safeParseJson(str: string): Record<string, unknown> {
-  try {
-    return JSON.parse(str || '{}');
-  } catch {
-    return { _raw: str };
   }
 }
