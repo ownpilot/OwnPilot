@@ -201,7 +201,13 @@ export function useWorkflowEditor() {
             n.type === 'stickyNoteNode' ||
             n.type === 'notificationNode' ||
             n.type === 'parallelNode' ||
-            n.type === 'mergeNode'
+            n.type === 'mergeNode' ||
+            n.type === 'dataStoreNode' ||
+            n.type === 'schemaValidatorNode' ||
+            n.type === 'filterNode' ||
+            n.type === 'mapNode' ||
+            n.type === 'aggregateNode' ||
+            n.type === 'webhookResponseNode'
           ) {
             return {
               id: n.id,

@@ -112,6 +112,32 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
         if (typeof d.branchCount !== 'number' || d.branchCount < 2)
           errors.push(`Node "${node.id}": Parallel node requires "branchCount" >= 2`);
         break;
+      case 'dataStoreNode':
+        if (!d.operation) errors.push(`Node "${node.id}": DataStore node requires "operation"`);
+        if (!d.key) errors.push(`Node "${node.id}": DataStore node requires "key"`);
+        break;
+      case 'schemaValidatorNode':
+        if (!d.schema || typeof d.schema !== 'object')
+          errors.push(`Node "${node.id}": SchemaValidator node requires "schema" (object)`);
+        break;
+      case 'filterNode':
+        if (!d.arrayExpression)
+          errors.push(`Node "${node.id}": Filter node requires "arrayExpression"`);
+        if (!d.condition) errors.push(`Node "${node.id}": Filter node requires "condition"`);
+        break;
+      case 'mapNode':
+        if (!d.arrayExpression)
+          errors.push(`Node "${node.id}": Map node requires "arrayExpression"`);
+        if (!d.expression) errors.push(`Node "${node.id}": Map node requires "expression"`);
+        break;
+      case 'aggregateNode':
+        if (!d.arrayExpression)
+          errors.push(`Node "${node.id}": Aggregate node requires "arrayExpression"`);
+        if (!d.operation) errors.push(`Node "${node.id}": Aggregate node requires "operation"`);
+        break;
+      case 'webhookResponseNode':
+        // All fields are optional
+        break;
     }
 
     // ── Common field range checks ──

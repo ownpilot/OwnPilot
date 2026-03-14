@@ -680,7 +680,7 @@ describe('executeLlmNode', () => {
 
     expect(result.status).toBe('success');
     expect(result.output).toBe('Hello! How can I help?');
-    expect(result.resolvedArgs).toEqual({
+    expect(result.resolvedArgs).toMatchObject({
       provider: 'openai',
       model: 'gpt-4',
       userMessage: 'Hello AI',

@@ -15,6 +15,12 @@ import type {
   HttpRequestNodeData,
   DelayNodeData,
   SwitchNodeData,
+  DataStoreNodeData,
+  SchemaValidatorNodeData,
+  FilterNodeData,
+  MapNodeData,
+  AggregateNodeData,
+  WebhookResponseNodeData,
   NodeResult,
 } from '../../db/repositories/workflows.js';
 import {
@@ -120,6 +126,10 @@ export async function executeNode(
 /**
  * Execute an LLM node: resolve template expressions in userMessage,
  * call the AI provider, return the response text as output.
+ *
+ * Supports:
+ * - `responseFormat: 'json'` — appends JSON instruction and parses response
+ * - `conversationMessages` — multi-turn context inserted between system and user
  */
 export async function executeLlmNode(
   node: WorkflowNode,
@@ -130,15 +140,40 @@ export async function executeLlmNode(
 
   try {
     const data = node.data as LlmNodeData;
+    const responseFormat = data.responseFormat ?? 'text';
 
     // Resolve templates in user message (e.g., {{node_1.output}})
     const resolvedMessage = resolveTemplates({ _msg: data.userMessage }, nodeOutputs, variables)
       ._msg as string;
 
     // Resolve templates in system prompt too (if present)
-    const resolvedSystemPrompt = data.systemPrompt
+    let resolvedSystemPrompt = data.systemPrompt
       ? (resolveTemplates({ _sp: data.systemPrompt }, nodeOutputs, variables)._sp as string)
       : undefined;
+
+    // When responseFormat is 'json', append JSON instruction to system prompt
+    if (responseFormat === 'json') {
+      const jsonInstruction =
+        '\nIMPORTANT: You MUST respond with valid JSON only. No markdown, no explanation.';
+      resolvedSystemPrompt = resolvedSystemPrompt
+        ? resolvedSystemPrompt + jsonInstruction
+        : jsonInstruction.trimStart();
+    }
+
+    // Resolve templates in conversation messages (if present)
+    const convMessages = data.conversationMessages ?? [];
+    let resolvedConversationMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    if (convMessages.length > 0) {
+      const convResolveMap: Record<string, unknown> = {};
+      for (let i = 0; i < convMessages.length; i++) {
+        convResolveMap[`_conv_${i}`] = convMessages[i]!.content;
+      }
+      const resolvedConv = resolveTemplates(convResolveMap, nodeOutputs, variables);
+      resolvedConversationMessages = convMessages.map((msg, i) => ({
+        role: msg.role,
+        content: resolvedConv[`_conv_${i}`] as string,
+      }));
+    }
 
     // Lazy import to avoid circular deps (agent-cache is in routes/)
     const { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } =
@@ -192,9 +227,14 @@ export async function executeLlmNode(
       headers: providerCfg?.headers,
     });
 
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+    // Build message array: system → conversation messages → user
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
     if (resolvedSystemPrompt) {
       messages.push({ role: 'system', content: resolvedSystemPrompt });
+    }
+    // Insert multi-turn conversation messages between system and user
+    for (const convMsg of resolvedConversationMessages) {
+      messages.push(convMsg);
     }
     messages.push({ role: 'user', content: resolvedMessage });
 
@@ -218,16 +258,37 @@ export async function executeLlmNode(
       };
     }
 
+    const durationMs = Date.now() - startTime;
+
+    // Parse JSON response if responseFormat is 'json'
+    let output: unknown = result.value.content;
+    if (responseFormat === 'json' && typeof output === 'string') {
+      try {
+        output = JSON.parse(output);
+      } catch {
+        // Parse failed — return raw string (don't error)
+      }
+    }
+
+    log.info('LLM completed', {
+      nodeId: node.id,
+      provider: effectiveProvider,
+      model: effectiveModel,
+      durationMs,
+      responseFormat,
+    });
+
     return {
       nodeId: node.id,
       status: 'success',
-      output: result.value.content,
+      output,
       resolvedArgs: {
         provider: effectiveProvider,
         model: effectiveModel,
         userMessage: resolvedMessage,
+        responseFormat,
       },
-      durationMs: Date.now() - startTime,
+      durationMs,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
     };
@@ -818,6 +879,420 @@ export function executeMergeNode(
       nodeId: node.id,
       status: 'error',
       error: getErrorMessage(error, 'Merge node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+// ============================================================================
+// In-memory data store for DataStore nodes (namespace → key → value)
+// ============================================================================
+
+const workflowDataStore = new Map<string, Map<string, unknown>>();
+
+/**
+ * Execute a DataStore node: get/set/delete/list/has on a namespace-scoped in-memory Map.
+ */
+export function executeDataStoreNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as DataStoreNodeData;
+    const resolved = resolveTemplates(
+      { _key: data.key, _value: data.value, _ns: data.namespace ?? 'default' },
+      nodeOutputs,
+      variables
+    );
+    const ns = resolved._ns as string;
+    const key = resolved._key as string;
+
+    if (!workflowDataStore.has(ns)) {
+      workflowDataStore.set(ns, new Map());
+    }
+    const store = workflowDataStore.get(ns)!;
+
+    let output: unknown;
+    switch (data.operation) {
+      case 'get':
+        output = store.get(key) ?? null;
+        break;
+      case 'set': {
+        const prev = store.get(key) ?? null;
+        store.set(key, resolved._value);
+        output = { previousValue: prev };
+        break;
+      }
+      case 'delete':
+        output = { existed: store.delete(key) };
+        break;
+      case 'list':
+        output = [...store.keys()];
+        break;
+      case 'has':
+        output = store.has(key);
+        break;
+    }
+
+    log.info('DataStore operation completed', { nodeId: node.id, operation: data.operation, ns, key });
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output,
+      resolvedArgs: { operation: data.operation, namespace: ns, key },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'DataStore node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a SchemaValidator node: validate upstream data against a JSON schema.
+ */
+export function executeSchemaValidatorNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  _variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as SchemaValidatorNodeData;
+    const schema = data.schema;
+    const validationErrors: string[] = [];
+
+    // Get upstream data (last output)
+    let inputData: unknown = undefined;
+    for (const result of Object.values(nodeOutputs)) {
+      inputData = result.output;
+    }
+
+    // Simple manual validation: check type, required fields, property types
+    if (schema.type === 'object' && typeof inputData === 'object' && inputData !== null) {
+      const obj = inputData as Record<string, unknown>;
+      const required = (schema.required as string[]) ?? [];
+      for (const field of required) {
+        if (!(field in obj)) validationErrors.push(`Missing required field: "${field}"`);
+      }
+      const properties = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+      for (const [key, propSchema] of Object.entries(properties)) {
+        if (key in obj && propSchema.type && typeof obj[key] !== propSchema.type) {
+          validationErrors.push(`Field "${key}" expected type "${propSchema.type}", got "${typeof obj[key]}"`);
+        }
+      }
+    } else if (schema.type && typeof inputData !== schema.type) {
+      validationErrors.push(`Expected type "${schema.type as string}", got "${typeof inputData}"`);
+    }
+
+    const valid = validationErrors.length === 0;
+    log.info('Schema validation completed', { nodeId: node.id, valid, errorCount: validationErrors.length });
+
+    if (!valid && data.strict) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        output: { valid, errors: validationErrors },
+        error: `Validation failed: ${validationErrors.join('; ')}`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: { valid, errors: validationErrors },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Schema validation failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a Filter node: filter an array by a condition expression.
+ */
+export function executeFilterNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as FilterNodeData;
+
+    // Resolve array expression via template
+    const resolved = resolveTemplates({ _arr: data.arrayExpression }, nodeOutputs, variables);
+    const arr = resolved._arr;
+    if (!Array.isArray(arr)) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `arrayExpression did not resolve to an array (got ${typeof arr})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    const vmTimeout = data.timeoutMs || 5000;
+    const filtered = arr.filter((item, index) => {
+      const ctx = { item, index, ...variables };
+      return vm.runInNewContext(data.condition, ctx, { timeout: vmTimeout });
+    });
+
+    log.info('Filter completed', { nodeId: node.id, inputCount: arr.length, outputCount: filtered.length });
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: filtered,
+      resolvedArgs: { condition: data.condition, inputCount: arr.length },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Filter node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a Map node: transform each element of an array via an expression.
+ */
+export function executeMapNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as MapNodeData;
+
+    const resolved = resolveTemplates({ _arr: data.arrayExpression }, nodeOutputs, variables);
+    const arr = resolved._arr;
+    if (!Array.isArray(arr)) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `arrayExpression did not resolve to an array (got ${typeof arr})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    const vmTimeout = data.timeoutMs || 5000;
+    const mapped = arr.map((item, index) => {
+      const ctx = { item, index, ...variables };
+      return vm.runInNewContext(data.expression, ctx, { timeout: vmTimeout });
+    });
+
+    log.info('Map completed', { nodeId: node.id, count: arr.length });
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output: mapped,
+      resolvedArgs: { expression: data.expression, inputCount: arr.length },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Map node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute an Aggregate node: perform aggregate operations on an array.
+ */
+export function executeAggregateNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as AggregateNodeData;
+
+    const resolved = resolveTemplates({ _arr: data.arrayExpression }, nodeOutputs, variables);
+    const arr = resolved._arr;
+    if (!Array.isArray(arr)) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `arrayExpression did not resolve to an array (got ${typeof arr})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    let output: unknown;
+    const getVal = (item: unknown): number => {
+      if (data.field && typeof item === 'object' && item !== null) {
+        return Number((item as Record<string, unknown>)[data.field]);
+      }
+      return Number(item);
+    };
+
+    switch (data.operation) {
+      case 'count':
+        output = arr.length;
+        break;
+      case 'sum':
+        output = arr.reduce((acc, item) => acc + getVal(item), 0);
+        break;
+      case 'avg':
+        output = arr.length > 0 ? arr.reduce((acc, item) => acc + getVal(item), 0) / arr.length : 0;
+        break;
+      case 'min':
+        output = arr.length > 0 ? Math.min(...arr.map(getVal)) : null;
+        break;
+      case 'max':
+        output = arr.length > 0 ? Math.max(...arr.map(getVal)) : null;
+        break;
+      case 'groupBy': {
+        const groups: Record<string, unknown[]> = {};
+        for (const item of arr) {
+          const key = data.field && typeof item === 'object' && item !== null
+            ? String((item as Record<string, unknown>)[data.field])
+            : String(item);
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(item);
+        }
+        output = groups;
+        break;
+      }
+      case 'flatten':
+        output = arr.flat();
+        break;
+      case 'unique':
+        if (data.field) {
+          const seen = new Set<unknown>();
+          output = arr.filter((item) => {
+            const val = typeof item === 'object' && item !== null
+              ? (item as Record<string, unknown>)[data.field!]
+              : item;
+            if (seen.has(val)) return false;
+            seen.add(val);
+            return true;
+          });
+        } else {
+          output = [...new Set(arr)];
+        }
+        break;
+    }
+
+    log.info('Aggregate completed', { nodeId: node.id, operation: data.operation, inputCount: arr.length });
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output,
+      resolvedArgs: { operation: data.operation, field: data.field, inputCount: arr.length },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Aggregate node failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
+
+/**
+ * Execute a WebhookResponse node: configure the HTTP response for webhook-triggered workflows.
+ */
+export function executeWebhookResponseNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>
+): NodeResult {
+  const startTime = Date.now();
+  try {
+    const data = node.data as WebhookResponseNodeData;
+
+    // Resolve templates in body and header values
+    const resolveMap: Record<string, unknown> = {};
+    if (data.body) resolveMap._body = data.body;
+    if (data.headers) {
+      for (const [k, v] of Object.entries(data.headers)) {
+        resolveMap[`_h_${k}`] = v;
+      }
+    }
+    const resolved = resolveTemplates(resolveMap, nodeOutputs, variables);
+
+    const headers: Record<string, string> = {};
+    if (data.headers) {
+      for (const k of Object.keys(data.headers)) {
+        headers[k] = resolved[`_h_${k}`] as string;
+      }
+    }
+
+    const output = {
+      statusCode: data.statusCode ?? 200,
+      body: resolved._body ?? '',
+      headers,
+      contentType: data.contentType ?? 'application/json',
+    };
+
+    log.info('WebhookResponse configured', { nodeId: node.id, statusCode: output.statusCode });
+    return {
+      nodeId: node.id,
+      status: 'success',
+      output,
+      resolvedArgs: { statusCode: output.statusCode, contentType: output.contentType },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'WebhookResponse node failed'),
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),

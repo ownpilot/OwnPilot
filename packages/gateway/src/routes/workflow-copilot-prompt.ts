@@ -2,7 +2,7 @@
  * Workflow Copilot — System prompt builder.
  *
  * Constructs a system prompt that teaches the AI how to generate valid
- * OwnPilot workflow JSON definitions (all 17 node types, edges, templates).
+ * OwnPilot workflow JSON definitions (all 23 node types, edges, templates).
  */
 
 interface WorkflowState {
@@ -89,6 +89,8 @@ Briefly explain what you built or changed before the JSON block.
 - \`userMessage\` (required): user message — use \`{{nodeId.output}}\` to inject upstream data
 - \`temperature\` (optional): 0.0-2.0, default 0.7. Use lower values (0.1-0.3) for classification/extraction, higher (0.7-0.9) for creative tasks
 - \`maxTokens\` (optional): default 4096
+- \`responseFormat\` (optional): \`"text"\` (default) | \`"json"\` — when \`"json"\`, the LLM is instructed to return valid JSON and the output is auto-parsed
+- \`conversationMessages\` (optional): array of \`{ role: "user"|"assistant", content: "..." }\` for multi-turn context before the main userMessage
 - **Best practice**: Always use \`"default"\` for provider and model unless the user specifically requests a particular provider. Always include a descriptive \`systemPrompt\` with clear role and output format instructions.
 
 ### 4. Condition Node — if/else branching (TWO outputs: "true" and "false")
@@ -328,12 +330,114 @@ Briefly explain what you built or changed before the JSON block.
 - When any node fails, this node receives the error and can decide recovery strategy
 - Max ONE error handler per workflow — place it off to the side (higher x) as it's not in the main flow
 
+### 18. Data Store Node — persist/retrieve key-value data across nodes
+\`\`\`
+{
+  "id": "node_N",
+  "type": "dataStore",
+  "label": "Save Result",
+  "operation": "set",
+  "key": "lastResult",
+  "value": "{{node_2.output}}",
+  "namespace": "myWorkflow",
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`operation\` (required): \`"get"\` | \`"set"\` | \`"delete"\` | \`"list"\` | \`"has"\`
+- \`key\` (required): storage key — supports template expressions
+- \`value\` (optional): value to store (for \`set\` operation) — supports template expressions
+- \`namespace\` (optional): scope isolation between workflows
+- Useful for persisting state between workflow runs or sharing data between branches
+
+### 19. Schema Validator Node — validate data against a JSON schema
+\`\`\`
+{
+  "id": "node_N",
+  "type": "schemaValidator",
+  "label": "Validate API Response",
+  "schema": { "required": ["name", "email"], "properties": { "name": { "type": "string" }, "email": { "type": "string" } } },
+  "strict": true,
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`schema\` (required): JSON Schema object with \`required\` and/or \`properties\`
+- \`strict\` (optional): if true, node fails when validation fails (default: false, just reports errors)
+- Validates upstream \`data\` against the schema
+- Output: \`{ valid: boolean, errors: string[], data: <upstream> }\`
+
+### 20. Filter Node — filter array items by condition
+\`\`\`
+{
+  "id": "node_N",
+  "type": "filter",
+  "label": "Active Users Only",
+  "arrayExpression": "{{node_2.output.users}}",
+  "condition": "item.active === true",
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`arrayExpression\` (required): template expression resolving to an array
+- \`condition\` (required): JS expression (access \`item\` and \`index\` variables), return truthy to keep
+- Output: filtered array
+- Simpler and faster than ForEach for pure filtering
+
+### 21. Map Node — transform each array item
+\`\`\`
+{
+  "id": "node_N",
+  "type": "map",
+  "label": "Extract Names",
+  "arrayExpression": "{{node_2.output.users}}",
+  "expression": "({ name: item.name, email: item.email })",
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`arrayExpression\` (required): template expression resolving to an array
+- \`expression\` (required): JS expression (access \`item\` and \`index\` variables), return transformed item
+- Output: mapped array
+- Simpler and faster than ForEach for pure transformations
+
+### 22. Aggregate Node — compute statistics on arrays
+\`\`\`
+{
+  "id": "node_N",
+  "type": "aggregate",
+  "label": "Total Revenue",
+  "arrayExpression": "{{node_2.output.orders}}",
+  "operation": "sum",
+  "field": "amount",
+  "position": { "x": 300, "y": 500 }
+}
+\`\`\`
+- \`arrayExpression\` (required): template expression resolving to an array
+- \`operation\` (required): \`"sum"\` | \`"count"\` | \`"avg"\` | \`"min"\` | \`"max"\` | \`"groupBy"\` | \`"flatten"\` | \`"unique"\`
+- \`field\` (optional): object field to operate on (e.g. \`"amount"\` for \`[{amount: 10}, {amount: 20}]\`)
+- Output: computed result (number, object, or array depending on operation)
+
+### 23. Webhook Response Node — send HTTP response for webhook-triggered workflows
+\`\`\`
+{
+  "id": "node_N",
+  "type": "webhookResponse",
+  "label": "Send Response",
+  "statusCode": 200,
+  "body": "{{node_3.output}}",
+  "contentType": "application/json",
+  "position": { "x": 300, "y": 700 }
+}
+\`\`\`
+- \`statusCode\` (optional): HTTP status code, default 200
+- \`body\` (optional): response body — supports template expressions
+- \`headers\` (optional): response headers object
+- \`contentType\` (optional): Content-Type header, default "application/json"
+- Only meaningful in webhook-triggered workflows — stores the HTTP response to send back
+
 ## Retry & Timeout (optional on most nodes)
 Most nodes support optional retry and timeout configuration:
 - \`retryCount\` (optional): 0-5, number of retries on failure (default: 0)
 - \`timeoutMs\` (optional): 0-300000, timeout in milliseconds (default: none)
-Retry uses exponential backoff (100ms, 200ms, 400ms...). Supported by: toolNode, llmNode, conditionNode, codeNode, transformerNode, forEachNode, httpRequestNode, switchNode, notificationNode.
-Not supported by: triggerNode, delayNode, stickyNoteNode, approvalNode, parallelNode, mergeNode, errorHandlerNode.
+Retry uses exponential backoff (100ms, 200ms, 400ms...). Supported by: toolNode, llmNode, conditionNode, codeNode, transformerNode, forEachNode, httpRequestNode, switchNode, notificationNode, filterNode, mapNode, schemaValidatorNode.
+Not supported by: triggerNode, delayNode, stickyNoteNode, approvalNode, parallelNode, mergeNode, errorHandlerNode, dataStoreNode, aggregateNode, webhookResponseNode.
 
 ## Edges
 
@@ -426,6 +530,11 @@ Add \`"outputAlias": "weather"\` to any node to create a readable alias:
 | Sub-Workflow | \`inputMapping\` values |
 | Approval | \`approvalMessage\` |
 | Error Handler | (no template fields) |
+| Data Store | \`key\`, \`value\` |
+| Filter | \`arrayExpression\` |
+| Map | \`arrayExpression\` |
+| Aggregate | \`arrayExpression\` |
+| Webhook Response | \`body\` |
 
 ### Expression nodes (use \`data\` variable, NOT templates)
 Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions where \`data\` holds the most recent upstream output. Do NOT use \`{{}}\` templates inside these expressions:

@@ -57,6 +57,10 @@ export interface LlmNodeData {
   baseUrl?: string;
   retryCount?: number;
   timeoutMs?: number;
+  /** When 'json', instructs the LLM to return valid JSON and parses the response */
+  responseFormat?: 'text' | 'json';
+  /** Multi-turn context messages inserted between system and user messages */
+  conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 export interface ConditionNodeData {
@@ -199,6 +203,59 @@ export interface MergeNodeData {
   description?: string;
 }
 
+export interface DataStoreNodeData {
+  label: string;
+  operation: 'get' | 'set' | 'delete' | 'list' | 'has';
+  key: string;
+  value?: unknown;
+  namespace?: string;
+  description?: string;
+}
+
+export interface SchemaValidatorNodeData {
+  label: string;
+  schema: Record<string, unknown>;
+  strict?: boolean;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface FilterNodeData {
+  label: string;
+  arrayExpression: string;
+  condition: string;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface MapNodeData {
+  label: string;
+  arrayExpression: string;
+  expression: string;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+}
+
+export interface AggregateNodeData {
+  label: string;
+  arrayExpression: string;
+  operation: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'groupBy' | 'flatten' | 'unique';
+  field?: string;
+  description?: string;
+}
+
+export interface WebhookResponseNodeData {
+  label: string;
+  statusCode?: number;
+  body?: string;
+  headers?: Record<string, string>;
+  contentType?: string;
+  description?: string;
+}
+
 export type WorkflowNodeData =
   | ToolNodeData
   | TriggerNodeData
@@ -217,6 +274,12 @@ export type WorkflowNodeData =
   | NotificationNodeData
   | ParallelNodeData
   | MergeNodeData
+  | DataStoreNodeData
+  | SchemaValidatorNodeData
+  | FilterNodeData
+  | MapNodeData
+  | AggregateNodeData
+  | WebhookResponseNodeData
   | Record<string, unknown>;
 
 export interface WorkflowNode {

@@ -46,6 +46,12 @@ import {
   executeSwitchNode,
   executeNotificationNode,
   executeMergeNode,
+  executeDataStoreNode,
+  executeSchemaValidatorNode,
+  executeFilterNode,
+  executeMapNode,
+  executeAggregateNode,
+  executeWebhookResponseNode,
 } from './node-executors.js';
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
@@ -378,6 +384,60 @@ export class WorkflowService implements IWorkflowService {
                 node,
                 async () =>
                   executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds),
+                onProgress
+              );
+            }
+
+            if (node.type === 'dataStoreNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'dataStore' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeDataStoreNode(node, nodeOutputs, workflow.variables),
+                onProgress
+              );
+            }
+
+            if (node.type === 'schemaValidatorNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'schemaValidator' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeSchemaValidatorNode(node, nodeOutputs, workflow.variables),
+                onProgress
+              );
+            }
+
+            if (node.type === 'filterNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'filter' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeFilterNode(node, nodeOutputs, workflow.variables),
+                onProgress
+              );
+            }
+
+            if (node.type === 'mapNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'map' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeMapNode(node, nodeOutputs, workflow.variables),
+                onProgress
+              );
+            }
+
+            if (node.type === 'aggregateNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'aggregate' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeAggregateNode(node, nodeOutputs, workflow.variables),
+                onProgress
+              );
+            }
+
+            if (node.type === 'webhookResponseNode') {
+              onProgress?.({ type: 'node_start', nodeId, toolName: 'webhookResponse' });
+              return await this.executeWithRetryAndTimeout(
+                node,
+                async () => executeWebhookResponseNode(node, nodeOutputs, workflow.variables),
                 onProgress
               );
             }

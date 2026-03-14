@@ -113,7 +113,7 @@ function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
           label: d.label,
           provider: d.provider,
           model: d.model,
-          ...pickDefined(d, ['systemPrompt', 'userMessage', 'temperature', 'maxTokens']),
+          ...pickDefined(d, ['systemPrompt', 'userMessage', 'temperature', 'maxTokens', 'responseFormat', 'conversationMessages']),
         };
       }
       if (n.type === 'conditionNode') {
@@ -181,6 +181,63 @@ function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
           expression: d.expression,
           cases: d.cases,
           ...pickDefined(d, ['description']),
+        };
+      }
+      if (n.type === 'dataStoreNode') {
+        return {
+          ...base,
+          type: 'dataStore',
+          label: d.label,
+          operation: d.operation,
+          key: d.key,
+          ...pickDefined(d, ['value', 'namespace', 'description']),
+        };
+      }
+      if (n.type === 'schemaValidatorNode') {
+        return {
+          ...base,
+          type: 'schemaValidator',
+          label: d.label,
+          schema: d.schema,
+          ...pickDefined(d, ['strict', 'description']),
+        };
+      }
+      if (n.type === 'filterNode') {
+        return {
+          ...base,
+          type: 'filter',
+          label: d.label,
+          arrayExpression: d.arrayExpression,
+          condition: d.condition,
+          ...pickDefined(d, ['description']),
+        };
+      }
+      if (n.type === 'mapNode') {
+        return {
+          ...base,
+          type: 'map',
+          label: d.label,
+          arrayExpression: d.arrayExpression,
+          expression: d.expression,
+          ...pickDefined(d, ['description']),
+        };
+      }
+      if (n.type === 'aggregateNode') {
+        return {
+          ...base,
+          type: 'aggregate',
+          label: d.label,
+          arrayExpression: d.arrayExpression,
+          operation: d.operation,
+          ...pickDefined(d, ['field', 'description']),
+        };
+      }
+      if (n.type === 'webhookResponseNode') {
+        return {
+          ...base,
+          type: 'webhookResponse',
+          label: d.label,
+          ...pickDefined(d, ['statusCode', 'body', 'headers', 'contentType', 'description']),
         };
       }
       // Tool node
@@ -674,6 +731,8 @@ export function convertDefinitionToReactFlow(
           userMessage: (def.userMessage as string) ?? '',
           ...(def.temperature != null ? { temperature: def.temperature } : {}),
           ...(def.maxTokens != null ? { maxTokens: def.maxTokens } : {}),
+          ...(def.responseFormat != null ? { responseFormat: def.responseFormat } : {}),
+          ...(def.conversationMessages != null ? { conversationMessages: def.conversationMessages } : {}),
         },
       };
     }
@@ -875,6 +934,95 @@ export function convertDefinitionToReactFlow(
         data: {
           label: def.label ?? 'Merge',
           ...(def.mode != null ? { mode: def.mode } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'dataStore') {
+      return {
+        id,
+        type: 'dataStoreNode',
+        position,
+        data: {
+          label: def.label ?? 'Data Store',
+          operation: (def.operation as string) ?? 'set',
+          key: (def.key as string) ?? '',
+          ...(def.value != null ? { value: def.value } : {}),
+          ...(def.namespace != null ? { namespace: def.namespace } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'schemaValidator') {
+      return {
+        id,
+        type: 'schemaValidatorNode',
+        position,
+        data: {
+          label: def.label ?? 'Schema Validator',
+          schema: def.schema ?? {},
+          ...(def.strict != null ? { strict: def.strict } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'filter') {
+      return {
+        id,
+        type: 'filterNode',
+        position,
+        data: {
+          label: def.label ?? 'Filter',
+          arrayExpression: (def.arrayExpression as string) ?? '',
+          condition: (def.condition as string) ?? '',
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'map') {
+      return {
+        id,
+        type: 'mapNode',
+        position,
+        data: {
+          label: def.label ?? 'Map',
+          arrayExpression: (def.arrayExpression as string) ?? '',
+          expression: (def.expression as string) ?? '',
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'aggregate') {
+      return {
+        id,
+        type: 'aggregateNode',
+        position,
+        data: {
+          label: def.label ?? 'Aggregate',
+          arrayExpression: (def.arrayExpression as string) ?? '',
+          operation: (def.operation as string) ?? 'count',
+          ...(def.field != null ? { field: def.field } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
+    if (def.type === 'webhookResponse') {
+      return {
+        id,
+        type: 'webhookResponseNode',
+        position,
+        data: {
+          label: def.label ?? 'Webhook Response',
+          ...(def.statusCode != null ? { statusCode: def.statusCode } : {}),
+          ...(def.body != null ? { body: def.body } : {}),
+          ...(def.headers != null ? { headers: def.headers } : {}),
+          ...(def.contentType != null ? { contentType: def.contentType } : {}),
           ...(def.description != null ? { description: def.description } : {}),
         },
       };
