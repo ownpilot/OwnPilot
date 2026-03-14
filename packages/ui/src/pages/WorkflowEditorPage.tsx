@@ -90,6 +90,7 @@ function WorkflowEditorInner() {
         handleArrange={editor.handleArrange}
         handleExecute={editor.handleExecute}
         handleCancel={editor.handleCancel}
+        executionProgress={editor.executionProgress}
       />
 
       {/* Three-panel layout */}

@@ -118,16 +118,40 @@ export function WorkflowLogViewerPage() {
     [sortedResults]
   );
 
-  // Build minimal node list for ExecutionTimeline
-  const timelineNodes = useMemo(
-    () =>
-      sortedResults.map((r) => ({
+  // Load workflow to get actual node labels for the timeline
+  const [workflowNodes, setWorkflowNodes] = useState<
+    Array<{ id: string; type: string; data: Record<string, unknown> }>
+  >([]);
+
+  useEffect(() => {
+    if (!log?.workflowId) return;
+    workflowsApi
+      .get(log.workflowId)
+      .then((wf) =>
+        setWorkflowNodes(
+          wf.nodes.map((n) => ({
+            id: n.id,
+            type: n.type,
+            data: n.data as unknown as Record<string, unknown>,
+          }))
+        )
+      )
+      .catch(() => {
+        /* workflow may have been deleted */
+      });
+  }, [log?.workflowId]);
+
+  // Build node list for ExecutionTimeline, using workflow labels when available
+  const timelineNodes = useMemo(() => {
+    return sortedResults.map((r) => {
+      const wfNode = workflowNodes.find((n) => n.id === r.nodeId);
+      return {
         id: r.nodeId,
-        type: 'tool',
-        data: { label: r.nodeId } as Record<string, unknown>,
-      })),
-    [sortedResults]
-  );
+        type: wfNode?.type ?? 'tool',
+        data: { label: (wfNode?.data?.label as string) ?? r.nodeId } as Record<string, unknown>,
+      };
+    });
+  }, [sortedResults, workflowNodes]);
 
   const handleReplay = useCallback(async () => {
     if (!logId || isReplaying) return;
@@ -300,14 +324,19 @@ export function WorkflowLogViewerPage() {
           <ExecutionTimeline nodeResults={log.nodeResults} nodes={timelineNodes} />
         ) : (
           <div className="space-y-2">
-            {filteredResults.map((result) => (
-              <NodeResultCard
-                key={result.nodeId}
-                result={result}
-                expanded={expandedNodes.has(result.nodeId)}
-                onToggle={() => toggleNode(result.nodeId)}
-              />
-            ))}
+            {filteredResults.map((result) => {
+              const wfNode = workflowNodes.find((n) => n.id === result.nodeId);
+              const nodeLabel = (wfNode?.data?.label as string) ?? result.nodeId;
+              return (
+                <NodeResultCard
+                  key={result.nodeId}
+                  result={result}
+                  label={nodeLabel}
+                  expanded={expandedNodes.has(result.nodeId)}
+                  onToggle={() => toggleNode(result.nodeId)}
+                />
+              );
+            })}
 
             {filteredResults.length === 0 && (
               <p className="text-center text-sm text-text-muted dark:text-dark-text-muted py-8">
@@ -327,10 +356,12 @@ export function WorkflowLogViewerPage() {
 
 function NodeResultCard({
   result,
+  label,
   expanded,
   onToggle,
 }: {
   result: NodeResult & { nodeId: string };
+  label: string;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -350,7 +381,7 @@ function NodeResultCard({
           <ChevronRight className="w-3.5 h-3.5 shrink-0" />
         )}
         <StatusIcon className="w-4 h-4 shrink-0" />
-        <span className="text-sm font-medium flex-1 truncate">{result.nodeId}</span>
+        <span className="text-sm font-medium flex-1 truncate">{label}</span>
         {result.retryAttempts != null && result.retryAttempts > 0 && (
           <span className="px-1.5 py-0.5 text-[10px] bg-warning/10 text-warning rounded-full">
             {result.retryAttempts} {result.retryAttempts === 1 ? 'retry' : 'retries'}

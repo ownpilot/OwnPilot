@@ -527,6 +527,77 @@ export function LlmConfigPanel({
               </p>
             </div>
 
+            {/* Conversation Context */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted">
+                  Conversation Context
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const msgs: LlmNodeData['conversationMessages'] = [
+                      ...(data.conversationMessages ?? []),
+                    ];
+                    msgs!.push({ role: 'user', content: '' });
+                    pushUpdate({ conversationMessages: msgs });
+                  }}
+                  className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+                >
+                  + Add Message
+                </button>
+              </div>
+              <p className="text-[10px] text-text-muted mb-2">
+                Optional multi-turn context messages inserted before the main User Message
+              </p>
+              {(data.conversationMessages ?? []).map((msg, i) => (
+                <div key={i} className="flex gap-1.5 mb-2">
+                  <select
+                    value={msg.role}
+                    onChange={(e) => {
+                      const msgs: LlmNodeData['conversationMessages'] = [
+                        ...(data.conversationMessages ?? []),
+                      ];
+                      msgs![i] = {
+                        role: e.target.value as 'user' | 'assistant',
+                        content: msgs![i]!.content,
+                      };
+                      pushUpdate({ conversationMessages: msgs });
+                    }}
+                    className="px-1.5 py-1 text-[10px] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary w-20 shrink-0"
+                  >
+                    <option value="user">User</option>
+                    <option value="assistant">Assistant</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={msg.content}
+                    onChange={(e) => {
+                      const msgs: LlmNodeData['conversationMessages'] = [
+                        ...(data.conversationMessages ?? []),
+                      ];
+                      msgs![i] = { role: msgs![i]!.role, content: e.target.value };
+                      pushUpdate({ conversationMessages: msgs });
+                    }}
+                    placeholder="Message content..."
+                    className={`${INPUT_CLS} flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const msgs = (data.conversationMessages ?? []).filter((_, j) => j !== i);
+                      pushUpdate({
+                        conversationMessages: msgs.length > 0 ? msgs : undefined,
+                      });
+                    }}
+                    className="p-1 text-text-muted hover:text-error transition-colors shrink-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
             {/* Advanced: custom API key + base URL */}
             <div>
               <button
