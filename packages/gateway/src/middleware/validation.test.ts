@@ -18,7 +18,6 @@ import {
   autonomyApproveRejectSchema,
   createGoalSchema,
   updateGoalSchema,
-  createGoalStepSchema,
   createGoalStepsSchema,
   updateGoalStepSchema,
   createMemorySchema,
@@ -28,7 +27,6 @@ import {
   cleanupMemoriesSchema,
   createExpenseSchema,
   updateExpenseSchema,
-  mediaSettingsSchema,
   createCustomTableSchema,
   updateCustomTableSchema,
   createCustomRecordSchema,
@@ -954,37 +952,6 @@ describe('updateGoalSchema', () => {
   });
 });
 
-describe('createGoalStepSchema', () => {
-  it('accepts valid step', () => {
-    expect(createGoalStepSchema.safeParse({ title: 'Step 1' }).success).toBe(true);
-  });
-
-  it('accepts step with optional fields', () => {
-    const result = createGoalStepSchema.safeParse({
-      title: 'Step 1',
-      description: 'First step',
-      orderNum: 0,
-      dependencies: ['step-0'],
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects empty title', () => {
-    expect(createGoalStepSchema.safeParse({ title: '' }).success).toBe(false);
-  });
-
-  it('rejects orderNum over 10000', () => {
-    expect(createGoalStepSchema.safeParse({ title: 'Step', orderNum: 10001 }).success).toBe(false);
-  });
-
-  it('rejects dependencies over 50 items', () => {
-    const deps = Array.from({ length: 51 }, (_, i) => `dep-${i}`);
-    expect(createGoalStepSchema.safeParse({ title: 'Step', dependencies: deps }).success).toBe(
-      false
-    );
-  });
-});
-
 describe('createGoalStepsSchema', () => {
   it('accepts array form with steps field', () => {
     const result = createGoalStepsSchema.safeParse({
@@ -1313,41 +1280,6 @@ describe('updateExpenseSchema', () => {
 });
 
 // ─── Media Settings Schemas ───────────────────────────────────────
-
-describe('mediaSettingsSchema', () => {
-  it('accepts valid settings with provider', () => {
-    expect(mediaSettingsSchema.safeParse({ provider: 'openai' }).success).toBe(true);
-  });
-
-  it('accepts settings with all fields', () => {
-    const result = mediaSettingsSchema.safeParse({
-      provider: 'openai',
-      model: 'dall-e-3',
-      config: { quality: 'hd' },
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects empty provider', () => {
-    expect(mediaSettingsSchema.safeParse({ provider: '' }).success).toBe(false);
-  });
-
-  it('rejects missing provider', () => {
-    expect(mediaSettingsSchema.safeParse({}).success).toBe(false);
-  });
-
-  it('rejects provider over 100 characters', () => {
-    expect(mediaSettingsSchema.safeParse({ provider: 'p'.repeat(101) }).success).toBe(false);
-  });
-
-  it('strips unknown fields (no passthrough)', () => {
-    const result = mediaSettingsSchema.safeParse({ provider: 'test', customKey: 'value' });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect((result.data as Record<string, unknown>).customKey).toBeUndefined();
-    }
-  });
-});
 
 // ─── Custom Data Schemas ──────────────────────────────────────────
 

@@ -307,13 +307,6 @@ export const updateGoalSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const createGoalStepSchema = z.object({
-  title: z.string().min(1).max(500),
-  description: z.string().max(5000).optional(),
-  orderNum: z.number().int().min(0).max(10000).optional(),
-  dependencies: z.array(z.string().max(200)).max(50).optional(),
-});
-
 export const createGoalStepsSchema = z.union([
   z.object({
     steps: z
@@ -415,14 +408,6 @@ export const updateExpenseSchema = z.object({
   paymentMethod: z.string().max(100).optional(),
   tags: z.array(z.string().max(100)).max(20).optional(),
   notes: z.string().max(5000).optional(),
-});
-
-// ─── Media Settings Schemas ─────────────────────────────────────
-
-export const mediaSettingsSchema = z.object({
-  provider: z.string().min(1).max(100),
-  model: z.string().max(200).optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ─── Custom Data Schemas ────────────────────────────────────────
