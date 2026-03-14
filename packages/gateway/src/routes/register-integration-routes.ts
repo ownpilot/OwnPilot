@@ -24,6 +24,7 @@ import {
   extensionsRoutes,
   skillsRoutes,
   webhookRoutes,
+  notificationRoutes,
 } from './index.js';
 
 export function registerIntegrationRoutes(app: Hono): void {
@@ -73,4 +74,7 @@ export function registerIntegrationRoutes(app: Hono): void {
 
   // Skills (npm discovery, install, permissions)
   app.route('/api/v1/skills', skillsRoutes);
+
+  // Notifications (cross-channel notification routing)
+  app.route('/api/v1/notifications', notificationRoutes);
 }
