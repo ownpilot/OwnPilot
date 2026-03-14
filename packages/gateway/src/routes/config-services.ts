@@ -33,6 +33,25 @@ export const configServicesRoutes = new Hono();
 // =============================================================================
 
 /**
+ * Validate entry data against service schema's required fields.
+ * Returns array of missing required field names (empty = valid).
+ */
+function validateRequiredFields(
+  data: Record<string, unknown>,
+  schema: ConfigFieldDefinition[]
+): string[] {
+  const missing: string[] = [];
+  for (const field of schema) {
+    if (!field.required) continue;
+    const val = data[field.name];
+    if (val === undefined || val === null || val === '') {
+      missing.push(field.label || field.name);
+    }
+  }
+  return missing;
+}
+
+/**
  * Detect if a value looks like it was masked by maskSecret().
  * Matches patterns like "abcd...wxyz" or "****".
  */
@@ -256,6 +275,22 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   }
 
   const body = await c.req.json<CreateConfigEntryInput>();
+
+  // Validate required fields
+  if (body.data && service.configSchema.length > 0) {
+    const missing = validateRequiredFields(body.data, service.configSchema);
+    if (missing.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Missing required fields: ${missing.join(', ')}`,
+        },
+        400
+      );
+    }
+  }
+
   const entry = await configServicesRepo.createEntry(name, body);
 
   wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
@@ -293,6 +328,23 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
           }
         }
       }
+    }
+  }
+
+  // Validate required fields (merge with existing data to allow partial updates)
+  if (body.data && service.configSchema.length > 0) {
+    const existingData = configServicesRepo.getEntries(name).find((e) => e.id === entryId)?.data ?? {};
+    const mergedData = { ...existingData, ...body.data };
+    const missing = validateRequiredFields(mergedData, service.configSchema);
+    if (missing.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Missing required fields: ${missing.join(', ')}`,
+        },
+        400
+      );
     }
   }
 
