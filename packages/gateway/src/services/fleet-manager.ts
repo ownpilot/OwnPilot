@@ -14,7 +14,7 @@
  */
 
 import { getEventSystem, getErrorMessage, getNextRunTime } from '@ownpilot/core';
-import type { FleetConfig, FleetSession, FleetTask, FleetWorkerConfig } from '@ownpilot/core';
+import type { FleetConfig, FleetSession, FleetTask, FleetWorkerConfig, EventHandler } from '@ownpilot/core';
 import { FleetWorker } from './fleet-worker.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { getLog } from './log.js';
@@ -38,6 +38,7 @@ interface ManagedFleet {
   session: FleetSession;
   timer: ReturnType<typeof setTimeout> | null;
   persistTimer: ReturnType<typeof setInterval> | null;
+  eventSubscriptions: Array<{ eventType: string; handler: EventHandler }>;
   consecutiveErrors: number;
   cyclesThisHour: number;
   hourWindow: number;
@@ -60,6 +61,13 @@ export class FleetManager {
   async start(): Promise<void> {
     if (this.running) return;
     this.running = true;
+
+    // Clean up old fleet sessions on boot
+    try {
+      const repo = getFleetRepository();
+      const cleaned = await repo.cleanupOldSessions();
+      if (cleaned > 0) log.info(`Cleaned up ${cleaned} old fleet sessions`);
+    } catch { /* non-critical */ }
 
     try {
       const repo = getFleetRepository();
@@ -118,6 +126,7 @@ export class FleetManager {
       session,
       timer: null,
       persistTimer: null,
+      eventSubscriptions: [],
       consecutiveErrors: 0,
       cyclesThisHour: 0,
       hourWindow: Math.floor(Date.now() / 3_600_000),
@@ -186,6 +195,9 @@ export class FleetManager {
       clearInterval(managed.persistTimer);
       managed.persistTimer = null;
     }
+
+    // Unsubscribe from events
+    this.clearEventSubscriptions(managed);
 
     // Update session
     managed.session.state = 'stopped';
@@ -275,7 +287,7 @@ export class FleetManager {
         this.scheduleCron(fleetId, managed, scheduleConfig?.cron);
         break;
       case 'event':
-        // Event-driven: no timer, triggered by broadcastToFleet or executeNow
+        this.subscribeToEvents(fleetId, managed);
         break;
       case 'on-demand':
         // Manual only: no timer
@@ -327,6 +339,43 @@ export class FleetManager {
         log.error(`Fleet cycle error: ${getErrorMessage(err)}`)
       );
     }, delay);
+  }
+
+  private subscribeToEvents(fleetId: string, managed: ManagedFleet): void {
+    // Clear existing subscriptions first to prevent duplicates on pause/resume
+    this.clearEventSubscriptions(managed);
+
+    const eventSystem = getEventSystem();
+    const filters = managed.config.scheduleConfig?.eventFilters ?? [];
+
+    for (const eventType of filters) {
+      const handler: EventHandler = () => {
+        this.runCycle(fleetId).catch((err) =>
+          log.warn(`Event-triggered cycle failed: ${getErrorMessage(err)}`)
+        );
+      };
+
+      eventSystem.onAny(eventType, handler);
+      managed.eventSubscriptions.push({ eventType, handler });
+    }
+
+    if (filters.length > 0) {
+      log.info(`[${fleetId}] Subscribed to ${filters.length} event(s): ${filters.join(', ')}`);
+    }
+  }
+
+  private clearEventSubscriptions(managed: ManagedFleet): void {
+    if (managed.eventSubscriptions.length === 0) return;
+
+    try {
+      const eventSystem = getEventSystem();
+      for (const sub of managed.eventSubscriptions) {
+        eventSystem.off(sub.eventType, sub.handler);
+      }
+    } catch {
+      // Event system not available — non-critical
+    }
+    managed.eventSubscriptions = [];
   }
 
   private scheduleImmediate(fleetId: string): void {
@@ -540,6 +589,19 @@ export class FleetManager {
           }
         } else if (r.status === 'rejected') {
           tasksFailed++;
+        }
+      }
+
+      // Feed worker results back to shared context
+      for (const r of results) {
+        if (r.status === 'fulfilled' && r.value?.success && r.value.output) {
+          const result = r.value;
+          if (result.taskId) {
+            managed.session.sharedContext[`task_${result.taskId}_output`] =
+              typeof result.output === 'string' && result.output.length > 500
+                ? result.output.slice(0, 500)
+                : result.output;
+          }
         }
       }
 

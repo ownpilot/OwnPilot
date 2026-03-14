@@ -182,7 +182,7 @@ export class BackgroundAgentManager {
         // Persist workspace ID back to DB
         await repo.update(config.id, config.userId, { workspaceId: wsId });
       } catch (err) {
-        log.debug(`Workspace creation for ${config.id} skipped: ${getErrorMessage(err)}`);
+        log.warn(`Workspace creation for ${config.id} skipped: ${getErrorMessage(err)}`);
       }
     }
 

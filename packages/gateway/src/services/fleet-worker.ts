@@ -243,7 +243,7 @@ export class FleetWorker {
 
     const run = await startOrchestration(
       {
-        goal: `${task.title}: ${task.description}`,
+        goal: `Fleet mission: ${this.mission}\n\nTask: ${task.title}: ${task.description}`,
         provider: cliProvider as CodingAgentProvider,
         cwd: cwd ?? '.',
         maxSteps: this.config.maxTurns ?? 10,
@@ -427,9 +427,10 @@ export class FleetWorker {
     const mcpTools = this.config.mcpTools;
     if (!mcpTools?.length) throw new Error('No MCP tools specified for mcp-bridge worker');
 
-    // Execute each MCP tool with task input
+    // Execute each MCP tool with task input (mission context included via args)
     const results: Array<{ tool: string; output: unknown }> = [];
-    const args = (task.input as Record<string, unknown>) ?? {};
+    const baseArgs = (task.input as Record<string, unknown>) ?? {};
+    const args = { ...baseArgs, _mission: this.mission, _task: `${task.title}: ${task.description}` };
 
     for (const toolName of mcpTools) {
       const toolResult = await mcpClientService.callTool(serverName, toolName, args);

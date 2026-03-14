@@ -1,6 +1,6 @@
 {
   "name": "@ownpilot/channels",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Communication channels for OwnPilot (Telegram)",
   "type": "module",
   "sideEffects": false,

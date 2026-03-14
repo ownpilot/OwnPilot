@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] - 2026-03-14
+
+### Added
+
+- **6 New Workflow Nodes** — DataStore (key-value persistence), SchemaValidator (JSON schema validation), Filter (array filtering), Map (array transformation), Aggregate (sum/count/avg/min/max/groupBy/flatten/unique), WebhookResponse (HTTP response for webhook triggers)
+- **LLM Node Improvements** — `responseFormat: 'json'` for auto-parsed JSON output, `conversationMessages` for multi-turn context
+- **5 Workflow Templates** — GitHub Issue Triage, Data Pipeline, Scheduled Report, Multi-Source Merge, Approval Workflow
+- **Webhook Trigger Integration** — `POST /webhooks/workflow/:path` endpoint with HMAC-SHA256 signature validation
+- **Approval Recovery** — `resumeFromApproval()` auto-resumes paused workflows when approval is decided
+- **Fleet Command Tests** — 68 comprehensive tests covering lifecycle, scheduling, task execution, budgets, concurrency
+- **Fleet Event-Driven Scheduling** — Fleets can now trigger cycles on EventBus events
+- **Fleet Shared Context Feedback** — Worker outputs automatically feed back into shared context for downstream workers
+- **Fleet Session Cleanup** — Old completed/failed sessions automatically cleaned on boot
+
+### Fixed
+
+- **Cost Tracking (all systems)** — `calculateExecutionCost()` shared utility now populates `costUsd` in BackgroundAgentRunner, SubagentRunner, FleetWorker, and SoulHeartbeatService; budget enforcement is now functional
+- **Fleet Dependency Cascade** — Failed tasks now propagate failure to all dependent tasks (no more deadlocked task chains)
+- **Fleet Shared Context Mutation** — `structuredClone()` prevents cross-worker context corruption
+- **Fleet Cron Scheduling** — Now uses `getNextRunTime()` from core instead of stub 60s fallback
+- **Fleet Orphaned Tasks** — Tasks stuck in 'running' from crashes are re-queued on fleet start
+- **Fleet `executed_at` Timestamp** — Worker execution time now properly saved to DB
+- **Workflow DataStore Memory Leak** — Added 10K entry limit with LRU eviction and `clearDataStore()` export
+- **Workflow SubWorkflow Auth** — Added userId ownership check (prevents cross-user access)
+- **Workflow SubWorkflow Abort** — Parent abort signal now propagates to child workflow execution
+- **Workflow Node Limit** — Max 500 nodes per workflow (DoS prevention)
+- **Workflow Copilot Prompt** — All 23 node types documented with correct short names matching `convertDefinitionToReactFlow`
+- **Workflow Wizard Templates** — Rewritten with valid node types (previously used non-existent `start`/`ai`/`end` types)
+- **Merge Node `firstCompleted`** — Mode parameter now functional (was no-op returning same as `waitAll`)
+- **Notification Node** — Awaits broadcast instead of fire-and-forget, surfaces delivery warnings
+- **Code Node** — Validates language input (rejects unsupported languages instead of silent fallback)
+- **Delay Node** — Logs warning when 1-hour safety cap is applied
+- **Agent Concurrent Guard** — `cycleInProgress` flag prevents double cycle execution
+- **Agent Rate Limit Retry** — Re-schedules with backoff after throttling (was silently stopping)
+- **Agent Crew Context Cache** — 30-second TTL cache reduces N*3 DB queries per heartbeat to 1
+- **getCommunicationBus()** — Throws descriptive error instead of unsafe non-null assertion crash
+- **Subagent spawnCounts** — Cleaned up when conversations have no active sessions (was growing unbounded)
+- **Workspace Creation** — Warning logged instead of silent debug on failure
+
+### Changed
+
+- Extracted `agent-runner-utils.ts` — shared tool registration, agent factory, model resolution, timeout, JSON parsing (~360 LOC dedup)
+- Centralized scheduling constants (`config/defaults.ts`) — `MANAGER_MAX_CONSECUTIVE_ERRORS`, `MANAGER_SESSION_PERSIST_INTERVAL_MS`, per-system delay bounds
+- `AutonomousAgentResult` base interface for unified result types across all runners
+- Fleet mission context included in all worker types (coding-cli, mcp-bridge were missing it)
+
+### Security
+
+- Bump hono 4.12.3 → 4.12.8 (arbitrary file access, prototype pollution, cookie/SSE injection)
+- Bump @hono/node-server 1.19.9 → 1.19.11 (authorization bypass via encoded slashes)
+- Bump undici override >=6.23.0 → >=6.24.1 (WebSocket DoS, CRLF injection, request smuggling)
+
+### Testing
+
+- 26,650+ tests total (core: 9,832; gateway: 16,236; ui: 141; cli: 293; channels: 148)
+- New: 68 Fleet Command tests, workflow node executor improvements
+
 ## [0.1.8] - 2026-03-14
 
 ### Added
@@ -298,6 +355,7 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.1.9]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.9
 [0.1.8]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.8
 [0.1.6]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.6
 [0.1.5]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.5

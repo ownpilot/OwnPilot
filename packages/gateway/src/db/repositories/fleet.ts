@@ -555,6 +555,21 @@ export class FleetRepository extends BaseRepository {
     return rows.length;
   }
 
+  // ---- Cleanup ----
+
+  /**
+   * Delete old completed/failed/stopped sessions older than N days.
+   * Uses stopped_at for terminated sessions, falls back to started_at.
+   * Returns the number of deleted sessions.
+   */
+  async cleanupOldSessions(olderThanDays: number = 30): Promise<number> {
+    const result = await this.query(
+      `DELETE FROM fleet_sessions WHERE state IN ('completed', 'stopped', 'error') AND COALESCE(stopped_at, started_at) < NOW() - INTERVAL '1 day' * $1 RETURNING id`,
+      [olderThanDays]
+    );
+    return result.length;
+  }
+
   // ---- Worker History ----
 
   async saveWorkerResult(result: FleetWorkerResult): Promise<void> {
