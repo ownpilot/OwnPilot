@@ -72,6 +72,8 @@ data/
 
 # Generated dev artifacts
 models-dev-full.json
+.codemap/
+.codemapignore
 
 # Runtime workspace directories
 packages/gateway/workspace/
