@@ -1,7 +1,7 @@
 /**
  * DelayNode — ReactFlow node for timed delays in workflows.
- * Pauses execution for a configurable duration in seconds, minutes, or hours.
- * Rose color theme.
+ * Time-focused design with gradient rose-to-pink header, large duration
+ * display, unit badge, and pulsing clock indicator when running.
  */
 
 import { memo } from 'react';
@@ -29,6 +29,12 @@ const unitSuffixes: Record<string, string> = {
   hours: 'h',
 };
 
+const unitLabels: Record<string, string> = {
+  seconds: 'SEC',
+  minutes: 'MIN',
+  hours: 'HRS',
+};
+
 const statusStyles: Record<NodeExecutionStatus, { border: string; bg: string }> = {
   pending: { border: 'border-rose-300 dark:border-rose-700', bg: '' },
   running: { border: 'border-warning', bg: 'bg-warning/5' },
@@ -51,12 +57,19 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeType>) {
   const duration = (data.duration as string) ?? '0';
   const unit = (data.unit as string) ?? 'seconds';
   const suffix = unitSuffixes[unit] ?? unit;
+  const unitLabel = unitLabels[unit] ?? unit.toUpperCase();
+
+  // Determine if the duration is large (> 60 minutes)
+  const numericDuration = parseFloat(duration) || 0;
+  const isLargeDuration =
+    (unit === 'hours' && numericDuration >= 1) ||
+    (unit === 'minutes' && numericDuration > 60);
 
   return (
     <div
       className={`
-        relative min-w-[180px] max-w-[260px] rounded-lg border-2 shadow-sm
-        bg-rose-50 dark:bg-rose-950/30
+        relative min-w-[200px] max-w-[280px] rounded-lg border-2 shadow-md overflow-hidden
+        bg-white dark:bg-gray-900
         ${style.border} ${style.bg}
         ${selected ? 'ring-2 ring-rose-500 ring-offset-1' : ''}
         ${status === 'running' ? 'animate-pulse' : ''}
@@ -70,37 +83,67 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeType>) {
         className="!w-3 !h-3 !bg-rose-500 !border-2 !border-white dark:!border-rose-950"
       />
 
-      {/* Content */}
-      <div className="px-3 py-2.5">
-        {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center shrink-0">
-            <Clock className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-          </div>
-          <span className="font-medium text-sm text-rose-900 dark:text-rose-100 truncate flex-1">
-            {(data.label as string) || 'Delay'}
-          </span>
-          {StatusIcon && (
-            <StatusIcon
-              className={`w-4 h-4 shrink-0 ${
-                status === 'success'
-                  ? 'text-success'
-                  : status === 'error'
-                    ? 'text-error'
-                    : status === 'running'
-                      ? 'text-warning'
-                      : 'text-text-muted'
+      {/* Gradient Header Bar */}
+      <div className="bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-2 flex items-center gap-2">
+        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <Clock className="w-3.5 h-3.5 text-white" />
+        </div>
+        <span className="font-semibold text-sm text-white truncate flex-1">
+          {(data.label as string) || 'Delay'}
+        </span>
+        {StatusIcon && (
+          <StatusIcon
+            className={`w-4 h-4 shrink-0 ${
+              status === 'success'
+                ? 'text-emerald-200'
+                : status === 'error'
+                  ? 'text-red-200'
+                  : status === 'running'
+                    ? 'text-amber-200'
+                    : 'text-white/60'
+            }`}
+          />
+        )}
+      </div>
+
+      {/* Body Content */}
+      <div className="px-3 py-3 space-y-2">
+        {/* Large Duration Display */}
+        <div className="flex items-center justify-center gap-2">
+          {/* Pulsing clock indicator when running */}
+          <div
+            className={`w-8 h-8 rounded-full border-2 border-rose-300 dark:border-rose-600 flex items-center justify-center ${
+              status === 'running' ? 'animate-spin' : ''
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                status === 'running'
+                  ? 'bg-amber-400 animate-pulse'
+                  : status === 'success'
+                    ? 'bg-emerald-400'
+                    : 'bg-rose-400'
               }`}
             />
-          )}
+          </div>
+          <span className="text-2xl font-bold text-rose-700 dark:text-rose-300 tracking-tight">
+            {duration}
+            <span className="text-lg font-semibold text-rose-400 dark:text-rose-500 ml-0.5">
+              {suffix}
+            </span>
+          </span>
         </div>
 
-        {/* Duration badge */}
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-rose-500/20 text-rose-700 dark:text-rose-300">
-            {duration}
-            {suffix}
+        {/* Unit Badge */}
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="px-2 py-0.5 text-[9px] font-bold rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-300 uppercase tracking-wider">
+            {unitLabel}
           </span>
+          {isLargeDuration && (
+            <span className="px-1.5 py-0.5 text-[9px] rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+              Max: 1 hour
+            </span>
+          )}
         </div>
 
         {/* Error message */}
@@ -112,7 +155,7 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeType>) {
 
         {/* Duration */}
         {data.executionDuration != null && (
-          <p className="text-[10px] text-text-muted dark:text-dark-text-muted mt-1">
+          <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
             {(data.executionDuration as number) < 1000
               ? `${data.executionDuration}ms`
               : `${((data.executionDuration as number) / 1000).toFixed(1)}s`}
