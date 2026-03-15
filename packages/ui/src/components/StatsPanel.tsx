@@ -23,6 +23,7 @@ import {
   Calendar,
   Users,
   Bookmark,
+  Repeat,
   AlertCircle,
   TrendingUp,
   Cpu,
@@ -270,6 +271,19 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
                   }
                   color="text-blue-500"
                 />
+                {summary.habits && (
+                  <StatCard
+                    icon={Repeat}
+                    label="Habits"
+                    value={summary.habits.total}
+                    subValue={
+                      summary.habits.totalToday > 0
+                        ? `${summary.habits.completedToday}/${summary.habits.totalToday} today`
+                        : undefined
+                    }
+                    color="text-emerald-500"
+                  />
+                )}
               </div>
             )}
 

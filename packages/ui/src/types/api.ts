@@ -43,6 +43,7 @@ export interface SummaryData {
   bookmarks: { total: number; favorites: number };
   calendar: { total: number; today: number; upcoming: number };
   contacts: { total: number; favorites: number; upcomingBirthdays: number };
+  habits?: { total: number; completedToday: number; totalToday: number; percentage: number; bestStreak: number };
 }
 
 /** GET /api/v1/costs/usage */

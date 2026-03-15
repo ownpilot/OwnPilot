@@ -150,9 +150,7 @@ export function DashboardPage() {
     summary?.tasks.completed ?? (summary ? summary.tasks.total - summary.tasks.pending : 0);
   const tasksTotal = summary?.tasks.total ?? 0;
   const completionPct = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0;
-  const habits = (summary as Record<string, unknown> | null)?.habits as
-    | { total: number; completedToday: number; totalToday: number; percentage: number; bestStreak: number }
-    | undefined;
+  const habits = summary?.habits;
 
   const stats = summary
     ? [
