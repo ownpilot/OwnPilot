@@ -13,6 +13,7 @@ import {
   setDefaultProvider,
   setDefaultModel,
 } from '../routes/settings.js';
+import { loadProviderConfig } from '@ownpilot/core';
 
 // ============================================================================
 // Implementation
@@ -77,17 +78,13 @@ export class ProviderService implements IProviderService {
   }
 
   listModels(provider: string): ModelInfo[] {
-    // Validate provider name against known list to prevent path traversal via require()
     if (!ProviderService.isValidProvider(provider)) return [];
 
-    // Models are loaded from provider JSON configs at runtime
-    // This is a sync convenience method; use provider.getModels() for full async list
     try {
-      const { loadProviderConfig } = require('@ownpilot/core');
       const config = loadProviderConfig(provider);
       if (!config?.models) return [];
-      return config.models.map(
-        (m: { id: string; name?: string; contextWindow?: number; maxOutput?: number }) => ({
+      return (config.models as Array<{ id: string; name?: string; contextWindow?: number; maxOutput?: number }>).map(
+        (m) => ({
           id: m.id,
           name: m.name ?? m.id,
           provider,
@@ -101,10 +98,12 @@ export class ProviderService implements IProviderService {
   }
 
   hasApiKey(provider: string): boolean {
-    // Validate provider name to prevent env variable probing
     if (!ProviderService.isValidProvider(provider)) return false;
 
-    // Check environment variable as a quick sync check
+    // Sync check: environment variable only.
+    // NOTE: API keys set via Config Center UI are not checked here because
+    // getApiKey() is async. Use getProviderApiKey() from routes/agent-cache.ts
+    // for a complete async check that covers both env vars and DB.
     const envKey = process.env[`${provider.toUpperCase().replace(/-/g, '_')}_API_KEY`];
     return !!envKey;
   }
