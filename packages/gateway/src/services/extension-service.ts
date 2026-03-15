@@ -5,16 +5,13 @@
  * Handles trigger synchronization and Config Center registration.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join, dirname, resolve, relative } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync, existsSync } from 'fs';
+import { resolve, relative } from 'path';
 import {
   getEventBus,
   getEventSystem,
   createEvent,
   EventTypes,
-  getServiceRegistry,
-  Services,
   type ResourceCreatedData,
   type ResourceUpdatedData,
   type ResourceDeletedData,
@@ -31,8 +28,17 @@ import { parseExtensionMarkdown } from './extension-markdown.js';
 import { parseAgentSkillsMd } from './agentskills-parser.js';
 import { auditSkillSecurity } from './skill-security-audit.js';
 import { registerToolConfigRequirements, unregisterDependencies } from './api-service-registrar.js';
-import { getDataDirectoryInfo } from '../paths/index.js';
 import { getLog } from './log.js';
+import {
+  activateExtensionTriggers,
+  deactivateExtensionTriggers,
+  cleanupOrphanTriggers as cleanupOrphanTriggersImpl,
+} from './extension-trigger-manager.js';
+import {
+  getAllScanDirectories,
+  scanSingleDirectory,
+  type ScanResult,
+} from './extension-scanner.js';
 
 const log = getLog('ExtService');
 
@@ -224,7 +230,7 @@ export class ExtensionService implements IExtensionService {
     // Create triggers for enabled extensions (non-fatal — triggers can be retried via reload)
     if (record.status === 'enabled') {
       try {
-        await this.activateExtensionTriggers(manifest, userId);
+        await this.activateExtTriggers(manifest, userId);
       } catch (e) {
         log.warn('Failed to activate triggers during install', {
           id: manifest.id,
@@ -266,7 +272,7 @@ export class ExtensionService implements IExtensionService {
     if (!record || record.userId !== userId) return false;
 
     // Deactivate triggers
-    await this.deactivateExtensionTriggers(id, userId);
+    await this.deactivateExtTriggers(id, userId);
 
     // Remove config dependencies
     try {
@@ -306,7 +312,7 @@ export class ExtensionService implements IExtensionService {
 
     if (record.status === 'enabled') return record;
 
-    await this.activateExtensionTriggers(record.manifest, userId);
+    await this.activateExtTriggers(record.manifest, userId);
     const updated = await extensionsRepo.updateStatus(id, 'enabled');
 
     if (updated) {
@@ -334,7 +340,7 @@ export class ExtensionService implements IExtensionService {
 
     if (record.status === 'disabled') return record;
 
-    await this.deactivateExtensionTriggers(id, userId);
+    await this.deactivateExtTriggers(id, userId);
     const updated = await extensionsRepo.updateStatus(id, 'disabled');
 
     if (updated) {
@@ -388,31 +394,11 @@ export class ExtensionService implements IExtensionService {
   }
 
   // --------------------------------------------------------------------------
-  // Cleanup orphan triggers (call on startup)
+  // Cleanup orphan triggers (call on startup) — delegates to trigger manager
   // --------------------------------------------------------------------------
 
   async cleanupOrphanTriggers(userId = 'default'): Promise<number> {
-    let cleaned = 0;
-    try {
-      const triggerService = getServiceRegistry().get(Services.Trigger);
-      const triggers = await triggerService.listTriggers(userId);
-      const extensionIds = new Set(extensionsRepo.getAll().map((e) => e.id));
-
-      for (const trigger of triggers) {
-        const match = trigger.name.match(/^\[Ext:([^\]]+)\]/);
-        if (match?.[1] && !extensionIds.has(match[1])) {
-          await triggerService.deleteTrigger(userId, trigger.id);
-          cleaned++;
-        }
-      }
-
-      if (cleaned > 0) {
-        log.info(`Cleaned up ${cleaned} orphan extension triggers`);
-      }
-    } catch (e) {
-      log.warn('Failed to clean orphan triggers', { error: String(e) });
-    }
-    return cleaned;
+    return cleanupOrphanTriggersImpl(userId);
   }
 
   // --------------------------------------------------------------------------
@@ -624,7 +610,7 @@ export class ExtensionService implements IExtensionService {
     }
 
     // Deactivate old triggers
-    await this.deactivateExtensionTriggers(id, userId);
+    await this.deactivateExtTriggers(id, userId);
 
     // Re-install from source
     const updated = await this.install(record.sourcePath, userId);
@@ -632,215 +618,39 @@ export class ExtensionService implements IExtensionService {
   }
 
   // --------------------------------------------------------------------------
-  // Scan directory for new extensions
+  // Scan directory for new extensions — delegates to extension-scanner
   // --------------------------------------------------------------------------
 
   async scanDirectory(
     directory?: string,
     userId = 'default'
-  ): Promise<{
-    installed: number;
-    errors: Array<{ path: string; error: string }>;
-  }> {
-    // If no explicit directory, scan all known directories
-    if (!directory) {
-      const dirs = [
-        this.getBundledDefaultExtensionsDirectory(),
-        this.getDefaultExtensionsDirectory(),
-        this.getDefaultSkillsDirectory(),
-        this.getWorkspaceSkillsDirectory(),
-        this.getBundledExampleSkillsDirectory(),
-      ].filter((d): d is string => d !== null);
+  ): Promise<ScanResult> {
+    const installFn = (manifestPath: string, uid: string) => this.install(manifestPath, uid);
 
+    if (!directory) {
+      const dirs = getAllScanDirectories();
       let totalInstalled = 0;
       const allErrors: Array<{ path: string; error: string }> = [];
       for (const dir of dirs) {
-        const r = await this.scanSingleDirectory(dir, userId);
+        const r = await scanSingleDirectory(dir, userId, installFn);
         totalInstalled += r.installed;
         allErrors.push(...r.errors);
       }
       return { installed: totalInstalled, errors: allErrors };
     }
-    return this.scanSingleDirectory(directory, userId);
-  }
-
-  private async scanSingleDirectory(
-    scanDir: string,
-    userId: string
-  ): Promise<{
-    installed: number;
-    errors: Array<{ path: string; error: string }>;
-  }> {
-    const errors: Array<{ path: string; error: string }> = [];
-    let installed = 0;
-
-    if (!existsSync(scanDir)) {
-      log.debug(`Directory does not exist: ${scanDir}`);
-      return { installed: 0, errors: [] };
-    }
-
-    let entries: string[];
-    try {
-      entries = readdirSync(scanDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name);
-    } catch {
-      return { installed: 0, errors: [{ path: scanDir, error: 'Cannot read directory' }] };
-    }
-
-    for (const dirName of entries) {
-      // Detection order:
-      // 1. SKILL.md (AgentSkills.io open standard — uppercase)
-      // 2. extension.json (OwnPilot native JSON)
-      // 3. extension.md (OwnPilot native markdown)
-      // 4. skill.json / skill.md (legacy backward compat)
-      const agentSkillsMdPath = join(scanDir, dirName, 'SKILL.md');
-      const jsonPath = join(scanDir, dirName, 'extension.json');
-      const mdPath = join(scanDir, dirName, 'extension.md');
-      const legacyJsonPath = join(scanDir, dirName, 'skill.json');
-      const legacyMdPath = join(scanDir, dirName, 'skill.md');
-      let manifestPath: string | null = null;
-      if (existsSync(agentSkillsMdPath)) {
-        manifestPath = agentSkillsMdPath;
-      } else if (existsSync(jsonPath)) {
-        manifestPath = jsonPath;
-      } else if (existsSync(mdPath)) {
-        manifestPath = mdPath;
-      } else if (existsSync(legacyJsonPath)) {
-        manifestPath = legacyJsonPath;
-      } else if (existsSync(legacyMdPath)) {
-        manifestPath = legacyMdPath;
-      }
-      if (!manifestPath) continue;
-
-      try {
-        await this.install(manifestPath, userId);
-        installed++;
-      } catch (e) {
-        errors.push({
-          path: manifestPath,
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
-    }
-
-    if (installed > 0) {
-      log.info(`Scanned ${scanDir}: installed ${installed} extensions`, { errors: errors.length });
-    }
-
-    return { installed, errors };
+    return scanSingleDirectory(directory, userId, installFn);
   }
 
   // --------------------------------------------------------------------------
-  // Trigger management (private)
+  // Trigger management — delegates to extension-trigger-manager
   // --------------------------------------------------------------------------
 
-  private async activateExtensionTriggers(
-    manifest: ExtensionManifest,
-    userId: string
-  ): Promise<void> {
-    if (!manifest.triggers?.length) return;
-
-    const triggerService = getServiceRegistry().get(Services.Trigger);
-    const prefix = `[Ext:${manifest.id}]`;
-
-    // De-duplicate: remove existing triggers for this extension before creating new ones
-    try {
-      const existing = await triggerService.listTriggers(userId);
-      for (const trigger of existing) {
-        if (trigger.name.startsWith(prefix)) {
-          await triggerService.deleteTrigger(userId, trigger.id);
-        }
-      }
-    } catch (e) {
-      log.warn(`Failed to clean existing triggers for ${manifest.id}`, { error: String(e) });
-    }
-
-    for (const trigger of manifest.triggers) {
-      try {
-        await triggerService.createTrigger(userId, {
-          name: `${prefix} ${trigger.name}`,
-          description: trigger.description ?? `Auto-managed by extension: ${manifest.name}`,
-          type: trigger.type,
-          config: trigger.config,
-          action: trigger.action,
-          enabled: trigger.enabled !== false,
-        });
-      } catch (e) {
-        log.warn(`Failed to create trigger for extension ${manifest.id}`, {
-          trigger: trigger.name,
-          error: String(e),
-        });
-      }
-    }
+  private activateExtTriggers(manifest: ExtensionManifest, userId: string): Promise<void> {
+    return activateExtensionTriggers(manifest, userId);
   }
 
-  private async deactivateExtensionTriggers(extensionId: string, userId: string): Promise<void> {
-    const triggerService = getServiceRegistry().get(Services.Trigger);
-    const prefix = `[Ext:${extensionId}]`;
-
-    try {
-      const triggers = await triggerService.listTriggers(userId);
-      for (const trigger of triggers) {
-        if (trigger.name.startsWith(prefix)) {
-          await triggerService.deleteTrigger(userId, trigger.id);
-        }
-      }
-    } catch (e) {
-      log.warn(`Failed to deactivate triggers for extension ${extensionId}`, { error: String(e) });
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // Helpers
-  // --------------------------------------------------------------------------
-
-  private getDefaultExtensionsDirectory(): string {
-    const dataInfo = getDataDirectoryInfo();
-    return join(dataInfo.root, 'extensions');
-  }
-
-  private getDefaultSkillsDirectory(): string {
-    const dataInfo = getDataDirectoryInfo();
-    return join(dataInfo.root, 'skills');
-  }
-
-  /**
-   * Get all directories to scan (data dir + workspace).
-   * The workspace data/skills/ dir allows bundling skills with the project.
-   */
-  private getWorkspaceSkillsDirectory(): string | null {
-    const workspaceDir = process.env.WORKSPACE_DIR ?? process.cwd();
-    const candidate = join(workspaceDir, 'data', 'skills');
-    return existsSync(candidate) ? candidate : null;
-  }
-
-  /**
-   * Bundled default extensions shipped with the gateway package.
-   * These are OwnPilot-format extensions that use the SDK (utils.callTool, etc.).
-   */
-  private getBundledDefaultExtensionsDirectory(): string | null {
-    try {
-      const thisDir = dirname(fileURLToPath(import.meta.url));
-      const candidate = join(thisDir, '..', '..', 'data', 'default-extensions');
-      return existsSync(candidate) ? candidate : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Bundled example skills shipped with the gateway package.
-   */
-  private getBundledExampleSkillsDirectory(): string | null {
-    try {
-      const thisDir = dirname(fileURLToPath(import.meta.url));
-      // thisDir = packages/gateway/src/services/ → go up 2 levels to packages/gateway/
-      const candidate = join(thisDir, '..', '..', 'data', 'example-skills');
-      return existsSync(candidate) ? candidate : null;
-    } catch {
-      return null;
-    }
+  private deactivateExtTriggers(extensionId: string, userId: string): Promise<void> {
+    return deactivateExtensionTriggers(extensionId, userId);
   }
 }
 
