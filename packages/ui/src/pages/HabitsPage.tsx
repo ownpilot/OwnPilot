@@ -573,8 +573,8 @@ function HabitModal({
     'w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-sm text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in" onClick={onBackdropClick}>
-      <div className="w-full max-w-md mx-4 rounded-xl bg-surface dark:bg-dark-surface border border-border dark:border-dark-border shadow-xl animate-fade-in-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onBackdropClick}>
+      <div className="w-full max-w-md mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-border dark:border-dark-border shadow-2xl animate-fade-in-up">
         <div className="px-5 py-4 border-b border-border dark:border-dark-border">
           <h2 className="text-lg font-semibold">{habit ? 'Edit Habit' : 'New Habit'}</h2>
           <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
