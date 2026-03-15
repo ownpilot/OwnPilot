@@ -277,10 +277,10 @@ CREATE TABLE IF NOT EXISTS captures (
 );
 
 -- =====================================================
--- PRODUCTIVITY PLUGIN TABLES (DEPRECATED — Backend-only, no UI pages)
+-- PRODUCTIVITY PLUGIN TABLES
 -- =====================================================
 
--- DEPRECATED: Backend-only (no UI page). Candidate for removal.
+-- Pomodoro: Backend-only (no UI page). Routes in productivity.ts.
 CREATE TABLE IF NOT EXISTS pomodoro_sessions (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS pomodoro_daily_stats (
   UNIQUE(user_id, date)
 );
 
--- DEPRECATED: Backend-only (no UI page). Candidate for removal.
+-- Habits: Full system — DB repo (645 lines), 8 AI tools, REST API, HabitsPage UI, dashboard card.
 CREATE TABLE IF NOT EXISTS habits (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
