@@ -91,15 +91,15 @@ export interface HabitLog {
 
 export const habitsApi = {
   list: (params?: Record<string, string>) =>
-    apiClient.get<{ habits: Habit[]; count: number }>('/productivity/habits', { params }),
+    apiClient.get<{ habits: Habit[]; count: number }>('/habits', { params }),
   getToday: () =>
     apiClient.get<{ habits: HabitWithTodayStatus[]; progress: { total: number; completed: number; rate: number } }>(
-      '/productivity/habits/today'
+      '/habits/today'
     ),
-  categories: () => apiClient.get<{ categories: string[] }>('/productivity/habits/categories'),
+  categories: () => apiClient.get<{ categories: string[] }>('/habits/categories'),
   get: (id: string) => apiClient.get<{ habit: Habit }>(`/productivity/habits/${id}`),
   create: (body: Record<string, unknown>) =>
-    apiClient.post<Habit>('/productivity/habits', body),
+    apiClient.post<Habit>('/habits', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<Habit>(`/productivity/habits/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/productivity/habits/${id}`),
