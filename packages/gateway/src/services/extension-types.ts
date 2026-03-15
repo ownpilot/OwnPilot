@@ -100,7 +100,8 @@ export type SkillPermission =
   | 'browser'
   | 'config'
   | 'expenses'
-  | 'bookmarks';
+  | 'bookmarks'
+  | 'habits';
 
 /** Required and optional permissions declared by an extension */
 export interface SkillPermissionSet {

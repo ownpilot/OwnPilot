@@ -85,13 +85,32 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'browser_extract',
   ],
   config: ['get_config', 'set_config', 'list_config'],
-  expenses: ['create_expense', 'update_expense', 'delete_expense', 'list_expenses', 'get_expense'],
+  expenses: [
+    'add_expense',
+    'batch_add_expenses',
+    'update_expense',
+    'delete_expense',
+    'query_expenses',
+    'expense_summary',
+    'export_expenses',
+    'parse_receipt',
+  ],
   bookmarks: [
-    'create_bookmark',
+    'add_bookmark',
+    'batch_add_bookmarks',
     'update_bookmark',
     'delete_bookmark',
     'list_bookmarks',
-    'get_bookmark',
+  ],
+  habits: [
+    'create_habit',
+    'list_habits',
+    'update_habit',
+    'delete_habit',
+    'log_habit',
+    'get_today_habits',
+    'get_habit_stats',
+    'archive_habit',
   ],
 };
 
@@ -155,6 +174,7 @@ export function getPermissionDescription(permission: SkillPermission): string {
     config: 'Access configuration settings',
     expenses: 'Create and manage expense records',
     bookmarks: 'Create and manage bookmarks',
+    habits: 'Create and manage habits with streak tracking',
   };
   return descriptions[permission] ?? permission;
 }
