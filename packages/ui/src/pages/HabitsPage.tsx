@@ -112,6 +112,8 @@ export function HabitsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [filter, setFilter] = useState<'active' | 'archived'>('active');
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  const [habitStats, setHabitStats] = useState<Record<string, unknown> | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(habits);
 
   // ---- Data fetching ----
@@ -194,6 +196,16 @@ export function HabitsPage() {
       fetchHabits();
     } catch {
       toast.error('Failed to restore');
+    }
+  };
+
+  const openDetails = async (habit: Habit) => {
+    setSelectedHabit(habit);
+    try {
+      const stats = await habitsApi.getStats(habit.id);
+      setHabitStats(stats);
+    } catch {
+      setHabitStats(null);
     }
   };
 
@@ -389,21 +401,22 @@ export function HabitsPage() {
                   {animatedItems.map(({ item: habit, animClass }) => (
                     <div key={habit.id} className={animClass}>
                       <div className="flex items-start gap-4 p-4 rounded-xl bg-surface dark:bg-dark-surface border border-border dark:border-dark-border hover:border-primary/30 transition-all group">
-                        {/* Log button */}
+                        {/* Check-in button */}
                         {!habit.isArchived && (
                           <button
                             onClick={() => handleLog(habit.id)}
-                            className="mt-0.5 shrink-0 text-text-muted dark:text-dark-text-muted hover:text-emerald-500 transition-transform active:scale-90"
+                            className="mt-1 shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 active:scale-95 transition-all"
                             title="Log completion"
                           >
-                            <Circle className="w-5 h-5" />
+                            <CheckCircle2 className="w-4 h-4" />
+                            Check In
                           </button>
                         )}
 
                         {/* Content */}
                         <div className="flex-1 min-w-0 space-y-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium">{habit.name}</span>
+                            <button onClick={() => openDetails(habit)} className="font-medium hover:text-primary transition-colors text-left">{habit.name}</button>
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
                               {frequencyLabels[habit.frequency] ?? habit.frequency}
                             </span>
@@ -496,6 +509,16 @@ export function HabitsPage() {
         )}
       </div>
 
+      {/* Detail Panel */}
+      {selectedHabit && (
+        <HabitDetailPanel
+          habit={selectedHabit}
+          stats={habitStats}
+          onClose={() => { setSelectedHabit(null); setHabitStats(null); }}
+          onLog={() => { handleLog(selectedHabit.id); }}
+        />
+      )}
+
       {/* Create/Edit Modal */}
       {(showCreate || editHabit) && (
         <HabitModal
@@ -511,6 +534,144 @@ export function HabitsPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Habit Detail Panel
+// ============================================================================
+
+function HabitDetailPanel({
+  habit,
+  stats,
+  onClose,
+  onLog,
+}: {
+  habit: Habit;
+  stats: Record<string, unknown> | null;
+  onClose: () => void;
+  onLog: () => void;
+}) {
+  const { onBackdropClick } = useModalClose(onClose);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onBackdropClick}>
+      <div className="w-full max-w-lg mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-border dark:border-dark-border shadow-2xl animate-fade-in-up max-h-[80vh] overflow-y-auto">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border dark:border-dark-border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">{habit.name}</h2>
+              {habit.description && (
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{habit.description}</p>
+              )}
+            </div>
+            {!habit.isArchived && (
+              <button
+                onClick={onLog}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 active:scale-95 transition-all"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Check In
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center p-3 rounded-lg bg-amber-500/10">
+            <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 mb-1">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{habit.streakCurrent}</div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Current Streak</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-emerald-500/10">
+            <div className="flex items-center justify-center gap-1 text-emerald-600 dark:text-emerald-400 mb-1">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{habit.streakLongest}</div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Best Streak</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-primary/10">
+            <div className="flex items-center justify-center gap-1 text-primary mb-1">
+              <Target className="w-4 h-4" />
+            </div>
+            <div className="text-xl font-bold text-primary">{habit.totalCompletions}</div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Total Done</div>
+          </div>
+          <div className="text-center p-3 rounded-lg bg-violet-500/10">
+            <div className="flex items-center justify-center gap-1 text-violet-600 dark:text-violet-400 mb-1">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div className="text-xl font-bold text-violet-600 dark:text-violet-400">
+              {stats && typeof stats.completionRate === 'number' ? `${Math.round(stats.completionRate as number)}%` : '—'}
+            </div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Completion Rate</div>
+          </div>
+        </div>
+
+        {/* Streak Heatmap (larger) */}
+        <div className="px-5 pb-4">
+          <h3 className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">Last 28 Days</h3>
+          <div className="flex gap-[3px] flex-wrap">
+            {Array.from({ length: 28 }, (_, i) => {
+              const daysAgo = 27 - i;
+              const completed = daysAgo < habit.streakCurrent;
+              const date = new Date();
+              date.setDate(date.getDate() - daysAgo);
+              const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              return (
+                <div
+                  key={i}
+                  className={`w-5 h-5 rounded transition-colors ${
+                    completed
+                      ? 'bg-emerald-500 dark:bg-emerald-400'
+                      : 'bg-border dark:bg-dark-border'
+                  }`}
+                  title={`${label}${completed ? ' - Completed' : ''}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="px-5 pb-4 space-y-2 text-sm">
+          <div className="flex justify-between py-1.5 border-t border-border dark:border-dark-border">
+            <span className="text-text-muted dark:text-dark-text-muted">Frequency</span>
+            <span className="font-medium capitalize">{habit.frequency}</span>
+          </div>
+          {habit.targetCount > 1 && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-text-muted dark:text-dark-text-muted">Target</span>
+              <span className="font-medium">{habit.targetCount}x{habit.unit ? ` ${habit.unit}` : ''}</span>
+            </div>
+          )}
+          {habit.category && (
+            <div className="flex justify-between py-1.5">
+              <span className="text-text-muted dark:text-dark-text-muted">Category</span>
+              <span className="font-medium">{habit.category}</span>
+            </div>
+          )}
+          <div className="flex justify-between py-1.5">
+            <span className="text-text-muted dark:text-dark-text-muted">Created</span>
+            <span className="font-medium">{new Date(habit.createdAt).toLocaleDateString()}</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-border dark:border-dark-border flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm text-text-muted dark:text-dark-text-muted hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
