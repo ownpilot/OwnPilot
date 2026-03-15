@@ -588,7 +588,8 @@ export class HabitsRepository extends BaseRepository {
       } else if (habit.frequency === 'weekdays') {
         isTargetDay = dayOfWeek >= 1 && dayOfWeek <= 5;
       } else {
-        isTargetDay = habit.targetDays.includes(dayOfWeek);
+        const days = Array.isArray(habit.targetDays) ? habit.targetDays : [];
+        isTargetDay = days.includes(dayOfWeek);
       }
 
       if (isTargetDay) {
