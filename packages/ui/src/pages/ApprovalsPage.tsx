@@ -83,8 +83,14 @@ export function ApprovalsPage() {
   }, [tab, toast]);
 
   useEffect(() => {
+    let stale = false;
     setIsLoading(true);
-    fetchApprovals();
+    fetchApprovals().then(() => {
+      if (stale) return; // Tab changed before fetch completed — discard
+    });
+    return () => {
+      stale = true;
+    };
   }, [fetchApprovals]);
 
   // Listen for real-time approval events

@@ -703,7 +703,7 @@ export class WorkflowService implements IWorkflowService {
             };
           }
 
-          const nodeResult = nodeOutputs[nodeId]!;
+          const nodeResult = nodeOutputs[nodeId];
 
           // Mirror result to alias key so {{alias.output}} works in downstream templates
           for (const [alias, mappedNodeId] of aliasToNodeId) {
@@ -1291,7 +1291,7 @@ export class WorkflowService implements IWorkflowService {
             };
           }
 
-          const nodeResult = nodeOutputs[nodeId]!;
+          const nodeResult = nodeOutputs[nodeId];
 
           // Mirror result to alias key
           for (const [alias, mappedNodeId] of aliasToNodeId) {

@@ -141,11 +141,11 @@ export class EventBus implements IEventBus {
     }
     const set = this.categoryHandlers.get(category)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      log.warn(
+      const msg =
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for category "${category}". ` +
-          `Handler not added. Possible memory leak.`
-      );
-      return () => {};
+        `Handler not added. Possible memory leak.`;
+      log.error(msg);
+      throw new Error(msg);
     }
     set.add(handler);
     return () => {
@@ -163,11 +163,11 @@ export class EventBus implements IEventBus {
     }
     const set = this.patternHandlers.get(pattern)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      log.warn(
+      const msg =
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for pattern "${pattern}". ` +
-          `Handler not added. Possible memory leak.`
-      );
-      return () => {};
+        `Handler not added. Possible memory leak.`;
+      log.error(msg);
+      throw new Error(msg);
     }
     set.add(handler);
     return () => {
@@ -210,11 +210,11 @@ export class EventBus implements IEventBus {
     }
     const set = this.handlers.get(type)!;
     if (set.size >= MAX_LISTENERS_PER_EVENT) {
-      log.warn(
+      const msg =
         `Max listeners (${MAX_LISTENERS_PER_EVENT}) reached for "${type}". ` +
-          `Handler not added. Possible memory leak.`
-      );
-      return () => {};
+        `Handler not added. Possible memory leak.`;
+      log.error(msg);
+      throw new Error(msg);
     }
     set.add(handler);
     return () => this.off(type, handler);

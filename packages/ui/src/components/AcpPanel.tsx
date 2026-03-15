@@ -511,9 +511,9 @@ function ToolCallList({
                 {/* Locations */}
                 {tc.locations && tc.locations.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {tc.locations.map((loc, i) => (
+                    {tc.locations.map((loc) => (
                       <span
-                        key={i}
+                        key={`${loc.path}:${loc.startLine ?? 0}`}
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-400 font-mono text-[10px]"
                       >
                         <FileText className="w-2.5 h-2.5" />
@@ -528,7 +528,7 @@ function ToolCallList({
                 {tc.content && tc.content.length > 0 && (
                   <div className="space-y-1">
                     {tc.content.map((item, i) => (
-                      <ToolContentView key={i} item={item} />
+                      <ToolContentView key={`${tc.toolCallId}-content-${i}`} item={item} />
                     ))}
                   </div>
                 )}
@@ -638,7 +638,7 @@ function PlanView({ plan }: { plan: import('../api/endpoints/coding-agents').Acp
       {plan.entries.map((entry, i) => {
         const statusStyle = PLAN_STATUS_STYLE[entry.status] ?? 'text-zinc-500';
         return (
-          <div key={i} className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30">
+          <div key={`plan-${i}-${entry.status}`} className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30">
             <div className="mt-0.5 shrink-0">
               {entry.status === 'completed' || entry.status === 'done' ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -683,7 +683,7 @@ function MessageList({ messages }: { messages: import('../hooks/useAcpSession').
     <div className="space-y-2">
       {messages.map((msg, i) => (
         <div
-          key={i}
+          key={`msg-${i}-${msg.role}`}
           className={`px-3 py-2 rounded-lg text-xs ${
             msg.role === 'assistant'
               ? 'bg-zinc-800/50 border border-zinc-700/30'
@@ -726,9 +726,9 @@ function ThoughtList({ thoughts }: { thoughts: import('../hooks/useAcpSession').
 
   return (
     <div className="space-y-2">
-      {thoughts.map((thought, i) => (
+      {thoughts.map((thought) => (
         <div
-          key={i}
+          key={thought.timestamp}
           className="px-3 py-2 rounded-lg bg-purple-500/5 border border-purple-500/10 text-xs"
         >
           <div className="flex items-center gap-2 mb-1">

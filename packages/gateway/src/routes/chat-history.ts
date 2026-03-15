@@ -523,7 +523,7 @@ chatHistoryRoutes.post('/history/:conversationId/channel-reply', async (c) => {
       });
     } catch (err) {
       // Non-fatal — message was already sent
-      getErrorMessage(err);
+      log.warn('Failed to persist channel message', { error: getErrorMessage(err) });
     }
 
     // Save to messages table (assistant role)
@@ -535,7 +535,7 @@ chatHistoryRoutes.post('/history/:conversationId/channel-reply', async (c) => {
         trace: { sentVia: 'webui', channelPluginId: session.channelPluginId },
       });
     } catch (err) {
-      getErrorMessage(err);
+      log.warn('Failed to save assistant message', { error: getErrorMessage(err) });
     }
 
     // Broadcast to WebSocket

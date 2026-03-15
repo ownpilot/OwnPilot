@@ -31,6 +31,7 @@ import {
 } from '@ownpilot/core';
 import { getErrorMessage } from '../../routes/helpers.js';
 import { getLog } from '../log.js';
+import { isBlockedUrl, isPrivateUrlAsync } from '../../utils/ssrf.js';
 import { resolveTemplates } from './template-resolver.js';
 import type { ToolExecutionResult } from './types.js';
 import vm from 'node:vm';
@@ -481,29 +482,14 @@ export function executeTransformerNode(
 }
 
 // ============================================================================
-// SSRF protection for HTTP Request node
+// SSRF protection for HTTP Request node (uses shared utility from utils/ssrf.ts)
 // ============================================================================
 
-const PRIVATE_IP_PATTERNS = [
-  /^127\./,
-  /^10\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^192\.168\./,
-  /^0\./,
-  /^169\.254\./,
-  /^::1$/,
-  /^fc00:/i,
-  /^fe80:/i,
-  /^localhost$/i,
-];
-
-function isSsrfTarget(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return PRIVATE_IP_PATTERNS.some((p) => p.test(parsed.hostname));
-  } catch {
-    return true; // Malformed URL — block
-  }
+async function isSsrfTarget(url: string): Promise<boolean> {
+  // Quick sync check: protocol, credentials, numeric obfuscation, private ranges
+  if (isBlockedUrl(url)) return true;
+  // Async DNS-rebinding check: resolves hostname and verifies resolved IPs
+  return isPrivateUrlAsync(url);
 }
 
 const MAX_RESPONSE_SIZE = 1_048_576; // 1MB default
@@ -543,7 +529,7 @@ export async function executeHttpRequestNode(
     const url = resolved._url as string;
 
     // SSRF protection
-    if (isSsrfTarget(url)) {
+    if (await isSsrfTarget(url)) {
       log.warn(`HTTP node ${node.id}: blocked request to private/internal address: ${url}`);
       return {
         nodeId: node.id,

@@ -78,14 +78,14 @@ class McpClientService implements IMcpClientService {
         log.warn(`MCP server "${server.displayName}" transport error — disconnecting`, {
           error: err instanceof Error ? err.message : String(err),
         });
-        this.handleUnexpectedDisconnect(server.name, server.id).catch(() => {});
+        this.handleUnexpectedDisconnect(server.name, server.id).catch((e) => log.debug('MCP disconnect handler error', { error: String(e) }));
       };
 
       transport.onerror = handleTransportError;
       transport.onclose = () => {
         if (this.connections.has(server.name)) {
           log.warn(`MCP server "${server.displayName}" transport closed unexpectedly`);
-          this.handleUnexpectedDisconnect(server.name, server.id).catch(() => {});
+          this.handleUnexpectedDisconnect(server.name, server.id).catch((e) => log.debug('MCP disconnect handler error', { error: String(e) }));
         }
       };
 

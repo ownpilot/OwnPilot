@@ -85,6 +85,27 @@ export class HeartbeatLogRepository extends BaseRepository {
     return rows.map(rowToEntry);
   }
 
+  async listByUser(userId: string, limit: number, offset: number): Promise<HeartbeatLogEntry[]> {
+    const rows = await this.query<HeartbeatLogRow>(
+      `SELECT hl.* FROM heartbeat_log hl
+       JOIN heartbeats h ON h.id = hl.agent_id
+       WHERE h.user_id = $1
+       ORDER BY hl.created_at DESC LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+    return rows.map(rowToEntry);
+  }
+
+  async countByUser(userId: string): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM heartbeat_log hl
+       JOIN heartbeats h ON h.id = hl.agent_id
+       WHERE h.user_id = $1`,
+      [userId]
+    );
+    return parseInt(row?.count ?? '0', 10);
+  }
+
   async listByAgent(agentId: string, limit: number, offset: number): Promise<HeartbeatLogEntry[]> {
     const rows = await this.query<HeartbeatLogRow>(
       `SELECT * FROM heartbeat_log WHERE agent_id = $1
@@ -92,6 +113,14 @@ export class HeartbeatLogRepository extends BaseRepository {
       [agentId, limit, offset]
     );
     return rows.map(rowToEntry);
+  }
+
+  async isAgentOwnedByUser(agentId: string, userId: string): Promise<boolean> {
+    const row = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM heartbeats WHERE id = $1 AND user_id = $2`,
+      [agentId, userId]
+    );
+    return parseInt(row?.count ?? '0', 10) > 0;
   }
 
   async count(): Promise<number> {
@@ -122,6 +151,47 @@ export class HeartbeatLogRepository extends BaseRepository {
          COALESCE(AVG(duration_ms), 0) AS avg_duration,
          COUNT(*) FILTER (WHERE jsonb_array_length(tasks_failed) > 0) AS failure_count
        FROM heartbeat_log ${where}`,
+      params
+    );
+
+    const totalCycles = parseInt(row?.total_cycles ?? '0', 10);
+    const failureCount = parseInt(row?.failure_count ?? '0', 10);
+
+    return {
+      totalCycles,
+      totalCost: parseFloat(row?.total_cost ?? '0'),
+      avgDurationMs: parseFloat(row?.avg_duration ?? '0'),
+      failureRate: totalCycles > 0 ? failureCount / totalCycles : 0,
+    };
+  }
+
+  async getStatsByUser(userId: string, agentId?: string): Promise<{
+    totalCycles: number;
+    totalCost: number;
+    avgDurationMs: number;
+    failureRate: number;
+  }> {
+    let where = 'WHERE h.user_id = $1';
+    const params: unknown[] = [userId];
+    if (agentId) {
+      where += ' AND hl.agent_id = $2';
+      params.push(agentId);
+    }
+
+    const row = await this.queryOne<{
+      total_cycles: string;
+      total_cost: string;
+      avg_duration: string;
+      failure_count: string;
+    }>(
+      `SELECT
+         COUNT(*) AS total_cycles,
+         COALESCE(SUM(hl.cost), 0) AS total_cost,
+         COALESCE(AVG(hl.duration_ms), 0) AS avg_duration,
+         COUNT(*) FILTER (WHERE jsonb_array_length(hl.tasks_failed) > 0) AS failure_count
+       FROM heartbeat_log hl
+       JOIN heartbeats h ON h.id = hl.agent_id
+       ${where}`,
       params
     );
 

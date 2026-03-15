@@ -153,7 +153,8 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
     // Listen for future plugin state changes via EventSystem
     eventSystem.onAny('plugin.status', (e) => {
       try {
-        const event = e.data as { pluginId: string; newStatus: string };
+        const event = e.data as { pluginId?: string; newStatus?: string };
+        if (!event?.pluginId || !event?.newStatus) return;
         const pluginId = createPluginId(event.pluginId);
         if (event.newStatus === 'enabled') {
           const plugin = pluginService.get(event.pluginId);
@@ -287,10 +288,15 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 
       // Look up the extension record for runtime/permissions config
       const extRecord = extensionsRepo.getById(def.extensionId);
-      const useSandbox = extRecord?.manifest?.runtime?.sandbox === 'worker';
-      const grantedPermissions = extRecord?.grantedPermissions as
-        | SkillPermission[]
-        | undefined;
+      if (!extRecord) {
+        log.debug('[tool-executor] Extension record not found during registration, skipping', {
+          extensionId: def.extensionId,
+          toolName: def.name,
+        });
+        continue;
+      }
+      const useSandbox = extRecord.manifest?.runtime?.sandbox === 'worker';
+      const grantedPermissions = (extRecord.grantedPermissions ?? []) as SkillPermission[];
 
       registry.register(
         toolDef,
@@ -304,9 +310,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
               toolName: def.name,
               code: def.extensionTool.code,
               args: args as Record<string, unknown>,
-              grantedPermissions: grantedPermissions?.map(String),
-              maxMemory: extRecord?.manifest?.runtime?.maxMemory,
-              maxExecutionTime: extRecord?.manifest?.runtime?.maxExecutionTime,
+              grantedPermissions: grantedPermissions.map(String),
+              maxMemory: extRecord.manifest?.runtime?.maxMemory,
+              maxExecutionTime: extRecord.manifest?.runtime?.maxExecutionTime,
             });
 
             return {
@@ -372,8 +378,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
             }
 
             const rec = extensionsRepo.getById(d.extensionId);
-            const sandbox = rec?.manifest?.runtime?.sandbox === 'worker';
-            const perms = rec?.grantedPermissions as SkillPermission[] | undefined;
+            if (!rec) continue; // Extension deleted between discovery and re-sync
+            const sandbox = rec.manifest?.runtime?.sandbox === 'worker';
+            const perms = (rec.grantedPermissions ?? []) as SkillPermission[];
 
             registry.register(
               {
@@ -390,7 +397,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
                     toolName: d.name,
                     code: d.extensionTool.code,
                     args: args as Record<string, unknown>,
-                    grantedPermissions: perms?.map(String),
+                    grantedPermissions: perms.map(String),
                     maxMemory: rec?.manifest?.runtime?.maxMemory,
                     maxExecutionTime: rec?.manifest?.runtime?.maxExecutionTime,
                   });

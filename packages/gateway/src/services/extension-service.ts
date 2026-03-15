@@ -377,10 +377,9 @@ export class ExtensionService implements IExtensionService {
     // Fall back to disabling (clear error state)
     const updated = await extensionsRepo.updateStatus(id, 'disabled');
     if (updated) {
-      getEventSystem().emit('extension.enabled', 'extension-service', {
+      getEventSystem().emit('extension.disabled', 'extension-service', {
         extensionId: id,
         userId,
-        triggers: 0,
       });
       log.info(`Recovered extension "${record.name}" from error state`, { id });
     }

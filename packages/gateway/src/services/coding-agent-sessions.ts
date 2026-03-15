@@ -583,7 +583,7 @@ export class CodingAgentSessionManager {
 
     // Close ACP client if present
     if (managed.acpClient) {
-      managed.acpClient.close().catch(() => {});
+      managed.acpClient.close().catch((e) => log.debug('ACP client close error', { error: String(e) }));
       managed.acpClient = null;
     }
 
@@ -715,7 +715,7 @@ export class CodingAgentSessionManager {
     // Close all ACP clients
     for (const managed of this.sessions.values()) {
       if (managed.acpClient) {
-        managed.acpClient.close().catch(() => {});
+        managed.acpClient.close().catch((e) => log.debug('ACP client close error on shutdown', { error: String(e) }));
         managed.acpClient = null;
       }
     }

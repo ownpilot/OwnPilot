@@ -96,7 +96,13 @@ vi.mock('./email-overrides.js', () => ({ registerEmailOverrides: vi.fn(async () 
 vi.mock('./audio-overrides.js', () => ({ registerAudioOverrides: vi.fn(async () => {}) }));
 
 vi.mock('../db/repositories/extensions.js', () => ({
-  extensionsRepo: { getById: vi.fn(() => null) },
+  extensionsRepo: {
+    getById: vi.fn(() => ({
+      id: 'ext-default',
+      manifest: {},
+      grantedPermissions: [],
+    })),
+  },
 }));
 
 const mockSandbox = {
@@ -1401,9 +1407,13 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([dynTool]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'dynamic output', isError: false });
-      // Ensure no sandbox config is returned (previous test may have set mockReturnValue)
+      // Ensure no sandbox config — extension exists but has no sandbox setting
       const { extensionsRepo } = await import('../db/repositories/extensions.js');
-      vi.mocked(extensionsRepo.getById).mockReturnValue(null as never);
+      vi.mocked(extensionsRepo.getById).mockReturnValue({
+        id: dynTool.extensionId,
+        manifest: {},
+        grantedPermissions: [],
+      } as never);
 
       vi.mocked(mockToolRegistry.register).mockClear();
       resync();
