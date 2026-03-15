@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   FileText,
   Bookmark,
+  Repeat,
   Users,
   Calendar,
   AlertTriangle,
@@ -149,6 +150,9 @@ export function DashboardPage() {
     summary?.tasks.completed ?? (summary ? summary.tasks.total - summary.tasks.pending : 0);
   const tasksTotal = summary?.tasks.total ?? 0;
   const completionPct = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0;
+  const habits = (summary as Record<string, unknown> | null)?.habits as
+    | { total: number; completedToday: number; totalToday: number; percentage: number; bestStreak: number }
+    | undefined;
 
   const stats = summary
     ? [
@@ -211,6 +215,25 @@ export function DashboardPage() {
           alert: false,
           link: '/bookmarks',
         },
+        ...(habits
+          ? [
+              {
+                label: 'Habits',
+                value: habits.total,
+                sub:
+                  habits.totalToday > 0
+                    ? `${habits.completedToday}/${habits.totalToday} today`
+                    : habits.bestStreak > 0
+                      ? `${habits.bestStreak}d streak`
+                      : undefined,
+                icon: Repeat,
+                color: 'text-emerald-500',
+                bgColor: 'bg-emerald-500/10',
+                alert: false,
+                link: '/habits',
+              },
+            ]
+          : []),
       ]
     : [];
 

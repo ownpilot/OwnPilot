@@ -84,6 +84,11 @@ const mockContactsRepo = {
   count: vi.fn(async () => 0),
 };
 
+const mockHabitsRepo = {
+  list: vi.fn(async () => []),
+  getTodayProgress: vi.fn(async () => ({ total: 0, completed: 0, percentage: 0, habits: [] })),
+};
+
 vi.mock('../db/repositories/index.js', () => ({
   TasksRepository: vi.fn(function () {
     return mockTasksRepo;
@@ -99,6 +104,9 @@ vi.mock('../db/repositories/index.js', () => ({
   }),
   ContactsRepository: vi.fn(function () {
     return mockContactsRepo;
+  }),
+  HabitsRepository: vi.fn(function () {
+    return mockHabitsRepo;
   }),
 }));
 
@@ -956,6 +964,13 @@ describe('Personal Data Routes', () => {
       mockContactsRepo.count.mockResolvedValue(50);
       mockContactsRepo.getFavorites.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }]);
       mockContactsRepo.getUpcomingBirthdays.mockResolvedValue([{ id: 'c3' }]);
+      mockHabitsRepo.getTodayProgress.mockResolvedValue({
+        total: 3, completed: 2, percentage: 67, habits: [],
+      });
+      mockHabitsRepo.list.mockResolvedValue([
+        { id: 'h1', streakCurrent: 5 },
+        { id: 'h2', streakCurrent: 12 },
+      ]);
 
       const res = await app.request('/pd/summary');
 
@@ -978,6 +993,10 @@ describe('Personal Data Routes', () => {
       expect(json.data.contacts.total).toBe(50);
       expect(json.data.contacts.favorites).toBe(2);
       expect(json.data.contacts.upcomingBirthdays).toBe(1);
+      expect(json.data.habits.total).toBe(2);
+      expect(json.data.habits.completedToday).toBe(2);
+      expect(json.data.habits.totalToday).toBe(3);
+      expect(json.data.habits.bestStreak).toBe(12);
     });
   });
 });
