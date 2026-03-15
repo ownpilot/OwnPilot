@@ -31,7 +31,13 @@ Quality ratings:
 | `cli-chat-parsers` | 280 | Output parsers and arg builders for each CLI (3 parsers, 3 builders). Pure functions, independently testable. |
 | `cli-tool-bridge` | 586 | Enables tool calling through CLI prompt engineering. Injects tool definitions into prompts, parses structured responses back. |
 
-**Quality**: All OK. `cli-chat-provider` was REFACTORED (815 from 1116 — parsers extracted).
+**Quality**: `cli-chat-provider` REFACTORED (815 from 1116 — parsers extracted).
+
+**NOTE**: Two `resolveProviderAndModel()` functions exist (by design):
+- `routes/settings.ts:312` — simple: resolves `'default'` → global default provider/model. Used by audio/image/coding overrides where process-specific routing is not relevant.
+- `agent-runner-utils.ts:97` — full: uses `resolveForProcess()` waterfall (per-process → global → first-configured). Used by all agent runners (chat, pulse, subagent, channel).
+
+Both are documented with JSDoc explaining when to use which.
 
 ---
 
