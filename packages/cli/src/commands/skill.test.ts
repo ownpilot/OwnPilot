@@ -50,7 +50,7 @@ import {
   skillAudit,
 } from './skill.js';
 
-import { select, confirm, checkbox } from '@inquirer/prompts';
+import { confirm, checkbox } from '@inquirer/prompts';
 
 describe('Skill CLI Commands', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
