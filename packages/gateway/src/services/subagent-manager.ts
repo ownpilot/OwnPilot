@@ -442,10 +442,8 @@ export function resetSubagentManager(): void {
   }
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
-
+// Local copy of safeParseJson — can't import from agent-runner-utils due to
+// import chain side effects that break test mocks (getEventSystem().scoped)
 function safeParseJson(str: string): Record<string, unknown> {
   try {
     return JSON.parse(str || '{}');
