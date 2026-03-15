@@ -14,6 +14,7 @@ import {
   mkdirSync,
   unlinkSync,
   readdirSync,
+  statSync,
 } from 'node:fs';
 import { join, dirname, basename, resolve, sep } from 'node:path';
 import { Hono } from 'hono';
@@ -77,8 +78,7 @@ function scanDir(dir: string, basePath: string, depth = 0): FileEntry[] {
       } else if (item.isFile()) {
         const stat = { size: 0 };
         try {
-          const fs = require('node:fs');
-          const s = fs.statSync(fullPath);
+          const s = statSync(fullPath);
           stat.size = s.size;
         } catch {
           /* ignore */

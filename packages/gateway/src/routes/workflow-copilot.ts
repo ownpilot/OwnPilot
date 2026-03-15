@@ -93,7 +93,7 @@ workflowCopilotRoute.post('/', async (c) => {
   });
 
   // Build system prompt
-  const systemPrompt = buildCopilotSystemPrompt(body.currentWorkflow, body.availableTools);
+  const systemPrompt = await buildCopilotSystemPrompt(body.currentWorkflow, body.availableTools);
 
   // Construct messages array
   const messages: Message[] = [

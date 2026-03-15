@@ -580,15 +580,15 @@ Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions w
  * Build the full system prompt for the workflow copilot, optionally
  * including the current workflow state and available tool names.
  */
-export function buildCopilotSystemPrompt(
+export async function buildCopilotSystemPrompt(
   currentWorkflow?: WorkflowState,
   availableTools?: string[]
-): string {
+): Promise<string> {
   const parts = [STATIC_PROMPT];
 
   // Add workflow ideas as inspiration when creating new workflows
   if (!currentWorkflow) {
-    parts.push(buildWorkflowIdeasSection());
+    parts.push(await buildWorkflowIdeasSection());
   }
 
   if (availableTools && availableTools.length > 0) {
@@ -611,11 +611,10 @@ export function buildCopilotSystemPrompt(
  * Build a compact workflow ideas section for the copilot prompt.
  * Loaded lazily to avoid bloating the static prompt string.
  */
-function buildWorkflowIdeasSection(): string {
+async function buildWorkflowIdeasSection(): Promise<string> {
   try {
     // Dynamic import to keep template ideas separate
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { WORKFLOW_TEMPLATE_IDEAS } = require('./workflow-template-ideas.js');
+    const { WORKFLOW_TEMPLATE_IDEAS } = await import('./workflow-template-ideas.js');
     if (!WORKFLOW_TEMPLATE_IDEAS?.length) return '';
 
     const lines = (WORKFLOW_TEMPLATE_IDEAS as Array<{ name: string; nodes: string; category: string }>)
