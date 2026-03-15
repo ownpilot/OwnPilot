@@ -1072,7 +1072,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     log.info(
       `[WhatsApp] handleIncomingMessage called — jid: ${msg.key.remoteJid}, pushName: ${msg.pushName}`
     );
-    let remoteJid = this.resolveIncomingJid(msg.key);
+    const remoteJid = this.resolveIncomingJid(msg.key);
     if (!remoteJid) return;
 
     // SAFETY: Only process DMs (@s.whatsapp.net) and groups (@g.us).
