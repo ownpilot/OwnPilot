@@ -128,12 +128,16 @@ describe('getRequiredPermission', () => {
     expect(getRequiredPermission('get_config')).toBe('config');
   });
 
-  it('returns expenses for create_expense', () => {
-    expect(getRequiredPermission('create_expense')).toBe('expenses');
+  it('returns expenses for add_expense', () => {
+    expect(getRequiredPermission('add_expense')).toBe('expenses');
   });
 
-  it('returns bookmarks for create_bookmark', () => {
-    expect(getRequiredPermission('create_bookmark')).toBe('bookmarks');
+  it('returns bookmarks for add_bookmark', () => {
+    expect(getRequiredPermission('add_bookmark')).toBe('bookmarks');
+  });
+
+  it('returns habits for create_habit', () => {
+    expect(getRequiredPermission('create_habit')).toBe('habits');
   });
 
   it('returns null for tool with no dot but unknown', () => {
@@ -319,7 +323,7 @@ describe('getAllPermissions', () => {
   it('returns an array of all permissions', () => {
     const perms = getAllPermissions();
     expect(Array.isArray(perms)).toBe(true);
-    expect(perms.length).toBe(14);
+    expect(perms.length).toBe(15);
   });
 
   it('includes all expected permission categories', () => {
@@ -339,6 +343,7 @@ describe('getAllPermissions', () => {
       'config',
       'expenses',
       'bookmarks',
+      'habits',
     ];
     for (const perm of expected) {
       expect(perms).toContain(perm);
