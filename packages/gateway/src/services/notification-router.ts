@@ -26,8 +26,10 @@ const PRIORITY_ORDER: Record<NotificationPriority, number> = {
   urgent: 3,
 };
 
-/** In-memory preferences store (can be backed by DB later) */
-const preferencesStore = new Map<string, NotificationPreferences>();
+/** Preferences persisted via settings repo with in-memory cache */
+import { settingsRepo } from '../db/repositories/index.js';
+const PREFS_KEY_PREFIX = 'notification_prefs:';
+const preferencesCache = new Map<string, NotificationPreferences>();
 
 /** Default preferences for users without explicit settings */
 const DEFAULT_PREFERENCES: Omit<NotificationPreferences, 'userId'> = {
@@ -188,11 +190,27 @@ export class NotificationRouter implements INotificationRouter {
   }
 
   async getPreferences(userId: string): Promise<NotificationPreferences | null> {
-    return preferencesStore.get(userId) ?? null;
+    // Check cache first
+    const cached = preferencesCache.get(userId);
+    if (cached) return cached;
+
+    // Load from DB
+    const stored = settingsRepo.get<string>(`${PREFS_KEY_PREFIX}${userId}`);
+    if (stored) {
+      try {
+        const prefs = JSON.parse(stored) as NotificationPreferences;
+        preferencesCache.set(userId, prefs);
+        return prefs;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   async setPreferences(prefs: NotificationPreferences): Promise<void> {
-    preferencesStore.set(prefs.userId, prefs);
+    await settingsRepo.set(`${PREFS_KEY_PREFIX}${prefs.userId}`, JSON.stringify(prefs));
+    preferencesCache.set(prefs.userId, prefs);
     log.info('Notification preferences updated', { userId: prefs.userId });
   }
 }
