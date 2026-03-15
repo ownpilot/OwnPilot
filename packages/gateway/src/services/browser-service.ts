@@ -6,6 +6,7 @@
  * and PII-aware form filling.
  */
 
+import { existsSync } from 'node:fs';
 import type { Browser, Page } from 'puppeteer-core';
 import { hasPII, detectPII, getLog } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
@@ -560,10 +561,9 @@ export class BrowserService {
       );
     }
 
-    const fs = require('fs') as typeof import('fs');
     for (const candidate of candidates) {
       try {
-        if (fs.existsSync(candidate)) return candidate;
+        if (existsSync(candidate)) return candidate;
       } catch {
         // Skip
       }
