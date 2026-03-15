@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "nemotron-3-super",
+      "name": "nemotron-3-super",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-11"
+    },
+    {
       "id": "qwen3.5:397b",
       "name": "qwen3.5:397b",
       "contextWindow": 262144,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-15"
     },
     {

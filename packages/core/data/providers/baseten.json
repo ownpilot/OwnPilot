@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "nvidia/Nemotron-3-Super",
+      "name": "Nemotron 3 Super",
+      "contextWindow": 262144,
+      "maxOutput": 32678,
+      "inputPrice": 0.3,
+      "outputPrice": 0.75,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-11"
+    },
+    {
       "id": "zai-org/GLM-5",
       "name": "GLM-5",
       "contextWindow": 202752,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {
@@ -85,6 +101,7 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -137,19 +154,51 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-      "name": "Qwen3 Coder 480B A35B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 66536,
-      "inputPrice": 0.38,
-      "outputPrice": 1.53,
+      "id": "deepseek-ai/DeepSeek-V3.1",
+      "name": "DeepSeek V3.1",
+      "contextWindow": 164000,
+      "maxOutput": 131000,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-25"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 0324",
+      "contextWindow": 164000,
+      "maxOutput": 131000,
+      "inputPrice": 0.77,
+      "outputPrice": 0.77,
       "capabilities": [
         "chat",
         "function_calling",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-07-23"
+      "releaseDate": "2025-03-24"
     }
   ],
   "baseUrl": "https://inference.baseten.co/v1",

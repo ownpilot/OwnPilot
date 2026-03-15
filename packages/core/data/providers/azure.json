@@ -566,6 +566,39 @@
       "releaseDate": "2025-07-09"
     },
     {
+      "id": "grok-4-1-fast-reasoning",
+      "name": "Grok 4.1 Fast (Reasoning)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-27"
+    },
+    {
+      "id": "grok-4-1-fast-non-reasoning",
+      "name": "Grok 4.1 Fast (Non-Reasoning)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-27"
+    },
+    {
       "id": "deepseek-r1-0528",
       "name": "DeepSeek-R1-0528",
       "contextWindow": 163840,

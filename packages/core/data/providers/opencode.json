@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "nemotron-3-super-free",
+      "name": "Nemotron 3 Super Free",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-11"
+    },
+    {
       "id": "gpt-5.4",
       "name": "GPT-5.4",
       "contextWindow": 1050000,
@@ -26,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-05"
     },
     {

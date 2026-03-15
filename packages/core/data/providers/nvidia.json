@@ -63,7 +63,7 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "stepfun-ai/step-3-5-flash",
+      "id": "stepfun-ai/step-3.5-flash",
       "name": "Step 3.5 Flash",
       "contextWindow": 256000,
       "maxOutput": 16384,
