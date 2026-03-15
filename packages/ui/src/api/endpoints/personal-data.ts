@@ -109,7 +109,7 @@ export const habitsApi = {
   getLogs: (id: string, params?: Record<string, string>) =>
     apiClient.get<{ logs: HabitLog[]; count: number }>(`/habits/${id}/logs`, { params }),
   getStats: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/habits/${id}/stats`),
+    apiClient.get<Record<string, unknown>>(`/habits/${id}`),
 };
 
 // ---- Calendar ----
