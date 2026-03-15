@@ -33,4 +33,5 @@ export {
 } from './soul-communication-tools.js';
 export { SKILL_TOOLS, executeSkillTool } from './skill-tools.js';
 export { CREW_TOOLS, CREW_TOOL_NAMES, executeCrewTool } from './crew-tools.js';
+export { HABIT_TOOLS, HABIT_TOOL_NAMES, executeHabitTool } from './habit-tools.js';
 export { FLEET_TOOLS, executeFleetTool } from './fleet-tools.js';

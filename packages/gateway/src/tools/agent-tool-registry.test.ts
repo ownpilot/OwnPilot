@@ -158,6 +158,8 @@ vi.mock('./index.js', () => ({
   executeSoulCommunicationTool: vi.fn(),
   CREW_TOOLS: [],
   executeCrewTool: vi.fn(),
+  HABIT_TOOLS: [],
+  executeHabitTool: vi.fn(),
   SKILL_TOOLS: [],
   executeSkillTool: vi.fn(),
 }));
