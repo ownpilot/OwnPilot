@@ -277,6 +277,124 @@ export function buildDateTimeContext(): string {
   return `${days[now.getDay()]} ${now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}`;
 }
 
+// ============================================================================
+// Agent Execution Pipeline
+// ============================================================================
+
+/**
+ * Options for the unified agent execution pipeline.
+ */
+export interface AgentPipelineOptions {
+  /** Fully configured Agent instance */
+  agent: Agent;
+  /** Message to send to the agent */
+  message: string;
+  /** Timeout in milliseconds */
+  timeoutMs: number;
+  /** Label for timeout errors (e.g., "Cycle", "Subagent", "Worker") */
+  timeoutLabel?: string;
+  /** Optional AbortSignal for cancellation */
+  abortSignal?: AbortSignal;
+  /** Optional external tool-end callback (called alongside the internal collector) */
+  onToolEnd?: (
+    tc: ToolCall,
+    result: { content: string; isError: boolean; durationMs: number }
+  ) => void;
+}
+
+/**
+ * Result from the unified agent execution pipeline.
+ */
+export interface AgentPipelineResult {
+  content: string;
+  toolCalls: CollectedToolCall[];
+  usage: { promptTokens: number; completionTokens: number } | null;
+  costUsd: number;
+  durationMs: number;
+}
+
+/**
+ * Create a promise that rejects when the given AbortSignal fires.
+ */
+export function createCancellationPromise(signal: AbortSignal): Promise<never> {
+  return new Promise((_, reject) => {
+    if (signal.aborted) {
+      reject(new Error('Cancelled'));
+      return;
+    }
+    signal.addEventListener('abort', () => reject(new Error('Cancelled')), { once: true });
+  });
+}
+
+/**
+ * Unified agent execution pipeline shared by all runners.
+ *
+ * Handles: tool call collection, timeout, optional cancellation,
+ * Result unwrapping, and cost calculation.
+ *
+ * Each runner is responsible for:
+ * - Creating the agent (provider, model, system prompt, tool filter)
+ * - Building the message
+ * - Mapping `AgentPipelineResult` to its own domain result type
+ */
+export async function executeAgentPipeline(
+  provider: string,
+  model: string,
+  opts: AgentPipelineOptions
+): Promise<AgentPipelineResult> {
+  const startTime = Date.now();
+
+  // Collect tool calls via callback
+  const collector = createToolCallCollector();
+  const wrappedOnToolEnd = (
+    tc: ToolCall,
+    result: { content: string; isError: boolean; durationMs: number }
+  ) => {
+    collector.onToolEnd(tc, result);
+    opts.onToolEnd?.(tc, result);
+  };
+
+  // Race: agent execution vs timeout vs optional cancellation
+  const promises: Promise<unknown>[] = [
+    opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd }),
+    createTimeoutPromise(opts.timeoutMs, opts.timeoutLabel ?? 'Agent'),
+  ];
+  if (opts.abortSignal) {
+    promises.push(createCancellationPromise(opts.abortSignal));
+  }
+
+  const chatResult = (await Promise.race(promises)) as {
+    ok: boolean;
+    value?: { content?: string; usage?: { promptTokens?: number; completionTokens?: number } };
+    error?: { message?: string };
+  };
+
+  // Unwrap Result type
+  if (!chatResult.ok) {
+    throw new Error(chatResult.error?.message ?? 'Agent execution failed');
+  }
+
+  const response = chatResult.value!;
+  const durationMs = Date.now() - startTime;
+
+  return {
+    content: response.content ?? '',
+    toolCalls: collector.toolCalls,
+    usage: response.usage
+      ? {
+          promptTokens: response.usage.promptTokens ?? 0,
+          completionTokens: response.usage.completionTokens ?? 0,
+        }
+      : null,
+    costUsd: calculateExecutionCost(provider, model, response.usage),
+    durationMs,
+  };
+}
+
+// ============================================================================
+// Cost Calculation
+// ============================================================================
+
 /**
  * Calculate cost from provider/model and token usage.
  * Returns 0 if usage data is unavailable.

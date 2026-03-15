@@ -33,9 +33,8 @@ import {
   createConfiguredAgent,
   resolveProviderAndModel,
   resolveToolFilter,
-  createToolCallCollector,
-  createTimeoutPromise,
   calculateExecutionCost,
+  executeAgentPipeline,
 } from './agent-runner-utils.js';
 
 const log = getLog('FleetWorker');
@@ -132,7 +131,7 @@ export class FleetWorker {
     task: FleetTask,
     sharedContext: Record<string, unknown>,
     workerId: string,
-    startTime: number
+    _startTime: number
   ): Promise<FleetWorkerResult> {
     const { provider, model } = await resolveProviderAndModel(
       this.config.provider ?? this.defaultProvider,
@@ -178,25 +177,17 @@ export class FleetWorker {
     // Build message with task + shared context
     const message = this.buildTaskMessage(task, sharedContext);
 
-    // Collect tool calls
-    const collector = createToolCallCollector();
-
-    // Execute with timeout
+    // Execute via unified pipeline
     const timeoutMs = this.config.timeoutMs ?? 300_000;
-    const chatResult = await Promise.race([
-      agent.chat(message, { onToolEnd: collector.onToolEnd }),
-      createTimeoutPromise(timeoutMs, 'Worker'),
-    ]);
-
-    if (!chatResult.ok) {
-      throw new Error(chatResult.error?.message ?? 'Agent chat failed');
-    }
-
-    const response = chatResult.value;
-    const durationMs = Date.now() - startTime;
+    const pipelineResult = await executeAgentPipeline(provider, model, {
+      agent,
+      message,
+      timeoutMs,
+      timeoutLabel: 'Worker',
+    });
 
     // Map collector format to fleet's { tool, name, args, result } format
-    const toolCalls = collector.toolCalls.map((tc) => ({
+    const toolCalls = pipelineResult.toolCalls.map((tc) => ({
       tool: tc.tool,
       name: tc.tool,
       args: tc.args as unknown,
@@ -206,7 +197,7 @@ export class FleetWorker {
     log.info(`[${this.fleetId}:${this.config.name}] ai-chat completed`, {
       taskId: task.id,
       toolCalls: toolCalls.length,
-      durationMs,
+      durationMs: pipelineResult.durationMs,
     });
 
     return {
@@ -217,16 +208,13 @@ export class FleetWorker {
       workerType: 'ai-chat',
       taskId: task.id,
       success: true,
-      output: response.content ?? '',
+      output: pipelineResult.content,
       toolCalls,
-      tokensUsed: response.usage
-        ? {
-            prompt: response.usage.promptTokens ?? 0,
-            completion: response.usage.completionTokens ?? 0,
-          }
+      tokensUsed: pipelineResult.usage
+        ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
         : undefined,
-      costUsd: calculateExecutionCost(provider, model, response.usage),
-      durationMs,
+      costUsd: pipelineResult.costUsd,
+      durationMs: pipelineResult.durationMs,
       executedAt: new Date(),
     };
   }

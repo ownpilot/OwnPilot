@@ -32,10 +32,8 @@ import {
   resolveProviderAndModel,
   createConfiguredAgent,
   resolveToolFilter,
-  createTimeoutPromise,
-  createToolCallCollector,
+  executeAgentPipeline,
   buildDateTimeContext,
-  calculateExecutionCost,
 } from './agent-runner-utils.js';
 
 const log = getLog('BackgroundAgentRunner');
@@ -80,26 +78,16 @@ export class BackgroundAgentRunner {
       // 3. Build the cycle message
       const cycleMessage = this.buildCycleMessage(session, cycleNumber);
 
-      // 4. Collect tool calls via callback
-      const { toolCalls: collectedCalls, onToolEnd } = createToolCallCollector();
+      // 4. Execute via unified pipeline
+      const pipelineResult = await executeAgentPipeline(provider, model, {
+        agent,
+        message: cycleMessage,
+        timeoutMs: this.config.limits.cycleTimeoutMs,
+        timeoutLabel: 'Cycle',
+      });
 
-      // 5. Execute agent.chat() with timeout
-      const chatResult = await Promise.race([
-        agent.chat(cycleMessage, { onToolEnd }),
-        createTimeoutPromise(this.config.limits.cycleTimeoutMs, 'Cycle'),
-      ]);
-
-      const durationMs = Date.now() - startTime;
-
-      // 6. Unwrap Result type
-      if (!chatResult.ok) {
-        throw new Error(chatResult.error?.message ?? 'Agent chat failed');
-      }
-
-      const response = chatResult.value;
-
-      // Map CollectedToolCall[] to BackgroundAgentToolCall[]
-      const toolCalls: BackgroundAgentToolCall[] = collectedCalls.map((tc) => ({
+      // Map to BackgroundAgentCycleResult
+      const toolCalls: BackgroundAgentToolCall[] = pipelineResult.toolCalls.map((tc) => ({
         tool: tc.tool,
         args: tc.args,
         result: tc.result,
@@ -109,25 +97,20 @@ export class BackgroundAgentRunner {
       log.info(`[${this.config.id}] Cycle ${cycleNumber} completed`, {
         toolCalls: toolCalls.length,
         tools: toolCalls.map((tc) => tc.tool),
-        durationMs,
-        outputLength: response.content?.length ?? 0,
+        durationMs: pipelineResult.durationMs,
+        outputLength: pipelineResult.content.length,
       });
 
-      const outputText = response.content ?? '';
-      const costUsd = calculateExecutionCost(provider, model, response.usage);
       return {
         success: true,
         toolCalls,
-        output: outputText,
-        outputMessage: outputText,
-        tokensUsed: response.usage
-          ? {
-              prompt: response.usage.promptTokens ?? 0,
-              completion: response.usage.completionTokens ?? 0,
-            }
+        output: pipelineResult.content,
+        outputMessage: pipelineResult.content,
+        tokensUsed: pipelineResult.usage
+          ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
           : undefined,
-        costUsd,
-        durationMs,
+        costUsd: pipelineResult.costUsd,
+        durationMs: pipelineResult.durationMs,
         turns: 1,
       };
     } catch (error) {

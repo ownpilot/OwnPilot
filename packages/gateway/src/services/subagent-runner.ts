@@ -36,10 +36,8 @@ import { getLog } from './log.js';
 import {
   createConfiguredAgent,
   resolveProviderAndModel,
-  createTimeoutPromise,
-  createToolCallCollector,
+  executeAgentPipeline,
   buildDateTimeContext,
-  calculateExecutionCost,
 } from './agent-runner-utils.js';
 
 const log = getLog('SubagentRunner');
@@ -111,55 +109,36 @@ export class SubagentRunner {
       // 3. Build the task message
       const taskMessage = this.buildTaskMessage();
 
-      // 4. Collect tool calls via callback
-      const collector = createToolCallCollector();
-      const wrappedOnToolEnd = (
-        tc: ToolCall,
-        result: { content: string; isError: boolean; durationMs: number }
-      ) => {
-        collector.onToolEnd(tc, result);
-        onToolEnd?.(tc, result);
-      };
-
-      // 5. Execute agent.chat() with timeout and cancellation
-      const chatResult = await Promise.race([
-        agent.chat(taskMessage, { onToolEnd: wrappedOnToolEnd }),
-        createTimeoutPromise(this.limits.timeoutMs, 'Subagent'),
-        this.cancellationPromise(),
-      ]);
-
-      const durationMs = Date.now() - startTime;
+      // 4. Execute via unified pipeline (with cancellation support)
+      const pipelineResult = await executeAgentPipeline(provider, model, {
+        agent,
+        message: taskMessage,
+        timeoutMs: this.limits.timeoutMs,
+        timeoutLabel: 'Subagent',
+        abortSignal: this.abortController.signal,
+        onToolEnd,
+      });
 
       // Check if cancelled during execution
       if (this.abortController.signal.aborted) {
-        return this.cancelledResult(durationMs, collector.toolCalls, provider, model);
+        return this.cancelledResult(pipelineResult.durationMs, pipelineResult.toolCalls, provider, model);
       }
-
-      // 6. Unwrap Result type
-      if (!chatResult.ok) {
-        throw new Error(chatResult.error?.message ?? 'Subagent execution failed');
-      }
-
-      const response = chatResult.value;
 
       log.info(
-        `[subagent:${this.input.name}] Completed: ${collector.toolCalls.length} tool calls, ${durationMs}ms`
+        `[subagent:${this.input.name}] Completed: ${pipelineResult.toolCalls.length} tool calls, ${pipelineResult.durationMs}ms`
       );
 
       return {
         success: true,
-        result: response.content ?? '',
-        toolCalls: collector.toolCalls,
+        result: pipelineResult.content,
+        toolCalls: pipelineResult.toolCalls,
         turnsUsed: 1,
-        toolCallsUsed: collector.toolCalls.length,
-        tokensUsed: response.usage
-          ? {
-              prompt: response.usage.promptTokens ?? 0,
-              completion: response.usage.completionTokens ?? 0,
-            }
+        toolCallsUsed: pipelineResult.toolCalls.length,
+        tokensUsed: pipelineResult.usage
+          ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
           : null,
-        costUsd: calculateExecutionCost(provider, model, response.usage),
-        durationMs,
+        costUsd: pipelineResult.costUsd,
+        durationMs: pipelineResult.durationMs,
         error: null,
         provider,
         model,
@@ -265,18 +244,6 @@ export class SubagentRunner {
     parts.push('Complete this task now. Provide a thorough response.');
 
     return parts.join('\n');
-  }
-
-  private cancellationPromise(): Promise<never> {
-    return new Promise((_, reject) => {
-      if (this.abortController.signal.aborted) {
-        reject(new Error('Subagent cancelled'));
-        return;
-      }
-      this.abortController.signal.addEventListener('abort', () => {
-        reject(new Error('Subagent cancelled'));
-      });
-    });
   }
 
   private cancelledResult(
