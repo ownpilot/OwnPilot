@@ -243,6 +243,98 @@ function syncCustomToolsIntoRegistry(registry: ToolRegistry, userId: string): vo
 }
 
 /**
+ * Register a single extension tool into the shared ToolRegistry.
+ * Shared by initial sync and event-driven re-sync to eliminate duplication.
+ */
+function registerSingleExtensionTool(
+  def: import('./extension-service.js').ToolDefinitionForRegistry,
+  registry: ToolRegistry,
+  dynamicRegistry: ReturnType<typeof getCustomToolDynamicRegistry>
+): boolean {
+  // Register in DynamicToolRegistry for sandbox execution
+  if (!dynamicRegistry.has(def.name)) {
+    try {
+      dynamicRegistry.register({
+        name: def.name,
+        description: def.description,
+        parameters: def.extensionTool.parameters as never,
+        code: def.extensionTool.code,
+        permissions: def.extensionTool.permissions as never,
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
+  const qName = qualifyToolName(def.name, nsPrefix, def.extensionId);
+
+  // Skip if already registered (for re-sync)
+  if (registry.has(qName)) return false;
+
+  const extRecord = extensionsRepo.getById(def.extensionId);
+  if (!extRecord) {
+    log.debug('[tool-executor] Extension record not found during registration, skipping', {
+      extensionId: def.extensionId,
+      toolName: def.name,
+    });
+    return false;
+  }
+
+  const useSandbox = extRecord.manifest?.runtime?.sandbox === 'worker';
+  const grantedPermissions = (extRecord.grantedPermissions ?? []) as SkillPermission[];
+
+  const toolDef: ToolDefinition = {
+    name: qName,
+    description: def.description,
+    parameters: def.parameters as ToolDefinition['parameters'],
+    category: def.category,
+  };
+
+  registry.register(
+    toolDef,
+    async (args, context) => {
+      if (useSandbox) {
+        const sandbox = getExtensionSandbox();
+        const sandboxResult = await sandbox.execute({
+          extensionId: def.extensionId,
+          toolName: def.name,
+          code: def.extensionTool.code,
+          args: args as Record<string, unknown>,
+          grantedPermissions: grantedPermissions.map(String),
+          maxMemory: extRecord.manifest?.runtime?.maxMemory,
+          maxExecutionTime: extRecord.manifest?.runtime?.maxExecutionTime,
+        });
+        return {
+          content: sandboxResult.success
+            ? JSON.stringify(sandboxResult.result)
+            : String(sandboxResult.error ?? 'Sandbox execution failed'),
+          isError: !sandboxResult.success,
+        };
+      }
+
+      const execResult = await dynamicRegistry.execute(
+        def.name,
+        args as Record<string, unknown>,
+        context
+      );
+      return {
+        content: execResult.isError ? String(execResult.content) : JSON.stringify(execResult.content),
+        isError: execResult.isError,
+      };
+    },
+    {
+      source: 'dynamic',
+      pluginId: `${nsPrefix}:${def.extensionId}` as import('@ownpilot/core').PluginId,
+      trustLevel: 'sandboxed',
+      providerName: `${nsPrefix}:${def.extensionId}`,
+    }
+  );
+
+  return true;
+}
+
+/**
  * Sync enabled extension tools into the shared ToolRegistry.
  * Extension tools get namespaced as ext.{id}.{name} or skill.{id}.{name}.
  * Also listens for extension install/enable/disable events to stay in sync.
@@ -261,88 +353,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
     setupSandboxCallToolHandler(registry);
 
     for (const def of extToolDefs) {
-      // Register in DynamicToolRegistry for sandbox execution
-      if (!dynamicRegistry.has(def.name)) {
-        try {
-          dynamicRegistry.register({
-            name: def.name,
-            description: def.description,
-            parameters: def.extensionTool.parameters as never,
-            code: def.extensionTool.code,
-            permissions: def.extensionTool.permissions as never,
-          });
-        } catch {
-          continue;
-        }
-      }
-
-      // Qualify name: ext.{id}.{name} or skill.{id}.{name}
-      const nsPrefix = def.format === 'agentskills' ? 'skill' : 'ext';
-      const qName = qualifyToolName(def.name, nsPrefix, def.extensionId);
-      const toolDef: ToolDefinition = {
-        name: qName,
-        description: def.description,
-        parameters: def.parameters as ToolDefinition['parameters'],
-        category: def.category,
-      };
-
-      // Look up the extension record for runtime/permissions config
-      const extRecord = extensionsRepo.getById(def.extensionId);
-      if (!extRecord) {
-        log.debug('[tool-executor] Extension record not found during registration, skipping', {
-          extensionId: def.extensionId,
-          toolName: def.name,
-        });
-        continue;
-      }
-      const useSandbox = extRecord.manifest?.runtime?.sandbox === 'worker';
-      const grantedPermissions = (extRecord.grantedPermissions ?? []) as SkillPermission[];
-
-      registry.register(
-        toolDef,
-        async (args, context) => {
-          // Permission check for the tool being invoked by the LLM (not via utils.callTool)
-          // This is a secondary safeguard — primary permission gate is in the callTool handler
-          if (useSandbox) {
-            const sandbox = getExtensionSandbox();
-            const sandboxResult = await sandbox.execute({
-              extensionId: def.extensionId,
-              toolName: def.name,
-              code: def.extensionTool.code,
-              args: args as Record<string, unknown>,
-              grantedPermissions: grantedPermissions.map(String),
-              maxMemory: extRecord.manifest?.runtime?.maxMemory,
-              maxExecutionTime: extRecord.manifest?.runtime?.maxExecutionTime,
-            });
-
-            return {
-              content: sandboxResult.success
-                ? JSON.stringify(sandboxResult.result)
-                : String(sandboxResult.error ?? 'Sandbox execution failed'),
-              isError: !sandboxResult.success,
-            };
-          }
-
-          // Default: use DynamicToolRegistry (existing behavior)
-          const execResult = await dynamicRegistry.execute(
-            def.name,
-            args as Record<string, unknown>,
-            context
-          );
-          return {
-            content: execResult.isError
-              ? String(execResult.content)
-              : JSON.stringify(execResult.content),
-            isError: execResult.isError,
-          };
-        },
-        {
-          source: 'dynamic',
-          pluginId: `${nsPrefix}:${def.extensionId}` as import('@ownpilot/core').PluginId,
-          trustLevel: 'sandboxed',
-          providerName: `${nsPrefix}:${def.extensionId}`,
-        }
-      );
+      registerSingleExtensionTool(def, registry, dynamicRegistry);
     }
 
     if (extToolDefs.length > 0) {
@@ -359,73 +370,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
         try {
           const freshDefs = service.getToolDefinitions();
           for (const d of freshDefs) {
-            const ns = d.format === 'agentskills' ? 'skill' : 'ext';
-            const qn = qualifyToolName(d.name, ns, d.extensionId);
-            if (registry.has(qn)) continue; // already registered
-
-            if (!dynamicRegistry.has(d.name)) {
-              try {
-                dynamicRegistry.register({
-                  name: d.name,
-                  description: d.description,
-                  parameters: d.extensionTool.parameters as never,
-                  code: d.extensionTool.code,
-                  permissions: d.extensionTool.permissions as never,
-                });
-              } catch {
-                continue;
-              }
-            }
-
-            const rec = extensionsRepo.getById(d.extensionId);
-            if (!rec) continue; // Extension deleted between discovery and re-sync
-            const sandbox = rec.manifest?.runtime?.sandbox === 'worker';
-            const perms = (rec.grantedPermissions ?? []) as SkillPermission[];
-
-            registry.register(
-              {
-                name: qn,
-                description: d.description,
-                parameters: d.parameters as ToolDefinition['parameters'],
-                category: d.category,
-              },
-              async (args, context) => {
-                if (sandbox) {
-                  const sbx = getExtensionSandbox();
-                  const sbxResult = await sbx.execute({
-                    extensionId: d.extensionId,
-                    toolName: d.name,
-                    code: d.extensionTool.code,
-                    args: args as Record<string, unknown>,
-                    grantedPermissions: perms.map(String),
-                    maxMemory: rec?.manifest?.runtime?.maxMemory,
-                    maxExecutionTime: rec?.manifest?.runtime?.maxExecutionTime,
-                  });
-                  return {
-                    content: sbxResult.success
-                      ? JSON.stringify(sbxResult.result)
-                      : String(sbxResult.error ?? 'Sandbox execution failed'),
-                    isError: !sbxResult.success,
-                  };
-                }
-
-                const res = await dynamicRegistry.execute(
-                  d.name,
-                  args as Record<string, unknown>,
-                  context
-                );
-                return {
-                  content: res.isError ? String(res.content) : JSON.stringify(res.content),
-                  isError: res.isError,
-                };
-              },
-              {
-                source: 'dynamic',
-                pluginId: `${ns}:${d.extensionId}` as import('@ownpilot/core').PluginId,
-                trustLevel: 'sandboxed',
-                providerName: `${ns}:${d.extensionId}`,
-              }
-            );
+            registerSingleExtensionTool(d, registry, dynamicRegistry);
           }
           dynamicRegistry.setCallableTools(registry.getAllTools());
         } catch (err) {
