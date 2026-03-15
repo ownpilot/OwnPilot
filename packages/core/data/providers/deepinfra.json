@@ -330,6 +330,38 @@
       "releaseDate": "2025-05-28"
     },
     {
+      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama 4 Scout 17B",
+      "contextWindow": 10000000,
+      "maxOutput": 16384,
+      "inputPrice": 0.08,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "name": "Llama 4 Maverick 17B FP8",
+      "contextWindow": 1000000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
       "id": "anthropic/claude-3-7-sonnet-latest",
       "name": "Claude Sonnet 3.7 (Latest)",
       "contextWindow": 200000,
@@ -345,6 +377,81 @@
       ],
       "default": false,
       "releaseDate": "2025-03-13"
+    },
+    {
+      "id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      "name": "Llama 3.3 70B Turbo",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.1,
+      "outputPrice": 0.32,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B-Instruct-Turbo",
+      "name": "Llama 3.1 8B Turbo",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.02,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama/Llama-3.1-70B-Instruct-Turbo",
+      "name": "Llama 3.1 70B Turbo",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama 3.1 70B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.02,
+      "outputPrice": 0.05,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
     }
   ],
   "baseUrl": "https://api.deepinfra.com/v1/openai",

@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "grok-4.20-experimental-beta-0304-reasoning",
-      "name": "Grok 4.20 (Experimental, Reasoning)",
+      "id": "grok-4.20-beta-latest-non-reasoning",
+      "name": "Grok 4.20 Beta (Non-Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
       "inputPrice": 2,
@@ -22,15 +22,14 @@
         "chat",
         "vision",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-03-04"
+      "releaseDate": "2026-03-09"
     },
     {
-      "id": "grok-4.20-multi-agent-experimental-beta-0304",
-      "name": "Grok 4.20 Multi-Agent (Experimental)",
+      "id": "grok-4.20-multi-agent-beta-latest",
+      "name": "Grok 4.20 Multi-Agent Beta",
       "contextWindow": 2000000,
       "maxOutput": 30000,
       "inputPrice": 2,
@@ -43,11 +42,11 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-04"
+      "releaseDate": "2026-03-09"
     },
     {
-      "id": "grok-4.20-experimental-beta-0304-non-reasoning",
-      "name": "Grok 4.20 (Experimental, Non-Reasoning)",
+      "id": "grok-4.20-beta-latest-reasoning",
+      "name": "Grok 4.20 Beta (Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
       "inputPrice": 2,
@@ -56,10 +55,11 @@
         "chat",
         "vision",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-04"
+      "releaseDate": "2026-03-09"
     },
     {
       "id": "grok-4-1-fast-non-reasoning",

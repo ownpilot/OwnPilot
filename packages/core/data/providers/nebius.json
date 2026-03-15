@@ -12,6 +12,40 @@
   },
   "models": [
     {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "name": "Nemotron-3-Super-120B-A12B",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "zai-org/GLM-5",
+      "name": "GLM-5",
+      "contextWindow": 200000,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
       "id": "MiniMaxAI/MiniMax-M2.1",
       "name": "MiniMax-M2.1",
       "contextWindow": 128000,
@@ -25,7 +59,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-01"
     },
     {
@@ -179,8 +213,8 @@
     {
       "id": "deepseek-ai/DeepSeek-V3.2",
       "name": "DeepSeek-V3.2",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "contextWindow": 163000,
+      "maxOutput": 16384,
       "inputPrice": 0.3,
       "outputPrice": 0.45,
       "capabilities": [
@@ -196,7 +230,7 @@
     {
       "id": "google/gemma-3-27b-it-fast",
       "name": "Gemma-3-27b-it (Fast)",
-      "contextWindow": 128000,
+      "contextWindow": 110000,
       "maxOutput": 8192,
       "inputPrice": 0.2,
       "outputPrice": 0.6,
@@ -213,7 +247,7 @@
     {
       "id": "google/gemma-3-27b-it",
       "name": "Gemma-3-27b-it",
-      "contextWindow": 128000,
+      "contextWindow": 110000,
       "maxOutput": 8192,
       "inputPrice": 0.1,
       "outputPrice": 0.3,
@@ -342,9 +376,27 @@
       "releaseDate": "2026-01-05"
     },
     {
+      "id": "moonshotai/Kimi-K2.5-fast",
+      "name": "Kimi-K2.5-fast",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.5,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-15"
+    },
+    {
       "id": "moonshotai/Kimi-K2.5",
       "name": "Kimi-K2.5",
-      "contextWindow": 262144,
+      "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0.5,
       "outputPrice": 2.5,

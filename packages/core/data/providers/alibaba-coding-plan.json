@@ -31,7 +31,7 @@
     {
       "id": "MiniMax-M2.5",
       "name": "MiniMax-M2.5",
-      "contextWindow": 16608,
+      "contextWindow": 196608,
       "maxOutput": 24576,
       "inputPrice": 0,
       "outputPrice": 0,

@@ -14,7 +14,7 @@
     {
       "id": "claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -31,7 +31,7 @@
     {
       "id": "claude-opus-4-6",
       "name": "Claude Opus 4.6",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,

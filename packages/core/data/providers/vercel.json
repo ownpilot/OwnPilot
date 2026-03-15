@@ -12,6 +12,86 @@
   },
   "models": [
     {
+      "id": "zai/glm-4.7-flash",
+      "name": "GLM 4.7 Flash",
+      "contextWindow": 200000,
+      "maxOutput": 131000,
+      "inputPrice": 0.07,
+      "outputPrice": 0.39999999999999997,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-13"
+    },
+    {
+      "id": "meituan/longcat-flash-thinking-2601",
+      "name": "LongCat Flash Thinking 2601",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-13"
+    },
+    {
+      "id": "xai/grok-4.20-non-reasoning-beta",
+      "name": "Grok 4.20 Beta Non-Reasoning",
+      "contextWindow": 2000000,
+      "maxOutput": 2000000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "xai/grok-4.20-reasoning-beta",
+      "name": "Grok 4.20 Beta Reasoning",
+      "contextWindow": 2000000,
+      "maxOutput": 2000000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "xai/grok-4.20-multi-agent-beta",
+      "name": "Grok 4.20 Multi Agent Beta",
+      "contextWindow": 2000000,
+      "maxOutput": 2000000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-11"
+    },
+    {
       "id": "voyage/voyage-4-lite",
       "name": "voyage-4-lite",
       "contextWindow": 32000,
@@ -22,7 +102,7 @@
         "chat",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-06"
     },
     {
@@ -245,6 +325,22 @@
       "maxOutput": 131072,
       "inputPrice": 1,
       "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "minimax/minimax-m2.5-highspeed",
+      "name": "MiniMax M2.5 High Speed",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0.6,
+      "outputPrice": 2.4,
       "capabilities": [
         "chat",
         "function_calling",

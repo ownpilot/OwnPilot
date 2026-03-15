@@ -16,8 +16,8 @@
       "name": "Gemini 3.1 Flash Lite Preview",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.5,
-      "outputPrice": 3,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
       "capabilities": [
         "chat",
         "vision",

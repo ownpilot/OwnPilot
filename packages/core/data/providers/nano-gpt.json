@@ -332,6 +332,23 @@
       "releaseDate": "2026-02-02"
     },
     {
+      "id": "zai-org/glm-4.7",
+      "name": "GLM 4.7",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-29"
+    },
+    {
       "id": "TEE/kimi-k2.5",
       "name": "Kimi K2.5 TEE",
       "contextWindow": 128000,
@@ -477,6 +494,23 @@
       ],
       "default": false,
       "releaseDate": "2026-01-22"
+    },
+    {
+      "id": "zai-org/glm-4.7-flash",
+      "name": "GLM 4.7 Flash",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.07,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-19"
     },
     {
       "id": "TEE/glm-4.7-flash",
@@ -4382,7 +4416,21 @@
       "releaseDate": "2025-04-15"
     },
     {
-      "id": "THUDM 2/GLM-Z1-32B-0414",
+      "id": "moonshotai/Kimi-Dev-72B",
+      "name": "Kimi Dev 72B",
+      "contextWindow": 128000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-15"
+    },
+    {
+      "id": "THUDM/GLM-Z1-32B-0414",
       "name": "GLM Z1 32B 0414",
       "contextWindow": 128000,
       "maxOutput": 65536,
@@ -4396,26 +4444,12 @@
       "releaseDate": "2025-04-15"
     },
     {
-      "id": "THUDM 2/GLM-Z1-Rumination-32B-0414",
+      "id": "THUDM/GLM-Z1-Rumination-32B-0414",
       "name": "GLM Z1 Rumination 32B 0414",
       "contextWindow": 32000,
       "maxOutput": 65536,
       "inputPrice": 0.2,
       "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-15"
-    },
-    {
-      "id": "moonshotai/Kimi-Dev-72B",
-      "name": "Kimi Dev 72B",
-      "contextWindow": 128000,
-      "maxOutput": 131072,
-      "inputPrice": 0.4,
-      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "streaming"
@@ -4436,48 +4470,6 @@
       ],
       "default": false,
       "releaseDate": "2025-04-15"
-    },
-    {
-      "id": "THUDM 2/GLM-4-32B-0414",
-      "name": "GLM 4 32B 0414",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
-      "id": "THUDM 2/GLM-4-9B-0414",
-      "name": "GLM 4 9B 0414",
-      "contextWindow": 32000,
-      "maxOutput": 8000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
-      "id": "THUDM 2/GLM-Z1-9B-0414",
-      "name": "GLM Z1 9B 0414",
-      "contextWindow": 32000,
-      "maxOutput": 8000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
     },
     {
       "id": "openai/gpt-4.1-nano",
@@ -4504,6 +4496,48 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "THUDM/GLM-4-32B-0414",
+      "name": "GLM 4 32B 0414",
+      "contextWindow": 128000,
+      "maxOutput": 65536,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "THUDM/GLM-4-9B-0414",
+      "name": "GLM 4 9B 0414",
+      "contextWindow": 32000,
+      "maxOutput": 8000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "THUDM/GLM-Z1-9B-0414",
+      "name": "GLM Z1 9B 0414",
+      "contextWindow": 32000,
+      "maxOutput": 8000,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,

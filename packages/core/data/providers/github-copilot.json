@@ -119,7 +119,7 @@
     {
       "id": "gpt-5.2-codex",
       "name": "GPT-5.2-Codex",
-      "contextWindow": 272000,
+      "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -136,7 +136,7 @@
     {
       "id": "gpt-5.2",
       "name": "GPT-5.2",
-      "contextWindow": 128000,
+      "contextWindow": 264000,
       "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
