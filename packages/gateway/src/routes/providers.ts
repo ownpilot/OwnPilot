@@ -480,6 +480,36 @@ app.get('/:id/models', (c) => {
 app.get('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
+
+  // Handle CLI providers (cli-claude, cli-codex, cli-gemini)
+  const cliProviders = detectCliChatProviders();
+  const cliProvider = cliProviders.find((p) => p.id === id);
+  if (cliProvider) {
+    const userConfig = await modelConfigsRepo.getUserProviderConfig(userId, id);
+    return apiResponse(c, {
+      providerId: id,
+      isCli: true,
+      baseConfig: {
+        type: 'cli',
+        binary: cliProvider.binary,
+        authenticated: cliProvider.authenticated,
+      },
+      userOverride: userConfig
+        ? {
+            baseUrl: userConfig.baseUrl,
+            isEnabled: userConfig.isEnabled,
+            notes: userConfig.notes,
+          }
+        : null,
+      effectiveConfig: {
+        type: 'cli',
+        binary: cliProvider.binary,
+        isEnabled: userConfig?.isEnabled !== false,
+        authenticated: cliProvider.authenticated,
+      },
+    });
+  }
+
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -527,9 +557,12 @@ app.get('/:id/config', async (c) => {
 app.put('/:id/config', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
-  const config = loadProviderConfig(id);
 
-  if (!config) {
+  // CLI providers and regular providers both support config overrides
+  const config = loadProviderConfig(id);
+  const isCli = !config && detectCliChatProviders().some((p) => p.id === id);
+
+  if (!config && !isCli) {
     return apiError(
       c,
       { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
@@ -602,8 +635,9 @@ app.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
   const userId = getUserId(c);
   const config = loadProviderConfig(id);
+  const isCli = !config && detectCliChatProviders().some((p) => p.id === id);
 
-  if (!config) {
+  if (!config && !isCli) {
     return apiError(
       c,
       { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
