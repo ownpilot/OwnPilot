@@ -8,7 +8,7 @@
  * chat.ts, chat-streaming.ts, and service-impl.ts.
  */
 
-import { debugLog, type ToolCall } from '@ownpilot/core';
+import { debugLog } from '@ownpilot/core';
 import { ChatRepository, LogsRepository } from '../db/repositories/index.js';
 import { channelSessionsRepo } from '../db/repositories/channel-sessions.js';
 import { wsGateway } from '../ws/server.js';
@@ -328,60 +328,7 @@ export async function clearChannelSession(
 }
 
 // ─────────────────────────────────────────────
-// Post-chat processing (kept here as companion to saveChat)
+// Post-chat processing — re-exported from dedicated module
 // ─────────────────────────────────────────────
 
-import { extractMemories, updateGoalProgress, evaluateTriggers } from '../assistant/index.js';
-import { getErrorMessage } from '../routes/helpers.js';
-
-/** Track in-flight post-processing for graceful shutdown. */
-const pendingTasks = new Set<Promise<unknown>>();
-
-/** Wait for all in-flight post-processing tasks to complete. */
-export function waitForPendingProcessing(): Promise<void> {
-  return Promise.allSettled([...pendingTasks]).then(() => {});
-}
-
-/**
- * Run post-chat processing: extract memories, update goals, evaluate triggers.
- * Runs asynchronously to not block the response.
- */
-export function runPostChatProcessing(
-  userId: string,
-  userMessage: string,
-  assistantContent: string,
-  toolCalls?: readonly ToolCall[]
-): void {
-  const task = Promise.all([
-    extractMemories(userId, userMessage, assistantContent).catch((e) =>
-      log.warn('Memory extraction failed:', e)
-    ),
-    updateGoalProgress(userId, userMessage, assistantContent, toolCalls).catch((e) =>
-      log.warn('Goal progress update failed:', e)
-    ),
-    evaluateTriggers(userId, userMessage, assistantContent).catch((e) =>
-      log.warn('Trigger evaluation failed:', e)
-    ),
-  ])
-    .then(([memoriesExtracted, _, triggerResult]) => {
-      if (memoriesExtracted && (memoriesExtracted as number) > 0) {
-        log.info(`Extracted ${memoriesExtracted} new memories from conversation`);
-      }
-      if (triggerResult && typeof triggerResult === 'object') {
-        const { triggered, pending, executed } = triggerResult as {
-          triggered: string[];
-          pending: string[];
-          executed: string[];
-        };
-        if (triggered.length > 0) log.info(`${triggered.length} triggers evaluated`);
-        if (executed.length > 0) log.info(`${executed.length} triggers executed successfully`);
-        if (pending.length > 0) log.info(`${pending.length} triggers pending/failed`);
-      }
-    })
-    .catch((error) => {
-      log.error('Post-chat processing failed', { error: getErrorMessage(error) });
-    });
-
-  pendingTasks.add(task);
-  task.finally(() => pendingTasks.delete(task));
-}
+export { runPostChatProcessing, waitForPendingProcessing } from '../assistant/chat-post-processor.js';
