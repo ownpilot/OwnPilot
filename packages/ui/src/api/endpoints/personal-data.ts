@@ -90,10 +90,10 @@ export interface HabitLog {
 }
 
 export const habitsApi = {
-  list: (params?: Record<string, string>) =>
+  list: (params?: { archived?: string; category?: string }) =>
     apiClient.get<{ habits: Habit[]; count: number }>('/habits', { params }),
   getToday: () =>
-    apiClient.get<{ habits: HabitWithTodayStatus[]; progress: { total: number; completed: number; rate: number } }>(
+    apiClient.get<{ total: number; completed: number; percentage: number; habits: HabitWithTodayStatus[] }>(
       '/habits/today'
     ),
   categories: () => apiClient.get<{ categories: string[] }>('/habits/categories'),

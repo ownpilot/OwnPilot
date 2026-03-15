@@ -119,12 +119,12 @@ export function HabitsPage() {
   const fetchHabits = useCallback(async () => {
     try {
       const [listRes, todayRes] = await Promise.all([
-        habitsApi.list({ isArchived: filter === 'archived' ? 'true' : 'false' }),
+        habitsApi.list({ archived: filter === 'archived' ? 'true' : 'false' }),
         habitsApi.getToday(),
       ]);
-      setHabits(listRes.habits);
-      setTodayHabits(todayRes.habits);
-      setTodayProgress(todayRes.progress);
+      setHabits(listRes.habits ?? []);
+      setTodayHabits(todayRes.habits ?? []);
+      setTodayProgress({ total: todayRes.total ?? 0, completed: todayRes.completed ?? 0, rate: todayRes.percentage ?? 0 });
     } catch {
       // API client handles error
     } finally {
