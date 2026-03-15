@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS contacts (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- DEPRECATED: No repository or routes implemented. Overlaps with Workspaces. Candidate for removal.
+-- DEAD TABLE: No repository, no routes, no tools, zero code references. Safe to DROP.
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- DEPRECATED: No repository or routes implemented. Overlaps with Triggers system. Candidate for removal.
+-- DEAD TABLE: No repository, no routes, no tools, zero code references. Safe to DROP.
 CREATE TABLE IF NOT EXISTS reminders (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL DEFAULT 'default',
