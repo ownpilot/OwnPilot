@@ -93,6 +93,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
     'tomorrow',
     'week',
   ],
+  update_calendar_event: ['edit event', 'reschedule', 'change event', 'move event', 'event update'],
   delete_calendar_event: ['cancel event', 'remove event', 'delete event'],
   batch_add_calendar_events: ['bulk events', 'batch calendar', 'multiple events'],
 
@@ -110,6 +111,7 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   add_bookmark: ['bookmark', 'favorite', 'save', 'link', 'url', 'site', 'web'],
   list_bookmarks: ['bookmarks', 'favorites', 'links', 'list'],
+  update_bookmark: ['edit bookmark', 'modify bookmark', 'change bookmark', 'bookmark update'],
   delete_bookmark: ['remove bookmark', 'delete bookmark'],
   batch_add_bookmarks: ['bulk bookmarks', 'multiple bookmarks'],
 
@@ -122,7 +124,40 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   query_expenses: ['expense search', 'filter', 'budget', 'query expenses'],
   export_expenses: ['export', 'report', 'csv', 'excel', 'download expenses'],
   expense_summary: ['summary', 'total', 'statistics', 'analysis', 'budget'],
+  update_expense: ['edit expense', 'modify expense', 'change expense', 'expense update'],
   delete_expense: ['remove expense', 'delete expense'],
+
+  // ─────────────────────────────────────────────
+  // HABITS
+  // ─────────────────────────────────────────────
+  create_habit: [
+    'habit',
+    'routine',
+    'daily',
+    'streak',
+    'tracking',
+    'discipline',
+    'consistency',
+    'build habit',
+    'new habit',
+  ],
+  list_habits: ['habits', 'routines', 'streaks', 'list habits', 'my habits'],
+  update_habit: ['edit habit', 'modify habit', 'change habit'],
+  delete_habit: ['remove habit', 'delete habit'],
+  log_habit: [
+    'check in',
+    'checkin',
+    'log',
+    'done',
+    'completed',
+    'did it',
+    'habit done',
+    'mark habit',
+    'track',
+  ],
+  get_today_habits: ['today', 'daily habits', 'what habits', 'habit progress', 'today habits'],
+  get_habit_stats: ['streak', 'stats', 'habit stats', 'progress', 'completion rate', 'habit info'],
+  archive_habit: ['archive habit', 'hide habit', 'stop tracking'],
 
   // ─────────────────────────────────────────────
   // FILE SYSTEM

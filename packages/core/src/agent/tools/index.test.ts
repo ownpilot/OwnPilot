@@ -1481,9 +1481,9 @@ describe('getToolStats()', () => {
     expect(stats.toolsByCategory['Tasks']).toBe(6);
   });
 
-  it('toolsByCategory["Finance"] is 7', () => {
+  it('toolsByCategory["Finance"] is 8', () => {
     const stats = getToolStats();
-    expect(stats.toolsByCategory['Finance']).toBe(7);
+    expect(stats.toolsByCategory['Finance']).toBe(8);
   });
 
   it('toolsByCategory["Dynamic Tools"] is 4', () => {

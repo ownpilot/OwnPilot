@@ -297,12 +297,13 @@ export const TOOL_CATEGORIES = {
     'update_task',
     'delete_task',
   ],
-  Bookmarks: ['add_bookmark', 'batch_add_bookmarks', 'list_bookmarks', 'delete_bookmark'],
+  Bookmarks: ['add_bookmark', 'batch_add_bookmarks', 'list_bookmarks', 'update_bookmark', 'delete_bookmark'],
   Notes: ['add_note', 'batch_add_notes', 'list_notes', 'update_note', 'delete_note'],
   Calendar: [
     'add_calendar_event',
     'batch_add_calendar_events',
     'list_calendar_events',
+    'update_calendar_event',
     'delete_calendar_event',
   ],
   Contacts: [
@@ -311,6 +312,26 @@ export const TOOL_CATEGORIES = {
     'list_contacts',
     'update_contact',
     'delete_contact',
+  ],
+  Habits: [
+    'create_habit',
+    'list_habits',
+    'update_habit',
+    'delete_habit',
+    'log_habit',
+    'get_today_habits',
+    'get_habit_stats',
+    'archive_habit',
+  ],
+  Finance: [
+    'add_expense',
+    'batch_add_expenses',
+    'query_expenses',
+    'expense_summary',
+    'export_expenses',
+    'parse_receipt',
+    'update_expense',
+    'delete_expense',
   ],
   'Custom Data': [
     'list_custom_tables',
@@ -368,17 +389,6 @@ export const TOOL_CATEGORIES = {
 
   // AI & NLP
   'Data Extraction': ['extract_entities', 'extract_table_data'],
-
-  // Finance
-  Finance: [
-    'add_expense',
-    'batch_add_expenses',
-    'parse_receipt',
-    'query_expenses',
-    'export_expenses',
-    'expense_summary',
-    'delete_expense',
-  ],
 
   // Weather
   Weather: ['get_weather', 'get_weather_forecast'],
