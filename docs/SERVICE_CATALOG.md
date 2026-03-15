@@ -20,24 +20,20 @@ Quality ratings:
 
 ## 1. AI Chat & Model Routing
 
-| Service | Lines | Responsibility |
-|---------|-------|----------------|
-| `model-routing` | 296 | Resolves AI provider + model from settings with multi-level fallback waterfall (per-agent, per-channel, per-process, global default). Central routing for all AI calls. |
-| `provider-service-impl` | 118 | IProviderService implementation. Wraps provider configs, API key lookup, base URL resolution. |
-| `config-center-impl` | 122 | ConfigCenter interface backed by PostgreSQL config_services tables with in-memory cache. Single source of truth for all API keys and service configs. |
-| `config-tools` | 322 | AI tools for managing config entries (get/set/list). Allows the agent to read and modify settings. |
-| `api-service-registrar` | 53 | Auto-registers tool config requirements in Config Center when tools declare needed services. |
-| `cli-chat-provider` | 815 | IProvider implementation using installed CLI tools (Claude Code, Codex, Gemini CLI) as chat backends. Enables using CLI subscriptions without API keys. |
-| `cli-chat-parsers` | 280 | Output parsers and arg builders for each CLI (3 parsers, 3 builders). Pure functions, independently testable. |
-| `cli-tool-bridge` | 586 | Enables tool calling through CLI prompt engineering. Injects tool definitions into prompts, parses structured responses back. |
+| Service | Lines | Tests | Status |
+|---------|-------|-------|--------|
+| `model-routing` | 296 | 25 | AUDITED OK — 5 processes, 4-level waterfall, legacy compat |
+| `provider-service-impl` | 118 | 16 | FIXED — `listModels()` had `require()` in ESM, now uses proper import |
+| `config-center-impl` | 122 | 22 | AUDITED OK — clean delegation to configServicesRepo |
+| `config-tools` | 322 | 21 | AUDITED OK — proto pollution protection, secret masking, merged updates |
+| `api-service-registrar` | 53 | — | AUDITED OK — minimal, clean |
+| `cli-chat-provider` | 815 | 18 | REFACTORED — parsers extracted (was 1116) |
+| `cli-chat-parsers` | 280 | 29 | NEW — independently testable pure functions |
+| `cli-tool-bridge` | 586 | 28 | AUDITED OK — max 8 rounds, repair attempts, well-structured |
 
-**Quality**: `cli-chat-provider` REFACTORED (815 from 1116 — parsers extracted).
-
-**NOTE**: Two `resolveProviderAndModel()` functions exist (by design):
-- `routes/settings.ts:312` — simple: resolves `'default'` → global default provider/model. Used by audio/image/coding overrides where process-specific routing is not relevant.
-- `agent-runner-utils.ts:97` — full: uses `resolveForProcess()` waterfall (per-process → global → first-configured). Used by all agent runners (chat, pulse, subagent, channel).
-
-Both are documented with JSDoc explaining when to use which.
+**Notes**:
+- Two `resolveProviderAndModel()` exist by design (documented with JSDoc): simple (settings.ts) vs full waterfall (agent-runner-utils.ts)
+- `provider-service-impl.hasApiKey()` is sync → only checks env vars, not Config Center DB
 
 ---
 
