@@ -128,17 +128,16 @@ async function buildCrewContextForHeartbeat(
 // within the same heartbeat cycle (typically completes within seconds).
 // ============================================================
 
-const CREW_CONTEXT_CACHE_TTL_MS = 30_000; // 30 seconds
-const crewContextCache = new Map<string, { value: string | null; expiresAt: number }>();
+import { TTLCache } from '../utils/ttl-cache.js';
+
+const crewContextCache = new TTLCache<string, string | null>({ defaultTtlMs: 30_000 });
 
 async function getCachedCrewContext(agentId: string, crewId: string): Promise<string | null> {
   const cacheKey = `${agentId}:${crewId}`;
   const cached = crewContextCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.value;
-  }
+  if (cached !== null) return cached;
   const value = await buildCrewContextForHeartbeat(agentId, crewId);
-  crewContextCache.set(cacheKey, { value, expiresAt: Date.now() + CREW_CONTEXT_CACHE_TTL_MS });
+  crewContextCache.set(cacheKey, value);
   return value;
 }
 
