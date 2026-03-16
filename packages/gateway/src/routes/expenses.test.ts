@@ -1,413 +1,214 @@
 /**
  * Expenses Routes Tests
  *
- * Integration tests for the expenses API endpoints.
- * Mocks node:fs/promises for file-based expense storage.
+ * Tests for the DB-backed expenses API endpoints.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
+// ── Mocks ──
 
-const sampleExpenses = [
-  {
-    id: 'exp_001',
-    date: '2026-01-15',
-    amount: 150,
-    currency: 'TRY',
-    category: 'food',
-    description: 'Grocery shopping at Migros',
-    paymentMethod: 'credit_card',
-    tags: ['groceries'],
-    source: 'web',
-    createdAt: '2026-01-15T10:00:00Z',
-    notes: 'Weekly groceries',
-  },
-  {
-    id: 'exp_002',
-    date: '2026-01-20',
-    amount: 500,
-    currency: 'TRY',
-    category: 'transport',
-    description: 'Monthly metro card',
-    source: 'web',
-    createdAt: '2026-01-20T08:00:00Z',
-  },
-  {
-    id: 'exp_003',
-    date: '2026-01-25',
-    amount: 1200,
-    currency: 'TRY',
-    category: 'entertainment',
-    description: 'Concert tickets',
-    source: 'web',
-    createdAt: '2026-01-25T14:00:00Z',
-    notes: 'Jazz festival',
-  },
-];
-
-const DEFAULT_CATEGORIES = {
-  food: { color: '#FF6B6B' },
-  transport: { color: '#4ECDC4' },
-  utilities: { color: '#45B7D1' },
-  entertainment: { color: '#96CEB4' },
-  shopping: { color: '#FFEAA7' },
-  health: { color: '#DDA0DD' },
-  education: { color: '#98D8C8' },
-  travel: { color: '#F7DC6F' },
-  subscription: { color: '#BB8FCE' },
-  housing: { color: '#85C1E9' },
-  other: { color: '#AEB6BF' },
+const sampleExpense = {
+  id: 'exp-1',
+  userId: 'user-1',
+  date: '2026-03-15',
+  amount: 42.50,
+  currency: 'TRY',
+  category: 'food',
+  description: 'Coffee',
+  paymentMethod: 'card',
+  tags: ['morning'],
+  source: 'web',
+  notes: 'Good coffee',
+  createdAt: new Date('2026-03-15'),
+  updatedAt: new Date('2026-03-15'),
 };
 
-let mockDbContent = {
-  version: '1.0',
-  lastUpdated: '2026-01-25T14:00:00Z',
-  expenses: [...sampleExpenses],
-  categories: DEFAULT_CATEGORIES,
+const mockRepo = {
+  list: vi.fn(async () => [sampleExpense]),
+  count: vi.fn(async () => 1),
+  get: vi.fn(async () => sampleExpense),
+  create: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleExpense, ...input })),
+  update: vi.fn(async (_id: string, input: Record<string, unknown>) => ({ ...sampleExpense, ...input })),
+  delete: vi.fn(async () => true),
+  getSummary: vi.fn(async () => ({
+    totalAmount: 150,
+    count: 3,
+    byCategory: { food: { amount: 100, count: 2 }, transport: { amount: 50, count: 1 } },
+    byCurrency: { TRY: 150 },
+  })),
 };
 
-vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn(async () => JSON.stringify(mockDbContent)),
-  writeFile: vi.fn(async () => undefined),
-  mkdir: vi.fn(async () => undefined),
+vi.mock('../db/repositories/expenses.js', () => ({
+  ExpensesRepository: vi.fn(function () {
+    return mockRepo;
+  }),
 }));
 
-// Import after mocks
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 const { expensesRoutes } = await import('./expenses.js');
 
-// ---------------------------------------------------------------------------
-// App setup
-// ---------------------------------------------------------------------------
+// ── App ──
 
 function createApp() {
   const app = new Hono();
-  app.use('*', requestId);
+  app.use('*', async (c, next) => {
+    c.set('userId', 'user-1');
+    await next();
+  });
   app.route('/expenses', expensesRoutes);
-  app.onError(errorHandler);
   return app;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+// ── Tests ──
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockRepo.list.mockResolvedValue([sampleExpense]);
+  mockRepo.count.mockResolvedValue(1);
+  mockRepo.get.mockResolvedValue(sampleExpense);
+  mockRepo.delete.mockResolvedValue(true);
+});
 
 describe('Expenses Routes', () => {
-  let app: Hono;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset mock db to fresh copy each test
-    mockDbContent = {
-      version: '1.0',
-      lastUpdated: '2026-01-25T14:00:00Z',
-      expenses: [...sampleExpenses],
-      categories: DEFAULT_CATEGORIES,
-    };
-    app = createApp();
-  });
-
-  // ========================================================================
-  // GET /expenses
-  // ========================================================================
-
   describe('GET /expenses', () => {
-    it('returns all expenses sorted by date descending', async () => {
+    it('returns expenses list', async () => {
+      const app = createApp();
       const res = await app.request('/expenses');
-
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.data.expenses).toHaveLength(3);
-      expect(json.data.total).toBe(3);
-      // Sorted descending
-      expect(json.data.expenses[0].date).toBe('2026-01-25');
-      expect(json.data.expenses[2].date).toBe('2026-01-15');
-    });
-
-    it('filters by category', async () => {
-      const res = await app.request('/expenses?category=food');
-
-      const json = await res.json();
       expect(json.data.expenses).toHaveLength(1);
-      expect(json.data.expenses[0].category).toBe('food');
+      expect(json.data.total).toBe(1);
+      expect(json.data.categories).toBeDefined();
     });
 
-    it('filters by date range', async () => {
-      const res = await app.request('/expenses?startDate=2026-01-18&endDate=2026-01-22');
-
-      const json = await res.json();
-      expect(json.data.expenses).toHaveLength(1);
-      expect(json.data.expenses[0].id).toBe('exp_002');
-    });
-
-    it('filters by search term in description', async () => {
-      const res = await app.request('/expenses?search=metro');
-
-      const json = await res.json();
-      expect(json.data.expenses).toHaveLength(1);
-      expect(json.data.expenses[0].description).toContain('metro');
-    });
-
-    it('filters by search term in notes', async () => {
-      const res = await app.request('/expenses?search=jazz');
-
-      const json = await res.json();
-      expect(json.data.expenses).toHaveLength(1);
-      expect(json.data.expenses[0].notes).toContain('Jazz');
-    });
-
-    it('respects pagination', async () => {
-      const res = await app.request('/expenses?limit=2&offset=1');
-
-      const json = await res.json();
-      expect(json.data.expenses).toHaveLength(2);
-      expect(json.data.total).toBe(3);
-      expect(json.data.limit).toBe(2);
-      expect(json.data.offset).toBe(1);
-    });
-
-    it('returns empty when no file exists', async () => {
-      const fsMod = await import('node:fs/promises');
-      vi.mocked(fsMod.readFile).mockRejectedValueOnce(new Error('ENOENT'));
-
-      const res = await app.request('/expenses');
-      const json = await res.json();
-
-      expect(json.data.expenses).toHaveLength(0);
-      expect(json.data.total).toBe(0);
+    it('passes filter params to repo', async () => {
+      const app = createApp();
+      await app.request('/expenses?startDate=2026-01-01&endDate=2026-12-31&category=food&search=coffee');
+      expect(mockRepo.list).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dateFrom: '2026-01-01',
+          dateTo: '2026-12-31',
+          category: 'food',
+          search: 'coffee',
+        })
+      );
     });
   });
-
-  // ========================================================================
-  // GET /expenses/summary
-  // ========================================================================
 
   describe('GET /expenses/summary', () => {
-    it('returns summary for default period (this_month)', async () => {
+    it('returns summary with defaults', async () => {
+      const app = createApp();
       const res = await app.request('/expenses/summary');
-
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.period).toBeDefined();
-      expect(json.data.summary).toBeDefined();
-      expect(json.data.summary.totalByCategory).toBeDefined();
+      expect(json.data.totalAmount).toBe(150);
+      expect(json.data.count).toBe(3);
+      expect(json.data.byCategory.food.amount).toBe(100);
     });
 
-    it('returns summary with custom date range', async () => {
-      const res = await app.request('/expenses/summary?startDate=2026-01-01&endDate=2026-01-31');
-
-      const json = await res.json();
-      expect(json.data.summary.totalExpenses).toBe(3);
-      expect(json.data.summary.grandTotal).toBe(1850);
-      expect(json.data.summary.topCategories).toBeDefined();
-    });
-
-    it('returns summary for all_time', async () => {
-      const res = await app.request('/expenses/summary?period=all_time');
-
-      const json = await res.json();
-      expect(json.data.period.name).toBe('all_time');
-      expect(json.data.summary.totalExpenses).toBe(3);
-    });
-
-    it('returns summary for today', async () => {
-      const res = await app.request('/expenses/summary?period=today');
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.period.name).toBe('today');
-      expect(json.data.summary).toBeDefined();
-    });
-
-    it('returns summary for this_week', async () => {
-      const res = await app.request('/expenses/summary?period=this_week');
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.period.name).toBe('this_week');
-      expect(json.data.summary).toBeDefined();
-    });
-
-    it('returns summary for last_month', async () => {
-      const res = await app.request('/expenses/summary?period=last_month');
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.period.name).toBe('last_month');
-      expect(json.data.summary).toBeDefined();
-    });
-
-    it('returns summary for this_year', async () => {
+    it('supports period parameter', async () => {
+      const app = createApp();
       const res = await app.request('/expenses/summary?period=this_year');
-
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.period.name).toBe('this_year');
-      expect(json.data.summary).toBeDefined();
+      expect(json.data.period).toBe('this_year');
     });
   });
-
-  // ========================================================================
-  // GET /expenses/monthly
-  // ========================================================================
 
   describe('GET /expenses/monthly', () => {
-    it('returns monthly breakdown for current year', async () => {
+    it('returns 12 months', async () => {
+      const app = createApp();
       const res = await app.request('/expenses/monthly?year=2026');
-
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.year).toBe(2026);
       expect(json.data.months).toHaveLength(12);
-      expect(json.data.yearTotal).toBe(1850);
-      expect(json.data.expenseCount).toBe(3);
-
-      // January should have data
-      const jan = json.data.months.find((m: { monthNum: string }) => m.monthNum === '01');
-      expect(jan.total).toBe(1850);
-      expect(jan.count).toBe(3);
+      expect(json.data.year).toBe(2026);
     });
   });
 
-  // ========================================================================
-  // POST /expenses
-  // ========================================================================
+  describe('GET /expenses/:id', () => {
+    it('returns single expense', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses/exp-1');
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.id).toBe('exp-1');
+    });
+
+    it('returns 404 for missing', async () => {
+      mockRepo.get.mockResolvedValue(null);
+      const app = createApp();
+      const res = await app.request('/expenses/missing');
+      expect(res.status).toBe(404);
+    });
+  });
 
   describe('POST /expenses', () => {
-    it('creates a new expense', async () => {
+    it('creates expense', async () => {
+      const app = createApp();
       const res = await app.request('/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: 75,
-          category: 'food',
-          description: 'Coffee shop',
-          currency: 'USD',
-        }),
+        body: JSON.stringify({ amount: 25, description: 'Lunch', category: 'food' }),
       });
-
       expect(res.status).toBe(201);
-      const json = await res.json();
-      expect(json.data.id).toMatch(/^exp_/);
-      expect(json.data.amount).toBe(75);
-      expect(json.data.currency).toBe('USD');
-      expect(json.data.source).toBe('web');
+      expect(mockRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 25, description: 'Lunch' })
+      );
     });
 
-    it('defaults currency to TRY', async () => {
+    it('returns 400 without amount', async () => {
+      const app = createApp();
       const res = await app.request('/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: 50,
-          category: 'food',
-          description: 'Lunch',
-        }),
+        body: JSON.stringify({ description: 'No amount' }),
       });
-
-      const json = await res.json();
-      expect(json.data.currency).toBe('TRY');
-    });
-
-    it('returns 500 when storage fails', async () => {
-      const fsMod = await import('node:fs/promises');
-      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
-
-      const res = await app.request('/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 50, category: 'food', description: 'Lunch' }),
-      });
-
-      expect(res.status).toBe(500);
-      const json = await res.json();
-      expect(json.error.code).toBe('INTERNAL_ERROR');
+      expect(res.status).toBe(400);
     });
   });
-
-  // ========================================================================
-  // PUT /expenses/:id
-  // ========================================================================
 
   describe('PUT /expenses/:id', () => {
-    it('updates an existing expense', async () => {
-      const res = await app.request('/expenses/exp_001', {
+    it('updates expense', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses/exp-1', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 200, description: 'Updated groceries' }),
+        body: JSON.stringify({ amount: 99 }),
       });
-
       expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.amount).toBe(200);
-      expect(json.data.description).toBe('Updated groceries');
-      // Preserves original id and createdAt
-      expect(json.data.id).toBe('exp_001');
-      expect(json.data.createdAt).toBe('2026-01-15T10:00:00Z');
+      expect(mockRepo.update).toHaveBeenCalledWith('exp-1', expect.objectContaining({ amount: 99 }));
     });
 
-    it('returns 404 for unknown expense', async () => {
-      const res = await app.request('/expenses/exp_nonexistent', {
+    it('returns 404 for missing', async () => {
+      mockRepo.update.mockResolvedValue(null);
+      const app = createApp();
+      const res = await app.request('/expenses/missing', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 999 }),
+        body: JSON.stringify({ amount: 1 }),
       });
-
       expect(res.status).toBe(404);
-      const json = await res.json();
-      expect(json.error.code).toBe('NOT_FOUND');
-    });
-
-    it('returns 500 when storage fails', async () => {
-      const fsMod = await import('node:fs/promises');
-      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
-
-      const res = await app.request('/expenses/exp_001', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 200 }),
-      });
-
-      expect(res.status).toBe(500);
-      const json = await res.json();
-      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 
-  // ========================================================================
-  // DELETE /expenses/:id
-  // ========================================================================
-
   describe('DELETE /expenses/:id', () => {
-    it('deletes an expense', async () => {
-      const res = await app.request('/expenses/exp_002', { method: 'DELETE' });
-
+    it('deletes expense', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses/exp-1', { method: 'DELETE' });
       expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.deleted.id).toBe('exp_002');
     });
 
-    it('returns 404 for unknown expense', async () => {
-      const res = await app.request('/expenses/exp_nonexistent', { method: 'DELETE' });
-
+    it('returns 404 for missing', async () => {
+      mockRepo.delete.mockResolvedValue(false);
+      const app = createApp();
+      const res = await app.request('/expenses/missing', { method: 'DELETE' });
       expect(res.status).toBe(404);
-    });
-
-    it('returns 500 when storage fails', async () => {
-      const fsMod = await import('node:fs/promises');
-      vi.mocked(fsMod.writeFile).mockRejectedValueOnce(new Error('Disk full'));
-
-      const res = await app.request('/expenses/exp_001', { method: 'DELETE' });
-
-      expect(res.status).toBe(500);
-      const json = await res.json();
-      expect(json.error.code).toBe('INTERNAL_ERROR');
     });
   });
 });

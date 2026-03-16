@@ -2,113 +2,39 @@
  * Expenses API Routes
  *
  * REST API for expense tracking and management.
+ * Backed by PostgreSQL via ExpensesRepository (migrated from file-based JSON).
  */
 
 import { Hono } from 'hono';
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import { generateId } from '@ownpilot/core';
 import {
   apiResponse,
   apiError,
-  getIntParam,
   notFoundError,
   validateQueryEnum,
   ERROR_CODES,
   getErrorMessage,
   parseJsonBody,
+  getUserId,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { pagination } from '../middleware/pagination.js';
+import { ExpensesRepository, type ExpenseCategory } from '../db/repositories/expenses.js';
 
 // =============================================================================
-// Types
+// Constants
 // =============================================================================
 
-export type ExpenseCategory =
-  | 'food'
-  | 'transport'
-  | 'utilities'
-  | 'entertainment'
-  | 'shopping'
-  | 'health'
-  | 'education'
-  | 'travel'
-  | 'subscription'
-  | 'housing'
-  | 'other';
+const VALID_CATEGORIES: readonly ExpenseCategory[] = [
+  'food', 'transport', 'utilities', 'entertainment', 'shopping',
+  'health', 'education', 'travel', 'subscription', 'housing', 'other',
+];
 
-export interface ExpenseEntry {
-  id: string;
-  date: string;
-  amount: number;
-  currency: string;
-  category: ExpenseCategory;
-  description: string;
-  paymentMethod?: string;
-  tags?: string[];
-  source: string;
-  receiptImage?: string;
-  createdAt: string;
-  notes?: string;
-}
-
-export interface ExpenseDatabase {
-  version: string;
-  lastUpdated: string;
-  expenses: ExpenseEntry[];
-  categories: Record<ExpenseCategory, { budget?: number; color?: string }>;
-}
-
-// =============================================================================
-// Configuration
-// =============================================================================
-
-const DEFAULT_EXPENSE_DB_PATH =
-  process.env.EXPENSE_DB_PATH ??
-  path.join(process.env.HOME ?? process.env.USERPROFILE ?? '.', '.ownpilot', 'expenses.json');
-
-const DEFAULT_CATEGORIES: ExpenseDatabase['categories'] = {
-  food: { color: '#FF6B6B' },
-  transport: { color: '#4ECDC4' },
-  utilities: { color: '#45B7D1' },
-  entertainment: { color: '#96CEB4' },
-  shopping: { color: '#FFEAA7' },
-  health: { color: '#DDA0DD' },
-  education: { color: '#98D8C8' },
-  travel: { color: '#F7DC6F' },
-  subscription: { color: '#BB8FCE' },
-  housing: { color: '#85C1E9' },
-  other: { color: '#AEB6BF' },
+const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+  food: '#FF6B6B', transport: '#4ECDC4', utilities: '#45B7D1',
+  entertainment: '#96CEB4', shopping: '#FFEAA7', health: '#DDA0DD',
+  education: '#98D8C8', travel: '#F7DC6F', subscription: '#BB8FCE',
+  housing: '#85C1E9', other: '#AEB6BF',
 };
-
-// =============================================================================
-// Database Operations
-// =============================================================================
-
-async function loadExpenseDb(): Promise<ExpenseDatabase> {
-  try {
-    const content = await fs.readFile(DEFAULT_EXPENSE_DB_PATH, 'utf-8');
-    return JSON.parse(content) as ExpenseDatabase;
-  } catch {
-    return {
-      version: '1.0',
-      lastUpdated: new Date().toISOString(),
-      expenses: [],
-      categories: DEFAULT_CATEGORIES,
-    };
-  }
-}
-
-async function saveExpenseDb(db: ExpenseDatabase): Promise<void> {
-  db.lastUpdated = new Date().toISOString();
-  await fs.mkdir(path.dirname(DEFAULT_EXPENSE_DB_PATH), { recursive: true });
-  await fs.writeFile(DEFAULT_EXPENSE_DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
-}
-
-function generateExpenseId(): string {
-  return generateId('exp');
-}
 
 // =============================================================================
 // Routes
@@ -117,356 +43,223 @@ function generateExpenseId(): string {
 export const expensesRoutes = new Hono();
 
 /**
- * GET /api/v1/expenses - List all expenses with optional filtering
+ * GET /expenses - List expenses with optional filtering
  */
 expensesRoutes.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async (c) => {
-  const db = await loadExpenseDb();
+  try {
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const { limit, offset } = c.get('pagination')!;
 
-  // Query params
-  const startDate = c.req.query('startDate');
-  const endDate = c.req.query('endDate');
-  const category = validateQueryEnum(c.req.query('category'), [
-    'food',
-    'transport',
-    'utilities',
-    'entertainment',
-    'shopping',
-    'health',
-    'education',
-    'travel',
-    'subscription',
-    'housing',
-    'other',
-  ] as const);
-  const search = c.req.query('search');
-  const { limit, offset } = c.get('pagination')!;
+    const category = validateQueryEnum(c.req.query('category'), VALID_CATEGORIES);
 
-  let expenses = [...db.expenses];
+    const expenses = await repo.list({
+      dateFrom: c.req.query('startDate') ?? undefined,
+      dateTo: c.req.query('endDate') ?? undefined,
+      category: category ?? undefined,
+      search: c.req.query('search') ?? undefined,
+      limit,
+      offset,
+    });
 
-  // Apply filters
-  if (startDate) {
-    expenses = expenses.filter((e) => e.date >= startDate);
+    const total = await repo.count({
+      dateFrom: c.req.query('startDate') ?? undefined,
+      dateTo: c.req.query('endDate') ?? undefined,
+      category: category ?? undefined,
+    });
+
+    return apiResponse(c, {
+      expenses,
+      total,
+      limit,
+      offset,
+      categories: Object.fromEntries(
+        VALID_CATEGORIES.map((cat) => [cat, { color: CATEGORY_COLORS[cat] }])
+      ),
+    });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }
-  if (endDate) {
-    expenses = expenses.filter((e) => e.date <= endDate);
-  }
-  if (category) {
-    expenses = expenses.filter((e) => e.category === category);
-  }
-  if (search) {
-    const searchLower = search.toLowerCase();
-    expenses = expenses.filter(
-      (e) =>
-        e.description.toLowerCase().includes(searchLower) ||
-        e.notes?.toLowerCase().includes(searchLower)
-    );
-  }
-
-  // Sort by date descending
-  expenses.sort((a, b) => b.date.localeCompare(a.date));
-
-  // Pagination
-  const total = expenses.length;
-  const paginatedExpenses = expenses.slice(offset, offset + limit);
-
-  return apiResponse(c, {
-    expenses: paginatedExpenses,
-    total,
-    limit,
-    offset,
-    categories: db.categories,
-  });
 });
 
 /**
- * GET /api/v1/expenses/summary - Get expense summary for a period
+ * GET /expenses/summary - Get expense summary for a period
  */
 expensesRoutes.get('/summary', async (c) => {
-  const db = await loadExpenseDb();
+  try {
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
 
-  const period = c.req.query('period') ?? 'this_month';
-  const customStartDate = c.req.query('startDate');
-  const customEndDate = c.req.query('endDate');
+    const period = c.req.query('period') ?? 'this_month';
+    const customStartDate = c.req.query('startDate');
+    const customEndDate = c.req.query('endDate');
 
-  // Calculate date range
-  const now = new Date();
-  let startDate: string;
-  let endDate: string;
+    const now = new Date();
+    let startDate: string | undefined;
+    let endDate: string | undefined;
 
-  if (customStartDate && customEndDate) {
-    startDate = customStartDate;
-    endDate = customEndDate;
-  } else {
-    endDate = now.toISOString().split('T')[0]!;
-
-    switch (period) {
-      case 'today':
-        startDate = endDate;
-        break;
-      case 'this_week': {
-        const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - now.getDay());
-        startDate = weekStart.toISOString().split('T')[0]!;
-        break;
+    if (customStartDate && customEndDate) {
+      startDate = customStartDate;
+      endDate = customEndDate;
+    } else {
+      endDate = now.toISOString().split('T')[0]!;
+      switch (period) {
+        case 'today':
+          startDate = endDate;
+          break;
+        case 'this_week': {
+          const ws = new Date(now);
+          ws.setDate(now.getDate() - now.getDay());
+          startDate = ws.toISOString().split('T')[0]!;
+          break;
+        }
+        case 'this_month':
+          startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+          break;
+        case 'last_month': {
+          const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const lme = new Date(now.getFullYear(), now.getMonth(), 0);
+          startDate = lm.toISOString().split('T')[0]!;
+          endDate = lme.toISOString().split('T')[0]!;
+          break;
+        }
+        case 'this_year':
+          startDate = `${now.getFullYear()}-01-01`;
+          break;
+        case 'all_time':
+        default:
+          startDate = undefined;
+          endDate = undefined;
       }
-      case 'this_month':
-        startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        break;
-      case 'last_month': {
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-        startDate = lastMonth.toISOString().split('T')[0]!;
-        endDate = lastMonthEnd.toISOString().split('T')[0]!;
-        break;
-      }
-      case 'this_year':
-        startDate = `${now.getFullYear()}-01-01`;
-        break;
-      case 'all_time':
-      default:
-        startDate = '1970-01-01';
     }
-  }
 
-  // Filter expenses
-  const expenses = db.expenses.filter((e) => e.date >= startDate && e.date <= endDate);
+    const summary = await repo.getSummary(startDate, endDate);
 
-  // Calculate summary
-  const totalByCategory: Record<string, number> = {};
-  const totalByCurrency: Record<string, number> = {};
-  let grandTotal = 0;
-
-  for (const e of expenses) {
-    totalByCategory[e.category] = (totalByCategory[e.category] ?? 0) + e.amount;
-    totalByCurrency[e.currency] = (totalByCurrency[e.currency] ?? 0) + e.amount;
-    grandTotal += e.amount;
-  }
-
-  // Top categories
-  const topCategories = Object.entries(totalByCategory)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([category, amount]) => ({
-      category,
-      amount,
-      percentage: grandTotal > 0 ? Math.round((amount / grandTotal) * 100) : 0,
-      color: db.categories[category as ExpenseCategory]?.color ?? '#AEB6BF',
-    }));
-
-  // Biggest expenses
-  const biggestExpenses = [...expenses].sort((a, b) => b.amount - a.amount).slice(0, 5);
-
-  // Daily average
-  const uniqueDays = new Set(expenses.map((e) => e.date)).size || 1;
-  const dailyAverage = grandTotal / uniqueDays;
-
-  return apiResponse(c, {
-    period: {
-      name: period,
+    return apiResponse(c, {
+      period,
       startDate,
       endDate,
-    },
-    summary: {
-      totalExpenses: expenses.length,
-      grandTotal: Math.round(grandTotal * 100) / 100,
-      dailyAverage: Math.round(dailyAverage * 100) / 100,
-      totalByCurrency,
-      totalByCategory,
-      topCategories,
-      biggestExpenses,
-    },
-    categories: db.categories,
-  });
+      ...summary,
+      categories: CATEGORY_COLORS,
+    });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+  }
 });
 
 /**
- * GET /api/v1/expenses/monthly - Get expenses grouped by month
+ * GET /expenses/monthly - Get monthly aggregated expenses
  */
 expensesRoutes.get('/monthly', async (c) => {
-  const db = await loadExpenseDb();
-  const year = getIntParam(c, 'year', new Date().getFullYear(), 2000, 2100);
+  try {
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const year = c.req.query('year') ?? String(new Date().getFullYear());
 
-  // Filter expenses for the year
-  const yearStart = `${year}-01-01`;
-  const yearEnd = `${year}-12-31`;
-  const expenses = db.expenses.filter((e) => e.date >= yearStart && e.date <= yearEnd);
-
-  // Group by month
-  const monthlyData: Record<
-    string,
-    { total: number; count: number; byCategory: Record<string, number> }
-  > = {};
-
-  for (let m = 1; m <= 12; m++) {
-    const monthKey = String(m).padStart(2, '0');
-    monthlyData[monthKey] = { total: 0, count: 0, byCategory: {} };
-  }
-
-  for (const e of expenses) {
-    const month = e.date.slice(5, 7);
-    const data = monthlyData[month];
-    if (data) {
-      data.total += e.amount;
-      data.count += 1;
-      data.byCategory[e.category] = (data.byCategory[e.category] ?? 0) + e.amount;
+    const months = [];
+    for (let m = 1; m <= 12; m++) {
+      const dateFrom = `${year}-${String(m).padStart(2, '0')}-01`;
+      const lastDay = new Date(Number(year), m, 0).getDate();
+      const dateTo = `${year}-${String(m).padStart(2, '0')}-${lastDay}`;
+      const summary = await repo.getSummary(dateFrom, dateTo);
+      months.push({
+        month: m,
+        year: Number(year),
+        ...summary,
+      });
     }
+
+    return apiResponse(c, { year: Number(year), months });
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }
-
-  // Format for chart
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-
-  const chartData = Object.entries(monthlyData).map(([monthNum, data]) => ({
-    month: months[parseInt(monthNum, 10) - 1],
-    monthNum,
-    total: Math.round(data.total * 100) / 100,
-    count: data.count,
-    byCategory: data.byCategory,
-  }));
-
-  const yearTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-  return apiResponse(c, {
-    year,
-    months: chartData,
-    yearTotal: Math.round(yearTotal * 100) / 100,
-    expenseCount: expenses.length,
-    categories: db.categories,
-  });
 });
 
 /**
- * POST /api/v1/expenses - Add a new expense
+ * GET /expenses/:id - Get single expense
+ */
+expensesRoutes.get('/:id', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const expense = await repo.get(c.req.param('id'));
+    if (!expense) return notFoundError(c, 'Expense', c.req.param('id'));
+    return apiResponse(c, expense);
+  } catch (error) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+  }
+});
+
+/**
+ * POST /expenses - Create expense
  */
 expensesRoutes.post('/', async (c) => {
-  const rawBody = await parseJsonBody(c);
-  const { validateBody, createExpenseSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createExpenseSchema, rawBody) as {
-    date?: string;
-    amount: number;
-    currency?: string;
-    category: ExpenseCategory;
-    description: string;
-    paymentMethod?: string;
-    tags?: string[];
-    notes?: string;
-  };
-
   try {
-    const db = await loadExpenseDb();
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const body = await parseJsonBody(c);
+    if (!body) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
 
-    const expense: ExpenseEntry = {
-      id: generateExpenseId(),
-      date: body.date ?? new Date().toISOString().split('T')[0]!,
-      amount: body.amount,
-      currency: body.currency ?? 'TRY',
-      category: body.category,
-      description: body.description,
-      paymentMethod: body.paymentMethod,
-      tags: body.tags,
+    const { date, amount, currency, category, description, paymentMethod, tags, notes } =
+      body as Record<string, unknown>;
+
+    if (!description || !amount) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'amount and description are required' }, 400);
+    }
+
+    const expense = await repo.create({
+      date: (date as string) ?? new Date().toISOString().split('T')[0]!,
+      amount: Number(amount),
+      currency: (currency as string) ?? 'TRY',
+      category: (category as string) ?? 'other',
+      description: description as string,
+      paymentMethod: paymentMethod as string | undefined,
+      tags: tags as string[] | undefined,
+      notes: notes as string | undefined,
       source: 'web',
-      createdAt: new Date().toISOString(),
-      notes: body.notes,
-    };
+    });
 
-    db.expenses.push(expense);
-    await saveExpenseDb(db);
-
-    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
+    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'created', id: expense.id } as never);
     return apiResponse(c, expense, 201);
   } catch (error) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INTERNAL_ERROR,
-        message: getErrorMessage(error, 'Failed to create expense'),
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }
 });
 
 /**
- * PUT /api/v1/expenses/:id - Update an expense
+ * PUT /expenses/:id - Update expense
  */
 expensesRoutes.put('/:id', async (c) => {
-  const id = c.req.param('id');
-  const rawBody = await parseJsonBody(c);
-  const { validateBody, updateExpenseSchema } = await import('../middleware/validation.js');
-  const body = validateBody(updateExpenseSchema, rawBody) as Partial<ExpenseEntry>;
-
   try {
-    const db = await loadExpenseDb();
-    const index = db.expenses.findIndex((e) => e.id === id);
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const body = await parseJsonBody(c);
+    if (!body) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
 
-    if (index === -1) {
-      return notFoundError(c, 'Expense', id);
-    }
+    const updated = await repo.update(c.req.param('id'), body as Record<string, unknown>);
+    if (!updated) return notFoundError(c, 'Expense', c.req.param('id'));
 
-    const existing = db.expenses[index]!;
-    const updated: ExpenseEntry = {
-      ...existing,
-      ...body,
-      id: existing.id,
-      createdAt: existing.createdAt,
-    };
-
-    db.expenses[index] = updated;
-    await saveExpenseDb(db);
-
-    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: updated.id });
+    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'updated', id: updated.id } as never);
     return apiResponse(c, updated);
   } catch (error) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INTERNAL_ERROR,
-        message: getErrorMessage(error, 'Failed to update expense'),
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }
 });
 
 /**
- * DELETE /api/v1/expenses/:id - Delete an expense
+ * DELETE /expenses/:id - Delete expense
  */
 expensesRoutes.delete('/:id', async (c) => {
-  const id = c.req.param('id');
-
   try {
-    const db = await loadExpenseDb();
-    const index = db.expenses.findIndex((e) => e.id === id);
+    const userId = getUserId(c);
+    const repo = new ExpensesRepository(userId);
+    const id = c.req.param('id');
+    const deleted = await repo.delete(id);
+    if (!deleted) return notFoundError(c, 'Expense', id);
 
-    if (index === -1) {
-      return notFoundError(c, 'Expense', id);
-    }
-
-    const deleted = db.expenses.splice(index, 1)[0];
-    await saveExpenseDb(db);
-
-    wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id });
-    return apiResponse(c, { deleted });
+    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'deleted', id } as never);
+    return apiResponse(c, { message: 'Expense deleted' });
   } catch (error) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INTERNAL_ERROR,
-        message: getErrorMessage(error, 'Failed to delete expense'),
-      },
-      500
-    );
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }
 });
