@@ -1,10 +1,16 @@
 # OwnPilot
 
-[![CI](https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/ghcr.io-ownpilot-blue?logo=docker)](https://ghcr.io/ownpilot/ownpilot)
-[![Node.js](https://img.shields.io/badge/Node.js-≥22-green?logo=node.js)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
+<p align="center">
+  <img src="ownpilot_.png" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml"><img src="https://github.com/ownpilot/ownpilot/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="https://ghcr.io/ownpilot/ownpilot"><img src="https://img.shields.io/badge/ghcr.io-ownpilot-blue?logo=docker" alt="Docker" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-≥22-green?logo=node.js" alt="Node.js" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript" alt="TypeScript" /></a>
+</p>
 
 Privacy-first personal AI assistant platform with soul agents, autonomous background agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
 
