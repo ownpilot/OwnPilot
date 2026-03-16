@@ -27,7 +27,13 @@ export async function activateExtensionTriggers(
 ): Promise<void> {
   if (!manifest.triggers?.length) return;
 
-  const triggerService = getServiceRegistry().get(Services.Trigger);
+  let triggerService;
+  try {
+    triggerService = getServiceRegistry().get(Services.Trigger);
+  } catch {
+    log.debug(`Trigger service not yet available, skipping trigger activation for ${manifest.id}`);
+    return;
+  }
   const prefix = `[Ext:${manifest.id}]`;
 
   // De-duplicate: remove existing triggers for this extension before creating new ones
@@ -68,7 +74,12 @@ export async function deactivateExtensionTriggers(
   extensionId: string,
   userId: string
 ): Promise<void> {
-  const triggerService = getServiceRegistry().get(Services.Trigger);
+  let triggerService;
+  try {
+    triggerService = getServiceRegistry().get(Services.Trigger);
+  } catch {
+    return; // Trigger service not yet available
+  }
   const prefix = `[Ext:${extensionId}]`;
 
   try {
@@ -90,7 +101,12 @@ export async function deactivateExtensionTriggers(
 export async function cleanupOrphanTriggers(userId = 'default'): Promise<number> {
   let cleaned = 0;
   try {
-    const triggerService = getServiceRegistry().get(Services.Trigger);
+    let triggerService;
+    try {
+      triggerService = getServiceRegistry().get(Services.Trigger);
+    } catch {
+      return 0; // Trigger service not yet available
+    }
     const triggers = await triggerService.listTriggers(userId);
     const extensionIds = new Set(extensionsRepo.getAll().map((e) => e.id));
 
