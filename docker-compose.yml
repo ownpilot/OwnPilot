@@ -30,7 +30,7 @@ services:
   gateway:
     build:
       context: .
-      dockerfile: packages/gateway/Dockerfile
+      dockerfile: Dockerfile
     container_name: ownpilot
     restart: unless-stopped
     ports:

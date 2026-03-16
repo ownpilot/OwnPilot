@@ -230,9 +230,9 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
 ```
                          ┌──────────────┐
                          │   Web UI     │  React 19 + Vite 7
-                         │  (Port 5173) │  Tailwind CSS 4
+                         │  (bundled)   │  Tailwind CSS 4
                          └──────┬───────┘
-                                │ HTTP + SSE + WebSocket
+                                │ HTTP + SSE + WebSocket (/ws)
               ┌─────────────────┼─────────────────┐
               │                 │                  │
      ┌────────┴────────┐       │        ┌─────────┴──────────┐
@@ -362,11 +362,10 @@ cp .env.example .env
 # Start PostgreSQL (if you don't have one already)
 docker compose --profile postgres up -d
 
-# Start development (gateway + ui)
+# Start development (gateway on :8080 + Vite UI on :5173)
 pnpm dev
 
-# UI: http://localhost:5173
-# API: http://localhost:8080
+# Open http://localhost:5173 (Vite proxies API/WS to gateway)
 ```
 
 AI provider API keys are configured via the **Config Center UI** (Settings page) after setup.
@@ -493,7 +492,7 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~76,000 LOC** across 210+ source files. **239 test files** with **11,750+ tests**.
+**~76,000 LOC** across 210+ source files. **389 test files** with **16,400+ tests**.
 
 **Route Modules (50+ top-level + 70+ sub-modules):**
 
@@ -1518,7 +1517,7 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 ### WebSocket Events
 
-Real-time broadcasts on `ws://localhost:18789`:
+Real-time broadcasts via WebSocket at `ws://localhost:8080/ws` (attached to the HTTP server, same port):
 
 | Event                     | Description                                      |
 | ------------------------- | ------------------------------------------------ |
@@ -1624,9 +1623,19 @@ LOG_LEVEL=info
 
 ## Deployment
 
-### Docker Compose
+### Ports & Services
 
-The simplest way to run OwnPilot in production:
+| Service        | Port    | Protocol | Description                                  |
+| -------------- | ------- | -------- | -------------------------------------------- |
+| **Gateway**    | `8080`  | HTTP     | REST API + bundled UI (Vite static assets)   |
+| **WebSocket**  | `8080`  | WS       | Real-time events at `/ws` (shares HTTP port) |
+| **PostgreSQL** | `25432` | TCP      | Database (mapped from container's `5432`)    |
+| **MQTT**       | `1883`  | TCP      | Mosquitto broker (optional, for edge/IoT)    |
+| **MQTT WS**    | `9001`  | WS       | MQTT WebSocket transport (optional)          |
+
+> **Note:** In production (Docker), a single port `8080` serves everything — REST API, WebSocket, and the pre-built UI. No separate frontend deployment needed.
+
+### Docker Compose
 
 ```bash
 cp .env.example .env
@@ -1637,15 +1646,13 @@ docker compose --profile postgres up -d
 
 # With MQTT broker for edge/IoT devices
 docker compose --profile postgres --profile mqtt up -d
-
-# UI + API: http://localhost:8080
 ```
 
-The gateway container serves the bundled UI — no separate frontend deployment needed.
+Open **http://localhost:8080** — the gateway serves the bundled React UI, REST API, and WebSocket on the same port.
 
 ### Pre-built Image
 
-A multi-arch image (amd64 + arm64) is published to GitHub Container Registry:
+A multi-arch image (amd64 + arm64) is published to GitHub Container Registry on every release:
 
 ```bash
 docker pull ghcr.io/ownpilot/ownpilot:latest
@@ -1658,19 +1665,29 @@ docker run -d \
   ghcr.io/ownpilot/ownpilot:latest
 ```
 
-Health check endpoint: `GET /health`
+Health check: `GET http://localhost:8080/health`
 
-### Manual
+### Development Mode
+
+In development, Vite runs a separate dev server with hot reload:
+
+| Service             | Port    | Description                                             |
+| ------------------- | ------- | ------------------------------------------------------- |
+| **Vite Dev Server** | `5173`  | React UI with HMR (proxies `/api` and `/ws` to gateway) |
+| **Gateway**         | `8080`  | REST API + WebSocket                                    |
+| **PostgreSQL**      | `25432` | Database                                                |
 
 ```bash
-# Build all packages
-pnpm build
+pnpm dev     # Starts gateway (8080) + Vite UI (5173)
+```
 
-# Start production server
-ownpilot start
+Open **http://localhost:5173** for development. Vite automatically proxies API calls (`/api/*`) and WebSocket (`/ws`) to the gateway on port 8080.
 
-# Or start gateway only
-pnpm --filter @ownpilot/gateway start
+### Manual Production
+
+```bash
+pnpm build        # Build all packages (includes UI static assets)
+ownpilot start    # Start production server on port 8080
 ```
 
 ---
@@ -1721,7 +1738,7 @@ pnpm clean            # Clear all build artifacts
 | **Telegram**   | Grammy 1.41                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 4.x (383+ test files, 22,000+ tests)   |
+| **Testing**    | Vitest 4.x (545+ test files, 26,500+ tests)   |
 | **Linting**    | ESLint 10 (flat config)                       |
 | **Formatting** | Prettier 3.8                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |
