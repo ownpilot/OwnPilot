@@ -1,0 +1,32 @@
+{
+  "name": "ownpilot-website",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.2",
+    "framer-motion": "^12.18.1",
+    "lucide-react": "^0.513.0",
+    "@oxog/codeshine": "^1.0.0",
+    "zustand": "^5.0.5",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "tailwindcss": "^4.1.8",
+    "@tailwindcss/vite": "^4.1.8"
+  }
+}

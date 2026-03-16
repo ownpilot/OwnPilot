@@ -1,0 +1,345 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 207 55% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 207 55% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 207 55% 18%;
+    --primary: 204 70% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 200 15% 95%;
+    --secondary-foreground: 207 55% 18%;
+    --muted: 200 15% 95%;
+    --muted-foreground: 207 10% 46%;
+    --accent: 200 15% 95%;
+    --accent-foreground: 207 55% 18%;
+    --border: 200 15% 89%;
+    --input: 200 15% 89%;
+    --ring: 204 70% 40%;
+    --radius: 0.625rem;
+
+    /* custom tokens — blue-teal palette from OwnPilot logo */
+    --color-bg: hsl(0 0% 100%);
+    --color-bg-subtle: hsl(200 15% 97%);
+    --color-surface: hsl(0 0% 100%);
+    --color-surface-raised: hsl(200 15% 98%);
+    --color-border: hsl(200 15% 89%);
+    --color-border-subtle: hsl(200 15% 93%);
+    --color-text: hsl(207 55% 18%);
+    --color-text-muted: hsl(207 10% 46%);
+    --color-text-subtle: hsl(207 10% 60%);
+    --color-accent: hsl(204 70% 40%);
+    --color-accent-light: hsl(204 70% 96%);
+    --color-code-bg: hsl(200 15% 95%);
+    --color-code-text: hsl(207 55% 15%);
+
+    /* Logo brand colors */
+    --brand-blue: #1a6fb5;
+    --brand-teal: #2ba67d;
+    --brand-navy: #0f2d4a;
+  }
+
+  .dark {
+    --background: 207 40% 6%;
+    --foreground: 0 0% 96%;
+    --card: 207 40% 6%;
+    --card-foreground: 0 0% 96%;
+    --popover: 207 40% 6%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 200 70% 55%;
+    --primary-foreground: 207 55% 10%;
+    --secondary: 207 20% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 207 20% 14%;
+    --muted-foreground: 207 10% 65%;
+    --accent: 207 20% 14%;
+    --accent-foreground: 0 0% 96%;
+    --border: 207 20% 16%;
+    --input: 207 20% 16%;
+    --ring: 200 70% 55%;
+
+    /* custom tokens dark */
+    --color-bg: hsl(207 40% 6%);
+    --color-bg-subtle: hsl(207 30% 8%);
+    --color-surface: hsl(207 30% 8%);
+    --color-surface-raised: hsl(207 25% 11%);
+    --color-border: hsl(207 20% 16%);
+    --color-border-subtle: hsl(207 20% 13%);
+    --color-text: hsl(0 0% 96%);
+    --color-text-muted: hsl(207 10% 65%);
+    --color-text-subtle: hsl(207 10% 50%);
+    --color-accent: hsl(200 70% 55%);
+    --color-accent-light: hsl(200 70% 12%);
+    --color-code-bg: hsl(207 30% 10%);
+    --color-code-text: hsl(0 0% 90%);
+
+    --brand-blue: #4da6e8;
+    --brand-teal: #3dd9a4;
+    --brand-navy: #8bb8d9;
+  }
+
+  * {
+    border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: "Geist Mono", "Fira Code", "Cascadia Code", monospace;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: var(--color-text);
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/* @oxog/codeshine base layout — the library generates HTML with cs-* classes but
+   does not inject layout CSS itself. These rules ensure lines render correctly. */
+.cs-codeblock {
+  border-radius: 0;
+}
+.cs-codeblock pre.cs-pre {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+}
+.cs-code {
+  display: block;
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.cs-line {
+  display: block;
+}
+.cs-line-content {
+  display: inline;
+}
+/* Hide codeshine's own copy button (we render our own) */
+.cs-copy-button {
+  display: none !important;
+}
+/* Hide codeshine's own language badge (we render our own) */
+.cs-language-badge {
+  display: none !important;
+}
+/* Hide codeshine filename header (we render our own) */
+.cs-header {
+  display: none !important;
+}
+
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-subtle {
+    background: linear-gradient(135deg, var(--color-text), var(--color-text-muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+  }
+
+  .glass-dark {
+    background: hsl(240 10% 7% / 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glow {
+    box-shadow: 0 0 60px hsl(204 70% 40% / 0.15);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 20px hsl(204 70% 40% / 0.2);
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease infinite;
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .noise {
+    position: relative;
+  }
+
+  .noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Docs prose */
+  .prose-docs h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    color: var(--color-text);
+  }
+  .prose-docs h2 {
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border-subtle);
+    padding-bottom: 0.5rem;
+  }
+  .prose-docs h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text);
+  }
+  .prose-docs p {
+    color: var(--color-text-muted);
+    line-height: 1.75;
+    margin-bottom: 1rem;
+  }
+  .prose-docs a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .prose-docs a:hover {
+    color: hsl(var(--primary) / 0.8);
+  }
+  .prose-docs code {
+    background: var(--color-code-bg);
+    color: var(--color-code-text);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.875em;
+    font-weight: 500;
+  }
+  .prose-docs pre {
+    margin: 1.25rem 0;
+  }
+  .prose-docs ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1rem;
+  }
+  .prose-docs ul li {
+    color: var(--color-text-muted);
+    padding: 0.2rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+    line-height: 1.65;
+  }
+  .prose-docs ul li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--color-text-subtle);
+    font-size: 0.875rem;
+  }
+  .prose-docs ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .prose-docs ol li {
+    color: var(--color-text-muted);
+    padding: 0.2rem 0;
+    line-height: 1.65;
+  }
+  .prose-docs table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+  .prose-docs th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: var(--color-bg-subtle);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .prose-docs td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    color: var(--color-text-muted);
+    vertical-align: top;
+  }
+  .prose-docs td code {
+    font-size: 0.8125em;
+  }
+
+  /* Sidebar active link */
+  .sidebar-link-active {
+    color: hsl(var(--primary));
+    background: var(--color-accent-light);
+    font-weight: 500;
+  }
+}
