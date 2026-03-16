@@ -14,7 +14,7 @@
     {
       "id": "anthropic--claude-4.6-sonnet",
       "name": "anthropic--claude-4.6-sonnet",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -31,7 +31,7 @@
     {
       "id": "anthropic--claude-4.6-opus",
       "name": "anthropic--claude-4.6-opus",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
@@ -77,7 +77,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-10-01"
+      "releaseDate": "2025-10-15"
     },
     {
       "id": "anthropic--claude-4.5-sonnet",

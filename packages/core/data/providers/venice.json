@@ -83,6 +83,24 @@
       "releaseDate": "2026-03-05"
     },
     {
+      "id": "qwen3-5-9b",
+      "name": "Qwen 3.5 9B",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.05,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
       "id": "openai-gpt-4o-2024-11-20",
       "name": "GPT-4o",
       "contextWindow": 128000,
@@ -153,6 +171,23 @@
       "releaseDate": "2026-02-24"
     },
     {
+      "id": "venice-uncensored-role-play",
+      "name": "Venice Role Play Uncensored",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-20"
+    },
+    {
       "id": "gemini-3-1-pro-preview",
       "name": "Gemini 3.1 Pro Preview",
       "contextWindow": 1000000,
@@ -194,8 +229,8 @@
       "name": "MiniMax M2.5",
       "contextWindow": 198000,
       "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.34,
+      "outputPrice": 1.19,
       "capabilities": [
         "chat",
         "function_calling",
@@ -279,8 +314,8 @@
       "name": "Kimi K2.5",
       "contextWindow": 256000,
       "maxOutput": 65536,
-      "inputPrice": 0.75,
-      "outputPrice": 3.75,
+      "inputPrice": 0.56,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "vision",
@@ -340,6 +375,22 @@
       ],
       "default": false,
       "releaseDate": "2026-01-16"
+    },
+    {
+      "id": "mistral-small-3-2-24b-instruct",
+      "name": "Mistral Small 3.2 24B Instruct",
+      "contextWindow": 256000,
+      "maxOutput": 16384,
+      "inputPrice": 0.09375,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-15"
     },
     {
       "id": "zai-org-glm-4.7",
@@ -503,8 +554,8 @@
       "name": "MiniMax M2.1",
       "contextWindow": 198000,
       "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.35,
+      "outputPrice": 1.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -740,6 +791,22 @@
       ],
       "default": false,
       "releaseDate": "2024-10-03"
+    },
+    {
+      "id": "zai-org-glm-4.6",
+      "name": "GLM 4.6",
+      "contextWindow": 198000,
+      "maxOutput": 16384,
+      "inputPrice": 0.85,
+      "outputPrice": 2.75,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-01"
     }
   ],
   "baseUrl": "https://api.venice.com/v1",

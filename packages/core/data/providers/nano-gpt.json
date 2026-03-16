@@ -482,7 +482,7 @@
       "releaseDate": "2026-01-24"
     },
     {
-      "id": "CrucibleLab 2/L3.3-70B-Loki-V2.0",
+      "id": "CrucibleLab/L3.3-70B-Loki-V2.0",
       "name": "L3.3 70B Loki v2.0",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -989,7 +989,7 @@
       "releaseDate": "2025-12-09"
     },
     {
-      "id": "ReadyArt 2/MS3.2-The-Omega-Directive-24B-Unslop-v2.0",
+      "id": "ReadyArt/MS3.2-The-Omega-Directive-24B-Unslop-v2.0",
       "name": "Omega Directive 24B Unslop v2.0",
       "contextWindow": 16384,
       "maxOutput": 32768,
@@ -1207,7 +1207,7 @@
       "releaseDate": "2025-11-26"
     },
     {
-      "id": "Doctor-Shotgun 2/MS3.2-24B-Magnum-Diamond",
+      "id": "Doctor-Shotgun/MS3.2-24B-Magnum-Diamond",
       "name": "MS3.2 24B Magnum Diamond",
       "contextWindow": 16384,
       "maxOutput": 32768,
@@ -1972,34 +1972,6 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "EVA-UNIT-01 2/EVA-Qwen2.5-72B-v0.2",
-      "name": "EVA-Qwen2.5-72B-v0.2",
-      "contextWindow": 16384,
-      "maxOutput": 8192,
-      "inputPrice": 0.7989999999999999,
-      "outputPrice": 0.7989999999999999,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "EVA-UNIT-01 2/EVA-LLaMA-3.33-70B-v0.1",
-      "name": "EVA-LLaMA-3.33-70B-v0.1",
-      "contextWindow": 16384,
-      "maxOutput": 16384,
-      "inputPrice": 2.006,
-      "outputPrice": 2.006,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
       "id": "soob3123/GrayLine-Qwen3-8B",
       "name": "Grayline Qwen3 8B",
       "contextWindow": 16384,
@@ -2053,6 +2025,34 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "EVA-UNIT-01/EVA-Qwen2.5-72B-v0.2",
+      "name": "EVA-Qwen2.5-72B-v0.2",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 0.7989999999999999,
+      "outputPrice": 0.7989999999999999,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "EVA-UNIT-01/EVA-LLaMA-3.33-70B-v0.1",
+      "name": "EVA-LLaMA-3.33-70B-v0.1",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 2.006,
+      "outputPrice": 2.006,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -2292,20 +2292,6 @@
       "releaseDate": "2025-08-26"
     },
     {
-      "id": "Alibaba-NLP 2/Tongyi-DeepResearch-30B-A3B",
-      "name": "Tongyi DeepResearch 30B A3B",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 0.08,
-      "outputPrice": 0.24000000000000002,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-26"
-    },
-    {
       "id": "NousResearch 2/hermes-4-405b",
       "name": "Hermes 4 Large",
       "contextWindow": 128000,
@@ -2316,6 +2302,20 @@
         "chat",
         "function_calling",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-26"
+    },
+    {
+      "id": "Alibaba-NLP/Tongyi-DeepResearch-30B-A3B",
+      "name": "Tongyi DeepResearch 30B A3B",
+      "contextWindow": 128000,
+      "maxOutput": 65536,
+      "inputPrice": 0.08,
+      "outputPrice": 0.24000000000000002,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -2533,7 +2533,7 @@
       "releaseDate": "2025-08-08"
     },
     {
-      "id": "Gryphe 2/MythoMax-L2-13b",
+      "id": "Gryphe/MythoMax-L2-13b",
       "name": "MythoMax 13B",
       "contextWindow": 4000,
       "maxOutput": 4096,
@@ -2964,26 +2964,12 @@
       "releaseDate": "2025-07-26"
     },
     {
-      "id": "EVA-UNIT-01 2/EVA-LLaMA-3.33-70B-v0.0",
-      "name": "EVA Llama 3.33 70B",
-      "contextWindow": 16384,
-      "maxOutput": 16384,
-      "inputPrice": 2.006,
-      "outputPrice": 2.006,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-26"
-    },
-    {
-      "id": "EVA-UNIT-01 2/EVA-Qwen2.5-32B-v0.2",
-      "name": "EVA-Qwen2.5-32B-v0.2",
-      "contextWindow": 16384,
-      "maxOutput": 8192,
-      "inputPrice": 0.7989999999999999,
-      "outputPrice": 0.7989999999999999,
+      "id": "LLM360/K2-Think",
+      "name": "K2-Think",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.17,
+      "outputPrice": 0.68,
       "capabilities": [
         "chat",
         "streaming"
@@ -2998,20 +2984,6 @@
       "maxOutput": 8192,
       "inputPrice": 0.7,
       "outputPrice": 0.7,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-26"
-    },
-    {
-      "id": "LLM360 2/K2-Think",
-      "name": "K2-Think",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.17,
-      "outputPrice": 0.68,
       "capabilities": [
         "chat",
         "streaming"
@@ -3040,6 +3012,34 @@
       "maxOutput": 16384,
       "inputPrice": 0.5,
       "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-26"
+    },
+    {
+      "id": "EVA-UNIT-01/EVA-LLaMA-3.33-70B-v0.0",
+      "name": "EVA Llama 3.33 70B",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 2.006,
+      "outputPrice": 2.006,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-26"
+    },
+    {
+      "id": "EVA-UNIT-01/EVA-Qwen2.5-32B-v0.2",
+      "name": "EVA-Qwen2.5-32B-v0.2",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 0.7989999999999999,
+      "outputPrice": 0.7989999999999999,
       "capabilities": [
         "chat",
         "streaming"
@@ -3479,7 +3479,7 @@
       "releaseDate": "2025-06-16"
     },
     {
-      "id": "MiniMaxAI 2/MiniMax-M1-80k",
+      "id": "MiniMaxAI/MiniMax-M1-80k",
       "name": "MiniMax M1 80K",
       "contextWindow": 1000000,
       "maxOutput": 131072,
@@ -4544,12 +4544,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "Salesforce 2/Llama-xLAM-2-70b-fc-r",
-      "name": "Llama-xLAM-2 70B fc-r",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 2.5,
-      "outputPrice": 2.5,
+      "id": "soob3123/Veiled-Calla-12B",
+      "name": "Veiled Calla 12B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.3,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "streaming"
@@ -4558,12 +4558,12 @@
       "releaseDate": "2025-04-13"
     },
     {
-      "id": "soob3123/Veiled-Calla-12B",
-      "name": "Veiled Calla 12B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0.3,
-      "outputPrice": 0.3,
+      "id": "Salesforce/Llama-xLAM-2-70b-fc-r",
+      "name": "Llama-xLAM-2 70B fc-r",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "streaming"
@@ -5135,7 +5135,7 @@
       "releaseDate": "2025-02-20"
     },
     {
-      "id": "LatitudeGames 2/Wayfarer-Large-70B-Llama-3.3",
+      "id": "LatitudeGames/Wayfarer-Large-70B-Llama-3.3",
       "name": "Llama 3.3 70B Wayfarer",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -5472,7 +5472,7 @@
       "releaseDate": "2025-01-25"
     },
     {
-      "id": "Tongyi-Zhiwen 2/QwenLong-L1-32B",
+      "id": "Tongyi-Zhiwen/QwenLong-L1-32B",
       "name": "QwenLong L1 32B",
       "contextWindow": 128000,
       "maxOutput": 40960,
@@ -6369,21 +6369,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Sao10K 2/L3.3-70B-Euryale-v2.3",
-      "name": "Llama 3.3 70B Euryale",
-      "contextWindow": 20480,
-      "maxOutput": 16384,
-      "inputPrice": 0.49299999999999994,
-      "outputPrice": 0.49299999999999994,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-06"
-    },
-    {
-      "id": "Steelskull 2/L3.3-Electra-R1-70b",
+      "id": "Steelskull/L3.3-Electra-R1-70b",
       "name": "Steelskull Electra R1 70b",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6397,7 +6383,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Steelskull 2/L3.3-MS-Evalebis-70b",
+      "id": "Steelskull/L3.3-MS-Evalebis-70b",
       "name": "MS Evalebis 70b",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6411,7 +6397,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Steelskull 2/L3.3-Cu-Mai-R1-70b",
+      "id": "Steelskull/L3.3-Cu-Mai-R1-70b",
       "name": "Llama 3.3 70B Cu Mai",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6425,7 +6411,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Steelskull 2/L3.3-Nevoria-R1-70b",
+      "id": "Steelskull/L3.3-Nevoria-R1-70b",
       "name": "Steelskull Nevoria R1 70b",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6439,7 +6425,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Steelskull 2/L3.3-MS-Nevoria-70b",
+      "id": "Steelskull/L3.3-MS-Nevoria-70b",
       "name": "Steelskull Nevoria 70b",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6453,7 +6439,7 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "Steelskull 2/L3.3-MS-Evayale-70B",
+      "id": "Steelskull/L3.3-MS-Evayale-70B",
       "name": "Evayale 70b ",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6473,6 +6459,20 @@
       "maxOutput": 4096,
       "inputPrice": 0.5,
       "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "Sao10K/L3.3-70B-Euryale-v2.3",
+      "name": "Llama 3.3 70B Euryale",
+      "contextWindow": 20480,
+      "maxOutput": 16384,
+      "inputPrice": 0.49299999999999994,
+      "outputPrice": 0.49299999999999994,
       "capabilities": [
         "chat",
         "streaming"
@@ -6551,7 +6551,7 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "Envoid 2/Llama-3.05-Nemotron-Tenyxchat-Storybreaker-70B",
+      "id": "Envoid/Llama-3.05-Nemotron-Tenyxchat-Storybreaker-70B",
       "name": "Nemotron Tenyxchat Storybreaker 70b",
       "contextWindow": 16384,
       "maxOutput": 8192,
@@ -6565,7 +6565,7 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "Envoid 2/Llama-3.05-NT-Storybreaker-Ministral-70B",
+      "id": "Envoid/Llama-3.05-NT-Storybreaker-Ministral-70B",
       "name": "Llama 3.05 Storybreaker Ministral 70b",
       "contextWindow": 16384,
       "maxOutput": 8192,
@@ -6593,7 +6593,7 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "ReadyArt 2/The-Omega-Abomination-L-70B-v1.0",
+      "id": "ReadyArt/The-Omega-Abomination-L-70B-v1.0",
       "name": "The Omega Abomination V1",
       "contextWindow": 16384,
       "maxOutput": 16384,
@@ -6607,7 +6607,7 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "Sao10K 2/L3-8B-Stheno-v3.2",
+      "id": "Sao10K/L3-8B-Stheno-v3.2",
       "name": "Sao10K Stheno 8b",
       "contextWindow": 16384,
       "maxOutput": 8192,
@@ -6837,34 +6837,6 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "Sao10K 2/L3.1-70B-Hanami-x1",
-      "name": "Llama 3.1 70B Hanami",
-      "contextWindow": 16384,
-      "maxOutput": 16384,
-      "inputPrice": 0.49299999999999994,
-      "outputPrice": 0.49299999999999994,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "Sao10K 2/L3.1-70B-Euryale-v2.2",
-      "name": "Llama 3.1 70B Euryale",
-      "contextWindow": 20480,
-      "maxOutput": 16384,
-      "inputPrice": 0.306,
-      "outputPrice": 0.357,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
       "id": "aion-labs/aion-rp-llama-3.1-8b",
       "name": "Llama 3.1 8b (uncensored)",
       "contextWindow": 32768,
@@ -6899,6 +6871,34 @@
       "maxOutput": 16384,
       "inputPrice": 0.0544,
       "outputPrice": 0.0544,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "Sao10K/L3.1-70B-Hanami-x1",
+      "name": "Llama 3.1 70B Hanami",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0.49299999999999994,
+      "outputPrice": 0.49299999999999994,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "Sao10K/L3.1-70B-Euryale-v2.2",
+      "name": "Llama 3.1 70B Euryale",
+      "contextWindow": 20480,
+      "maxOutput": 16384,
+      "inputPrice": 0.306,
+      "outputPrice": 0.357,
       "capabilities": [
         "chat",
         "streaming"
@@ -7023,20 +7023,6 @@
       "releaseDate": "2024-07-05"
     },
     {
-      "id": "Infermatic 2/MN-12B-Inferor-v0.0",
-      "name": "Mistral Nemo Inferor 12B",
-      "contextWindow": 16384,
-      "maxOutput": 8192,
-      "inputPrice": 0.25499999999999995,
-      "outputPrice": 0.49299999999999994,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-01"
-    },
-    {
       "id": "anthracite-org/magnum-v2-72b",
       "name": "Magnum V2 72B",
       "contextWindow": 16384,
@@ -7051,7 +7037,21 @@
       "releaseDate": "2024-07-01"
     },
     {
-      "id": "NeverSleep 2/Llama-3-Lumimaid-70B-v0.1",
+      "id": "Infermatic/MN-12B-Inferor-v0.0",
+      "name": "Mistral Nemo Inferor 12B",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 0.25499999999999995,
+      "outputPrice": 0.49299999999999994,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-01"
+    },
+    {
+      "id": "NeverSleep/Llama-3-Lumimaid-70B-v0.1",
       "name": "Lumimaid 70b",
       "contextWindow": 16384,
       "maxOutput": 8192,
@@ -7065,7 +7065,7 @@
       "releaseDate": "2024-07-01"
     },
     {
-      "id": "NeverSleep 2/Lumimaid-v0.2-70B",
+      "id": "NeverSleep/Lumimaid-v0.2-70B",
       "name": "Lumimaid v0.2",
       "contextWindow": 16384,
       "maxOutput": 8192,
@@ -7079,21 +7079,7 @@
       "releaseDate": "2024-07-01"
     },
     {
-      "id": "GalrionSoftworks 2/MN-LooseCannon-12B-v1",
-      "name": "MN-LooseCannon-12B-v1",
-      "contextWindow": 16384,
-      "maxOutput": 8192,
-      "inputPrice": 0.49299999999999994,
-      "outputPrice": 0.49299999999999994,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-01"
-    },
-    {
-      "id": "MarinaraSpaghetti 2/NemoMix-Unleashed-12B",
+      "id": "MarinaraSpaghetti/NemoMix-Unleashed-12B",
       "name": "NemoMix 12B Unleashed",
       "contextWindow": 32768,
       "maxOutput": 8192,
@@ -7109,6 +7095,34 @@
     {
       "id": "inflatebot/MN-12B-Mag-Mell-R1",
       "name": "Mag Mell R1",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 0.49299999999999994,
+      "outputPrice": 0.49299999999999994,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-01"
+    },
+    {
+      "id": "VongolaChouko/Starcannon-Unleashed-12B-v1.0",
+      "name": "Mistral Nemo Starcannon 12b v1",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 0.49299999999999994,
+      "outputPrice": 0.49299999999999994,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-01"
+    },
+    {
+      "id": "GalrionSoftworks/MN-LooseCannon-12B-v1",
+      "name": "MN-LooseCannon-12B-v1",
       "contextWindow": 16384,
       "maxOutput": 8192,
       "inputPrice": 0.49299999999999994,
@@ -7166,20 +7180,6 @@
       "id": "TheDrummer 2/UnslopNemo-12B-v4.1",
       "name": "UnslopNemo 12b v4",
       "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0.49299999999999994,
-      "outputPrice": 0.49299999999999994,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-01"
-    },
-    {
-      "id": "VongolaChouko 2/Starcannon-Unleashed-12B-v1.0",
-      "name": "Mistral Nemo Starcannon 12b v1",
-      "contextWindow": 16384,
       "maxOutput": 8192,
       "inputPrice": 0.49299999999999994,
       "outputPrice": 0.49299999999999994,

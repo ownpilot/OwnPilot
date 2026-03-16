@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "glm-5-turbo",
+      "name": "GLM-5-Turbo",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-16"
+    },
+    {
       "id": "glm-5",
       "name": "GLM-5",
       "contextWindow": 204800,
@@ -24,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-11"
     },
     {
