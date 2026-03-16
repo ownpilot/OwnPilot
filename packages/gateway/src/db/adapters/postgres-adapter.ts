@@ -9,6 +9,12 @@ import pg from 'pg';
 import { getLog } from '../../services/log.js';
 import { DB_POOL_MAX, DB_IDLE_TIMEOUT_MS, DB_CONNECT_TIMEOUT_MS } from '../../config/defaults.js';
 
+// Fix pg timezone handling: TIMESTAMP WITHOUT TIME ZONE (OID 1114) values are stored
+// as UTC in this codebase, but pg's default parser interprets them as local time.
+// This causes shifted dates on non-UTC machines (e.g. UTC+3 → 3-hour shift).
+// Force UTC interpretation by appending 'Z' before parsing.
+pg.types.setTypeParser(1114, (str: string) => new Date(str + 'Z'));
+
 const log = getLog('PostgresAdapter');
 
 const { Pool } = pg;

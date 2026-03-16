@@ -90,25 +90,25 @@ export function PomodoroPage() {
   // ---- Timer ----
 
   useEffect(() => {
-    if (activeSession?.status === 'running' && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            // Timer complete — auto-complete session
-            pomodoroApi.completeSession(activeSession.id).then(() => {
-              toast.success('Session completed!');
-              fetchState();
-            }).catch(() => {});
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => {
-        if (timerRef.current) clearInterval(timerRef.current);
-      };
-    }
-  }, [activeSession, timeLeft, fetchState, toast]);
+    if (activeSession?.status !== 'running') return;
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Timer complete — auto-complete session
+          pomodoroApi.completeSession(activeSession.id).then(() => {
+            toast.success('Session completed!');
+            fetchState();
+          }).catch(() => {});
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [activeSession, fetchState, toast]);
 
   // ---- Actions ----
 

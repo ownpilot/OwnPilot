@@ -62,6 +62,7 @@ import { STORAGE_KEYS } from '../constants/storage-keys';
 import { DebugDrawer } from './DebugDrawer';
 import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
+import { MiniPomodoro } from './MiniPomodoro';
 
 interface NavItem {
   to: string;
@@ -439,6 +440,7 @@ export function Layout() {
         <div className="flex-1 flex justify-center">
           <PulseSlotGrid slots={pulseSlots} compact={isMobile} />
         </div>
+        <MiniPomodoro />
         <span
           className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
           title={connectionStyle.label}

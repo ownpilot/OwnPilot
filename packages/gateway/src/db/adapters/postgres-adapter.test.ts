@@ -33,6 +33,7 @@ vi.mock('pg', () => ({
     Pool: vi.fn(function () {
       return mockPool;
     }),
+    types: { setTypeParser: vi.fn() },
   },
 }));
 vi.mock('../../services/log.js', () => ({ getLog: vi.fn(() => mockLog) }));
