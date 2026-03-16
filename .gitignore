@@ -110,6 +110,8 @@ _*.py
 packages/*/package-lock.json
 packages/**/package-lock.json
 package-lock.json
+# Allow website's package-lock.json (npm project, not pnpm)
+!website/package-lock.json
 
 # Stray Python/data files anywhere in packages
 packages/**/*.py
