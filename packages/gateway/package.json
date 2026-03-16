@@ -1,6 +1,6 @@
 {
   "name": "@ownpilot/gateway",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "HTTP API gateway for OwnPilot",
   "type": "module",
   "main": "./dist/index.js",
