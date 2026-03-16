@@ -50,11 +50,11 @@ export function PomodoroPage() {
   const fetchState = useCallback(async () => {
     try {
       const [sessionRes, statsRes] = await Promise.all([
-        pomodoroApi.getSession(),
-        pomodoroApi.getStats(),
+        pomodoroApi.getSession().catch(() => ({ session: null })),
+        pomodoroApi.getStats().catch(() => ({ completedSessions: 0, totalWorkMinutes: 0, totalBreakMinutes: 0, interruptions: 0 })),
       ]);
       setActiveSession(sessionRes.session);
-      setStats(statsRes);
+      setStats(statsRes as PomodoroStats);
 
       if (sessionRes.session?.status === 'running') {
         const elapsed = Math.floor((Date.now() - new Date(sessionRes.session.startedAt).getTime()) / 1000);
