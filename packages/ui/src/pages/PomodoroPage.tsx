@@ -59,7 +59,13 @@ export function PomodoroPage() {
       if (sessionRes.session?.status === 'running') {
         const elapsed = Math.floor((Date.now() - new Date(sessionRes.session.startedAt).getTime()) / 1000);
         const total = sessionRes.session.durationMinutes * 60;
-        setTimeLeft(Math.max(0, total - elapsed));
+        const remaining = Math.max(0, total - elapsed);
+        setTimeLeft(remaining);
+
+        // Auto-complete if timer already expired
+        if (remaining === 0) {
+          pomodoroApi.completeSession(sessionRes.session.id).catch(() => {});
+        }
       }
     } catch {
       // API might not be ready
@@ -108,11 +114,14 @@ export function PomodoroPage() {
 
   const handleStart = async (type: string, duration: number) => {
     try {
-      await pomodoroApi.startSession({
+      const res = await pomodoroApi.startSession({
         type,
         durationMinutes: duration,
       });
       toast.success(`${type === 'work' ? 'Focus' : 'Break'} session started!`);
+      // Set timer immediately (don't wait for fetchState round-trip)
+      setTimeLeft(duration * 60);
+      setActiveSession(res.session);
       fetchState();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to start session');
