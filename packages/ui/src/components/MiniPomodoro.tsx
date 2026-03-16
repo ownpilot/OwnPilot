@@ -13,9 +13,27 @@ import { pomodoroApi, type PomodoroSession } from '../api/endpoints/personal-dat
 import { Target, Zap, Pause } from './icons';
 
 const TYPE_CONFIG = {
-  work: { icon: Target, color: 'text-primary', bg: 'bg-primary/10', ring: 'ring-primary/30', label: 'Focus' },
-  short_break: { icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500/10', ring: 'ring-emerald-500/30', label: 'Break' },
-  long_break: { icon: Pause, color: 'text-violet-500', bg: 'bg-violet-500/10', ring: 'ring-violet-500/30', label: 'Break' },
+  work: {
+    icon: Target,
+    color: 'text-primary',
+    bg: 'bg-primary/10',
+    ring: 'ring-primary/30',
+    label: 'Focus',
+  },
+  short_break: {
+    icon: Zap,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+    ring: 'ring-emerald-500/30',
+    label: 'Break',
+  },
+  long_break: {
+    icon: Pause,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500/10',
+    ring: 'ring-violet-500/30',
+    label: 'Break',
+  },
 } as const;
 
 function formatTime(seconds: number): string {
@@ -92,9 +110,10 @@ export function MiniPomodoro() {
 
   const config = TYPE_CONFIG[session.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.work;
   const Icon = config.icon;
-  const progress = session.durationMinutes * 60 > 0
-    ? ((session.durationMinutes * 60 - timeLeft) / (session.durationMinutes * 60)) * 100
-    : 0;
+  const progress =
+    session.durationMinutes * 60 > 0
+      ? ((session.durationMinutes * 60 - timeLeft) / (session.durationMinutes * 60)) * 100
+      : 0;
 
   return (
     <button
@@ -105,14 +124,27 @@ export function MiniPomodoro() {
       {/* Tiny progress ring */}
       <div className="relative w-5 h-5 shrink-0">
         <svg className="w-5 h-5 -rotate-90" viewBox="0 0 20 20">
-          <circle cx="10" cy="10" r="8" fill="none" strokeWidth="2"
-            className="text-black/5 dark:text-white/5" stroke="currentColor" />
-          <circle cx="10" cy="10" r="8" fill="none" strokeWidth="2"
+          <circle
+            cx="10"
+            cy="10"
+            r="8"
+            fill="none"
+            strokeWidth="2"
+            className="text-black/5 dark:text-white/5"
+            stroke="currentColor"
+          />
+          <circle
+            cx="10"
+            cy="10"
+            r="8"
+            fill="none"
+            strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * 8}`}
             strokeDashoffset={`${2 * Math.PI * 8 * (1 - progress / 100)}`}
             strokeLinecap="round"
             className={`${config.color} transition-all duration-1000`}
-            stroke="currentColor" />
+            stroke="currentColor"
+          />
         </svg>
         <Icon className={`w-2.5 h-2.5 ${config.color} absolute inset-0 m-auto`} />
       </div>

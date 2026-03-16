@@ -199,9 +199,20 @@ export class WorkflowService implements IWorkflowService {
             }
 
             return await this.dispatchNode({
-              node, nodeId, nodeOutputs, workflow, nodeMap, userId, toolService,
-              abortSignal: abortController.signal, onProgress, dryRun,
-              repo, logId: wfLog.id, workflowId, depth,
+              node,
+              nodeId,
+              nodeOutputs,
+              workflow,
+              nodeMap,
+              userId,
+              toolService,
+              abortSignal: abortController.signal,
+              onProgress,
+              dryRun,
+              repo,
+              logId: wfLog.id,
+              workflowId,
+              depth,
             });
           })
         );
@@ -577,9 +588,20 @@ export class WorkflowService implements IWorkflowService {
             }
 
             return await this.dispatchNode({
-              node, nodeId, nodeOutputs, workflow, nodeMap, userId, toolService,
-              abortSignal: abortController.signal, onProgress, dryRun: false,
-              repo, logId, workflowId, depth: 0,
+              node,
+              nodeId,
+              nodeOutputs,
+              workflow,
+              nodeMap,
+              userId,
+              toolService,
+              abortSignal: abortController.signal,
+              onProgress,
+              dryRun: false,
+              repo,
+              logId,
+              workflowId,
+              depth: 0,
             });
           })
         );
@@ -807,7 +829,10 @@ export class WorkflowService implements IWorkflowService {
     node: WorkflowNode;
     nodeId: string;
     nodeOutputs: Record<string, NodeResult>;
-    workflow: { variables: Record<string, unknown>; edges: { source: string; target: string; sourceHandle?: string }[] };
+    workflow: {
+      variables: Record<string, unknown>;
+      edges: { source: string; target: string; sourceHandle?: string }[];
+    };
     nodeMap: Map<string, WorkflowNode>;
     userId: string;
     toolService: IToolService;
@@ -820,23 +845,42 @@ export class WorkflowService implements IWorkflowService {
     depth: number;
   }): Promise<NodeResult> {
     const {
-      node, nodeId, nodeOutputs, workflow, nodeMap: _nodeMap, userId, toolService,
-      abortSignal, onProgress, dryRun, repo, logId, workflowId, depth,
+      node,
+      nodeId,
+      nodeOutputs,
+      workflow,
+      nodeMap: _nodeMap,
+      userId,
+      toolService,
+      abortSignal,
+      onProgress,
+      dryRun,
+      repo,
+      logId,
+      workflowId,
+      depth,
     } = ctx;
     void _nodeMap; // Used by callers for forEach context; not needed in dispatch
 
     // ── llmNode ──
     if (node.type === 'llmNode') {
-      onProgress?.({ type: 'node_start', nodeId, toolName: `llm:${(node.data as LlmNodeData).provider}` });
+      onProgress?.({
+        type: 'node_start',
+        nodeId,
+        toolName: `llm:${(node.data as LlmNodeData).provider}`,
+      });
       if (dryRun) {
         const args = resolveTemplates(
           { userMessage: (node.data as LlmNodeData).userMessage },
-          nodeOutputs, workflow.variables
+          nodeOutputs,
+          workflow.variables
         );
         return dryRunResult(node, args);
       }
       return await this.executeWithRetryAndTimeout(
-        node, () => executeLlmNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        () => executeLlmNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -844,7 +888,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'conditionNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'condition' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeConditionNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeConditionNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -853,7 +899,9 @@ export class WorkflowService implements IWorkflowService {
       const cd = node.data as CodeNodeData;
       onProgress?.({ type: 'node_start', nodeId, toolName: `code:${cd.language}` });
       return await this.executeWithRetryAndTimeout(
-        node, () => executeCodeNode(node, nodeOutputs, workflow.variables, userId, toolService), onProgress
+        node,
+        () => executeCodeNode(node, nodeOutputs, workflow.variables, userId, toolService),
+        onProgress
       );
     }
 
@@ -861,7 +909,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'transformerNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'transformer' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeTransformerNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeTransformerNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -874,12 +924,15 @@ export class WorkflowService implements IWorkflowService {
             url: (node.data as unknown as Record<string, unknown>).url,
             method: (node.data as unknown as Record<string, unknown>).method,
           },
-          nodeOutputs, workflow.variables
+          nodeOutputs,
+          workflow.variables
         );
         return dryRunResult(node, args);
       }
       return await this.executeWithRetryAndTimeout(
-        node, () => executeHttpRequestNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        () => executeHttpRequestNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -893,7 +946,9 @@ export class WorkflowService implements IWorkflowService {
         });
       }
       return await this.executeWithRetryAndTimeout(
-        node, () => executeDelayNode(node, nodeOutputs, workflow.variables, abortSignal), onProgress
+        node,
+        () => executeDelayNode(node, nodeOutputs, workflow.variables, abortSignal),
+        onProgress
       );
     }
 
@@ -901,7 +956,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'switchNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'switch' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeSwitchNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeSwitchNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -911,7 +968,8 @@ export class WorkflowService implements IWorkflowService {
       if (dryRun) {
         const args = resolveTemplates(
           { message: (node.data as unknown as Record<string, unknown>).message },
-          nodeOutputs, workflow.variables
+          nodeOutputs,
+          workflow.variables
         );
         return dryRunResult(node, {
           ...args,
@@ -919,7 +977,9 @@ export class WorkflowService implements IWorkflowService {
         });
       }
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeNotificationNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeNotificationNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -927,7 +987,8 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'parallelNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'parallel' });
       const parallelStart = Date.now();
-      const branchCount = ((node.data as unknown as Record<string, unknown>).branchCount as number) || 2;
+      const branchCount =
+        ((node.data as unknown as Record<string, unknown>).branchCount as number) || 2;
 
       if (dryRun) return dryRunResult(node, { branchCount });
 
@@ -946,18 +1007,26 @@ export class WorkflowService implements IWorkflowService {
 
         log.info('Parallel branching', { nodeId, branchCount, targets: allTargetNodeIds });
         const result: NodeResult = {
-          nodeId, status: 'success',
+          nodeId,
+          status: 'success',
           output: { branches: branchResults, branchCount },
           durationMs: Date.now() - parallelStart,
           startedAt: new Date(parallelStart).toISOString(),
           completedAt: new Date().toISOString(),
         };
         nodeOutputs[nodeId] = result;
-        onProgress?.({ type: 'node_complete', nodeId, status: 'success', output: result.output, durationMs: result.durationMs });
+        onProgress?.({
+          type: 'node_complete',
+          nodeId,
+          status: 'success',
+          output: result.output,
+          durationMs: result.durationMs,
+        });
         return result;
       } catch (error) {
         return {
-          nodeId, status: 'error' as const,
+          nodeId,
+          status: 'error' as const,
           error: getErrorMessage(error, 'Parallel execution failed'),
           startedAt: new Date(parallelStart).toISOString(),
           completedAt: new Date().toISOString(),
@@ -969,9 +1038,13 @@ export class WorkflowService implements IWorkflowService {
     // ── mergeNode ──
     if (node.type === 'mergeNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'merge' });
-      const incomingNodeIds = workflow.edges.filter((e) => e.target === nodeId).map((e) => e.source);
+      const incomingNodeIds = workflow.edges
+        .filter((e) => e.target === nodeId)
+        .map((e) => e.source);
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds), onProgress
+        node,
+        async () => executeMergeNode(node, nodeOutputs, workflow.variables, incomingNodeIds),
+        onProgress
       );
     }
 
@@ -979,7 +1052,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'dataStoreNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'dataStore' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeDataStoreNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeDataStoreNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -987,7 +1062,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'schemaValidatorNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'schemaValidator' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeSchemaValidatorNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeSchemaValidatorNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -995,7 +1072,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'filterNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'filter' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeFilterNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeFilterNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -1003,7 +1082,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'mapNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'map' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeMapNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeMapNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -1011,7 +1092,9 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'aggregateNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'aggregate' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeAggregateNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeAggregateNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
@@ -1019,15 +1102,21 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'webhookResponseNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'webhookResponse' });
       return await this.executeWithRetryAndTimeout(
-        node, async () => executeWebhookResponseNode(node, nodeOutputs, workflow.variables), onProgress
+        node,
+        async () => executeWebhookResponseNode(node, nodeOutputs, workflow.variables),
+        onProgress
       );
     }
 
     // ── stickyNoteNode ──
     if (node.type === 'stickyNoteNode') {
       return {
-        nodeId, status: 'skipped' as const, output: null,
-        startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), durationMs: 0,
+        nodeId,
+        status: 'skipped' as const,
+        output: null,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        durationMs: 0,
       };
     }
 
@@ -1044,7 +1133,8 @@ export class WorkflowService implements IWorkflowService {
       }
 
       const approvalRepo = createWorkflowApprovalsRepository(userId);
-      const timeoutMin = typeof apData.timeoutMinutes === 'number' ? apData.timeoutMinutes : undefined;
+      const timeoutMin =
+        typeof apData.timeoutMinutes === 'number' ? apData.timeoutMinutes : undefined;
       const approval = await approvalRepo.create({
         workflowLogId: logId,
         workflowId,
@@ -1059,14 +1149,20 @@ export class WorkflowService implements IWorkflowService {
       });
 
       const approvalResult: NodeResult = {
-        nodeId, status: 'running',
+        nodeId,
+        status: 'running',
         output: { approvalId: approval.id, status: 'awaiting_approval' },
         startedAt: new Date().toISOString(),
       };
       nodeOutputs[nodeId] = approvalResult;
 
       await repo.updateLog(logId, { status: 'awaiting_approval', nodeResults: nodeOutputs });
-      onProgress?.({ type: 'node_complete', nodeId, status: 'running', output: approvalResult.output });
+      onProgress?.({
+        type: 'node_complete',
+        nodeId,
+        status: 'running',
+        output: approvalResult.output,
+      });
       onProgress?.({ type: 'done', logId, logStatus: 'awaiting_approval' });
 
       throw new ApprovalPauseError(approval.id);
@@ -1077,23 +1173,42 @@ export class WorkflowService implements IWorkflowService {
       const swData = node.data as unknown as Record<string, unknown>;
       const subWorkflowId = swData.subWorkflowId as string | undefined;
       onProgress?.({
-        type: 'node_start', nodeId,
+        type: 'node_start',
+        nodeId,
         toolName: `subWorkflow:${swData.subWorkflowName ?? subWorkflowId ?? 'unknown'}`,
       });
 
       if (!subWorkflowId) {
-        return { nodeId, status: 'error' as const, error: 'Sub-workflow node has no target workflow configured', startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), durationMs: 0 };
+        return {
+          nodeId,
+          status: 'error' as const,
+          error: 'Sub-workflow node has no target workflow configured',
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 0,
+        };
       }
 
       const nodeMaxDepth = typeof swData.maxDepth === 'number' ? swData.maxDepth : 5;
       if (depth >= nodeMaxDepth) {
-        return { nodeId, status: 'error' as const, error: `Max sub-workflow depth ${nodeMaxDepth} exceeded (current depth: ${depth})`, startedAt: new Date().toISOString(), completedAt: new Date().toISOString(), durationMs: 0 };
+        return {
+          nodeId,
+          status: 'error' as const,
+          error: `Max sub-workflow depth ${nodeMaxDepth} exceeded (current depth: ${depth})`,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 0,
+        };
       }
 
       if (dryRun) {
         const inputMapping = (swData.inputMapping ?? {}) as Record<string, string>;
         const resolvedMapping = resolveTemplates(inputMapping, nodeOutputs, workflow.variables);
-        return dryRunResult(node, { subWorkflowId, inputMapping: resolvedMapping, depth: depth + 1 });
+        return dryRunResult(node, {
+          subWorkflowId,
+          inputMapping: resolvedMapping,
+          depth: depth + 1,
+        });
       }
 
       return await this.executeWithRetryAndTimeout(
@@ -1101,30 +1216,59 @@ export class WorkflowService implements IWorkflowService {
         async () => {
           const startTime = Date.now();
           const inputMapping = (swData.inputMapping ?? {}) as Record<string, string>;
-          const subVars = resolveTemplates(inputMapping, nodeOutputs, workflow.variables) as Record<string, unknown>;
+          const subVars = resolveTemplates(inputMapping, nodeOutputs, workflow.variables) as Record<
+            string,
+            unknown
+          >;
 
           const subRepo = createWorkflowsRepository(userId);
           const subWorkflow = await subRepo.get(subWorkflowId);
           if (!subWorkflow) {
-            return { nodeId, status: 'error' as const, error: `Sub-workflow ${subWorkflowId} not found`, startedAt: new Date(startTime).toISOString(), completedAt: new Date().toISOString(), durationMs: Date.now() - startTime };
+            return {
+              nodeId,
+              status: 'error' as const,
+              error: `Sub-workflow ${subWorkflowId} not found`,
+              startedAt: new Date(startTime).toISOString(),
+              completedAt: new Date().toISOString(),
+              durationMs: Date.now() - startTime,
+            };
           }
           if (subWorkflow.userId && subWorkflow.userId !== userId) {
-            return { nodeId, status: 'error' as const, error: `Sub-workflow ${subWorkflowId} belongs to a different user`, startedAt: new Date(startTime).toISOString(), completedAt: new Date().toISOString(), durationMs: Date.now() - startTime };
+            return {
+              nodeId,
+              status: 'error' as const,
+              error: `Sub-workflow ${subWorkflowId} belongs to a different user`,
+              startedAt: new Date(startTime).toISOString(),
+              completedAt: new Date().toISOString(),
+              durationMs: Date.now() - startTime,
+            };
           }
           if (abortSignal.aborted) {
-            return { nodeId, status: 'error' as const, error: 'Workflow execution cancelled', startedAt: new Date(startTime).toISOString(), completedAt: new Date().toISOString(), durationMs: Date.now() - startTime };
+            return {
+              nodeId,
+              status: 'error' as const,
+              error: 'Workflow execution cancelled',
+              startedAt: new Date(startTime).toISOString(),
+              completedAt: new Date().toISOString(),
+              durationMs: Date.now() - startTime,
+            };
           }
 
           const mergedVars = { ...subWorkflow.variables, ...subVars };
           const origVars = subWorkflow.variables;
           subWorkflow.variables = mergedVars;
 
-          const onParentAbort = () => { this.cancelExecution(subWorkflowId); };
+          const onParentAbort = () => {
+            this.cancelExecution(subWorkflowId);
+          };
           abortSignal.addEventListener('abort', onParentAbort, { once: true });
 
           let subLog;
           try {
-            subLog = await this.executeWorkflow(subWorkflowId, userId, undefined, { dryRun, depth: depth + 1 });
+            subLog = await this.executeWorkflow(subWorkflowId, userId, undefined, {
+              dryRun,
+              depth: depth + 1,
+            });
           } finally {
             abortSignal.removeEventListener('abort', onParentAbort);
           }
@@ -1135,7 +1279,8 @@ export class WorkflowService implements IWorkflowService {
           const successResults = Object.values(subResults).filter(
             (r) => r.status === 'success' && r.output !== undefined
           );
-          const lastOutput = successResults.length > 0 ? successResults[successResults.length - 1]!.output : null;
+          const lastOutput =
+            successResults.length > 0 ? successResults[successResults.length - 1]!.output : null;
 
           return {
             nodeId,
@@ -1160,7 +1305,9 @@ export class WorkflowService implements IWorkflowService {
       return dryRunResult(node, args);
     }
     return await this.executeWithRetryAndTimeout(
-      node, () => executeNode(node, nodeOutputs, workflow.variables, userId, toolService), onProgress
+      node,
+      () => executeNode(node, nodeOutputs, workflow.variables, userId, toolService),
+      onProgress
     );
   }
 

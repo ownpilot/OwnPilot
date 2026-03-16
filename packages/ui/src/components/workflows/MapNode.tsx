@@ -92,7 +92,13 @@ function MapNodeComponent({ data, selected }: NodeProps<MapNodeType>) {
           <span className="text-lg font-bold font-mono">[</span>
           <span className="text-[9px] text-sky-500 dark:text-sky-400 italic">item</span>
           <span className="text-lg font-bold font-mono">]</span>
-          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            className="w-4 h-4"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M3 8h10M10 5l3 3-3 3" />
           </svg>
           <span className="text-lg font-bold font-mono">[</span>

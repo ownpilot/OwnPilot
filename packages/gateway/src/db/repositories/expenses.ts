@@ -173,14 +173,38 @@ export class ExpensesRepository extends BaseRepository {
     const values: unknown[] = [];
     let paramIdx = 1;
 
-    if (input.date !== undefined) { fields.push(`date = $${paramIdx++}`); values.push(input.date); }
-    if (input.amount !== undefined) { fields.push(`amount = $${paramIdx++}`); values.push(input.amount); }
-    if (input.currency !== undefined) { fields.push(`currency = $${paramIdx++}`); values.push(input.currency); }
-    if (input.category !== undefined) { fields.push(`category = $${paramIdx++}`); values.push(input.category); }
-    if (input.description !== undefined) { fields.push(`description = $${paramIdx++}`); values.push(input.description); }
-    if (input.paymentMethod !== undefined) { fields.push(`payment_method = $${paramIdx++}`); values.push(input.paymentMethod); }
-    if (input.tags !== undefined) { fields.push(`tags = $${paramIdx++}`); values.push(JSON.stringify(input.tags)); }
-    if (input.notes !== undefined) { fields.push(`notes = $${paramIdx++}`); values.push(input.notes); }
+    if (input.date !== undefined) {
+      fields.push(`date = $${paramIdx++}`);
+      values.push(input.date);
+    }
+    if (input.amount !== undefined) {
+      fields.push(`amount = $${paramIdx++}`);
+      values.push(input.amount);
+    }
+    if (input.currency !== undefined) {
+      fields.push(`currency = $${paramIdx++}`);
+      values.push(input.currency);
+    }
+    if (input.category !== undefined) {
+      fields.push(`category = $${paramIdx++}`);
+      values.push(input.category);
+    }
+    if (input.description !== undefined) {
+      fields.push(`description = $${paramIdx++}`);
+      values.push(input.description);
+    }
+    if (input.paymentMethod !== undefined) {
+      fields.push(`payment_method = $${paramIdx++}`);
+      values.push(input.paymentMethod);
+    }
+    if (input.tags !== undefined) {
+      fields.push(`tags = $${paramIdx++}`);
+      values.push(JSON.stringify(input.tags));
+    }
+    if (input.notes !== undefined) {
+      fields.push(`notes = $${paramIdx++}`);
+      values.push(input.notes);
+    }
 
     if (fields.length === 0) return this.get(id);
 
@@ -195,10 +219,10 @@ export class ExpensesRepository extends BaseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await this.execute(
-      `DELETE FROM expenses WHERE id = $1 AND user_id = $2`,
-      [id, this.userId]
-    );
+    const result = await this.execute(`DELETE FROM expenses WHERE id = $1 AND user_id = $2`, [
+      id,
+      this.userId,
+    ]);
     return ((result as { changes?: number })?.changes ?? 0) > 0;
   }
 
@@ -207,12 +231,30 @@ export class ExpensesRepository extends BaseRepository {
     const params: unknown[] = [this.userId];
     let paramIdx = 2;
 
-    if (query.dateFrom) { conditions.push(`date >= $${paramIdx++}`); params.push(query.dateFrom); }
-    if (query.dateTo) { conditions.push(`date <= $${paramIdx++}`); params.push(query.dateTo); }
-    if (query.category) { conditions.push(`category = $${paramIdx++}`); params.push(query.category); }
-    if (query.minAmount !== undefined) { conditions.push(`amount >= $${paramIdx++}`); params.push(query.minAmount); }
-    if (query.maxAmount !== undefined) { conditions.push(`amount <= $${paramIdx++}`); params.push(query.maxAmount); }
-    if (query.search) { conditions.push(`description ILIKE $${paramIdx++}`); params.push(`%${query.search}%`); }
+    if (query.dateFrom) {
+      conditions.push(`date >= $${paramIdx++}`);
+      params.push(query.dateFrom);
+    }
+    if (query.dateTo) {
+      conditions.push(`date <= $${paramIdx++}`);
+      params.push(query.dateTo);
+    }
+    if (query.category) {
+      conditions.push(`category = $${paramIdx++}`);
+      params.push(query.category);
+    }
+    if (query.minAmount !== undefined) {
+      conditions.push(`amount >= $${paramIdx++}`);
+      params.push(query.minAmount);
+    }
+    if (query.maxAmount !== undefined) {
+      conditions.push(`amount <= $${paramIdx++}`);
+      params.push(query.maxAmount);
+    }
+    if (query.search) {
+      conditions.push(`description ILIKE $${paramIdx++}`);
+      params.push(`%${query.search}%`);
+    }
 
     const limit = query.limit ?? 100;
     const offset = query.offset ?? 0;
@@ -229,9 +271,18 @@ export class ExpensesRepository extends BaseRepository {
     const params: unknown[] = [this.userId];
     let paramIdx = 2;
 
-    if (query?.dateFrom) { conditions.push(`date >= $${paramIdx++}`); params.push(query.dateFrom); }
-    if (query?.dateTo) { conditions.push(`date <= $${paramIdx++}`); params.push(query.dateTo); }
-    if (query?.category) { conditions.push(`category = $${paramIdx++}`); params.push(query.category); }
+    if (query?.dateFrom) {
+      conditions.push(`date >= $${paramIdx++}`);
+      params.push(query.dateFrom);
+    }
+    if (query?.dateTo) {
+      conditions.push(`date <= $${paramIdx++}`);
+      params.push(query.dateTo);
+    }
+    if (query?.category) {
+      conditions.push(`category = $${paramIdx++}`);
+      params.push(query.category);
+    }
 
     const row = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM expenses WHERE ${conditions.join(' AND ')}`,
@@ -240,7 +291,10 @@ export class ExpensesRepository extends BaseRepository {
     return parseInt(row?.count ?? '0', 10);
   }
 
-  async getSummary(dateFrom?: string, dateTo?: string): Promise<{
+  async getSummary(
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<{
     totalAmount: number;
     count: number;
     byCategory: Record<string, { amount: number; count: number }>;
@@ -250,8 +304,14 @@ export class ExpensesRepository extends BaseRepository {
     const params: unknown[] = [this.userId];
     let paramIdx = 2;
 
-    if (dateFrom) { conditions.push(`date >= $${paramIdx++}`); params.push(dateFrom); }
-    if (dateTo) { conditions.push(`date <= $${paramIdx++}`); params.push(dateTo); }
+    if (dateFrom) {
+      conditions.push(`date >= $${paramIdx++}`);
+      params.push(dateFrom);
+    }
+    if (dateTo) {
+      conditions.push(`date <= $${paramIdx++}`);
+      params.push(dateTo);
+    }
 
     const where = conditions.join(' AND ');
 

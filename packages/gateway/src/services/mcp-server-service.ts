@@ -59,8 +59,12 @@ function startSessionCleanup(): void {
       if (now - lastActivity > SESSION_MAX_AGE_MS) {
         const session = sessions.get(sid);
         if (session) {
-          session.server.close().catch((e) => log.debug('MCP session server close error', { error: String(e) }));
-          session.transport.close().catch((e) => log.debug('MCP session transport close error', { error: String(e) }));
+          session.server
+            .close()
+            .catch((e) => log.debug('MCP session server close error', { error: String(e) }));
+          session.transport
+            .close()
+            .catch((e) => log.debug('MCP session transport close error', { error: String(e) }));
         }
         sessions.delete(sid);
         sessionLastActivity.delete(sid);
@@ -389,8 +393,12 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
 export function invalidateMcpServer(): void {
   // Close all sessions and their servers
   for (const [sid, session] of sessions) {
-    session.server.close().catch((e) => log.debug('MCP server close error on invalidate', { error: String(e) }));
-    session.transport.close().catch((e) => log.debug('MCP transport close error on invalidate', { error: String(e) }));
+    session.server
+      .close()
+      .catch((e) => log.debug('MCP server close error on invalidate', { error: String(e) }));
+    session.transport
+      .close()
+      .catch((e) => log.debug('MCP transport close error on invalidate', { error: String(e) }));
     sessions.delete(sid);
   }
   sessionLastActivity.clear();

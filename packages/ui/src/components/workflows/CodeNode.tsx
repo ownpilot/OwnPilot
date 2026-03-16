@@ -49,7 +49,11 @@ function CodeNodeComponent({ data, selected }: NodeProps<CodeNodeType>) {
   const style = statusStyles[status];
   const StatusIcon = statusIcons[status];
   const lang = (data.language as string) ?? 'javascript';
-  const langConf = languageConfig[lang] ?? { label: lang.toUpperCase(), color: 'text-gray-300', bg: 'bg-gray-500/20' };
+  const langConf = languageConfig[lang] ?? {
+    label: lang.toUpperCase(),
+    color: 'text-gray-300',
+    bg: 'bg-gray-500/20',
+  };
   const code = (data.code as string) ?? '';
 
   // First 2 non-empty lines of code for preview

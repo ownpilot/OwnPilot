@@ -107,7 +107,10 @@ export class BackgroundAgentRunner {
         output: pipelineResult.content,
         outputMessage: pipelineResult.content,
         tokensUsed: pipelineResult.usage
-          ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
+          ? {
+              prompt: pipelineResult.usage.promptTokens,
+              completion: pipelineResult.usage.completionTokens,
+            }
           : undefined,
         costUsd: pipelineResult.costUsd,
         durationMs: pipelineResult.durationMs,

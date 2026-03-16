@@ -13,16 +13,7 @@ import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
 import { ChannelSetupModal } from '../components/ChannelSetupModal';
 import { PageHomeTab } from '../components/PageHomeTab';
-import {
-  Plus,
-  Activity,
-  Send,
-  Home,
-  MessageSquare,
-  Globe,
-  Inbox,
-  Bot,
-} from '../components/icons';
+import { Plus, Activity, Send, Home, MessageSquare, Globe, Inbox, Bot } from '../components/icons';
 import type { Channel, ChannelUser, ChannelStats } from '../api/types';
 import { ChannelDetail, PairingBanner } from './channels-detail';
 import { timeAgo, getStatusColor, getStatusBg, StatusIcon, PlatformIcon } from './channels-helpers';

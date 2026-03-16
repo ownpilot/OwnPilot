@@ -190,7 +190,9 @@ function ToolNodeComponent({ data, selected }: NodeProps<ToolNodeType>) {
         <div className="px-3 py-2 flex-1 min-w-0">
           {/* Header: source icon + label + status */}
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${cfg.strip}/20`}>
+            <div
+              className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${cfg.strip}/20`}
+            >
               <SourceIcon className={`w-3 h-3 ${cfg.iconColor}`} />
             </div>
             <span className="font-medium text-sm text-text-primary dark:text-dark-text-primary truncate flex-1">
@@ -213,7 +215,9 @@ function ToolNodeComponent({ data, selected }: NodeProps<ToolNodeType>) {
 
           {/* Source badge + server/plugin name */}
           <div className="flex items-center gap-1 mt-1.5">
-            <span className={`inline-block px-1.5 py-0.5 text-[8px] font-bold rounded uppercase tracking-wider ${cfg.badge}`}>
+            <span
+              className={`inline-block px-1.5 py-0.5 text-[8px] font-bold rounded uppercase tracking-wider ${cfg.badge}`}
+            >
               {cfg.label}
             </span>
             {serverName && (
@@ -234,7 +238,9 @@ function ToolNodeComponent({ data, selected }: NodeProps<ToolNodeType>) {
           {/* Args count badge + description row */}
           <div className="flex items-center gap-1.5 mt-1">
             {argsCount > 0 && (
-              <span className={`inline-block px-1.5 py-0.5 text-[9px] font-semibold rounded ${cfg.badge}`}>
+              <span
+                className={`inline-block px-1.5 py-0.5 text-[9px] font-semibold rounded ${cfg.badge}`}
+              >
                 {argsCount} arg{argsCount > 1 ? 's' : ''}
               </span>
             )}

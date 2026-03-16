@@ -113,7 +113,14 @@ function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
           label: d.label,
           provider: d.provider,
           model: d.model,
-          ...pickDefined(d, ['systemPrompt', 'userMessage', 'temperature', 'maxTokens', 'responseFormat', 'conversationMessages']),
+          ...pickDefined(d, [
+            'systemPrompt',
+            'userMessage',
+            'temperature',
+            'maxTokens',
+            'responseFormat',
+            'conversationMessages',
+          ]),
         };
       }
       if (n.type === 'conditionNode') {
@@ -732,7 +739,9 @@ export function convertDefinitionToReactFlow(
           ...(def.temperature != null ? { temperature: def.temperature } : {}),
           ...(def.maxTokens != null ? { maxTokens: def.maxTokens } : {}),
           ...(def.responseFormat != null ? { responseFormat: def.responseFormat } : {}),
-          ...(def.conversationMessages != null ? { conversationMessages: def.conversationMessages } : {}),
+          ...(def.conversationMessages != null
+            ? { conversationMessages: def.conversationMessages }
+            : {}),
         },
       };
     }

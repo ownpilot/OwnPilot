@@ -973,7 +973,10 @@ describe('Personal Data Routes', () => {
       mockContactsRepo.getFavorites.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }]);
       mockContactsRepo.getUpcomingBirthdays.mockResolvedValue([{ id: 'c3' }]);
       mockHabitsRepo.getTodayProgress.mockResolvedValue({
-        total: 3, completed: 2, percentage: 67, habits: [],
+        total: 3,
+        completed: 2,
+        percentage: 67,
+        habits: [],
       });
       mockHabitsRepo.list.mockResolvedValue([
         { id: 'h1', streakCurrent: 5 },

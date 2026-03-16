@@ -23,7 +23,10 @@ export const IS_WIN = platform() === 'win32';
  * Returns { prompt, systemPrompt } — systemPrompt is extracted separately
  * so it can be passed via CLI flags (e.g. claude --system-prompt).
  */
-export function messagesToPrompt(messages: readonly Message[]): { prompt: string; systemPrompt: string } {
+export function messagesToPrompt(messages: readonly Message[]): {
+  prompt: string;
+  systemPrompt: string;
+} {
   const parts: string[] = [];
   let systemPrompt = '';
 
@@ -121,14 +124,28 @@ export function extractJsonObjects(stdout: string): string[] {
     }
 
     if (inString) {
-      if (escaped) { escaped = false; continue; }
-      if (char === '\\') { escaped = true; continue; }
-      if (char === '"') { inString = false; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
       continue;
     }
 
-    if (char === '"') { inString = true; continue; }
-    if (char === '{') { depth += 1; continue; }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
     if (char === '}') {
       depth -= 1;
       if (depth === 0) {
@@ -235,7 +252,11 @@ export function inlineSystemPrompt(prompt: string, systemPrompt?: string): strin
   return `<system_prompt>\n${systemPrompt}\n</system_prompt>\n\n${prompt}`;
 }
 
-export function injectWorkspaceGuidance(binary: CliChatBinary, prompt: string, cwd?: string): string {
+export function injectWorkspaceGuidance(
+  binary: CliChatBinary,
+  prompt: string,
+  cwd?: string
+): string {
   if (!cwd) return prompt;
 
   const common = [

@@ -62,8 +62,7 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeType>) {
   // Determine if the duration is large (> 60 minutes)
   const numericDuration = parseFloat(duration) || 0;
   const isLargeDuration =
-    (unit === 'hours' && numericDuration >= 1) ||
-    (unit === 'minutes' && numericDuration > 60);
+    (unit === 'hours' && numericDuration >= 1) || (unit === 'minutes' && numericDuration > 60);
 
   return (
     <div

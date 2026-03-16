@@ -13,7 +13,7 @@ const sampleExpense = {
   id: 'exp-1',
   userId: 'user-1',
   date: '2026-03-15',
-  amount: 42.50,
+  amount: 42.5,
   currency: 'TRY',
   category: 'food',
   description: 'Coffee',
@@ -30,7 +30,10 @@ const mockRepo = {
   count: vi.fn(async () => 1),
   get: vi.fn(async () => sampleExpense),
   create: vi.fn(async (input: Record<string, unknown>) => ({ ...sampleExpense, ...input })),
-  update: vi.fn(async (_id: string, input: Record<string, unknown>) => ({ ...sampleExpense, ...input })),
+  update: vi.fn(async (_id: string, input: Record<string, unknown>) => ({
+    ...sampleExpense,
+    ...input,
+  })),
   delete: vi.fn(async () => true),
   getSummary: vi.fn(async () => ({
     totalAmount: 150,
@@ -88,7 +91,9 @@ describe('Expenses Routes', () => {
 
     it('passes filter params to repo', async () => {
       const app = createApp();
-      await app.request('/expenses?startDate=2026-01-01&endDate=2026-12-31&category=food&search=coffee');
+      await app.request(
+        '/expenses?startDate=2026-01-01&endDate=2026-12-31&category=food&search=coffee'
+      );
       expect(mockRepo.list).toHaveBeenCalledWith(
         expect.objectContaining({
           dateFrom: '2026-01-01',
@@ -182,7 +187,10 @@ describe('Expenses Routes', () => {
         body: JSON.stringify({ amount: 99 }),
       });
       expect(res.status).toBe(200);
-      expect(mockRepo.update).toHaveBeenCalledWith('exp-1', expect.objectContaining({ amount: 99 }));
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        'exp-1',
+        expect.objectContaining({ amount: 99 })
+      );
     });
 
     it('returns 404 for missing', async () => {

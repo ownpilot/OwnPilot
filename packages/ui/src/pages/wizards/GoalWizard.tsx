@@ -50,9 +50,12 @@ export function GoalWizard({ onComplete, onCancel }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const aiAbortRef = useRef<AbortController | null>(null);
-  const [result, setResult] = useState<{ ok: boolean; goalId?: string; error?: string; stepsError?: boolean } | null>(
-    null
-  );
+  const [result, setResult] = useState<{
+    ok: boolean;
+    goalId?: string;
+    error?: string;
+    stepsError?: boolean;
+  } | null>(null);
 
   const canGoNext = useMemo(() => {
     switch (step) {
@@ -393,7 +396,8 @@ Return ONLY the JSON array, nothing else.`;
               </p>
               {result.stepsError && (
                 <p className="text-xs text-warning mt-2">
-                  Goal created but some steps could not be saved. You can add them manually in the Goals page.
+                  Goal created but some steps could not be saved. You can add them manually in the
+                  Goals page.
                 </p>
               )}
             </>

@@ -24,9 +24,8 @@ vi.mock('../services/log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
-const { runPostChatProcessing, waitForPendingProcessing } = await import(
-  './chat-post-processor.js'
-);
+const { runPostChatProcessing, waitForPendingProcessing } =
+  await import('./chat-post-processor.js');
 
 // ── Tests ──
 
@@ -82,7 +81,13 @@ describe('waitForPendingProcessing', () => {
   it('waits for all in-flight tasks', async () => {
     let completed = false;
     mockExtractMemories.mockImplementation(
-      () => new Promise((r) => setTimeout(() => { completed = true; r(0); }, 10))
+      () =>
+        new Promise((r) =>
+          setTimeout(() => {
+            completed = true;
+            r(0);
+          }, 10)
+        )
     );
 
     runPostChatProcessing('user-1', 'msg', 'resp');

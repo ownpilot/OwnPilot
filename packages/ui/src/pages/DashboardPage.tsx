@@ -239,9 +239,10 @@ export function DashboardPage() {
               {
                 label: 'Expenses',
                 value: expenses.total,
-                sub: expenses.thisMonth > 0
-                  ? `${expenses.thisMonth.toFixed(0)} this month`
-                  : undefined,
+                sub:
+                  expenses.thisMonth > 0
+                    ? `${expenses.thisMonth.toFixed(0)} this month`
+                    : undefined,
                 icon: Receipt,
                 color: 'text-orange-500',
                 bgColor: 'bg-orange-500/10',

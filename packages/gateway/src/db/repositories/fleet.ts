@@ -171,10 +171,14 @@ function rowToWorkerResult(row: WorkerHistoryRow): FleetWorkerResult {
     taskId: row.task_id ?? undefined,
     success: row.success,
     output: row.output,
-    toolCalls: parseJsonField<Array<{ tool?: string; name: string; args: unknown; result: unknown }>>(
-      row.tool_calls,
-      []
-    ).map((tc) => ({ tool: tc.tool ?? tc.name, name: tc.name, args: tc.args, result: tc.result })),
+    toolCalls: parseJsonField<
+      Array<{ tool?: string; name: string; args: unknown; result: unknown }>
+    >(row.tool_calls, []).map((tc) => ({
+      tool: tc.tool ?? tc.name,
+      name: tc.name,
+      args: tc.args,
+      result: tc.result,
+    })),
     tokensUsed: row.tokens_used
       ? (parseJsonFieldNullable<{ prompt: number; completion: number }>(row.tokens_used) ??
         undefined)

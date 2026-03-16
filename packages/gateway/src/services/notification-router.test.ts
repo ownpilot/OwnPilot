@@ -34,6 +34,16 @@ vi.mock('./log.js', () => ({
   }),
 }));
 
+const settingsStore = new Map<string, string>();
+vi.mock('../db/repositories/index.js', () => ({
+  settingsRepo: {
+    get: (key: string) => settingsStore.get(key) ?? null,
+    set: async (key: string, value: string) => {
+      settingsStore.set(key, value);
+    },
+  },
+}));
+
 // ============================================================================
 // Import after mocks
 // ============================================================================
@@ -69,6 +79,7 @@ describe('NotificationRouter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    settingsStore.clear();
     resetNotificationRouter();
     router = new NotificationRouter();
     mockChannelService.listChannels.mockReturnValue([]);
@@ -271,9 +282,7 @@ describe('NotificationRouter', () => {
         makeChannel('telegram'),
         makeChannel('whatsapp'),
       ]);
-      mockChannelService.send
-        .mockResolvedValueOnce('ok')
-        .mockRejectedValueOnce(new Error('Fail'));
+      mockChannelService.send.mockResolvedValueOnce('ok').mockRejectedValueOnce(new Error('Fail'));
 
       const result = await router.broadcast(makeNotification());
 

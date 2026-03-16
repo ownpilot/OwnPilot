@@ -1,24 +1,43 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
-import {
-  Pause,
-  RotateCcw,
-  Target,
-  CheckCircle2,
-  Zap,
-} from '../components/icons';
+import { Pause, RotateCcw, Target, CheckCircle2, Zap } from '../components/icons';
 import { useToast } from '../components/ToastProvider';
 import { useDebouncedCallback } from '../hooks';
-import { pomodoroApi, type PomodoroSession, type PomodoroStats } from '../api/endpoints/personal-data';
+import {
+  pomodoroApi,
+  type PomodoroSession,
+  type PomodoroStats,
+} from '../api/endpoints/personal-data';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const SESSION_TYPES = [
-  { type: 'work', label: 'Focus', icon: Target, color: 'text-primary', bg: 'bg-primary', duration: 25 },
-  { type: 'short_break', label: 'Short Break', icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500', duration: 5 },
-  { type: 'long_break', label: 'Long Break', icon: Pause, color: 'text-violet-500', bg: 'bg-violet-500', duration: 15 },
+  {
+    type: 'work',
+    label: 'Focus',
+    icon: Target,
+    color: 'text-primary',
+    bg: 'bg-primary',
+    duration: 25,
+  },
+  {
+    type: 'short_break',
+    label: 'Short Break',
+    icon: Zap,
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500',
+    duration: 5,
+  },
+  {
+    type: 'long_break',
+    label: 'Long Break',
+    icon: Pause,
+    color: 'text-violet-500',
+    bg: 'bg-violet-500',
+    duration: 15,
+  },
 ] as const;
 
 // ============================================================================
@@ -51,13 +70,22 @@ export function PomodoroPage() {
     try {
       const [sessionRes, statsRes] = await Promise.all([
         pomodoroApi.getSession().catch(() => ({ session: null })),
-        pomodoroApi.getStats().catch(() => ({ completedSessions: 0, totalWorkMinutes: 0, totalBreakMinutes: 0, interruptions: 0 })),
+        pomodoroApi
+          .getStats()
+          .catch(() => ({
+            completedSessions: 0,
+            totalWorkMinutes: 0,
+            totalBreakMinutes: 0,
+            interruptions: 0,
+          })),
       ]);
       setActiveSession(sessionRes.session);
       setStats(statsRes as PomodoroStats);
 
       if (sessionRes.session?.status === 'running') {
-        const elapsed = Math.floor((Date.now() - new Date(sessionRes.session.startedAt).getTime()) / 1000);
+        const elapsed = Math.floor(
+          (Date.now() - new Date(sessionRes.session.startedAt).getTime()) / 1000
+        );
         const total = sessionRes.session.durationMinutes * 60;
         const remaining = Math.max(0, total - elapsed);
         setTimeLeft(remaining);
@@ -96,10 +124,13 @@ export function PomodoroPage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           // Timer complete — auto-complete session
-          pomodoroApi.completeSession(activeSession.id).then(() => {
-            toast.success('Session completed!');
-            fetchState();
-          }).catch(() => {});
+          pomodoroApi
+            .completeSession(activeSession.id)
+            .then(() => {
+              toast.success('Session completed!');
+              fetchState();
+            })
+            .catch(() => {});
           return 0;
         }
         return prev - 1;
@@ -159,7 +190,11 @@ export function PomodoroPage() {
   // ---- Render ----
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full text-text-muted dark:text-dark-text-muted">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full text-text-muted dark:text-dark-text-muted">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -168,15 +203,28 @@ export function PomodoroPage() {
         {/* Timer Circle */}
         <div className="relative flex items-center justify-center">
           <svg className="w-64 h-64 -rotate-90" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" strokeWidth="4"
-              className="text-border dark:text-dark-border" />
+            <circle
+              cx="60"
+              cy="60"
+              r="54"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="text-border dark:text-dark-border"
+            />
             {activeSession?.status === 'running' && (
-              <circle cx="60" cy="60" r="54" fill="none" strokeWidth="4"
+              <circle
+                cx="60"
+                cy="60"
+                r="54"
+                fill="none"
+                strokeWidth="4"
                 strokeDasharray={`${2 * Math.PI * 54}`}
                 strokeDashoffset={`${2 * Math.PI * 54 * (1 - progress / 100)}`}
                 strokeLinecap="round"
                 className={`${activeType?.color ?? 'text-primary'} transition-all duration-1000`}
-                stroke="currentColor" />
+                stroke="currentColor"
+              />
             )}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -184,9 +232,7 @@ export function PomodoroPage() {
               {activeSession?.status === 'running' ? formatTime(timeLeft) : '00:00'}
             </div>
             <div className="text-sm text-text-muted dark:text-dark-text-muted mt-1">
-              {activeSession?.status === 'running'
-                ? activeType?.label ?? 'Session'
-                : 'Ready'}
+              {activeSession?.status === 'running' ? (activeType?.label ?? 'Session') : 'Ready'}
             </div>
             {activeSession?.taskDescription && (
               <div className="text-xs text-text-muted dark:text-dark-text-muted mt-1 max-w-[180px] truncate">
@@ -224,7 +270,9 @@ export function PomodoroPage() {
               >
                 <st.icon className={`w-6 h-6 ${st.color}`} />
                 <span className="text-xs font-medium">{st.label}</span>
-                <span className="text-[10px] text-text-muted dark:text-dark-text-muted">{st.duration} min</span>
+                <span className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                  {st.duration} min
+                </span>
               </button>
             ))}
           </div>
@@ -243,7 +291,9 @@ export function PomodoroPage() {
             </div>
             <div className="text-center">
               <div className="text-xl font-bold text-warning">{stats.interruptions}</div>
-              <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Interrupts</div>
+              <div className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                Interrupts
+              </div>
             </div>
           </div>
         )}

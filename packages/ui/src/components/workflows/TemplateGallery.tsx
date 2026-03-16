@@ -897,7 +897,8 @@ const TEMPLATES: WorkflowTemplate[] = [
           id: 'node_6',
           type: 'notification',
           label: 'Triage Summary',
-          message: 'Issue triage complete for {{variables.owner}}/{{variables.repo}}:\n\n{{node_3.output}}',
+          message:
+            'Issue triage complete for {{variables.owner}}/{{variables.repo}}:\n\n{{node_3.output}}',
           severity: 'info',
           position: { x: 1100, y: 250 },
         },
@@ -1006,8 +1007,7 @@ const TEMPLATES: WorkflowTemplate[] = [
   {
     id: 'scheduled-report',
     name: 'Scheduled Report',
-    description:
-      'Gather data on a schedule, analyze with AI, and post results to a webhook',
+    description: 'Gather data on a schedule, analyze with AI, and post results to a webhook',
     category: 'Scheduling',
     nodeCount: 5,
     definition: {
@@ -1230,8 +1230,7 @@ const TEMPLATES: WorkflowTemplate[] = [
           id: 'node_5',
           type: 'notification',
           label: 'Approved',
-          message:
-            'Your proposal has been approved!\n\nProposal:\n{{node_2.output}}',
+          message: 'Your proposal has been approved!\n\nProposal:\n{{node_2.output}}',
           severity: 'success',
           position: { x: 1100, y: 50 },
         },
@@ -1249,8 +1248,7 @@ const TEMPLATES: WorkflowTemplate[] = [
           tool: 'core.create_memory',
           label: 'Log Decision',
           args: {
-            content:
-              'Proposal decision: {{node_4.output}}. Request: {{node_1.output}}',
+            content: 'Proposal decision: {{node_4.output}}. Request: {{node_1.output}}',
             importance: 6,
           },
           position: { x: 1350, y: 150 },

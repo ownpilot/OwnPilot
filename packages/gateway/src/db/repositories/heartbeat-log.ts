@@ -165,7 +165,10 @@ export class HeartbeatLogRepository extends BaseRepository {
     };
   }
 
-  async getStatsByUser(userId: string, agentId?: string): Promise<{
+  async getStatsByUser(
+    userId: string,
+    agentId?: string
+  ): Promise<{
     totalCycles: number;
     totalCost: number;
     avgDurationMs: number;

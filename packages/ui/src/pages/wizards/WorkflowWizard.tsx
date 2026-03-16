@@ -29,10 +29,41 @@ const WORKFLOW_TEMPLATES = [
     name: 'Daily Summary',
     desc: 'Summarize recent activity and create a daily briefing',
     nodes: [
-      { id: 'node_1', type: 'triggerNode', position: { x: 300, y: 50 }, data: { label: 'Daily Schedule', triggerType: 'schedule', cron: '0 9 * * 1-5' } },
-      { id: 'node_2', type: 'toolNode', position: { x: 300, y: 200 }, data: { label: 'Get Recent Activity', toolName: 'core.get_recent_conversations', toolArgs: {} } },
-      { id: 'node_3', type: 'llmNode', position: { x: 300, y: 350 }, data: { label: 'Summarize', provider: 'default', model: 'default', systemPrompt: 'You are a concise summarizer.', userMessage: 'Summarize the recent activity into a brief daily summary:\n{{node_2.output}}' } },
-      { id: 'node_4', type: 'notificationNode', position: { x: 300, y: 500 }, data: { label: 'Send Summary', message: '{{node_3.output}}', severity: 'info' } },
+      {
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Daily Schedule', triggerType: 'schedule', cron: '0 9 * * 1-5' },
+      },
+      {
+        id: 'node_2',
+        type: 'toolNode',
+        position: { x: 300, y: 200 },
+        data: {
+          label: 'Get Recent Activity',
+          toolName: 'core.get_recent_conversations',
+          toolArgs: {},
+        },
+      },
+      {
+        id: 'node_3',
+        type: 'llmNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Summarize',
+          provider: 'default',
+          model: 'default',
+          systemPrompt: 'You are a concise summarizer.',
+          userMessage:
+            'Summarize the recent activity into a brief daily summary:\n{{node_2.output}}',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'notificationNode',
+        position: { x: 300, y: 500 },
+        data: { label: 'Send Summary', message: '{{node_3.output}}', severity: 'info' },
+      },
     ],
     edges: [
       { source: 'node_1', target: 'node_2' },
@@ -45,10 +76,38 @@ const WORKFLOW_TEMPLATES = [
     name: 'Web Research Pipeline',
     desc: 'Search the web, extract content, and summarize findings',
     nodes: [
-      { id: 'node_1', type: 'triggerNode', position: { x: 300, y: 50 }, data: { label: 'Manual Trigger', triggerType: 'manual' } },
-      { id: 'node_2', type: 'toolNode', position: { x: 300, y: 200 }, data: { label: 'Web Search', toolName: 'core.web_search', toolArgs: {} } },
-      { id: 'node_3', type: 'llmNode', position: { x: 300, y: 350 }, data: { label: 'Analyze & Summarize', provider: 'default', model: 'default', systemPrompt: 'You are a research analyst. Provide comprehensive, well-structured summaries.', userMessage: 'Analyze the search results and create a comprehensive summary:\n{{node_2.output}}' } },
-      { id: 'node_4', type: 'notificationNode', position: { x: 300, y: 500 }, data: { label: 'Report', message: '{{node_3.output}}', severity: 'info' } },
+      {
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Manual Trigger', triggerType: 'manual' },
+      },
+      {
+        id: 'node_2',
+        type: 'toolNode',
+        position: { x: 300, y: 200 },
+        data: { label: 'Web Search', toolName: 'core.web_search', toolArgs: {} },
+      },
+      {
+        id: 'node_3',
+        type: 'llmNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Analyze & Summarize',
+          provider: 'default',
+          model: 'default',
+          systemPrompt:
+            'You are a research analyst. Provide comprehensive, well-structured summaries.',
+          userMessage:
+            'Analyze the search results and create a comprehensive summary:\n{{node_2.output}}',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'notificationNode',
+        position: { x: 300, y: 500 },
+        data: { label: 'Report', message: '{{node_3.output}}', severity: 'info' },
+      },
     ],
     edges: [
       { source: 'node_1', target: 'node_2' },
@@ -61,11 +120,45 @@ const WORKFLOW_TEMPLATES = [
     name: 'API Health Monitor',
     desc: 'Check API endpoints and alert on failures',
     nodes: [
-      { id: 'node_1', type: 'triggerNode', position: { x: 300, y: 50 }, data: { label: 'Every 5 Minutes', triggerType: 'schedule', cron: '*/5 * * * *' } },
-      { id: 'node_2', type: 'httpRequestNode', position: { x: 300, y: 200 }, data: { label: 'Health Check', method: 'GET', url: 'https://api.example.com/health' } },
-      { id: 'node_3', type: 'conditionNode', position: { x: 300, y: 350 }, data: { label: 'Status OK?', expression: 'data.status === 200 || data.statusCode === 200' } },
-      { id: 'node_4', type: 'notificationNode', position: { x: 100, y: 500 }, data: { label: 'Alert: API Down', message: 'API health check failed! Response: {{node_2.output}}', severity: 'error' } },
-      { id: 'node_5', type: 'dataStoreNode', position: { x: 500, y: 500 }, data: { label: 'Log Success', operation: 'set', key: 'last_health_check', value: '{{node_2.output}}' } },
+      {
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Every 5 Minutes', triggerType: 'schedule', cron: '*/5 * * * *' },
+      },
+      {
+        id: 'node_2',
+        type: 'httpRequestNode',
+        position: { x: 300, y: 200 },
+        data: { label: 'Health Check', method: 'GET', url: 'https://api.example.com/health' },
+      },
+      {
+        id: 'node_3',
+        type: 'conditionNode',
+        position: { x: 300, y: 350 },
+        data: { label: 'Status OK?', expression: 'data.status === 200 || data.statusCode === 200' },
+      },
+      {
+        id: 'node_4',
+        type: 'notificationNode',
+        position: { x: 100, y: 500 },
+        data: {
+          label: 'Alert: API Down',
+          message: 'API health check failed! Response: {{node_2.output}}',
+          severity: 'error',
+        },
+      },
+      {
+        id: 'node_5',
+        type: 'dataStoreNode',
+        position: { x: 500, y: 500 },
+        data: {
+          label: 'Log Success',
+          operation: 'set',
+          key: 'last_health_check',
+          value: '{{node_2.output}}',
+        },
+      },
     ],
     edges: [
       { source: 'node_1', target: 'node_2' },
@@ -79,11 +172,56 @@ const WORKFLOW_TEMPLATES = [
     name: 'Content Review & Approval',
     desc: 'Generate content, review with AI, and require human approval',
     nodes: [
-      { id: 'node_1', type: 'triggerNode', position: { x: 300, y: 50 }, data: { label: 'Manual Trigger', triggerType: 'manual' } },
-      { id: 'node_2', type: 'llmNode', position: { x: 300, y: 200 }, data: { label: 'Draft Content', provider: 'default', model: 'default', systemPrompt: 'You are a professional content writer.', userMessage: 'Write a concise blog post about the latest trends in AI.' } },
-      { id: 'node_3', type: 'llmNode', position: { x: 300, y: 350 }, data: { label: 'Quality Review', provider: 'default', model: 'default', systemPrompt: 'You are a senior editor. Rate the content 1-10 and suggest improvements.', userMessage: 'Review this draft:\n{{node_2.output}}' } },
-      { id: 'node_4', type: 'approvalNode', position: { x: 300, y: 500 }, data: { label: 'Human Approval', approvalMessage: 'Review draft:\n{{node_2.output}}\n\nAI Review:\n{{node_3.output}}', timeoutMinutes: 1440 } },
-      { id: 'node_5', type: 'notificationNode', position: { x: 300, y: 650 }, data: { label: 'Published', message: 'Content approved and ready for publishing.', severity: 'success' } },
+      {
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Manual Trigger', triggerType: 'manual' },
+      },
+      {
+        id: 'node_2',
+        type: 'llmNode',
+        position: { x: 300, y: 200 },
+        data: {
+          label: 'Draft Content',
+          provider: 'default',
+          model: 'default',
+          systemPrompt: 'You are a professional content writer.',
+          userMessage: 'Write a concise blog post about the latest trends in AI.',
+        },
+      },
+      {
+        id: 'node_3',
+        type: 'llmNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Quality Review',
+          provider: 'default',
+          model: 'default',
+          systemPrompt: 'You are a senior editor. Rate the content 1-10 and suggest improvements.',
+          userMessage: 'Review this draft:\n{{node_2.output}}',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'approvalNode',
+        position: { x: 300, y: 500 },
+        data: {
+          label: 'Human Approval',
+          approvalMessage: 'Review draft:\n{{node_2.output}}\n\nAI Review:\n{{node_3.output}}',
+          timeoutMinutes: 1440,
+        },
+      },
+      {
+        id: 'node_5',
+        type: 'notificationNode',
+        position: { x: 300, y: 650 },
+        data: {
+          label: 'Published',
+          message: 'Content approved and ready for publishing.',
+          severity: 'success',
+        },
+      },
     ],
     edges: [
       { source: 'node_1', target: 'node_2' },
@@ -97,11 +235,52 @@ const WORKFLOW_TEMPLATES = [
     name: 'Data Transform Pipeline',
     desc: 'Fetch data from API, filter, transform, and aggregate results',
     nodes: [
-      { id: 'node_1', type: 'triggerNode', position: { x: 300, y: 50 }, data: { label: 'Manual Trigger', triggerType: 'manual' } },
-      { id: 'node_2', type: 'httpRequestNode', position: { x: 300, y: 200 }, data: { label: 'Fetch Data', method: 'GET', url: 'https://jsonplaceholder.typicode.com/users' } },
-      { id: 'node_3', type: 'filterNode', position: { x: 300, y: 350 }, data: { label: 'Active Users', arrayExpression: '{{node_2.output.body}}', condition: 'item.id <= 5' } },
-      { id: 'node_4', type: 'mapNode', position: { x: 300, y: 500 }, data: { label: 'Extract Names', arrayExpression: '{{node_3.output}}', expression: '({ name: item.name, email: item.email, city: item.address?.city })' } },
-      { id: 'node_5', type: 'notificationNode', position: { x: 300, y: 650 }, data: { label: 'Results', message: 'Processed {{node_4.output.length}} users: {{node_4.output}}', severity: 'info' } },
+      {
+        id: 'node_1',
+        type: 'triggerNode',
+        position: { x: 300, y: 50 },
+        data: { label: 'Manual Trigger', triggerType: 'manual' },
+      },
+      {
+        id: 'node_2',
+        type: 'httpRequestNode',
+        position: { x: 300, y: 200 },
+        data: {
+          label: 'Fetch Data',
+          method: 'GET',
+          url: 'https://jsonplaceholder.typicode.com/users',
+        },
+      },
+      {
+        id: 'node_3',
+        type: 'filterNode',
+        position: { x: 300, y: 350 },
+        data: {
+          label: 'Active Users',
+          arrayExpression: '{{node_2.output.body}}',
+          condition: 'item.id <= 5',
+        },
+      },
+      {
+        id: 'node_4',
+        type: 'mapNode',
+        position: { x: 300, y: 500 },
+        data: {
+          label: 'Extract Names',
+          arrayExpression: '{{node_3.output}}',
+          expression: '({ name: item.name, email: item.email, city: item.address?.city })',
+        },
+      },
+      {
+        id: 'node_5',
+        type: 'notificationNode',
+        position: { x: 300, y: 650 },
+        data: {
+          label: 'Results',
+          message: 'Processed {{node_4.output.length}} users: {{node_4.output}}',
+          severity: 'info',
+        },
+      },
     ],
     edges: [
       { source: 'node_1', target: 'node_2' },

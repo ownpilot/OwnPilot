@@ -89,7 +89,13 @@ function MergeNodeComponent({ data, selected }: NodeProps<MergeNodeType>) {
       <div className="px-3 py-2 space-y-1.5">
         {/* Converging arrows visual */}
         <div className="flex items-center justify-center py-1">
-          <svg className="w-10 h-5 text-teal-400 dark:text-teal-600" viewBox="0 0 40 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="w-10 h-5 text-teal-400 dark:text-teal-600"
+            viewBox="0 0 40 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M5 2 L20 16" />
             <path d="M20 2 L20 16" />
             <path d="M35 2 L20 16" />

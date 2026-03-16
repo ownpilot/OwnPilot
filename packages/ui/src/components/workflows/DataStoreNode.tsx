@@ -29,7 +29,10 @@ export type DataStoreNodeType = Node<DataStoreNodeData>;
 
 /** Per-operation badge colors */
 const operationStyles: Record<string, { bg: string; text: string }> = {
-  get: { bg: 'bg-emerald-100 dark:bg-emerald-900/40', text: 'text-emerald-700 dark:text-emerald-300' },
+  get: {
+    bg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    text: 'text-emerald-700 dark:text-emerald-300',
+  },
   set: { bg: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-700 dark:text-blue-300' },
   delete: { bg: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-700 dark:text-red-300' },
   list: { bg: 'bg-violet-100 dark:bg-violet-900/40', text: 'text-violet-700 dark:text-violet-300' },
@@ -107,13 +110,21 @@ function DataStoreNodeComponent({ data, selected }: NodeProps<DataStoreNodeType>
         {/* Cylinder visual + operation badge */}
         <div className="flex items-center gap-2">
           {/* Mini cylinder icon */}
-          <svg className="w-5 h-6 text-cyan-300 dark:text-cyan-700 shrink-0" viewBox="0 0 20 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="w-5 h-6 text-cyan-300 dark:text-cyan-700 shrink-0"
+            viewBox="0 0 20 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <ellipse cx="10" cy="5" rx="8" ry="3" />
             <path d="M2 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" />
             <ellipse cx="10" cy="12" rx="8" ry="2" strokeDasharray="3 2" opacity="0.4" />
           </svg>
           {operation && (
-            <span className={`px-2 py-0.5 text-[10px] font-extrabold rounded uppercase tracking-wider ${opStyle.bg} ${opStyle.text}`}>
+            <span
+              className={`px-2 py-0.5 text-[10px] font-extrabold rounded uppercase tracking-wider ${opStyle.bg} ${opStyle.text}`}
+            >
               {operation}
             </span>
           )}

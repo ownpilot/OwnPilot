@@ -103,7 +103,13 @@ function ParallelNodeComponent({ data, selected }: NodeProps<ParallelNodeType>) 
         {/* Fan-out visual indicator */}
         <div className="flex items-center justify-center gap-0.5 py-1">
           <div className="w-4 h-0.5 bg-teal-300 dark:bg-teal-700 rounded" />
-          <svg className="w-5 h-4 text-teal-400 dark:text-teal-600" viewBox="0 0 20 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="w-5 h-4 text-teal-400 dark:text-teal-600"
+            viewBox="0 0 20 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M10 2 L3 14" />
             <path d="M10 2 L10 14" />
             <path d="M10 2 L17 14" />

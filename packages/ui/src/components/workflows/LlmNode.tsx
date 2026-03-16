@@ -180,10 +180,7 @@ function LlmNodeComponent({ data, selected }: NodeProps<LlmNodeType>) {
 
         {/* User message preview */}
         {userMessage && (
-          <p
-            className="text-[10px] text-gray-600 dark:text-gray-400 truncate"
-            title={userMessage}
-          >
+          <p className="text-[10px] text-gray-600 dark:text-gray-400 truncate" title={userMessage}>
             {userMessage.slice(0, 60)}
             {userMessage.length > 60 ? '...' : ''}
           </p>

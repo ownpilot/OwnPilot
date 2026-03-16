@@ -250,7 +250,10 @@ export interface CollectedToolCall {
 
 export function createToolCallCollector(): {
   toolCalls: CollectedToolCall[];
-  onToolEnd: (tc: ToolCall, result: { content: string; isError: boolean; durationMs: number }) => void;
+  onToolEnd: (
+    tc: ToolCall,
+    result: { content: string; isError: boolean; durationMs: number }
+  ) => void;
 } {
   const toolCalls: CollectedToolCall[] = [];
   const onToolEnd = (

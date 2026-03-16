@@ -79,7 +79,11 @@ describe('Heartbeat Log Routes', () => {
       const json = await res.json();
       expect(json.data.items).toHaveLength(1);
       expect(json.data.total).toBe(1);
-      expect(mockRepo.listByUser).toHaveBeenCalledWith('user-1', expect.any(Number), expect.any(Number));
+      expect(mockRepo.listByUser).toHaveBeenCalledWith(
+        'user-1',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('passes limit and offset to repo', async () => {

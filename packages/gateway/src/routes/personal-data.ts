@@ -652,7 +652,9 @@ personalDataRoutes.get('/summary', async (c) => {
     contactsRepo.getUpcomingBirthdays(30),
     habitsRepo.getTodayProgress(),
     habitsRepo.list({ isArchived: false }),
-    expensesRepo.getSummary().catch(() => ({ totalAmount: 0, count: 0, byCategory: {}, byCurrency: {} })),
+    expensesRepo
+      .getSummary()
+      .catch(() => ({ totalAmount: 0, count: 0, byCategory: {}, byCurrency: {} })),
     expensesRepo.count().catch(() => 0),
   ]);
 

@@ -297,7 +297,13 @@ export const TOOL_CATEGORIES = {
     'update_task',
     'delete_task',
   ],
-  Bookmarks: ['add_bookmark', 'batch_add_bookmarks', 'list_bookmarks', 'update_bookmark', 'delete_bookmark'],
+  Bookmarks: [
+    'add_bookmark',
+    'batch_add_bookmarks',
+    'list_bookmarks',
+    'update_bookmark',
+    'delete_bookmark',
+  ],
   Notes: ['add_note', 'batch_add_notes', 'list_notes', 'update_note', 'delete_note'],
   Calendar: [
     'add_calendar_event',

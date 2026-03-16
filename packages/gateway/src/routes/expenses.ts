@@ -25,15 +25,31 @@ import { ExpensesRepository, type ExpenseCategory } from '../db/repositories/exp
 // =============================================================================
 
 const VALID_CATEGORIES: readonly ExpenseCategory[] = [
-  'food', 'transport', 'utilities', 'entertainment', 'shopping',
-  'health', 'education', 'travel', 'subscription', 'housing', 'other',
+  'food',
+  'transport',
+  'utilities',
+  'entertainment',
+  'shopping',
+  'health',
+  'education',
+  'travel',
+  'subscription',
+  'housing',
+  'other',
 ];
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  food: '#FF6B6B', transport: '#4ECDC4', utilities: '#45B7D1',
-  entertainment: '#96CEB4', shopping: '#FFEAA7', health: '#DDA0DD',
-  education: '#98D8C8', travel: '#F7DC6F', subscription: '#BB8FCE',
-  housing: '#85C1E9', other: '#AEB6BF',
+  food: '#FF6B6B',
+  transport: '#4ECDC4',
+  utilities: '#45B7D1',
+  entertainment: '#96CEB4',
+  shopping: '#FFEAA7',
+  health: '#DDA0DD',
+  education: '#98D8C8',
+  travel: '#F7DC6F',
+  subscription: '#BB8FCE',
+  housing: '#85C1E9',
+  other: '#AEB6BF',
 };
 
 // =============================================================================
@@ -198,13 +214,18 @@ expensesRoutes.post('/', async (c) => {
     const userId = getUserId(c);
     const repo = new ExpensesRepository(userId);
     const body = await parseJsonBody(c);
-    if (!body) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+    if (!body)
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
 
     const { date, amount, currency, category, description, paymentMethod, tags, notes } =
       body as Record<string, unknown>;
 
     if (!description || !amount) {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'amount and description are required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'amount and description are required' },
+        400
+      );
     }
 
     const expense = await repo.create({
@@ -219,7 +240,10 @@ expensesRoutes.post('/', async (c) => {
       source: 'web',
     });
 
-    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'created', id: expense.id } as never);
+    wsGateway.broadcast(
+      'data:changed' as never,
+      { entity: 'expense', action: 'created', id: expense.id } as never
+    );
     return apiResponse(c, expense, 201);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
@@ -234,12 +258,16 @@ expensesRoutes.put('/:id', async (c) => {
     const userId = getUserId(c);
     const repo = new ExpensesRepository(userId);
     const body = await parseJsonBody(c);
-    if (!body) return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+    if (!body)
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
 
     const updated = await repo.update(c.req.param('id'), body as Record<string, unknown>);
     if (!updated) return notFoundError(c, 'Expense', c.req.param('id'));
 
-    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'updated', id: updated.id } as never);
+    wsGateway.broadcast(
+      'data:changed' as never,
+      { entity: 'expense', action: 'updated', id: updated.id } as never
+    );
     return apiResponse(c, updated);
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
@@ -257,7 +285,10 @@ expensesRoutes.delete('/:id', async (c) => {
     const deleted = await repo.delete(id);
     if (!deleted) return notFoundError(c, 'Expense', id);
 
-    wsGateway.broadcast('data:changed' as never, { entity: 'expense', action: 'deleted', id } as never);
+    wsGateway.broadcast(
+      'data:changed' as never,
+      { entity: 'expense', action: 'deleted', id } as never
+    );
     return apiResponse(c, { message: 'Expense deleted' });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);

@@ -79,9 +79,7 @@ export function DataStoreConfigPanel({
             placeholder="my_key or {{node_1.output.id}}"
             className={INPUT_CLS}
           />
-          <p className="text-[10px] text-text-muted">
-            {'Supports {{template}} expressions'}
-          </p>
+          <p className="text-[10px] text-text-muted">{'Supports {{template}} expressions'}</p>
         </div>
 
         {/* Value — only for set */}
@@ -108,9 +106,7 @@ export function DataStoreConfigPanel({
           <input
             type="text"
             value={(data.namespace as string) ?? ''}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, namespace: e.target.value || undefined })
-            }
+            onChange={(e) => onUpdate(node.id, { ...data, namespace: e.target.value || undefined })}
             placeholder="default"
             className={INPUT_CLS}
           />

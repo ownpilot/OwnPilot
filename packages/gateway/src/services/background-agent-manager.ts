@@ -515,153 +515,154 @@ export class BackgroundAgentManager {
     managed.cycleInProgress = true;
 
     try {
+      // Check if agent should still be running
+      if (session.state !== 'running' && session.state !== 'waiting') return;
 
-    // Check if agent should still be running
-    if (session.state !== 'running' && session.state !== 'waiting') return;
-
-    // Rate limit check: cycles per hour
-    this.enforceRateLimit(managed);
-    if (!this.canExecuteCycle(managed)) {
-      // Wait and try again later
-      if (session.config.mode !== 'event') {
-        managed.timer = setTimeout(async () => {
-          try {
-            await this.executeCycle(agentId);
-          } catch (err) {
-            log.error('Rate-limited cycle retry error', { agentId, error: getErrorMessage(err) });
-            // Re-schedule with backoff
-            this.scheduleNext(agentId, managed);
-          }
-        }, 60_000); // Retry in 1 minute
-      }
-      return;
-    }
-
-    // Budget check
-    if (session.config.limits.totalBudgetUsd !== undefined) {
-      if (session.totalCostUsd >= session.config.limits.totalBudgetUsd) {
-        log.warn('Agent budget exceeded', {
-          agentId,
-          totalCostUsd: session.totalCostUsd,
-          budgetUsd: session.config.limits.totalBudgetUsd,
-        });
-        await this.stopAgent(agentId, 'budget_exceeded');
+      // Rate limit check: cycles per hour
+      this.enforceRateLimit(managed);
+      if (!this.canExecuteCycle(managed)) {
+        // Wait and try again later
+        if (session.config.mode !== 'event') {
+          managed.timer = setTimeout(async () => {
+            try {
+              await this.executeCycle(agentId);
+            } catch (err) {
+              log.error('Rate-limited cycle retry error', { agentId, error: getErrorMessage(err) });
+              // Re-schedule with backoff
+              this.scheduleNext(agentId, managed);
+            }
+          }, 60_000); // Retry in 1 minute
+        }
         return;
       }
-    }
 
-    session.state = 'running';
-    const cycleNumber = session.cyclesCompleted + 1;
-
-    // Emit cycle start event
-    this.emitEvent('background-agent.cycle.start', { agentId, cycleNumber });
-
-    // Run the cycle
-    let result: BackgroundAgentCycleResult;
-    try {
-      result = await runner.runCycle(session);
-    } catch (err) {
-      result = {
-        success: false,
-        toolCalls: [],
-        output: '',
-        outputMessage: '',
-        durationMs: 0,
-        turns: 0,
-        error: getErrorMessage(err),
-      };
-    }
-
-    // Update session with result
-    session.cyclesCompleted = cycleNumber;
-    session.totalToolCalls += result.toolCalls.length;
-    session.totalCostUsd += result.costUsd ?? 0;
-    session.lastCycleAt = new Date();
-    session.lastCycleDurationMs = result.durationMs;
-    session.lastCycleError = result.error ?? null;
-    managed.lastCycleToolCalls = result.toolCalls.length;
-
-    // Clear inbox after cycle (messages were included in the cycle prompt)
-    session.inbox = [];
-
-    // Track rate limiting
-    managed.cyclesThisHour++;
-
-    // Post-cycle budget enforcement
-    if (session.config.limits.totalBudgetUsd !== undefined && session.config.limits.totalBudgetUsd > 0) {
-      const budgetRatio = session.totalCostUsd / session.config.limits.totalBudgetUsd;
-      if (budgetRatio >= 1) {
-        log.warn('Agent budget exceeded after cycle', {
-          agentId,
-          totalCostUsd: session.totalCostUsd,
-          budgetUsd: session.config.limits.totalBudgetUsd,
-        });
-        await this.stopAgent(agentId, 'budget_exceeded');
-        return;
-      } else if (budgetRatio >= 0.8) {
-        log.warn('Agent approaching budget limit', {
-          agentId,
-          totalCostUsd: session.totalCostUsd,
-          budgetUsd: session.config.limits.totalBudgetUsd,
-          percentUsed: Math.round(budgetRatio * 100),
-        });
+      // Budget check
+      if (session.config.limits.totalBudgetUsd !== undefined) {
+        if (session.totalCostUsd >= session.config.limits.totalBudgetUsd) {
+          log.warn('Agent budget exceeded', {
+            agentId,
+            totalCostUsd: session.totalCostUsd,
+            budgetUsd: session.config.limits.totalBudgetUsd,
+          });
+          await this.stopAgent(agentId, 'budget_exceeded');
+          return;
+        }
       }
-    }
 
-    // Track consecutive errors
-    if (result.success) {
-      managed.consecutiveErrors = 0;
-    } else {
-      managed.consecutiveErrors++;
-    }
+      session.state = 'running';
+      const cycleNumber = session.cyclesCompleted + 1;
 
-    // Save cycle to history
-    try {
-      const repo = getBackgroundAgentsRepository();
-      await repo.saveHistory(agentId, cycleNumber, result);
-    } catch (err) {
-      log.error('Failed to save cycle history', { agentId, error: getErrorMessage(err) });
-    }
+      // Emit cycle start event
+      this.emitEvent('background-agent.cycle.start', { agentId, cycleNumber });
 
-    // Emit cycle complete event
-    this.emitEvent('background-agent.cycle.complete', {
-      agentId,
-      cycleNumber,
-      success: result.success,
-      toolCallsCount: result.toolCalls.length,
-      durationMs: result.durationMs,
-      outputPreview: result.outputMessage.slice(0, 200),
-    });
+      // Run the cycle
+      let result: BackgroundAgentCycleResult;
+      try {
+        result = await runner.runCycle(session);
+      } catch (err) {
+        result = {
+          success: false,
+          toolCalls: [],
+          output: '',
+          outputMessage: '',
+          durationMs: 0,
+          turns: 0,
+          error: getErrorMessage(err),
+        };
+      }
 
-    // Broadcast to WS for UI
-    this.broadcastUpdate(agentId, managed);
+      // Update session with result
+      session.cyclesCompleted = cycleNumber;
+      session.totalToolCalls += result.toolCalls.length;
+      session.totalCostUsd += result.costUsd ?? 0;
+      session.lastCycleAt = new Date();
+      session.lastCycleDurationMs = result.durationMs;
+      session.lastCycleError = result.error ?? null;
+      managed.lastCycleToolCalls = result.toolCalls.length;
 
-    // Check stop conditions
-    if (this.shouldStop(managed, result)) {
-      return; // stopAgent was already called inside shouldStop
-    }
+      // Clear inbox after cycle (messages were included in the cycle prompt)
+      session.inbox = [];
 
-    // Auto-pause on too many consecutive errors
-    if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      log.warn('Agent auto-pausing due to consecutive errors', {
+      // Track rate limiting
+      managed.cyclesThisHour++;
+
+      // Post-cycle budget enforcement
+      if (
+        session.config.limits.totalBudgetUsd !== undefined &&
+        session.config.limits.totalBudgetUsd > 0
+      ) {
+        const budgetRatio = session.totalCostUsd / session.config.limits.totalBudgetUsd;
+        if (budgetRatio >= 1) {
+          log.warn('Agent budget exceeded after cycle', {
+            agentId,
+            totalCostUsd: session.totalCostUsd,
+            budgetUsd: session.config.limits.totalBudgetUsd,
+          });
+          await this.stopAgent(agentId, 'budget_exceeded');
+          return;
+        } else if (budgetRatio >= 0.8) {
+          log.warn('Agent approaching budget limit', {
+            agentId,
+            totalCostUsd: session.totalCostUsd,
+            budgetUsd: session.config.limits.totalBudgetUsd,
+            percentUsed: Math.round(budgetRatio * 100),
+          });
+        }
+      }
+
+      // Track consecutive errors
+      if (result.success) {
+        managed.consecutiveErrors = 0;
+      } else {
+        managed.consecutiveErrors++;
+      }
+
+      // Save cycle to history
+      try {
+        const repo = getBackgroundAgentsRepository();
+        await repo.saveHistory(agentId, cycleNumber, result);
+      } catch (err) {
+        log.error('Failed to save cycle history', { agentId, error: getErrorMessage(err) });
+      }
+
+      // Emit cycle complete event
+      this.emitEvent('background-agent.cycle.complete', {
         agentId,
-        consecutiveErrors: MAX_CONSECUTIVE_ERRORS,
-      });
-      this.emitEvent('background-agent.error', {
-        agentId,
-        error: `Auto-paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`,
         cycleNumber,
+        success: result.success,
+        toolCallsCount: result.toolCalls.length,
+        durationMs: result.durationMs,
+        outputPreview: result.outputMessage.slice(0, 200),
       });
-      await this.pauseAgent(agentId);
-      return;
-    }
 
-    // Schedule next cycle
-    if (session.config.mode === 'event') {
-      session.state = 'waiting';
-    }
-    this.scheduleNext(agentId, managed);
+      // Broadcast to WS for UI
+      this.broadcastUpdate(agentId, managed);
 
+      // Check stop conditions
+      if (this.shouldStop(managed, result)) {
+        return; // stopAgent was already called inside shouldStop
+      }
+
+      // Auto-pause on too many consecutive errors
+      if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        log.warn('Agent auto-pausing due to consecutive errors', {
+          agentId,
+          consecutiveErrors: MAX_CONSECUTIVE_ERRORS,
+        });
+        this.emitEvent('background-agent.error', {
+          agentId,
+          error: `Auto-paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`,
+          cycleNumber,
+        });
+        await this.pauseAgent(agentId);
+        return;
+      }
+
+      // Schedule next cycle
+      if (session.config.mode === 'event') {
+        session.state = 'waiting';
+      }
+      this.scheduleNext(agentId, managed);
     } finally {
       managed.cycleInProgress = false;
     }

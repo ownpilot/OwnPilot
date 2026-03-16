@@ -321,7 +321,9 @@ function registerSingleExtensionTool(
         context
       );
       return {
-        content: execResult.isError ? String(execResult.content) : JSON.stringify(execResult.content),
+        content: execResult.isError
+          ? String(execResult.content)
+          : JSON.stringify(execResult.content),
         isError: execResult.isError,
       };
     },

@@ -783,11 +783,15 @@ workflowRoutes.post('/approvals/:id/approve', async (c) => {
       .catch((err: unknown) => {
         // Log but don't fail the approval response — workflow resume is best-effort
         const wfRepo = createWorkflowsRepository(userId);
-        wfRepo.updateLog(approval.workflowLogId, {
-          status: 'failed',
-          error: `Resume after approval failed: ${getErrorMessage(err)}`,
-          completedAt: new Date().toISOString(),
-        }).catch(() => { /* ignore log update failure */ });
+        wfRepo
+          .updateLog(approval.workflowLogId, {
+            status: 'failed',
+            error: `Resume after approval failed: ${getErrorMessage(err)}`,
+            completedAt: new Date().toISOString(),
+          })
+          .catch(() => {
+            /* ignore log update failure */
+          });
       });
   }
 

@@ -121,7 +121,9 @@ export class ChannelAssetStore {
     const expired = await this.repo.listExpired(new Date().toISOString());
     for (const asset of expired) {
       if (asset.storagePath) {
-        await rm(asset.storagePath, { force: true }).catch((e) => log.debug('Asset cleanup failed', { path: asset.storagePath, error: String(e) }));
+        await rm(asset.storagePath, { force: true }).catch((e) =>
+          log.debug('Asset cleanup failed', { path: asset.storagePath, error: String(e) })
+        );
       }
     }
     await this.repo.deleteMany(expired.map((asset) => asset.id));

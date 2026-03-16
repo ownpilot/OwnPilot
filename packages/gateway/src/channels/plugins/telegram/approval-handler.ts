@@ -50,7 +50,9 @@ export class TelegramApprovalHandler {
       const entry = this.pending.get(id);
 
       if (!entry || entry.resolved) {
-        await ctx.answerCallbackQuery({ text: 'This approval has expired.' }).catch((e) => log.debug('Telegram callback error', { error: String(e) }));
+        await ctx
+          .answerCallbackQuery({ text: 'This approval has expired.' })
+          .catch((e) => log.debug('Telegram callback error', { error: String(e) }));
         return;
       }
 

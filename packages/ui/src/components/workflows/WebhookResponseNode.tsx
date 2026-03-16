@@ -148,7 +148,13 @@ function WebhookResponseNodeComponent({ data, selected }: NodeProps<WebhookRespo
 
         {/* Reply visual indicator */}
         <div className="flex items-center justify-center gap-1 text-rose-300 dark:text-rose-700">
-          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            className="w-4 h-4"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <path d="M6 3L2 7l4 4" />
             <path d="M2 7h8a4 4 0 0 1 0 8H8" />
           </svg>

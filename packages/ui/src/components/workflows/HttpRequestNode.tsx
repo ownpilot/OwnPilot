@@ -28,10 +28,7 @@ export interface HttpRequestNodeData extends Record<string, unknown> {
 
 export type HttpRequestNodeType = Node<HttpRequestNodeData>;
 
-const methodStyles: Record<
-  string,
-  { bg: string; text: string; headerBg: string }
-> = {
+const methodStyles: Record<string, { bg: string; text: string; headerBg: string }> = {
   GET: {
     bg: 'bg-emerald-500',
     text: 'text-white',

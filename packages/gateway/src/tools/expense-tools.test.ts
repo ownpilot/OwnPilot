@@ -27,25 +27,33 @@ beforeEach(() => {
 
 describe('executeExpenseTool', () => {
   it('add_expense creates an expense', async () => {
-    const result = await executeExpenseTool('add_expense', {
-      amount: 42.50,
-      description: 'Coffee',
-      category: 'food',
-    }, 'user-1');
+    const result = await executeExpenseTool(
+      'add_expense',
+      {
+        amount: 42.5,
+        description: 'Coffee',
+        category: 'food',
+      },
+      'user-1'
+    );
 
     expect(result.success).toBe(true);
     expect(mockRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 42.50, description: 'Coffee', category: 'food' })
+      expect.objectContaining({ amount: 42.5, description: 'Coffee', category: 'food' })
     );
   });
 
   it('batch_add_expenses creates multiple', async () => {
-    const result = await executeExpenseTool('batch_add_expenses', {
-      expenses: [
-        { amount: 10, description: 'A' },
-        { amount: 20, description: 'B' },
-      ],
-    }, 'user-1');
+    const result = await executeExpenseTool(
+      'batch_add_expenses',
+      {
+        expenses: [
+          { amount: 10, description: 'A' },
+          { amount: 20, description: 'B' },
+        ],
+      },
+      'user-1'
+    );
 
     expect(result.success).toBe(true);
     expect(mockRepo.create).toHaveBeenCalledTimes(2);
@@ -53,7 +61,11 @@ describe('executeExpenseTool', () => {
   });
 
   it('batch_add_expenses rejects non-array', async () => {
-    const result = await executeExpenseTool('batch_add_expenses', { expenses: 'not array' }, 'user-1');
+    const result = await executeExpenseTool(
+      'batch_add_expenses',
+      { expenses: 'not array' },
+      'user-1'
+    );
     expect(result.success).toBe(false);
   });
 
@@ -67,7 +79,8 @@ describe('executeExpenseTool', () => {
 
   it('expense_summary returns aggregated data', async () => {
     mockRepo.getSummary.mockResolvedValue({
-      totalAmount: 150, count: 3,
+      totalAmount: 150,
+      count: 3,
       byCategory: { food: { amount: 100, count: 2 } },
       byCurrency: { TRY: 150 },
     });
@@ -80,7 +93,11 @@ describe('executeExpenseTool', () => {
 
   it('update_expense updates and returns', async () => {
     mockRepo.update.mockResolvedValue({ id: 'e1', amount: 99 });
-    const result = await executeExpenseTool('update_expense', { expenseId: 'e1', amount: 99 }, 'user-1');
+    const result = await executeExpenseTool(
+      'update_expense',
+      { expenseId: 'e1', amount: 99 },
+      'user-1'
+    );
 
     expect(result.success).toBe(true);
   });
@@ -111,10 +128,19 @@ describe('executeExpenseTool', () => {
   });
 
   it('export_expenses returns CSV format', async () => {
-    mockRepo.list.mockResolvedValue([{
-      id: 'e1', date: '2026-01-01', amount: 50, currency: 'TRY',
-      category: 'food', description: 'Test', paymentMethod: 'card', tags: [], notes: '',
-    }]);
+    mockRepo.list.mockResolvedValue([
+      {
+        id: 'e1',
+        date: '2026-01-01',
+        amount: 50,
+        currency: 'TRY',
+        category: 'food',
+        description: 'Test',
+        paymentMethod: 'card',
+        tags: [],
+        notes: '',
+      },
+    ]);
     const result = await executeExpenseTool('export_expenses', { format: 'csv' }, 'user-1');
 
     expect(result.success).toBe(true);
@@ -129,7 +155,11 @@ describe('executeExpenseTool', () => {
 
   it('catches exceptions', async () => {
     mockRepo.create.mockRejectedValue(new Error('DB down'));
-    const result = await executeExpenseTool('add_expense', { amount: 1, description: 'x' }, 'user-1');
+    const result = await executeExpenseTool(
+      'add_expense',
+      { amount: 1, description: 'x' },
+      'user-1'
+    );
     expect(result.success).toBe(false);
     expect(result.error).toContain('DB down');
   });

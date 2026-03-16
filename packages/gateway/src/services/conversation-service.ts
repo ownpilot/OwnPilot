@@ -331,4 +331,7 @@ export async function clearChannelSession(
 // Post-chat processing — re-exported from dedicated module
 // ─────────────────────────────────────────────
 
-export { runPostChatProcessing, waitForPendingProcessing } from '../assistant/chat-post-processor.js';
+export {
+  runPostChatProcessing,
+  waitForPendingProcessing,
+} from '../assistant/chat-post-processor.js';

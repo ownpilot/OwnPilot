@@ -8,7 +8,16 @@ import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import { INPUT_CLS, OutputAliasField } from '../NodeConfigPanel';
 import { TemplateValidator } from '../TemplateValidator';
 
-const AGGREGATE_OPS = ['sum', 'count', 'avg', 'min', 'max', 'groupBy', 'flatten', 'unique'] as const;
+const AGGREGATE_OPS = [
+  'sum',
+  'count',
+  'avg',
+  'min',
+  'max',
+  'groupBy',
+  'flatten',
+  'unique',
+] as const;
 
 export function AggregateConfigPanel({
   node,
@@ -58,9 +67,7 @@ export function AggregateConfigPanel({
           <input
             type="text"
             value={arrayExpr}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, arrayExpression: e.target.value })
-            }
+            onChange={(e) => onUpdate(node.id, { ...data, arrayExpression: e.target.value })}
             placeholder="{{node_1.output.items}}"
             className={INPUT_CLS}
           />
@@ -93,9 +100,7 @@ export function AggregateConfigPanel({
           <input
             type="text"
             value={(data.field as string) ?? ''}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, field: e.target.value || undefined })
-            }
+            onChange={(e) => onUpdate(node.id, { ...data, field: e.target.value || undefined })}
             placeholder="e.g. price, name"
             className={INPUT_CLS}
           />

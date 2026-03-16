@@ -61,9 +61,13 @@ function ErrorHandlerNodeComponent({ data, selected }: NodeProps<ErrorHandlerNod
       />
 
       {/* Warning stripe accent at very top */}
-      <div className="h-1 w-full" style={{
-        background: 'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
-      }} />
+      <div
+        className="h-1 w-full"
+        style={{
+          background:
+            'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
+        }}
+      />
 
       {/* Gradient Header Bar */}
       <div className="bg-gradient-to-r from-red-500 to-rose-500 px-3 py-2 flex items-center gap-2">
@@ -135,9 +139,13 @@ function ErrorHandlerNodeComponent({ data, selected }: NodeProps<ErrorHandlerNod
       </div>
 
       {/* Warning stripe accent at bottom */}
-      <div className="h-1 w-full" style={{
-        background: 'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
-      }} />
+      <div
+        className="h-1 w-full"
+        style={{
+          background:
+            'repeating-linear-gradient(135deg, #ef4444 0px, #ef4444 4px, #fbbf24 4px, #fbbf24 8px)',
+        }}
+      />
     </div>
   );
 }

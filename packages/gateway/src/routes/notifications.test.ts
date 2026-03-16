@@ -52,7 +52,10 @@ describe('POST /notifications/send', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.data.notification.id).toBe('notif-1');
-    expect(mockRouter.notify).toHaveBeenCalledWith('default', expect.objectContaining({ title: 'Test' }));
+    expect(mockRouter.notify).toHaveBeenCalledWith(
+      'default',
+      expect.objectContaining({ title: 'Test' })
+    );
   });
 
   it('returns 400 when title is missing', async () => {
@@ -93,7 +96,10 @@ describe('POST /notifications/channel', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        channelId: 'ch-1', chatId: 'chat-1', title: 'Alert', body: 'Details',
+        channelId: 'ch-1',
+        chatId: 'chat-1',
+        title: 'Alert',
+        body: 'Details',
       }),
     });
 

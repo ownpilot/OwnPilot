@@ -127,7 +127,8 @@ function ApprovalNodeComponent({ data, selected }: NodeProps<ApprovalNodeType>) 
             className="text-[10px] text-gray-500 dark:text-gray-400 italic truncate"
             title={message}
           >
-            &ldquo;{message.slice(0, 60)}{message.length > 60 ? '...' : ''}&rdquo;
+            &ldquo;{message.slice(0, 60)}
+            {message.length > 60 ? '...' : ''}&rdquo;
           </p>
         )}
 

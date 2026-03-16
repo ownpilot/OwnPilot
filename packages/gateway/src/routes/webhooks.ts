@@ -12,10 +12,7 @@ import { getServiceRegistry, Services } from '@ownpilot/core';
 import { getLog } from '../services/log.js';
 import { safeKeyCompare, apiError, apiResponse, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { TriggersRepository, type WebhookConfig } from '../db/repositories/triggers.js';
-import {
-  WorkflowsRepository,
-  type TriggerNodeData,
-} from '../db/repositories/workflows.js';
+import { WorkflowsRepository, type TriggerNodeData } from '../db/repositories/workflows.js';
 
 const log = getLog('Webhooks');
 
@@ -324,7 +321,10 @@ webhookRoutes.post('/workflow/:path', async (c) => {
         inputs: { __webhook: { path: webhookPath, body, receivedAt: new Date().toISOString() } },
       })
       .catch((err: Error) =>
-        log.error('Webhook workflow execution failed', { workflowId: workflow.id, error: err.message })
+        log.error('Webhook workflow execution failed', {
+          workflowId: workflow.id,
+          error: err.message,
+        })
       );
 
     return apiResponse(c, {

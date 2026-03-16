@@ -112,9 +112,7 @@ function makeConfig(overrides: Partial<FleetConfig> = {}): FleetConfig {
     name: 'Test Fleet',
     mission: 'Test mission',
     scheduleType: 'interval',
-    workers: [
-      { name: 'worker-a', type: 'ai-chat' },
-    ],
+    workers: [{ name: 'worker-a', type: 'ai-chat' }],
     concurrencyLimit: 5,
     autoStart: false,
     createdAt: new Date(),
@@ -168,8 +166,9 @@ describe('FleetManager', () => {
     sessionIdCounter = 0;
 
     // Default: createSession returns a fresh session
-    mockCreateSession.mockImplementation((fleetId: string, sharedContext?: Record<string, unknown>) =>
-      Promise.resolve(makeSession(fleetId, { sharedContext: sharedContext ?? {} }))
+    mockCreateSession.mockImplementation(
+      (fleetId: string, sharedContext?: Record<string, unknown>) =>
+        Promise.resolve(makeSession(fleetId, { sharedContext: sharedContext ?? {} }))
     );
     mockRequeueOrphanedTasks.mockResolvedValue(0);
     mockGetReadyTasks.mockResolvedValue([]);
@@ -411,7 +410,10 @@ describe('FleetManager', () => {
       await vi.advanceTimersByTimeAsync(1100);
 
       expect(mockWorkerExecute).toHaveBeenCalledTimes(1);
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({ status: 'running' }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({ status: 'running' })
+      );
       expect(mockSaveWorkerResult).toHaveBeenCalledWith(result);
     });
 
@@ -425,7 +427,10 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({ status: 'completed' }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({ status: 'completed' })
+      );
     });
 
     it('runCycle re-queues task on failure with retries remaining', async () => {
@@ -438,7 +443,10 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({ status: 'queued', retries: 1 }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({ status: 'queued', retries: 1 })
+      );
     });
 
     it('runCycle marks task as failed when retries exhausted', async () => {
@@ -451,7 +459,10 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({ status: 'failed', retries: 3 }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({ status: 'failed', retries: 3 })
+      );
     });
 
     it('runCycle increments session counters after execution', async () => {
@@ -478,10 +489,13 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({
-        status: 'failed',
-        error: 'No suitable worker',
-      }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({
+          status: 'failed',
+          error: 'No suitable worker',
+        })
+      );
       expect(mockWorkerExecute).not.toHaveBeenCalled();
     });
 
@@ -547,17 +561,22 @@ describe('FleetManager', () => {
     it('task retry logic re-queues on failure with retries left', async () => {
       const task = makeTask({ retries: 1, maxRetries: 3 });
       mockGetReadyTasks.mockResolvedValueOnce([task]);
-      mockWorkerExecute.mockResolvedValueOnce(makeWorkerResult({ success: false, error: 'transient' }));
+      mockWorkerExecute.mockResolvedValueOnce(
+        makeWorkerResult({ success: false, error: 'transient' })
+      );
 
       const config = makeConfig({ scheduleType: 'interval', scheduleConfig: { intervalMs: 1000 } });
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockUpdateTask).toHaveBeenCalledWith(task.id, expect.objectContaining({
-        status: 'queued',
-        retries: 2,
-        error: 'transient',
-      }));
+      expect(mockUpdateTask).toHaveBeenCalledWith(
+        task.id,
+        expect.objectContaining({
+          status: 'queued',
+          retries: 2,
+          error: 'transient',
+        })
+      );
     });
   });
 
@@ -568,9 +587,7 @@ describe('FleetManager', () => {
   describe('Budget', () => {
     it('pre-cycle budget check pauses fleet when exceeded', async () => {
       // Start with a session that already exceeded budget
-      mockCreateSession.mockResolvedValueOnce(
-        makeSession('fleet-1', { totalCostUsd: 10 })
-      );
+      mockCreateSession.mockResolvedValueOnce(makeSession('fleet-1', { totalCostUsd: 10 }));
 
       const config = makeConfig({
         scheduleType: 'interval',
@@ -601,9 +618,7 @@ describe('FleetManager', () => {
     });
 
     it('maxTotalCycles stops fleet when limit reached', async () => {
-      mockCreateSession.mockResolvedValueOnce(
-        makeSession('fleet-1', { cyclesCompleted: 10 })
-      );
+      mockCreateSession.mockResolvedValueOnce(makeSession('fleet-1', { cyclesCompleted: 10 }));
 
       const config = makeConfig({
         scheduleType: 'interval',
@@ -745,17 +760,17 @@ describe('FleetManager', () => {
   describe('Shared context', () => {
     it('structuredClone prevents mutation of shared context', async () => {
       const sharedContext = { key: 'original' };
-      mockCreateSession.mockResolvedValueOnce(
-        makeSession('fleet-1', { sharedContext })
-      );
+      mockCreateSession.mockResolvedValueOnce(makeSession('fleet-1', { sharedContext }));
 
       const task = makeTask();
       mockGetReadyTasks.mockResolvedValueOnce([task]);
-      mockWorkerExecute.mockImplementationOnce(async (_task: FleetTask, ctx: Record<string, unknown>) => {
-        // Worker mutates its copy
-        ctx.key = 'mutated';
-        return makeWorkerResult();
-      });
+      mockWorkerExecute.mockImplementationOnce(
+        async (_task: FleetTask, ctx: Record<string, unknown>) => {
+          // Worker mutates its copy
+          ctx.key = 'mutated';
+          return makeWorkerResult();
+        }
+      );
 
       const config = makeConfig({ scheduleType: 'interval', scheduleConfig: { intervalMs: 1000 } });
       await manager.startFleet(config);
@@ -870,14 +885,20 @@ describe('FleetManager', () => {
       await manager.broadcastToFleet('fleet-1', 'Hello fleet');
 
       expect(mockCreateTask).toHaveBeenCalledTimes(2);
-      expect(mockCreateTask).toHaveBeenCalledWith('fleet-1', expect.objectContaining({
-        assignedWorker: 'w1',
-        priority: 'high',
-      }));
-      expect(mockCreateTask).toHaveBeenCalledWith('fleet-1', expect.objectContaining({
-        assignedWorker: 'w2',
-        priority: 'high',
-      }));
+      expect(mockCreateTask).toHaveBeenCalledWith(
+        'fleet-1',
+        expect.objectContaining({
+          assignedWorker: 'w1',
+          priority: 'high',
+        })
+      );
+      expect(mockCreateTask).toHaveBeenCalledWith(
+        'fleet-1',
+        expect.objectContaining({
+          assignedWorker: 'w2',
+          priority: 'high',
+        })
+      );
     });
 
     it('broadcastToFleet throws for unknown fleet', async () => {

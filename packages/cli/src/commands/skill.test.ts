@@ -162,7 +162,12 @@ describe('Skill CLI Commands', () => {
       mockFetch.mockResolvedValueOnce(apiOk({ permissions: [] }));
       // 3rd call: install
       mockFetch.mockResolvedValueOnce(
-        apiOk({ success: true, extensionId: 'test-skill', packageName: 'test-skill', packageVersion: '1.0.0' })
+        apiOk({
+          success: true,
+          extensionId: 'test-skill',
+          packageName: 'test-skill',
+          packageVersion: '1.0.0',
+        })
       );
 
       await skillInstall('test-skill');
@@ -175,9 +180,7 @@ describe('Skill CLI Commands', () => {
         apiOk({ name: 'bad-skill', version: '1.0.0', description: 'Bad' })
       );
       mockFetch.mockResolvedValueOnce(apiOk({ permissions: [] }));
-      mockFetch.mockResolvedValueOnce(
-        apiOk({ success: false, error: 'Invalid manifest' })
-      );
+      mockFetch.mockResolvedValueOnce(apiOk({ success: false, error: 'Invalid manifest' }));
 
       await skillInstall('bad-skill');
 
@@ -189,14 +192,21 @@ describe('Skill CLI Commands', () => {
         apiOk({ name: 'net-skill', version: '1.0.0', description: 'Needs network' })
       );
       mockFetch.mockResolvedValueOnce(
-        apiOk({ permissions: [{ name: 'network', description: 'HTTP access', sensitivity: 'high' }] })
+        apiOk({
+          permissions: [{ name: 'network', description: 'HTTP access', sensitivity: 'high' }],
+        })
       );
 
       vi.mocked(checkbox).mockResolvedValueOnce(['network']);
       vi.mocked(confirm).mockResolvedValueOnce(true);
 
       mockFetch.mockResolvedValueOnce(
-        apiOk({ success: true, extensionId: 'net-skill', packageName: 'net-skill', packageVersion: '1.0.0' })
+        apiOk({
+          success: true,
+          extensionId: 'net-skill',
+          packageName: 'net-skill',
+          packageVersion: '1.0.0',
+        })
       );
       // Grant permissions call
       mockFetch.mockResolvedValueOnce(apiOk(null));
@@ -229,9 +239,7 @@ describe('Skill CLI Commands', () => {
 
   describe('skillUninstall', () => {
     it('uninstalls by ID', async () => {
-      mockFetch.mockResolvedValueOnce(
-        apiOk([{ id: 'ext-1', name: 'Test Extension' }])
-      );
+      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', name: 'Test Extension' }]));
       vi.mocked(confirm).mockResolvedValueOnce(true);
       mockFetch.mockResolvedValueOnce(apiOk(null));
 

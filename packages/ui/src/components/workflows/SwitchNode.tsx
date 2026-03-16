@@ -125,9 +125,7 @@ function SwitchNodeComponent({ data, selected }: NodeProps<SwitchNodeType>) {
                 <span
                   key={c.label}
                   className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold rounded ${
-                    isActive
-                      ? 'bg-fuchsia-500 text-white ring-1 ring-fuchsia-400'
-                      : chipColor
+                    isActive ? 'bg-fuchsia-500 text-white ring-1 ring-fuchsia-400' : chipColor
                   }`}
                 >
                   {c.label}
@@ -176,7 +174,10 @@ function SwitchNodeComponent({ data, selected }: NodeProps<SwitchNodeType>) {
         {/* Output handle labels */}
         <div className="flex justify-between mt-1 text-[8px] font-medium text-fuchsia-500/60 dark:text-fuchsia-400/40">
           {handleLabels.map((label) => (
-            <span key={label} className={label === 'Default' ? 'text-gray-400 dark:text-gray-600' : ''}>
+            <span
+              key={label}
+              className={label === 'Default' ? 'text-gray-400 dark:text-gray-600' : ''}
+            >
               {label}
             </span>
           ))}

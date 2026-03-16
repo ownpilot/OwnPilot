@@ -329,10 +329,10 @@ describe('Skills Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.grantedPermissions).toEqual(['network', 'filesystem']);
-      expect(mockExtensionsRepo.updatePermissions).toHaveBeenCalledWith(
-        'ext-1',
-        ['network', 'filesystem']
-      );
+      expect(mockExtensionsRepo.updatePermissions).toHaveBeenCalledWith('ext-1', [
+        'network',
+        'filesystem',
+      ]);
     });
 
     it('returns 400 when grantedPermissions is not an array', async () => {

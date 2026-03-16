@@ -1536,9 +1536,7 @@ describe('integration: condition branching', () => {
     );
 
     // notificationNode for true branch
-    mockExecuteNotificationNode.mockResolvedValue(
-      makeNodeResult('true_branch', { sent: true })
-    );
+    mockExecuteNotificationNode.mockResolvedValue(makeNodeResult('true_branch', { sent: true }));
 
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1579,9 +1577,7 @@ describe('integration: condition branching', () => {
     );
 
     // notificationNode for false branch
-    mockExecuteNotificationNode.mockResolvedValue(
-      makeNodeResult('false_branch', { sent: true })
-    );
+    mockExecuteNotificationNode.mockResolvedValue(makeNodeResult('false_branch', { sent: true }));
 
     mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
 
@@ -1610,10 +1606,7 @@ describe('integration: forEach with body nodes', () => {
       makeNode('fe1', 'forEachNode', { arrayExpression: '{{node_1.output}}' }),
       makeNode('body_tf', 'transformerNode', { expression: 'item * 2' }),
     ];
-    const edges = [
-      makeEdge('node_1', 'fe1'),
-      makeEdge('fe1', 'body_tf', 'each'),
-    ];
+    const edges = [makeEdge('node_1', 'fe1'), makeEdge('fe1', 'body_tf', 'each')];
 
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
 
@@ -1622,10 +1615,7 @@ describe('integration: forEach with body nodes', () => {
 
     // forEachNode: mock to return the doubled results
     mockExecuteForEachNode.mockImplementation(
-      async (
-        node: WorkflowNode,
-        nodeOutputs: Record<string, NodeResult>
-      ) => {
+      async (node: WorkflowNode, nodeOutputs: Record<string, NodeResult>) => {
         // Verify it received the upstream array
         const upstreamOutput = nodeOutputs['node_1']?.output;
         expect(upstreamOutput).toEqual([1, 2, 3]);
@@ -1687,9 +1677,7 @@ describe('integration: error propagation', () => {
     expect(log.status).toBe('failed');
 
     // toolNode should have emitted a node_error event
-    const toolError = progressEvents.find(
-      (e) => e.type === 'node_error' && e.nodeId === 'tool1'
-    );
+    const toolError = progressEvents.find((e) => e.type === 'node_error' && e.nodeId === 'tool1');
     expect(toolError).toBeDefined();
     expect(toolError!.error).toBe('Connection refused');
 
@@ -1756,9 +1744,7 @@ describe('integration: new node types (filter, map, aggregate)', () => {
     mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
 
     // Source returns objects
-    mockExecuteNode.mockResolvedValue(
-      makeNodeResult('source', [{ name: 'a' }, { name: 'b' }])
-    );
+    mockExecuteNode.mockResolvedValue(makeNodeResult('source', [{ name: 'a' }, { name: 'b' }]));
 
     // mapNode: simulate real map behavior
     mockExecuteMapNode.mockImplementation(

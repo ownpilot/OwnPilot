@@ -78,7 +78,8 @@ export async function executeExpenseTool(
           result: {
             expenses,
             count: expenses.length,
-            message: expenses.length === 0 ? 'No expenses found.' : `Found ${expenses.length} expense(s).`,
+            message:
+              expenses.length === 0 ? 'No expenses found.' : `Found ${expenses.length} expense(s).`,
           },
         };
       }
@@ -156,13 +157,20 @@ export async function executeExpenseTool(
 
         if (format === 'csv') {
           const header = 'id,date,amount,currency,category,description,paymentMethod,tags,notes';
-          const rows = expenses.map((e) =>
-            `${e.id},${e.date},${e.amount},${e.currency},${e.category},"${e.description}",${e.paymentMethod ?? ''},"${(e.tags ?? []).join(';')}","${e.notes ?? ''}"`
+          const rows = expenses.map(
+            (e) =>
+              `${e.id},${e.date},${e.amount},${e.currency},${e.category},"${e.description}",${e.paymentMethod ?? ''},"${(e.tags ?? []).join(';')}","${e.notes ?? ''}"`
           );
-          return { success: true, result: { format: 'csv', data: [header, ...rows].join('\n'), count: expenses.length } };
+          return {
+            success: true,
+            result: { format: 'csv', data: [header, ...rows].join('\n'), count: expenses.length },
+          };
         }
 
-        return { success: true, result: { format: 'json', data: expenses, count: expenses.length } };
+        return {
+          success: true,
+          result: { format: 'json', data: expenses, count: expenses.length },
+        };
       }
 
       default:

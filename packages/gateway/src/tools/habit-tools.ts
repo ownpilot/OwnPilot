@@ -28,7 +28,10 @@ This is the PREFERRED tool for habit tracking — do NOT create custom tables fo
     parameters: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'Habit name (e.g., "Morning exercise", "Read 30 minutes")' },
+        name: {
+          type: 'string',
+          description: 'Habit name (e.g., "Morning exercise", "Read 30 minutes")',
+        },
         description: { type: 'string', description: 'Optional detailed description' },
         frequency: {
           type: 'string',
@@ -38,14 +41,21 @@ This is the PREFERRED tool for habit tracking — do NOT create custom tables fo
         targetDays: {
           type: 'array',
           items: { type: 'number' },
-          description: 'Custom target days (0=Sunday, 1=Monday, ...6=Saturday). Only for frequency=custom.',
+          description:
+            'Custom target days (0=Sunday, 1=Monday, ...6=Saturday). Only for frequency=custom.',
         },
         targetCount: {
           type: 'number',
           description: 'Number of times to complete per day (default: 1)',
         },
-        unit: { type: 'string', description: 'Unit of measurement (e.g., "minutes", "pages", "glasses")' },
-        category: { type: 'string', description: 'Category (e.g., "health", "learning", "mindfulness")' },
+        unit: {
+          type: 'string',
+          description: 'Unit of measurement (e.g., "minutes", "pages", "glasses")',
+        },
+        category: {
+          type: 'string',
+          description: 'Category (e.g., "health", "learning", "mindfulness")',
+        },
         reminderTime: { type: 'string', description: 'Reminder time in HH:mm format' },
       },
       required: ['name'],
@@ -54,7 +64,8 @@ This is the PREFERRED tool for habit tracking — do NOT create custom tables fo
   {
     name: 'list_habits',
     brief: 'List all habits with streak info',
-    description: 'List habits with current streak, longest streak, and total completions. Supports filtering by category and archive status.',
+    description:
+      'List habits with current streak, longest streak, and total completions. Supports filtering by category and archive status.',
     category: 'productivity',
     parameters: {
       type: 'object',
@@ -94,7 +105,8 @@ This is the PREFERRED tool for habit tracking — do NOT create custom tables fo
   {
     name: 'delete_habit',
     brief: 'Delete a habit and its logs permanently',
-    description: 'Permanently delete a habit and all its completion logs. Use archive_habit to hide without deleting.',
+    description:
+      'Permanently delete a habit and all its completion logs. Use archive_habit to hide without deleting.',
     category: 'productivity',
     parameters: {
       type: 'object',
@@ -124,7 +136,8 @@ If no date is provided, logs for today. If count > 1, records multiple completio
   {
     name: 'get_today_habits',
     brief: 'Get habits due today with completion status',
-    description: 'Returns all habits scheduled for today with their completion status, current streak, and progress toward daily target.',
+    description:
+      'Returns all habits scheduled for today with their completion status, current streak, and progress toward daily target.',
     category: 'productivity',
     parameters: {
       type: 'object',
@@ -135,7 +148,8 @@ If no date is provided, logs for today. If count > 1, records multiple completio
   {
     name: 'get_habit_stats',
     brief: 'Get detailed stats for a habit (streaks, completion rate)',
-    description: 'Get detailed statistics for a habit including current/longest streak, weekly/monthly completion counts, and overall completion rate.',
+    description:
+      'Get detailed statistics for a habit including current/longest streak, weekly/monthly completion counts, and overall completion rate.',
     category: 'productivity',
     parameters: {
       type: 'object',
@@ -148,7 +162,8 @@ If no date is provided, logs for today. If count > 1, records multiple completio
   {
     name: 'archive_habit',
     brief: 'Archive a habit (hide without deleting)',
-    description: 'Archive a habit to hide it from the active list. Logs and streaks are preserved. Use update_habit with isArchived=false to unarchive.',
+    description:
+      'Archive a habit to hide it from the active list. Logs and streaks are preserved. Use update_habit with isArchived=false to unarchive.',
     category: 'productivity',
     parameters: {
       type: 'object',
@@ -200,9 +215,10 @@ export async function executeHabitTool(
           result: {
             habits,
             total: habits.length,
-            message: habits.length === 0
-              ? 'No habits found. Create one with create_habit.'
-              : `Found ${habits.length} habit(s).`,
+            message:
+              habits.length === 0
+                ? 'No habits found. Create one with create_habit.'
+                : `Found ${habits.length} habit(s).`,
           },
         };
       }
@@ -238,9 +254,10 @@ export async function executeHabitTool(
           result: {
             habits: todayHabits,
             progress,
-            message: todayHabits.length === 0
-              ? 'No habits scheduled for today.'
-              : `${progress.completed}/${progress.total} habits completed today.`,
+            message:
+              todayHabits.length === 0
+                ? 'No habits scheduled for today.'
+                : `${progress.completed}/${progress.total} habits completed today.`,
           },
         };
       }

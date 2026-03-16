@@ -88,9 +88,7 @@ describe('scanSingleDirectory', () => {
       if (p.endsWith('extension.json')) return true;
       return false;
     });
-    vi.mocked(readdirSync).mockReturnValue([
-      { name: 'bad-ext', isDirectory: () => true },
-    ] as never);
+    vi.mocked(readdirSync).mockReturnValue([{ name: 'bad-ext', isDirectory: () => true }] as never);
 
     const installFn = vi.fn(async () => {
       throw new Error('Invalid manifest');
@@ -124,9 +122,7 @@ describe('scanSingleDirectory', () => {
       if (p.endsWith('extension.json')) return true;
       return false;
     });
-    vi.mocked(readdirSync).mockReturnValue([
-      { name: 'dual', isDirectory: () => true },
-    ] as never);
+    vi.mocked(readdirSync).mockReturnValue([{ name: 'dual', isDirectory: () => true }] as never);
 
     const installFn = vi.fn(async () => ({}));
     await scanSingleDirectory('/scan', 'user-1', installFn);

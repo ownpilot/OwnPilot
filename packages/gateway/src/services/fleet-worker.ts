@@ -10,11 +10,7 @@
  * The worker does NOT own scheduling — that's the FleetManager's job.
  */
 
-import {
-  createProvider,
-  generateId,
-  getErrorMessage,
-} from '@ownpilot/core';
+import { createProvider, generateId, getErrorMessage } from '@ownpilot/core';
 import type {
   AIProvider,
   FleetWorkerConfig,
@@ -156,9 +152,14 @@ export class FleetWorker {
     }
 
     // Tool filter
-    const toolFilter = (this.config.allowedTools?.length || this.config.skills?.length)
-      ? resolveToolFilter(this.config.allowedTools, this.config.skills, `${this.fleetId}:${this.config.name}`)
-      : undefined;
+    const toolFilter =
+      this.config.allowedTools?.length || this.config.skills?.length
+        ? resolveToolFilter(
+            this.config.allowedTools,
+            this.config.skills,
+            `${this.fleetId}:${this.config.name}`
+          )
+        : undefined;
 
     // Create agent with all tool sources
     const agent = await createConfiguredAgent({
@@ -211,7 +212,10 @@ export class FleetWorker {
       output: pipelineResult.content,
       toolCalls,
       tokensUsed: pipelineResult.usage
-        ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
+        ? {
+            prompt: pipelineResult.usage.promptTokens,
+            completion: pipelineResult.usage.completionTokens,
+          }
         : undefined,
       costUsd: pipelineResult.costUsd,
       durationMs: pipelineResult.durationMs,
@@ -418,7 +422,11 @@ export class FleetWorker {
     // Execute each MCP tool with task input (mission context included via args)
     const results: Array<{ tool: string; output: unknown }> = [];
     const baseArgs = (task.input as Record<string, unknown>) ?? {};
-    const args = { ...baseArgs, _mission: this.mission, _task: `${task.title}: ${task.description}` };
+    const args = {
+      ...baseArgs,
+      _mission: this.mission,
+      _task: `${task.title}: ${task.description}`,
+    };
 
     for (const toolName of mcpTools) {
       const toolResult = await mcpClientService.callTool(serverName, toolName, args);
@@ -488,4 +496,3 @@ When your task is complete, summarize what you accomplished.`;
     return parts.join('\n');
   }
 }
-

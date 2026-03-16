@@ -638,7 +638,10 @@ function PlanView({ plan }: { plan: import('../api/endpoints/coding-agents').Acp
       {plan.entries.map((entry, i) => {
         const statusStyle = PLAN_STATUS_STYLE[entry.status] ?? 'text-zinc-500';
         return (
-          <div key={`plan-${i}-${entry.status}`} className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30">
+          <div
+            key={`plan-${i}-${entry.status}`}
+            className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-zinc-800/30"
+          >
             <div className="mt-0.5 shrink-0">
               {entry.status === 'completed' || entry.status === 'done' ? (
                 <Check className="w-3.5 h-3.5 text-emerald-400" />

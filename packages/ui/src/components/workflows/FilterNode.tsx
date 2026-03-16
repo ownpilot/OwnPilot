@@ -93,7 +93,9 @@ function FilterNodeComponent({ data, selected }: NodeProps<FilterNodeType>) {
         <div className="flex items-center gap-1 text-[9px]">
           <span className="text-gray-400 dark:text-gray-500">in</span>
           <div className="flex-1 border-t border-dashed border-emerald-300 dark:border-emerald-700 relative">
-            <span className="absolute left-1/2 -translate-x-1/2 -top-1.5 text-emerald-500">&#x25B6;</span>
+            <span className="absolute left-1/2 -translate-x-1/2 -top-1.5 text-emerald-500">
+              &#x25B6;
+            </span>
           </div>
           <span className="text-emerald-600 dark:text-emerald-400 font-semibold">out</span>
         </div>

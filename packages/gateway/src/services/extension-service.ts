@@ -621,10 +621,7 @@ export class ExtensionService implements IExtensionService {
   // Scan directory for new extensions — delegates to extension-scanner
   // --------------------------------------------------------------------------
 
-  async scanDirectory(
-    directory?: string,
-    userId = 'default'
-  ): Promise<ScanResult> {
+  async scanDirectory(directory?: string, userId = 'default'): Promise<ScanResult> {
     const installFn = (manifestPath: string, uid: string) => this.install(manifestPath, uid);
 
     if (!directory) {

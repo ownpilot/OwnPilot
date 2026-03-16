@@ -41,9 +41,9 @@
 10. [Key Design Patterns](#10-key-design-patterns)
 11. [Deployment Architecture](#11-deployment-architecture)
 12. [Security Architecture](#12-security-architecture)
-14. [Environment and Configuration](#14-environment-and-configuration)
-15. [Build System](#15-build-system)
-16. [Testing Strategy](#16-testing-strategy)
+13. [Environment and Configuration](#14-environment-and-configuration)
+14. [Build System](#15-build-system)
+15. [Testing Strategy](#16-testing-strategy)
 
 ---
 
@@ -258,11 +258,11 @@ Internal workspace dependencies flow strictly downward. No circular dependencies
 
 Detailed dependency table:
 
-| Package             | Depends On                                                        |
-| ------------------- | ----------------------------------------------------------------- |
-| `@ownpilot/core`    | (none -- zero external dependencies)                              |
-| `@ownpilot/gateway` | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ...                 |
-| `@ownpilot/ui`      | `@ownpilot/gateway` (types only), react, vite                     |
+| Package             | Depends On                                                         |
+| ------------------- | ------------------------------------------------------------------ |
+| `@ownpilot/core`    | (none -- zero external dependencies)                               |
+| `@ownpilot/gateway` | `@ownpilot/core`, hono, pg, ws, jose, dotenv, ...                  |
+| `@ownpilot/ui`      | `@ownpilot/gateway` (types only), react, vite                      |
 | `@ownpilot/cli`     | `@ownpilot/core`, `@ownpilot/gateway`, grammy, commander, inquirer |
 
 ### Key External Dependencies
@@ -1078,8 +1078,8 @@ The `ChannelManager` (`packages/gateway/src/channels/manager.ts`) provides a uni
 
 **Supported Channel Types:**
 
-| Channel  | Library | Adapter Location                        |
-| -------- | ------- | --------------------------------------- |
+| Channel  | Library | Adapter Location                                  |
+| -------- | ------- | ------------------------------------------------- |
 | Telegram | grammy  | `packages/gateway/src/channels/plugins/telegram/` |
 
 **Architecture:**
@@ -1856,12 +1856,12 @@ packages/ui/src/App.test.tsx
 
 ### Test Coverage Summary
 
-| Package              | Test Files | Tests  | Description                            |
-| -------------------- | :--------: | :----: | -------------------------------------- |
-| `@ownpilot/gateway`  |     50     | 1,075+ | Route integration, service, middleware |
-| `@ownpilot/core`     |     11     |  ~100  | Types, crypto, privacy, agent          |
-| `@ownpilot/ui`       |     1      |   ~5   | App rendering                          |
-| `@ownpilot/cli`      |     1      |   ~5   | CLI commands                           |
+| Package             | Test Files | Tests  | Description                            |
+| ------------------- | :--------: | :----: | -------------------------------------- |
+| `@ownpilot/gateway` |     50     | 1,075+ | Route integration, service, middleware |
+| `@ownpilot/core`    |     11     |  ~100  | Types, crypto, privacy, agent          |
+| `@ownpilot/ui`      |     1      |   ~5   | App rendering                          |
+| `@ownpilot/cli`     |     1      |   ~5   | CLI commands                           |
 
 ### Test Patterns
 

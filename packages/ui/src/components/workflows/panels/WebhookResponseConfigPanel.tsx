@@ -103,9 +103,7 @@ export function WebhookResponseConfigPanel({
           </label>
           <textarea
             value={(data.headers as string) ?? ''}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, headers: e.target.value || undefined })
-            }
+            onChange={(e) => onUpdate(node.id, { ...data, headers: e.target.value || undefined })}
             placeholder={'X-Custom-Header: value\nX-Request-Id: {{node_1.output.id}}'}
             rows={3}
             className={`${INPUT_CLS} resize-y font-mono text-xs`}

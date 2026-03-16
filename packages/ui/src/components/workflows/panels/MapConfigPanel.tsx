@@ -56,9 +56,7 @@ export function MapConfigPanel({
           <input
             type="text"
             value={arrayExpr}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, arrayExpression: e.target.value })
-            }
+            onChange={(e) => onUpdate(node.id, { ...data, arrayExpression: e.target.value })}
             placeholder="{{node_1.output.items}}"
             className={INPUT_CLS}
           />
@@ -78,8 +76,8 @@ export function MapConfigPanel({
             className={`${INPUT_CLS} resize-y font-mono text-xs`}
           />
           <p className="text-[10px] text-text-muted">
-            Use <code className="font-mono">item</code> and{' '}
-            <code className="font-mono">index</code> variables, return transformed item
+            Use <code className="font-mono">item</code> and <code className="font-mono">index</code>{' '}
+            variables, return transformed item
           </p>
         </div>
 

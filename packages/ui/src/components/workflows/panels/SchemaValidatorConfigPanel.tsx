@@ -75,9 +75,7 @@ export function SchemaValidatorConfigPanel({
             rows={6}
             className={`${INPUT_CLS} resize-y font-mono text-xs`}
           />
-          {parseError && (
-            <p className="text-[10px] text-error">{parseError}</p>
-          )}
+          {parseError && <p className="text-[10px] text-error">{parseError}</p>}
         </div>
 
         {/* Strict Mode */}

@@ -617,7 +617,9 @@ async function buildWorkflowIdeasSection(): Promise<string> {
     const { WORKFLOW_TEMPLATE_IDEAS } = await import('./workflow-template-ideas.js');
     if (!WORKFLOW_TEMPLATE_IDEAS?.length) return '';
 
-    const lines = (WORKFLOW_TEMPLATE_IDEAS as Array<{ name: string; nodes: string; category: string }>)
+    const lines = (
+      WORKFLOW_TEMPLATE_IDEAS as Array<{ name: string; nodes: string; category: string }>
+    )
       .map((t) => `- **${t.name}** (${t.category}): ${t.nodes}`)
       .join('\n');
 

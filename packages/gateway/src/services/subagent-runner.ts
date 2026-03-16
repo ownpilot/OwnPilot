@@ -121,7 +121,12 @@ export class SubagentRunner {
 
       // Check if cancelled during execution
       if (this.abortController.signal.aborted) {
-        return this.cancelledResult(pipelineResult.durationMs, pipelineResult.toolCalls, provider, model);
+        return this.cancelledResult(
+          pipelineResult.durationMs,
+          pipelineResult.toolCalls,
+          provider,
+          model
+        );
       }
 
       log.info(
@@ -135,7 +140,10 @@ export class SubagentRunner {
         turnsUsed: 1,
         toolCallsUsed: pipelineResult.toolCalls.length,
         tokensUsed: pipelineResult.usage
-          ? { prompt: pipelineResult.usage.promptTokens, completion: pipelineResult.usage.completionTokens }
+          ? {
+              prompt: pipelineResult.usage.promptTokens,
+              completion: pipelineResult.usage.completionTokens,
+            }
           : null,
         costUsd: pipelineResult.costUsd,
         durationMs: pipelineResult.durationMs,

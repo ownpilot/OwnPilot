@@ -42,11 +42,20 @@ const triggerIcons: Record<string, React.ComponentType<{ className?: string }>> 
 };
 
 const triggerBadgeStyles: Record<string, { bg: string; text: string }> = {
-  manual: { bg: 'bg-emerald-100 dark:bg-emerald-900/50', text: 'text-emerald-800 dark:text-emerald-200' },
+  manual: {
+    bg: 'bg-emerald-100 dark:bg-emerald-900/50',
+    text: 'text-emerald-800 dark:text-emerald-200',
+  },
   schedule: { bg: 'bg-blue-100 dark:bg-blue-900/50', text: 'text-blue-800 dark:text-blue-200' },
   event: { bg: 'bg-amber-100 dark:bg-amber-900/50', text: 'text-amber-800 dark:text-amber-200' },
-  condition: { bg: 'bg-orange-100 dark:bg-orange-900/50', text: 'text-orange-800 dark:text-orange-200' },
-  webhook: { bg: 'bg-violet-100 dark:bg-violet-900/50', text: 'text-violet-800 dark:text-violet-200' },
+  condition: {
+    bg: 'bg-orange-100 dark:bg-orange-900/50',
+    text: 'text-orange-800 dark:text-orange-200',
+  },
+  webhook: {
+    bg: 'bg-violet-100 dark:bg-violet-900/50',
+    text: 'text-violet-800 dark:text-violet-200',
+  },
 };
 
 function TriggerNodeComponent({ data, selected }: NodeProps<TriggerNodeType>) {
@@ -61,7 +70,7 @@ function TriggerNodeComponent({ data, selected }: NodeProps<TriggerNodeType>) {
   // Cron label
   const cronLabel =
     triggerType === 'schedule' && data.cron
-      ? CRON_PRESETS.find((p) => p.cron === data.cron)?.label ?? null
+      ? (CRON_PRESETS.find((p) => p.cron === data.cron)?.label ?? null)
       : null;
 
   return (

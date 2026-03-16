@@ -126,10 +126,7 @@ function lazyRouteExecutor(
  * Create a provider for memory tools (requires userId)
  */
 export function createMemoryToolProvider(userId: string): ToolProvider {
-  const executor = lazyRouteExecutor(
-    () => import('../../routes/memories.js'),
-    'executeMemoryTool'
-  );
+  const executor = lazyRouteExecutor(() => import('../../routes/memories.js'), 'executeMemoryTool');
   return {
     name: 'memory',
     getTools: () =>
@@ -144,10 +141,7 @@ export function createMemoryToolProvider(userId: string): ToolProvider {
  * Create a provider for goal tools (requires userId)
  */
 export function createGoalToolProvider(userId: string): ToolProvider {
-  const executor = lazyRouteExecutor(
-    () => import('../../routes/goals.js'),
-    'executeGoalTool'
-  );
+  const executor = lazyRouteExecutor(() => import('../../routes/goals.js'), 'executeGoalTool');
   return {
     name: 'goal',
     getTools: () =>

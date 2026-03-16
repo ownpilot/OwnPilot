@@ -26,11 +26,8 @@ vi.mock('./log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }));
 
-const {
-  activateExtensionTriggers,
-  deactivateExtensionTriggers,
-  cleanupOrphanTriggers,
-} = await import('./extension-trigger-manager.js');
+const { activateExtensionTriggers, deactivateExtensionTriggers, cleanupOrphanTriggers } =
+  await import('./extension-trigger-manager.js');
 
 // ── Tests ──
 
@@ -74,7 +71,13 @@ describe('activateExtensionTriggers', () => {
         id: 'ext-1',
         name: 'My Extension',
         triggers: [
-          { name: 'Daily Check', type: 'cron', config: { cron: '0 9 * * *' }, action: 'notify', description: 'Runs daily' },
+          {
+            name: 'Daily Check',
+            type: 'cron',
+            config: { cron: '0 9 * * *' },
+            action: 'notify',
+            description: 'Runs daily',
+          },
         ],
       } as never,
       'user-1'
@@ -149,9 +152,7 @@ describe('cleanupOrphanTriggers', () => {
   });
 
   it('returns 0 when no orphans', async () => {
-    mockTriggerService.listTriggers.mockResolvedValue([
-      { id: 't1', name: '[Ext:ext-1] Valid' },
-    ]);
+    mockTriggerService.listTriggers.mockResolvedValue([{ id: 't1', name: '[Ext:ext-1] Valid' }]);
 
     const cleaned = await cleanupOrphanTriggers('user-1');
     expect(cleaned).toBe(0);

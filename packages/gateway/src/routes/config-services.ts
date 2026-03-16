@@ -333,7 +333,8 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   // Validate required fields (merge with existing data to allow partial updates)
   if (body.data && service.configSchema.length > 0) {
-    const existingData = configServicesRepo.getEntries(name).find((e) => e.id === entryId)?.data ?? {};
+    const existingData =
+      configServicesRepo.getEntries(name).find((e) => e.id === entryId)?.data ?? {};
     const mergedData = { ...existingData, ...body.data };
     const missing = validateRequiredFields(mergedData, service.configSchema);
     if (missing.length > 0) {

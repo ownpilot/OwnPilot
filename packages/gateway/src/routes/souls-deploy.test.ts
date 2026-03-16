@@ -3,7 +3,9 @@ import { Hono } from 'hono';
 
 // ── Mocks ──
 
-const mockSoulRepo = { create: vi.fn(async (data: Record<string, unknown>) => ({ id: 'soul-1', ...data })) };
+const mockSoulRepo = {
+  create: vi.fn(async (data: Record<string, unknown>) => ({ id: 'soul-1', ...data })),
+};
 const mockAgentsRepo = { create: vi.fn(async () => ({ id: 'agent-1' })) };
 const mockTriggerRepo = { create: vi.fn(async () => ({ id: 'trigger-1' })) };
 const mockAdapter = { transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()) };
@@ -130,7 +132,9 @@ describe('POST /souls/deploy', () => {
 
   it('retries on duplicate name conflict', async () => {
     mockAdapter.transaction
-      .mockRejectedValueOnce(new Error('duplicate key value violates unique constraint "agents_name_unique"'))
+      .mockRejectedValueOnce(
+        new Error('duplicate key value violates unique constraint "agents_name_unique"')
+      )
       .mockImplementationOnce(async (fn: () => Promise<unknown>) => fn());
 
     const app = createApp();

@@ -14,7 +14,13 @@
  */
 
 import { getEventSystem, getErrorMessage, getNextRunTime } from '@ownpilot/core';
-import type { FleetConfig, FleetSession, FleetTask, FleetWorkerConfig, EventHandler } from '@ownpilot/core';
+import type {
+  FleetConfig,
+  FleetSession,
+  FleetTask,
+  FleetWorkerConfig,
+  EventHandler,
+} from '@ownpilot/core';
 import { FleetWorker } from './fleet-worker.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { getLog } from './log.js';
@@ -67,7 +73,9 @@ export class FleetManager {
       const repo = getFleetRepository();
       const cleaned = await repo.cleanupOldSessions();
       if (cleaned > 0) log.info(`Cleaned up ${cleaned} old fleet sessions`);
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
 
     try {
       const repo = getFleetRepository();
@@ -330,7 +338,9 @@ export class FleetManager {
       if (nextRun) {
         delay = Math.max(nextRun.getTime() - Date.now(), 1000);
       } else {
-        log.warn(`[${fleetId}] Invalid cron expression "${cron}", falling back to default interval`);
+        log.warn(
+          `[${fleetId}] Invalid cron expression "${cron}", falling back to default interval`
+        );
       }
     }
 
@@ -483,7 +493,9 @@ export class FleetManager {
           // Cascade failure to dependent tasks
           const cascaded = await repo.failDependentTasks(fleetId, task.id);
           if (cascaded > 0) {
-            log.info(`[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`);
+            log.info(
+              `[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`
+            );
           }
           return null;
         }
@@ -545,7 +557,9 @@ export class FleetManager {
               // Cascade failure to dependent tasks
               const cascaded = await repo.failDependentTasks(fleetId, task.id);
               if (cascaded > 0) {
-                log.info(`[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`);
+                log.info(
+                  `[${fleetId}] Cascaded failure from task ${task.id} to ${cascaded} dependent task(s)`
+                );
               }
             }
           }
@@ -619,11 +633,15 @@ export class FleetManager {
       if (postMaxCost !== undefined && postMaxCost > 0) {
         const budgetRatio = managed.session.totalCostUsd / postMaxCost;
         if (budgetRatio >= 1) {
-          log.warn(`[${fleetId}] Budget exceeded after cycle ($${managed.session.totalCostUsd}/$${postMaxCost})`);
+          log.warn(
+            `[${fleetId}] Budget exceeded after cycle ($${managed.session.totalCostUsd}/$${postMaxCost})`
+          );
           await this.pauseFleet(fleetId);
           return;
         } else if (budgetRatio >= 0.8) {
-          log.warn(`[${fleetId}] Approaching budget limit ($${managed.session.totalCostUsd}/$${postMaxCost}, ${Math.round(budgetRatio * 100)}% used)`);
+          log.warn(
+            `[${fleetId}] Approaching budget limit ($${managed.session.totalCostUsd}/$${postMaxCost}, ${Math.round(budgetRatio * 100)}% used)`
+          );
         }
       }
 

@@ -83,15 +83,20 @@ export class ProviderService implements IProviderService {
     try {
       const config = loadProviderConfig(provider);
       if (!config?.models) return [];
-      return (config.models as Array<{ id: string; name?: string; contextWindow?: number; maxOutput?: number }>).map(
-        (m) => ({
-          id: m.id,
-          name: m.name ?? m.id,
-          provider,
-          contextWindow: m.contextWindow,
-          maxOutput: m.maxOutput,
-        })
-      );
+      return (
+        config.models as Array<{
+          id: string;
+          name?: string;
+          contextWindow?: number;
+          maxOutput?: number;
+        }>
+      ).map((m) => ({
+        id: m.id,
+        name: m.name ?? m.id,
+        provider,
+        contextWindow: m.contextWindow,
+        maxOutput: m.maxOutput,
+      }));
     } catch {
       return [];
     }

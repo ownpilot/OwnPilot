@@ -88,7 +88,11 @@ describe('executeHabitTool', () => {
     const updated = { id: 'h1', name: 'Updated' };
     mockRepo.update.mockResolvedValue(updated);
 
-    const result = await executeHabitTool('update_habit', { habitId: 'h1', name: 'Updated' }, 'user-1');
+    const result = await executeHabitTool(
+      'update_habit',
+      { habitId: 'h1', name: 'Updated' },
+      'user-1'
+    );
 
     expect(result.success).toBe(true);
     expect(result.result).toEqual(updated);

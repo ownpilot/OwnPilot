@@ -505,9 +505,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
             )
           );
           setExecutionProgress((prev) =>
-            prev
-              ? { ...prev, running: getNodeLabel(event.nodeId) }
-              : null
+            prev ? { ...prev, running: getNodeLabel(event.nodeId) } : null
           );
           break;
 
@@ -530,9 +528,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
             )
           );
           setExecutionProgress((prev) =>
-            prev
-              ? { ...prev, completed: prev.completed + 1, running: null }
-              : null
+            prev ? { ...prev, completed: prev.completed + 1, running: null } : null
           );
           break;
 
@@ -552,9 +548,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
             )
           );
           setExecutionProgress((prev) =>
-            prev
-              ? { ...prev, failed: prev.failed + 1, running: null }
-              : null
+            prev ? { ...prev, failed: prev.failed + 1, running: null } : null
           );
           break;
 
@@ -573,11 +567,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
                 : n
             )
           );
-          setExecutionProgress((prev) =>
-            prev
-              ? { ...prev, retries: prev.retries + 1 }
-              : null
-          );
+          setExecutionProgress((prev) => (prev ? { ...prev, retries: prev.retries + 1 } : null));
           break;
 
         case 'foreach_iteration_start':
@@ -599,9 +589,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
           break;
 
         case 'done':
-          setExecutionProgress((prev) =>
-            prev ? { ...prev, running: null } : null
-          );
+          setExecutionProgress((prev) => (prev ? { ...prev, running: null } : null));
           toast.success(
             event.logStatus === 'completed'
               ? `Workflow completed in ${event.durationMs ? `${(event.durationMs / 1000).toFixed(1)}s` : 'N/A'}`

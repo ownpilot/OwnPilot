@@ -514,7 +514,8 @@ export function LlmConfigPanel({
                 value={(data.responseFormat as string) ?? 'text'}
                 onChange={(e) =>
                   pushUpdate({
-                    responseFormat: e.target.value === 'text' ? undefined : (e.target.value as 'json'),
+                    responseFormat:
+                      e.target.value === 'text' ? undefined : (e.target.value as 'json'),
                   })
                 }
                 className={INPUT_CLS}

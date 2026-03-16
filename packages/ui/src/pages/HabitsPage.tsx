@@ -73,9 +73,7 @@ function StreakHeatmap({ habit }: { habit: Habit }) {
         <div
           key={i}
           className={`w-2.5 h-2.5 rounded-[2px] transition-colors ${
-            completed
-              ? 'bg-emerald-500 dark:bg-emerald-400'
-              : 'bg-border dark:bg-dark-border'
+            completed ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-border dark:bg-dark-border'
           }`}
           title={`${27 - i} days ago`}
         />
@@ -126,7 +124,11 @@ export function HabitsPage() {
       ]);
       setHabits(listRes.habits ?? []);
       setTodayHabits(todayRes.habits ?? []);
-      setTodayProgress({ total: todayRes.total ?? 0, completed: todayRes.completed ?? 0, rate: todayRes.percentage ?? 0 });
+      setTodayProgress({
+        total: todayRes.total ?? 0,
+        completed: todayRes.completed ?? 0,
+        rate: todayRes.percentage ?? 0,
+      });
     } catch {
       // API client handles error
     } finally {
@@ -276,32 +278,45 @@ export function HabitsPage() {
                 icon: Zap,
                 color: 'text-amber-500 bg-amber-500/10',
                 title: 'Streak Tracking',
-                description: 'Build momentum with automatic streak counting. See your current and longest streaks at a glance.',
+                description:
+                  'Build momentum with automatic streak counting. See your current and longest streaks at a glance.',
               },
               {
                 icon: Calendar,
                 color: 'text-emerald-500 bg-emerald-500/10',
                 title: 'Flexible Scheduling',
-                description: 'Daily, weekdays, weekly, or custom frequency. Set target counts and units.',
+                description:
+                  'Daily, weekdays, weekly, or custom frequency. Set target counts and units.',
               },
               {
                 icon: Sparkles,
                 color: 'text-violet-500 bg-violet-500/10',
                 title: 'AI Coaching',
-                description: 'Your AI can log habits, check streaks, and motivate you during conversations.',
+                description:
+                  'Your AI can log habits, check streaks, and motivate you during conversations.',
               },
               {
                 icon: Activity,
                 color: 'text-primary bg-primary/10',
                 title: 'Progress Insights',
-                description: 'Track completion rates, total completions, and visualize your consistency over time.',
+                description:
+                  'Track completion rates, total completions, and visualize your consistency over time.',
               },
             ]}
             steps={[
-              { title: 'Create a habit', detail: 'Click "Create Habit" and set name, frequency, and target.' },
+              {
+                title: 'Create a habit',
+                detail: 'Click "Create Habit" and set name, frequency, and target.',
+              },
               { title: 'Log daily', detail: 'Check off habits as you complete them each day.' },
-              { title: 'Build streaks', detail: 'Watch your streak grow as you maintain consistency.' },
-              { title: 'Track progress', detail: 'View stats, completion rates, and your longest streaks.' },
+              {
+                title: 'Build streaks',
+                detail: 'Watch your streak grow as you maintain consistency.',
+              },
+              {
+                title: 'Track progress',
+                detail: 'View stats, completion rates, and your longest streaks.',
+              },
             ]}
           >
             {/* Today's habits preview */}
@@ -317,7 +332,9 @@ export function HabitsPage() {
                 <div className="w-full h-2 rounded-full bg-border dark:bg-dark-border overflow-hidden">
                   <div
                     className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                    style={{ width: `${todayProgress.total > 0 ? (todayProgress.completed / todayProgress.total) * 100 : 0}%` }}
+                    style={{
+                      width: `${todayProgress.total > 0 ? (todayProgress.completed / todayProgress.total) * 100 : 0}%`,
+                    }}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -326,14 +343,24 @@ export function HabitsPage() {
                       <button
                         onClick={() => !h.completedToday && handleLog(h.id)}
                         className={`shrink-0 transition-transform active:scale-90 ${
-                          h.completedToday ? 'text-emerald-500' : 'text-text-muted dark:text-dark-text-muted hover:text-primary'
+                          h.completedToday
+                            ? 'text-emerald-500'
+                            : 'text-text-muted dark:text-dark-text-muted hover:text-primary'
                         }`}
                       >
-                        {h.completedToday ? <CheckCircle2 className="w-4.5 h-4.5" /> : <Circle className="w-4.5 h-4.5" />}
+                        {h.completedToday ? (
+                          <CheckCircle2 className="w-4.5 h-4.5" />
+                        ) : (
+                          <Circle className="w-4.5 h-4.5" />
+                        )}
                       </button>
-                      <span className={h.completedToday ? 'line-through opacity-50' : ''}>{h.name}</span>
+                      <span className={h.completedToday ? 'line-through opacity-50' : ''}>
+                        {h.name}
+                      </span>
                       {h.streakCurrent > 0 && (
-                        <span className={`ml-auto flex items-center gap-0.5 text-xs font-medium ${streakColor(h.streakCurrent)}`}>
+                        <span
+                          className={`ml-auto flex items-center gap-0.5 text-xs font-medium ${streakColor(h.streakCurrent)}`}
+                        >
                           <Zap className="w-3 h-3" />
                           {h.streakCurrent}
                         </span>
@@ -416,7 +443,12 @@ export function HabitsPage() {
                         {/* Content */}
                         <div className="flex-1 min-w-0 space-y-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <button onClick={() => openDetails(habit)} className="font-medium hover:text-primary transition-colors text-left">{habit.name}</button>
+                            <button
+                              onClick={() => openDetails(habit)}
+                              className="font-medium hover:text-primary transition-colors text-left"
+                            >
+                              {habit.name}
+                            </button>
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
                               {frequencyLabels[habit.frequency] ?? habit.frequency}
                             </span>
@@ -441,7 +473,9 @@ export function HabitsPage() {
                           {/* Streak + Stats Row */}
                           <div className="flex items-center gap-4">
                             {/* Current Streak Badge */}
-                            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${streakBg(habit.streakCurrent)} ${streakColor(habit.streakCurrent)}`}>
+                            <div
+                              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${streakBg(habit.streakCurrent)} ${streakColor(habit.streakCurrent)}`}
+                            >
                               <Zap className="w-3 h-3" />
                               {habit.streakCurrent}d streak
                             </div>
@@ -514,8 +548,13 @@ export function HabitsPage() {
         <HabitDetailPanel
           habit={selectedHabit}
           stats={habitStats}
-          onClose={() => { setSelectedHabit(null); setHabitStats(null); }}
-          onLog={() => { handleLog(selectedHabit.id); }}
+          onClose={() => {
+            setSelectedHabit(null);
+            setHabitStats(null);
+          }}
+          onLog={() => {
+            handleLog(selectedHabit.id);
+          }}
         />
       )}
 
@@ -556,7 +595,10 @@ function HabitDetailPanel({
   const { onBackdropClick } = useModalClose(onClose);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-lg mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-border dark:border-dark-border shadow-2xl animate-fade-in-up max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border dark:border-dark-border">
@@ -564,7 +606,9 @@ function HabitDetailPanel({
             <div>
               <h2 className="text-lg font-semibold">{habit.name}</h2>
               {habit.description && (
-                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">{habit.description}</p>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                  {habit.description}
+                </p>
               )}
             </div>
             {!habit.isArchived && (
@@ -585,14 +629,20 @@ function HabitDetailPanel({
             <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 mb-1">
               <Zap className="w-4 h-4" />
             </div>
-            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{habit.streakCurrent}</div>
-            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Current Streak</div>
+            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">
+              {habit.streakCurrent}
+            </div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">
+              Current Streak
+            </div>
           </div>
           <div className="text-center p-3 rounded-lg bg-emerald-500/10">
             <div className="flex items-center justify-center gap-1 text-emerald-600 dark:text-emerald-400 mb-1">
               <TrendingUp className="w-4 h-4" />
             </div>
-            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{habit.streakLongest}</div>
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+              {habit.streakLongest}
+            </div>
             <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Best Streak</div>
           </div>
           <div className="text-center p-3 rounded-lg bg-primary/10">
@@ -607,15 +657,21 @@ function HabitDetailPanel({
               <Activity className="w-4 h-4" />
             </div>
             <div className="text-xl font-bold text-violet-600 dark:text-violet-400">
-              {stats && typeof stats.completionRate === 'number' ? `${Math.round(stats.completionRate as number)}%` : '—'}
+              {stats && typeof stats.completionRate === 'number'
+                ? `${Math.round(stats.completionRate as number)}%`
+                : '—'}
             </div>
-            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">Completion Rate</div>
+            <div className="text-[10px] text-text-muted dark:text-dark-text-muted">
+              Completion Rate
+            </div>
           </div>
         </div>
 
         {/* Streak Heatmap (larger) */}
         <div className="px-5 pb-4">
-          <h3 className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">Last 28 Days</h3>
+          <h3 className="text-xs font-medium text-text-muted dark:text-dark-text-muted mb-2">
+            Last 28 Days
+          </h3>
           <div className="flex gap-[3px] flex-wrap">
             {Array.from({ length: 28 }, (_, i) => {
               const daysAgo = 27 - i;
@@ -647,7 +703,9 @@ function HabitDetailPanel({
           {habit.targetCount > 1 && (
             <div className="flex justify-between py-1.5">
               <span className="text-text-muted dark:text-dark-text-muted">Target</span>
-              <span className="font-medium">{habit.targetCount}x{habit.unit ? ` ${habit.unit}` : ''}</span>
+              <span className="font-medium">
+                {habit.targetCount}x{habit.unit ? ` ${habit.unit}` : ''}
+              </span>
             </div>
           )}
           {habit.category && (
@@ -734,7 +792,10 @@ function HabitModal({
     'w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-sm text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onBackdropClick}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      onClick={onBackdropClick}
+    >
       <div className="w-full max-w-md mx-4 rounded-xl bg-white dark:bg-zinc-900 border border-border dark:border-dark-border shadow-2xl animate-fade-in-up">
         <div className="px-5 py-4 border-b border-border dark:border-dark-border">
           <h2 className="text-lg font-semibold">{habit ? 'Edit Habit' : 'New Habit'}</h2>
@@ -771,7 +832,11 @@ function HabitModal({
               <label className="block text-xs font-medium text-text-secondary dark:text-dark-text-secondary mb-1.5">
                 Frequency
               </label>
-              <select className={inputClass} value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+              <select
+                className={inputClass}
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+              >
                 <option value="daily">Daily</option>
                 <option value="weekdays">Weekdays</option>
                 <option value="weekly">Weekly</option>

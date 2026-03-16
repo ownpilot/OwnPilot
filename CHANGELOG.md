@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9] - 2026-03-16
+
+### Added
+
+- **Mini Pomodoro Timer** — Compact countdown widget in the global header bar, visible on all pages when a Pomodoro session is active. Shows progress ring, session type icon, and countdown. Click to navigate to Pomodoro page. Auto-hides when no session is running or when on the Pomodoro page itself.
+- **MiniPomodoro component** (`packages/ui/src/components/MiniPomodoro.tsx`) — Self-contained component with WebSocket updates and independent countdown
+
+### Fixed
+
+- **Pomodoro Timer Broken on Non-UTC Machines** — Root cause: PostgreSQL `TIMESTAMP` (without timezone) columns + `pg` driver's default parser interprets stored values as local time. On non-UTC machines, `startedAt` was shifted backward, causing `fetchState()` to calculate `remaining = 0` and immediately auto-complete every session. Fix: `pg.types.setTypeParser(1114)` forces UTC interpretation for all timestamp columns.
+- **Pomodoro Timer Effect** — Removed `timeLeft` from the timer `useEffect` dependency array, which was needlessly recreating the interval every second
+- **CI: notification-router.test.ts** — Test was hitting real PostgreSQL (port 25432) instead of mocks after preferences were migrated to DB-backed storage. Added `settingsRepo` mock with in-memory Map.
+- **Code Formatting** — Fixed 88 files with Prettier formatting issues that were failing `format:check` in CI
+
 ## [0.1.10] - 2026-03-14
 
 ### Added
@@ -68,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Delay Node** — Logs warning when 1-hour safety cap is applied
 - **Agent Concurrent Guard** — `cycleInProgress` flag prevents double cycle execution
 - **Agent Rate Limit Retry** — Re-schedules with backoff after throttling (was silently stopping)
-- **Agent Crew Context Cache** — 30-second TTL cache reduces N*3 DB queries per heartbeat to 1
+- **Agent Crew Context Cache** — 30-second TTL cache reduces N\*3 DB queries per heartbeat to 1
 - **getCommunicationBus()** — Throws descriptive error instead of unsafe non-null assertion crash
 - **Subagent spawnCounts** — Cleaned up when conversations have no active sessions (was growing unbounded)
 - **Workspace Creation** — Warning logged instead of silent debug on failure

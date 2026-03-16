@@ -1,6 +1,6 @@
 {
   "name": "ownpilot-monorepo",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "description": "OwnPilot - Privacy-first personal AI assistant platform",
   "type": "module",

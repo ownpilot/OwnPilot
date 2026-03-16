@@ -257,10 +257,11 @@ describe('agent-runner-utils', () => {
     it('collects tool calls via onToolEnd', () => {
       const { toolCalls, onToolEnd } = createToolCallCollector();
 
-      onToolEnd(
-        { name: 'search_web', arguments: '{"query":"test"}' } as never,
-        { content: 'results', isError: false, durationMs: 150 }
-      );
+      onToolEnd({ name: 'search_web', arguments: '{"query":"test"}' } as never, {
+        content: 'results',
+        isError: false,
+        durationMs: 150,
+      });
 
       expect(toolCalls).toHaveLength(1);
       expect(toolCalls[0]).toEqual({
@@ -275,10 +276,11 @@ describe('agent-runner-utils', () => {
     it('marks error tool calls as unsuccessful', () => {
       const { toolCalls, onToolEnd } = createToolCallCollector();
 
-      onToolEnd(
-        { name: 'fail_tool', arguments: '{}' } as never,
-        { content: 'Error occurred', isError: true, durationMs: 50 }
-      );
+      onToolEnd({ name: 'fail_tool', arguments: '{}' } as never, {
+        content: 'Error occurred',
+        isError: true,
+        durationMs: 50,
+      });
 
       expect(toolCalls[0]!.success).toBe(false);
     });
@@ -286,10 +288,11 @@ describe('agent-runner-utils', () => {
     it('handles invalid JSON arguments', () => {
       const { toolCalls, onToolEnd } = createToolCallCollector();
 
-      onToolEnd(
-        { name: 'raw_tool', arguments: 'not json' } as never,
-        { content: 'ok', isError: false, durationMs: 10 }
-      );
+      onToolEnd({ name: 'raw_tool', arguments: 'not json' } as never, {
+        content: 'ok',
+        isError: false,
+        durationMs: 10,
+      });
 
       expect(toolCalls[0]!.args).toEqual({ _raw: 'not json' });
     });

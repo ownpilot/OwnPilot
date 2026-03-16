@@ -93,13 +93,15 @@ export const habitsApi = {
   list: (params?: { archived?: string; category?: string }) =>
     apiClient.get<{ habits: Habit[]; count: number }>('/habits', { params }),
   getToday: () =>
-    apiClient.get<{ total: number; completed: number; percentage: number; habits: HabitWithTodayStatus[] }>(
-      '/habits/today'
-    ),
+    apiClient.get<{
+      total: number;
+      completed: number;
+      percentage: number;
+      habits: HabitWithTodayStatus[];
+    }>('/habits/today'),
   categories: () => apiClient.get<{ categories: string[] }>('/habits/categories'),
   get: (id: string) => apiClient.get<{ habit: Habit }>(`/habits/${id}`),
-  create: (body: Record<string, unknown>) =>
-    apiClient.post<Habit>('/habits', body),
+  create: (body: Record<string, unknown>) => apiClient.post<Habit>('/habits', body),
   update: (id: string, body: Record<string, unknown>) =>
     apiClient.patch<Habit>(`/habits/${id}`, body),
   delete: (id: string) => apiClient.delete<void>(`/habits/${id}`),
@@ -108,8 +110,7 @@ export const habitsApi = {
     apiClient.post<HabitLog>(`/habits/${id}/log`, body ?? {}),
   getLogs: (id: string, params?: Record<string, string>) =>
     apiClient.get<{ logs: HabitLog[]; count: number }>(`/habits/${id}/logs`, { params }),
-  getStats: (id: string) =>
-    apiClient.get<Record<string, unknown>>(`/habits/${id}`),
+  getStats: (id: string) => apiClient.get<Record<string, unknown>>(`/habits/${id}`),
 };
 
 // ---- Pomodoro ----

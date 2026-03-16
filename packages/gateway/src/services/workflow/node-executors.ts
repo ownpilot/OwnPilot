@@ -335,7 +335,11 @@ export function executeConditionNode(
     const branch = Boolean(result);
     const durationMs = Date.now() - startTime;
 
-    log.info('Condition evaluated', { nodeId: node.id, result: branch ? 'true' : 'false', durationMs });
+    log.info('Condition evaluated', {
+      nodeId: node.id,
+      result: branch ? 'true' : 'false',
+      durationMs,
+    });
 
     return {
       nodeId: node.id,
@@ -693,7 +697,11 @@ export async function executeDelayNode(
     const resolvedUnit = data.unit ?? 'seconds';
 
     if (delayMs > MAX_DELAY_MS) {
-      log.warn('Delay capped to maximum 1 hour', { nodeId: node.id, requestedMs: delayMs, cappedMs: MAX_DELAY_MS });
+      log.warn('Delay capped to maximum 1 hour', {
+        nodeId: node.id,
+        requestedMs: delayMs,
+        cappedMs: MAX_DELAY_MS,
+      });
     }
 
     log.info('Delay applied', { nodeId: node.id, delayMs: actualDelay, unit: resolvedUnit });
@@ -850,7 +858,11 @@ export function executeMergeNode(
       output = { mode, results: collected, count: Object.keys(collected).length };
     }
 
-    log.info('Merge completed', { nodeId: node.id, mode, inputCount: Object.keys(collected).length });
+    log.info('Merge completed', {
+      nodeId: node.id,
+      mode,
+      inputCount: Object.keys(collected).length,
+    });
 
     return {
       nodeId: node.id,
@@ -960,7 +972,12 @@ export function executeDataStoreNode(
         break;
     }
 
-    log.info('DataStore operation completed', { nodeId: node.id, operation: data.operation, ns, key });
+    log.info('DataStore operation completed', {
+      nodeId: node.id,
+      operation: data.operation,
+      ns,
+      key,
+    });
     return {
       nodeId: node.id,
       status: 'success',
@@ -1012,7 +1029,9 @@ export function executeSchemaValidatorNode(
       const properties = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
       for (const [key, propSchema] of Object.entries(properties)) {
         if (key in obj && propSchema.type && typeof obj[key] !== propSchema.type) {
-          validationErrors.push(`Field "${key}" expected type "${propSchema.type}", got "${typeof obj[key]}"`);
+          validationErrors.push(
+            `Field "${key}" expected type "${propSchema.type}", got "${typeof obj[key]}"`
+          );
         }
       }
     } else if (schema.type && typeof inputData !== schema.type) {
@@ -1020,7 +1039,11 @@ export function executeSchemaValidatorNode(
     }
 
     const valid = validationErrors.length === 0;
-    log.info('Schema validation completed', { nodeId: node.id, valid, errorCount: validationErrors.length });
+    log.info('Schema validation completed', {
+      nodeId: node.id,
+      valid,
+      errorCount: validationErrors.length,
+    });
 
     if (!valid && data.strict) {
       return {
@@ -1086,7 +1109,11 @@ export function executeFilterNode(
       return vm.runInNewContext(data.condition, ctx, { timeout: vmTimeout });
     });
 
-    log.info('Filter completed', { nodeId: node.id, inputCount: arr.length, outputCount: filtered.length });
+    log.info('Filter completed', {
+      nodeId: node.id,
+      inputCount: arr.length,
+      outputCount: filtered.length,
+    });
     return {
       nodeId: node.id,
       status: 'success',
@@ -1213,9 +1240,10 @@ export function executeAggregateNode(
       case 'groupBy': {
         const groups: Record<string, unknown[]> = {};
         for (const item of arr) {
-          const key = data.field && typeof item === 'object' && item !== null
-            ? String((item as Record<string, unknown>)[data.field])
-            : String(item);
+          const key =
+            data.field && typeof item === 'object' && item !== null
+              ? String((item as Record<string, unknown>)[data.field])
+              : String(item);
           if (!groups[key]) groups[key] = [];
           groups[key].push(item);
         }
@@ -1229,9 +1257,10 @@ export function executeAggregateNode(
         if (data.field) {
           const seen = new Set<unknown>();
           output = arr.filter((item) => {
-            const val = typeof item === 'object' && item !== null
-              ? (item as Record<string, unknown>)[data.field!]
-              : item;
+            const val =
+              typeof item === 'object' && item !== null
+                ? (item as Record<string, unknown>)[data.field!]
+                : item;
             if (seen.has(val)) return false;
             seen.add(val);
             return true;
@@ -1242,7 +1271,11 @@ export function executeAggregateNode(
         break;
     }
 
-    log.info('Aggregate completed', { nodeId: node.id, operation: data.operation, inputCount: arr.length });
+    log.info('Aggregate completed', {
+      nodeId: node.id,
+      operation: data.operation,
+      inputCount: arr.length,
+    });
     return {
       nodeId: node.id,
       status: 'success',
