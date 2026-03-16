@@ -1,24 +1,32 @@
-import { Link } from "react-router";
-import { Github, Shield, Heart } from "lucide-react";
+import { Link } from 'react-router';
+import { Github, Shield, Heart } from 'lucide-react';
 
 const footerLinks = {
   Product: [
-    { label: "Features", href: "/#features" },
-    { label: "Architecture", href: "/docs/architecture" },
-    { label: "Changelog", href: "/changelog" },
-    { label: "Roadmap", href: "https://github.com/ownpilot/ownpilot/issues" },
+    { label: 'Features', href: '/#features' },
+    { label: 'Architecture', href: '/docs/architecture' },
+    { label: 'Changelog', href: '/changelog' },
+    { label: 'Roadmap', href: 'https://github.com/ownpilot/ownpilot/issues' },
   ],
   Documentation: [
-    { label: "Getting Started", href: "/docs/getting-started" },
-    { label: "Quick Start", href: "/docs/quick-start" },
-    { label: "API Reference", href: "/docs/api-reference" },
-    { label: "Deployment", href: "/docs/deployment" },
+    { label: 'Getting Started', href: '/docs/getting-started' },
+    { label: 'Quick Start', href: '/docs/quick-start' },
+    { label: 'API Reference', href: '/docs/api-reference' },
+    { label: 'Deployment', href: '/docs/deployment' },
   ],
   Community: [
-    { label: "GitHub", href: "https://github.com/ownpilot/ownpilot", external: true },
-    { label: "Issues", href: "https://github.com/ownpilot/ownpilot/issues", external: true },
-    { label: "Discussions", href: "https://github.com/ownpilot/ownpilot/discussions", external: true },
-    { label: "Contributing", href: "https://github.com/ownpilot/ownpilot/blob/main/CONTRIBUTING.md", external: true },
+    { label: 'GitHub', href: 'https://github.com/ownpilot/ownpilot', external: true },
+    { label: 'Issues', href: 'https://github.com/ownpilot/ownpilot/issues', external: true },
+    {
+      label: 'Discussions',
+      href: 'https://github.com/ownpilot/ownpilot/discussions',
+      external: true,
+    },
+    {
+      label: 'Contributing',
+      href: 'https://github.com/ownpilot/ownpilot/blob/main/CONTRIBUTING.md',
+      external: true,
+    },
   ],
 };
 
@@ -53,7 +61,7 @@ export function Footer() {
               <ul className="space-y-2.5">
                 {links.map((link) => (
                   <li key={link.label}>
-                    {"external" in link && link.external ? (
+                    {'external' in link && link.external ? (
                       <a
                         href={link.href}
                         target="_blank"
@@ -79,9 +87,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-[var(--color-text-subtle)]">
-            © 2026 OwnPilot. MIT License.
-          </p>
+          <p className="text-xs text-[var(--color-text-subtle)]">© 2026 OwnPilot. MIT License.</p>
           <div className="flex items-center gap-4">
             <a
               href="https://github.com/ownpilot/ownpilot"

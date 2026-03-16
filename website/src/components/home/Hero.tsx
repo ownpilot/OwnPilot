@@ -1,9 +1,9 @@
-import { useRef, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Github, Terminal, Shield, Cpu } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { CodeBlock } from "@/components/ui/CodeBlock";
+import { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, Github, Terminal, Shield, Cpu } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { CodeBlock } from '@/components/ui/CodeBlock';
 
 const DOCKER_QUICKSTART = `# Clone and start OwnPilot
 git clone https://github.com/ownpilot/ownpilot.git
@@ -16,10 +16,10 @@ docker compose --profile postgres up -d
 # Configure your AI provider in Settings → Config Center`;
 
 const stats = [
-  { value: "190+", label: "Built-in Tools" },
-  { value: "96", label: "AI Providers" },
-  { value: "26.5K+", label: "Tests" },
-  { value: "MIT", label: "License" },
+  { value: '190+', label: 'Built-in Tools' },
+  { value: '96', label: 'AI Providers' },
+  { value: '26.5K+', label: 'Tests' },
+  { value: 'MIT', label: 'License' },
 ];
 
 // Floating particle component
@@ -39,7 +39,7 @@ export function Hero() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const resize = () => {
@@ -47,7 +47,7 @@ export function Hero() {
       canvas.height = canvas.offsetHeight;
     };
     resize();
-    window.addEventListener("resize", resize);
+    window.addEventListener('resize', resize);
 
     let frame = 0;
     let animId: number;
@@ -58,8 +58,8 @@ export function Hero() {
 
       // Draw grid dots
       const spacing = 40;
-      const isDark = document.documentElement.classList.contains("dark");
-      const dotColor = isDark ? "rgba(139,92,246,0.15)" : "rgba(109,40,217,0.08)";
+      const isDark = document.documentElement.classList.contains('dark');
+      const dotColor = isDark ? 'rgba(139,92,246,0.15)' : 'rgba(109,40,217,0.08)';
 
       for (let x = 0; x < canvas.width + spacing; x += spacing) {
         for (let y = 0; y < canvas.height + spacing; y += spacing) {
@@ -81,7 +81,7 @@ export function Hero() {
 
     draw();
     return () => {
-      window.removeEventListener("resize", resize);
+      window.removeEventListener('resize', resize);
       cancelAnimationFrame(animId);
     };
   }, []);
@@ -89,10 +89,7 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[var(--color-bg)]">
       {/* Animated dot grid background */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-      />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg)]/0 via-[var(--color-bg)]/0 to-[var(--color-bg)]" />
@@ -104,11 +101,46 @@ export function Hero() {
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {[
-          { width: 6, height: 6, top: "20%", left: "15%", animationDelay: "0s", animationDuration: "3s" },
-          { width: 4, height: 4, top: "60%", left: "80%", animationDelay: "1s", animationDuration: "4s" },
-          { width: 8, height: 8, top: "40%", left: "85%", animationDelay: "0.5s", animationDuration: "3.5s" },
-          { width: 5, height: 5, top: "75%", left: "25%", animationDelay: "2s", animationDuration: "2.5s" },
-          { width: 7, height: 7, top: "15%", left: "70%", animationDelay: "1.5s", animationDuration: "4.5s" },
+          {
+            width: 6,
+            height: 6,
+            top: '20%',
+            left: '15%',
+            animationDelay: '0s',
+            animationDuration: '3s',
+          },
+          {
+            width: 4,
+            height: 4,
+            top: '60%',
+            left: '80%',
+            animationDelay: '1s',
+            animationDuration: '4s',
+          },
+          {
+            width: 8,
+            height: 8,
+            top: '40%',
+            left: '85%',
+            animationDelay: '0.5s',
+            animationDuration: '3.5s',
+          },
+          {
+            width: 5,
+            height: 5,
+            top: '75%',
+            left: '25%',
+            animationDelay: '2s',
+            animationDuration: '2.5s',
+          },
+          {
+            width: 7,
+            height: 7,
+            top: '15%',
+            left: '70%',
+            animationDelay: '1.5s',
+            animationDuration: '4.5s',
+          },
         ].map((p, i) => (
           <Particle key={i} style={p} />
         ))}
@@ -149,9 +181,11 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-lg text-[var(--color-text-muted)] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0"
             >
-              Privacy-first personal AI assistant platform with soul agents,
-              autonomous workflows, 190+ tools, and 96 AI providers.{" "}
-              <strong className="text-[var(--color-text)] font-medium">Self-hosted. Zero data leaks.</strong>
+              Privacy-first personal AI assistant platform with soul agents, autonomous workflows,
+              190+ tools, and 96 AI providers.{' '}
+              <strong className="text-[var(--color-text)] font-medium">
+                Self-hosted. Zero data leaks.
+              </strong>
             </motion.p>
 
             {/* Key badges */}
@@ -162,9 +196,9 @@ export function Hero() {
               className="flex flex-wrap gap-2 justify-center lg:justify-start mb-8"
             >
               {[
-                { icon: Shield, text: "AES-256-GCM" },
-                { icon: Cpu, text: "96 AI Providers" },
-                { icon: Terminal, text: "190+ Tools" },
+                { icon: Shield, text: 'AES-256-GCM' },
+                { icon: Cpu, text: '96 AI Providers' },
+                { icon: Terminal, text: '190+ Tools' },
               ].map(({ icon: Icon, text }) => (
                 <span
                   key={text}
@@ -185,7 +219,7 @@ export function Hero() {
             >
               <Button
                 size="lg"
-                onClick={() => window.open("https://github.com/ownpilot/ownpilot", "_blank")}
+                onClick={() => window.open('https://github.com/ownpilot/ownpilot', '_blank')}
                 className="group"
               >
                 <Github className="w-4 h-4" />
@@ -195,7 +229,9 @@ export function Hero() {
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => document.getElementById("quick-start")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document.getElementById('quick-start')?.scrollIntoView({ behavior: 'smooth' })
+                }
               >
                 Quick Start
               </Button>

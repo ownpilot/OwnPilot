@@ -1,18 +1,20 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export function InstallationPage() {
   return (
     <DocsLayout>
-      <Badge variant="green" className="mb-3">Getting Started</Badge>
+      <Badge variant="green" className="mb-3">
+        Getting Started
+      </Badge>
       <h1>Installation</h1>
       <p>
-        This guide covers all prerequisites and manual installation steps. If you want the fastest path,
-        see the <a href="/docs/quick-start">Quick Start</a> guide.
+        This guide covers all prerequisites and manual installation steps. If you want the fastest
+        path, see the <a href="/docs/quick-start">Quick Start</a> guide.
       </p>
 
       <h2>Prerequisites</h2>
@@ -25,10 +27,26 @@ export function InstallationPage() {
           </tr>
         </thead>
         <tbody>
-          <tr><td>Node.js</td><td>22+</td><td>Runtime (for source install)</td></tr>
-          <tr><td>pnpm</td><td>10+</td><td>Package manager</td></tr>
-          <tr><td>Docker</td><td>Latest</td><td>PostgreSQL + optional app container</td></tr>
-          <tr><td>Git</td><td>Latest</td><td>Clone repository</td></tr>
+          <tr>
+            <td>Node.js</td>
+            <td>22+</td>
+            <td>Runtime (for source install)</td>
+          </tr>
+          <tr>
+            <td>pnpm</td>
+            <td>10+</td>
+            <td>Package manager</td>
+          </tr>
+          <tr>
+            <td>Docker</td>
+            <td>Latest</td>
+            <td>PostgreSQL + optional app container</td>
+          </tr>
+          <tr>
+            <td>Git</td>
+            <td>Latest</td>
+            <td>Clone repository</td>
+          </tr>
         </tbody>
       </table>
 
@@ -65,9 +83,25 @@ npm install -g pnpm`}
 
       <h3>Windows</h3>
       <ol>
-        <li>Install Node.js 22+ from <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a></li>
-        <li>Install Docker Desktop from <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener noreferrer">docker.com</a></li>
-        <li>Run <code>npm install -g pnpm</code></li>
+        <li>
+          Install Node.js 22+ from{' '}
+          <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">
+            nodejs.org
+          </a>
+        </li>
+        <li>
+          Install Docker Desktop from{' '}
+          <a
+            href="https://www.docker.com/products/docker-desktop/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            docker.com
+          </a>
+        </li>
+        <li>
+          Run <code>npm install -g pnpm</code>
+        </li>
       </ol>
 
       <h2>Clone the repository</h2>
@@ -86,10 +120,7 @@ cd ownpilot`}
       </Callout>
 
       <h2>Configure environment</h2>
-      <CodeBlock
-        code={`cp .env.example .env`}
-        language="bash"
-      />
+      <CodeBlock code={`cp .env.example .env`} language="bash" />
 
       <p>Key environment variables:</p>
       <table>
@@ -101,16 +132,76 @@ cd ownpilot`}
           </tr>
         </thead>
         <tbody>
-          <tr><td><code>PORT</code></td><td>8080</td><td>Gateway API port</td></tr>
-          <tr><td><code>UI_PORT</code></td><td>5173</td><td>Vite dev server port</td></tr>
-          <tr><td><code>POSTGRES_HOST</code></td><td>localhost</td><td>Database host</td></tr>
-          <tr><td><code>POSTGRES_PORT</code></td><td>25432</td><td>Database port</td></tr>
-          <tr><td><code>POSTGRES_USER</code></td><td>ownpilot</td><td>Database user</td></tr>
-          <tr><td><code>POSTGRES_PASSWORD</code></td><td>ownpilot_secret</td><td>Database password</td></tr>
-          <tr><td><code>POSTGRES_DB</code></td><td>ownpilot</td><td>Database name</td></tr>
-          <tr><td><code>AUTH_TYPE</code></td><td>none</td><td>none | api-key | jwt</td></tr>
-          <tr><td><code>LOG_LEVEL</code></td><td>info</td><td>error | warn | info | debug</td></tr>
-          <tr><td><code>NODE_ENV</code></td><td>development</td><td>development | production</td></tr>
+          <tr>
+            <td>
+              <code>PORT</code>
+            </td>
+            <td>8080</td>
+            <td>Gateway API port</td>
+          </tr>
+          <tr>
+            <td>
+              <code>UI_PORT</code>
+            </td>
+            <td>5173</td>
+            <td>Vite dev server port</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_HOST</code>
+            </td>
+            <td>localhost</td>
+            <td>Database host</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_PORT</code>
+            </td>
+            <td>25432</td>
+            <td>Database port</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_USER</code>
+            </td>
+            <td>ownpilot</td>
+            <td>Database user</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_PASSWORD</code>
+            </td>
+            <td>ownpilot_secret</td>
+            <td>Database password</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_DB</code>
+            </td>
+            <td>ownpilot</td>
+            <td>Database name</td>
+          </tr>
+          <tr>
+            <td>
+              <code>AUTH_TYPE</code>
+            </td>
+            <td>none</td>
+            <td>none | api-key | jwt</td>
+          </tr>
+          <tr>
+            <td>
+              <code>LOG_LEVEL</code>
+            </td>
+            <td>info</td>
+            <td>error | warn | info | debug</td>
+          </tr>
+          <tr>
+            <td>
+              <code>NODE_ENV</code>
+            </td>
+            <td>development</td>
+            <td>development | production</td>
+          </tr>
         </tbody>
       </table>
 

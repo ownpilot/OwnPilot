@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { CodeBlock as CodeshineCB } from "@oxog/codeshine/react";
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { CodeBlock as CodeshineCB } from '@oxog/codeshine/react';
 
 interface CodeBlockProps {
   code: string;
@@ -11,12 +11,7 @@ interface CodeBlockProps {
   className?: string;
 }
 
-export function CodeBlock({
-  code,
-  language = "bash",
-  filename,
-  className,
-}: CodeBlockProps) {
+export function CodeBlock({ code, language = 'bash', filename, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -28,8 +23,8 @@ export function CodeBlock({
   return (
     <div
       className={cn(
-        "relative group rounded-xl overflow-hidden border border-[var(--color-border)]",
-        "bg-[var(--color-code-bg)]",
+        'relative group rounded-xl overflow-hidden border border-[var(--color-border)]',
+        'bg-[var(--color-code-bg)]',
         className
       )}
     >
@@ -43,9 +38,7 @@ export function CodeBlock({
             <div className="w-3 h-3 rounded-full bg-green-400/60" />
           </div>
           {filename && (
-            <span className="text-xs text-[var(--color-text-subtle)] font-mono">
-              {filename}
-            </span>
+            <span className="text-xs text-[var(--color-text-subtle)] font-mono">{filename}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -55,10 +48,10 @@ export function CodeBlock({
           <button
             onClick={handleCopy}
             className={cn(
-              "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all duration-150",
-              "text-[var(--color-text-subtle)] hover:text-[var(--color-text)]",
-              "hover:bg-[var(--color-border)] cursor-pointer",
-              copied && "text-emerald-500 dark:text-emerald-400"
+              'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all duration-150',
+              'text-[var(--color-text-subtle)] hover:text-[var(--color-text)]',
+              'hover:bg-[var(--color-border)] cursor-pointer',
+              copied && 'text-emerald-500 dark:text-emerald-400'
             )}
           >
             {copied ? (
@@ -99,9 +92,9 @@ export function InlineCode({ children, className }: InlineCodeProps) {
   return (
     <code
       className={cn(
-        "px-1.5 py-0.5 rounded-md text-sm font-mono",
-        "bg-[var(--color-code-bg)] text-[var(--color-code-text)]",
-        "border border-[var(--color-border)]",
+        'px-1.5 py-0.5 rounded-md text-sm font-mono',
+        'bg-[var(--color-code-bg)] text-[var(--color-code-text)]',
+        'border border-[var(--color-border)]',
         className
       )}
     >

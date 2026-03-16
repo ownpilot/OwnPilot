@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { DocsSidebar } from "./DocsSidebar";
-import { Header } from "./Header";
-import { Footer } from "./Footer";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { Menu, X } from 'lucide-react';
+import { DocsSidebar } from './DocsSidebar';
+import { Header } from './Header';
+import { Footer } from './Footer';
+import { cn } from '@/lib/utils';
 
 interface DocsLayoutProps {
   children: React.ReactNode;
@@ -55,18 +55,14 @@ export function DocsLayout({ children, toc }: DocsLayoutProps) {
           )}
 
           {/* Main content */}
-          <main className={cn("flex-1 min-w-0", toc ? "lg:pr-8" : "")}>
-            <div className="prose-docs max-w-3xl">
-              {children}
-            </div>
+          <main className={cn('flex-1 min-w-0', toc ? 'lg:pr-8' : '')}>
+            <div className="prose-docs max-w-3xl">{children}</div>
           </main>
 
           {/* Table of contents */}
           {toc && (
             <aside className="hidden xl:block w-56 shrink-0">
-              <div className="sticky top-24">
-                {toc}
-              </div>
+              <div className="sticky top-24">{toc}</div>
             </aside>
           )}
         </div>

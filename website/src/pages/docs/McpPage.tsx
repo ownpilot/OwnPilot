@@ -1,9 +1,9 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const MCP_CLIENT_CONFIG = `# Configure MCP servers via Settings → MCP, or via the CLI:
 ownpilot config set mcp-servers '[
@@ -122,12 +122,14 @@ const MCP_AUTH = `# If AUTH_TYPE=api-key, include the key in MCP requests:
 export function McpPage() {
   return (
     <DocsLayout>
-      <Badge variant="purple" className="mb-3">MCP Integration</Badge>
+      <Badge variant="purple" className="mb-3">
+        MCP Integration
+      </Badge>
       <h1>MCP Integration</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
-        OwnPilot is both an MCP client and an MCP server. As a client, it connects to external
-        MCP servers and uses their tools natively. As a server, it exposes all 190+ built-in tools
-        to Claude Desktop, Claude Code, and any other MCP client.
+        OwnPilot is both an MCP client and an MCP server. As a client, it connects to external MCP
+        servers and uses their tools natively. As a server, it exposes all 190+ built-in tools to
+        Claude Desktop, Claude Code, and any other MCP client.
       </p>
 
       <h2>OwnPilot as MCP client</h2>
@@ -147,27 +149,101 @@ export function McpPage() {
       <h3>MCP server management API</h3>
       <table>
         <thead>
-          <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>GET</code></td><td><code>/api/v1/mcp/servers</code></td><td>List all MCP servers</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/mcp/servers</code></td><td>Add MCP server</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/v1/mcp/servers/:id</code></td><td>Get server details + tools</td></tr>
-          <tr><td><code>DELETE</code></td><td><code>/api/v1/mcp/servers/:id</code></td><td>Remove server</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/mcp/servers/:id/connect</code></td><td>Connect/reconnect</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/mcp/servers/:id/disconnect</code></td><td>Disconnect</td></tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers</code>
+            </td>
+            <td>List all MCP servers</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers</code>
+            </td>
+            <td>Add MCP server</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers/:id</code>
+            </td>
+            <td>Get server details + tools</td>
+          </tr>
+          <tr>
+            <td>
+              <code>DELETE</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers/:id</code>
+            </td>
+            <td>Remove server</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers/:id/connect</code>
+            </td>
+            <td>Connect/reconnect</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/mcp/servers/:id/disconnect</code>
+            </td>
+            <td>Disconnect</td>
+          </tr>
         </tbody>
       </table>
 
       <h3>Transport types</h3>
       <table>
         <thead>
-          <tr><th>Type</th><th>Description</th><th>When to use</th></tr>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>When to use</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>stdio</code></td><td>Launch a local process, communicate over stdin/stdout</td><td>Local tools (filesystem, git, etc.)</td></tr>
-          <tr><td><code>http</code></td><td>Streamable HTTP transport</td><td>Remote MCP servers, services</td></tr>
-          <tr><td><code>sse</code></td><td>Server-Sent Events transport (legacy)</td><td>Older MCP servers</td></tr>
+          <tr>
+            <td>
+              <code>stdio</code>
+            </td>
+            <td>Launch a local process, communicate over stdin/stdout</td>
+            <td>Local tools (filesystem, git, etc.)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>http</code>
+            </td>
+            <td>Streamable HTTP transport</td>
+            <td>Remote MCP servers, services</td>
+          </tr>
+          <tr>
+            <td>
+              <code>sse</code>
+            </td>
+            <td>Server-Sent Events transport (legacy)</td>
+            <td>Older MCP servers</td>
+          </tr>
         </tbody>
       </table>
 
@@ -175,9 +251,9 @@ export function McpPage() {
       <CodeBlock code={MCP_TOOLS_USAGE} language="bash" />
 
       <Callout type="tip" title="Tool discovery">
-        MCP tools are discovered automatically when a server connects. They appear in
-        the agent's tool search under their server name. The agent doesn't need any special
-        instructions — it can find and use MCP tools the same way as built-in tools.
+        MCP tools are discovered automatically when a server connects. They appear in the agent's
+        tool search under their server name. The agent doesn't need any special instructions — it
+        can find and use MCP tools the same way as built-in tools.
       </Callout>
 
       <h3>Popular server presets</h3>
@@ -186,8 +262,8 @@ export function McpPage() {
       <h2>OwnPilot as MCP server</h2>
       <p>
         OwnPilot exposes all 190+ built-in tools as a Streamable HTTP MCP endpoint at
-        <code>/mcp</code>. This lets Claude Desktop, Claude Code, Cursor, and other MCP
-        clients use your personal data and tools directly.
+        <code>/mcp</code>. This lets Claude Desktop, Claude Code, Cursor, and other MCP clients use
+        your personal data and tools directly.
       </p>
 
       <h3>Connecting Claude Desktop</h3>
@@ -198,19 +274,19 @@ export function McpPage() {
       />
 
       <p>
-        On macOS, this file is at{" "}
-        <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>.
-        On Windows: <code>%APPDATA%\Claude\claude_desktop_config.json</code>.
+        On macOS, this file is at{' '}
+        <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>. On Windows:{' '}
+        <code>%APPDATA%\Claude\claude_desktop_config.json</code>.
       </p>
 
       <h3>Available tools in Claude Desktop</h3>
       <CodeBlock code={MCP_SERVER_TOOLS} language="bash" />
 
       <Callout type="info" title="Tool name encoding">
-        MCP requires tool names to contain only alphanumeric characters and underscores.
-        OwnPilot's dot-prefixed namespaces (<code>core.create_note</code>) are automatically
-        converted to double-underscore format (<code>core__create_note</code>) for MCP compatibility.
-        The reverse mapping is applied when the tool is executed.
+        MCP requires tool names to contain only alphanumeric characters and underscores. OwnPilot's
+        dot-prefixed namespaces (<code>core.create_note</code>) are automatically converted to
+        double-underscore format (<code>core__create_note</code>) for MCP compatibility. The reverse
+        mapping is applied when the tool is executed.
       </Callout>
 
       <h3>Authentication for the MCP server</h3>
@@ -237,9 +313,9 @@ claude -p "List my tasks for today" \\
       />
 
       <Callout type="note" title="Claude Code transport">
-        Claude Code uses <code>"type": "http"</code> (not <code>"streamable-http"</code>)
-        for Streamable HTTP transport. Use <code>--mcp-config</code> explicitly — Claude Code
-        does not auto-read <code>.mcp.json</code> in <code>-p</code> (print) mode.
+        Claude Code uses <code>"type": "http"</code> (not <code>"streamable-http"</code>) for
+        Streamable HTTP transport. Use <code>--mcp-config</code> explicitly — Claude Code does not
+        auto-read <code>.mcp.json</code> in <code>-p</code> (print) mode.
       </Callout>
 
       {/* Prev/Next navigation */}

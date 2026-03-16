@@ -1,18 +1,20 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Badge } from "@/components/ui/Badge";
-import { Callout } from "@/components/ui/Callout";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Badge } from '@/components/ui/Badge';
+import { Callout } from '@/components/ui/Callout';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export function ApiReferencePage() {
   return (
     <DocsLayout>
-      <Badge variant="blue" className="mb-3">API Reference</Badge>
+      <Badge variant="blue" className="mb-3">
+        API Reference
+      </Badge>
       <h1>REST API Reference</h1>
       <p>
-        OwnPilot exposes a comprehensive REST API at <code>http://localhost:8080/api/v1/</code>.
-        All responses use standardized <code>apiResponse</code> / <code>apiError</code> helpers.
+        OwnPilot exposes a comprehensive REST API at <code>http://localhost:8080/api/v1/</code>. All
+        responses use standardized <code>apiResponse</code> / <code>apiError</code> helpers.
       </p>
 
       <h2>Response format</h2>
@@ -47,38 +49,186 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8080/api/v1/heal
       <h2>Route modules</h2>
       <table>
         <thead>
-          <tr><th>Route</th><th>Description</th></tr>
+          <tr>
+            <th>Route</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>GET /api/v1/health</code></td><td>Health check + version</td></tr>
-          <tr><td><code>POST /api/v1/chat</code></td><td>Send chat message (SSE streaming)</td></tr>
-          <tr><td><code>GET /api/v1/conversations</code></td><td>List conversations</td></tr>
-          <tr><td><code>GET /api/v1/agents</code></td><td>List soul agents</td></tr>
-          <tr><td><code>POST /api/v1/agents</code></td><td>Create soul agent</td></tr>
-          <tr><td><code>GET /api/v1/agents/:id/heartbeat</code></td><td>Get heartbeat logs</td></tr>
-          <tr><td><code>POST /api/v1/agents/:id/start</code></td><td>Start agent heartbeat</td></tr>
-          <tr><td><code>GET /api/v1/background-agents</code></td><td>List background agents</td></tr>
-          <tr><td><code>POST /api/v1/background-agents</code></td><td>Create background agent</td></tr>
-          <tr><td><code>GET /api/v1/workflows</code></td><td>List workflows</td></tr>
-          <tr><td><code>POST /api/v1/workflows</code></td><td>Create workflow</td></tr>
-          <tr><td><code>POST /api/v1/workflows/:id/run</code></td><td>Execute workflow</td></tr>
-          <tr><td><code>GET /api/v1/tools</code></td><td>List available tools</td></tr>
-          <tr><td><code>POST /api/v1/tools/execute</code></td><td>Execute a tool directly</td></tr>
-          <tr><td><code>GET /api/v1/extensions</code></td><td>List extensions</td></tr>
-          <tr><td><code>POST /api/v1/extensions/:id/enable</code></td><td>Enable extension</td></tr>
-          <tr><td><code>GET /api/v1/notes</code></td><td>List notes</td></tr>
-          <tr><td><code>GET /api/v1/tasks</code></td><td>List tasks</td></tr>
-          <tr><td><code>GET /api/v1/memories</code></td><td>List memories</td></tr>
-          <tr><td><code>GET /api/v1/goals</code></td><td>List goals</td></tr>
-          <tr><td><code>GET /api/v1/calendar</code></td><td>List calendar events</td></tr>
-          <tr><td><code>GET /api/v1/contacts</code></td><td>List contacts</td></tr>
-          <tr><td><code>GET /api/v1/edge/devices</code></td><td>List IoT devices</td></tr>
-          <tr><td><code>POST /api/v1/edge/devices/:id/command</code></td><td>Send device command</td></tr>
-          <tr><td><code>GET /api/v1/providers</code></td><td>List AI providers</td></tr>
-          <tr><td><code>GET /api/v1/config</code></td><td>Get configuration</td></tr>
-          <tr><td><code>POST /api/v1/pulse/run</code></td><td>Trigger pulse cycle</td></tr>
-          <tr><td><code>GET /api/v1/fleet</code></td><td>List fleet sessions</td></tr>
-          <tr><td><code>POST /webhooks/workflow/:path</code></td><td>Webhook trigger (HMAC-SHA256)</td></tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/health</code>
+            </td>
+            <td>Health check + version</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/chat</code>
+            </td>
+            <td>Send chat message (SSE streaming)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/conversations</code>
+            </td>
+            <td>List conversations</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/agents</code>
+            </td>
+            <td>List soul agents</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/agents</code>
+            </td>
+            <td>Create soul agent</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/agents/:id/heartbeat</code>
+            </td>
+            <td>Get heartbeat logs</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/agents/:id/start</code>
+            </td>
+            <td>Start agent heartbeat</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/background-agents</code>
+            </td>
+            <td>List background agents</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/background-agents</code>
+            </td>
+            <td>Create background agent</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/workflows</code>
+            </td>
+            <td>List workflows</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/workflows</code>
+            </td>
+            <td>Create workflow</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/workflows/:id/run</code>
+            </td>
+            <td>Execute workflow</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/tools</code>
+            </td>
+            <td>List available tools</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/tools/execute</code>
+            </td>
+            <td>Execute a tool directly</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/extensions</code>
+            </td>
+            <td>List extensions</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/extensions/:id/enable</code>
+            </td>
+            <td>Enable extension</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/notes</code>
+            </td>
+            <td>List notes</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/tasks</code>
+            </td>
+            <td>List tasks</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/memories</code>
+            </td>
+            <td>List memories</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/goals</code>
+            </td>
+            <td>List goals</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/calendar</code>
+            </td>
+            <td>List calendar events</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/contacts</code>
+            </td>
+            <td>List contacts</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/edge/devices</code>
+            </td>
+            <td>List IoT devices</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/edge/devices/:id/command</code>
+            </td>
+            <td>Send device command</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/providers</code>
+            </td>
+            <td>List AI providers</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/config</code>
+            </td>
+            <td>Get configuration</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /api/v1/pulse/run</code>
+            </td>
+            <td>Trigger pulse cycle</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET /api/v1/fleet</code>
+            </td>
+            <td>List fleet sessions</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST /webhooks/workflow/:path</code>
+            </td>
+            <td>Webhook trigger (HMAC-SHA256)</td>
+          </tr>
         </tbody>
       </table>
 
@@ -124,9 +274,7 @@ ws.send(JSON.stringify({
       />
 
       <h2>Pagination</h2>
-      <p>
-        All list endpoints support pagination via query parameters:
-      </p>
+      <p>All list endpoints support pagination via query parameters:</p>
       <CodeBlock
         code={`GET /api/v1/notes?page=1&limit=20
 GET /api/v1/tasks?page=2&limit=50&status=pending`}
@@ -134,7 +282,8 @@ GET /api/v1/tasks?page=2&limit=50&status=pending`}
       />
 
       <Callout type="info" title="API versioning">
-        All API routes are prefixed with <code>/api/v1/</code>. Future breaking changes will use <code>/api/v2/</code>.
+        All API routes are prefixed with <code>/api/v1/</code>. Future breaking changes will use{' '}
+        <code>/api/v2/</code>.
       </Callout>
 
       {/* Prev/Next navigation */}

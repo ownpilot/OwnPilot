@@ -1,74 +1,74 @@
-import { useRef, useState } from "react";
-import { motion, useInView } from "framer-motion";
-import { CheckCircle } from "lucide-react";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Badge } from "@/components/ui/Badge";
-import { cn } from "@/lib/utils";
+import { useRef, useState } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { CheckCircle } from 'lucide-react';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/lib/utils';
 
 const tabs = [
   {
-    id: "docker",
-    label: "Docker",
-    icon: "🐳",
+    id: 'docker',
+    label: 'Docker',
+    icon: '🐳',
     steps: [
       {
-        title: "Clone repository",
+        title: 'Clone repository',
         code: `git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Start OwnPilot + PostgreSQL",
+        title: 'Start OwnPilot + PostgreSQL',
         code: `docker compose --profile postgres up -d`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Open in browser",
+        title: 'Open in browser',
         code: `# UI + API: http://localhost:8080
 # Configure AI keys in Settings → Config Center`,
-        language: "bash",
+        language: 'bash',
       },
     ],
   },
   {
-    id: "source",
-    label: "From Source",
-    icon: "📦",
+    id: 'source',
+    label: 'From Source',
+    icon: '📦',
     steps: [
       {
-        title: "Clone and install",
+        title: 'Clone and install',
         code: `git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot
 pnpm install`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Configure environment",
+        title: 'Configure environment',
         code: `cp .env.example .env
 # Edit .env (defaults work with Docker Compose)`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Start database",
+        title: 'Start database',
         code: `docker compose --profile postgres up -d`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Start dev server",
+        title: 'Start dev server',
         code: `pnpm dev
 # Gateway: http://localhost:8080
 # UI:      http://localhost:5173`,
-        language: "bash",
+        language: 'bash',
       },
     ],
   },
   {
-    id: "wizard",
-    label: "Setup Wizard",
-    icon: "🧙",
+    id: 'wizard',
+    label: 'Setup Wizard',
+    icon: '🧙',
     steps: [
       {
-        title: "Clone and run setup wizard",
+        title: 'Clone and run setup wizard',
         code: `git clone https://github.com/ownpilot/ownpilot.git
 cd ownpilot
 
@@ -77,17 +77,17 @@ cd ownpilot
 
 # Windows PowerShell
 .\\setup.ps1`,
-        language: "bash",
+        language: 'bash',
       },
       {
-        title: "Wizard guides you through",
+        title: 'Wizard guides you through',
         code: `# Prerequisites check (Node.js 22+, pnpm 10+, Docker)
 # Server configuration (ports, host)
 # Authentication setup (none / API key / JWT)
 # Database configuration
 # Docker PostgreSQL startup
 # Dependency installation and build`,
-        language: "bash",
+        language: 'bash',
       },
     ],
   },
@@ -115,8 +115,8 @@ ANTHROPIC_API_KEY=sk-ant-...`;
 
 export function QuickStart() {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [activeTab, setActiveTab] = useState("docker");
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const [activeTab, setActiveTab] = useState('docker');
 
   const activeTabData = tabs.find((t) => t.id === activeTab) ?? tabs[0]!;
 
@@ -154,10 +154,10 @@ export function QuickStart() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer",
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer',
                     activeTab === tab.id
-                      ? "bg-[var(--color-bg)] text-[var(--color-text)] shadow-sm border border-[var(--color-border)]"
-                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+                      ? 'bg-[var(--color-bg)] text-[var(--color-text)] shadow-sm border border-[var(--color-border)]'
+                      : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                   )}
                 >
                   <span>{tab.icon}</span>
@@ -182,10 +182,7 @@ export function QuickStart() {
                     <p className="text-sm font-medium text-[var(--color-text)] mb-2">
                       {step.title}
                     </p>
-                    <CodeBlock
-                      code={step.code}
-                      language={step.language}
-                    />
+                    <CodeBlock code={step.code} language={step.language} />
                   </div>
                 </div>
               ))}
@@ -198,9 +195,13 @@ export function QuickStart() {
               </p>
               <div className="space-y-2">
                 {[
-                  { label: "Gateway API", url: "http://localhost:8080", desc: "REST API + WebSocket" },
-                  { label: "Web UI (dev)", url: "http://localhost:5173", desc: "Vite dev server" },
-                  { label: "PostgreSQL", url: "localhost:25432", desc: "Database with pgvector" },
+                  {
+                    label: 'Gateway API',
+                    url: 'http://localhost:8080',
+                    desc: 'REST API + WebSocket',
+                  },
+                  { label: 'Web UI (dev)', url: 'http://localhost:5173', desc: 'Vite dev server' },
+                  { label: 'PostgreSQL', url: 'localhost:25432', desc: 'Database with pgvector' },
                 ].map((svc) => (
                   <div key={svc.label} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
@@ -227,19 +228,21 @@ export function QuickStart() {
                 Environment Configuration
               </h3>
               <p className="text-sm text-[var(--color-text-muted)]">
-                The defaults in <code className="text-xs bg-[var(--color-code-bg)] px-1.5 py-0.5 rounded font-mono">.env.example</code> work out of the box with Docker Compose PostgreSQL.
+                The defaults in{' '}
+                <code className="text-xs bg-[var(--color-code-bg)] px-1.5 py-0.5 rounded font-mono">
+                  .env.example
+                </code>{' '}
+                work out of the box with Docker Compose PostgreSQL.
               </p>
             </div>
-            <CodeBlock
-              code={envVars}
-              language="bash"
-              filename=".env"
-            />
+            <CodeBlock code={envVars} language="bash" filename=".env" />
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
                 <div className="text-2xl mb-1">🔑</div>
-                <div className="text-sm font-medium text-[var(--color-text)] mb-1">Config Center</div>
+                <div className="text-sm font-medium text-[var(--color-text)] mb-1">
+                  Config Center
+                </div>
                 <div className="text-xs text-[var(--color-text-muted)]">
                   Set AI API keys via the web UI. No .env editing required.
                 </div>

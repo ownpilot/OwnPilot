@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
   :root {
@@ -93,8 +93,14 @@
   body {
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family: "Geist", system-ui, -apple-system, sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family:
+      'Geist',
+      system-ui,
+      -apple-system,
+      sans-serif;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -103,7 +109,7 @@
   kbd,
   pre,
   samp {
-    font-family: "Geist Mono", "Fira Code", "Cascadia Code", monospace;
+    font-family: 'Geist Mono', 'Fira Code', 'Cascadia Code', monospace;
   }
 
   /* Scrollbar */
@@ -212,9 +218,15 @@
   }
 
   @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   .noise {
@@ -222,7 +234,7 @@
   }
 
   .noise::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
@@ -293,7 +305,7 @@
     line-height: 1.65;
   }
   .prose-docs ul li::before {
-    content: "—";
+    content: '—';
     position: absolute;
     left: 0;
     color: var(--color-text-subtle);

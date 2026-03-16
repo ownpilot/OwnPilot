@@ -1,22 +1,25 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export function QuickStartPage() {
   return (
     <DocsLayout>
-      <Badge variant="green" className="mb-3">Getting Started</Badge>
+      <Badge variant="green" className="mb-3">
+        Getting Started
+      </Badge>
       <h1>Quick Start</h1>
       <p>
-        The fastest way to start OwnPilot is with Docker — it pulls the image, starts PostgreSQL with pgvector,
-        and serves everything on a single port.
+        The fastest way to start OwnPilot is with Docker — it pulls the image, starts PostgreSQL
+        with pgvector, and serves everything on a single port.
       </p>
 
       <Callout type="info" title="Prerequisites">
-        Docker Desktop (or Docker Engine) must be installed and running. No Node.js required for the Docker path.
+        Docker Desktop (or Docker Engine) must be installed and running. No Node.js required for the
+        Docker path.
       </Callout>
 
       <h2>Option 1: Docker Compose (Recommended)</h2>
@@ -30,10 +33,14 @@ docker compose --profile postgres up -d`}
         language="bash"
       />
 
-      <p>Open <code>http://localhost:8080</code> in your browser. Configure your first AI provider key in <strong>Settings → Config Center</strong>.</p>
+      <p>
+        Open <code>http://localhost:8080</code> in your browser. Configure your first AI provider
+        key in <strong>Settings → Config Center</strong>.
+      </p>
 
       <Callout type="tip" title="Custom configuration">
-        To customize settings before starting (auth, Telegram token, etc.), copy and edit <code>.env</code> first:
+        To customize settings before starting (auth, Telegram token, etc.), copy and edit{' '}
+        <code>.env</code> first:
       </Callout>
 
       <CodeBlock
@@ -84,8 +91,13 @@ pnpm dev`}
 
       <p>In dev mode, two URLs are available:</p>
       <ul>
-        <li><code>http://localhost:5173</code> — Vite UI dev server (hot reload, proxies API to gateway)</li>
-        <li><code>http://localhost:8080</code> — Gateway REST API + WebSocket</li>
+        <li>
+          <code>http://localhost:5173</code> — Vite UI dev server (hot reload, proxies API to
+          gateway)
+        </li>
+        <li>
+          <code>http://localhost:8080</code> — Gateway REST API + WebSocket
+        </li>
       </ul>
 
       <h2>Option 4: Interactive setup wizard</h2>
@@ -109,14 +121,12 @@ pnpm dev`}
       </ul>
 
       <h2>Configure AI providers</h2>
-      <p>
-        After starting, configure your AI provider API keys. There are two ways:
-      </p>
+      <p>After starting, configure your AI provider API keys. There are two ways:</p>
 
       <h3>Web UI (recommended)</h3>
       <p>
-        Navigate to <strong>Settings → Config Center</strong> and add your provider API keys.
-        Keys are stored encrypted in PostgreSQL — not in plain text in <code>.env</code>.
+        Navigate to <strong>Settings → Config Center</strong> and add your provider API keys. Keys
+        are stored encrypted in PostgreSQL — not in plain text in <code>.env</code>.
       </p>
 
       <h3>CLI</h3>
@@ -144,30 +154,38 @@ ownpilot config set ollama-base-url http://localhost:11434`}
         <tbody>
           <tr>
             <td>Gateway API</td>
-            <td><code>http://localhost:8080</code></td>
+            <td>
+              <code>http://localhost:8080</code>
+            </td>
             <td>REST API + WebSocket + bundled UI</td>
           </tr>
           <tr>
             <td>UI (dev mode)</td>
-            <td><code>http://localhost:5173</code></td>
+            <td>
+              <code>http://localhost:5173</code>
+            </td>
             <td>Vite dev server with hot reload</td>
           </tr>
           <tr>
             <td>PostgreSQL</td>
-            <td><code>localhost:25432</code></td>
+            <td>
+              <code>localhost:25432</code>
+            </td>
             <td>Database with pgvector extension</td>
           </tr>
           <tr>
             <td>WebSocket</td>
-            <td><code>ws://localhost:8080/ws</code></td>
+            <td>
+              <code>ws://localhost:8080/ws</code>
+            </td>
             <td>Real-time event broadcasts</td>
           </tr>
         </tbody>
       </table>
 
       <Callout type="success" title="You're ready!">
-        Once OwnPilot is running and you've set an API key, navigate to the Chat page to start your first conversation.
-        The assistant has access to all 190+ built-in tools by default.
+        Once OwnPilot is running and you've set an API key, navigate to the Chat page to start your
+        first conversation. The assistant has access to all 190+ built-in tools by default.
       </Callout>
 
       {/* Prev/Next navigation */}

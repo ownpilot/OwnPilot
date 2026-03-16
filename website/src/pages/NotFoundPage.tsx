@@ -1,9 +1,9 @@
-import { Link } from "react-router";
-import { motion } from "framer-motion";
-import { ArrowLeft, Home, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { Link } from 'react-router';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Home, BookOpen } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
 
 export function NotFoundPage() {
   return (
@@ -21,12 +21,10 @@ export function NotFoundPage() {
             404
           </div>
 
-          <h1 className="text-2xl font-bold text-[var(--color-text)] mb-3">
-            Page not found
-          </h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text)] mb-3">Page not found</h1>
           <p className="text-[var(--color-text-muted)] mb-10 leading-relaxed">
-            The page you're looking for doesn't exist or has been moved.
-            Let's get you back on track.
+            The page you're looking for doesn't exist or has been moved. Let's get you back on
+            track.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -1,11 +1,11 @@
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Github, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { Github, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 
 export function CTA() {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
     <section className="py-24 bg-[var(--color-bg-subtle)] relative overflow-hidden">
@@ -24,19 +24,18 @@ export function CTA() {
           </div>
 
           <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--color-text)] mb-6 leading-[1.1]">
-            Ready to own your{" "}
-            <span className="text-gradient">AI assistant?</span>
+            Ready to own your <span className="text-gradient">AI assistant?</span>
           </h2>
 
           <p className="text-xl text-[var(--color-text-muted)] mb-10 max-w-2xl mx-auto leading-relaxed">
-            Join the growing community of privacy-conscious developers and power users
-            who self-host OwnPilot. Your data. Your infrastructure. Your rules.
+            Join the growing community of privacy-conscious developers and power users who self-host
+            OwnPilot. Your data. Your infrastructure. Your rules.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Button
               size="lg"
-              onClick={() => window.open("https://github.com/ownpilot/ownpilot", "_blank")}
+              onClick={() => window.open('https://github.com/ownpilot/ownpilot', '_blank')}
               className="group text-base"
             >
               <Github className="w-5 h-5" />
@@ -46,7 +45,9 @@ export function CTA() {
             <Button
               size="lg"
               variant="secondary"
-              onClick={() => window.open("https://github.com/ownpilot/ownpilot#quick-start", "_blank")}
+              onClick={() =>
+                window.open('https://github.com/ownpilot/ownpilot#quick-start', '_blank')
+              }
               className="text-base"
             >
               Quick Start →
@@ -56,9 +57,9 @@ export function CTA() {
           {/* Features list */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
             {[
-              { icon: "🔒", title: "Zero telemetry", desc: "Your data never leaves your server" },
-              { icon: "⚡", title: "One command", desc: "docker compose up and you're live" },
-              { icon: "🔧", title: "Fully extensible", desc: "Skills, plugins, custom tools, MCP" },
+              { icon: '🔒', title: 'Zero telemetry', desc: 'Your data never leaves your server' },
+              { icon: '⚡', title: 'One command', desc: "docker compose up and you're live" },
+              { icon: '🔧', title: 'Fully extensible', desc: 'Skills, plugins, custom tools, MCP' },
             ].map((item) => (
               <div
                 key={item.title}

@@ -1,9 +1,9 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const CREATE_CODING_AGENT = `POST /api/v1/coding-agents
 Content-Type: application/json
@@ -137,12 +137,15 @@ const ENV_SANITIZATION = `# Coding agent processes run with a sanitized environm
 export function CodingAgentsPage() {
   return (
     <DocsLayout>
-      <Badge variant="purple" className="mb-3">Coding Agents</Badge>
+      <Badge variant="purple" className="mb-3">
+        Coding Agents
+      </Badge>
       <h1>Coding Agents</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot orchestrates Claude Code, Codex CLI, and Gemini CLI as coding agents — autonomous
-        code editors that can read files, run tests, make commits, and complete multi-step programming
-        tasks. Sessions stream output in real-time and support PTY mode for interactive tools.
+        code editors that can read files, run tests, make commits, and complete multi-step
+        programming tasks. Sessions stream output in real-time and support PTY mode for interactive
+        tools.
       </p>
 
       <h2>Supported providers</h2>
@@ -156,10 +159,42 @@ export function CodingAgentsPage() {
           </tr>
         </thead>
         <tbody>
-          <tr><td>Claude Code</td><td><code>claude-code</code></td><td><code>claude-opus-4-5</code></td><td>Recommended — best code quality</td></tr>
-          <tr><td>Codex CLI</td><td><code>codex</code></td><td><code>o3</code></td><td>OpenAI's coding CLI</td></tr>
-          <tr><td>Gemini CLI</td><td><code>gemini-cli</code></td><td><code>gemini-2.5-pro</code></td><td>Google's coding agent</td></tr>
-          <tr><td>Custom</td><td>user-defined</td><td>—</td><td>Any CLI tool with stdin/stdout protocol</td></tr>
+          <tr>
+            <td>Claude Code</td>
+            <td>
+              <code>claude-code</code>
+            </td>
+            <td>
+              <code>claude-opus-4-5</code>
+            </td>
+            <td>Recommended — best code quality</td>
+          </tr>
+          <tr>
+            <td>Codex CLI</td>
+            <td>
+              <code>codex</code>
+            </td>
+            <td>
+              <code>o3</code>
+            </td>
+            <td>OpenAI's coding CLI</td>
+          </tr>
+          <tr>
+            <td>Gemini CLI</td>
+            <td>
+              <code>gemini-cli</code>
+            </td>
+            <td>
+              <code>gemini-2.5-pro</code>
+            </td>
+            <td>Google's coding agent</td>
+          </tr>
+          <tr>
+            <td>Custom</td>
+            <td>user-defined</td>
+            <td>—</td>
+            <td>Any CLI tool with stdin/stdout protocol</td>
+          </tr>
         </tbody>
       </table>
 
@@ -169,16 +204,62 @@ export function CodingAgentsPage() {
       <h3>Configuration options</h3>
       <table>
         <thead>
-          <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+          <tr>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>provider</code></td><td>string</td><td>claude-code | codex | gemini-cli | custom ID</td></tr>
-          <tr><td><code>workDir</code></td><td>string</td><td>Working directory for the agent</td></tr>
-          <tr><td><code>model</code></td><td>string</td><td>Model to use for inference</td></tr>
-          <tr><td><code>maxTurns</code></td><td>number</td><td>Max tool-use iterations per session (default: 20)</td></tr>
-          <tr><td><code>systemPrompt</code></td><td>string</td><td>Additional instructions prepended to system</td></tr>
-          <tr><td><code>allowedTools</code></td><td>string[]</td><td>Restrict which tools the agent can use</td></tr>
-          <tr><td><code>maxCost</code></td><td>number</td><td>Maximum USD cost per session</td></tr>
+          <tr>
+            <td>
+              <code>provider</code>
+            </td>
+            <td>string</td>
+            <td>claude-code | codex | gemini-cli | custom ID</td>
+          </tr>
+          <tr>
+            <td>
+              <code>workDir</code>
+            </td>
+            <td>string</td>
+            <td>Working directory for the agent</td>
+          </tr>
+          <tr>
+            <td>
+              <code>model</code>
+            </td>
+            <td>string</td>
+            <td>Model to use for inference</td>
+          </tr>
+          <tr>
+            <td>
+              <code>maxTurns</code>
+            </td>
+            <td>number</td>
+            <td>Max tool-use iterations per session (default: 20)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>systemPrompt</code>
+            </td>
+            <td>string</td>
+            <td>Additional instructions prepended to system</td>
+          </tr>
+          <tr>
+            <td>
+              <code>allowedTools</code>
+            </td>
+            <td>string[]</td>
+            <td>Restrict which tools the agent can use</td>
+          </tr>
+          <tr>
+            <td>
+              <code>maxCost</code>
+            </td>
+            <td>number</td>
+            <td>Maximum USD cost per session</td>
+          </tr>
         </tbody>
       </table>
 
@@ -188,11 +269,24 @@ export function CodingAgentsPage() {
       <h3>Execution modes</h3>
       <table>
         <thead>
-          <tr><th>Mode</th><th>Description</th></tr>
+          <tr>
+            <th>Mode</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>auto</code></td><td>Agent runs autonomously, making all decisions</td></tr>
-          <tr><td><code>interactive</code></td><td>Agent pauses and asks for confirmation on significant actions</td></tr>
+          <tr>
+            <td>
+              <code>auto</code>
+            </td>
+            <td>Agent runs autonomously, making all decisions</td>
+          </tr>
+          <tr>
+            <td>
+              <code>interactive</code>
+            </td>
+            <td>Agent pauses and asks for confirmation on significant actions</td>
+          </tr>
         </tbody>
       </table>
 
@@ -201,16 +295,16 @@ export function CodingAgentsPage() {
 
       <h2>PTY mode</h2>
       <p>
-        PTY (pseudoterminal) mode allocates a real terminal for the coding agent process.
-        This is required for tools that detect whether they're running in a terminal (like
-        interactive test runners, color output, progress bars).
+        PTY (pseudoterminal) mode allocates a real terminal for the coding agent process. This is
+        required for tools that detect whether they're running in a terminal (like interactive test
+        runners, color output, progress bars).
       </p>
       <CodeBlock code={PTY_MODE} language="json" filename="pty-session.json" />
 
       <Callout type="info" title="When to use PTY mode">
-        Use PTY mode when running commands that require terminal detection:
-        test runners with watch mode, tools using ANSI colors, interactive CLIs.
-        For simple file operations and non-interactive tasks, PTY mode is not needed.
+        Use PTY mode when running commands that require terminal detection: test runners with watch
+        mode, tools using ANSI colors, interactive CLIs. For simple file operations and
+        non-interactive tasks, PTY mode is not needed.
       </Callout>
 
       <h2>Provider configuration</h2>
@@ -218,8 +312,8 @@ export function CodingAgentsPage() {
 
       <h2>Custom provider registration</h2>
       <p>
-        Any CLI tool that accepts a prompt on stdin or as a flag and produces output on stdout
-        can be registered as a custom coding agent provider.
+        Any CLI tool that accepts a prompt on stdin or as a flag and produces output on stdout can
+        be registered as a custom coding agent provider.
       </p>
       <CodeBlock code={CUSTOM_PROVIDER} language="http" filename="register-provider.http" />
 
@@ -228,16 +322,16 @@ export function CodingAgentsPage() {
 
       <h2>Environment sanitization</h2>
       <p>
-        Coding agent child processes run with a sanitized copy of the parent environment.
-        This prevents conflicts when OwnPilot itself runs inside an agent environment.
+        Coding agent child processes run with a sanitized copy of the parent environment. This
+        prevents conflicts when OwnPilot itself runs inside an agent environment.
       </p>
       <CodeBlock code={ENV_SANITIZATION} language="bash" />
 
       <Callout type="warning" title="CLAUDECODE env var">
-        Claude Code sets <code>CLAUDECODE=1</code> in its environment. If OwnPilot is itself
-        running inside Claude Code, child coding agent processes will see this variable and
-        refuse to start. OwnPilot automatically removes it (and similar variables) from the
-        sanitized environment passed to child coding agents.
+        Claude Code sets <code>CLAUDECODE=1</code> in its environment. If OwnPilot is itself running
+        inside Claude Code, child coding agent processes will see this variable and refuse to start.
+        OwnPilot automatically removes it (and similar variables) from the sanitized environment
+        passed to child coding agents.
       </Callout>
 
       <h2>Fleet integration</h2>

@@ -1,9 +1,9 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const CREATE_NOTE = `POST /api/v1/notes
 Content-Type: application/json
@@ -156,7 +156,9 @@ core.list_data_keys   — List all stored keys`;
 export function PersonalDataPage() {
   return (
     <DocsLayout>
-      <Badge variant="blue" className="mb-3">Personal Data</Badge>
+      <Badge variant="blue" className="mb-3">
+        Personal Data
+      </Badge>
       <h1>Personal Data</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot provides a complete personal data management system — notes, tasks, goals,
@@ -165,8 +167,8 @@ export function PersonalDataPage() {
       </p>
 
       <Callout type="tip" title="Privacy guarantee">
-        All personal data lives exclusively in your self-hosted PostgreSQL instance.
-        No personal data is ever sent to third-party services. Sensitive fields use AES-256-GCM encryption.
+        All personal data lives exclusively in your self-hosted PostgreSQL instance. No personal
+        data is ever sent to third-party services. Sensitive fields use AES-256-GCM encryption.
       </Callout>
 
       <h2>Data types overview</h2>
@@ -179,17 +181,83 @@ export function PersonalDataPage() {
           </tr>
         </thead>
         <tbody>
-          <tr><td>Notes</td><td><code>/api/v1/notes</code></td><td>Rich text notes with tags and pinning</td></tr>
-          <tr><td>Tasks</td><td><code>/api/v1/tasks</code></td><td>Tasks with priority, due dates, recurrence</td></tr>
-          <tr><td>Goals</td><td><code>/api/v1/goals</code></td><td>Long-term goals with milestones</td></tr>
-          <tr><td>Calendar</td><td><code>/api/v1/calendar</code></td><td>Events with recurrence rules</td></tr>
-          <tr><td>Contacts</td><td><code>/api/v1/contacts</code></td><td>People with email, phone, company</td></tr>
-          <tr><td>Memories</td><td><code>/api/v1/memories</code></td><td>AI memories with vector similarity search</td></tr>
-          <tr><td>Bookmarks</td><td><code>/api/v1/bookmarks</code></td><td>URLs with metadata and folders</td></tr>
-          <tr><td>Expenses</td><td><code>/api/v1/expenses</code></td><td>Expense tracking with categories</td></tr>
-          <tr><td>Habits</td><td><code>/api/v1/habits</code></td><td>Habit tracking with streak calculation</td></tr>
-          <tr><td>Custom Data</td><td><code>/api/v1/data</code></td><td>Arbitrary JSON key-value store</td></tr>
-          <tr><td>Personal Data</td><td><code>/api/v1/personal-data</code></td><td>Profile, preferences, health data</td></tr>
+          <tr>
+            <td>Notes</td>
+            <td>
+              <code>/api/v1/notes</code>
+            </td>
+            <td>Rich text notes with tags and pinning</td>
+          </tr>
+          <tr>
+            <td>Tasks</td>
+            <td>
+              <code>/api/v1/tasks</code>
+            </td>
+            <td>Tasks with priority, due dates, recurrence</td>
+          </tr>
+          <tr>
+            <td>Goals</td>
+            <td>
+              <code>/api/v1/goals</code>
+            </td>
+            <td>Long-term goals with milestones</td>
+          </tr>
+          <tr>
+            <td>Calendar</td>
+            <td>
+              <code>/api/v1/calendar</code>
+            </td>
+            <td>Events with recurrence rules</td>
+          </tr>
+          <tr>
+            <td>Contacts</td>
+            <td>
+              <code>/api/v1/contacts</code>
+            </td>
+            <td>People with email, phone, company</td>
+          </tr>
+          <tr>
+            <td>Memories</td>
+            <td>
+              <code>/api/v1/memories</code>
+            </td>
+            <td>AI memories with vector similarity search</td>
+          </tr>
+          <tr>
+            <td>Bookmarks</td>
+            <td>
+              <code>/api/v1/bookmarks</code>
+            </td>
+            <td>URLs with metadata and folders</td>
+          </tr>
+          <tr>
+            <td>Expenses</td>
+            <td>
+              <code>/api/v1/expenses</code>
+            </td>
+            <td>Expense tracking with categories</td>
+          </tr>
+          <tr>
+            <td>Habits</td>
+            <td>
+              <code>/api/v1/habits</code>
+            </td>
+            <td>Habit tracking with streak calculation</td>
+          </tr>
+          <tr>
+            <td>Custom Data</td>
+            <td>
+              <code>/api/v1/data</code>
+            </td>
+            <td>Arbitrary JSON key-value store</td>
+          </tr>
+          <tr>
+            <td>Personal Data</td>
+            <td>
+              <code>/api/v1/personal-data</code>
+            </td>
+            <td>Profile, preferences, health data</td>
+          </tr>
         </tbody>
       </table>
 
@@ -203,15 +271,67 @@ export function PersonalDataPage() {
       <h3>Notes API endpoints</h3>
       <table>
         <thead>
-          <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>GET</code></td><td><code>/api/v1/notes</code></td><td>List notes (paginated, filterable)</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/notes</code></td><td>Create note</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/v1/notes/:id</code></td><td>Get single note</td></tr>
-          <tr><td><code>PUT</code></td><td><code>/api/v1/notes/:id</code></td><td>Update note</td></tr>
-          <tr><td><code>DELETE</code></td><td><code>/api/v1/notes/:id</code></td><td>Delete note</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/v1/notes/search?q=</code></td><td>Semantic search</td></tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/notes</code>
+            </td>
+            <td>List notes (paginated, filterable)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/notes</code>
+            </td>
+            <td>Create note</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/notes/:id</code>
+            </td>
+            <td>Get single note</td>
+          </tr>
+          <tr>
+            <td>
+              <code>PUT</code>
+            </td>
+            <td>
+              <code>/api/v1/notes/:id</code>
+            </td>
+            <td>Update note</td>
+          </tr>
+          <tr>
+            <td>
+              <code>DELETE</code>
+            </td>
+            <td>
+              <code>/api/v1/notes/:id</code>
+            </td>
+            <td>Delete note</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/notes/search?q=</code>
+            </td>
+            <td>Semantic search</td>
+          </tr>
         </tbody>
       </table>
 
@@ -225,63 +345,86 @@ export function PersonalDataPage() {
       <h3>Task status values</h3>
       <table>
         <thead>
-          <tr><th>Status</th><th>Description</th></tr>
+          <tr>
+            <th>Status</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>pending</code></td><td>Not yet started</td></tr>
-          <tr><td><code>in_progress</code></td><td>Currently being worked on</td></tr>
-          <tr><td><code>completed</code></td><td>Done</td></tr>
-          <tr><td><code>cancelled</code></td><td>Will not be done</td></tr>
+          <tr>
+            <td>
+              <code>pending</code>
+            </td>
+            <td>Not yet started</td>
+          </tr>
+          <tr>
+            <td>
+              <code>in_progress</code>
+            </td>
+            <td>Currently being worked on</td>
+          </tr>
+          <tr>
+            <td>
+              <code>completed</code>
+            </td>
+            <td>Done</td>
+          </tr>
+          <tr>
+            <td>
+              <code>cancelled</code>
+            </td>
+            <td>Will not be done</td>
+          </tr>
         </tbody>
       </table>
 
       <h2>Goals</h2>
       <p>
-        Goals support milestone tracking, categories, target dates, and progress updates.
-        The agent can automatically track progress and send reminders.
+        Goals support milestone tracking, categories, target dates, and progress updates. The agent
+        can automatically track progress and send reminders.
       </p>
       <CodeBlock code={CREATE_GOAL} language="http" filename="create-goal.http" />
 
       <h2>Calendar</h2>
       <p>
-        Calendar events support recurrence rules, location, attendees, and reminders.
-        Recurrence values: <code>none</code>, <code>daily</code>, <code>weekly</code>,
-        <code>monthly</code>, <code>yearly</code>.
+        Calendar events support recurrence rules, location, attendees, and reminders. Recurrence
+        values: <code>none</code>, <code>daily</code>, <code>weekly</code>,<code>monthly</code>,{' '}
+        <code>yearly</code>.
       </p>
       <CodeBlock code={CREATE_CALENDAR} language="http" filename="create-event.http" />
 
       <h2>Contacts</h2>
       <p>
-        Contacts store people with name, email, phone, company, social links, notes,
-        and custom tags. Full-text search across all fields.
+        Contacts store people with name, email, phone, company, social links, notes, and custom
+        tags. Full-text search across all fields.
       </p>
       <CodeBlock code={CREATE_CONTACT} language="http" filename="create-contact.http" />
 
       <h2>Memory System</h2>
       <p>
-        The memory system uses pgvector for semantic similarity search. When the agent
-        encounters new information it should remember, it stores it with an embedding.
-        Future queries semantically recall relevant memories.
+        The memory system uses pgvector for semantic similarity search. When the agent encounters
+        new information it should remember, it stores it with an embedding. Future queries
+        semantically recall relevant memories.
       </p>
       <CodeBlock code={CREATE_MEMORY} language="http" filename="create-memory.http" />
 
       <Callout type="info" title="Vector similarity search">
-        Memories are retrieved using cosine similarity on 1536-dimension embeddings.
-        The agent automatically injects the top-K most relevant memories into its context
-        at the start of each conversation.
+        Memories are retrieved using cosine similarity on 1536-dimension embeddings. The agent
+        automatically injects the top-K most relevant memories into its context at the start of each
+        conversation.
       </Callout>
 
       <h2>Bookmarks</h2>
       <p>
-        Save URLs with AI-generated summaries, tags, and folder organization.
-        Full-text and semantic search across titles, descriptions, and content.
+        Save URLs with AI-generated summaries, tags, and folder organization. Full-text and semantic
+        search across titles, descriptions, and content.
       </p>
       <CodeBlock code={CREATE_BOOKMARK} language="http" filename="create-bookmark.http" />
 
       <h2>Expenses</h2>
       <p>
-        Track personal and business expenses with categories, currencies, and tags.
-        The agent can generate expense summaries, category breakdowns, and monthly reports.
+        Track personal and business expenses with categories, currencies, and tags. The agent can
+        generate expense summaries, category breakdowns, and monthly reports.
       </p>
       <CodeBlock code={CREATE_EXPENSE} language="http" filename="create-expense.http" />
 
@@ -294,20 +437,20 @@ export function PersonalDataPage() {
 
       <h2>Habits</h2>
       <p>
-        Track daily, weekly, or custom-schedule habits. The system calculates streaks,
-        completion rates, and best periods. The agent can send habit reminders and celebrate milestones.
+        Track daily, weekly, or custom-schedule habits. The system calculates streaks, completion
+        rates, and best periods. The agent can send habit reminders and celebrate milestones.
       </p>
 
       <h2>Pomodoro Timer</h2>
       <p>
-        Built-in Pomodoro technique support with 25-minute focus sessions, 5-minute breaks,
-        and long break intervals. Session data is stored and statistics are available to the agent.
+        Built-in Pomodoro technique support with 25-minute focus sessions, 5-minute breaks, and long
+        break intervals. Session data is stored and statistics are available to the agent.
       </p>
 
       <h2>Custom Data</h2>
       <p>
-        The custom data store allows you (or the agent) to persist arbitrary JSON data under
-        named keys. Useful for storing structured personal data that doesn't fit other categories.
+        The custom data store allows you (or the agent) to persist arbitrary JSON data under named
+        keys. Useful for storing structured personal data that doesn't fit other categories.
       </p>
       <CodeBlock
         code={`# Store custom data via API
@@ -328,15 +471,15 @@ GET /api/v1/data/fitness_goals_2026`}
 
       <h2>All LLM tool names</h2>
       <p>
-        The agent accesses personal data through these built-in tool names
-        (all prefixed with <code>core.</code> in the namespace system):
+        The agent accesses personal data through these built-in tool names (all prefixed with{' '}
+        <code>core.</code> in the namespace system):
       </p>
       <CodeBlock code={TOOL_EXAMPLES} language="text" filename="personal-data-tools" />
 
       <Callout type="note" title="Tool access via meta-proxy">
-        In conversations, the agent discovers and calls these tools through the meta-tool proxy
-        (<code>search_tools</code> → <code>get_tool_help</code> → <code>use_tool</code>).
-        You can also call any tool directly via <code>POST /api/v1/tools/execute</code>.
+        In conversations, the agent discovers and calls these tools through the meta-tool proxy (
+        <code>search_tools</code> → <code>get_tool_help</code> → <code>use_tool</code>). You can
+        also call any tool directly via <code>POST /api/v1/tools/execute</code>.
       </Callout>
 
       {/* Prev/Next navigation */}

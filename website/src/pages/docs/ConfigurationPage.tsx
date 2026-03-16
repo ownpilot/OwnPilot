@@ -1,9 +1,9 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const CLI_CONFIG = `# Set configuration values
 ownpilot config set openai-api-key sk-...
@@ -152,12 +152,15 @@ ownpilot workspace set-default   # Set as the default workspace
 export function ConfigurationPage() {
   return (
     <DocsLayout>
-      <Badge variant="blue" className="mb-3">Configuration</Badge>
+      <Badge variant="blue" className="mb-3">
+        Configuration
+      </Badge>
       <h1>Configuration</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot has four configuration sources with a clear priority order: CLI flags override DB
-        values, which override environment variables, which override built-in defaults. All sensitive
-        values are stored AES-256-GCM encrypted in PostgreSQL — no plain-text secrets in <code>.env</code>.
+        values, which override environment variables, which override built-in defaults. All
+        sensitive values are stored AES-256-GCM encrypted in PostgreSQL — no plain-text secrets in{' '}
+        <code>.env</code>.
       </p>
 
       <h2>Configuration priority</h2>
@@ -165,8 +168,9 @@ export function ConfigurationPage() {
 
       <h2>Config Center (web UI)</h2>
       <p>
-        The recommended way to manage configuration. Navigate to <strong>Settings → Config Center</strong>{" "}
-        in the OwnPilot web UI. All API keys and sensitive values are stored encrypted in PostgreSQL.
+        The recommended way to manage configuration. Navigate to{' '}
+        <strong>Settings → Config Center</strong> in the OwnPilot web UI. All API keys and sensitive
+        values are stored encrypted in PostgreSQL.
       </p>
       <CodeBlock code={CONFIG_CENTER} language="bash" />
 
@@ -187,40 +191,148 @@ export function ConfigurationPage() {
       <h3>Core server variables</h3>
       <table>
         <thead>
-          <tr><th>Variable</th><th>Default</th><th>Required</th><th>Description</th></tr>
+          <tr>
+            <th>Variable</th>
+            <th>Default</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>PORT</code></td><td>8080</td><td>No</td><td>HTTP server port</td></tr>
-          <tr><td><code>HOST</code></td><td>0.0.0.0</td><td>No</td><td>Bind address</td></tr>
-          <tr><td><code>NODE_ENV</code></td><td>development</td><td>No</td><td>Set to <code>production</code> for deployments</td></tr>
-          <tr><td><code>LOG_LEVEL</code></td><td>info</td><td>No</td><td>error | warn | info | debug</td></tr>
+          <tr>
+            <td>
+              <code>PORT</code>
+            </td>
+            <td>8080</td>
+            <td>No</td>
+            <td>HTTP server port</td>
+          </tr>
+          <tr>
+            <td>
+              <code>HOST</code>
+            </td>
+            <td>0.0.0.0</td>
+            <td>No</td>
+            <td>Bind address</td>
+          </tr>
+          <tr>
+            <td>
+              <code>NODE_ENV</code>
+            </td>
+            <td>development</td>
+            <td>No</td>
+            <td>
+              Set to <code>production</code> for deployments
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <code>LOG_LEVEL</code>
+            </td>
+            <td>info</td>
+            <td>No</td>
+            <td>error | warn | info | debug</td>
+          </tr>
         </tbody>
       </table>
 
       <h3>Database variables</h3>
       <table>
         <thead>
-          <tr><th>Variable</th><th>Default</th><th>Required</th><th>Description</th></tr>
+          <tr>
+            <th>Variable</th>
+            <th>Default</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>POSTGRES_HOST</code></td><td>localhost</td><td>Yes</td><td>PostgreSQL hostname</td></tr>
-          <tr><td><code>POSTGRES_PORT</code></td><td>25432</td><td>No</td><td>Port (Docker maps container 5432 → host 25432)</td></tr>
-          <tr><td><code>POSTGRES_USER</code></td><td>ownpilot</td><td>Yes</td><td>Database user</td></tr>
-          <tr><td><code>POSTGRES_PASSWORD</code></td><td>—</td><td>Yes</td><td>Database password</td></tr>
-          <tr><td><code>POSTGRES_DB</code></td><td>ownpilot</td><td>No</td><td>Database name</td></tr>
+          <tr>
+            <td>
+              <code>POSTGRES_HOST</code>
+            </td>
+            <td>localhost</td>
+            <td>Yes</td>
+            <td>PostgreSQL hostname</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_PORT</code>
+            </td>
+            <td>25432</td>
+            <td>No</td>
+            <td>Port (Docker maps container 5432 → host 25432)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_USER</code>
+            </td>
+            <td>ownpilot</td>
+            <td>Yes</td>
+            <td>Database user</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_PASSWORD</code>
+            </td>
+            <td>—</td>
+            <td>Yes</td>
+            <td>Database password</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POSTGRES_DB</code>
+            </td>
+            <td>ownpilot</td>
+            <td>No</td>
+            <td>Database name</td>
+          </tr>
         </tbody>
       </table>
 
       <h3>Authentication variables</h3>
       <table>
         <thead>
-          <tr><th>Variable</th><th>Default</th><th>Required</th><th>Description</th></tr>
+          <tr>
+            <th>Variable</th>
+            <th>Default</th>
+            <th>Required</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>AUTH_TYPE</code></td><td>none</td><td>No</td><td>none | api-key | jwt</td></tr>
-          <tr><td><code>API_KEY</code></td><td>—</td><td>If api-key</td><td>Static API key for Bearer auth</td></tr>
-          <tr><td><code>JWT_SECRET</code></td><td>—</td><td>If jwt</td><td>JWT signing secret (min 64 characters)</td></tr>
-          <tr><td><code>JWT_EXPIRY</code></td><td>7d</td><td>No</td><td>JWT token expiry (e.g., 1h, 7d, 30d)</td></tr>
+          <tr>
+            <td>
+              <code>AUTH_TYPE</code>
+            </td>
+            <td>none</td>
+            <td>No</td>
+            <td>none | api-key | jwt</td>
+          </tr>
+          <tr>
+            <td>
+              <code>API_KEY</code>
+            </td>
+            <td>—</td>
+            <td>If api-key</td>
+            <td>Static API key for Bearer auth</td>
+          </tr>
+          <tr>
+            <td>
+              <code>JWT_SECRET</code>
+            </td>
+            <td>—</td>
+            <td>If jwt</td>
+            <td>JWT signing secret (min 64 characters)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>JWT_EXPIRY</code>
+            </td>
+            <td>7d</td>
+            <td>No</td>
+            <td>JWT token expiry (e.g., 1h, 7d, 30d)</td>
+          </tr>
         </tbody>
       </table>
 
@@ -235,8 +347,8 @@ export function ConfigurationPage() {
 
       <h2>Model routing</h2>
       <p>
-        Configure different AI providers and models for different processes.
-        This lets you use a fast cheap model for workflows while using a powerful model for chat.
+        Configure different AI providers and models for different processes. This lets you use a
+        fast cheap model for workflows while using a powerful model for chat.
       </p>
       <CodeBlock code={ROUTING_CONFIG} language="json" filename="routing-config.json" />
 
@@ -246,17 +358,85 @@ export function ConfigurationPage() {
       <h2>Config API endpoints</h2>
       <table>
         <thead>
-          <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td><code>GET</code></td><td><code>/api/v1/config</code></td><td>List all keys (values masked)</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/v1/config/:key</code></td><td>Get specific value</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/config</code></td><td>Set a value</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/config/bulk</code></td><td>Set multiple values</td></tr>
-          <tr><td><code>DELETE</code></td><td><code>/api/v1/config/:key</code></td><td>Delete a key</td></tr>
-          <tr><td><code>GET</code></td><td><code>/api/v1/config/services</code></td><td>List configured services</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/config/services</code></td><td>Configure a service (Telegram, etc.)</td></tr>
-          <tr><td><code>POST</code></td><td><code>/api/v1/config/routing</code></td><td>Set model routing config</td></tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/config</code>
+            </td>
+            <td>List all keys (values masked)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/config/:key</code>
+            </td>
+            <td>Get specific value</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/config</code>
+            </td>
+            <td>Set a value</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/config/bulk</code>
+            </td>
+            <td>Set multiple values</td>
+          </tr>
+          <tr>
+            <td>
+              <code>DELETE</code>
+            </td>
+            <td>
+              <code>/api/v1/config/:key</code>
+            </td>
+            <td>Delete a key</td>
+          </tr>
+          <tr>
+            <td>
+              <code>GET</code>
+            </td>
+            <td>
+              <code>/api/v1/config/services</code>
+            </td>
+            <td>List configured services</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/config/services</code>
+            </td>
+            <td>Configure a service (Telegram, etc.)</td>
+          </tr>
+          <tr>
+            <td>
+              <code>POST</code>
+            </td>
+            <td>
+              <code>/api/v1/config/routing</code>
+            </td>
+            <td>Set model routing config</td>
+          </tr>
         </tbody>
       </table>
 

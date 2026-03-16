@@ -1,49 +1,81 @@
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { Badge } from "@/components/ui/Badge";
+import { useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import { Badge } from '@/components/ui/Badge';
 
 const packages = [
   {
-    name: "@ownpilot/core",
-    size: "~62K LOC",
-    files: "160+ files",
-    color: "border-purple-500/30 bg-purple-500/5",
-    badge: "bg-purple-500/10 text-purple-500",
-    description: "AI engine, tool framework, plugin architecture, security primitives, sandboxed code execution, AES-256-GCM encryption, tamper-evident audit, PII detection. Minimal dependencies.",
-    modules: ["agent/ — Multi-provider AI engine", "agent/orchestra/ — Fan-out, race, pipeline", "agent/tools/ — 190+ tool definitions", "plugins/ — Isolation + marketplace", "sandbox/ — VM, Docker, Worker threads", "crypto/ — Zero-dep AES-256-GCM", "privacy/ — PII detection (15+ types)"],
+    name: '@ownpilot/core',
+    size: '~62K LOC',
+    files: '160+ files',
+    color: 'border-purple-500/30 bg-purple-500/5',
+    badge: 'bg-purple-500/10 text-purple-500',
+    description:
+      'AI engine, tool framework, plugin architecture, security primitives, sandboxed code execution, AES-256-GCM encryption, tamper-evident audit, PII detection. Minimal dependencies.',
+    modules: [
+      'agent/ — Multi-provider AI engine',
+      'agent/orchestra/ — Fan-out, race, pipeline',
+      'agent/tools/ — 190+ tool definitions',
+      'plugins/ — Isolation + marketplace',
+      'sandbox/ — VM, Docker, Worker threads',
+      'crypto/ — Zero-dep AES-256-GCM',
+      'privacy/ — PII detection (15+ types)',
+    ],
   },
   {
-    name: "@ownpilot/gateway",
-    size: "~76K LOC",
-    files: "389 test files",
-    color: "border-blue-500/30 bg-blue-500/5",
-    badge: "bg-blue-500/10 text-blue-500",
-    description: "Hono HTTP API server. Routes, services, DB repositories, agent runners, WebSocket, channels (Telegram + WhatsApp), MCP client/server, plugin init, triggers.",
-    modules: ["routes/ — 55+ route modules", "services/ — 60+ business services", "db/repositories/ — 45+ repos", "channels/ — Telegram + WhatsApp", "services/workflow/ — 23 node executors", "services/soul-heartbeat-service.ts", "tools/ — CLI, edge, browser, coding"],
+    name: '@ownpilot/gateway',
+    size: '~76K LOC',
+    files: '389 test files',
+    color: 'border-blue-500/30 bg-blue-500/5',
+    badge: 'bg-blue-500/10 text-blue-500',
+    description:
+      'Hono HTTP API server. Routes, services, DB repositories, agent runners, WebSocket, channels (Telegram + WhatsApp), MCP client/server, plugin init, triggers.',
+    modules: [
+      'routes/ — 55+ route modules',
+      'services/ — 60+ business services',
+      'db/repositories/ — 45+ repos',
+      'channels/ — Telegram + WhatsApp',
+      'services/workflow/ — 23 node executors',
+      'services/soul-heartbeat-service.ts',
+      'tools/ — CLI, edge, browser, coding',
+    ],
   },
   {
-    name: "@ownpilot/ui",
-    size: "~40K LOC",
-    files: "57+ pages",
-    color: "border-emerald-500/30 bg-emerald-500/5",
-    badge: "bg-emerald-500/10 text-emerald-500",
-    description: "React 19 + Vite 7 + Tailwind CSS 4 frontend. Code-split with lazy loading, dark mode, 120+ components, real-time WebSocket updates.",
-    modules: ["pages/ — 57+ page components", "components/ — 120+ reusable UI", "hooks/ — WebSocket, chat store, theme", "api/ — Typed fetch wrapper + endpoints", "App.tsx — Route definitions"],
+    name: '@ownpilot/ui',
+    size: '~40K LOC',
+    files: '57+ pages',
+    color: 'border-emerald-500/30 bg-emerald-500/5',
+    badge: 'bg-emerald-500/10 text-emerald-500',
+    description:
+      'React 19 + Vite 7 + Tailwind CSS 4 frontend. Code-split with lazy loading, dark mode, 120+ components, real-time WebSocket updates.',
+    modules: [
+      'pages/ — 57+ page components',
+      'components/ — 120+ reusable UI',
+      'hooks/ — WebSocket, chat store, theme',
+      'api/ — Typed fetch wrapper + endpoints',
+      'App.tsx — Route definitions',
+    ],
   },
   {
-    name: "@ownpilot/cli",
-    size: "CLI tools",
-    files: "293 tests",
-    color: "border-orange-500/30 bg-orange-500/5",
-    badge: "bg-orange-500/10 text-orange-500",
-    description: "Commander.js CLI for server management, bot control, workspace operations, configuration, and channel management.",
-    modules: ["commands/start — Start server", "commands/config — Manage settings", "commands/bot — Telegram bot control", "commands/workspace — Isolation", "commands/skill — Install/remove skills"],
+    name: '@ownpilot/cli',
+    size: 'CLI tools',
+    files: '293 tests',
+    color: 'border-orange-500/30 bg-orange-500/5',
+    badge: 'bg-orange-500/10 text-orange-500',
+    description:
+      'Commander.js CLI for server management, bot control, workspace operations, configuration, and channel management.',
+    modules: [
+      'commands/start — Start server',
+      'commands/config — Manage settings',
+      'commands/bot — Telegram bot control',
+      'commands/workspace — Isolation',
+      'commands/skill — Install/remove skills',
+    ],
   },
 ];
 
 export function Architecture() {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
     <section className="py-24 bg-[var(--color-bg)]">
@@ -57,11 +89,11 @@ export function Architecture() {
               Architecture
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-text)] mb-4">
-              TypeScript monorepo,{" "}
-              <span className="text-gradient">built to scale</span>
+              TypeScript monorepo, <span className="text-gradient">built to scale</span>
             </h2>
             <p className="text-[var(--color-text-muted)]">
-              4 packages, single port in production. Gateway serves the bundled UI, REST API, WebSocket, and SSE — all on port 8080.
+              4 packages, single port in production. Gateway serves the bundled UI, REST API,
+              WebSocket, and SSE — all on port 8080.
             </p>
           </motion.div>
         </div>
@@ -110,7 +142,10 @@ export function Architecture() {
               </p>
               <ul className="space-y-1">
                 {pkg.modules.map((mod) => (
-                  <li key={mod} className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
+                  <li
+                    key={mod}
+                    className="flex items-start gap-2 text-xs text-[var(--color-text-muted)]"
+                  >
                     <span className="text-[var(--color-text-subtle)] mt-0.5 shrink-0">—</span>
                     <code className="font-mono">{mod}</code>
                   </li>
@@ -131,7 +166,15 @@ export function Architecture() {
             Message Pipeline
           </h3>
           <div className="flex flex-wrap items-center gap-2">
-            {["Request", "Audit", "Persistence", "Post-Processing", "Context-Injection", "Agent-Execution", "Response"].map((stage, i, arr) => (
+            {[
+              'Request',
+              'Audit',
+              'Persistence',
+              'Post-Processing',
+              'Context-Injection',
+              'Agent-Execution',
+              'Response',
+            ].map((stage, i, arr) => (
               <div key={stage} className="flex items-center gap-2">
                 <div className="px-3 py-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] font-medium">
                   {stage}
@@ -143,7 +186,8 @@ export function Architecture() {
             ))}
           </div>
           <p className="mt-3 text-xs text-[var(--color-text-subtle)]">
-            All messages (web UI, Telegram, WhatsApp, triggers) flow through the same MessageBus pipeline.
+            All messages (web UI, Telegram, WhatsApp, triggers) flow through the same MessageBus
+            pipeline.
           </p>
         </motion.div>
       </div>

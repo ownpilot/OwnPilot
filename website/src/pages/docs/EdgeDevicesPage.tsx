@@ -1,9 +1,9 @@
-import { DocsLayout } from "@/components/layout/DocsLayout";
-import { CodeBlock } from "@/components/ui/CodeBlock";
-import { Callout } from "@/components/ui/Callout";
-import { Badge } from "@/components/ui/Badge";
-import { Link } from "react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { DocsLayout } from '@/components/layout/DocsLayout';
+import { CodeBlock } from '@/components/ui/CodeBlock';
+import { Callout } from '@/components/ui/Callout';
+import { Badge } from '@/components/ui/Badge';
+import { Link } from 'react-router';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const MQTT_CONFIG = `# Configure MQTT broker in .env or Config Center:
 MQTT_BROKER_URL=mqtt://localhost:1883
@@ -157,12 +157,14 @@ GET    /api/v1/edge/broker/status               MQTT broker connection status`;
 export function EdgeDevicesPage() {
   return (
     <DocsLayout>
-      <Badge variant="orange" className="mb-3">Edge Devices</Badge>
+      <Badge variant="orange" className="mb-3">
+        Edge Devices
+      </Badge>
       <h1>Edge Devices &amp; IoT</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot integrates with IoT devices via MQTT (Mosquitto), providing a device registry,
-        telemetry storage, command queue, and 6 LLM tools so your AI assistant can read sensors
-        and control actuators directly in conversation.
+        telemetry storage, command queue, and 6 LLM tools so your AI assistant can read sensors and
+        control actuators directly in conversation.
       </p>
 
       <h2>Architecture</h2>
@@ -180,9 +182,9 @@ export function EdgeDevicesPage() {
       <CodeBlock code={MQTT_CONFIG} language="bash" filename=".env" />
 
       <Callout type="info" title="Broker configuration">
-        Configure the MQTT broker URL in <strong>Settings → Config Center → Edge</strong> or via
-        the <code>MQTT_BROKER_URL</code> environment variable. The gateway connects automatically
-        when the URL is set.
+        Configure the MQTT broker URL in <strong>Settings → Config Center → Edge</strong> or via the{' '}
+        <code>MQTT_BROKER_URL</code> environment variable. The gateway connects automatically when
+        the URL is set.
       </Callout>
 
       <h2>Registering devices</h2>
@@ -194,15 +196,43 @@ export function EdgeDevicesPage() {
       <h3>Compatible hardware</h3>
       <table>
         <thead>
-          <tr><th>Device</th><th>Example use</th><th>Connection</th></tr>
+          <tr>
+            <th>Device</th>
+            <th>Example use</th>
+            <th>Connection</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>ESP32 / ESP8266</td><td>Temperature, humidity, motion sensors</td><td>WiFi → MQTT</td></tr>
-          <tr><td>Raspberry Pi</td><td>GPIO, camera, complex automation</td><td>Ethernet/WiFi → MQTT</td></tr>
-          <tr><td>Arduino + ESP</td><td>Simple sensors and actuators</td><td>Serial → ESP → MQTT</td></tr>
-          <tr><td>Shelly devices</td><td>Smart plugs, switches, dimmers</td><td>Built-in MQTT</td></tr>
-          <tr><td>Zigbee2MQTT</td><td>Zigbee device bridge</td><td>USB → MQTT</td></tr>
-          <tr><td>Tasmota devices</td><td>Flashed smart plugs and relays</td><td>Built-in MQTT</td></tr>
+          <tr>
+            <td>ESP32 / ESP8266</td>
+            <td>Temperature, humidity, motion sensors</td>
+            <td>WiFi → MQTT</td>
+          </tr>
+          <tr>
+            <td>Raspberry Pi</td>
+            <td>GPIO, camera, complex automation</td>
+            <td>Ethernet/WiFi → MQTT</td>
+          </tr>
+          <tr>
+            <td>Arduino + ESP</td>
+            <td>Simple sensors and actuators</td>
+            <td>Serial → ESP → MQTT</td>
+          </tr>
+          <tr>
+            <td>Shelly devices</td>
+            <td>Smart plugs, switches, dimmers</td>
+            <td>Built-in MQTT</td>
+          </tr>
+          <tr>
+            <td>Zigbee2MQTT</td>
+            <td>Zigbee device bridge</td>
+            <td>USB → MQTT</td>
+          </tr>
+          <tr>
+            <td>Tasmota devices</td>
+            <td>Flashed smart plugs and relays</td>
+            <td>Built-in MQTT</td>
+          </tr>
         </tbody>
       </table>
 
@@ -223,17 +253,18 @@ export function EdgeDevicesPage() {
       <CodeBlock code={COMMAND_QUEUE} language="bash" />
 
       <h2>6 LLM tools for edge devices</h2>
-      <p>
-        Agents have 6 built-in tools for interacting with IoT devices in natural language:
-      </p>
+      <p>Agents have 6 built-in tools for interacting with IoT devices in natural language:</p>
       <CodeBlock code={LLM_TOOLS} language="bash" filename="edge-tools.txt" />
 
       <Callout type="tip" title="Natural language device control">
         Once devices are registered, you can control them conversationally:
         <br />
-        <em>"What's the temperature in the living room?"</em><br />
-        <em>"Turn on the bedroom fan"</em><br />
-        <em>"Show me humidity trends for the past week"</em><br />
+        <em>"What's the temperature in the living room?"</em>
+        <br />
+        <em>"Turn on the bedroom fan"</em>
+        <br />
+        <em>"Show me humidity trends for the past week"</em>
+        <br />
         <em>"Alert me when motion is detected in the garage"</em>
       </Callout>
 
@@ -244,9 +275,7 @@ export function EdgeDevicesPage() {
       <CodeBlock code={EDGE_ROUTES} language="bash" filename="edge-api.txt" />
 
       <h2>WebSocket events</h2>
-      <p>
-        Edge device events are broadcast over the WebSocket connection:
-      </p>
+      <p>Edge device events are broadcast over the WebSocket connection:</p>
       <CodeBlock
         code={`// Subscribe to device events:
 ws.send(JSON.stringify({

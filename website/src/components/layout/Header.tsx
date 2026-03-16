@@ -1,27 +1,27 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router";
-import { Github, Menu, X, Star } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Button } from "@/components/ui/Button";
-import { cn } from "@/lib/utils";
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router';
+import { Github, Menu, X, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/utils';
 
 const navLinks = [
-  { href: "/#features", label: "Features" },
-  { href: "/docs/getting-started", label: "Docs" },
-  { href: "/changelog", label: "Changelog" },
+  { href: '/#features', label: 'Features' },
+  { href: '/docs/getting-started', label: 'Docs' },
+  { href: '/changelog', label: 'Changelog' },
 ];
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const isHome = location.pathname === "/";
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -31,19 +31,14 @@ export function Header() {
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled || !isHome
-          ? "glass border-b border-[var(--color-border)]"
-          : "bg-transparent"
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        scrolled || !isHome ? 'glass border-b border-[var(--color-border)]' : 'bg-transparent'
       )}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 group"
-          >
+          <Link to="/" className="flex items-center gap-2 group">
             <img
               src="/logo.jpeg"
               alt="OwnPilot"
@@ -61,8 +56,8 @@ export function Header() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150",
-                  "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)]"
+                  'px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150',
+                  'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)]'
                 )}
               >
                 {link.label}
@@ -78,8 +73,8 @@ export function Header() {
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)]"
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)]'
               )}
             >
               <Github className="w-4 h-4" />
@@ -87,7 +82,7 @@ export function Header() {
             </a>
             <Button
               size="sm"
-              onClick={() => window.open("https://github.com/ownpilot/ownpilot", "_blank")}
+              onClick={() => window.open('https://github.com/ownpilot/ownpilot', '_blank')}
             >
               Get Started
             </Button>
@@ -109,7 +104,7 @@ export function Header() {
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
             className="md:hidden border-t border-[var(--color-border)] bg-[var(--color-bg)]"
