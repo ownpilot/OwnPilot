@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenClaw Bridge Daemon
+Documentation=https://github.com/ayaz/openclaw-bridge
+After=network.target
+Wants=network.target
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=ayaz
+Group=ayaz
+WorkingDirectory=/home/ayaz/openclaw-bridge
+ExecStart=/usr/bin/node --experimental-strip-types src/index.ts
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/sysconfig/openclaw-bridge
+
+# Output
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-bridge
+
+[Install]
+WantedBy=multi-user.target
