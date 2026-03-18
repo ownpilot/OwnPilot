@@ -114,6 +114,11 @@ export class ClawRunner {
         durationMs: pipelineResult.durationMs,
       });
 
+      // Save audit log entries for each tool call
+      this.saveAuditLog(cycleNumber, toolCalls).catch((err) => {
+        log.warn(`[${this.config.id}] Failed to save audit log: ${getErrorMessage(err)}`);
+      });
+
       return {
         success: true,
         toolCalls,
@@ -328,6 +333,23 @@ export class ClawRunner {
     }
 
     return parts.join('\n');
+  }
+
+  private async saveAuditLog(cycleNumber: number, toolCalls: ClawToolCall[]): Promise<void> {
+    if (toolCalls.length === 0) return;
+    const { getClawsRepository } = await import('../db/repositories/claws.js');
+    const repo = getClawsRepository();
+    await repo.saveAuditBatch(
+      toolCalls.map((tc) => ({
+        clawId: this.config.id,
+        cycleNumber,
+        toolName: tc.tool,
+        toolArgs: tc.args,
+        toolResult: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result ?? '').slice(0, 5000),
+        success: tc.success,
+        durationMs: tc.durationMs,
+      }))
+    );
   }
 
   private appendFileTree(parts: string[], files: WorkspaceFileInfo[], indent: number): void {

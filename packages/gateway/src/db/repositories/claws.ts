@@ -544,6 +544,119 @@ export class ClawsRepository extends BaseRepository {
     );
     return result?.changes ?? 0;
   }
+
+  // ---------- Audit Log ----------
+
+  async saveAuditEntry(entry: {
+    clawId: string;
+    cycleNumber: number;
+    toolName: string;
+    toolArgs: Record<string, unknown>;
+    toolResult: string;
+    success: boolean;
+    durationMs: number;
+    category?: string;
+  }): Promise<void> {
+    await this.execute(
+      `INSERT INTO claw_audit_log (id, claw_id, cycle_number, tool_name, tool_args, tool_result, success, duration_ms, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        generateId('aud'),
+        entry.clawId,
+        entry.cycleNumber,
+        entry.toolName,
+        JSON.stringify(entry.toolArgs),
+        (entry.toolResult ?? '').slice(0, 10_000),
+        entry.success,
+        entry.durationMs,
+        entry.category ?? this.categorizeToolCall(entry.toolName),
+      ]
+    );
+  }
+
+  async saveAuditBatch(entries: Array<{
+    clawId: string;
+    cycleNumber: number;
+    toolName: string;
+    toolArgs: Record<string, unknown>;
+    toolResult: string;
+    success: boolean;
+    durationMs: number;
+    category?: string;
+  }>): Promise<void> {
+    for (const entry of entries) {
+      await this.saveAuditEntry(entry);
+    }
+  }
+
+  async getAuditLog(
+    clawId: string,
+    limit: number,
+    offset: number,
+    category?: string
+  ): Promise<{ entries: Array<{
+    id: string;
+    clawId: string;
+    cycleNumber: number;
+    toolName: string;
+    toolArgs: Record<string, unknown>;
+    toolResult: string;
+    success: boolean;
+    durationMs: number;
+    category: string;
+    executedAt: string;
+  }>; total: number }> {
+    let countSql = `SELECT COUNT(*) as count FROM claw_audit_log WHERE claw_id = $1`;
+    let sql = `SELECT * FROM claw_audit_log WHERE claw_id = $1`;
+    const params: unknown[] = [clawId];
+    let paramIdx = 2;
+
+    if (category) {
+      const catFilter = ` AND category = $${paramIdx++}`;
+      countSql += catFilter;
+      sql += catFilter;
+      params.push(category);
+    }
+
+    const countRow = await this.queryOne<{ count: string }>(countSql, params);
+    const total = parseInt(countRow?.count ?? '0', 10);
+
+    sql += ` ORDER BY executed_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`;
+    const rows = await this.query<{
+      id: string; claw_id: string; cycle_number: number; tool_name: string;
+      tool_args: string; tool_result: string; success: boolean; duration_ms: number;
+      category: string; executed_at: string;
+    }>(sql, [...params, limit, offset]);
+
+    return {
+      entries: rows.map((r) => ({
+        id: r.id,
+        clawId: r.claw_id,
+        cycleNumber: r.cycle_number,
+        toolName: r.tool_name,
+        toolArgs: parseJsonField<Record<string, unknown>>(r.tool_args, {}),
+        toolResult: r.tool_result,
+        success: r.success,
+        durationMs: r.duration_ms,
+        category: r.category,
+        executedAt: r.executed_at,
+      })),
+      total,
+    };
+  }
+
+  private categorizeToolCall(toolName: string): string {
+    if (toolName.startsWith('claw_')) return 'claw';
+    if (toolName.startsWith('browse_') || toolName === 'browser_click' || toolName === 'browser_type' || toolName === 'browser_fill_form' || toolName === 'browser_screenshot' || toolName === 'browser_extract') return 'browser';
+    if (toolName === 'run_cli_tool' || toolName === 'install_cli_tool' || toolName === 'list_cli_tools') return 'cli';
+    if (toolName === 'run_coding_task' || toolName.startsWith('orchestrat')) return 'coding-agent';
+    if (toolName.startsWith('fetch_') || toolName.startsWith('http_') || toolName === 'search_web' || toolName === 'post_json' || toolName === 'call_json_api') return 'web';
+    if (toolName.startsWith('execute_') || toolName === 'eval_js' || toolName === 'eval_python') return 'code-exec';
+    if (toolName.startsWith('git_')) return 'git';
+    if (toolName.includes('memory') || toolName.includes('goal') || toolName.includes('plan')) return 'knowledge';
+    if (toolName.startsWith('read_file') || toolName.startsWith('write_file') || toolName.startsWith('list_dir') || toolName.startsWith('delete_file')) return 'filesystem';
+    return 'tool';
+  }
 }
 
 // ============================================================================

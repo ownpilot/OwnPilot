@@ -233,6 +233,23 @@ clawRoutes.get('/:id/history', async (c) => {
   }
 });
 
+// GET /:id/audit — Get audit log (per-tool-call tracking)
+clawRoutes.get('/:id/audit', async (c) => {
+  try {
+    const { id } = c.req.param();
+    const { limit, offset } = getPaginationParams(c);
+    const category = c.req.query('category');
+
+    const { getClawsRepository } = await import('../db/repositories/claws.js');
+    const repo = getClawsRepository();
+    const result = await repo.getAuditLog(id, limit, offset, category || undefined);
+
+    return apiResponse(c, result);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // POST /:id/approve-escalation
 clawRoutes.post('/:id/approve-escalation', async (c) => {
   try {
