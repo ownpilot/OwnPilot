@@ -6760,6 +6760,7 @@
       "outputPrice": 14.246,
       "capabilities": [
         "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,

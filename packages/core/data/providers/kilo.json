@@ -4981,6 +4981,7 @@
       "outputPrice": 0.15,
       "capabilities": [
         "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,

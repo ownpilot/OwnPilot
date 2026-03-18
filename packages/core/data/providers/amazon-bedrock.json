@@ -14,7 +14,7 @@
     {
       "id": "eu.anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6 (EU)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -31,7 +31,7 @@
     {
       "id": "anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -63,7 +63,7 @@
     {
       "id": "global.anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6 (Global)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -80,7 +80,7 @@
     {
       "id": "us.anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6 (US)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -130,7 +130,7 @@
     {
       "id": "global.anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6 (Global)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
@@ -147,7 +147,7 @@
     {
       "id": "us.anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6 (US)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
@@ -164,7 +164,7 @@
     {
       "id": "anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
@@ -181,7 +181,7 @@
     {
       "id": "eu.anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6 (EU)",
-      "contextWindow": 200000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,

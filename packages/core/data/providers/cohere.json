@@ -67,7 +67,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -83,7 +82,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -99,7 +97,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -129,7 +126,6 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -144,7 +140,6 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -160,7 +155,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -176,7 +170,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

@@ -33,8 +33,8 @@
       "name": "Qwen3.5 397B A17B TEE",
       "contextWindow": 262144,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "inputPrice": 0.39,
+      "outputPrice": 2.34,
       "capabilities": [
         "chat",
         "vision",
@@ -51,8 +51,8 @@
       "name": "MiniMax M2.5 TEE",
       "contextWindow": 196608,
       "maxOutput": 65536,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.3,
+      "outputPrice": 1.1,
       "capabilities": [
         "chat",
         "function_calling",
@@ -68,8 +68,8 @@
       "name": "GLM 5 TEE",
       "contextWindow": 202752,
       "maxOutput": 65535,
-      "inputPrice": 0.75,
-      "outputPrice": 2.5,
+      "inputPrice": 0.95,
+      "outputPrice": 3.15,
       "capabilities": [
         "chat",
         "function_calling",
@@ -282,8 +282,8 @@
       "name": "GLM 4.6 TEE",
       "contextWindow": 202752,
       "maxOutput": 65536,
-      "inputPrice": 0.35,
-      "outputPrice": 1.5,
+      "inputPrice": 0.4,
+      "outputPrice": 1.7,
       "capabilities": [
         "chat",
         "function_calling",
@@ -479,10 +479,10 @@
     {
       "id": "deepseek-ai/DeepSeek-V3.2-TEE",
       "name": "DeepSeek V3.2 TEE",
-      "contextWindow": 163840,
+      "contextWindow": 131072,
       "maxOutput": 65536,
-      "inputPrice": 0.25,
-      "outputPrice": 0.38,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
       "capabilities": [
         "chat",
         "function_calling",

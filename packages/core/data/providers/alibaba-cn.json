@@ -64,7 +64,7 @@
       "releaseDate": "2026-02-16"
     },
     {
-      "id": "minimax-m2.5",
+      "id": "MiniMax-M2.5",
       "name": "MiniMax-M2.5",
       "contextWindow": 204800,
       "maxOutput": 131072,
