@@ -424,5 +424,5 @@
     }
   ],
   "baseUrl": "https://app.firmware.ai/api/v1",
-  "docsUrl": "https://docs.firmware.ai"
+  "docsUrl": "https://docs.frogbot.ai"
 }
