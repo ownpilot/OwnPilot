@@ -66,3 +66,18 @@ CREATE TABLE IF NOT EXISTS claw_history (
 );
 
 CREATE INDEX IF NOT EXISTS idx_claw_history_claw ON claw_history(claw_id, executed_at DESC);
+
+-- Claw audit log (per-tool-call tracking)
+CREATE TABLE IF NOT EXISTS claw_audit_log (
+  id TEXT PRIMARY KEY,
+  claw_id TEXT NOT NULL REFERENCES claws(id) ON DELETE CASCADE,
+  cycle_number INTEGER NOT NULL,
+  tool_name TEXT NOT NULL,
+  tool_args JSONB DEFAULT '{}',
+  tool_result TEXT DEFAULT '',
+  success BOOLEAN NOT NULL DEFAULT TRUE,
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  category TEXT NOT NULL DEFAULT 'tool',
+  executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_claw_audit_claw ON claw_audit_log(claw_id, executed_at DESC);

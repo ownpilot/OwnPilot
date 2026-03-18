@@ -74,8 +74,8 @@ describe('Claw Tools', () => {
   });
 
   describe('CLAW_TOOLS', () => {
-    it('should export 12 tool definitions', () => {
-      expect(CLAW_TOOLS).toHaveLength(12);
+    it('should export 14 tool definitions', () => {
+      expect(CLAW_TOOLS).toHaveLength(14);
     });
 
     it('should have correct tool names', () => {
@@ -92,6 +92,8 @@ describe('Claw Tools', () => {
         'claw_update_config',
         'claw_send_agent_message',
         'claw_reflect',
+        'claw_list_subclaws',
+        'claw_stop_subclaw',
       ]);
     });
 

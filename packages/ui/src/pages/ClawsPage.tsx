@@ -110,6 +110,10 @@ export function ClawsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClaw, setSelectedClaw] = useState<ClawConfig | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<string>('');
+  const [filterState, setFilterState] = useState<string>('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { subscribe } = useGateway();
   const toast = useToast();
@@ -235,6 +239,44 @@ export function ClawsPage() {
     }
   };
 
+  // Bulk actions
+  const bulkStop = async () => {
+    for (const id of selectedIds) { try { await clawsApi.stop(id); } catch { /* skip */ } }
+    toast.success(`Stopped ${selectedIds.size} claws`);
+    setSelectedIds(new Set());
+    fetchClaws();
+  };
+
+  const bulkDelete = async () => {
+    const ok = await confirm({ title: 'Delete Selected', message: `Delete ${selectedIds.size} claws?`, confirmText: 'Delete All', variant: 'danger' });
+    if (!ok) return;
+    for (const id of selectedIds) { try { await clawsApi.delete(id); } catch { /* skip */ } }
+    toast.success(`Deleted ${selectedIds.size} claws`);
+    setSelectedIds(new Set());
+    setSelectedClaw(null);
+    fetchClaws();
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
+  // Filtering
+  const filteredClaws = claws.filter((c) => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!c.name.toLowerCase().includes(q) && !c.mission.toLowerCase().includes(q) && !c.id.toLowerCase().includes(q)) return false;
+    }
+    if (filterMode && c.mode !== filterMode) return false;
+    if (filterState) {
+      const state = c.session?.state ?? 'stopped';
+      if (filterState === 'active' && !['running', 'starting', 'waiting'].includes(state)) return false;
+      if (filterState === 'stopped' && !['stopped', 'completed', 'failed'].includes(state)) return false;
+      if (filterState === 'paused' && state !== 'paused') return false;
+    }
+    return true;
+  });
+
   const runningCount = claws.filter((c) =>
     c.session && ['running', 'starting', 'waiting'].includes(c.session.state)
   ).length;
@@ -313,9 +355,54 @@ export function ClawsPage() {
             />
           ) : (
             <div className="space-y-4">
-              {/* Claw List */}
+              {/* Search + Filter Bar */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[200px]">
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by name, mission, or ID..."
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+                  />
+                </div>
+                <select value={filterMode} onChange={(e) => setFilterMode(e.target.value)}
+                  className="px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary">
+                  <option value="">All modes</option>
+                  <option value="single-shot">Single-shot</option>
+                  <option value="continuous">Continuous</option>
+                  <option value="interval">Interval</option>
+                  <option value="event">Event</option>
+                </select>
+                <select value={filterState} onChange={(e) => setFilterState(e.target.value)}
+                  className="px-3 py-2 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary">
+                  <option value="">All states</option>
+                  <option value="active">Active</option>
+                  <option value="paused">Paused</option>
+                  <option value="stopped">Stopped</option>
+                </select>
+                <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                  {filteredClaws.length} of {claws.length}
+                </span>
+              </div>
+
+              {/* Bulk Actions (when items selected) */}
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
+                  <span className="text-sm font-medium text-primary">{selectedIds.size} selected</span>
+                  <div className="flex-1" />
+                  <button onClick={bulkStop} className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20">
+                    <Square className="w-3 h-3" /> Stop All
+                  </button>
+                  <button onClick={bulkDelete} className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-red-500/10 text-red-600 hover:bg-red-500/20">
+                    <Trash2 className="w-3 h-3" /> Delete All
+                  </button>
+                  <button onClick={() => setSelectedIds(new Set())} className="text-xs text-text-muted hover:text-text-primary">Clear</button>
+                </div>
+              )}
+
+              {/* Claw Grid */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {claws.map((claw) => (
+                {filteredClaws.map((claw) => (
                   <ClawCard
                     key={claw.id}
                     claw={claw}
@@ -328,6 +415,8 @@ export function ClawsPage() {
                     onApproveEscalation={() => approveEscalation(claw.id)}
                     onSelect={() => setSelectedClaw(claw)}
                     isSelected={selectedClaw?.id === claw.id}
+                    isChecked={selectedIds.has(claw.id)}
+                    onToggleCheck={() => toggleSelect(claw.id)}
                   />
                 ))}
               </div>
@@ -529,6 +618,8 @@ function ClawCard({
   onApproveEscalation,
   onSelect,
   isSelected,
+  isChecked,
+  onToggleCheck,
 }: {
   claw: ClawConfig;
   onStart: () => void;
@@ -538,6 +629,8 @@ function ClawCard({
   onDelete: () => void;
   onClone: () => void;
   onApproveEscalation: () => void;
+  isChecked?: boolean;
+  onToggleCheck?: () => void;
   onSelect: () => void;
   isSelected: boolean;
 }) {
@@ -558,6 +651,14 @@ function ClawCard({
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
+        {onToggleCheck && (
+          <input
+            type="checkbox"
+            checked={isChecked ?? false}
+            onChange={(e) => { e.stopPropagation(); onToggleCheck(); }}
+            className="w-3.5 h-3.5 rounded accent-primary mt-1 mr-2 shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary truncate">
             {claw.name}
@@ -1052,6 +1153,21 @@ function ClawManagementPanel({
                 <button onClick={() => setTab('files')} className="text-xs text-primary hover:underline shrink-0">Browse Files</button>
                 <a href={`/api/v1/file-workspaces/${claw.workspaceId}/download`}
                   className="text-xs text-primary hover:underline shrink-0">Download ZIP</a>
+              </div>
+            )}
+
+            {/* Artifacts list */}
+            {claw.session?.artifacts && claw.session.artifacts.length > 0 && (
+              <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+                <p className={lbl}>Artifacts ({claw.session.artifacts.length})</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {claw.session.artifacts.map((artId) => (
+                    <a key={artId} href={`/artifacts?id=${artId}`}
+                      className="px-2 py-1 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors font-mono">
+                      {artId.slice(0, 12)}...
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
 

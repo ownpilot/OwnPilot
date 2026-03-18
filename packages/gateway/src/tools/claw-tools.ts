@@ -340,6 +340,28 @@ Use this periodically (e.g., every 5-10 cycles) to avoid going in circles.`,
   tags: ['claw', 'reflect', 'evaluate', 'introspect', 'performance', 'strategy'],
 };
 
+const clawListSubclawsDef: ToolDefinition = {
+  name: 'claw_list_subclaws',
+  description: 'List all sub-claws spawned by this claw with their current status.',
+  parameters: { type: 'object', properties: {} },
+  category: 'Claw',
+  tags: ['claw', 'subclaw', 'list', 'children'],
+};
+
+const clawStopSubclawDef: ToolDefinition = {
+  name: 'claw_stop_subclaw',
+  description: 'Stop a running sub-claw that was spawned by this claw.',
+  parameters: {
+    type: 'object',
+    properties: {
+      subclaw_id: { type: 'string', description: 'ID of the sub-claw to stop' },
+    },
+    required: ['subclaw_id'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'subclaw', 'stop', 'terminate'],
+};
+
 // =============================================================================
 // Exports
 // =============================================================================
@@ -357,6 +379,8 @@ export const CLAW_TOOLS: ToolDefinition[] = [
   clawUpdateConfigDef,
   clawSendAgentMessageDef,
   clawReflectDef,
+  clawListSubclawsDef,
+  clawStopSubclawDef,
 ];
 
 export const CLAW_TOOL_NAMES = CLAW_TOOLS.map((t) => t.name);
@@ -426,6 +450,12 @@ export async function executeClawTool(
 
       case 'claw_reflect':
         return await executeReflect(args);
+
+      case 'claw_list_subclaws':
+        return await executeListSubclaws(userId);
+
+      case 'claw_stop_subclaw':
+        return await executeStopSubclaw(args, userId);
 
       default:
         return { success: false, error: `Unknown claw tool: ${toolName}` };
@@ -1117,4 +1147,63 @@ async function executeReflect(
       hint: 'Update .claw/TASKS.md, .claw/MEMORY.md, and .claw/LOG.md to improve self-assessment accuracy.',
     },
   };
+}
+
+async function executeListSubclaws(
+  _userId: string
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
+  const ctx = getClawContext();
+  if (!ctx) return { success: false, error: 'Not running inside a Claw context' };
+
+  try {
+    const { getClawsRepository } = await import('../db/repositories/claws.js');
+    const repo = getClawsRepository();
+    const children = await repo.getChildClaws(ctx.clawId);
+
+    const { getClawManager } = await import('../services/claw-manager.js');
+    const manager = getClawManager();
+
+    const subclaws = children.map((c) => {
+      const session = manager.getSession(c.id);
+      return {
+        id: c.id,
+        name: c.name,
+        mode: c.mode,
+        state: session?.state ?? 'stopped',
+        cycles: session?.cyclesCompleted ?? 0,
+        depth: c.depth,
+      };
+    });
+
+    return { success: true, result: { subclaws, total: subclaws.length } };
+  } catch (err) {
+    return { success: false, error: getErrorMessage(err) };
+  }
+}
+
+async function executeStopSubclaw(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
+  const ctx = getClawContext();
+  if (!ctx) return { success: false, error: 'Not running inside a Claw context' };
+
+  const subclawId = args.subclaw_id as string;
+  if (!subclawId) return { success: false, error: 'subclaw_id is required' };
+
+  try {
+    // Verify it's actually a child of this claw
+    const { getClawsRepository } = await import('../db/repositories/claws.js');
+    const repo = getClawsRepository();
+    const subclaw = await repo.getByIdAnyUser(subclawId);
+    if (!subclaw || subclaw.parentClawId !== ctx.clawId) {
+      return { success: false, error: 'Subclaw not found or not a child of this claw' };
+    }
+
+    const { getClawManager } = await import('../services/claw-manager.js');
+    const stopped = await getClawManager().stopClaw(subclawId, userId);
+    return { success: true, result: { stopped, message: stopped ? 'Subclaw stopped' : 'Subclaw was not running' } };
+  } catch (err) {
+    return { success: false, error: getErrorMessage(err) };
+  }
 }

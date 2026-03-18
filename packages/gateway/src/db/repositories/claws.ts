@@ -545,6 +545,14 @@ export class ClawsRepository extends BaseRepository {
     return result?.changes ?? 0;
   }
 
+  async cleanupOldAuditLog(retentionDays: number): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM claw_audit_log WHERE executed_at < NOW() - INTERVAL '1 day' * $1`,
+      [retentionDays]
+    );
+    return result?.changes ?? 0;
+  }
+
   // ---------- Audit Log ----------
 
   async saveAuditEntry(entry: {

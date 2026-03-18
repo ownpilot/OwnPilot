@@ -22,6 +22,10 @@ export class ClawServiceImpl implements IClawService {
   // ---- CRUD ----
 
   async createClaw(input: CreateClawInput): Promise<ClawConfig> {
+    if (!input.name?.trim()) throw new Error('Claw name is required');
+    if (!input.mission?.trim()) throw new Error('Claw mission is required');
+    if (input.mission.length > 10_000) throw new Error('Mission exceeds 10,000 character limit');
+
     const repo = getClawsRepository();
 
     // Resolve parent depth

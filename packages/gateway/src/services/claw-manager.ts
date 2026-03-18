@@ -33,6 +33,7 @@ const MAX_CONSECUTIVE_ERRORS = 5;
 const SESSION_PERSIST_INTERVAL_MS = 30_000;
 const DEFAULT_INTERVAL_MS = 300_000; // 5 min
 const MISSION_COMPLETE_SENTINEL = 'MISSION_COMPLETE';
+const MAX_CONCURRENT_CLAWS = 50;
 
 // Continuous mode adaptive delays
 const CONTINUOUS_MIN_DELAY_MS = 500;   // Active: fast loop
@@ -135,6 +136,11 @@ export class ClawManager {
   async startClaw(clawId: string, userId: string): Promise<ClawSession> {
     if (this.claws.has(clawId)) {
       throw new Error(`Claw ${clawId} is already running`);
+    }
+
+    // Enforce concurrent claw limit
+    if (this.claws.size >= MAX_CONCURRENT_CLAWS) {
+      throw new Error(`Maximum concurrent claws (${MAX_CONCURRENT_CLAWS}) reached. Stop some claws before starting new ones.`);
     }
 
     const repo = getClawsRepository();

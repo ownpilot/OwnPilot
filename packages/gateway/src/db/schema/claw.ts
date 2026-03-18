@@ -94,4 +94,5 @@ export const CLAW_INDEXES_SQL = `
 CREATE INDEX IF NOT EXISTS idx_claws_user_id ON claws(user_id);
 CREATE INDEX IF NOT EXISTS idx_claws_parent ON claws(parent_claw_id);
 CREATE INDEX IF NOT EXISTS idx_claw_history_claw ON claw_history(claw_id, executed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_claw_sessions_state ON claw_sessions(state);
 `;
