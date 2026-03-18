@@ -68,6 +68,8 @@ import {
   executeCrewTool,
   HABIT_TOOLS,
   executeHabitTool,
+  CLAW_TOOLS,
+  executeClawTool,
 } from './index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -205,6 +207,11 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     {
       definitions: HABIT_TOOLS,
       executor: executeHabitTool,
+      needsUserId: true,
+    },
+    {
+      definitions: CLAW_TOOLS,
+      executor: executeClawTool,
       needsUserId: true,
     },
   ];

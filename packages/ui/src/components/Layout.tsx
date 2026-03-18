@@ -153,6 +153,7 @@ const navGroups: NavGroup[] = [
     icon: Sparkles,
     badge: 'Beta',
     items: [
+      { to: '/claws', icon: Zap, label: 'Claws' },
       { to: '/fleet', icon: Layers, label: 'Fleet Command' },
       { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
       { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },

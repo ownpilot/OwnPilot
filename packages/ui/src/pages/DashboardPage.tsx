@@ -42,6 +42,7 @@ import {
   CrewsWidget,
   SubagentsWidget,
   FleetWidget,
+  ClawsWidget,
 } from '../components/dashboard';
 
 type TabId = 'overview' | 'agents' | 'automation' | 'extensions';
@@ -361,7 +362,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Fleet Overview (if any fleets exist) */}
+      {/* Claws + Fleet Overview */}
+      <ClawsWidget limit={4} />
       <FleetWidget limit={4} />
 
       {/* Two-column: Timeline + Quick Actions */}
@@ -448,6 +450,7 @@ export function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <SoulAgentsWidget limit={8} />
         <BackgroundAgentsWidget limit={8} />
+        <ClawsWidget limit={8} />
         <FleetWidget limit={8} />
         <CrewsWidget limit={8} />
       </div>

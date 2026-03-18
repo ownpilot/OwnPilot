@@ -335,4 +335,20 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   execute_plan: ['plan', 'execute', 'run', 'start'],
   pause_plan: ['plan', 'pause', 'hold'],
   delete_plan: ['plan', 'delete', 'remove'],
+
+  // ─────────────────────────────────────────────
+  // CLAW (Unified Autonomous Agent)
+  // ─────────────────────────────────────────────
+  claw_install_package: ['claw', 'install', 'package', 'npm', 'pip', 'pnpm', 'dependency'],
+  claw_run_script: ['claw', 'script', 'execute', 'run', 'code', 'python', 'javascript', 'shell'],
+  claw_create_tool: ['claw', 'tool', 'create', 'forge', 'ephemeral', 'generate'],
+  claw_spawn_subclaw: ['claw', 'spawn', 'subclaw', 'delegate', 'child', 'subtask'],
+  claw_publish_artifact: ['claw', 'artifact', 'publish', 'output', 'report', 'chart'],
+  claw_request_escalation: ['claw', 'escalation', 'permission', 'upgrade', 'sandbox'],
+  claw_send_output: ['claw', 'send', 'output', 'notify', 'telegram', 'message', 'update'],
+  claw_complete_report: ['claw', 'report', 'complete', 'final', 'deliverable', 'summary'],
+  claw_emit_event: ['claw', 'event', 'emit', 'trigger', 'eventbus', 'coordinate', 'signal'],
+  claw_update_config: ['claw', 'config', 'update', 'self', 'adapt', 'modify', 'settings'],
+  claw_send_agent_message: ['claw', 'message', 'send', 'agent', 'communicate', 'inbox'],
+  claw_reflect: ['claw', 'reflect', 'evaluate', 'introspect', 'performance', 'progress'],
 };

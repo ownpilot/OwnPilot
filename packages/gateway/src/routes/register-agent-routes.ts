@@ -21,6 +21,7 @@ import {
   subagentRoutes,
   orchestraRoutes,
   fleetRoutes,
+  clawRoutes,
 } from './index.js';
 
 export function registerAgentRoutes(app: Hono): void {
@@ -54,4 +55,7 @@ export function registerAgentRoutes(app: Hono): void {
 
   // Fleet (coordinated background agent army)
   app.route('/api/v1/fleet', fleetRoutes);
+
+  // Claws (unified autonomous agent runtime)
+  app.route('/api/v1/claws', clawRoutes);
 }
