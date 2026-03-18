@@ -432,6 +432,29 @@ Briefly explain what you built or changed before the JSON block.
 - \`contentType\` (optional): Content-Type header, default "application/json"
 - Only meaningful in webhook-triggered workflows — stores the HTTP response to send back
 
+### 24. Claw Node — spawn an autonomous Claw agent
+\`\`\`
+{
+  "id": "node_N",
+  "type": "claw",
+  "label": "Research Agent",
+  "name": "Market Research",
+  "mission": "Research {{node_1.output.topic}} and produce a report",
+  "mode": "single-shot",
+  "sandbox": "auto",
+  "waitForCompletion": true,
+  "position": { "x": 300, "y": 700 }
+}
+\`\`\`
+- \`name\` (required): claw display name — supports template expressions
+- \`mission\` (required): mission statement — supports template expressions
+- \`mode\` (optional): "single-shot" | "continuous" | "interval" | "event" (default: "single-shot")
+- \`sandbox\` (optional): "auto" | "docker" | "local" (default: "auto")
+- \`waitForCompletion\` (optional): if true, waits for claw to finish (default: true for single-shot)
+- \`timeoutMs\` (optional): max wait time in ms (default: 600000 = 10 min)
+- \`provider\`, \`model\`, \`codingAgentProvider\`, \`skills\` (optional): claw configuration
+- Output: { clawId, clawName, state, lastOutput, cost }
+
 ## Retry & Timeout (optional on most nodes)
 Most nodes support optional retry and timeout configuration:
 - \`retryCount\` (optional): 0-5, number of retries on failure (default: 0)

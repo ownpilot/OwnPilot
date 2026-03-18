@@ -52,6 +52,7 @@ import {
   executeMapNode,
   executeAggregateNode,
   executeWebhookResponseNode,
+  executeClawNode,
 } from './node-executors.js';
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
@@ -1104,6 +1105,31 @@ export class WorkflowService implements IWorkflowService {
       return await this.executeWithRetryAndTimeout(
         node,
         async () => executeWebhookResponseNode(node, nodeOutputs, workflow.variables),
+        onProgress
+      );
+    }
+
+    // ── clawNode ──
+    if (node.type === 'clawNode') {
+      onProgress?.({ type: 'node_start', nodeId, toolName: 'claw' });
+      if (dryRun) {
+        const args = resolveTemplates(
+          {
+            name: (node.data as unknown as Record<string, unknown>).name,
+            mission: (node.data as unknown as Record<string, unknown>).mission,
+          },
+          nodeOutputs,
+          workflow.variables
+        );
+        return dryRunResult(node, {
+          ...args,
+          mode: (node.data as unknown as Record<string, unknown>).mode,
+          sandbox: (node.data as unknown as Record<string, unknown>).sandbox,
+        });
+      }
+      return await this.executeWithRetryAndTimeout(
+        node,
+        () => executeClawNode(node, nodeOutputs, workflow.variables, userId),
         onProgress
       );
     }

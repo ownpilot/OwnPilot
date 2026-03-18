@@ -1412,3 +1412,132 @@ export function executeSwitchNode(
     };
   }
 }
+
+// =============================================================================
+// clawNode — spawn a Claw agent and optionally wait for completion
+// =============================================================================
+
+export async function executeClawNode(
+  node: WorkflowNode,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>,
+  userId: string
+): Promise<NodeResult> {
+  const startTime = Date.now();
+  try {
+    const data = node.data as unknown as Record<string, unknown>;
+
+    // Resolve templates
+    const resolved = resolveTemplates(
+      {
+        name: data.name as string,
+        mission: data.mission as string,
+      },
+      nodeOutputs,
+      variables
+    );
+
+    const name = resolved.name as string;
+    const mission = resolved.mission as string;
+    const mode = (data.mode as string) ?? 'single-shot';
+    const sandbox = (data.sandbox as string) ?? 'auto';
+    const waitForCompletion = (data.waitForCompletion as boolean) ?? (mode === 'single-shot');
+    const timeoutMs = (data.timeoutMs as number) ?? 600_000; // 10 min default
+
+    if (!name || !mission) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: 'Claw node requires name and mission',
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    const { getClawService } = await import('../claw-service.js');
+    const service = getClawService();
+
+    // Create the claw
+    const config = await service.createClaw({
+      userId,
+      name,
+      mission,
+      mode: mode as 'single-shot' | 'continuous' | 'interval' | 'event',
+      sandbox: sandbox as 'auto' | 'docker' | 'local',
+      provider: data.provider as string | undefined,
+      model: data.model as string | undefined,
+      codingAgentProvider: data.codingAgentProvider as string | undefined,
+      skills: data.skills as string[] | undefined,
+    });
+
+    // Start the claw
+    const session = await service.startClaw(config.id, userId);
+
+    // If not waiting, return immediately
+    if (!waitForCompletion) {
+      return {
+        nodeId: node.id,
+        status: 'success',
+        output: {
+          clawId: config.id,
+          clawName: name,
+          state: session.state,
+          mode,
+          waitedForCompletion: false,
+          message: `Claw "${name}" started (${mode} mode)`,
+        },
+        resolvedArgs: { name, mission, mode, sandbox },
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
+    // Wait for single-shot completion with timeout
+    const deadline = Date.now() + timeoutMs;
+    let finalState = session.state;
+
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 2000)); // poll every 2s
+      const current = service.getSession(config.id, userId);
+      if (!current || ['completed', 'stopped', 'failed'].includes(current.state)) {
+        finalState = current?.state ?? 'stopped';
+        break;
+      }
+      finalState = current.state;
+    }
+
+    // Get final history
+    const { entries } = await service.getHistory(config.id, userId, 1, 0);
+    const lastEntry = entries[0];
+
+    return {
+      nodeId: node.id,
+      status: finalState === 'completed' ? 'success' : finalState === 'failed' ? 'error' : 'success',
+      output: {
+        clawId: config.id,
+        clawName: name,
+        state: finalState,
+        waitedForCompletion: true,
+        cyclesCompleted: lastEntry?.cycleNumber ?? 0,
+        lastOutput: lastEntry?.outputMessage?.slice(0, 2000) ?? '',
+        cost: lastEntry?.costUsd ?? 0,
+      },
+      resolvedArgs: { name, mission, mode, sandbox },
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+      ...(finalState === 'failed' && lastEntry?.error ? { error: lastEntry.error } : {}),
+    };
+  } catch (error) {
+    return {
+      nodeId: node.id,
+      status: 'error',
+      error: getErrorMessage(error, 'Claw node execution failed'),
+      durationMs: Date.now() - startTime,
+      startedAt: new Date(startTime).toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+}
