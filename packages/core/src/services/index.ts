@@ -245,6 +245,25 @@ export type {
 // Autonomous Agent Result (shared base for all autonomous agent runners)
 export type { AutonomousAgentResult } from './agent-execution-result.js';
 
+// Claw Service (unified autonomous agent runtime)
+export type {
+  IClawService,
+  ClawMode,
+  ClawState,
+  ClawSandboxMode,
+  ClawCreator,
+  ClawLimits,
+  ClawConfig,
+  CreateClawInput,
+  UpdateClawInput,
+  ClawEscalation,
+  ClawSession,
+  ClawToolCall,
+  ClawCycleResult,
+  ClawHistoryEntry,
+} from './claw-types.js';
+export { DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from './claw-types.js';
+
 // Background Agent Service
 export type {
   IBackgroundAgentService,

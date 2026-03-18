@@ -42,6 +42,7 @@ import {
 import { SOULS_TABLES_SQL, SOULS_MIGRATIONS_SQL, SOULS_INDEXES_SQL } from './souls.js';
 import { CHANNELS_TABLES_SQL, CHANNELS_MIGRATIONS_SQL, CHANNELS_INDEXES_SQL } from './channels.js';
 import { FLEET_TABLES_SQL, FLEET_MIGRATIONS_SQL, FLEET_INDEXES_SQL } from './fleet.js';
+import { CLAW_TABLES_SQL, CLAW_MIGRATIONS_SQL, CLAW_INDEXES_SQL } from './claw.js';
 
 const log = getLog('Schema');
 
@@ -61,6 +62,7 @@ export const SCHEMA_SQL = [
   SOULS_TABLES_SQL,
   CHANNELS_TABLES_SQL,
   FLEET_TABLES_SQL,
+  CLAW_TABLES_SQL,
 ].join('\n');
 
 /**
@@ -79,6 +81,7 @@ export const MIGRATIONS_SQL = [
   SOULS_MIGRATIONS_SQL,
   CHANNELS_MIGRATIONS_SQL,
   FLEET_MIGRATIONS_SQL,
+  CLAW_MIGRATIONS_SQL,
 ].join('\n');
 
 /**
@@ -96,6 +99,7 @@ export const INDEXES_SQL = [
   SOULS_INDEXES_SQL,
   CHANNELS_INDEXES_SQL,
   FLEET_INDEXES_SQL,
+  CLAW_INDEXES_SQL,
 ].join('\n');
 
 /**

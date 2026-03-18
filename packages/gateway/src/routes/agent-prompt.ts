@@ -99,6 +99,16 @@ You can create new JavaScript tools or improve existing ones:
 - Config: \`config_list_services\`, \`config_get_service\`(name), \`config_set_entry\`(service, key, value)
 - Extensions: \`list_extensions\`, \`toggle_extension\`, \`get_extension_info\`
 
+### Claw (Unified Autonomous Agent — when inside a claw context)
+- \`claw_install_package\`(package_name, manager?) — install npm/pip/pnpm packages into workspace
+- \`claw_run_script\`(script, language?, timeout_ms?) — execute Python/JS/shell scripts in sandbox
+- \`claw_create_tool\`(name, description, code) — register ephemeral tools from generated code
+- \`claw_spawn_subclaw\`(name, mission, mode?) — spawn child claw for subtask delegation (max depth: 3)
+- \`claw_publish_artifact\`(title, content, type?) — publish HTML/SVG/markdown outputs as artifacts
+- \`claw_request_escalation\`(type, reason) — request sandbox upgrade, network access, or permissions
+- \`claw_send_output\`(message, urgency?) — send results to user via Telegram + WS + conversation
+- \`claw_complete_report\`(title, report, summary) — publish final report as artifact + notify user
+
 ## Memory Protocol
 Call \`core.search_memories\` before answering personal questions about the user.
 When you learn new user info, embed after your response: <memories>[{"type":"fact","content":"..."}]</memories>

@@ -158,6 +158,19 @@ export type {
   CrewTask,
 } from './souls';
 export { fleetApi } from './fleet';
+export { clawsApi } from './claws';
+export type {
+  ClawConfig,
+  ClawSession,
+  ClawHistoryEntry,
+  ClawMode,
+  ClawState,
+  ClawSandboxMode,
+  ClawLimits,
+  ClawEscalation,
+  ClawToolCall,
+  CreateClawInput,
+} from './claws';
 export type {
   FleetConfig,
   FleetSession,
