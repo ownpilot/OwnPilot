@@ -12,7 +12,7 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript" alt="TypeScript" /></a>
 </p>
 
-Privacy-first personal AI assistant platform with soul agents, autonomous background agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
+Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, autonomous background agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
 
 **Self-hosted. Your data stays yours.**
 
@@ -35,6 +35,7 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
 - [Soul Agents](#soul-agents)
 - [Autonomous Hub](#autonomous-hub)
 - [Agent Orchestra](#agent-orchestra)
+- [Claw Agents](#claw-agents)
 - [Background Agents](#background-agents-1)
 - [Subagents](#subagents)
 - [Tool System](#tool-system)
@@ -119,6 +120,24 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
 - **Activity Feed** — Unified timeline of heartbeat logs and agent messages with aggregate stats (total runs, success rate, avg duration, total cost)
 - **Global Status Bar** — Live agent count, running/paused/error breakdown, daily cost, and WebSocket connection state
 - **Search & Filters** — Filter agents by status, type (soul/background), and text search across name, role, and mission
+
+### Claw Agents
+
+- **Unified Autonomous Runtime** — Each Claw agent combines LLM reasoning, isolated workspace, 250+ tools, CLI access, browser automation, coding agents, and persistent directive files into a single autonomous runtime
+- **4 Execution Modes** — Single-shot (one task), Continuous (adaptive loop), Interval (periodic), Event-driven (reactive to EventBus events)
+- **14 Claw Tools** — `claw_install_package`, `claw_run_script`, `claw_create_tool`, `claw_spawn_subclaw`, `claw_publish_artifact`, `claw_request_escalation`, `claw_send_output`, `claw_complete_report`, `claw_emit_event`, `claw_update_config`, `claw_send_agent_message`, `claw_reflect`, `claw_list_subclaws`, `claw_stop_subclaw`
+- **7 Chat Management Tools** — Create, list, start, stop, message, and inspect claws from the main chat
+- **`.claw/` Directive System** — Persistent workspace files (INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md) that guide the claw across cycles
+- **Workspace Isolation** — Each claw gets its own file workspace with file browser, inline editor, and ZIP download
+- **Output Delivery** — Send results via Telegram, WebSocket live feed, conversation history, and artifact publishing
+- **Subclaw Orchestration** — Spawn child claws (max depth 3) with parent control (list, stop)
+- **Self-Modification** — Claws can update their own config, reflect on progress, and adapt strategy
+- **Inter-Claw Messaging** — Direct message passing between claws via inbox system
+- **Audit Log** — Per-tool-call tracking with 10 auto-categories (claw, cli, browser, coding-agent, web, code-exec, git, filesystem, knowledge, tool)
+- **Workflow Integration** — `clawNode` (24th workflow node type) for spawning claws within workflows
+- **8-Tab Management UI** — Overview, Settings, Skills, Files, History, Audit, Output, Chat
+- **6 Templates** — Research Agent, Code Reviewer, Data Analyst, Monitor & Alert, Content Creator, Event Reactor
+- **Resource Limits** — MAX_CONCURRENT_CLAWS=50, generous defaults (50 turns, 500 tool calls, 10min timeout, unlimited budget)
 
 ### Background Agents
 
@@ -250,6 +269,7 @@ Privacy-first personal AI assistant platform with soul agents, autonomous backgr
               │  Agent Engine   │  Tool Orchestration
               │  Orchestra      │  Multi-Agent Coordination
               │  Provider Router│  Smart Model Selection
+              │  Claw Agents    │  Unified Autonomous Runtime
               │  Background Agt │  Persistent Autonomous Agents
               │  Coding Agents  │  External AI CLIs
               │  Browser Agent  │  Headless Web Automation
@@ -1213,7 +1233,7 @@ PostgreSQL with 85+ repositories via the `pg` adapter.
 
 **Productivity:** `pomodoro_sessions`, `habits`, `captures`
 
-**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`, `autonomy_log`, `background_agents`, `background_agent_sessions`, `background_agent_history`, `souls`, `crews`, `agent_messages`
+**Autonomous AI:** `memories`, `goals`, `triggers`, `plans`, `heartbeats`, `workflows`, `autonomy_log`, `background_agents`, `background_agent_sessions`, `background_agent_history`, `souls`, `crews`, `agent_messages`, `claws`, `claw_sessions`, `claw_history`, `claw_audit_log`
 
 **Channels:** `channel_messages`, `channel_users`, `channel_sessions`, `channel_verification`
 
@@ -1465,6 +1485,26 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 | `GET`    | `/api/v1/background-agents/:id/history` | Paginated cycle history       |
 | `POST`   | `/api/v1/background-agents/:id/message` | Send message to agent inbox   |
 
+### Claw Agents
+
+| Method   | Endpoint                                | Description                         |
+| -------- | --------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/claws`                         | List all claws with session status  |
+| `POST`   | `/api/v1/claws`                         | Create a new claw agent             |
+| `GET`    | `/api/v1/claws/stats`                   | Aggregate claw statistics           |
+| `GET`    | `/api/v1/claws/:id`                     | Get claw details + session          |
+| `PUT`    | `/api/v1/claws/:id`                     | Update claw configuration           |
+| `DELETE` | `/api/v1/claws/:id`                     | Delete claw (auto-stops if running) |
+| `POST`   | `/api/v1/claws/:id/start`              | Start claw execution                |
+| `POST`   | `/api/v1/claws/:id/pause`              | Pause running claw                  |
+| `POST`   | `/api/v1/claws/:id/resume`             | Resume paused claw                  |
+| `POST`   | `/api/v1/claws/:id/stop`               | Stop claw                           |
+| `POST`   | `/api/v1/claws/:id/execute`            | Run one cycle immediately           |
+| `POST`   | `/api/v1/claws/:id/message`            | Send message to claw inbox          |
+| `GET`    | `/api/v1/claws/:id/history`            | Paginated cycle history             |
+| `GET`    | `/api/v1/claws/:id/audit`              | Per-tool-call audit log             |
+| `POST`   | `/api/v1/claws/:id/approve-escalation` | Approve pending escalation          |
+
 ### Subagents
 
 | Method   | Endpoint                    | Description                 |
@@ -1532,6 +1572,7 @@ Real-time broadcasts via WebSocket at `ws://localhost:8080/ws` (attached to the 
 | `bg-agent:*`              | Background agent lifecycle and cycle results     |
 | `subagent:*`              | Subagent spawned, progress, and completion       |
 | `pulse:activity`          | Pulse system proactive activity                  |
+| `claw:*`                  | Claw lifecycle, cycle results, output, escalation |
 
 ### Response Format
 
