@@ -31,6 +31,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     container_name: ownpilot
     restart: unless-stopped
     ports:
@@ -54,6 +55,7 @@ services:
       - API_KEYS=${API_KEYS:-}
       - JWT_SECRET=${JWT_SECRET:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - WS_ALLOWED_ORIGINS=${WS_ALLOWED_ORIGINS:-}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       # Rate Limiting
       - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
@@ -78,6 +80,63 @@ services:
         condition: service_healthy
         required: false
 
+  # Ollama Local AI Server (gemma3:1b ~2GB RAM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ownpilot-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - ownpilot-network
+    healthcheck:
+      test: ['CMD', 'ollama', 'list']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    profiles:
+      - ollama
+
+  # Pull gemma3:1b on first start (exits after pull completes)
+  ollama-setup:
+    image: ollama/ollama:latest
+    container_name: ownpilot-ollama-setup
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ['ollama', 'pull', 'qwen2.5:1.5b']
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    networks:
+      - ownpilot-network
+    profiles:
+      - ollama
+    restart: 'no'
+
+  # Register Ollama as local provider in OwnPilot (exits after registration)
+  ollama-register:
+    image: curlimages/curl:latest
+    container_name: ownpilot-ollama-register
+    depends_on:
+      ollama-setup:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
+    networks:
+      - ownpilot-network
+    profiles:
+      - ollama
+    restart: 'no'
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        RESP=$(curl -sf -X POST http://gateway:8080/api/v1/local-providers \
+          -H 'Content-Type: application/json' \
+          -d '{"name":"Ollama","providerType":"ollama","baseUrl":"http://ollama:11434","discoveryEndpoint":"/api/tags"}' || echo '{}')
+        ID=$(echo "$RESP" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"//;s/"//')
+        [ -n "$ID" ] && curl -sf -X POST "http://gateway:8080/api/v1/local-providers/$ID/discover" || true
+
   # Eclipse Mosquitto MQTT Broker (for Edge Delegation)
   mosquitto:
     image: eclipse-mosquitto:2
@@ -99,6 +158,8 @@ volumes:
   gateway-data:
     driver: local
   postgres-data:
+    driver: local
+  ollama-data:
     driver: local
   mosquitto-data:
     driver: local
