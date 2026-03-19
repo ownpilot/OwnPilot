@@ -1487,14 +1487,14 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 ### Claw Agents
 
-| Method   | Endpoint                                | Description                         |
-| -------- | --------------------------------------- | ----------------------------------- |
-| `GET`    | `/api/v1/claws`                         | List all claws with session status  |
-| `POST`   | `/api/v1/claws`                         | Create a new claw agent             |
-| `GET`    | `/api/v1/claws/stats`                   | Aggregate claw statistics           |
-| `GET`    | `/api/v1/claws/:id`                     | Get claw details + session          |
-| `PUT`    | `/api/v1/claws/:id`                     | Update claw configuration           |
-| `DELETE` | `/api/v1/claws/:id`                     | Delete claw (auto-stops if running) |
+| Method   | Endpoint                               | Description                         |
+| -------- | -------------------------------------- | ----------------------------------- |
+| `GET`    | `/api/v1/claws`                        | List all claws with session status  |
+| `POST`   | `/api/v1/claws`                        | Create a new claw agent             |
+| `GET`    | `/api/v1/claws/stats`                  | Aggregate claw statistics           |
+| `GET`    | `/api/v1/claws/:id`                    | Get claw details + session          |
+| `PUT`    | `/api/v1/claws/:id`                    | Update claw configuration           |
+| `DELETE` | `/api/v1/claws/:id`                    | Delete claw (auto-stops if running) |
 | `POST`   | `/api/v1/claws/:id/start`              | Start claw execution                |
 | `POST`   | `/api/v1/claws/:id/pause`              | Pause running claw                  |
 | `POST`   | `/api/v1/claws/:id/resume`             | Resume paused claw                  |
@@ -1559,19 +1559,19 @@ Sliding window algorithm with configurable window (default 60s), max requests (d
 
 Real-time broadcasts via WebSocket at `ws://localhost:8080/ws` (attached to the HTTP server, same port):
 
-| Event                     | Description                                      |
-| ------------------------- | ------------------------------------------------ |
-| `data:changed`            | CRUD mutation on any entity (tasks, notes, etc.) |
-| `chat:stream:*`           | Streaming response chunks                        |
-| `tool:start/progress/end` | Tool execution lifecycle                         |
-| `channel:message`         | Incoming channel message (Telegram, WhatsApp)    |
-| `channel:status`          | Channel connection/disconnection status change   |
-| `channel:user:*`          | User events (first_seen, pending, blocked, etc.) |
-| `trigger:executed`        | Trigger execution result                         |
-| `coding-agent:session:*`  | Coding agent session lifecycle and output        |
-| `bg-agent:*`              | Background agent lifecycle and cycle results     |
-| `subagent:*`              | Subagent spawned, progress, and completion       |
-| `pulse:activity`          | Pulse system proactive activity                  |
+| Event                     | Description                                       |
+| ------------------------- | ------------------------------------------------- |
+| `data:changed`            | CRUD mutation on any entity (tasks, notes, etc.)  |
+| `chat:stream:*`           | Streaming response chunks                         |
+| `tool:start/progress/end` | Tool execution lifecycle                          |
+| `channel:message`         | Incoming channel message (Telegram, WhatsApp)     |
+| `channel:status`          | Channel connection/disconnection status change    |
+| `channel:user:*`          | User events (first_seen, pending, blocked, etc.)  |
+| `trigger:executed`        | Trigger execution result                          |
+| `coding-agent:session:*`  | Coding agent session lifecycle and output         |
+| `bg-agent:*`              | Background agent lifecycle and cycle results      |
+| `subagent:*`              | Subagent spawned, progress, and completion        |
+| `pulse:activity`          | Pulse system proactive activity                   |
 | `claw:*`                  | Claw lifecycle, cycle results, output, escalation |
 
 ### Response Format

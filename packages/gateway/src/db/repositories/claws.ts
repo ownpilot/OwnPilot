@@ -201,10 +201,10 @@ export class ClawsRepository extends BaseRepository {
   }
 
   async getById(id: string, userId: string): Promise<ClawConfig | null> {
-    const row = await this.queryOne<ClawRow>(
-      `SELECT * FROM claws WHERE id = $1 AND user_id = $2`,
-      [id, userId]
-    );
+    const row = await this.queryOne<ClawRow>(`SELECT * FROM claws WHERE id = $1 AND user_id = $2`, [
+      id,
+      userId,
+    ]);
     return row ? rowToConfig(row) : null;
   }
 
@@ -419,10 +419,9 @@ export class ClawsRepository extends BaseRepository {
     artifacts: string[];
     pendingEscalation: ClawEscalation | null;
   } | null> {
-    const row = await this.queryOne<SessionRow>(
-      `SELECT * FROM claw_sessions WHERE claw_id = $1`,
-      [clawId]
-    );
+    const row = await this.queryOne<SessionRow>(`SELECT * FROM claw_sessions WHERE claw_id = $1`, [
+      clawId,
+    ]);
     if (!row) return null;
     return {
       state: row.state as ClawState,
@@ -582,16 +581,18 @@ export class ClawsRepository extends BaseRepository {
     );
   }
 
-  async saveAuditBatch(entries: Array<{
-    clawId: string;
-    cycleNumber: number;
-    toolName: string;
-    toolArgs: Record<string, unknown>;
-    toolResult: string;
-    success: boolean;
-    durationMs: number;
-    category?: string;
-  }>): Promise<void> {
+  async saveAuditBatch(
+    entries: Array<{
+      clawId: string;
+      cycleNumber: number;
+      toolName: string;
+      toolArgs: Record<string, unknown>;
+      toolResult: string;
+      success: boolean;
+      durationMs: number;
+      category?: string;
+    }>
+  ): Promise<void> {
     if (entries.length === 0) return;
 
     // Single batch INSERT instead of N serial queries
@@ -600,7 +601,9 @@ export class ClawsRepository extends BaseRepository {
     let idx = 1;
 
     for (const entry of entries) {
-      valuePlaceholders.push(`($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++})`);
+      valuePlaceholders.push(
+        `($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++})`
+      );
       params.push(
         generateId('aud'),
         entry.clawId,
@@ -626,18 +629,21 @@ export class ClawsRepository extends BaseRepository {
     limit: number,
     offset: number,
     category?: string
-  ): Promise<{ entries: Array<{
-    id: string;
-    clawId: string;
-    cycleNumber: number;
-    toolName: string;
-    toolArgs: Record<string, unknown>;
-    toolResult: string;
-    success: boolean;
-    durationMs: number;
-    category: string;
-    executedAt: string;
-  }>; total: number }> {
+  ): Promise<{
+    entries: Array<{
+      id: string;
+      clawId: string;
+      cycleNumber: number;
+      toolName: string;
+      toolArgs: Record<string, unknown>;
+      toolResult: string;
+      success: boolean;
+      durationMs: number;
+      category: string;
+      executedAt: string;
+    }>;
+    total: number;
+  }> {
     let countSql = `SELECT COUNT(*) as count FROM claw_audit_log WHERE claw_id = $1`;
     let sql = `SELECT * FROM claw_audit_log WHERE claw_id = $1`;
     const params: unknown[] = [clawId];
@@ -655,9 +661,16 @@ export class ClawsRepository extends BaseRepository {
 
     sql += ` ORDER BY executed_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`;
     const rows = await this.query<{
-      id: string; claw_id: string; cycle_number: number; tool_name: string;
-      tool_args: string; tool_result: string; success: boolean; duration_ms: number;
-      category: string; executed_at: string;
+      id: string;
+      claw_id: string;
+      cycle_number: number;
+      tool_name: string;
+      tool_args: string;
+      tool_result: string;
+      success: boolean;
+      duration_ms: number;
+      category: string;
+      executed_at: string;
     }>(sql, [...params, limit, offset]);
 
     return {
@@ -679,14 +692,42 @@ export class ClawsRepository extends BaseRepository {
 
   private categorizeToolCall(toolName: string): string {
     if (toolName.startsWith('claw_')) return 'claw';
-    if (toolName.startsWith('browse_') || toolName === 'browser_click' || toolName === 'browser_type' || toolName === 'browser_fill_form' || toolName === 'browser_screenshot' || toolName === 'browser_extract') return 'browser';
-    if (toolName === 'run_cli_tool' || toolName === 'install_cli_tool' || toolName === 'list_cli_tools') return 'cli';
+    if (
+      toolName.startsWith('browse_') ||
+      toolName === 'browser_click' ||
+      toolName === 'browser_type' ||
+      toolName === 'browser_fill_form' ||
+      toolName === 'browser_screenshot' ||
+      toolName === 'browser_extract'
+    )
+      return 'browser';
+    if (
+      toolName === 'run_cli_tool' ||
+      toolName === 'install_cli_tool' ||
+      toolName === 'list_cli_tools'
+    )
+      return 'cli';
     if (toolName === 'run_coding_task' || toolName.startsWith('orchestrat')) return 'coding-agent';
-    if (toolName.startsWith('fetch_') || toolName.startsWith('http_') || toolName === 'search_web' || toolName === 'post_json' || toolName === 'call_json_api') return 'web';
-    if (toolName.startsWith('execute_') || toolName === 'eval_js' || toolName === 'eval_python') return 'code-exec';
+    if (
+      toolName.startsWith('fetch_') ||
+      toolName.startsWith('http_') ||
+      toolName === 'search_web' ||
+      toolName === 'post_json' ||
+      toolName === 'call_json_api'
+    )
+      return 'web';
+    if (toolName.startsWith('execute_') || toolName === 'eval_js' || toolName === 'eval_python')
+      return 'code-exec';
     if (toolName.startsWith('git_')) return 'git';
-    if (toolName.includes('memory') || toolName.includes('goal') || toolName.includes('plan')) return 'knowledge';
-    if (toolName.startsWith('read_file') || toolName.startsWith('write_file') || toolName.startsWith('list_dir') || toolName.startsWith('delete_file')) return 'filesystem';
+    if (toolName.includes('memory') || toolName.includes('goal') || toolName.includes('plan'))
+      return 'knowledge';
+    if (
+      toolName.startsWith('read_file') ||
+      toolName.startsWith('write_file') ||
+      toolName.startsWith('list_dir') ||
+      toolName.startsWith('delete_file')
+    )
+      return 'filesystem';
     return 'tool';
   }
 }

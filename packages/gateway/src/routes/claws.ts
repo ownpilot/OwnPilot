@@ -104,23 +104,45 @@ clawRoutes.post('/', async (c) => {
     const userId = getUserId(c);
     const body = await c.req.json();
 
-    const { name, mission, mode, allowed_tools, limits, interval_ms, event_filters, auto_start,
-      stop_condition, provider, model, soul_id, sandbox, coding_agent_provider, skills } =
-      body as Record<string, unknown>;
+    const {
+      name,
+      mission,
+      mode,
+      allowed_tools,
+      limits,
+      interval_ms,
+      event_filters,
+      auto_start,
+      stop_condition,
+      provider,
+      model,
+      soul_id,
+      sandbox,
+      coding_agent_provider,
+      skills,
+    } = body as Record<string, unknown>;
 
     if (!name || typeof name !== 'string') {
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
     }
     if (!mission || typeof mission !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
+        400
+      );
     }
 
     const validModes = ['continuous', 'interval', 'event', 'single-shot'];
     if (mode && !validModes.includes(mode as string)) {
-      return apiError(c, {
-        code: ERROR_CODES.VALIDATION_ERROR,
-        message: `mode must be one of: ${validModes.join(', ')}`,
-      }, 400);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `mode must be one of: ${validModes.join(', ')}`,
+        },
+        400
+      );
     }
 
     const service = getClawService();
@@ -177,7 +199,11 @@ clawRoutes.post('/:id/pause', async (c) => {
 
     const paused = await service.pauseClaw(id, userId);
     if (!paused) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not running or not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Claw not running or not found' },
+        404
+      );
     }
     return apiResponse(c, { paused: true });
   } catch (err) {
@@ -194,7 +220,11 @@ clawRoutes.post('/:id/resume', async (c) => {
 
     const resumed = await service.resumeClaw(id, userId);
     if (!resumed) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not paused or not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Claw not paused or not found' },
+        404
+      );
     }
     return apiResponse(c, { resumed: true });
   } catch (err) {
@@ -211,7 +241,11 @@ clawRoutes.post('/:id/stop', async (c) => {
 
     const stopped = await service.stopClaw(id, userId);
     if (!stopped) {
-      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not running or not found' }, 404);
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Claw not running or not found' },
+        404
+      );
     }
     return apiResponse(c, { stopped: true });
   } catch (err) {
@@ -241,7 +275,11 @@ clawRoutes.post('/:id/message', async (c) => {
     const body = await c.req.json();
 
     if (!body.message || typeof body.message !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' }, 400);
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
+        400
+      );
     }
 
     const service = getClawService();
@@ -293,10 +331,14 @@ clawRoutes.post('/:id/approve-escalation', async (c) => {
 
     const approved = await service.approveEscalation(id, userId);
     if (!approved) {
-      return apiError(c, {
-        code: ERROR_CODES.NOT_FOUND,
-        message: 'No pending escalation or claw not found',
-      }, 404);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.NOT_FOUND,
+          message: 'No pending escalation or claw not found',
+        },
+        404
+      );
     }
     return apiResponse(c, { approved: true });
   } catch (err) {
@@ -315,10 +357,14 @@ clawRoutes.post('/:id/deny-escalation', async (c) => {
 
     const denied = await service.denyEscalation(id, userId, reason);
     if (!denied) {
-      return apiError(c, {
-        code: ERROR_CODES.NOT_FOUND,
-        message: 'No pending escalation or claw not found',
-      }, 404);
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.NOT_FOUND,
+          message: 'No pending escalation or claw not found',
+        },
+        404
+      );
     }
     return apiResponse(c, { denied: true });
   } catch (err) {

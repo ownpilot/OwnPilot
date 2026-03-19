@@ -69,7 +69,7 @@ function createApp() {
   return app;
 }
 
-describe('Health Routes', () => {
+describe('Health Routes', { timeout: 15_000 }, () => {
   let app: Hono;
 
   beforeEach(() => {

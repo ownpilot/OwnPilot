@@ -364,9 +364,7 @@ describe('ClawsRepository', () => {
 
   describe('getInterruptedSessions', () => {
     it('should return running/waiting sessions with configs', async () => {
-      mockAdapter.query.mockResolvedValueOnce([
-        { ...makeClawRow(), session_state: 'running' },
-      ]);
+      mockAdapter.query.mockResolvedValueOnce([{ ...makeClawRow(), session_state: 'running' }]);
 
       const interrupted = await repo.getInterruptedSessions();
       expect(interrupted).toHaveLength(1);

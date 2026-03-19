@@ -88,9 +88,7 @@ describe('Claws Routes', () => {
 
   describe('GET /claws', () => {
     it('should return list of claws', async () => {
-      service.listClaws.mockResolvedValue([
-        { id: 'claw-1', name: 'Test', mode: 'continuous' },
-      ]);
+      service.listClaws.mockResolvedValue([{ id: 'claw-1', name: 'Test', mode: 'continuous' }]);
       service.listSessions.mockReturnValue([]);
 
       const res = await app.request('/claws');

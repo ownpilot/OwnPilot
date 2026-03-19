@@ -271,7 +271,8 @@ Complement .claw/MEMORY.md for structured data that needs to be machine-readable
     properties: {
       updates: {
         type: 'object',
-        description: 'Key-value pairs to merge into context. Set a value to null to delete that key.',
+        description:
+          'Key-value pairs to merge into context. Set a value to null to delete that key.',
       },
     },
     required: ['updates'],
@@ -332,8 +333,16 @@ Use this to adapt your behavior based on what you learn. For example:
     type: 'object',
     properties: {
       mission: { type: 'string', description: 'Updated mission statement' },
-      mode: { type: 'string', enum: ['continuous', 'interval', 'event', 'single-shot'], description: 'New execution mode' },
-      sandbox: { type: 'string', enum: ['docker', 'local', 'auto'], description: 'New sandbox mode' },
+      mode: {
+        type: 'string',
+        enum: ['continuous', 'interval', 'event', 'single-shot'],
+        description: 'New execution mode',
+      },
+      sandbox: {
+        type: 'string',
+        enum: ['docker', 'local', 'auto'],
+        description: 'New sandbox mode',
+      },
       interval_ms: { type: 'number', description: 'New interval in ms (for interval mode)' },
       stop_condition: { type: 'string', description: 'New stop condition (e.g., max_cycles:200)' },
       auto_start: { type: 'boolean', description: 'Auto-start on server boot' },
@@ -351,9 +360,16 @@ The message is delivered to the target's inbox and will be read on their next cy
     type: 'object',
     properties: {
       target_claw_id: { type: 'string', description: 'ID of the target claw to message' },
-      subject: { type: 'string', description: 'Message subject (e.g., "Research results", "Task delegation")' },
+      subject: {
+        type: 'string',
+        description: 'Message subject (e.g., "Research results", "Task delegation")',
+      },
       content: { type: 'string', description: 'Message content' },
-      message_type: { type: 'string', enum: ['task', 'result', 'knowledge', 'coordination'], description: 'Message type (default: coordination)' },
+      message_type: {
+        type: 'string',
+        enum: ['task', 'result', 'knowledge', 'coordination'],
+        description: 'Message type (default: coordination)',
+      },
     },
     required: ['target_claw_id', 'subject', 'content'],
   },
@@ -371,7 +387,11 @@ Use this periodically (e.g., every 5-10 cycles) to avoid going in circles.`,
   parameters: {
     type: 'object',
     properties: {
-      question: { type: 'string', description: 'What to reflect on (e.g., "Am I making progress?", "Should I change strategy?")' },
+      question: {
+        type: 'string',
+        description:
+          'What to reflect on (e.g., "Am I making progress?", "Should I change strategy?")',
+      },
     },
     required: ['question'],
   },
@@ -584,9 +604,8 @@ async function executeRunScript(
     return { success: false, error: 'Script is empty or exceeds 100KB limit' };
   }
 
-  const { getSessionWorkspacePath, writeSessionWorkspaceFile } = await import(
-    '../workspace/file-workspace.js'
-  );
+  const { getSessionWorkspacePath, writeSessionWorkspaceFile } =
+    await import('../workspace/file-workspace.js');
   const wsPath = getSessionWorkspacePath(ctx.workspaceId);
   if (!wsPath) return { success: false, error: 'Workspace not found' };
 
@@ -712,7 +731,11 @@ __result = typeof __fn === 'function' ? __fn(args) : { error: "No function named
 
     // Resolve promises (sync vm can't await, but we can resolve simple thenables)
     let output = vmCtx.__result;
-    if (output && typeof output === 'object' && typeof (output as Promise<unknown>).then === 'function') {
+    if (
+      output &&
+      typeof output === 'object' &&
+      typeof (output as Promise<unknown>).then === 'function'
+    ) {
       output = await (output as Promise<unknown>);
     }
 
@@ -771,7 +794,7 @@ async function executeSpawnSubclaw(
     userId,
     name,
     mission,
-    mode: (mode as 'continuous' | 'interval' | 'event' | 'single-shot'),
+    mode: mode as 'continuous' | 'interval' | 'event' | 'single-shot',
     allowedTools: [],
     limits: {
       maxTurnsPerCycle: 15,
@@ -799,7 +822,9 @@ async function executeSpawnSubclaw(
         totalToolCalls: session.totalToolCalls,
         costUsd: session.totalCostUsd,
         artifacts: session.artifacts,
-        output: session.lastCycleError ? `Failed: ${session.lastCycleError}` : 'Subclaw completed successfully.',
+        output: session.lastCycleError
+          ? `Failed: ${session.lastCycleError}`
+          : 'Subclaw completed successfully.',
       },
       error: session.lastCycleError ?? undefined,
     };
@@ -929,7 +954,8 @@ async function executeSendOutput(
   // 1. Send via Telegram
   try {
     const { sendTelegramMessage } = await import('./notification-tools.js');
-    const emoji = urgency === 'high' ? '\u26a0\ufe0f' : urgency === 'medium' ? '\ud83e\udd16' : '\ud83d\udce4';
+    const emoji =
+      urgency === 'high' ? '\u26a0\ufe0f' : urgency === 'medium' ? '\ud83e\udd16' : '\ud83d\udce4';
     const telegramText = `${emoji} *Claw Output*\n\n${message}`;
     const sent = await sendTelegramMessage(userId, telegramText);
     if (sent) deliveries.push('telegram');
@@ -970,9 +996,10 @@ async function executeSendOutput(
     success: true,
     result: {
       delivered: deliveries,
-      message: deliveries.length > 0
-        ? `Output sent via ${deliveries.join(', ')}`
-        : 'No delivery channels available',
+      message:
+        deliveries.length > 0
+          ? `Output sent via ${deliveries.join(', ')}`
+          : 'No delivery channels available',
     },
   };
 }
@@ -1213,13 +1240,13 @@ async function executeReflect(
   const { readSessionWorkspaceFile } = await import('../workspace/file-workspace.js');
 
   const tasks = ctx.workspaceId
-    ? readSessionWorkspaceFile(ctx.workspaceId, '.claw/TASKS.md')?.toString('utf-8') ?? ''
+    ? (readSessionWorkspaceFile(ctx.workspaceId, '.claw/TASKS.md')?.toString('utf-8') ?? '')
     : '';
   const log = ctx.workspaceId
-    ? readSessionWorkspaceFile(ctx.workspaceId, '.claw/LOG.md')?.toString('utf-8') ?? ''
+    ? (readSessionWorkspaceFile(ctx.workspaceId, '.claw/LOG.md')?.toString('utf-8') ?? '')
     : '';
   const memory = ctx.workspaceId
-    ? readSessionWorkspaceFile(ctx.workspaceId, '.claw/MEMORY.md')?.toString('utf-8') ?? ''
+    ? (readSessionWorkspaceFile(ctx.workspaceId, '.claw/MEMORY.md')?.toString('utf-8') ?? '')
     : '';
 
   // Count task progress
@@ -1232,7 +1259,9 @@ async function executeReflect(
   const logLines = log.split('\n').filter((l) => l.trim().length > 0).length;
 
   // Count memory entries
-  const memoryLines = memory.split('\n').filter((l) => l.trim().length > 0 && !l.startsWith('#')).length;
+  const memoryLines = memory
+    .split('\n')
+    .filter((l) => l.trim().length > 0 && !l.startsWith('#')).length;
 
   return {
     success: true,
@@ -1245,13 +1274,14 @@ async function executeReflect(
         progressPercent: progressPct,
         logEntries: logLines,
         memoryEntries: memoryLines,
-        recommendation: progressPct >= 80
-          ? 'Mission is nearly complete. Consider using claw_complete_report to deliver final results.'
-          : progressPct >= 50
-            ? 'Good progress. Continue working through remaining tasks.'
-            : progressPct > 0
-              ? 'Some progress made. Review your strategy — are you on the right track?'
-              : 'No tasks completed yet. Make sure to update .claw/TASKS.md as you work.',
+        recommendation:
+          progressPct >= 80
+            ? 'Mission is nearly complete. Consider using claw_complete_report to deliver final results.'
+            : progressPct >= 50
+              ? 'Good progress. Continue working through remaining tasks.'
+              : progressPct > 0
+                ? 'Some progress made. Review your strategy — are you on the right track?'
+                : 'No tasks completed yet. Make sure to update .claw/TASKS.md as you work.',
       },
       hint: 'Update .claw/TASKS.md, .claw/MEMORY.md, and .claw/LOG.md to improve self-assessment accuracy.',
     },
@@ -1337,7 +1367,11 @@ async function executeSetContext(
   }
 }
 
-async function executeGetContext(): Promise<{ success: boolean; result?: unknown; error?: string }> {
+async function executeGetContext(): Promise<{
+  success: boolean;
+  result?: unknown;
+  error?: string;
+}> {
   const ctx = getClawContext();
   if (!ctx) return { success: false, error: 'Not running inside a Claw context' };
 
@@ -1380,7 +1414,10 @@ async function executeStopSubclaw(
 
     const { getClawManager } = await import('../services/claw-manager.js');
     const stopped = await getClawManager().stopClaw(subclawId, userId);
-    return { success: true, result: { stopped, message: stopped ? 'Subclaw stopped' : 'Subclaw was not running' } };
+    return {
+      success: true,
+      result: { stopped, message: stopped ? 'Subclaw stopped' : 'Subclaw was not running' },
+    };
   } catch (err) {
     return { success: false, error: getErrorMessage(err) };
   }

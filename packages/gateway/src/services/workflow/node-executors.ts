@@ -1441,7 +1441,7 @@ export async function executeClawNode(
     const mission = resolved.mission as string;
     const mode = (data.mode as string) ?? 'single-shot';
     const sandbox = (data.sandbox as string) ?? 'auto';
-    const waitForCompletion = (data.waitForCompletion as boolean) ?? (mode === 'single-shot');
+    const waitForCompletion = (data.waitForCompletion as boolean) ?? mode === 'single-shot';
     const timeoutMs = (data.timeoutMs as number) ?? 600_000; // 10 min default
 
     if (!name || !mission) {
@@ -1514,7 +1514,8 @@ export async function executeClawNode(
 
     return {
       nodeId: node.id,
-      status: finalState === 'completed' ? 'success' : finalState === 'failed' ? 'error' : 'success',
+      status:
+        finalState === 'completed' ? 'success' : finalState === 'failed' ? 'error' : 'success',
       output: {
         clawId: config.id,
         clawName: name,

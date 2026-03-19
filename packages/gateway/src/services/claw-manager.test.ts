@@ -9,22 +9,18 @@ import type { ClawConfig, ClawSession, ClawCycleResult } from '@ownpilot/core';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const {
-  mockRunCycle,
-  mockGetClawsRepo,
-  mockGetOrCreateSessionWorkspace,
-  mockGetEventSystem,
-} = vi.hoisted(() => {
-  return {
-    mockRunCycle: vi.fn(),
-    mockGetClawsRepo: vi.fn(),
-    mockGetOrCreateSessionWorkspace: vi.fn(),
-    mockGetEventSystem: vi.fn(() => ({
-      emit: vi.fn(),
-      on: vi.fn(() => vi.fn()),
-    })),
-  };
-});
+const { mockRunCycle, mockGetClawsRepo, mockGetOrCreateSessionWorkspace, mockGetEventSystem } =
+  vi.hoisted(() => {
+    return {
+      mockRunCycle: vi.fn(),
+      mockGetClawsRepo: vi.fn(),
+      mockGetOrCreateSessionWorkspace: vi.fn(),
+      mockGetEventSystem: vi.fn(() => ({
+        emit: vi.fn(),
+        on: vi.fn(() => vi.fn()),
+      })),
+    };
+  });
 
 vi.mock('./claw-runner.js', () => ({
   ClawRunner: vi.fn().mockImplementation(function () {
@@ -409,9 +405,7 @@ describe('ClawManager', () => {
       const config = makeConfig({ mode: 'continuous' });
       setupRepo(config);
 
-      mockRunCycle.mockResolvedValue(
-        makeCycleResult({ success: false, error: 'API error' })
-      );
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: false, error: 'API error' }));
 
       await manager.startClaw('claw-1', 'user-1');
 

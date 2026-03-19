@@ -206,13 +206,23 @@ export class ClawRunner {
 
     // Execution rules
     parts.push('## How You Operate');
-    parts.push('1. You have FULL AUTONOMY. Make decisions, take actions, solve problems without asking for permission.');
+    parts.push(
+      '1. You have FULL AUTONOMY. Make decisions, take actions, solve problems without asking for permission.'
+    );
     parts.push('2. Use as many tools as needed. You have generous limits — do not hold back.');
-    parts.push('3. Install packages, write scripts, create tools — your workspace is yours to use freely.');
+    parts.push(
+      '3. Install packages, write scripts, create tools — your workspace is yours to use freely.'
+    );
     parts.push('4. Store important findings in memory for future cycles.');
-    parts.push('5. Send progress updates to the user via claw_send_output — they want to see what you are doing.');
-    parts.push('6. When your mission is complete, use claw_complete_report to deliver a comprehensive final report, then respond with "MISSION_COMPLETE".');
-    parts.push('7. If you need capabilities you do not have (network, Docker, permissions), use claw_request_escalation.');
+    parts.push(
+      '5. Send progress updates to the user via claw_send_output — they want to see what you are doing.'
+    );
+    parts.push(
+      '6. When your mission is complete, use claw_complete_report to deliver a comprehensive final report, then respond with "MISSION_COMPLETE".'
+    );
+    parts.push(
+      '7. If you need capabilities you do not have (network, Docker, permissions), use claw_request_escalation.'
+    );
     parts.push('8. You can spawn sub-claws for parallel subtasks — delegate when it makes sense.');
 
     if (this.config.stopCondition) {
@@ -223,16 +233,30 @@ export class ClawRunner {
     // Claw-specific tools
     parts.push('## Claw Tools');
     parts.push('- **claw_install_package**(package_name, manager?): Install npm/pip/pnpm packages');
-    parts.push('- **claw_run_script**(script, language?, timeout_ms?): Execute Python/JS/shell scripts');
-    parts.push('- **claw_create_tool**(name, description, code): Create ephemeral tools at runtime');
+    parts.push(
+      '- **claw_run_script**(script, language?, timeout_ms?): Execute Python/JS/shell scripts'
+    );
+    parts.push(
+      '- **claw_create_tool**(name, description, code): Create ephemeral tools at runtime'
+    );
     parts.push('- **claw_spawn_subclaw**(name, mission, mode?): Spawn child claw for subtask');
     parts.push('- **claw_publish_artifact**(title, content, type?): Publish outputs as artifacts');
     parts.push('- **claw_request_escalation**(type, reason): Request environment upgrade');
-    parts.push('- **claw_send_output**(message, urgency?): Send results to user NOW (Telegram + UI)');
-    parts.push('- **claw_complete_report**(title, report, summary): Final deliverable (artifact + notify)');
-    parts.push('- **claw_emit_event**(event_type, payload?): Emit event to EventBus (trigger other claws/workflows)');
-    parts.push('- **claw_update_config**(mission?, mode?, sandbox?, ...): Update your own config on the fly');
-    parts.push('- **claw_send_agent_message**(target_claw_id, subject, content): Send direct message to another claw');
+    parts.push(
+      '- **claw_send_output**(message, urgency?): Send results to user NOW (Telegram + UI)'
+    );
+    parts.push(
+      '- **claw_complete_report**(title, report, summary): Final deliverable (artifact + notify)'
+    );
+    parts.push(
+      '- **claw_emit_event**(event_type, payload?): Emit event to EventBus (trigger other claws/workflows)'
+    );
+    parts.push(
+      '- **claw_update_config**(mission?, mode?, sandbox?, ...): Update your own config on the fly'
+    );
+    parts.push(
+      '- **claw_send_agent_message**(target_claw_id, subject, content): Send direct message to another claw'
+    );
     parts.push('- **claw_reflect**(question): Self-assess your progress based on .claw/ files');
     parts.push('');
 
@@ -241,8 +265,12 @@ export class ClawRunner {
     parts.push('You can install and run ANY CLI tool on the system:');
     parts.push('- **list_cli_tools**(): Discover all available CLI tools and their status');
     parts.push('- **install_cli_tool**(name, method): Install new CLI tools globally (npm/pnpm)');
-    parts.push('- **run_cli_tool**(name, args, cwd): Execute any CLI tool (eslint, git, docker, curl, ffmpeg, etc.)');
-    parts.push('Do NOT hesitate to install and use CLI tools. If a tool would help, install it and use it.');
+    parts.push(
+      '- **run_cli_tool**(name, args, cwd): Execute any CLI tool (eslint, git, docker, curl, ffmpeg, etc.)'
+    );
+    parts.push(
+      'Do NOT hesitate to install and use CLI tools. If a tool would help, install it and use it.'
+    );
     parts.push('');
 
     // Browser — headless web automation
@@ -253,14 +281,20 @@ export class ClawRunner {
     parts.push('- **browser_type**(selector, text): Type into input fields');
     parts.push('- **browser_fill_form**(fields): Fill multiple form fields at once');
     parts.push('- **browser_screenshot**(fullPage?, selector?): Take screenshots');
-    parts.push('- **browser_extract**(selector?, dataSelectors?): Extract structured data from pages');
+    parts.push(
+      '- **browser_extract**(selector?, dataSelectors?): Extract structured data from pages'
+    );
     parts.push('');
 
     // Coding agents — full IDE delegation
     parts.push('## Coding Agents');
     parts.push('You can delegate coding tasks to specialized AI coding assistants:');
-    parts.push('- **run_coding_task**(task, provider?, model?): Execute coding task via Claude Code/Codex/Gemini CLI');
-    parts.push('- **orchestrate_coding_task**(task, analysis): Multi-step orchestrated coding pipeline');
+    parts.push(
+      '- **run_coding_task**(task, provider?, model?): Execute coding task via Claude Code/Codex/Gemini CLI'
+    );
+    parts.push(
+      '- **orchestrate_coding_task**(task, analysis): Multi-step orchestrated coding pipeline'
+    );
     if (this.config.codingAgentProvider) {
       parts.push(`Active coding agent: **${this.config.codingAgentProvider}**`);
     }
@@ -285,12 +319,20 @@ export class ClawRunner {
     // .claw/ directive system
     parts.push('## .claw/ Directive System');
     parts.push('Your workspace contains a `.claw/` directory with persistent files you MUST use:');
-    parts.push('- **`.claw/INSTRUCTIONS.md`**: Your directives. Read and follow every cycle. You can edit this.');
-    parts.push('- **`.claw/TASKS.md`**: Your task checklist. Mark items done, add new ones as you work.');
-    parts.push('- **`.claw/MEMORY.md`**: Your persistent memory. Write findings, decisions, context here.');
+    parts.push(
+      '- **`.claw/INSTRUCTIONS.md`**: Your directives. Read and follow every cycle. You can edit this.'
+    );
+    parts.push(
+      '- **`.claw/TASKS.md`**: Your task checklist. Mark items done, add new ones as you work.'
+    );
+    parts.push(
+      '- **`.claw/MEMORY.md`**: Your persistent memory. Write findings, decisions, context here.'
+    );
     parts.push('- **`.claw/LOG.md`**: Your execution log. Append a summary after each cycle.');
     parts.push('');
-    parts.push('Update these files using write_file or claw_run_script. They persist across cycles and restarts.');
+    parts.push(
+      'Update these files using write_file or claw_run_script. They persist across cycles and restarts.'
+    );
     parts.push('');
 
     // Read and inject INSTRUCTIONS.md into system prompt
@@ -320,7 +362,9 @@ export class ClawRunner {
     // Subclaw context
     if (this.config.parentClawId) {
       parts.push('## Parent Context');
-      parts.push(`You are a subclaw (depth ${this.config.depth}) spawned by claw ${this.config.parentClawId}.`);
+      parts.push(
+        `You are a subclaw (depth ${this.config.depth}) spawned by claw ${this.config.parentClawId}.`
+      );
       parts.push('Focus on your specific subtask and report results clearly.');
       parts.push('');
     }
@@ -345,7 +389,10 @@ export class ClawRunner {
         cycleNumber,
         toolName: tc.tool,
         toolArgs: tc.args,
-        toolResult: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result ?? '').slice(0, 5000),
+        toolResult:
+          typeof tc.result === 'string'
+            ? tc.result
+            : JSON.stringify(tc.result ?? '').slice(0, 5000),
         success: tc.success,
         durationMs: tc.durationMs,
       }))
@@ -412,7 +459,9 @@ export class ClawRunner {
       parts.push(`\nStop condition: ${this.config.stopCondition}`);
     }
 
-    parts.push('\nContinue your mission. Update .claw/TASKS.md and .claw/MEMORY.md as you work. Append to .claw/LOG.md.');
+    parts.push(
+      '\nContinue your mission. Update .claw/TASKS.md and .claw/MEMORY.md as you work. Append to .claw/LOG.md.'
+    );
 
     return parts.join('\n');
   }
