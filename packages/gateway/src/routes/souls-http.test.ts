@@ -85,7 +85,7 @@ vi.mock('../db/adapters/index.js', () => ({
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => ({
-  ...await importOriginal<Record<string, unknown>>(),
+  ...(await importOriginal<Record<string, unknown>>()),
   getServiceRegistry: () => ({
     get: (token: unknown) => {
       if (token === 'Memory') return mockMemorySvc;

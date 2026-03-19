@@ -137,11 +137,7 @@ describe('Claw Tools', () => {
     it('should reject empty package name', async () => {
       setClawContext();
 
-      const result = await executeClawTool(
-        'claw_install_package',
-        { package_name: '' },
-        'user-1'
-      );
+      const result = await executeClawTool('claw_install_package', { package_name: '' }, 'user-1');
       expect(result.success).toBe(false);
     });
 
@@ -313,9 +309,7 @@ describe('Claw Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.result).toEqual(
-        expect.objectContaining({ mode: 'single-shot' })
-      );
+      expect(result.result).toEqual(expect.objectContaining({ mode: 'single-shot' }));
       expect(mockRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           depth: 2,
@@ -341,9 +335,7 @@ describe('Claw Tools', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.result).toEqual(
-        expect.objectContaining({ mode: 'continuous' })
-      );
+      expect(result.result).toEqual(expect.objectContaining({ mode: 'continuous' }));
     });
   });
 

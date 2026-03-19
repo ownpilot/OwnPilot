@@ -30,14 +30,36 @@ Each claw gets an isolated workspace with .claw/ directive files (INSTRUCTIONS.m
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Display name (e.g., "Market Research Agent")' },
-      mission: { type: 'string', description: 'Detailed mission — what the claw should accomplish' },
-      mode: { type: 'string', enum: ['single-shot', 'continuous', 'interval', 'event'], description: 'Execution mode (default: single-shot)' },
-      sandbox: { type: 'string', enum: ['auto', 'docker', 'local'], description: 'Script sandbox (default: auto)' },
+      mission: {
+        type: 'string',
+        description: 'Detailed mission — what the claw should accomplish',
+      },
+      mode: {
+        type: 'string',
+        enum: ['single-shot', 'continuous', 'interval', 'event'],
+        description: 'Execution mode (default: single-shot)',
+      },
+      sandbox: {
+        type: 'string',
+        enum: ['auto', 'docker', 'local'],
+        description: 'Script sandbox (default: auto)',
+      },
       provider: { type: 'string', description: 'AI provider (optional)' },
       model: { type: 'string', description: 'AI model (optional)' },
-      coding_agent: { type: 'string', enum: ['claude-code', 'codex', 'gemini-cli'], description: 'Coding agent to use (optional)' },
-      auto_start: { type: 'boolean', description: 'Start immediately after creation (default: false)' },
-      skills: { type: 'array', items: { type: 'string' }, description: 'Skill IDs to grant access (optional)' },
+      coding_agent: {
+        type: 'string',
+        enum: ['claude-code', 'codex', 'gemini-cli'],
+        description: 'Coding agent to use (optional)',
+      },
+      auto_start: {
+        type: 'boolean',
+        description: 'Start immediately after creation (default: false)',
+      },
+      skills: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Skill IDs to grant access (optional)',
+      },
     },
     required: ['name', 'mission'],
   },
@@ -48,7 +70,8 @@ Each claw gets an isolated workspace with .claw/ directive files (INSTRUCTIONS.m
 const listClawsDef: ToolDefinition = {
   name: 'list_claws',
   workflowUsable: true,
-  description: 'List all Claw agents with their current status, cycles, tool calls, and cost. Shows running, paused, waiting, and stopped claws.',
+  description:
+    'List all Claw agents with their current status, cycles, tool calls, and cost. Shows running, paused, waiting, and stopped claws.',
   parameters: { type: 'object', properties: {} },
   category: 'Claws',
   tags: ['claw', 'list', 'status'],
@@ -57,7 +80,8 @@ const listClawsDef: ToolDefinition = {
 const startClawDef: ToolDefinition = {
   name: 'start_claw',
   workflowUsable: true,
-  description: 'Start a stopped or newly created Claw agent. The claw will begin executing its mission.',
+  description:
+    'Start a stopped or newly created Claw agent. The claw will begin executing its mission.',
   parameters: {
     type: 'object',
     properties: {
@@ -72,7 +96,8 @@ const startClawDef: ToolDefinition = {
 const stopClawDef: ToolDefinition = {
   name: 'stop_claw',
   workflowUsable: true,
-  description: 'Stop a running Claw agent. The claw will stop executing and its session will be saved.',
+  description:
+    'Stop a running Claw agent. The claw will stop executing and its session will be saved.',
   parameters: {
     type: 'object',
     properties: {
@@ -87,7 +112,8 @@ const stopClawDef: ToolDefinition = {
 const getClawStatusDef: ToolDefinition = {
   name: 'get_claw_status',
   workflowUsable: true,
-  description: 'Get detailed status of a specific Claw agent including session state, cycles, tool calls, cost, last error, and pending escalation.',
+  description:
+    'Get detailed status of a specific Claw agent including session state, cycles, tool calls, cost, last error, and pending escalation.',
   parameters: {
     type: 'object',
     properties: {
@@ -102,7 +128,8 @@ const getClawStatusDef: ToolDefinition = {
 const messageClawDef: ToolDefinition = {
   name: 'message_claw',
   workflowUsable: true,
-  description: 'Send a message to a running Claw agent. The message will be included in the claw\'s next cycle as an inbox item.',
+  description:
+    "Send a message to a running Claw agent. The message will be included in the claw's next cycle as an inbox item.",
   parameters: {
     type: 'object',
     properties: {
@@ -118,7 +145,8 @@ const messageClawDef: ToolDefinition = {
 const getClawHistoryDef: ToolDefinition = {
   name: 'get_claw_history',
   workflowUsable: true,
-  description: 'Get recent execution history of a Claw agent — cycle results, tool calls made, costs, and outputs.',
+  description:
+    'Get recent execution history of a Claw agent — cycle results, tool calls made, costs, and outputs.',
   parameters: {
     type: 'object',
     properties: {
@@ -238,7 +266,10 @@ export async function executeClawManagementTool(
 
       case 'stop_claw': {
         const stopped = await service.stopClaw(args.claw_id as string, userId);
-        return { success: stopped, result: { message: stopped ? 'Claw stopped' : 'Claw not found or not running' } };
+        return {
+          success: stopped,
+          result: { message: stopped ? 'Claw stopped' : 'Claw not found or not running' },
+        };
       }
 
       case 'get_claw_status': {
@@ -278,7 +309,12 @@ export async function executeClawManagementTool(
 
       case 'get_claw_history': {
         const limit = (args.limit as number) ?? 5;
-        const { entries, total } = await service.getHistory(args.claw_id as string, userId, limit, 0);
+        const { entries, total } = await service.getHistory(
+          args.claw_id as string,
+          userId,
+          limit,
+          0
+        );
         return {
           success: true,
           result: {

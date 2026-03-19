@@ -72,29 +72,33 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
   // Live updates via WebSocket
   useEffect(() => {
     const unsubs = [
-      subscribe<{ clawId: string; state: ClawState; cyclesCompleted?: number; totalToolCalls?: number; totalCostUsd?: number; lastCycleAt?: string }>(
-        'claw.update',
-        (data) => {
-          setClaws((prev) =>
-            prev.map((c) => {
-              if (c.id !== data.clawId) return c;
-              return {
-                ...c,
-                session: c.session
-                  ? {
-                      ...c.session,
-                      state: data.state ?? c.session.state,
-                      cyclesCompleted: data.cyclesCompleted ?? c.session.cyclesCompleted,
-                      totalToolCalls: data.totalToolCalls ?? c.session.totalToolCalls,
-                      totalCostUsd: data.totalCostUsd ?? c.session.totalCostUsd,
-                      lastCycleAt: data.lastCycleAt ?? c.session.lastCycleAt,
-                    }
-                  : null,
-              };
-            })
-          );
-        }
-      ),
+      subscribe<{
+        clawId: string;
+        state: ClawState;
+        cyclesCompleted?: number;
+        totalToolCalls?: number;
+        totalCostUsd?: number;
+        lastCycleAt?: string;
+      }>('claw.update', (data) => {
+        setClaws((prev) =>
+          prev.map((c) => {
+            if (c.id !== data.clawId) return c;
+            return {
+              ...c,
+              session: c.session
+                ? {
+                    ...c.session,
+                    state: data.state ?? c.session.state,
+                    cyclesCompleted: data.cyclesCompleted ?? c.session.cyclesCompleted,
+                    totalToolCalls: data.totalToolCalls ?? c.session.totalToolCalls,
+                    totalCostUsd: data.totalCostUsd ?? c.session.totalCostUsd,
+                    lastCycleAt: data.lastCycleAt ?? c.session.lastCycleAt,
+                  }
+                : null,
+            };
+          })
+        );
+      }),
       subscribe('claw.started', () => fetchData()),
       subscribe('claw.stopped', () => fetchData()),
     ];
@@ -105,9 +109,7 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
   const runningCount = claws.filter(
     (c) => c.session?.state === 'running' || c.session?.state === 'starting'
   ).length;
-  const escalationCount = claws.filter(
-    (c) => c.session?.state === 'escalation_pending'
-  ).length;
+  const escalationCount = claws.filter((c) => c.session?.state === 'escalation_pending').length;
   const totalCost = claws.reduce((sum, c) => sum + (c.session?.totalCostUsd || 0), 0);
 
   if (isLoading) {
@@ -175,7 +177,9 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
           <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
             Claws
           </h3>
-          <span className="text-xs text-text-muted dark:text-dark-text-muted">({claws.length})</span>
+          <span className="text-xs text-text-muted dark:text-dark-text-muted">
+            ({claws.length})
+          </span>
         </div>
         <div className="flex items-center gap-3 text-xs">
           <span className="flex items-center gap-1 text-success">

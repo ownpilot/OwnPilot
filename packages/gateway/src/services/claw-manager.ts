@@ -39,7 +39,7 @@ const AUDIT_RETENTION_DAYS = 30;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
 
 // Continuous mode adaptive delays
-const CONTINUOUS_MIN_DELAY_MS = 500;   // Active: fast loop
+const CONTINUOUS_MIN_DELAY_MS = 500; // Active: fast loop
 const CONTINUOUS_MAX_DELAY_MS = 10_000; // Error: backoff
 const CONTINUOUS_IDLE_DELAY_MS = 5_000; // No tool calls: slow down
 
@@ -154,7 +154,9 @@ export class ClawManager {
 
     // Enforce concurrent claw limit
     if (this.claws.size >= MAX_CONCURRENT_CLAWS) {
-      throw new Error(`Maximum concurrent claws (${MAX_CONCURRENT_CLAWS}) reached. Stop some claws before starting new ones.`);
+      throw new Error(
+        `Maximum concurrent claws (${MAX_CONCURRENT_CLAWS}) reached. Stop some claws before starting new ones.`
+      );
     }
 
     const repo = getClawsRepository();
@@ -571,7 +573,9 @@ export class ClawManager {
 
       // on_report — stop when claw_complete_report was called this cycle
       if (stopCondition === 'on_report') {
-        const calledReport = result.toolCalls.some((tc) => tc.tool === 'claw_complete_report' && tc.success);
+        const calledReport = result.toolCalls.some(
+          (tc) => tc.tool === 'claw_complete_report' && tc.success
+        );
         if (calledReport) return true;
       }
 
@@ -759,24 +763,34 @@ export class ClawManager {
   private runCleanup(): void {
     const repo = getClawsRepository();
 
-    repo.cleanupOldHistory(HISTORY_RETENTION_DAYS).then((deleted) => {
-      if (deleted > 0) log.info(`Cleaned up ${deleted} old claw history entries`);
-    }).catch((err) => {
-      log.warn(`History cleanup failed: ${getErrorMessage(err)}`);
-    });
+    repo
+      .cleanupOldHistory(HISTORY_RETENTION_DAYS)
+      .then((deleted) => {
+        if (deleted > 0) log.info(`Cleaned up ${deleted} old claw history entries`);
+      })
+      .catch((err) => {
+        log.warn(`History cleanup failed: ${getErrorMessage(err)}`);
+      });
 
-    repo.cleanupOldAuditLog(AUDIT_RETENTION_DAYS).then((deleted) => {
-      if (deleted > 0) log.info(`Cleaned up ${deleted} old claw audit log entries`);
-    }).catch((err) => {
-      log.warn(`Audit log cleanup failed: ${getErrorMessage(err)}`);
-    });
+    repo
+      .cleanupOldAuditLog(AUDIT_RETENTION_DAYS)
+      .then((deleted) => {
+        if (deleted > 0) log.info(`Cleaned up ${deleted} old claw audit log entries`);
+      })
+      .catch((err) => {
+        log.warn(`Audit log cleanup failed: ${getErrorMessage(err)}`);
+      });
   }
 
   /**
    * Ensure a conversation row exists for the claw's chat history.
    * The Chat tab fetches /api/v1/chat/claw-{id}/messages — this needs a row in conversations.
    */
-  private async ensureConversationRow(clawId: string, _userId: string, clawName: string): Promise<void> {
+  private async ensureConversationRow(
+    clawId: string,
+    _userId: string,
+    clawName: string
+  ): Promise<void> {
     const conversationId = `claw-${clawId}`;
     try {
       const { ConversationsRepository } = await import('../db/repositories/conversations.js');
@@ -798,12 +812,18 @@ export class ClawManager {
    * Scaffold .claw/ directory with initial instruction files.
    * Only creates files that don't already exist (idempotent).
    */
-  private scaffoldClawDir(workspaceId: string, config: { name: string; mission: string; mode: string }): void {
+  private scaffoldClawDir(
+    workspaceId: string,
+    config: { name: string; mission: string; mode: string }
+  ): void {
     try {
       // INSTRUCTIONS.md — persistent directives the claw reads every cycle
       if (!readSessionWorkspaceFile(workspaceId, '.claw/INSTRUCTIONS.md')) {
-        writeSessionWorkspaceFile(workspaceId, '.claw/INSTRUCTIONS.md', Buffer.from(
-`# ${config.name} — Instructions
+        writeSessionWorkspaceFile(
+          workspaceId,
+          '.claw/INSTRUCTIONS.md',
+          Buffer.from(
+            `# ${config.name} — Instructions
 
 ## Mission
 ${config.mission}
@@ -817,13 +837,19 @@ ${config.mission}
 
 ## Notes
 Add custom directives here. This file persists across cycles.
-`, 'utf-8'));
+`,
+            'utf-8'
+          )
+        );
       }
 
       // TASKS.md — checklist the claw maintains
       if (!readSessionWorkspaceFile(workspaceId, '.claw/TASKS.md')) {
-        writeSessionWorkspaceFile(workspaceId, '.claw/TASKS.md', Buffer.from(
-`# Tasks
+        writeSessionWorkspaceFile(
+          workspaceId,
+          '.claw/TASKS.md',
+          Buffer.from(
+            `# Tasks
 
 ## TODO
 - [ ] Start working on the mission
@@ -835,13 +861,19 @@ Add custom directives here. This file persists across cycles.
 ## IN PROGRESS
 
 ## DONE
-`, 'utf-8'));
+`,
+            'utf-8'
+          )
+        );
       }
 
       // MEMORY.md — persistent notes across cycles
       if (!readSessionWorkspaceFile(workspaceId, '.claw/MEMORY.md')) {
-        writeSessionWorkspaceFile(workspaceId, '.claw/MEMORY.md', Buffer.from(
-`# Memory
+        writeSessionWorkspaceFile(
+          workspaceId,
+          '.claw/MEMORY.md',
+          Buffer.from(
+            `# Memory
 
 Persistent notes across cycles. Write findings, decisions, and context here.
 The claw reads this every cycle to maintain continuity.
@@ -851,16 +883,25 @@ The claw reads this every cycle to maintain continuity.
 ## Decisions
 
 ## Context
-`, 'utf-8'));
+`,
+            'utf-8'
+          )
+        );
       }
 
       // LOG.md — execution log
       if (!readSessionWorkspaceFile(workspaceId, '.claw/LOG.md')) {
-        writeSessionWorkspaceFile(workspaceId, '.claw/LOG.md', Buffer.from(
-`# Execution Log
+        writeSessionWorkspaceFile(
+          workspaceId,
+          '.claw/LOG.md',
+          Buffer.from(
+            `# Execution Log
 
 Append cycle summaries here for a running log of what happened.
-`, 'utf-8'));
+`,
+            'utf-8'
+          )
+        );
       }
     } catch (err) {
       log.warn(`Failed to scaffold .claw/ dir: ${getErrorMessage(err)}`);
