@@ -1565,7 +1565,7 @@ function FileBrowser({
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-3">
         {currentPath && (
-          <button onClick={() => onNavigate(currentPath.split('/').slice(0, -1).join(''))}
+          <button onClick={() => onNavigate(currentPath.split('/').slice(0, -1).join('/'))}
             className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary">
             <ArrowLeft className="w-4 h-4 text-text-muted" />
           </button>
