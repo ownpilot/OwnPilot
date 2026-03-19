@@ -396,6 +396,32 @@ app.get('/:id', async (c) => {
     });
   }
 
+  // Check local providers (Ollama, LM Studio, etc.) by UUID
+  const localProvider = await localProvidersRepo.getProvider(id);
+  if (localProvider) {
+    const localModels = await localProvidersRepo.listModels(undefined, localProvider.id);
+    const localProviderColors: Record<string, string> = {
+      ollama: '#10b981',
+      lmstudio: '#6366f1',
+      localai: '#f59e0b',
+      vllm: '#ef4444',
+      custom: '#8b5cf6',
+    };
+    return apiResponse(c, {
+      id: localProvider.id,
+      name: localProvider.name,
+      type: 'openai-compatible',
+      baseUrl: localProvider.baseUrl,
+      apiKeyEnv: '',
+      models: localModels.map((m) => ({ id: m.modelId, name: m.displayName || m.modelId })),
+      isConfigured: true,
+      isEnabled: localProvider.isEnabled,
+      hasOverride: false,
+      color: localProviderColors[localProvider.providerType] ?? '#10b981',
+      userOverride: null,
+    });
+  }
+
   const config = loadProviderConfig(id);
 
   if (!config) {
@@ -441,7 +467,7 @@ app.get('/:id', async (c) => {
 /**
  * GET /providers/:id/models - Get models for a provider
  */
-app.get('/:id/models', (c) => {
+app.get('/:id/models', async (c) => {
   const id = c.req.param('id');
 
   // Check CLI chat providers first (cli-claude, cli-codex, cli-gemini)
@@ -453,6 +479,18 @@ app.get('/:id/models', (c) => {
       providerName: cliProvider.displayName,
       models: cliProvider.models.map((m) => ({ id: m, name: m })),
       isConfigured: cliProvider.authenticated,
+    });
+  }
+
+  // Check local providers by UUID
+  const localProvider = await localProvidersRepo.getProvider(id);
+  if (localProvider) {
+    const localModels = await localProvidersRepo.listModels(undefined, localProvider.id);
+    return apiResponse(c, {
+      provider: localProvider.id,
+      providerName: localProvider.name,
+      models: localModels.map((m) => ({ id: m.modelId, name: m.displayName || m.modelId })),
+      isConfigured: true,
     });
   }
 
