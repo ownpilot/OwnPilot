@@ -7,7 +7,7 @@
 FROM node:22-alpine AS builder
 
 # Install pnpm (pinned to match packageManager field)
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN npm install -g pnpm@10.29.3
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ FROM node:22-alpine AS production
 RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
 
 # Install pnpm (pinned to match packageManager field)
-RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+RUN npm install -g pnpm@10.29.3
 
 WORKDIR /app
 
