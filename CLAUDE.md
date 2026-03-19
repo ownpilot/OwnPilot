@@ -8,7 +8,7 @@ Privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo
 packages/
   core/      - Agent engine, tools, plugins, events, sandbox, privacy
   gateway/   - Hono HTTP API server, routes, services, DB, channels, triggers, WebSocket
-  ui/        - React 19 + Vite + Tailwind frontend (58 pages, code-split)
+  ui/        - React 19 + Vite + Tailwind frontend (64 pages, code-split)
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
 ```
 
@@ -22,7 +22,7 @@ packages/
 - **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
 - **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
 - **Edge/IoT**: MQTT broker (Mosquitto) integration for edge device management. Types: `packages/core/src/edge/`. Service: `packages/gateway/src/services/edge-service.ts`. Routes: `/api/v1/edge`
-- **Test framework**: Vitest across all packages. 26,600+ tests total (gateway: 16,400+; core: 9,714; cli: 340; ui: 141)
+- **Test framework**: Vitest across all packages. 26,700+ tests total (gateway: 16,500+; core: 9,714; cli: 340; ui: 141). 550 test files
 - **Autonomous Agent Runners**: Shared utilities in `packages/gateway/src/services/agent-runner-utils.ts` — `createConfiguredAgent()`, `registerAllToolSources()`, `resolveProviderAndModel()`, `executeAgentPipeline()`, `calculateExecutionCost()`, `createToolCallCollector()`, `resolveToolFilter()`, `createCancellationPromise()`
 - **Habit Tracking**: 8 AI tools in `packages/gateway/src/tools/habit-tools.ts`, DB repo in `db/repositories/habits.ts` (645 lines), REST API in `routes/productivity.ts`, HabitsPage UI with streak heatmap
 - **Utilities**: `TTLCache<K,V>` in `packages/gateway/src/utils/ttl-cache.ts` — generic cache with auto-prune. `chat-post-processor.ts` in `assistant/` — extracted from conversation-service
@@ -30,7 +30,7 @@ packages/
 - **Cost tracking**: `calculateExecutionCost(provider, model, usage)` in `agent-runner-utils.ts` — wraps `@ownpilot/core` `calculateCost()`. Used by BackgroundAgentRunner, SubagentRunner, FleetWorker, SoulHeartbeatService
 - **Workflow system**: 24 node types (including `clawNode`), copilot prompt in `routes/workflow-copilot-prompt.ts`, executors in `services/workflow/node-executors.ts`, service in `services/workflow/workflow-service.ts`. Centralized `dispatchNode()` method handles all node types. Copilot uses short type names (e.g. `"llm"`, `"claw"`) — UI's `convertDefinitionToReactFlow()` converts to `*Node` suffix
 - **Fleet Command**: FleetManager + FleetWorker with 4 worker types (ai-chat, coding-cli, api-call, mcp-bridge). 68 tests in `fleet-manager.test.ts`. Task dependencies cascade failures via `failDependentTasks()`
-- **Claw Runtime**: Unified autonomous agent composing LLM + workspace + soul + coding agents + 250+ tools. Types in `core/src/services/claw-types.ts`. Runner/Manager/Service in `gateway/src/services/claw-{runner,manager,service}.ts`. 14 claw tools + 7 management tools in `tools/claw-tools.ts` + `tools/claw-management-tools.ts`. DB: `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` (migration 022). REST: `/api/v1/claws` (15 endpoints including `/stats` and `/audit`). UI: ClawsPage (8-tab management panel + search/filter + bulk actions) + ClawsWidget. 117 tests. Modes: `continuous` / `interval` / `event` / `single-shot`. Limits: MAX_CONCURRENT_CLAWS=50, MAX_CLAW_DEPTH=3, mission 10K chars. `.claw/` directive system: INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md (auto-scaffolded, injected into prompt). Workflow: `clawNode` type in workflow system. Triggers can call `start_claw` tool action
+- **Claw Runtime**: Unified autonomous agent composing LLM + workspace + soul + coding agents + 250+ tools. Types in `core/src/services/claw-types.ts`. Runner/Manager/Service in `gateway/src/services/claw-{runner,manager,service}.ts`. 16 claw tools + 7 management tools in `tools/claw-tools.ts` + `tools/claw-management-tools.ts`. DB: `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` (migrations 022, 023). REST: `/api/v1/claws` (16 endpoints including `/stats`, `/audit`, `/deny-escalation`). UI: ClawsPage (8-tab management panel + search/filter + bulk actions) + ClawsWidget (live WS updates). 117+ tests. Modes: `continuous` / `interval` / `event` / `single-shot`. Limits: MAX_CONCURRENT_CLAWS=50, MAX_CLAW_DEPTH=3, mission 10K chars. `.claw/` directive system: INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md (auto-scaffolded, injected into prompt). Working Memory: `claw_set_context`/`claw_get_context` for persistent cross-cycle state. Stop conditions: `max_cycles:N`, `on_report`, `on_error`, `idle:N`. Auto-fail after 5 consecutive errors. Daily cleanup: 90d history, 30d audit retention. Workflow: `clawNode` type in workflow system. Triggers can call `start_claw` tool action
 
 ## Commands
 

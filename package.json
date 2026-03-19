@@ -28,7 +28,7 @@
   "devDependencies": {
     "@types/node": "^22.19.13",
     "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^10.0.2",
+    "eslint": "^10.0.3",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
     "turbo": "^2.8.12",
@@ -43,8 +43,12 @@
     "overrides": {
       "@isaacs/brace-expansion": ">=5.0.1",
       "esbuild": ">=0.25.0",
-      "undici": ">=6.24.1",
-      "minimatch": ">=10.2.3"
+      "undici": ">=7.10.0",
+      "minimatch": ">=10.2.3",
+      "flatted": ">=3.4.0",
+      "dompurify": ">=3.3.3",
+      "file-type": ">=21.3.3",
+      "express-rate-limit": ">=8.3.0"
     }
   },
   "packageManager": "pnpm@10.29.3",
