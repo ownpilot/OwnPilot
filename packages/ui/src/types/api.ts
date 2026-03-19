@@ -58,9 +58,18 @@ export interface SummaryData {
 }
 
 /** GET /api/v1/costs/usage */
+export interface CostsUsagePeriod {
+  totalTokens: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCost: number;
+  totalCostFormatted: string;
+  totalRequests: number;
+}
+
 export interface CostsData {
-  daily: { totalTokens: number; totalCost: number };
-  monthly: { totalTokens: number; totalCost: number };
+  daily: CostsUsagePeriod;
+  monthly: CostsUsagePeriod;
 }
 
 /** Agent detail (extends base Agent from types/index.ts) */

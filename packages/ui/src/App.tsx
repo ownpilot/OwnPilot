@@ -29,6 +29,9 @@ const ProfilePage = lazy(() =>
 const DashboardPage = lazy(() =>
   import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))
 );
+const AnalyticsPage = lazy(() =>
+  import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
+);
 const TasksPage = lazy(() => import('./pages/TasksPage').then((m) => ({ default: m.TasksPage })));
 const NotesPage = lazy(() => import('./pages/NotesPage').then((m) => ({ default: m.NotesPage })));
 const CalendarPage = lazy(() =>
@@ -222,6 +225,7 @@ export function App() {
       >
         <Route index element={page(<ChatPage />)} />
         <Route path="dashboard" element={page(<DashboardPage />)} />
+        <Route path="analytics" element={page(<AnalyticsPage />)} />
         <Route path="wizards" element={page(<WizardsPage />)} />
         <Route path="wizards/:wizardId" element={page(<WizardRouter />)} />
         <Route path="memories" element={page(<MemoriesPage />)} />

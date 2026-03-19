@@ -83,6 +83,7 @@ interface NavGroup {
 const mainItems: NavItem[] = [
   { to: '/', icon: MessageSquare, label: 'Chat' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/analytics', icon: Activity, label: 'Analytics' },
   { to: '/channels', icon: Send, label: 'Channels' },
   { to: '/history', icon: History, label: 'Conversations' },
 ];
