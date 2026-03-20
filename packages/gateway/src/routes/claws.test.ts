@@ -84,6 +84,61 @@ describe('Claws Routes', () => {
     app = createApp();
   });
 
+  // ---- Stats ----
+
+  describe('GET /claws/stats', () => {
+    it('should return aggregate statistics', async () => {
+      service.listClaws.mockResolvedValue([
+        { id: 'c1', mode: 'continuous' },
+        { id: 'c2', mode: 'interval' },
+        { id: 'c3', mode: 'continuous' },
+      ]);
+      service.listSessions.mockReturnValue([
+        {
+          config: { id: 'c1' },
+          state: 'running',
+          totalCostUsd: 0.05,
+          cyclesCompleted: 10,
+          totalToolCalls: 42,
+        },
+        {
+          config: { id: 'c3' },
+          state: 'paused',
+          totalCostUsd: 0.02,
+          cyclesCompleted: 3,
+          totalToolCalls: 8,
+        },
+      ]);
+
+      const res = await app.request('/claws/stats');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.total).toBe(3);
+      expect(body.data.running).toBe(1);
+      expect(body.data.totalCycles).toBe(13);
+      expect(body.data.totalToolCalls).toBe(50);
+      expect(body.data.totalCost).toBeCloseTo(0.07);
+      expect(body.data.byMode).toEqual({ continuous: 2, interval: 1 });
+      expect(body.data.byState.running).toBe(1);
+      expect(body.data.byState.paused).toBe(1);
+      expect(body.data.byState.stopped).toBe(1);
+    });
+
+    it('should return empty stats when no claws', async () => {
+      service.listClaws.mockResolvedValue([]);
+      service.listSessions.mockReturnValue([]);
+
+      const res = await app.request('/claws/stats');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.total).toBe(0);
+      expect(body.data.running).toBe(0);
+      expect(body.data.totalCost).toBe(0);
+    });
+  });
+
   // ---- List ----
 
   describe('GET /claws', () => {

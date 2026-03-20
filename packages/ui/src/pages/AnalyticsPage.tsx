@@ -53,29 +53,13 @@ import {
   fleetApi,
   workflowsApi,
 } from '../api';
+import type { ProviderBreakdown, DailyUsage } from '../api';
 import type { SummaryData, CostsData } from '../types';
 import { Skeleton } from '../components/Skeleton';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-interface ProviderBreakdownItem {
-  provider: string;
-  requests: number;
-  cost: number;
-  percentOfTotal: number;
-  inputTokens: number;
-  outputTokens: number;
-}
-
-interface DailyUsageItem {
-  date: string;
-  requests: number;
-  cost: number;
-  inputTokens: number;
-  outputTokens: number;
-}
 
 interface ClawStats {
   total: number;
@@ -376,8 +360,10 @@ export function AnalyticsPage() {
   // Data
   const [usage, setUsage] = useState<CostsData | null>(null);
   const [breakdown, setBreakdown] = useState<{
-    byProvider: ProviderBreakdownItem[];
-    daily: DailyUsageItem[];
+    byProvider: ProviderBreakdown[];
+    byModel: ProviderBreakdown[];
+    daily: DailyUsage[];
+    totalCost: number;
   } | null>(null);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [clawStats, setClawStats] = useState<ClawStats | null>(null);
@@ -467,6 +453,17 @@ export function AnalyticsPage() {
       requests: p.requests,
       input: p.inputTokens,
       output: p.outputTokens,
+    }));
+
+  const modelCostData = (
+    (breakdown?.byModel ?? []) as Array<ProviderBreakdown & { model?: string }>
+  )
+    .filter((m) => m.cost > 0)
+    .slice(0, 6)
+    .map((m) => ({
+      name: m.model ?? m.provider,
+      cost: Math.round(m.cost * 10000) / 10000,
+      requests: m.requests,
     }));
 
   const clawModeData = clawStats
@@ -690,8 +687,8 @@ export function AnalyticsPage() {
         </SectionCard>
       </div>
 
-      {/* ---- Row 3: Provider Breakdown + Agent Distribution + Requests ---- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* ---- Row 3: Provider Breakdown + Model Cost + Agent Distribution + Requests ---- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <SectionCard title="Cost by Provider" icon={DollarSign} iconColor="text-pink-500">
           {providerDonut.length > 0 ? (
             <div className="flex items-center gap-4">
@@ -702,6 +699,22 @@ export function AnalyticsPage() {
             </div>
           ) : (
             <EmptyChart height={140} message="No cost data" />
+          )}
+        </SectionCard>
+
+        <SectionCard title="Cost by Model" icon={BarChart3} iconColor="text-violet-500">
+          {modelCostData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={170}>
+              <BarChart data={modelCostData} layout="vertical" margin={{ left: 0 }}>
+                <CartesianGrid {...gridProps} horizontal={false} />
+                <XAxis type="number" {...axisProps} tickFormatter={(v) => `$${v}`} />
+                <YAxis dataKey="name" type="category" {...axisProps} width={80} />
+                <Tooltip content={<ChartTooltip />} />
+                <Bar dataKey="cost" name="Cost" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart height={170} message="No model data" />
           )}
         </SectionCard>
 

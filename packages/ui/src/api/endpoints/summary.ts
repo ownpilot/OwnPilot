@@ -17,7 +17,12 @@ export const costsApi = {
       params: { period },
     }),
   getBreakdown: (period: string) =>
-    apiClient.get<{ byProvider: ProviderBreakdown[]; daily: DailyUsage[] }>('/costs/breakdown', {
+    apiClient.get<{
+      byProvider: ProviderBreakdown[];
+      byModel: ProviderBreakdown[];
+      daily: DailyUsage[];
+      totalCost: number;
+    }>('/costs/breakdown', {
       params: { period },
     }),
   setBudget: (budget: { dailyLimit?: number; weeklyLimit?: number; monthlyLimit?: number }) =>
