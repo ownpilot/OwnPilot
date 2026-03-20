@@ -5,6 +5,21 @@ import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '.
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
 import { DollarSign, Home, BarChart, TrendingUp, Calendar, Layers } from '../components/icons';
+import {
+  AreaChart,
+  Area,
+  BarChart as RechartsBarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { PageHomeTab } from '../components/PageHomeTab';
 
 type Period = 'day' | 'week' | 'month' | 'year';
@@ -304,37 +319,120 @@ export function CostsPage() {
                 </div>
               )}
 
-              {/* Daily Chart */}
+              {/* Daily Cost Trend */}
               {breakdown && breakdown.daily.length > 0 && (
                 <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
-                  <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary mb-4">
-                    Daily Usage
+                  <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2 mb-4">
+                    <TrendingUp className="w-4 h-4 text-success" />
+                    Daily Cost Trend
                   </h3>
-                  <div className="flex gap-1 items-end h-32">
-                    {breakdown.daily.slice(-14).map((day) => {
-                      const maxCost = Math.max(...breakdown.daily.map((d) => d.cost));
-                      const height = maxCost > 0 ? (day.cost / maxCost) * 100 : 0;
-                      return (
-                        <div
-                          key={day.date}
-                          className="flex-1 group relative"
-                          title={`${day.date}: ${day.costFormatted}`}
-                        >
-                          <div
-                            className="bg-success rounded-t transition-all hover:bg-success/80"
-                            style={{ height: `${Math.max(height, 2)}%` }}
-                          />
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                            {day.date}: {day.costFormatted}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-between mt-2 text-xs text-text-muted">
-                    <span>{breakdown.daily[0]?.date}</span>
-                    <span>{breakdown.daily[breakdown.daily.length - 1]?.date}</span>
-                  </div>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart
+                      data={breakdown.daily.map((d) => ({
+                        ...d,
+                        date: new Date(d.date).toLocaleDateString('en', {
+                          month: 'short',
+                          day: 'numeric',
+                        }),
+                      }))}
+                    >
+                      <defs>
+                        <linearGradient id="costAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="var(--color-border, #334155)"
+                        opacity={0.4}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11 }}
+                        stroke="var(--color-text-muted, #94a3b8)"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        stroke="var(--color-text-muted, #94a3b8)"
+                        tickFormatter={(v) => `$${v}`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'var(--color-bg-secondary, #1e293b)',
+                          border: '1px solid var(--color-border, #334155)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                        }}
+                        formatter={(value: unknown) => [`$${Number(value).toFixed(4)}`, 'Cost']}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="cost"
+                        stroke="#22c55e"
+                        fill="url(#costAreaGrad)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Token Volume */}
+              {breakdown && breakdown.daily.length > 0 && (
+                <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
+                  <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2 mb-4">
+                    <BarChart className="w-4 h-4 text-indigo-500" />
+                    Token Volume
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <RechartsBarChart
+                      data={breakdown.daily.map((d) => ({
+                        ...d,
+                        date: new Date(d.date).toLocaleDateString('en', {
+                          month: 'short',
+                          day: 'numeric',
+                        }),
+                      }))}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="var(--color-border, #334155)"
+                        opacity={0.4}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11 }}
+                        stroke="var(--color-text-muted, #94a3b8)"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        stroke="var(--color-text-muted, #94a3b8)"
+                        tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v)}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'var(--color-bg-secondary, #1e293b)',
+                          border: '1px solid var(--color-border, #334155)',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                        }}
+                      />
+                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                      <Bar
+                        dataKey="inputTokens"
+                        name="Input"
+                        fill="#6366f1"
+                        radius={[3, 3, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="outputTokens"
+                        name="Output"
+                        fill="#a855f7"
+                        radius={[3, 3, 0, 0]}
+                      />
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </div>
@@ -342,11 +440,106 @@ export function CostsPage() {
 
           {activeTab === 'breakdown' && breakdown && (
             <div className="space-y-6">
-              {/* Provider Breakdown */}
+              {/* Provider Cost Distribution */}
+              {breakdown.byProvider.filter((p) => p.cost > 0).length > 0 && (
+                <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border p-4">
+                  <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2 mb-4">
+                    <DollarSign className="w-4 h-4 text-pink-500" />
+                    Cost Distribution
+                  </h3>
+                  <div className="flex items-center gap-8">
+                    <div className="w-48 h-48 flex-shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={breakdown.byProvider
+                              .filter((p) => p.cost > 0)
+                              .map((p) => ({
+                                name: p.provider,
+                                value: Math.round(p.cost * 100) / 100,
+                              }))}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius="50%"
+                            outerRadius="85%"
+                            paddingAngle={2}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {breakdown.byProvider
+                              .filter((p) => p.cost > 0)
+                              .map((_, i) => (
+                                <Cell
+                                  key={i}
+                                  fill={
+                                    [
+                                      '#6366f1',
+                                      '#8b5cf6',
+                                      '#ec4899',
+                                      '#f97316',
+                                      '#22c55e',
+                                      '#06b6d4',
+                                      '#3b82f6',
+                                      '#eab308',
+                                    ][i % 8]
+                                  }
+                                />
+                              ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              background: 'var(--color-bg-secondary, #1e293b)',
+                              border: '1px solid var(--color-border, #334155)',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                            }}
+                            formatter={(value: unknown) => [`$${Number(value).toFixed(4)}`, 'Cost']}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      {breakdown.byProvider
+                        .filter((p) => p.cost > 0)
+                        .map((p, i) => (
+                          <div key={p.provider} className="flex items-center gap-2 text-sm">
+                            <span
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{
+                                background: [
+                                  '#6366f1',
+                                  '#8b5cf6',
+                                  '#ec4899',
+                                  '#f97316',
+                                  '#22c55e',
+                                  '#06b6d4',
+                                  '#3b82f6',
+                                  '#eab308',
+                                ][i % 8],
+                              }}
+                            />
+                            <span className="text-text-muted dark:text-dark-text-muted capitalize truncate">
+                              {p.provider}
+                            </span>
+                            <span className="ml-auto font-medium text-text-primary dark:text-dark-text-primary whitespace-nowrap">
+                              {p.costFormatted}
+                            </span>
+                            <span className="text-text-muted dark:text-dark-text-muted text-xs w-12 text-right">
+                              {p.percentOfTotal.toFixed(0)}%
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Provider Breakdown List */}
               <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
                 <div className="p-4 border-b border-border dark:border-dark-border">
-                  <h3 className="text-lg font-medium text-text-primary dark:text-dark-text-primary">
-                    By Provider
+                  <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-orange-500" />
+                    Provider Details
                   </h3>
                 </div>
                 <div className="divide-y divide-border dark:divide-dark-border">
