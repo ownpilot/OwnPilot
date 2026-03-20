@@ -1,6 +1,6 @@
 {
   "name": "@ownpilot/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "OwnPilot Core - Secure AI agent engine and tool framework",
   "type": "module",
   "sideEffects": false,
