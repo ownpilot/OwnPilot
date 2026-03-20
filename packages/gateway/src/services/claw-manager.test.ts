@@ -369,6 +369,41 @@ describe('ClawManager', () => {
       const approved = await manager.approveEscalation('claw-1');
       expect(approved).toBe(false);
     });
+
+    it('should deny escalation and resume with inbox message', async () => {
+      const repo = setupRepo(makeConfig());
+      await manager.startClaw('claw-1', 'user-1');
+
+      await manager.requestEscalation('claw-1', {
+        id: 'esc-2',
+        type: 'tool_access',
+        reason: 'Need shell',
+        requestedAt: new Date(),
+      });
+      expect(manager.getSession('claw-1')?.state).toBe('escalation_pending');
+
+      const denied = await manager.denyEscalation('claw-1', 'Too risky');
+      expect(denied).toBe(true);
+      expect(manager.getSession('claw-1')?.state).toBe('running');
+      expect(manager.getSession('claw-1')?.pendingEscalation).toBeNull();
+      expect(manager.getSession('claw-1')?.inbox).toContainEqual(
+        expect.stringContaining('ESCALATION_DENIED')
+      );
+      expect(repo.appendToInbox).toHaveBeenCalled();
+    });
+
+    it('should return false when denying non-existent claw', async () => {
+      const denied = await manager.denyEscalation('claw-99');
+      expect(denied).toBe(false);
+    });
+
+    it('should return false when denying non-escalated claw', async () => {
+      setupRepo(makeConfig());
+      await manager.startClaw('claw-1', 'user-1');
+
+      const denied = await manager.denyEscalation('claw-1');
+      expect(denied).toBe(false);
+    });
   });
 
   describe('stop conditions', () => {
@@ -397,6 +432,53 @@ describe('ClawManager', () => {
       await vi.advanceTimersByTimeAsync(5100);
 
       expect(manager.getSession('claw-1')).toBeNull();
+    });
+
+    it('should stop on on_error condition when cycle fails', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'on_error' });
+      setupRepo(config);
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: false, error: 'Something broke' }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+
+      // on_error stops after first failure
+      expect(manager.getSession('claw-1')).toBeNull();
+    });
+
+    it('should stop on idle:N condition after N idle cycles', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'idle:2' });
+      setupRepo(config);
+      // Cycle returns 0 tool calls (idle)
+      mockRunCycle.mockResolvedValue(makeCycleResult({ toolCalls: [] }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      // First idle cycle
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.getSession('claw-1')).not.toBeNull();
+      // Second idle cycle → stop
+      await vi.advanceTimersByTimeAsync(5100);
+      expect(manager.getSession('claw-1')).toBeNull();
+    });
+  });
+
+  describe('config hot-reload', () => {
+    it('should update in-memory config via updateClawConfig', async () => {
+      const config = makeConfig({ mode: 'continuous' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+
+      const updated = { ...config, mode: 'interval' as const, intervalMs: 60_000 };
+      manager.updateClawConfig('claw-1', updated);
+
+      expect(manager.getSession('claw-1')?.config.mode).toBe('interval');
+      expect(manager.getSession('claw-1')?.config.intervalMs).toBe(60_000);
+    });
+
+    it('should no-op for unknown claw', () => {
+      const config = makeConfig();
+      // Should not throw
+      manager.updateClawConfig('claw-99', config);
     });
   });
 
