@@ -416,6 +416,10 @@ async function main() {
           : undefined;
       const agent = await getOrCreateChatAgent(provider, model, fallback);
 
+      // Reset conversation for each trigger fire — prevents stale context from
+      // previous executions causing "Empty conversation context" errors.
+      agent.reset();
+
       const bus = registry.get<IMessageBus>(Services.Message);
       const conversationId = agent.getConversation().id;
       const normalized: NormalizedMessage = {
