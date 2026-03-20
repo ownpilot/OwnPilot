@@ -717,7 +717,7 @@ describe('ModelConfigsRepository', () => {
       });
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      expect(params[8]).toBe('{"key":"value"}');
+      expect(params[12]).toBe('{"key":"value"}');
     });
   });
 

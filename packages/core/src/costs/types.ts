@@ -3,6 +3,29 @@
  */
 
 /**
+ * Billing type for AI providers
+ *
+ * - `pay-per-use`: Standard API billing per token (OpenAI, Anthropic, etc.)
+ * - `subscription`: Fixed monthly fee, no per-token cost (ChatGPT Plus, Claude Pro, etc.)
+ * - `free`: No cost (local models, free tiers like Groq, Ollama, etc.)
+ */
+export type BillingType = 'pay-per-use' | 'subscription' | 'free';
+
+/**
+ * Provider billing configuration
+ */
+export interface ProviderBillingConfig {
+  /** Billing model */
+  billingType: BillingType;
+  /** Monthly subscription cost in USD (only for subscription type) */
+  monthlyCostUsd?: number;
+  /** Subscription plan name (e.g., "ChatGPT Plus", "Claude Pro") */
+  planName?: string;
+  /** Notes (e.g., "Includes 5M tokens/month") */
+  notes?: string;
+}
+
+/**
  * AI Provider
  */
 export type AIProvider =
@@ -76,6 +99,8 @@ export interface UsageRecord {
   latencyMs: number;
   /** Request type */
   requestType: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'tool';
+  /** Billing type for this request */
+  billingType?: BillingType;
   /** Was cached */
   cached?: boolean;
   /** Error if failed */

@@ -4,7 +4,7 @@
  * Functions for calculating and estimating LLM API costs.
  */
 
-import type { AIProvider, CostEstimate, ModelPricing } from './types.js';
+import type { AIProvider, BillingType, CostEstimate, ModelPricing } from './types.js';
 import { MODEL_PRICING } from './model-pricing.js';
 
 // Pre-built lookup maps for O(1) exact-match pricing (built once at module load)
@@ -36,14 +36,23 @@ export function getModelPricing(provider: AIProvider, modelId: string): ModelPri
 }
 
 /**
- * Calculate cost for a request
+ * Calculate cost for a request.
+ *
+ * If `billingType` is 'subscription' or 'free', returns 0 (no per-token cost).
+ * Subscription costs are tracked separately via provider billing config.
  */
 export function calculateCost(
   provider: AIProvider,
   modelId: string,
   inputTokens: number,
-  outputTokens: number
+  outputTokens: number,
+  billingType?: BillingType
 ): number {
+  // Subscription and free providers have no per-token cost
+  if (billingType === 'subscription' || billingType === 'free') {
+    return 0;
+  }
+
   const pricing = getModelPricing(provider, modelId);
 
   if (!pricing) {

@@ -40,6 +40,10 @@ export interface CustomProvider {
   apiKeySetting?: string;
   providerType: 'openai_compatible' | 'custom';
   isEnabled: boolean;
+  billingType: 'pay-per-use' | 'subscription' | 'free';
+  subscriptionCostUsd?: number;
+  subscriptionPlan?: string;
+  billingNotes?: string;
   config: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -79,6 +83,10 @@ export interface CreateProviderInput {
   apiKeySetting?: string;
   providerType?: 'openai_compatible' | 'custom';
   isEnabled?: boolean;
+  billingType?: 'pay-per-use' | 'subscription' | 'free';
+  subscriptionCostUsd?: number;
+  subscriptionPlan?: string;
+  billingNotes?: string;
   config?: Record<string, unknown>;
 }
 
@@ -105,6 +113,9 @@ export interface CreateUserProviderConfigInput {
   isEnabled?: boolean;
   apiKeyEnv?: string;
   notes?: string;
+  billingType?: 'pay-per-use' | 'subscription' | 'free';
+  subscriptionCostUsd?: number;
+  subscriptionPlan?: string;
   config?: Record<string, unknown>;
 }
 
@@ -114,6 +125,9 @@ export interface UpdateUserProviderConfigInput {
   isEnabled?: boolean;
   apiKeyEnv?: string;
   notes?: string;
+  billingType?: 'pay-per-use' | 'subscription' | 'free';
+  subscriptionCostUsd?: number;
+  subscriptionPlan?: string;
   config?: Record<string, unknown>;
 }
 
@@ -123,6 +137,10 @@ export interface UpdateProviderInput {
   apiKeySetting?: string;
   providerType?: 'openai_compatible' | 'custom';
   isEnabled?: boolean;
+  billingType?: 'pay-per-use' | 'subscription' | 'free';
+  subscriptionCostUsd?: number;
+  subscriptionPlan?: string;
+  billingNotes?: string;
   config?: Record<string, unknown>;
 }
 
@@ -159,6 +177,10 @@ interface CustomProviderRow {
   api_key_setting: string | null;
   provider_type: string;
   is_enabled: boolean;
+  billing_type: string | null;
+  subscription_cost_usd: number | null;
+  subscription_plan: string | null;
+  billing_notes: string | null;
   config: string;
   created_at: string;
   updated_at: string;
@@ -204,6 +226,7 @@ function rowToModelConfig(row: ModelConfigRow): UserModelConfig {
 }
 
 function rowToProvider(row: CustomProviderRow): CustomProvider {
+  const billingType = row.billing_type as CustomProvider['billingType'] | null;
   return {
     id: row.id,
     userId: row.user_id,
@@ -213,6 +236,10 @@ function rowToProvider(row: CustomProviderRow): CustomProvider {
     apiKeySetting: row.api_key_setting || undefined,
     providerType: row.provider_type as 'openai_compatible' | 'custom',
     isEnabled: row.is_enabled,
+    billingType: billingType ?? 'pay-per-use',
+    subscriptionCostUsd: row.subscription_cost_usd ?? undefined,
+    subscriptionPlan: row.subscription_plan ?? undefined,
+    billingNotes: row.billing_notes ?? undefined,
     config: parseJsonField(row.config, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -518,6 +545,10 @@ export class ModelConfigsRepository extends BaseRepository {
           provider_type = COALESCE($4, provider_type),
           is_enabled = COALESCE($5, is_enabled),
           config = COALESCE($6, config),
+          billing_type = COALESCE($10, billing_type),
+          subscription_cost_usd = COALESCE($11, subscription_cost_usd),
+          subscription_plan = COALESCE($12, subscription_plan),
+          billing_notes = COALESCE($13, billing_notes),
           updated_at = $7
         WHERE user_id = $8 AND provider_id = $9`,
         [
@@ -530,6 +561,10 @@ export class ModelConfigsRepository extends BaseRepository {
           now,
           userId,
           input.providerId,
+          input.billingType ?? null,
+          input.subscriptionCostUsd ?? null,
+          input.subscriptionPlan ?? null,
+          input.billingNotes ?? null,
         ]
       );
 
@@ -542,8 +577,10 @@ export class ModelConfigsRepository extends BaseRepository {
       await this.execute(
         `INSERT INTO custom_providers (
           id, user_id, provider_id, display_name,
-          api_base_url, api_key_setting, provider_type, is_enabled, config, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          api_base_url, api_key_setting, provider_type, is_enabled,
+          billing_type, subscription_cost_usd, subscription_plan, billing_notes,
+          config, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           id,
           userId,
@@ -553,6 +590,10 @@ export class ModelConfigsRepository extends BaseRepository {
           input.apiKeySetting || null,
           input.providerType || 'openai_compatible',
           input.isEnabled !== false,
+          input.billingType || 'pay-per-use',
+          input.subscriptionCostUsd ?? null,
+          input.subscriptionPlan ?? null,
+          input.billingNotes ?? null,
           JSON.stringify(input.config || {}),
           now,
           now,
