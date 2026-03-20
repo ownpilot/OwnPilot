@@ -1,5 +1,9 @@
 # OwnPilot
 
+> Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, autonomous background agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
+>
+>**Self-hosted. Your data stays yours.**
+
 <p align="center">
   <img src="ownpilot_.jpeg" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
 </p>
@@ -11,10 +15,6 @@
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-≥22-green?logo=node.js" alt="Node.js" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript" alt="TypeScript" /></a>
 </p>
-
-Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, autonomous background agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
-
-**Self-hosted. Your data stays yours.**
 
 ---
 
