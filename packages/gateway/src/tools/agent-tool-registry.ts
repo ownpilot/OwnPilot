@@ -93,6 +93,109 @@ import { checkToolPermission } from '../services/tool-permission-service.js';
 const log = getLog('AgentTools');
 
 // =============================================================================
+// Tool Name Aliases — auto-resolve common LLM hallucinations
+// =============================================================================
+
+/**
+ * Maps commonly hallucinated tool names to their correct counterparts.
+ * Keys are the wrong names (without namespace prefix), values are the correct names.
+ * Both namespaced ("core.get_current_time") and bare ("get_current_time") forms are resolved.
+ */
+const TOOL_ALIASES: Record<string, string> = {
+  // Time/Date
+  get_current_time: 'get_current_datetime',
+  get_time: 'get_current_datetime',
+  current_time: 'get_current_datetime',
+  get_date: 'get_current_datetime',
+  get_datetime: 'get_current_datetime',
+
+  // Tasks
+  get_tasks: 'list_tasks',
+  create_task: 'add_task',
+  new_task: 'add_task',
+  remove_task: 'delete_task',
+
+  // Notes
+  get_notes: 'list_notes',
+  create_note: 'add_note',
+  new_note: 'add_note',
+  remove_note: 'delete_note',
+
+  // Memory
+  get_memories: 'list_memories',
+  save_memory: 'add_memory',
+  remember: 'add_memory',
+  recall: 'search_memories',
+
+  // Calendar
+  get_events: 'list_events',
+  create_event: 'add_event',
+  new_event: 'add_event',
+
+  // Contacts
+  get_contacts: 'list_contacts',
+  create_contact: 'add_contact',
+  new_contact: 'add_contact',
+
+  // Bookmarks
+  get_bookmarks: 'list_bookmarks',
+  create_bookmark: 'add_bookmark',
+  new_bookmark: 'add_bookmark',
+
+  // Files
+  read_file: 'file_read',
+  write_file: 'file_write',
+  list_files: 'file_list',
+  delete_file: 'file_delete',
+
+  // Web
+  fetch_url: 'web_fetch',
+  browse: 'web_search',
+  google: 'web_search',
+  search: 'web_search',
+  search_web: 'web_search',
+
+  // Email
+  send_mail: 'send_email',
+  compose_email: 'send_email',
+
+  // Goals
+  get_goals: 'list_goals',
+  create_goal: 'add_goal',
+  new_goal: 'add_goal',
+
+  // Git
+  git_log: 'git_history',
+
+  // Code
+  run_code: 'execute_code',
+  exec_code: 'execute_code',
+  eval_code: 'execute_code',
+};
+
+/**
+ * Resolve a tool name through the alias map.
+ * Handles both namespaced ("core.get_current_time") and bare ("get_current_time") forms.
+ * Returns the resolved name (with original namespace preserved) or null if no alias found.
+ */
+function resolveToolAlias(toolName: string): string | null {
+  // Try bare name first
+  const alias = TOOL_ALIASES[toolName];
+  if (alias) return alias;
+
+  // Try stripping namespace prefix (e.g., "core.get_current_time" → "get_current_time")
+  const dotIdx = toolName.indexOf('.');
+  if (dotIdx > 0) {
+    const prefix = toolName.slice(0, dotIdx + 1); // "core."
+    const baseName = toolName.slice(dotIdx + 1); // "get_current_time"
+    const baseAlias = TOOL_ALIASES[baseName];
+    if (baseAlias) return prefix + baseAlias; // "core.get_current_datetime"
+  }
+
+  return null;
+}
+
+// =============================================================================
 // Helpers
 // =============================================================================
 
@@ -670,10 +773,19 @@ export async function executeUseTool(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<CoreToolResult> {
-  const { tool_name, arguments: toolArgs } = args as {
+  let { tool_name, arguments: toolArgs } = args as {
     tool_name: string;
     arguments: Record<string, unknown>;
   };
+
+  // Alias resolution — auto-fix common LLM hallucinations
+  if (!tools.has(tool_name)) {
+    const resolved = resolveToolAlias(tool_name);
+    if (resolved && tools.has(resolved)) {
+      log.info(`Tool alias resolved: ${tool_name} → ${resolved}`);
+      tool_name = resolved;
+    }
+  }
 
   // Check if tool exists — suggest similar names if not
   if (!tools.has(tool_name)) {
@@ -749,7 +861,16 @@ export async function executeBatchUseTool(
   // Execute all tool calls in parallel
   const results = await Promise.allSettled(
     calls.map(async (call, idx) => {
-      const { tool_name, arguments: toolArgs } = call;
+      let { tool_name, arguments: toolArgs } = call;
+
+      // Alias resolution
+      if (!tools.has(tool_name)) {
+        const resolved = resolveToolAlias(tool_name);
+        if (resolved && tools.has(resolved)) {
+          log.info(`Tool alias resolved: ${tool_name} → ${resolved}`);
+          tool_name = resolved;
+        }
+      }
 
       // Check tool exists
       if (!tools.has(tool_name)) {

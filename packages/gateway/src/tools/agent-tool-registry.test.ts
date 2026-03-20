@@ -2001,4 +2001,59 @@ describe('agent-tools helpers', () => {
       expect(result.content).toContain('store_memory');
     });
   });
+
+  // =========================================================================
+  // Tool Alias Resolution
+  // =========================================================================
+  describe('tool alias resolution', () => {
+    it('resolves get_current_time to get_current_datetime', async () => {
+      const registry = createMockRegistry({
+        get_current_datetime: {
+          name: 'get_current_datetime',
+          description: 'Get current date and time',
+          category: 'utility',
+        },
+      });
+      const result = await executeUseTool(
+        registry as any,
+        { tool_name: 'get_current_time', arguments: {} },
+        { userId: 'test' }
+      );
+      // Should NOT return an error — alias resolved silently
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('resolves namespaced alias core.get_current_time', async () => {
+      const registry = createMockRegistry({
+        'core.get_current_datetime': {
+          name: 'core.get_current_datetime',
+          description: 'Get current date and time',
+          category: 'utility',
+        },
+      });
+      const result = await executeUseTool(
+        registry as any,
+        { tool_name: 'core.get_current_time', arguments: {} },
+        { userId: 'test' }
+      );
+      expect(result.isError).toBeFalsy();
+    });
+
+    it('still returns error for truly unknown tools', async () => {
+      const registry = createMockRegistry({
+        get_current_datetime: {
+          name: 'get_current_datetime',
+          description: 'Get current date and time',
+          category: 'utility',
+        },
+      });
+      const result = await executeUseTool(
+        registry as any,
+        { tool_name: 'totally_fake_tool', arguments: {} },
+        { userId: 'test' }
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain('not found');
+    });
+  });
 });
