@@ -102,6 +102,81 @@ costRoutes.get('/', async (c) => {
 });
 
 /**
+ * GET /costs/subscriptions - Get subscription provider costs
+ */
+costRoutes.get('/subscriptions', async (c) => {
+  try {
+    const userId = getUserId(c) ?? 'default';
+    const { ModelConfigsRepository } = await import('../db/repositories/model-configs.js');
+    const repo = new ModelConfigsRepository();
+
+    // Get all provider configs with billing info
+    const configs = await repo.listUserProviderConfigs(userId);
+    const customProviders = await repo.listProviders(userId);
+
+    const subscriptions: Array<{
+      providerId: string;
+      displayName: string;
+      billingType: string;
+      monthlyCostUsd: number;
+      planName?: string;
+    }> = [];
+
+    let totalMonthly = 0;
+    let freeCount = 0;
+    let apiCount = 0;
+
+    // Built-in provider overrides
+    for (const cfg of configs) {
+      if (cfg.billingType === 'subscription' && cfg.subscriptionCostUsd) {
+        subscriptions.push({
+          providerId: cfg.providerId,
+          displayName: cfg.subscriptionPlan || cfg.providerId,
+          billingType: 'subscription',
+          monthlyCostUsd: cfg.subscriptionCostUsd,
+          planName: cfg.subscriptionPlan,
+        });
+        totalMonthly += cfg.subscriptionCostUsd;
+      } else if (cfg.billingType === 'free') {
+        freeCount++;
+      } else {
+        apiCount++;
+      }
+    }
+
+    // Custom providers
+    for (const cp of customProviders) {
+      if (cp.billingType === 'subscription' && cp.subscriptionCostUsd) {
+        subscriptions.push({
+          providerId: cp.providerId,
+          displayName: cp.subscriptionPlan || cp.displayName,
+          billingType: 'subscription',
+          monthlyCostUsd: cp.subscriptionCostUsd,
+          planName: cp.subscriptionPlan,
+        });
+        totalMonthly += cp.subscriptionCostUsd;
+      } else if (cp.billingType === 'free') {
+        freeCount++;
+      } else {
+        apiCount++;
+      }
+    }
+
+    return apiResponse(c, {
+      subscriptions,
+      totalMonthlyUsd: Math.round(totalMonthly * 100) / 100,
+      counts: {
+        subscription: subscriptions.length,
+        payPerUse: apiCount,
+        free: freeCount,
+      },
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+/**
  * GET /costs/usage - Get usage stats for UI dashboard
  */
 costRoutes.get('/usage', async (c) => {
