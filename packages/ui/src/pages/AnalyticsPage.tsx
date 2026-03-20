@@ -374,6 +374,16 @@ export function AnalyticsPage() {
     fleets: 0,
     workflows: 0,
   });
+  const [subscriptionData, setSubscriptionData] = useState<{
+    subscriptions: Array<{
+      providerId: string;
+      displayName: string;
+      monthlyCostUsd: number;
+      planName?: string;
+    }>;
+    totalMonthlyUsd: number;
+    counts: { subscription: number; payPerUse: number; free: number };
+  } | null>(null);
 
   const fetchAll = useCallback(
     async (showRefresh = false) => {
@@ -389,6 +399,7 @@ export function AnalyticsPage() {
           bgRes,
           fleetsRes,
           wfRes,
+          subsRes,
         ] = await Promise.allSettled([
           costsApi.usage(),
           costsApi.getBreakdown(period),
@@ -398,6 +409,7 @@ export function AnalyticsPage() {
           backgroundAgentsApi.list(),
           fleetApi.list(),
           workflowsApi.list(),
+          costsApi.getSubscriptions(),
         ]);
 
         if (usageRes.status === 'fulfilled') setUsage(usageRes.value);
@@ -422,6 +434,8 @@ export function AnalyticsPage() {
           fleets: count(fleetsRes),
           workflows: count(wfRes),
         });
+
+        if (subsRes.status === 'fulfilled') setSubscriptionData(subsRes.value);
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -626,6 +640,78 @@ export function AnalyticsPage() {
           link="/tasks"
         />
       </div>
+
+      {/* ---- Billing Overview ---- */}
+      {subscriptionData &&
+        (subscriptionData.subscriptions.length > 0 || subscriptionData.counts.free > 0) && (
+          <SectionCard title="Billing Overview" icon={DollarSign} iconColor="text-violet-500">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Billing type distribution */}
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-24 flex-shrink-0">
+                  <MiniDonut
+                    data={[
+                      { name: 'Pay-per-use', value: subscriptionData.counts.payPerUse },
+                      { name: 'Subscription', value: subscriptionData.counts.subscription },
+                      { name: 'Free', value: subscriptionData.counts.free },
+                    ].filter((d) => d.value > 0)}
+                    colors={['#3b82f6', '#8b5cf6', '#22c55e']}
+                  />
+                </div>
+                <DonutLegend
+                  data={[
+                    { name: 'Pay-per-use (API)', value: subscriptionData.counts.payPerUse },
+                    { name: 'Subscription', value: subscriptionData.counts.subscription },
+                    { name: 'Free', value: subscriptionData.counts.free },
+                  ].filter((d) => d.value > 0)}
+                  colors={['#3b82f6', '#8b5cf6', '#22c55e']}
+                />
+              </div>
+
+              {/* Monthly subscription total */}
+              <div className="flex flex-col justify-center items-center">
+                <p className="text-xs text-text-muted dark:text-dark-text-muted uppercase tracking-wider mb-1">
+                  Monthly Subscriptions
+                </p>
+                <p className="text-3xl font-bold text-violet-500">
+                  ${subscriptionData.totalMonthlyUsd.toFixed(2)}
+                </p>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+                  {subscriptionData.subscriptions.length} subscription
+                  {subscriptionData.subscriptions.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              {/* Subscription list */}
+              <div className="space-y-2">
+                {subscriptionData.subscriptions.length > 0 ? (
+                  subscriptionData.subscriptions.map((sub) => (
+                    <div
+                      key={sub.providerId}
+                      className="flex items-center justify-between p-2 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                          {sub.displayName}
+                        </p>
+                        {sub.planName && (
+                          <p className="text-[10px] text-text-muted dark:text-dark-text-muted">
+                            {sub.planName}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-violet-500">${sub.monthlyCostUsd}/mo</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted text-center py-4">
+                    No subscriptions configured
+                  </p>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+        )}
 
       {/* ---- Row 2: Cost Trend + Token Volume ---- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

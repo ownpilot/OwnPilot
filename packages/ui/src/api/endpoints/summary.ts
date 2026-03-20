@@ -27,4 +27,16 @@ export const costsApi = {
     }),
   setBudget: (budget: { dailyLimit?: number; weeklyLimit?: number; monthlyLimit?: number }) =>
     apiClient.post<{ status: BudgetStatus }>('/costs/budget', budget),
+  getSubscriptions: () =>
+    apiClient.get<{
+      subscriptions: Array<{
+        providerId: string;
+        displayName: string;
+        billingType: string;
+        monthlyCostUsd: number;
+        planName?: string;
+      }>;
+      totalMonthlyUsd: number;
+      counts: { subscription: number; payPerUse: number; free: number };
+    }>('/costs/subscriptions'),
 };
