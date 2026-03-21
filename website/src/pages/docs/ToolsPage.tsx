@@ -35,13 +35,13 @@ export function ToolsPage() {
       </Badge>
       <h1>Tool System Overview</h1>
       <p>
-        OwnPilot provides 190+ built-in tools across 32 categories, plus extensible hooks for custom
+        OwnPilot provides 250+ built-in tools across 32 categories, plus extensible hooks for custom
         tools, MCP tools, skills, and extensions. The meta-tool proxy keeps LLM context lean.
       </p>
 
       <h2>Meta-tool Proxy</h2>
       <p>
-        Instead of sending all 190+ tool definitions to the LLM (which would consume thousands of
+        Instead of sending all 250+ tool definitions to the LLM (which would consume thousands of
         tokens), OwnPilot uses a meta-tool proxy pattern. Only 4 tools are ever sent to the LLM:
       </p>
       <ul>
@@ -60,7 +60,7 @@ export function ToolsPage() {
       </ul>
 
       <Callout type="tip" title="Why meta-tools?">
-        Sending 190+ tool definitions to the LLM would use 15,000+ tokens per request. With
+        Sending 250+ tool definitions to the LLM would use 15,000+ tokens per request. With
         meta-tools, the LLM uses ~200 tokens to get the schema for exactly the tool it needs. This
         reduces cost by ~98% and improves response quality.
       </Callout>
@@ -133,7 +133,7 @@ export function ToolsPage() {
         </tbody>
       </table>
 
-      <h2>Built-in tools (190+)</h2>
+      <h2>Built-in tools (250+)</h2>
       <p>Organized across 32 categories:</p>
       <CodeBlock code={TOOL_CATEGORIES} language="text" filename="tool-categories" />
 
@@ -161,7 +161,7 @@ ownpilot config set mcp-servers '[
 
       <h3>MCP Server</h3>
       <p>
-        OwnPilot exposes all 190+ tools as an MCP endpoint, making them available to Claude Desktop
+        OwnPilot exposes all 250+ tools as an MCP endpoint, making them available to Claude Desktop
         and any other MCP client. Uses Streamable HTTP transport on <code>/mcp</code>.
       </p>
 
@@ -214,7 +214,7 @@ ownpilot skill update`}
       <h2>Custom Tools</h2>
       <p>
         Create new tools at runtime via LLM. Tools are sandboxed JavaScript that can call any of the
-        190+ built-in tools. Stored in the database and available immediately.
+        250+ built-in tools. Stored in the database and available immediately.
       </p>
 
       <h2>Connected Apps (Composio)</h2>

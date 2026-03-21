@@ -53,12 +53,12 @@ export function WorkflowsPage() {
       </Badge>
       <h1>Workflows</h1>
       <p>
-        OwnPilot's workflow system provides a visual drag-and-drop builder with 23 node types, a
+        OwnPilot's workflow system provides a visual drag-and-drop builder with 24 node types, a
         Workflow Copilot for AI-assisted creation, and webhook triggers with HMAC signature
         validation.
       </p>
 
-      <h2>23 Node Types</h2>
+      <h2>24 Node Types</h2>
       <table>
         <thead>
           <tr>
@@ -228,6 +228,13 @@ export function WorkflowsPage() {
               <code>webhookResponse</code>
             </td>
             <td>Send HTTP response for webhook triggers</td>
+          </tr>
+          <tr>
+            <td>Claw Agent</td>
+            <td>
+              <code>claw</code>
+            </td>
+            <td>Trigger autonomous claw agent from workflow</td>
           </tr>
         </tbody>
       </table>

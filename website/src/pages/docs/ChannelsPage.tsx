@@ -103,7 +103,7 @@ export function ChannelsPage() {
       <h1>Channels</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot connects to Telegram and WhatsApp via channel plugins, bringing the full assistant
-        experience — 190+ tools, memory, workflows — directly into your messaging apps. Each channel
+        experience — 250+ tools, memory, workflows — directly into your messaging apps. Each channel
         has approval flow, pairing keys, user management, and inbox persistence.
       </p>
 

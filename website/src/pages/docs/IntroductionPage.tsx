@@ -29,8 +29,8 @@ export function IntroductionPage() {
       <h2>What is OwnPilot?</h2>
       <p>
         OwnPilot is a full-featured AI assistant platform that you deploy on your own hardware or
-        cloud VM. It brings together multi-provider AI (96 providers including local inference),
-        190+ built-in tools, autonomous soul agents, visual workflow automation, MCP integration,
+        cloud VM. It brings together multi-provider AI (104 providers including local inference),
+        250+ built-in tools, autonomous soul agents, visual workflow automation, MCP integration,
         voice, browser automation, IoT control, and Telegram + WhatsApp connectivity — all in a
         single, self-hosted package.
       </p>
@@ -57,12 +57,12 @@ export function IntroductionPage() {
           {
             icon: Wrench,
             title: 'Extensible',
-            desc: '190+ built-in tools, custom tools via LLM, Extensions SDK, Skills (SKILL.md), MCP client/server, plugins, and 1000+ Composio integrations.',
+            desc: '250+ built-in tools, custom tools via LLM, Extensions SDK, Skills (SKILL.md), MCP client/server, plugins, and 1000+ Composio integrations.',
           },
           {
             icon: Bot,
             title: 'Autonomous',
-            desc: 'Soul agents with heartbeat lifecycles, background agents with 3 scheduling modes, visual workflows with 23 node types, and proactive Pulse system.',
+            desc: 'Soul agents with heartbeat lifecycles, background agents with 3 scheduling modes, visual workflows with 24 node types, and proactive Pulse system.',
           },
         ].map(({ icon: Icon, title, desc }) => (
           <Card key={title} className="flex gap-4">
@@ -88,11 +88,11 @@ export function IntroductionPage() {
         <tbody>
           <tr>
             <td>AI Providers</td>
-            <td>96 (including 8 aggregators + local)</td>
+            <td>104 (including 8 aggregators + local)</td>
           </tr>
           <tr>
             <td>Built-in Tools</td>
-            <td>190+ across 32 categories</td>
+            <td>250+ across 32 categories</td>
           </tr>
           <tr>
             <td>Workflow Node Types</td>
@@ -100,7 +100,7 @@ export function IntroductionPage() {
           </tr>
           <tr>
             <td>Test Suite</td>
-            <td>26,500+ tests, 545+ files</td>
+            <td>26,750+ tests, 550+ files</td>
           </tr>
           <tr>
             <td>Codebase</td>
@@ -128,7 +128,7 @@ export function IntroductionPage() {
       </p>
       <ul>
         <li>
-          <code>@ownpilot/core</code> — AI engine, 190+ tools, plugins, sandbox, crypto, privacy
+          <code>@ownpilot/core</code> — AI engine, 250+ tools, plugins, sandbox, crypto, privacy
           (~62K LOC)
         </li>
         <li>
@@ -152,7 +152,7 @@ export function IntroductionPage() {
       <h2>What you can do with OwnPilot</h2>
       <ul>
         <li>
-          Chat with 96 AI providers (OpenAI, Anthropic, Google, Ollama, and more) through a single
+          Chat with 104 AI providers (OpenAI, Anthropic, Google, Ollama, and more) through a single
           interface
         </li>
         <li>
@@ -160,7 +160,7 @@ export function IntroductionPage() {
           locally stored
         </li>
         <li>
-          Build visual workflows with 23 node types and a Workflow Copilot for AI-assisted creation
+          Build visual workflows with 24 node types and a Workflow Copilot for AI-assisted creation
         </li>
         <li>
           Create autonomous Soul Agents with personalities, heartbeat schedules, and crew

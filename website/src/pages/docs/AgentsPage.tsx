@@ -126,7 +126,7 @@ export function AgentsPage() {
 
       <h3>Features</h3>
       <ul>
-        <li>Full tool access: same 190+ tools as chat agents</li>
+        <li>Full tool access: same 250+ tools as chat agents</li>
         <li>Workspace isolation: each agent gets a private file workspace</li>
         <li>Rate limiting: cycles-per-hour enforcement</li>
         <li>Budget tracking: auto-stop when budget exceeded</li>

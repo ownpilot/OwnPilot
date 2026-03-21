@@ -25,7 +25,7 @@ const ARCH = `                     ┌──────────────
                             │
                    ┌────────▼────────┐
                    │     Core        │  @ownpilot/core
-                   │  190+ Tools     │  AI Engine
+                   │  250+ Tools     │  AI Engine
                    └────────┬────────┘
                             │
                    ┌────────▼────────┐  ┌──────────────┐
@@ -60,7 +60,7 @@ export function ArchitecturePage() {
 
       <h3>@ownpilot/core</h3>
       <p>
-        The foundational runtime library. Contains the AI engine, 190+ tool definitions, plugin
+        The foundational runtime library. Contains the AI engine, 250+ tool definitions, plugin
         architecture, security primitives, sandboxed code execution, and cryptography. Minimal
         external dependencies (only <code>googleapis</code> for Google OAuth).
       </p>
@@ -78,7 +78,7 @@ export function ArchitecturePage() {
           Zhipu, 8 aggregators)
         </li>
         <li>
-          <code>agent/tools/</code> — 190+ built-in tool definitions across 32 tool files
+          <code>agent/tools/</code> — 250+ built-in tool definitions across 32 tool files
         </li>
         <li>
           <code>plugins/</code> — Plugin system with isolation, marketplace, signing, runtime
@@ -125,7 +125,7 @@ export function ArchitecturePage() {
           <code>channels/</code> — Telegram + WhatsApp channel plugins
         </li>
         <li>
-          <code>services/workflow/</code> — 23 node type executors
+          <code>services/workflow/</code> — 24 node type executors
         </li>
         <li>
           <code>tools/</code> — CLI tools, edge devices, browser, coding agents

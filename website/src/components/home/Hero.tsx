@@ -16,9 +16,9 @@ docker compose --profile postgres up -d
 # Configure your AI provider in Settings → Config Center`;
 
 const stats = [
-  { value: '190+', label: 'Built-in Tools' },
-  { value: '96', label: 'AI Providers' },
-  { value: '26.5K+', label: 'Tests' },
+  { value: '250+', label: 'Built-in Tools' },
+  { value: '104', label: 'AI Providers' },
+  { value: '26.7K+', label: 'Tests' },
   { value: 'MIT', label: 'License' },
 ];
 
@@ -159,7 +159,7 @@ export function Hero() {
             >
               <Badge variant="purple" className="px-3 py-1 text-xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                v0.2.9 — Now with Mini Pomodoro Timer
+                v0.3.1 — Analytics Dashboard & Tool Aliases
               </Badge>
             </motion.div>
 
@@ -182,7 +182,7 @@ export function Hero() {
               className="text-lg text-[var(--color-text-muted)] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0"
             >
               Privacy-first personal AI assistant platform with soul agents, autonomous workflows,
-              190+ tools, and 96 AI providers.{' '}
+              250+ tools, and 104 AI providers.{' '}
               <strong className="text-[var(--color-text)] font-medium">
                 Self-hosted. Zero data leaks.
               </strong>
@@ -197,8 +197,8 @@ export function Hero() {
             >
               {[
                 { icon: Shield, text: 'AES-256-GCM' },
-                { icon: Cpu, text: '96 AI Providers' },
-                { icon: Terminal, text: '190+ Tools' },
+                { icon: Cpu, text: '104 AI Providers' },
+                { icon: Terminal, text: '250+ Tools' },
               ].map(({ icon: Icon, text }) => (
                 <span
                   key={text}
@@ -292,7 +292,7 @@ export function Hero() {
               className="absolute -bottom-4 -left-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg"
             >
               <div className="text-xs text-[var(--color-text-muted)]">Test coverage</div>
-              <div className="text-sm font-bold text-emerald-500">26,500+ tests</div>
+              <div className="text-sm font-bold text-emerald-500">26,750+ tests</div>
             </motion.div>
           </motion.div>
         </div>

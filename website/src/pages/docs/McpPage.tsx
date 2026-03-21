@@ -78,7 +78,7 @@ const MCP_SERVER_CONFIG_CLAUDE = `// claude_desktop_config.json
   }
 }`;
 
-const MCP_SERVER_TOOLS = `# OwnPilot exposes all 190+ tools via Streamable HTTP at /mcp
+const MCP_SERVER_TOOLS = `# OwnPilot exposes all 250+ tools via Streamable HTTP at /mcp
 # Example tools available to Claude Desktop:
 
 core__create_note        → Create a note
@@ -128,7 +128,7 @@ export function McpPage() {
       <h1>MCP Integration</h1>
       <p className="text-lg text-[var(--color-text-muted)] mb-8">
         OwnPilot is both an MCP client and an MCP server. As a client, it connects to external MCP
-        servers and uses their tools natively. As a server, it exposes all 190+ built-in tools to
+        servers and uses their tools natively. As a server, it exposes all 250+ built-in tools to
         Claude Desktop, Claude Code, and any other MCP client.
       </p>
 
@@ -261,7 +261,7 @@ export function McpPage() {
 
       <h2>OwnPilot as MCP server</h2>
       <p>
-        OwnPilot exposes all 190+ built-in tools as a Streamable HTTP MCP endpoint at
+        OwnPilot exposes all 250+ built-in tools as a Streamable HTTP MCP endpoint at
         <code>/mcp</code>. This lets Claude Desktop, Claude Code, Cursor, and other MCP clients use
         your personal data and tools directly.
       </p>
