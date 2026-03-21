@@ -55,7 +55,7 @@ export const docsNav: NavItem[] = [
     title: 'Tool System',
     items: [
       { title: 'Tool Overview', href: '/docs/tools' },
-      { title: 'Built-in Tools (190+)', href: '/docs/tools/builtin' },
+      { title: 'Built-in Tools (250+)', href: '/docs/tools/builtin' },
       { title: 'Meta-tool Proxy', href: '/docs/tools/meta-proxy' },
       { title: 'MCP Integration', href: '/docs/mcp' },
       { title: 'Extensions', href: '/docs/tools/extensions' },

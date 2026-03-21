@@ -13,7 +13,7 @@ export function ProvidersPage() {
       </Badge>
       <h1>AI Provider Overview</h1>
       <p>
-        OwnPilot supports 96 AI providers through a unified provider abstraction. All providers use
+        OwnPilot supports 104 AI providers through a unified provider abstraction. All providers use
         the same agent interface — you can switch models without changing any code.
       </p>
 

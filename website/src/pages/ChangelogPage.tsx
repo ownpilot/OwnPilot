@@ -17,9 +17,49 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    version: '0.3.1',
+    date: '2026-03-22',
+    highlight: true,
+    added: [
+      'Analytics Dashboard — Rich recharts-powered dashboard at /analytics with KPI cards, cost/token area+bar charts, provider donut, agent distribution, daily requests line chart, and period toggle (7d/30d)',
+      'Billing Overview — Subscription vs API cost breakdown in analytics with provider billing type (pay-per-use / subscription / free)',
+      'Model Cost Chart — Per-model cost stats endpoint with test coverage',
+      'Provider Billing Type Editor — Configure billing type per provider in settings UI',
+      'Recharts Upgrade — Cost charts migrated from div-bars to recharts components',
+      'Tool Name Alias System — LLM hallucination recovery: tools auto-resolve common misspellings and alternative names',
+      '11 new models across 8 providers — Updated provider defaults and model specs',
+    ],
+    fixed: [
+      'Trigger Conversations — Reset conversation before each trigger chat execution, preventing context bleed between triggers',
+    ],
+  },
+  {
+    version: '0.3.0',
+    date: '2026-03-18',
+    added: [
+      'Claw Runtime (Autonomy L5) — Unified autonomous agent composing LLM + workspace + soul + coding agents + 250+ tools. Modes: continuous, interval, event, single-shot',
+      'Claw UI — 8-tab management panel with search/filter, bulk actions, live WebSocket updates, FileBrowser, modal code editor, directive editing',
+      'Claw Workflow Node — 24th workflow node type for triggering claw agents from workflows',
+      'Claw Context Tools — claw_set_context / claw_get_context for persistent cross-cycle working memory',
+      'Claw Audit System — Per-tool-call tracking, batch audit queries, deny escalation endpoint',
+      '.claw/ Directive System — Auto-scaffolded INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md injected into agent prompt',
+      'Claw Health Stats — /claws/stats endpoint with runtime health metrics',
+      'Hot-Reload Config — Claw configuration updates without restart',
+    ],
+    fixed: [
+      'Claw FileBrowser — Corrected parent directory navigation',
+      'Provider model specs — Updated defaults and added DInference provider',
+    ],
+    security: [
+      'Fixed 13 Dependabot vulnerabilities via dependency overrides',
+    ],
+    testing: [
+      '7 new claw-manager unit tests + analytics endpoint coverage',
+    ],
+  },
+  {
     version: '0.2.9',
     date: '2026-03-16',
-    highlight: true,
     added: [
       'Mini Pomodoro Timer — Compact countdown widget in the global header bar, visible on all pages when a Pomodoro session is active. Shows progress ring, session type icon, and countdown. Click to navigate to Pomodoro page.',
       'MiniPomodoro component (packages/ui/src/components/MiniPomodoro.tsx) — Self-contained component with WebSocket updates and independent countdown',

@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "xiaomi/mimo-v2-pro",
+      "name": "MiMo V2 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-18"
+    },
+    {
       "id": "minimax/minimax-m2.7",
       "name": "Minimax M2.7",
       "contextWindow": 204800,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-18"
     },
     {

@@ -185,7 +185,7 @@ ownpilot config set ollama-base-url http://localhost:11434`}
 
       <Callout type="success" title="You're ready!">
         Once OwnPilot is running and you've set an API key, navigate to the Chat page to start your
-        first conversation. The assistant has access to all 190+ built-in tools by default.
+        first conversation. The assistant has access to all 250+ built-in tools by default.
       </Callout>
 
       {/* Prev/Next navigation */}

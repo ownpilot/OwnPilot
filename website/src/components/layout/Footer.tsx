@@ -48,7 +48,7 @@ export function Footer() {
               <Shield className="w-3.5 h-3.5" />
               <span>MIT License</span>
               <span className="mx-1">·</span>
-              <span>v0.2.9</span>
+              <span>v0.3.1</span>
             </div>
           </div>
 

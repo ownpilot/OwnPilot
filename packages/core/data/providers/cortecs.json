@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "minimax-m2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 196608,
+      "maxOutput": 196608,
+      "inputPrice": 0.32,
+      "outputPrice": 1.18,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 256000,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-27"
     },
     {

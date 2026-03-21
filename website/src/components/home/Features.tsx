@@ -28,17 +28,17 @@ import { Badge } from '@/components/ui/Badge';
 const features = [
   {
     icon: Brain,
-    title: '96 AI Providers',
+    title: '104 AI Providers',
     badge: 'Multi-Provider',
     badgeVariant: 'purple' as const,
     description:
-      'OpenAI, Anthropic, Google, xAI, DeepSeek, Mistral, and 90+ more — including Ollama and LM Studio for fully local inference. Smart routing: cheapest, fastest, smartest.',
+      'OpenAI, Anthropic, Google, xAI, DeepSeek, Mistral, and 97+ more — including Ollama and LM Studio for fully local inference. Smart routing: cheapest, fastest, smartest.',
     color: 'from-purple-500/20 to-violet-500/20',
     iconColor: 'text-purple-500',
   },
   {
     icon: Wrench,
-    title: '190+ Built-in Tools',
+    title: '250+ Built-in Tools',
     badge: '32 Categories',
     badgeVariant: 'blue' as const,
     description:
@@ -69,10 +69,10 @@ const features = [
   {
     icon: GitBranch,
     title: 'Workflows',
-    badge: '23 Node Types',
+    badge: '24 Node Types',
     badgeVariant: 'green' as const,
     description:
-      'Visual drag-and-drop workflow builder with LLM, condition, forEach, parallel, merge, dataStore, schemaValidator, approval, and webhook nodes. Copilot-assisted.',
+      'Visual drag-and-drop workflow builder with LLM, condition, forEach, parallel, merge, dataStore, schemaValidator, claw, approval, and webhook nodes. Copilot-assisted.',
     color: 'from-emerald-500/20 to-green-500/20',
     iconColor: 'text-emerald-500',
   },
@@ -92,7 +92,7 @@ const features = [
     badge: 'Only 4 Tools',
     badgeVariant: 'orange' as const,
     description:
-      'Only 4 meta-tools are sent to the LLM context. All 190+ tools are discoverable on-demand, keeping prompts lean while maintaining full tool availability.',
+      'Only 4 meta-tools are sent to the LLM context. All 250+ tools are discoverable on-demand, keeping prompts lean while maintaining full tool availability.',
     color: 'from-yellow-500/20 to-orange-500/20',
     iconColor: 'text-yellow-500',
   },

@@ -14,7 +14,7 @@ const packages = [
     modules: [
       'agent/ — Multi-provider AI engine',
       'agent/orchestra/ — Fan-out, race, pipeline',
-      'agent/tools/ — 190+ tool definitions',
+      'agent/tools/ — 250+ tool definitions',
       'plugins/ — Isolation + marketplace',
       'sandbox/ — VM, Docker, Worker threads',
       'crypto/ — Zero-dep AES-256-GCM',
@@ -24,17 +24,17 @@ const packages = [
   {
     name: '@ownpilot/gateway',
     size: '~76K LOC',
-    files: '389 test files',
+    files: '394 test files',
     color: 'border-blue-500/30 bg-blue-500/5',
     badge: 'bg-blue-500/10 text-blue-500',
     description:
       'Hono HTTP API server. Routes, services, DB repositories, agent runners, WebSocket, channels (Telegram + WhatsApp), MCP client/server, plugin init, triggers.',
     modules: [
-      'routes/ — 55+ route modules',
-      'services/ — 60+ business services',
-      'db/repositories/ — 45+ repos',
+      'routes/ — 60+ route modules',
+      'services/ — 110+ business services',
+      'db/repositories/ — 65+ repos',
       'channels/ — Telegram + WhatsApp',
-      'services/workflow/ — 23 node executors',
+      'services/workflow/ — 24 node executors',
       'services/soul-heartbeat-service.ts',
       'tools/ — CLI, edge, browser, coding',
     ],
@@ -42,14 +42,14 @@ const packages = [
   {
     name: '@ownpilot/ui',
     size: '~40K LOC',
-    files: '57+ pages',
+    files: '58+ pages',
     color: 'border-emerald-500/30 bg-emerald-500/5',
     badge: 'bg-emerald-500/10 text-emerald-500',
     description:
       'React 19 + Vite 7 + Tailwind CSS 4 frontend. Code-split with lazy loading, dark mode, 120+ components, real-time WebSocket updates.',
     modules: [
-      'pages/ — 57+ page components',
-      'components/ — 120+ reusable UI',
+      'pages/ — 58+ page components',
+      'components/ — 140+ reusable UI',
       'hooks/ — WebSocket, chat store, theme',
       'api/ — Typed fetch wrapper + endpoints',
       'App.tsx — Route definitions',
@@ -58,7 +58,7 @@ const packages = [
   {
     name: '@ownpilot/cli',
     size: 'CLI tools',
-    files: '293 tests',
+    files: '340 tests',
     color: 'border-orange-500/30 bg-orange-500/5',
     badge: 'bg-orange-500/10 text-orange-500',
     description:
