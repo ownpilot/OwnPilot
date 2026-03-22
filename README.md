@@ -407,7 +407,7 @@ ownpilot/
 │   │   │   ├── agent/           # Agent engine, orchestrator, providers
 │   │   │   │   ├── providers/   # Multi-provider implementations
 │   │   │   │   ├── orchestra/   # Multi-agent orchestration engine
-│   │   │   │   └── tools/       # 190+ built-in tool definitions
+│   │   │   │   └── tools/       # 250+ built-in tool definitions
 │   │   │   ├── plugins/         # Plugin system with isolation, marketplace
 │   │   │   ├── events/          # EventBus, HookBus, ScopedBus
 │   │   │   ├── services/        # Service registry (DI container)
@@ -432,7 +432,7 @@ ownpilot/
 │   │   │   ├── db/
 │   │   │   │   ├── repositories/  # 67 data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
-│   │   │   │   ├── migrations/    # 23 schema migrations
+│   │   │   │   ├── migrations/    # 26 schema migrations
 │   │   │   │   └── seeds/         # Default data
 │   │   │   ├── channels/        # Telegram + WhatsApp channel plugins
 │   │   │   ├── plugins/         # Plugin initialization & registration
@@ -502,7 +502,7 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~148,000 LOC** across 476 source files. **394 test files** with **16,500+ tests**.
+**~144,000 LOC** across 460 source files. **388 test files** with **16,294+ tests**.
 
 **Route Modules (115 handlers):**
 
@@ -622,7 +622,7 @@ All API keys are managed via the **Config Center UI** (Settings page) or the `ow
 
 ### Supported Providers
 
-**96 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
+**104 providers** with auto-synced model catalogs from [models.dev](https://models.dev). Key providers:
 
 | Provider           | Integration Type         | Key Models                                                              |
 | ------------------ | ------------------------ | ----------------------------------------------------------------------- |
@@ -668,7 +668,7 @@ Any OpenAI-compatible endpoint can be added as a custom provider.
 
 - **Anthropic Prompt Caching** — Static system prompt sections (persona, tools, capabilities) marked with `cache_control: { type: 'ephemeral' }`. Dynamic sections (current context, code execution) sent without caching. Reduces input token costs on multi-turn conversations.
 - **Context Compaction** — When context grows large, old messages can be AI-summarized into a compact summary, preserving recent messages. Reduces token usage while maintaining conversation continuity.
-- **Meta-tool Proxy** — Only 4 small tool definitions sent to the LLM instead of 190+ full schemas.
+- **Meta-tool Proxy** — Only 4 small tool definitions sent to the LLM instead of 250+ full schemas.
 
 ---
 
@@ -1706,7 +1706,7 @@ pnpm clean            # Clear all build artifacts
 | **Telegram**   | Grammy 1.41                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 4.x (550 test files, 26,700+ tests)    |
+| **Testing**    | Vitest 4.x (549 test files, 26,500+ tests)    |
 | **Linting**    | ESLint 10 (flat config)                       |
 | **Formatting** | Prettier 3.8                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |
