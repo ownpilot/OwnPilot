@@ -100,7 +100,7 @@ export function IntroductionPage() {
           </tr>
           <tr>
             <td>Test Suite</td>
-            <td>26,750+ tests, 550+ files</td>
+            <td>26,500+ tests, 549+ files</td>
           </tr>
           <tr>
             <td>Codebase</td>

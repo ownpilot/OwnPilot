@@ -24,7 +24,7 @@ const packages = [
   {
     name: '@ownpilot/gateway',
     size: '~76K LOC',
-    files: '394 test files',
+    files: '388 test files',
     color: 'border-blue-500/30 bg-blue-500/5',
     badge: 'bg-blue-500/10 text-blue-500',
     description:

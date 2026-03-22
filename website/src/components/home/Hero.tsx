@@ -18,7 +18,7 @@ docker compose --profile postgres up -d
 const stats = [
   { value: '250+', label: 'Built-in Tools' },
   { value: '104', label: 'AI Providers' },
-  { value: '26.7K+', label: 'Tests' },
+  { value: '26.5K+', label: 'Tests' },
   { value: 'MIT', label: 'License' },
 ];
 
@@ -292,7 +292,7 @@ export function Hero() {
               className="absolute -bottom-4 -left-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg"
             >
               <div className="text-xs text-[var(--color-text-muted)]">Test coverage</div>
-              <div className="text-sm font-bold text-emerald-500">26,750+ tests</div>
+              <div className="text-sm font-bold text-emerald-500">26,500+ tests</div>
             </motion.div>
           </motion.div>
         </div>
