@@ -1,14 +1,13 @@
 /**
- * useAgentStatus — WebSocket-based live status tracking for background agents
+ * useAgentStatus — WebSocket-based live status tracking for autonomous agents
  */
 
 import { useEffect, useRef } from 'react';
 import { useGateway } from '../../../hooks/useWebSocket';
-import type { BackgroundAgentState } from '../../../api/endpoints/background-agents';
 
 export interface AgentUpdatePayload {
   agentId: string;
-  state: BackgroundAgentState;
+  state: string;
   cyclesCompleted: number;
   totalToolCalls: number;
   lastCycleAt: string | null;
@@ -24,10 +23,12 @@ export function useAgentStatus(onUpdate: (payload: AgentUpdatePayload) => void):
   onUpdateRef.current = onUpdate;
 
   useEffect(() => {
-    const unsub = subscribe<AgentUpdatePayload>('background-agent:update', (payload) =>
-      onUpdateRef.current(payload)
-    );
-    return unsub;
+    const unsubs = [
+      subscribe<AgentUpdatePayload>('soul:heartbeat', (payload) =>
+        onUpdateRef.current(payload)
+      ),
+    ];
+    return () => unsubs.forEach((fn) => fn());
   }, [subscribe]);
 
   return { isConnected: status === 'connected' };

@@ -9,7 +9,7 @@
  * - Events: emits progress/completion via EventBus
  * - Cleanup: removes completed sessions after TTL
  *
- * Unlike BackgroundAgentManager, this doesn't do scheduling —
+ * This manager doesn't do scheduling —
  * subagents run once to completion.
  */
 

@@ -8,7 +8,7 @@ import { apiClient } from '../client';
 // Types
 // =============================================================================
 
-export type FleetWorkerType = 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge';
+export type FleetWorkerType = 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw';
 export type FleetScheduleType = 'continuous' | 'interval' | 'cron' | 'event' | 'on-demand';
 export type FleetTaskPriority = 'low' | 'normal' | 'high' | 'critical';
 export type FleetTaskStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';

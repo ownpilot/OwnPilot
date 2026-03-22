@@ -409,17 +409,6 @@ export interface ServerEvents {
   'approval:required': { approvalId: string; workflowId: string; nodeId: string };
   'approval:decided': { approvalId: string; status: 'approved' | 'rejected' };
 
-  // Background agent state events
-  'background-agent:update': {
-    agentId: string;
-    state: string;
-    cyclesCompleted: number;
-    totalToolCalls: number;
-    lastCycleAt?: string;
-    lastCycleDurationMs?: number;
-    lastCycleError?: string;
-  };
-
   // Subagent events
   'subagent:spawned': {
     subagentId: string;

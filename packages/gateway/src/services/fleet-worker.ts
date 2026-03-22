@@ -1,11 +1,12 @@
 /**
  * Fleet Worker
  *
- * Executes a single task using one of 4 worker engines:
- * - ai-chat: Full Agent engine with 250+ tools (like background-agent-runner)
+ * Executes a single task using one of 5 worker engines:
+ * - ai-chat: Full Agent engine with 250+ tools
  * - coding-cli: CLI tools via CodingAgentOrchestrator (Claude Code, Gemini, Codex)
  * - api-call: Direct AI provider API (lightweight, no tools)
  * - mcp-bridge: MCP server tool calls
+ * - claw: Delegates to Claw single-shot (workspace + audit + directives)
  *
  * The worker does NOT own scheduling — that's the FleetManager's job.
  */
@@ -91,6 +92,9 @@ export class FleetWorker {
           break;
         case 'mcp-bridge':
           result = await this.executeMcpBridge(task, workerId, startTime);
+          break;
+        case 'claw':
+          result = await this.executeClaw(task, sharedContext, workerId, startTime);
           break;
         default:
           throw new Error(`Unknown worker type: ${this.config.type}`);
@@ -460,6 +464,90 @@ export class FleetWorker {
       })),
       costUsd: 0,
       durationMs,
+      executedAt: new Date(),
+    };
+  }
+
+  // ---------- claw: Claw single-shot delegation ----------
+
+  private async executeClaw(
+    task: FleetTask,
+    sharedContext: Record<string, unknown>,
+    workerId: string,
+    startTime: number
+  ): Promise<FleetWorkerResult> {
+    const { getClawService } = await import('./claw-service.js');
+    const clawService = getClawService();
+
+    // Create ephemeral Claw in single-shot mode
+    const contextStr =
+      Object.keys(sharedContext).length > 0
+        ? `\n\nShared context from other workers:\n${JSON.stringify(sharedContext, null, 2)}`
+        : '';
+
+    const clawConfig = await clawService.createClaw({
+      userId: this.userId,
+      name: `fleet-${this.fleetId}-${task.id}`,
+      mission: `Fleet mission: ${this.mission}\n\nTask: ${task.title}\n${task.description}${contextStr}`,
+      mode: 'single-shot',
+      provider: this.config.provider ?? this.defaultProvider,
+      model: this.config.model ?? this.defaultModel,
+      allowedTools: this.config.allowedTools ?? [],
+      skills: this.config.skills ?? [],
+      limits: {
+        maxTurnsPerCycle: this.config.maxTurns ?? 10,
+        maxToolCallsPerCycle: 50,
+        cycleTimeoutMs: this.config.timeoutMs ?? 300_000,
+        maxCyclesPerHour: 120,
+      },
+      createdBy: 'ai',
+    });
+
+    // Start (runs single cycle + auto-stops for single-shot mode)
+    await clawService.startClaw(clawConfig.id, this.userId);
+
+    // Get the cycle result from history
+    const { entries } = await clawService.getHistory(clawConfig.id, this.userId, 1, 0);
+    const cycleResult = entries[0];
+
+    const durationMs = Date.now() - startTime;
+    const success = cycleResult?.success ?? false;
+    const output = cycleResult?.outputMessage ?? '';
+    const toolCalls = (cycleResult?.toolCalls ?? []).map((tc: { tool: string; args: unknown; result: unknown }) => ({
+      tool: tc.tool,
+      name: tc.tool,
+      args: tc.args,
+      result: tc.result,
+    }));
+
+    log.info(`[${this.fleetId}:${this.config.name}] claw completed`, {
+      taskId: task.id,
+      clawId: clawConfig.id,
+      toolCalls: toolCalls.length,
+      durationMs,
+    });
+
+    // Cleanup: delete ephemeral Claw
+    try {
+      await clawService.deleteClaw(clawConfig.id, this.userId);
+    } catch {
+      log.warn(`Failed to cleanup ephemeral claw ${clawConfig.id}`);
+    }
+
+    return {
+      id: generateId('flr'),
+      sessionId: this.sessionId,
+      workerId,
+      workerName: this.config.name,
+      workerType: 'claw',
+      taskId: task.id,
+      success,
+      output,
+      toolCalls,
+      tokensUsed: cycleResult?.tokensUsed as { prompt: number; completion: number } | undefined,
+      costUsd: cycleResult?.costUsd ?? 0,
+      durationMs,
+      error: cycleResult?.error ?? undefined,
       executedAt: new Date(),
     };
   }

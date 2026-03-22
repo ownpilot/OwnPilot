@@ -35,7 +35,6 @@ import type { SummaryData } from '../types';
 import {
   SystemStatsWidget,
   SoulAgentsWidget,
-  BackgroundAgentsWidget,
   WorkflowsWidget,
   SkillsWidget,
   HeartbeatLogsWidget,
@@ -449,7 +448,6 @@ export function DashboardPage() {
       <SystemStatsWidget />
       <div className="grid gap-4 lg:grid-cols-2">
         <SoulAgentsWidget limit={8} />
-        <BackgroundAgentsWidget limit={8} />
         <ClawsWidget limit={8} />
         <FleetWidget limit={8} />
         <CrewsWidget limit={8} />

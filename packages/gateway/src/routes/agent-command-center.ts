@@ -19,7 +19,6 @@ import {
   getIntParam,
 } from './helpers.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getBackgroundAgentService } from '../services/background-agent-service.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { agentsRepo } from '../db/repositories/agents.js';
@@ -83,37 +82,6 @@ agentCommandCenterRoutes.post('/command', async (c) => {
                   status: hbResult.success ? 'executed' : 'failed',
                   error: hbResult.error,
                 };
-                break;
-              default:
-                result = { status: 'unknown_command', command: body.command };
-            }
-            break;
-          }
-
-          case 'background': {
-            const bgService = getBackgroundAgentService();
-            const config = await bgService.getAgent(target.id, userId);
-            if (!config) {
-              results.push({ target, success: false, error: 'Background agent not found' });
-              continue;
-            }
-
-            switch (body.command) {
-              case 'start':
-                await bgService.startAgent(target.id, userId);
-                result = { status: 'started' };
-                break;
-              case 'pause':
-                await bgService.pauseAgent(target.id, userId);
-                result = { status: 'paused' };
-                break;
-              case 'resume':
-                await bgService.resumeAgent(target.id, userId);
-                result = { status: 'resumed' };
-                break;
-              case 'stop':
-                await bgService.stopAgent(target.id, userId);
-                result = { status: 'stopped' };
                 break;
               default:
                 result = { status: 'unknown_command', command: body.command };
@@ -334,15 +302,10 @@ agentCommandCenterRoutes.get('/status', async (c) => {
   try {
     const userId = getUserId(c);
     const soulRepo = getSoulsRepository();
-    const bgService = getBackgroundAgentService();
     const crewRepo = getCrewsRepository();
 
     // Get all souls for this user
     const souls = await soulRepo.list(userId, 1000, 0);
-
-    // Get all background agents for this user
-    const bgAgents = await bgService.listAgents(userId);
-    const bgSessions = bgService.listSessions(userId);
 
     // Get all crews for this user
     const crews = await crewRepo.list(userId, 100, 0);
@@ -366,18 +329,6 @@ agentCommandCenterRoutes.get('/status', async (c) => {
       })
     );
 
-    const bgStatuses = bgAgents.map((agent) => {
-      const session = bgSessions.find((s) => s.config.id === agent.id);
-      return {
-        type: 'background' as const,
-        id: agent.id,
-        name: agent.name,
-        status: session?.state ?? 'stopped',
-        lastActivity: session?.lastCycleAt ?? null,
-        mode: agent.mode,
-      };
-    });
-
     const crewStatuses = crews.map((crew) => ({
       type: 'crew' as const,
       id: crew.id,
@@ -388,17 +339,14 @@ agentCommandCenterRoutes.get('/status', async (c) => {
 
     return apiResponse(c, {
       summary: {
-        totalAgents: soulStatuses.length + bgStatuses.length,
+        totalAgents: soulStatuses.length,
         totalCrews: crewStatuses.length,
         running:
-          soulStatuses.filter((s) => s.status === 'healthy' || s.status === 'running').length +
-          bgStatuses.filter((s) => s.status === 'running').length,
+          soulStatuses.filter((s) => s.status === 'healthy' || s.status === 'running').length,
         paused:
-          soulStatuses.filter((s) => s.status === 'paused').length +
-          bgStatuses.filter((s) => s.status === 'paused').length,
+          soulStatuses.filter((s) => s.status === 'paused').length,
       },
       souls: soulStatuses,
-      backgroundAgents: bgStatuses,
       crews: crewStatuses,
     });
   } catch (err) {
@@ -564,11 +512,10 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
-    const userId = getUserId(c);
+    getUserId(c); // Auth check
     const body = validateBody(agentExecuteSchema, await c.req.json());
 
     const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
-    const bgService = getBackgroundAgentService();
     const results: { target: { type: string; id: string }; success: boolean; error?: string }[] =
       [];
 
@@ -579,10 +526,8 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
           if (target.type === 'soul') {
             const result = await runAgentHeartbeat(target.id);
             return { target, success: result.success, error: result.error };
-          } else {
-            const executed = await bgService.executeNow(target.id, userId, target.task);
-            return { target, success: executed };
           }
+          return { target, success: false, error: `Unsupported target type: ${target.type}` };
         } catch (err) {
           return { target, success: false, error: getErrorMessage(err) };
         }
@@ -597,8 +542,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
             const result = await runAgentHeartbeat(target.id);
             results.push({ target, success: result.success, error: result.error });
           } else {
-            const executed = await bgService.executeNow(target.id, userId, target.task);
-            results.push({ target, success: executed });
+            results.push({ target, success: false, error: `Unsupported target type: ${target.type}` });
           }
         } catch (err) {
           results.push({ target, success: false, error: getErrorMessage(err) });

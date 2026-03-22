@@ -1,5 +1,5 @@
 /**
- * AgentCard — unified card for both soul-based and background agents
+ * AgentCard — card for soul-based autonomous agents
  */
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -67,17 +67,11 @@ export function AgentCard({ agent, onPause, onResume, onDelete, onTestRun }: Pro
       <div className="mt-2 flex items-center gap-2">
         <span
           className={`text-xs px-2 py-0.5 rounded-full ${
-            agent.kind === 'soul'
-              ? 'bg-primary/10 text-primary'
-              : 'bg-text-muted/10 text-text-muted dark:text-dark-text-muted'
+            'bg-primary/10 text-primary'
           }`}
-          title={
-            agent.kind === 'soul'
-              ? 'Soul Agent: Has personality, scheduled heartbeats, and can learn from feedback'
-              : 'Background Agent: Lightweight worker, runs continuously or on intervals'
-          }
+          title="Soul Agent: Has personality, scheduled heartbeats, and can learn from feedback"
         >
-          {agent.kind === 'soul' ? 'Soul Agent' : 'Background'}
+          Soul Agent
         </span>
         {/* Claw mode badge */}
         {agent.soul?.autonomy.level === 5 && agent.soul.autonomy.clawMode?.enabled && (
@@ -96,15 +90,6 @@ export function AgentCard({ agent, onPause, onResume, onDelete, onTestRun }: Pro
           >
             <Clock className="w-3 h-3" />
             {cronToHuman(agent.soul.heartbeat.interval)}
-          </span>
-        )}
-        {agent.backgroundAgent?.mode === 'interval' && agent.backgroundAgent.intervalMs && (
-          <span
-            className="text-xs text-text-muted dark:text-dark-text-muted flex items-center gap-1"
-            title="Run interval - how often this agent executes"
-          >
-            <Clock className="w-3 h-3" />
-            Every {Math.round(agent.backgroundAgent.intervalMs / 60_000)}m
           </span>
         )}
       </div>

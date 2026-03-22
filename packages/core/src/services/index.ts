@@ -264,23 +264,6 @@ export type {
 } from './claw-types.js';
 export { DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from './claw-types.js';
 
-// Background Agent Service
-export type {
-  IBackgroundAgentService,
-  BackgroundAgentMode,
-  BackgroundAgentState,
-  BackgroundAgentCreator,
-  BackgroundAgentLimits,
-  BackgroundAgentConfig,
-  CreateBackgroundAgentInput,
-  UpdateBackgroundAgentInput,
-  BackgroundAgentSession,
-  BackgroundAgentCycleResult,
-  BackgroundAgentToolCall,
-  BackgroundAgentHistoryEntry,
-} from './background-agent-service.js';
-export { DEFAULT_BACKGROUND_AGENT_LIMITS } from './background-agent-service.js';
-
 // Subagent Service
 export type {
   ISubagentService,

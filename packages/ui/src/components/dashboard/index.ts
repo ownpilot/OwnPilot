@@ -4,7 +4,6 @@
 
 export { SystemStatsWidget } from './SystemStatsWidget';
 export { SoulAgentsWidget } from './SoulAgentsWidget';
-export { BackgroundAgentsWidget } from './BackgroundAgentsWidget';
 export { WorkflowsWidget } from './WorkflowsWidget';
 export { SkillsWidget } from './SkillsWidget';
 export { HeartbeatLogsWidget } from './HeartbeatLogsWidget';

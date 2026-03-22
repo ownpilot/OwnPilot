@@ -1,7 +1,7 @@
 /**
  * AutonomousAgentResult - Base result type for all autonomous agent executions.
  *
- * Shared by BackgroundAgentCycleResult, FleetWorkerResult, and SubagentSession.
+ * Shared by ClawCycleResult, FleetWorkerResult, and SubagentSession.
  * Each subtype extends this with domain-specific fields while maintaining a
  * consistent shape for cross-agent observability and reporting.
  *

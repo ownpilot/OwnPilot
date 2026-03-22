@@ -53,9 +53,9 @@ export function AgentsPage() {
             <td>Cron schedule</td>
           </tr>
           <tr>
-            <td>Background Agent</td>
-            <td>Persistent agent with configurable mission</td>
-            <td>Interval / event-driven</td>
+            <td>Claw Agent</td>
+            <td>Unified autonomous runtime with .claw/ directives</td>
+            <td>Continuous / interval / event / single-shot</td>
           </tr>
           <tr>
             <td>Subagent</td>
@@ -105,22 +105,26 @@ export function AgentsPage() {
         <li>16+ ready-made crew templates</li>
       </ul>
 
-      <h2>Background Agents</h2>
+      <h2>Claw Agents</h2>
       <p>
-        Background agents are persistent autonomous agents that run independently with configurable
-        missions, schedules, and full tool access.
+        Claw is the unified autonomous agent runtime that composes LLM, workspace, soul, and coding
+        agents with 250+ tools. Claws use a <code>.claw/</code> directive system (INSTRUCTIONS.md,
+        TASKS.md, MEMORY.md, LOG.md) that is auto-scaffolded and injected into the prompt.
       </p>
 
       <h3>Scheduling modes</h3>
       <ul>
         <li>
-          <strong>Interval</strong> — Fixed timer (e.g., every 30 minutes)
-        </li>
-        <li>
           <strong>Continuous</strong> — Adaptive delays based on activity level
         </li>
         <li>
+          <strong>Interval</strong> — Fixed timer (e.g., every 30 minutes)
+        </li>
+        <li>
           <strong>Event-driven</strong> — Reactive to specific EventBus events
+        </li>
+        <li>
+          <strong>Single-shot</strong> — Run once and complete
         </li>
       </ul>
 
@@ -128,16 +132,18 @@ export function AgentsPage() {
       <ul>
         <li>Full tool access: same 250+ tools as chat agents</li>
         <li>Workspace isolation: each agent gets a private file workspace</li>
-        <li>Rate limiting: cycles-per-hour enforcement</li>
+        <li>Working memory: persistent cross-cycle state via <code>claw_set_context</code> / <code>claw_get_context</code></li>
+        <li>Subclaws: nested autonomous agents (max depth 3)</li>
+        <li>Escalation: approval-gated actions with deny support</li>
+        <li>Stop conditions: <code>max_cycles</code>, <code>on_report</code>, <code>on_error</code>, <code>idle:N</code></li>
+        <li>Auto-fail after 5 consecutive errors</li>
+        <li>Audit trail: full history with 90-day retention</li>
         <li>Budget tracking: auto-stop when budget exceeded</li>
-        <li>Auto-pause on consecutive errors</li>
-        <li>Session persistence: state saved to DB every 30 seconds</li>
-        <li>Inbox messaging: send messages to running agents</li>
       </ul>
 
       <h2>Subagents</h2>
       <p>
-        Chat and background agents can spawn subagents for parallel task execution. The
+        Chat and claw agents can spawn subagents for parallel task execution. The
         fire-and-forget model lets the parent agent continue working while subagents run
         concurrently.
       </p>

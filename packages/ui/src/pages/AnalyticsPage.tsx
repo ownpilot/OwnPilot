@@ -48,7 +48,6 @@ import {
   costsApi,
   summaryApi,
   clawsApi,
-  backgroundAgentsApi,
   soulsApi,
   fleetApi,
   workflowsApi,
@@ -73,7 +72,6 @@ interface ClawStats {
 
 interface AgentCounts {
   souls: number;
-  background: number;
   claws: number;
   fleets: number;
   workflows: number;
@@ -369,7 +367,6 @@ export function AnalyticsPage() {
   const [clawStats, setClawStats] = useState<ClawStats | null>(null);
   const [agentCounts, setAgentCounts] = useState<AgentCounts>({
     souls: 0,
-    background: 0,
     claws: 0,
     fleets: 0,
     workflows: 0,
@@ -396,7 +393,6 @@ export function AnalyticsPage() {
           summaryRes,
           clawStatsRes,
           soulsRes,
-          bgRes,
           fleetsRes,
           wfRes,
           subsRes,
@@ -406,7 +402,6 @@ export function AnalyticsPage() {
           summaryApi.get(),
           clawsApi.stats(),
           soulsApi.list(),
-          backgroundAgentsApi.list(),
           fleetApi.list(),
           workflowsApi.list(),
           costsApi.getSubscriptions(),
@@ -429,7 +424,6 @@ export function AnalyticsPage() {
 
         setAgentCounts({
           souls: count(soulsRes),
-          background: count(bgRes),
           claws: clawStatsRes.status === 'fulfilled' ? (clawStatsRes.value as ClawStats).total : 0,
           fleets: count(fleetsRes),
           workflows: count(wfRes),
@@ -494,7 +488,6 @@ export function AnalyticsPage() {
 
   const agentBarData = [
     { name: 'Soul Agents', count: agentCounts.souls, fill: '#6366f1' },
-    { name: 'Background', count: agentCounts.background, fill: '#8b5cf6' },
     { name: 'Claws', count: agentCounts.claws, fill: '#ec4899' },
     { name: 'Fleet', count: agentCounts.fleets, fill: '#f97316' },
     { name: 'Workflows', count: agentCounts.workflows, fill: '#22c55e' },
@@ -614,8 +607,8 @@ export function AnalyticsPage() {
         />
         <StatCard
           label="Active Agents"
-          value={agentCounts.souls + agentCounts.background + (clawStats?.running ?? 0)}
-          sub={`${agentCounts.souls} souls, ${agentCounts.background} bg, ${clawStats?.running ?? 0} claws`}
+          value={agentCounts.souls + (clawStats?.running ?? 0)}
+          sub={`${agentCounts.souls} souls, ${clawStats?.running ?? 0} claws`}
           icon={Bot}
           color="text-emerald-500"
           bgColor="bg-emerald-500/10"

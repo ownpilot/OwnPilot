@@ -379,12 +379,7 @@ async function main() {
   const { getCodingAgentService } = await import('./services/coding-agent-service.js');
   registry.register(Services.CodingAgent, getCodingAgentService());
 
-  // 21. Background Agent Service (persistent, long-running autonomous agents)
-  const { getBackgroundAgentService } = await import('./services/background-agent-service.js');
-  const bgAgentService = getBackgroundAgentService();
-  registry.register(Services.BackgroundAgent, bgAgentService);
-
-  // 22. Subagent Service (ephemeral, task-oriented child agents)
+  // 21. Subagent Service (ephemeral, task-oriented child agents)
   const { getSubagentService } = await import('./services/subagent-service.js');
   registry.register(Services.Subagent, getSubagentService());
 
@@ -499,14 +494,6 @@ async function main() {
     log.info('Autonomy Engine started.');
   } catch (error) {
     log.warn('Autonomy Engine failed to start', { error: String(error) });
-  }
-
-  // Start Background Agent Service (resume autoStart + interrupted agents)
-  try {
-    await bgAgentService.start();
-    log.info('Background Agent Service started.');
-  } catch (error) {
-    log.warn('Background Agent Service failed to start', { error: String(error) });
   }
 
   // Start Fleet Service (resume autoStart fleets)
@@ -643,16 +630,7 @@ async function main() {
       log.warn('UI session cleanup stop error', { error: String(e) });
     }
 
-    // 4.7. Stop background agent service (persist all sessions)
-    try {
-      const { getBackgroundAgentService: getBgSvc } =
-        await import('./services/background-agent-service.js');
-      await getBgSvc().stop();
-    } catch (e) {
-      log.warn('Background agent service stop error', { error: String(e) });
-    }
-
-    // 4.8. Stop fleet service (persist all sessions)
+    // 4.7. Stop fleet service (persist all sessions)
     try {
       const { getFleetService: getFleetSvc } = await import('./services/fleet-service.js');
       await getFleetSvc().stop();

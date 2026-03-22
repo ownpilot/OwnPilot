@@ -2,7 +2,7 @@
  * AutonomousHubPage — Command Center for all autonomous agents
  *
  * Consolidates: SoulEditorPage, CrewDashboardPage, AgentCommsPage,
- * HeartbeatLogPage, BackgroundAgentsPage into a single unified hub.
+ * HeartbeatLogPage into a single unified hub.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -25,10 +25,8 @@ import {
 } from '../../components/icons';
 import { PageHomeTab } from '../../components/PageHomeTab';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { crewsApi } from '../../api/endpoints/souls';
+import { crewsApi, soulsApi } from '../../api/endpoints/souls';
 import type { CrewTemplate } from '../../api/endpoints/souls';
-import { backgroundAgentsApi } from '../../api/endpoints/background-agents';
-import { soulsApi } from '../../api/endpoints/souls';
 import { useAgents } from './hooks/useAgents';
 import { useAgentStatus } from './hooks/useAgentStatus';
 import type { HubTab } from './types';
@@ -89,7 +87,7 @@ export function AutonomousHubPage() {
       });
   }, []);
 
-  // WebSocket live updates for background agents
+  // WebSocket live updates for autonomous agents
   const { isConnected } = useAgentStatus(
     useCallback(() => {
       // Refresh on any status update
@@ -110,16 +108,12 @@ export function AutonomousHubPage() {
   const handlePause = useCallback(
     async (agentId: string) => {
       const agent = agents.find((a) => a.id === agentId);
-      if (!agent) return;
+      if (!agent?.soul) return;
       try {
-        if (agent.kind === 'background') {
-          await backgroundAgentsApi.pause(agentId);
-        } else if (agent.soul) {
-          await soulsApi.update(agentId, {
-            ...agent.soul,
-            heartbeat: { ...agent.soul.heartbeat, enabled: false },
-          });
-        }
+        await soulsApi.update(agentId, {
+          ...agent.soul,
+          heartbeat: { ...agent.soul.heartbeat, enabled: false },
+        });
         toast.success('Agent paused');
         refresh();
       } catch {
@@ -132,16 +126,12 @@ export function AutonomousHubPage() {
   const handleResume = useCallback(
     async (agentId: string) => {
       const agent = agents.find((a) => a.id === agentId);
-      if (!agent) return;
+      if (!agent?.soul) return;
       try {
-        if (agent.kind === 'background') {
-          await backgroundAgentsApi.resume(agentId);
-        } else if (agent.soul) {
-          await soulsApi.update(agentId, {
-            ...agent.soul,
-            heartbeat: { ...agent.soul.heartbeat, enabled: true },
-          });
-        }
+        await soulsApi.update(agentId, {
+          ...agent.soul,
+          heartbeat: { ...agent.soul.heartbeat, enabled: true },
+        });
         toast.success('Agent resumed');
         refresh();
       } catch {
@@ -163,11 +153,7 @@ export function AutonomousHubPage() {
       )
         return;
       try {
-        if (agent.kind === 'background') {
-          await backgroundAgentsApi.delete(agentId);
-        } else {
-          await soulsApi.delete(agentId);
-        }
+        await soulsApi.delete(agentId);
         toast.success('Agent deleted');
         refresh();
       } catch {
@@ -435,7 +421,6 @@ export function AutonomousHubPage() {
               >
                 <option value="all">All Types</option>
                 <option value="soul">Soul Agents</option>
-                <option value="background">Background Agents</option>
               </select>
               <span className="text-xs text-text-muted dark:text-dark-text-muted ml-auto">
                 {filteredAgents.length} agent{filteredAgents.length !== 1 ? 's' : ''}

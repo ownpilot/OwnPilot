@@ -134,7 +134,6 @@ const mockHeartbeatProvider = { name: 'heartbeat', getTools: vi.fn(() => []) };
 const mockExtensionProvider = { name: 'extension', getTools: vi.fn(() => []) };
 const mockCodingAgentProvider = { name: 'coding-agent', getTools: vi.fn(() => []) };
 const mockCliToolProvider = { name: 'cli-tools', getTools: vi.fn(() => []) };
-const mockBackgroundAgentProvider = { name: 'background-agent', getTools: vi.fn(() => []) };
 const mockBrowserProvider = { name: 'browser', getTools: vi.fn(() => []) };
 const mockEdgeProvider = { name: 'edge', getTools: vi.fn(() => []) };
 const mockSkillProvider = { name: 'skill', getTools: vi.fn(() => []) };
@@ -155,7 +154,6 @@ vi.mock('./tool-providers/index.js', async (importOriginal) => {
     createExtensionToolProvider: vi.fn(() => mockExtensionProvider),
     createCodingAgentToolProvider: vi.fn(() => mockCodingAgentProvider),
     createCliToolProvider: vi.fn(() => mockCliToolProvider),
-    createBackgroundAgentToolProvider: vi.fn(() => mockBackgroundAgentProvider),
     createBrowserToolProvider: vi.fn(() => mockBrowserProvider),
     createEdgeToolProvider: vi.fn(() => mockEdgeProvider),
     createSkillToolProvider: vi.fn(() => mockSkillProvider),
@@ -182,7 +180,6 @@ import {
   createHeartbeatToolProvider,
   createExtensionToolProvider,
   createCodingAgentToolProvider,
-  createBackgroundAgentToolProvider,
   createBrowserToolProvider,
   createEdgeToolProvider,
   createSkillToolProvider,
@@ -266,13 +263,12 @@ describe('Tool Executor', () => {
       expect(createHeartbeatToolProvider).toHaveBeenCalledWith('user-1');
       expect(createExtensionToolProvider).toHaveBeenCalledWith('user-1');
       expect(createCodingAgentToolProvider).toHaveBeenCalledWith('user-1');
-      expect(createBackgroundAgentToolProvider).toHaveBeenCalledWith('user-1');
       expect(createBrowserToolProvider).toHaveBeenCalledWith('user-1');
       expect(createEdgeToolProvider).toHaveBeenCalledWith('user-1');
       expect(createSkillToolProvider).toHaveBeenCalledWith('user-1');
       expect(createFleetToolProvider).toHaveBeenCalledWith('user-1');
 
-      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(16);
+      expect(mockToolRegistry.registerProvider).toHaveBeenCalledTimes(15);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockMemoryProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockGoalProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCustomDataProvider);
@@ -284,7 +280,6 @@ describe('Tool Executor', () => {
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockExtensionProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCodingAgentProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockCliToolProvider);
-      expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockBackgroundAgentProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockBrowserProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockEdgeProvider);
       expect(mockToolRegistry.registerProvider).toHaveBeenCalledWith(mockSkillProvider);

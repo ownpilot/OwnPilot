@@ -16,12 +16,7 @@ import type {
   AgentMessage,
 } from '../../api/endpoints/souls';
 import type { AgentDetail } from '../../types';
-import { backgroundAgentsApi } from '../../api/endpoints/background-agents';
 import { providersApi } from '../../api/endpoints/providers';
-import type {
-  BackgroundAgentConfig,
-  BackgroundAgentHistoryEntry,
-} from '../../api/endpoints/background-agents';
 import {
   Heart,
   Send,
@@ -77,21 +72,17 @@ export function TabContent({ children }: { children: React.ReactNode }) {
 export function OverviewTab({
   agentId,
   soul,
-  bgAgent,
   agentData,
   stats,
   heartbeats,
-  bgHistory,
   messages,
   onUpdate,
 }: {
   agentId: string;
   soul: AgentSoul | null;
-  bgAgent: BackgroundAgentConfig | null;
   agentData: AgentDetail | null;
   stats: HeartbeatStats | null;
   heartbeats: HeartbeatLog[];
-  bgHistory: BackgroundAgentHistoryEntry[];
   messages: AgentMessage[];
   onUpdate: () => void;
 }) {
@@ -160,13 +151,7 @@ export function OverviewTab({
       const providerToSave = editProvider || 'default';
       const modelToSave = editModel || 'default';
 
-      if (bgAgent) {
-        // Update background agent provider/model
-        await backgroundAgentsApi.update(agentId, {
-          provider: providerToSave,
-          model: modelToSave,
-        });
-      } else if (soul) {
+      if (soul) {
         // Update soul agent via agents API (main agent record)
         await agentsApi.update(agentId, {
           provider: providerToSave,
@@ -200,30 +185,20 @@ export function OverviewTab({
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
-          label={soul ? 'Heartbeat Cycles' : 'Completed Cycles'}
-          value={String(
-            stats?.totalCycles ?? bgAgent?.session?.cyclesCompleted ?? heartbeats.length
-          )}
+          label="Heartbeat Cycles"
+          value={String(stats?.totalCycles ?? heartbeats.length)}
         />
         <StatCard
           label="Success Rate"
           value={
             stats
               ? `${((1 - stats.failureRate) * 100).toFixed(0)}%`
-              : bgHistory.length > 0
-                ? `${((bgHistory.filter((e) => e.success).length / bgHistory.length) * 100).toFixed(0)}%`
-                : '—'
+              : '—'
           }
         />
         <StatCard
           label="Total Cost"
-          value={
-            stats
-              ? formatCost(stats.totalCost)
-              : bgAgent?.session
-                ? formatCost(bgAgent.session.totalCostUsd)
-                : '$0.00'
-          }
+          value={stats ? formatCost(stats.totalCost) : '$0.00'}
         />
         <StatCard label="Messages" value={String(messages.length)} />
       </div>
@@ -234,7 +209,7 @@ export function OverviewTab({
           Agent Info
         </h3>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <InfoRow label="Type" value={soul ? 'Soul Agent' : 'Background Agent'} />
+          <InfoRow label="Type" value="Soul Agent" />
           {soul && (
             <>
               <InfoRow label="Soul Version" value={`v${soul.evolution.version}`} />
@@ -252,18 +227,6 @@ export function OverviewTab({
                     : 'No skills enabled'
                 }
               />
-            </>
-          )}
-          {bgAgent && (
-            <>
-              <InfoRow label="Mode" value={bgAgent.mode} />
-              <InfoRow label="Cycles" value={String(bgAgent.session?.cyclesCompleted ?? 0)} />
-              <InfoRow label="Tool Calls" value={String(bgAgent.session?.totalToolCalls ?? 0)} />
-              <InfoRow label="Mission" value={bgAgent.mission} />
-              <InfoRow label="Created" value={new Date(bgAgent.createdAt).toLocaleDateString()} />
-              {bgAgent.session?.lastCycleAt && (
-                <InfoRow label="Last Cycle" value={formatTimeAgo(bgAgent.session.lastCycleAt)} />
-              )}
             </>
           )}
         </div>
@@ -457,34 +420,6 @@ export function OverviewTab({
         </div>
       )}
 
-      {/* Recent background cycles */}
-      {bgHistory.length > 0 && (
-        <div className="border border-border dark:border-dark-border rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary mb-3">
-            Recent Cycles
-          </h3>
-          <div className="space-y-2">
-            {bgHistory.slice(0, 5).map((entry) => (
-              <div
-                key={entry.id}
-                className="text-xs flex items-center gap-2 text-text-muted dark:text-dark-text-muted"
-              >
-                {entry.success ? (
-                  <CheckCircle2 className="w-3 h-3 text-success" />
-                ) : (
-                  <AlertCircle className="w-3 h-3 text-danger" />
-                )}
-                <span>
-                  Cycle #{entry.cycleNumber} · {entry.toolCalls.length} tool calls ·{' '}
-                  {formatDuration(entry.durationMs)}
-                  {entry.costUsd != null && ` · ${formatCost(entry.costUsd)}`}
-                </span>
-                <span className="ml-auto">{formatTimeAgo(entry.executedAt)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -611,17 +546,13 @@ export function MessagesTab({
 
 export function ActivityTab({
   heartbeats,
-  bgHistory,
   onRefresh,
 }: {
   heartbeats: HeartbeatLog[];
-  bgHistory: BackgroundAgentHistoryEntry[];
   onRefresh: () => void;
 }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const hasHeartbeats = heartbeats.length > 0;
-  const hasBgHistory = bgHistory.length > 0;
-  const isEmpty = !hasHeartbeats && !hasBgHistory;
+  const isEmpty = !hasHeartbeats;
 
   return (
     <div className="space-y-4">
@@ -701,79 +632,6 @@ export function ActivityTab({
             </>
           )}
 
-          {/* Background agent cycle entries */}
-          {hasBgHistory && (
-            <>
-              <h4 className="text-xs font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider mt-4">
-                Background Cycles ({bgHistory.length})
-              </h4>
-              {bgHistory.map((entry) => {
-                const isExpanded = expandedId === entry.id;
-                return (
-                  <div
-                    key={entry.id}
-                    className="border border-border dark:border-dark-border rounded-lg p-3 text-xs"
-                  >
-                    <div className="flex items-center gap-2">
-                      {entry.success ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                      ) : (
-                        <AlertCircle className="w-3.5 h-3.5 text-danger" />
-                      )}
-                      <span className="font-medium text-text-primary dark:text-dark-text-primary">
-                        Cycle #{entry.cycleNumber}
-                      </span>
-                      <span className="text-text-muted dark:text-dark-text-muted">
-                        {entry.turns} turn{entry.turns !== 1 ? 's' : ''} · {entry.toolCalls.length}{' '}
-                        tool call{entry.toolCalls.length !== 1 ? 's' : ''}
-                      </span>
-                      {!entry.success && entry.error && (
-                        <span className="text-danger truncate max-w-40">{entry.error}</span>
-                      )}
-                      <span className="text-text-muted dark:text-dark-text-muted ml-auto">
-                        {formatDuration(entry.durationMs)}
-                        {entry.costUsd != null && ` · ${formatCost(entry.costUsd)}`} ·{' '}
-                        {formatTimeAgo(entry.executedAt)}
-                      </span>
-                      {entry.toolCalls.length > 0 && (
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                          className="text-primary hover:text-primary-dark transition-colors"
-                        >
-                          {isExpanded ? '−' : '+'}
-                        </button>
-                      )}
-                    </div>
-                    {entry.outputMessage && (
-                      <p className="mt-1 pl-5 text-text-muted dark:text-dark-text-muted line-clamp-2">
-                        {entry.outputMessage}
-                      </p>
-                    )}
-                    {isExpanded && entry.toolCalls.length > 0 && (
-                      <div className="mt-2 pl-5 space-y-1">
-                        {entry.toolCalls.map((tc, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center gap-2 text-text-muted dark:text-dark-text-muted"
-                          >
-                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary">
-                              {tc.tool}
-                            </span>
-                            <span>{formatDuration(tc.duration)}</span>
-                          </div>
-                        ))}
-                        {entry.tokensUsed && (
-                          <div className="pt-1 text-text-muted dark:text-dark-text-muted">
-                            Tokens: {entry.tokensUsed.prompt}in / {entry.tokensUsed.completion}out
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
         </div>
       )}
     </div>
@@ -786,15 +644,13 @@ export function ActivityTab({
 
 export function BudgetTab({
   soul,
-  bgAgent,
   stats,
 }: {
   soul: AgentSoul | null;
-  bgAgent: BackgroundAgentConfig | null;
   stats: HeartbeatStats | null;
 }) {
-  const totalCost = stats?.totalCost ?? bgAgent?.session?.totalCostUsd ?? 0;
-  const dailyLimit = soul?.autonomy.maxCostPerDay ?? bgAgent?.limits.totalBudgetUsd ?? 0;
+  const totalCost = stats?.totalCost ?? 0;
+  const dailyLimit = soul?.autonomy.maxCostPerDay ?? 0;
   const monthlyLimit = soul?.autonomy.maxCostPerMonth ?? 0;
 
   return (

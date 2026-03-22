@@ -2,15 +2,15 @@
  * Agent System Domain
  *
  * Bounded context for all agent lifecycle management:
- * regular agents, coding agents, background agents, soul agents,
+ * regular agents, coding agents, soul agents,
  * subagents, orchestra, crews, and inter-agent messaging.
  *
  * Tables: agents, agent_souls, agent_crews, agent_crew_members,
- *         agent_messages, heartbeat_log, background_agents,
- *         background_agent_*, subagent_history, orchestra_executions,
+ *         agent_messages, heartbeat_log,
+ *         subagent_history, orchestra_executions,
  *         orchestration_runs
  *
- * Routes: /agents, /souls, /crews, /background-agents, /subagents,
+ * Routes: /agents, /souls, /crews, /subagents,
  *         /orchestra, /agent-messages, /heartbeat-logs, /agent-command
  *
  * Public API: AgentRegistry (unified agent management)
@@ -31,7 +31,6 @@ export const agentSystemDomain = {
     '/api/v1/audit',
     '/api/v1/debug',
     '/api/v1/heartbeats',
-    '/api/v1/background-agents',
     '/api/v1/subagents',
     '/api/v1/orchestra',
   ],
@@ -44,9 +43,6 @@ export const agentSystemDomain = {
     'agent_crew_members',
     'agent_messages',
     'heartbeat_log',
-    'background_agents',
-    'background_agent_configs',
-    'background_agent_history',
     'subagent_history',
     'orchestra_executions',
     'orchestration_runs',
@@ -56,7 +52,6 @@ export const agentSystemDomain = {
   publicServices: [
     'agent-registry',
     'soul-heartbeat-service',
-    'background-agent-service',
     'subagent-service',
     'orchestra-engine',
     'coding-agent-orchestrator',

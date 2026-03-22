@@ -5,7 +5,7 @@
  * sandbox execution + all 250+ tools into a single autonomous runtime.
  *
  * Execution modes:
- * - cyclic: Repeated execution with scheduling (like BackgroundAgent)
+ * - cyclic: Repeated execution with scheduling (continuous, interval, event)
  * - single-shot: One execution, auto-stop on completion (like Subagent)
  *
  * Usage:

@@ -336,8 +336,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         cliChat: '/api/v1/cli-chat',
         // Security Scanner (unified vulnerability analysis)
         security: '/api/v1/security',
-        // Background Agents (persistent autonomous agents)
-        backgroundAgents: '/api/v1/background-agents',
         subagents: '/api/v1/subagents',
         // Agent Orchestra (multi-agent collaboration)
         orchestra: '/api/v1/orchestra',

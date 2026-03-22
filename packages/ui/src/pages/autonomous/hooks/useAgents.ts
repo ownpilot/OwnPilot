@@ -1,19 +1,16 @@
 /**
- * useAgents — merges soul-based and background agents into a unified list
+ * useAgents — loads soul-based agents into a unified list
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { soulsApi, crewsApi } from '../../../api/endpoints/souls';
 import type { AgentSoul, AgentCrew } from '../../../api/endpoints/souls';
-import { backgroundAgentsApi } from '../../../api/endpoints/background-agents';
-import type { BackgroundAgentConfig } from '../../../api/endpoints/background-agents';
-import { fromSoul, fromBackground } from '../types';
+import { fromSoul } from '../types';
 import type { UnifiedAgent } from '../types';
 
 export interface UseAgentsResult {
   agents: UnifiedAgent[];
   souls: AgentSoul[];
-  backgroundAgents: BackgroundAgentConfig[];
   crews: AgentCrew[];
   isLoading: boolean;
   isRefreshing: boolean;
@@ -23,7 +20,6 @@ export interface UseAgentsResult {
 
 export function useAgents(): UseAgentsResult {
   const [souls, setSouls] = useState<AgentSoul[]>([]);
-  const [backgroundAgents, setBackgroundAgents] = useState<BackgroundAgentConfig[]>([]);
   const [crews, setCrews] = useState<AgentCrew[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -32,19 +28,16 @@ export function useAgents(): UseAgentsResult {
   const fetchAll = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const [soulsData, bgData, crewsData] = await Promise.allSettled([
+      const [soulsData, crewsData] = await Promise.allSettled([
         soulsApi.list(),
-        backgroundAgentsApi.list(),
         crewsApi.list(),
       ]);
 
       if (soulsData.status === 'fulfilled') setSouls(soulsData.value.items);
-      if (bgData.status === 'fulfilled') setBackgroundAgents(bgData.value);
       if (crewsData.status === 'fulfilled') setCrews(crewsData.value.items);
 
       const failures: string[] = [];
       if (soulsData.status === 'rejected') failures.push('souls');
-      if (bgData.status === 'rejected') failures.push('background agents');
       if (crewsData.status === 'rejected') failures.push('crews');
       setError(failures.length > 0 ? `Failed to load: ${failures.join(', ')}` : null);
     } finally {
@@ -57,19 +50,11 @@ export function useAgents(): UseAgentsResult {
     fetchAll();
   }, [fetchAll]);
 
-  // Merge into unified agent list, deduplicate by ID
+  // Build unified agent list from souls
   const agents: UnifiedAgent[] = [];
-  const soulAgentIds = new Set<string>();
 
   for (const soul of souls) {
-    soulAgentIds.add(soul.agentId);
     agents.push(fromSoul(soul, crews));
-  }
-
-  for (const bg of backgroundAgents) {
-    if (!soulAgentIds.has(bg.id)) {
-      agents.push(fromBackground(bg));
-    }
   }
 
   // Sort: running first, then by name
@@ -91,7 +76,6 @@ export function useAgents(): UseAgentsResult {
   return {
     agents,
     souls,
-    backgroundAgents,
     crews,
     isLoading,
     isRefreshing,

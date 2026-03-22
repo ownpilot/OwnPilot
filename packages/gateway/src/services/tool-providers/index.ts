@@ -29,8 +29,6 @@ import {
   executeCodingAgentTool,
   CLI_TOOL_TOOLS,
   executeCliToolTool,
-  BACKGROUND_AGENT_TOOLS,
-  executeBackgroundAgentTool,
   SUBAGENT_TOOLS,
   executeSubagentTool,
   ORCHESTRA_TOOL_DEFINITIONS,
@@ -282,20 +280,6 @@ export function createCliToolProvider(userId: string): ToolProvider {
       CLI_TOOL_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeCliToolTool, userId),
-      })),
-  };
-}
-
-/**
- * Create a provider for background agent tools (requires userId)
- */
-export function createBackgroundAgentToolProvider(userId: string): ToolProvider {
-  return {
-    name: 'background-agent',
-    getTools: () =>
-      BACKGROUND_AGENT_TOOLS.map((def) => ({
-        definition: def,
-        executor: wrapGatewayExecutor(def, executeBackgroundAgentTool, userId),
       })),
   };
 }

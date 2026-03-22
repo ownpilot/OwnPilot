@@ -16,7 +16,6 @@ import {
   Chrome,
   Code,
   Users,
-  Activity,
   BarChart3,
   Lock,
   Network,
@@ -55,16 +54,6 @@ const features = [
       'Agents with rich identity: personality, role, mission, heartbeat lifecycle, crew system, inter-agent messaging, and evolution tracking. 16+ ready-made templates.',
     color: 'from-violet-500/20 to-purple-500/20',
     iconColor: 'text-violet-500',
-  },
-  {
-    icon: Activity,
-    title: 'Background Agents',
-    badge: '3 Modes',
-    badgeVariant: 'orange' as const,
-    description:
-      'Persistent autonomous agents with interval, continuous, or event-driven scheduling. Full tool access, workspace isolation, budget tracking, and rate limiting.',
-    color: 'from-orange-500/20 to-amber-500/20',
-    iconColor: 'text-orange-500',
   },
   {
     icon: GitBranch,
@@ -162,7 +151,7 @@ const features = [
     badge: 'Multi-Worker',
     badgeVariant: 'purple' as const,
     description:
-      'FleetManager with 4 worker types: ai-chat, coding-cli, api-call, mcp-bridge. Task dependencies, shared context feedback, cron scheduling, crash recovery.',
+      'FleetManager with 5 worker types: ai-chat, coding-cli, api-call, mcp-bridge, claw. Task dependencies, shared context feedback, cron scheduling, crash recovery.',
     color: 'from-violet-500/20 to-indigo-500/20',
     iconColor: 'text-violet-500',
   },

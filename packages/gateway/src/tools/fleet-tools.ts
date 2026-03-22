@@ -51,7 +51,7 @@ Each fleet has a task queue. Add tasks and workers pick them up automatically.`,
             name: { type: 'string', description: 'Unique worker name' },
             type: {
               type: 'string',
-              enum: ['ai-chat', 'coding-cli', 'api-call', 'mcp-bridge'],
+              enum: ['ai-chat', 'coding-cli', 'api-call', 'mcp-bridge', 'claw'],
               description: 'Worker engine type',
             },
             description: { type: 'string', description: 'What this worker does' },
@@ -322,7 +322,7 @@ export async function executeFleetTool(
 
         const workerConfigs = workers.map((w) => ({
           name: w.name as string,
-          type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge',
+          type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw',
           description: w.description as string | undefined,
           provider: w.provider as string | undefined,
           model: w.model as string | undefined,

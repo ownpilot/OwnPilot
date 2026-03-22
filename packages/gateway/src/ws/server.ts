@@ -264,16 +264,6 @@ export class WSGateway {
       })
     );
 
-    // background-agent.update → background-agent:update (colon for WS)
-    this.legacyUnsubs.push(
-      eventSystem.onAny('background-agent.update', (event) => {
-        this.broadcast(
-          'background-agent:update',
-          event.data as ServerEvents['background-agent:update']
-        );
-      })
-    );
-
     // subagent.* → subagent:* (spawned, progress, completed)
     this.legacyUnsubs.push(
       eventSystem.onAny('subagent.spawned', (event) => {

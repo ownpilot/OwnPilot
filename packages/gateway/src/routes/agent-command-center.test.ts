@@ -24,7 +24,6 @@ const {
   mockCrewsRepo,
   mockHbLogRepo,
   mockAgentsRepo,
-  mockBgService,
   mockAgentMsgsRepo,
   mockSettingsRepo,
   mockRunAgentHeartbeat,
@@ -56,17 +55,6 @@ const {
     create: vi.fn(),
   };
 
-  const mockBgService = {
-    getAgent: vi.fn(),
-    listAgents: vi.fn(),
-    listSessions: vi.fn(),
-    startAgent: vi.fn(),
-    pauseAgent: vi.fn(),
-    resumeAgent: vi.fn(),
-    stopAgent: vi.fn(),
-    executeNow: vi.fn(),
-  };
-
   const mockAgentMsgsRepo = {
     listByAgent: vi.fn(),
   };
@@ -82,7 +70,6 @@ const {
     mockCrewsRepo,
     mockHbLogRepo,
     mockAgentsRepo,
-    mockBgService,
     mockAgentMsgsRepo,
     mockSettingsRepo,
     mockRunAgentHeartbeat,
@@ -107,10 +94,6 @@ vi.mock('../db/repositories/heartbeat-log.js', () => ({
 
 vi.mock('../db/repositories/agents.js', () => ({
   agentsRepo: mockAgentsRepo,
-}));
-
-vi.mock('../services/background-agent-service.js', () => ({
-  getBackgroundAgentService: vi.fn(() => mockBgService),
 }));
 
 vi.mock('../db/repositories/agent-messages.js', () => ({
@@ -218,10 +201,6 @@ function makeCrewMember(agentId = 'agent-1', role = 'coordinator') {
   return { crewId: 'crew-1', agentId, role, joinedAt: new Date('2024-01-01') };
 }
 
-function makeBgAgent(id = 'bg-1') {
-  return { id, name: 'BG Agent', mission: 'Run tasks', mode: 'interval', userId: 'user-1' };
-}
-
 function makeHbEntry(agentId = 'agent-1') {
   return {
     id: `hb-${agentId}`,
@@ -277,8 +256,6 @@ describe('Agent Command Center Routes', () => {
       avgDurationMs: 0,
       failureRate: 0,
     });
-    mockBgService.listAgents.mockResolvedValue([]);
-    mockBgService.listSessions.mockReturnValue([]);
     mockAgentMsgsRepo.listByAgent.mockResolvedValue([]);
     mockSettingsRepo.get.mockResolvedValue(null);
   });
@@ -426,101 +403,6 @@ describe('Agent Command Center Routes', () => {
       expect(json.data.results[0].result.status).toBe('unknown_command');
     });
 
-    it('succeeds: start command on existing background agent', async () => {
-      const bgAgent = makeBgAgent('bg-1');
-      mockBgService.getAgent.mockResolvedValue(bgAgent);
-      mockBgService.startAgent.mockResolvedValue({ state: 'running' });
-
-      const res = await app.request('/acc/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1' }],
-          command: 'start',
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.results[0].result.status).toBe('started');
-      expect(mockBgService.startAgent).toHaveBeenCalledWith('bg-1', 'user-1');
-    });
-
-    it('succeeds: pause command on existing background agent', async () => {
-      const bgAgent = makeBgAgent('bg-1');
-      mockBgService.getAgent.mockResolvedValue(bgAgent);
-      mockBgService.pauseAgent.mockResolvedValue(true);
-
-      const res = await app.request('/acc/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1' }],
-          command: 'pause',
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.results[0].result.status).toBe('paused');
-    });
-
-    it('succeeds: resume command on existing background agent', async () => {
-      const bgAgent = makeBgAgent('bg-1');
-      mockBgService.getAgent.mockResolvedValue(bgAgent);
-      mockBgService.resumeAgent.mockResolvedValue(true);
-
-      const res = await app.request('/acc/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1' }],
-          command: 'resume',
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.results[0].result.status).toBe('resumed');
-    });
-
-    it('succeeds: stop command on existing background agent', async () => {
-      const bgAgent = makeBgAgent('bg-1');
-      mockBgService.getAgent.mockResolvedValue(bgAgent);
-      mockBgService.stopAgent.mockResolvedValue(true);
-
-      const res = await app.request('/acc/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1' }],
-          command: 'stop',
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.results[0].result.status).toBe('stopped');
-    });
-
-    it('records failure when background agent is not found', async () => {
-      mockBgService.getAgent.mockResolvedValue(null);
-
-      const res = await app.request('/acc/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-missing' }],
-          command: 'start',
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.failed).toBe(1);
-      expect(json.data.results[0].error).toBe('Background agent not found');
-    });
-
     it('succeeds: pause command on crew — pauses all member souls', async () => {
       const crew = makeCrew('crew-1');
       const members = [makeCrewMember('agent-1'), makeCrewMember('agent-2')];
@@ -588,11 +470,11 @@ describe('Agent Command Center Routes', () => {
     });
 
     it('handles multiple targets with mixed results', async () => {
-      // Soul found, bg not found
+      // Soul found, crew not found
       const soul = makeSoul('agent-1');
       mockSoulsRepo.getByAgentId.mockResolvedValueOnce(soul);
       mockSoulsRepo.setHeartbeatEnabled.mockResolvedValue(undefined);
-      mockBgService.getAgent.mockResolvedValue(null);
+      mockCrewsRepo.getById.mockResolvedValue(null);
 
       const res = await app.request('/acc/command', {
         method: 'POST',
@@ -600,7 +482,7 @@ describe('Agent Command Center Routes', () => {
         body: JSON.stringify({
           targets: [
             { type: 'soul', id: 'agent-1' },
-            { type: 'background', id: 'bg-missing' },
+            { type: 'crew', id: 'crew-missing' },
           ],
           command: 'pause',
         }),
@@ -792,8 +674,6 @@ describe('Agent Command Center Routes', () => {
   describe('GET /acc/status', () => {
     it('returns 200 with empty data when no agents exist', async () => {
       mockSoulsRepo.list.mockResolvedValue([]);
-      mockBgService.listAgents.mockResolvedValue([]);
-      mockBgService.listSessions.mockReturnValue([]);
       mockCrewsRepo.list.mockResolvedValue([]);
 
       const res = await app.request('/acc/status');
@@ -802,7 +682,6 @@ describe('Agent Command Center Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.souls).toHaveLength(0);
-      expect(json.data.backgroundAgents).toHaveLength(0);
       expect(json.data.crews).toHaveLength(0);
       expect(json.data.summary.totalAgents).toBe(0);
       expect(json.data.summary.totalCrews).toBe(0);
@@ -813,8 +692,6 @@ describe('Agent Command Center Routes', () => {
       const hbEntry = makeHbEntry('agent-1');
       mockSoulsRepo.list.mockResolvedValue([soul]);
       mockHbLogRepo.getLatest.mockResolvedValue(hbEntry);
-      mockBgService.listAgents.mockResolvedValue([]);
-      mockBgService.listSessions.mockReturnValue([]);
       mockCrewsRepo.list.mockResolvedValue([]);
 
       const res = await app.request('/acc/status');
@@ -839,8 +716,6 @@ describe('Agent Command Center Routes', () => {
       });
       mockSoulsRepo.list.mockResolvedValue([soul]);
       mockHbLogRepo.getLatest.mockResolvedValue(null);
-      mockBgService.listAgents.mockResolvedValue([]);
-      mockBgService.listSessions.mockReturnValue([]);
       mockCrewsRepo.list.mockResolvedValue([]);
 
       const res = await app.request('/acc/status');
@@ -851,28 +726,10 @@ describe('Agent Command Center Routes', () => {
       expect(json.data.summary.paused).toBe(1);
     });
 
-    it('includes background agent status with session info', async () => {
-      const bgAgent = makeBgAgent('bg-1');
-      const session = { config: { id: 'bg-1' }, state: 'running', lastCycleAt: new Date() };
-      mockBgService.listAgents.mockResolvedValue([bgAgent]);
-      mockBgService.listSessions.mockReturnValue([session]);
-      mockSoulsRepo.list.mockResolvedValue([]);
-      mockCrewsRepo.list.mockResolvedValue([]);
-
-      const res = await app.request('/acc/status');
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.backgroundAgents).toHaveLength(1);
-      expect(json.data.backgroundAgents[0].status).toBe('running');
-    });
-
     it('includes crew status info', async () => {
       const crew = makeCrew('crew-1');
       mockCrewsRepo.list.mockResolvedValue([crew]);
       mockSoulsRepo.list.mockResolvedValue([]);
-      mockBgService.listAgents.mockResolvedValue([]);
-      mockBgService.listSessions.mockReturnValue([]);
 
       const res = await app.request('/acc/status');
 
@@ -1175,23 +1032,6 @@ describe('Agent Command Center Routes', () => {
       expect(mockRunAgentHeartbeat).toHaveBeenCalledWith('agent-1');
     });
 
-    it('executes background target sequentially', async () => {
-      mockBgService.executeNow.mockResolvedValue(true);
-
-      const res = await app.request('/acc/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1', task: 'run task' }],
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.executed).toBe(1);
-      expect(mockBgService.executeNow).toHaveBeenCalledWith('bg-1', 'user-1', 'run task');
-    });
-
     it('executes soul targets in parallel when parallel=true', async () => {
       mockRunAgentHeartbeat.mockResolvedValue({ success: true });
 
@@ -1229,23 +1069,6 @@ describe('Agent Command Center Routes', () => {
       expect(json.data.executed).toBe(0);
       expect(json.data.failed).toBe(1);
       expect(json.data.results[0].error).toBe('Heartbeat failed');
-    });
-
-    it('records failure when executeNow returns false', async () => {
-      mockBgService.executeNow.mockResolvedValue(false);
-
-      const res = await app.request('/acc/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targets: [{ type: 'background', id: 'bg-1' }],
-        }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.executed).toBe(0);
-      expect(json.data.failed).toBe(1);
     });
 
     it('records individual target error when execution throws', async () => {

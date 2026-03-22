@@ -1,17 +1,12 @@
 /**
  * Unified Agent Types
  *
- * Merges soul-based agents and background agents into a single
- * type for the Autonomous Hub.
+ * Unified agent types for the Autonomous Hub.
  */
 
 import type { AgentSoul, AgentCrew } from '../../api/endpoints/souls';
-import type {
-  BackgroundAgentConfig,
-  BackgroundAgentState,
-} from '../../api/endpoints/background-agents';
 
-export type AgentKind = 'soul' | 'background';
+export type AgentKind = 'soul';
 
 export type AgentStatus =
   | 'running'
@@ -39,25 +34,10 @@ export interface UnifiedAgent {
 
   // Source data for detail views
   soul?: AgentSoul;
-  backgroundAgent?: BackgroundAgentConfig;
 }
 
 export type HubTab = 'home' | 'agents' | 'crews' | 'messages' | 'activity' | 'plans';
 export type ProfileTab = 'overview' | 'soul' | 'tools' | 'messages' | 'activity' | 'budget';
-
-/** Map background agent state to unified agent status */
-export function mapBackgroundState(state: BackgroundAgentState): AgentStatus {
-  const map: Record<BackgroundAgentState, AgentStatus> = {
-    starting: 'starting',
-    running: 'running',
-    paused: 'paused',
-    waiting: 'waiting',
-    completed: 'idle',
-    failed: 'error',
-    stopped: 'stopped',
-  };
-  return map[state] || 'idle';
-}
 
 /** Build a UnifiedAgent from a soul */
 export function fromSoul(soul: AgentSoul, crews: AgentCrew[]): UnifiedAgent {
@@ -82,19 +62,3 @@ export function fromSoul(soul: AgentSoul, crews: AgentCrew[]): UnifiedAgent {
   };
 }
 
-/** Build a UnifiedAgent from a background agent config */
-export function fromBackground(bg: BackgroundAgentConfig): UnifiedAgent {
-  return {
-    id: bg.id,
-    kind: 'background',
-    name: bg.name,
-    emoji: '🤖',
-    role: 'Background Agent',
-    mission: bg.mission,
-    status: bg.session ? mapBackgroundState(bg.session.state) : 'stopped',
-    lastActiveAt: bg.session?.lastCycleAt ?? undefined,
-    todayCost: bg.session?.totalCostUsd ?? 0,
-    unreadMessages: 0,
-    backgroundAgent: bg,
-  };
-}

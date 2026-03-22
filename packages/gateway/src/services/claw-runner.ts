@@ -6,7 +6,7 @@
  *
  * The runner does NOT own scheduling — that's the ClawManager's job.
  *
- * Differences from BackgroundAgentRunner:
+ * Key characteristics:
  * - Workspace-aware: includes directory listing in system prompt
  * - Soul-aware: injects soul identity when soulId is configured
  * - Coding-agent-aware: describes coding CLI availability

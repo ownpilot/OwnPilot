@@ -12,7 +12,6 @@ import { MarkdownContent } from '../../../components/MarkdownContent';
 import { chatApi } from '../../../api/endpoints/chat';
 import { settingsApi } from '../../../api/endpoints/settings';
 import { soulsApi } from '../../../api/endpoints/souls';
-import { backgroundAgentsApi } from '../../../api/endpoints/background-agents';
 import { agentsApi } from '../../../api/endpoints/agents';
 import { extensionsApi } from '../../../api/endpoints/extensions';
 import type { ExtensionInfo } from '../../../api/types';
@@ -527,67 +526,52 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
         const provider = config.provider || defaults.provider;
         const model = config.model || defaults.model;
 
-        if (config.kind === 'soul') {
-          await soulsApi.deploy({
-            identity: {
-              name: config.name,
-              emoji: config.emoji,
-              role: config.role,
-              personality: config.personality || '',
-              voice: { tone: 'professional', language: 'en' },
-              boundaries: [],
-            },
-            purpose: {
-              mission: config.mission,
-              goals: [],
-              expertise: [],
-              toolPreferences: config.tools || [],
-            },
-            autonomy: {
-              level: config.autonomyLevel ?? 2,
-              allowedActions: config.tools || ['search_web', 'create_memory', 'search_memories'],
-              blockedActions: ['delete_data', 'execute_code'],
-              requiresApproval: (config.autonomyLevel ?? 2) <= 1 ? ['send_message_to_user'] : [],
-              maxCostPerCycle: 0.5,
-              maxCostPerDay: 5.0,
-              maxCostPerMonth: 100.0,
-            },
-            heartbeat: {
-              enabled: config.heartbeatEnabled !== false,
-              interval: config.heartbeatInterval || '0 */6 * * *',
-              checklist: [],
-              selfHealingEnabled: true,
-              maxDurationMs: 120000,
-            },
-            relationships: { delegates: [], peers: [], channels: [] },
-            evolution: {
-              evolutionMode: 'supervised',
-              coreTraits: config.personality ? [config.personality] : [],
-              mutableTraits: [],
-            },
-            bootSequence: { onStart: [], onHeartbeat: ['read_inbox'], onMessage: [] },
-            skillAccess: {
-              allowed: config.skills || [],
-              blocked: [],
-            },
-            provider,
-            model,
-          });
-          toast.success(`Soul agent "${config.name}" created!`);
-        } else {
-          await backgroundAgentsApi.create({
+        await soulsApi.deploy({
+          identity: {
             name: config.name,
+            emoji: config.emoji,
+            role: config.role,
+            personality: config.personality || '',
+            voice: { tone: 'professional', language: 'en' },
+            boundaries: [],
+          },
+          purpose: {
             mission: config.mission,
-            mode: config.bgMode || 'interval',
-            interval_ms: config.bgMode === 'interval' ? (config.bgIntervalMs ?? 300000) : undefined,
-            auto_start: false,
-            allowed_tools: config.tools || [],
-            skills: config.skills || [],
-            provider,
-            model,
-          });
-          toast.success(`Background agent "${config.name}" created!`);
-        }
+            goals: [],
+            expertise: [],
+            toolPreferences: config.tools || [],
+          },
+          autonomy: {
+            level: config.autonomyLevel ?? 2,
+            allowedActions: config.tools || ['search_web', 'create_memory', 'search_memories'],
+            blockedActions: ['delete_data', 'execute_code'],
+            requiresApproval: (config.autonomyLevel ?? 2) <= 1 ? ['send_message_to_user'] : [],
+            maxCostPerCycle: 0.5,
+            maxCostPerDay: 5.0,
+            maxCostPerMonth: 100.0,
+          },
+          heartbeat: {
+            enabled: config.heartbeatEnabled !== false,
+            interval: config.heartbeatInterval || '0 */6 * * *',
+            checklist: [],
+            selfHealingEnabled: true,
+            maxDurationMs: 120000,
+          },
+          relationships: { delegates: [], peers: [], channels: [] },
+          evolution: {
+            evolutionMode: 'supervised',
+            coreTraits: config.personality ? [config.personality] : [],
+            mutableTraits: [],
+          },
+          bootSequence: { onStart: [], onHeartbeat: ['read_inbox'], onMessage: [] },
+          skillAccess: {
+            allowed: config.skills || [],
+            blocked: [],
+          },
+          provider,
+          model,
+        });
+        toast.success(`Soul agent "${config.name}" created!`);
         onCreated();
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to create agent';

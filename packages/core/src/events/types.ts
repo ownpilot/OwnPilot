@@ -27,7 +27,6 @@ export type EventCategory =
   | 'extension'
   | 'memory'
   | 'mcp'
-  | 'background-agent'
   | 'subagent'
   | 'orchestra';
 
@@ -119,7 +118,6 @@ export function deriveCategory(type: string): EventCategory {
     'extension',
     'memory',
     'mcp',
-    'background-agent',
     'subagent',
     'orchestra',
   ];

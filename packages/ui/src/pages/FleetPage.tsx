@@ -1,5 +1,5 @@
 /**
- * Fleet Page — Manage coordinated background agent armies
+ * Fleet Page — Manage coordinated multi-worker agent fleets
  *
  * Follows the app's page convention: header → tab bar → PageHomeTab / content.
  */
@@ -83,6 +83,8 @@ function getWorkerTypeIcon(type: FleetWorkerType) {
       return Globe;
     case 'mcp-bridge':
       return Server;
+    case 'claw':
+      return Brain;
   }
 }
 
@@ -96,6 +98,8 @@ function getWorkerTypeLabel(type: FleetWorkerType): string {
       return 'API Call';
     case 'mcp-bridge':
       return 'MCP Bridge';
+    case 'claw':
+      return 'Claw Agent';
   }
 }
 
@@ -109,6 +113,8 @@ function getWorkerTypeColor(type: FleetWorkerType): string {
       return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
     case 'mcp-bridge':
       return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
+    case 'claw':
+      return 'text-teal-500 bg-teal-500/10 border-teal-500/20';
   }
 }
 
@@ -767,6 +773,7 @@ function CreateFleetModal({ onClose, onCreated }: { onClose: () => void; onCreat
                             <option value="coding-cli">Coding CLI</option>
                             <option value="api-call">API Call</option>
                             <option value="mcp-bridge">MCP Bridge</option>
+                            <option value="claw">Claw Agent</option>
                           </select>
                           {workers.length > 1 && (
                             <button

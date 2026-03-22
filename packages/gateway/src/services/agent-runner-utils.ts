@@ -1,8 +1,8 @@
 /**
  * Shared utilities for autonomous agent runners.
  *
- * Eliminates duplication across BackgroundAgentRunner, SubagentRunner,
- * and FleetWorker by extracting common patterns:
+ * Eliminates duplication across SubagentRunner and FleetWorker
+ * by extracting common patterns:
  * - Tool registration pipeline
  * - Agent creation from provider config
  * - Timeout/cancellation promises

@@ -36,7 +36,7 @@ import type { IHeartbeatService } from './heartbeat-service.js';
 import type { IPulseService } from './pulse-service.js';
 import type { ICodingAgentService } from './coding-agent-service.js';
 import type { ICliToolService } from './cli-tool-service.js';
-import type { IBackgroundAgentService } from './background-agent-service.js';
+
 import type { ISubagentService } from './subagent-service.js';
 import type { IOrchestraService } from '../agent/orchestra/types.js';
 import type { IArtifactService } from './artifact-service.js';
@@ -120,9 +120,6 @@ export const Services = {
 
   /** CLI tool discovery, execution, and management */
   CliTool: new ServiceToken<ICliToolService>('cli-tool'),
-
-  /** Background agents (persistent, long-running autonomous agents) */
-  BackgroundAgent: new ServiceToken<IBackgroundAgentService>('background-agent'),
 
   /** Subagents (ephemeral, task-oriented child agents) */
   Subagent: new ServiceToken<ISubagentService>('subagent'),

@@ -147,7 +147,7 @@ ownpilot workspace status        # Show current workspace info
 ownpilot workspace set-default   # Set as the default workspace
 
 # Workspace stores agent-specific files and state
-# Each background agent gets an isolated workspace directory`;
+# Each claw agent gets an isolated workspace directory`;
 
 export function ConfigurationPage() {
   return (

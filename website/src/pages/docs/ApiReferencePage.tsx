@@ -99,15 +99,15 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" http://localhost:8080/api/v1/heal
           </tr>
           <tr>
             <td>
-              <code>GET /api/v1/background-agents</code>
+              <code>GET /api/v1/claws</code>
             </td>
-            <td>List background agents</td>
+            <td>List claw agents</td>
           </tr>
           <tr>
             <td>
-              <code>POST /api/v1/background-agents</code>
+              <code>POST /api/v1/claws</code>
             </td>
-            <td>Create background agent</td>
+            <td>Create claw agent</td>
           </tr>
           <tr>
             <td>

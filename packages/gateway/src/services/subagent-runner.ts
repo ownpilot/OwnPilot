@@ -8,13 +8,13 @@
  * 4. Run agent.chat() with task message
  * 5. Collect results and tool call traces
  *
- * Key difference from BackgroundAgentRunner:
+ * Key characteristics:
  * - Single execution (not cyclic)
  * - Task-focused prompt (not mission-focused)
  * - Returns full result (not cycle result)
  * - Supports AbortController for cancellation
  *
- * Full tool registration pipeline (mirrors background-agent-runner.ts):
+ * Full tool registration pipeline:
  * - Core tools (registerAllTools)
  * - Gateway domain tools (memory, goals, custom data, triggers, etc.)
  * - Dynamic tools (custom tools, CRUD meta-tools)

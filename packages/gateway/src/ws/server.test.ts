@@ -1613,17 +1613,6 @@ describe('WSGateway', () => {
       expect(mockSessionManager.broadcast).toHaveBeenCalledWith('data:changed', payload);
     });
 
-    it('forwards background-agent.update as background-agent:update', () => {
-      const gw = new WSGateway();
-      gw.startEventBridge();
-      const cb = getAnyCb('background-agent.update');
-      const payload = { agentId: 'bg-1', status: 'running' };
-
-      cb({ type: 'background-agent.update', data: payload });
-
-      expect(mockSessionManager.broadcast).toHaveBeenCalledWith('background-agent:update', payload);
-    });
-
     it('forwards subagent.spawned as subagent:spawned', () => {
       const gw = new WSGateway();
       gw.startEventBridge();

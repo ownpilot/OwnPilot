@@ -3,10 +3,11 @@
  *
  * A Fleet is a coordinated group of workers that run continuously in the background,
  * picking up tasks from a queue and executing them using various engines:
- * - ai-chat: Full Agent engine with tool access (like background agents)
+ * - ai-chat: Full Agent engine with tool access
  * - coding-cli: CLI tools (Claude Code, Gemini CLI, Codex)
  * - api-call: Direct AI provider API (lightweight, no tools)
  * - mcp-bridge: MCP server tool calls
+ * - claw: Delegates to Claw single-shot mode (workspace + audit + directives)
  */
 
 import type { AutonomousAgentResult } from '../../services/agent-execution-result.js';
@@ -16,7 +17,7 @@ import type { AutonomousAgentResult } from '../../services/agent-execution-resul
 // ============================================================================
 
 /** Engine that powers a fleet worker */
-export type FleetWorkerType = 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge';
+export type FleetWorkerType = 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw';
 
 /** Schedule type for fleet execution */
 export type FleetScheduleType = 'continuous' | 'interval' | 'cron' | 'event' | 'on-demand';

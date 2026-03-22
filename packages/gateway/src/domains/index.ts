@@ -7,7 +7,7 @@
  * defined in each domain's index file.
  *
  * Domains:
- *   1. agent-system   — Agent lifecycle, souls, crews, background agents, subagents, orchestra
+ *   1. agent-system   — Agent lifecycle, souls, crews, subagents, orchestra
  *   2. personal-data  — Tasks, bookmarks, notes, calendar, contacts, memories, goals, custom data
  *   3. automation      — Triggers, plans, workflows, autonomy, execution permissions
  *   4. tools-extensions — Tool executor, custom tools, extensions, skills, plugins

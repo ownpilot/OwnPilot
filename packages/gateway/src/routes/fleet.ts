@@ -1,7 +1,7 @@
 /**
  * Fleet Routes
  *
- * REST API for managing fleets — coordinated background agent armies.
+ * REST API for managing fleets — coordinated agent armies.
  *
  * Route order matters in Hono:
  * 1. Static routes first (/)
@@ -118,7 +118,7 @@ fleetRoutes.post('/', async (c) => {
     // Map snake_case worker fields from API to camelCase for internal types
     const mappedWorkers = (workers as Array<Record<string, unknown>>).map((w) => ({
       name: w.name as string,
-      type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge',
+      type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw',
       description: w.description as string | undefined,
       provider: w.provider as string | undefined,
       model: w.model as string | undefined,
@@ -439,7 +439,7 @@ fleetRoutes.put('/:id', async (c) => {
       workers: Array.isArray(body.workers)
         ? (body.workers as Array<Record<string, unknown>>).map((w) => ({
             name: w.name as string,
-            type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge',
+            type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw',
             description: w.description as string | undefined,
             provider: w.provider as string | undefined,
             model: w.model as string | undefined,

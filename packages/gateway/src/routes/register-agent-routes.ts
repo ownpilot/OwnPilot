@@ -2,7 +2,7 @@
  * Agent Domain Route Registration
  *
  * Mounts all agent-related routes: core agents, souls, crews,
- * background agents, subagents, orchestra, and agent messaging.
+ * subagents, orchestra, and agent messaging.
  */
 
 import type { Hono } from 'hono';
@@ -17,7 +17,6 @@ import {
   debugRoutes,
   auditRoutes,
   heartbeatsRoutes,
-  backgroundAgentsRoutes,
   subagentRoutes,
   orchestraRoutes,
   fleetRoutes,
@@ -44,16 +43,13 @@ export function registerAgentRoutes(app: Hono): void {
   // Heartbeats (NL-to-cron periodic tasks)
   app.route('/api/v1/heartbeats', heartbeatsRoutes);
 
-  // Background Agents (persistent, long-running autonomous agents)
-  app.route('/api/v1/background-agents', backgroundAgentsRoutes);
-
   // Subagents (ephemeral, task-oriented child agents)
   app.route('/api/v1/subagents', subagentRoutes);
 
   // Agent Orchestra (multi-agent collaboration & delegation)
   app.route('/api/v1/orchestra', orchestraRoutes);
 
-  // Fleet (coordinated background agent army)
+  // Fleet (coordinated agent army)
   app.route('/api/v1/fleet', fleetRoutes);
 
   // Claws (unified autonomous agent runtime)

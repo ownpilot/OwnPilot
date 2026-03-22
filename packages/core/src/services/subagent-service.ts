@@ -2,14 +2,8 @@
  * ISubagentService - Ephemeral Subagent System Interface
  *
  * Lightweight, task-oriented child agents spawned by a parent (chat agent,
- * background agent, or another subagent). Each subagent gets its own Agent
+ * claw agent, or another subagent). Each subagent gets its own Agent
  * instance, runs a single task to completion, and reports results back.
- *
- * Key differences from BackgroundAgent:
- * - Ephemeral: lives in memory while running, only audit records persisted
- * - Single-task: runs once to completion (not cyclic)
- * - Parallel: multiple subagents can run concurrently per parent
- * - Fire-and-forget spawn: parent polls for results
  *
  * Usage:
  *   const subagent = registry.get(Services.Subagent);
@@ -32,7 +26,7 @@ export type SubagentState =
   | 'timeout';
 
 /** Who can be a parent of a subagent */
-export type SubagentParentType = 'chat' | 'background-agent' | 'subagent';
+export type SubagentParentType = 'chat' | 'claw' | 'subagent';
 
 // ============================================================================
 // Configuration Types

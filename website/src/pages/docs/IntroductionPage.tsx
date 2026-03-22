@@ -62,7 +62,7 @@ export function IntroductionPage() {
           {
             icon: Bot,
             title: 'Autonomous',
-            desc: 'Soul agents with heartbeat lifecycles, background agents with 3 scheduling modes, visual workflows with 24 node types, and proactive Pulse system.',
+            desc: 'Soul agents with heartbeat lifecycles, Claw autonomous agents with 4 scheduling modes, visual workflows with 24 node types, and proactive Pulse system.',
           },
         ].map(({ icon: Icon, title, desc }) => (
           <Card key={title} className="flex gap-4">
@@ -196,7 +196,7 @@ docker compose --profile postgres up -d
           {
             href: '/docs/agents',
             title: 'Agent System',
-            desc: 'Soul agents, background agents, crews',
+            desc: 'Soul agents, Claw agents, crews',
           },
         ].map((link) => (
           <Link

@@ -51,15 +51,15 @@ const waitForEventDef: ToolDefinition = {
   workflowUsable: true,
   description:
     'Wait for a specific event to occur on the EventBus, with a timeout. ' +
-    'Useful for synchronizing with asynchronous operations like background agent completion, ' +
-    'trigger execution, or external signals. Returns the event data when received.',
+    'Useful for synchronizing with asynchronous operations like trigger execution, ' +
+    'agent completion, or external signals. Returns the event data when received.',
   parameters: {
     type: 'object',
     properties: {
       event_type: {
         type: 'string',
         description:
-          'Exact event type to wait for (e.g., "memory.created", "trigger.success", "background-agent.cycle.complete")',
+          'Exact event type to wait for (e.g., "memory.created", "trigger.success", "agent.complete")',
       },
       timeout_ms: {
         type: 'number',
@@ -105,11 +105,6 @@ const EVENT_CATEGORIES_INFO = {
   chat: ['chat.completed'],
   channel: ['channel.connected', 'channel.message.received', 'channel.message.sent'],
   extension: ['extension.installed', 'extension.enabled', 'extension.disabled'],
-  'background-agent': [
-    'background-agent.started',
-    'background-agent.cycle.complete',
-    'background-agent.stopped',
-  ],
   gateway: ['gateway.system.notification', 'gateway.chat.message'],
   system: ['system.startup', 'system.shutdown'],
   mcp: ['mcp.server.connected', 'mcp.server.disconnected'],

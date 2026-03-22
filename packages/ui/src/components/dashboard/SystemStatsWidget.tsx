@@ -4,11 +4,10 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Brain, Bot, Users, GitBranch, Heart, Puzzle, Zap, AlertCircle, Plus } from '../icons';
+import { Brain, Users, GitBranch, Heart, Puzzle, Zap, AlertCircle, Plus } from '../icons';
 import {
   soulsApi,
   crewsApi,
-  backgroundAgentsApi,
   workflowsApi,
   extensionsApi,
   heartbeatLogsApi,
@@ -19,7 +18,6 @@ import { Skeleton } from '../Skeleton';
 interface SystemStats {
   souls: number;
   crews: number;
-  backgroundAgents: number;
   workflows: number;
   extensions: number;
   heartbeatLogs: number;
@@ -30,7 +28,6 @@ export function SystemStatsWidget() {
   const [stats, setStats] = useState<SystemStats>({
     souls: 0,
     crews: 0,
-    backgroundAgents: 0,
     workflows: 0,
     extensions: 0,
     heartbeatLogs: 0,
@@ -43,10 +40,9 @@ export function SystemStatsWidget() {
     const fetchData = async () => {
       try {
         setError(null);
-        const [souls, crews, bgAgents, extensions, heartbeats, subagents] = await Promise.all([
+        const [souls, crews, extensions, heartbeats, subagents] = await Promise.all([
           soulsApi.list().catch(() => ({ items: [], total: 0 })),
           crewsApi.list().catch(() => ({ items: [], total: 0 })),
-          backgroundAgentsApi.list().catch(() => []),
           extensionsApi.list().catch(() => []),
           heartbeatLogsApi.list(1, 0).catch(() => ({ items: [], total: 0 })),
           subagentsApi.getHistory(undefined, 1, 0).catch(() => ({ entries: [], total: 0 })),
@@ -65,7 +61,6 @@ export function SystemStatsWidget() {
         setStats({
           souls: souls.total,
           crews: crews.total,
-          backgroundAgents: bgAgents.length,
           workflows: workflowCount,
           extensions: extensions.length,
           heartbeatLogs: heartbeats.total,
@@ -99,15 +94,6 @@ export function SystemStatsWidget() {
       createLink: '/autonomous?new=crew',
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
-    },
-    {
-      label: 'Bg Agents',
-      value: stats.backgroundAgents,
-      icon: Bot,
-      link: '/background-agents',
-      createLink: '/background-agents?new=1',
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
     },
     {
       label: 'Workflows',
@@ -147,8 +133,8 @@ export function SystemStatsWidget() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
-        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <Skeleton key={i} className="h-20" />
         ))}
       </div>
@@ -172,7 +158,7 @@ export function SystemStatsWidget() {
 
   return (
     <>
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
         {statItems.map((stat) => (
           <Link
             key={stat.label}
@@ -216,13 +202,6 @@ export function SystemStatsWidget() {
         >
           <Plus className="w-3 h-3" />
           Crew
-        </Link>
-        <Link
-          to="/background-agents?new=1"
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors"
-        >
-          <Plus className="w-3 h-3" />
-          Bg Agent
         </Link>
         <Link
           to="/workflows/new"

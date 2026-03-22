@@ -16,11 +16,6 @@ import type {
   AgentMessage,
 } from '../../api/endpoints/souls';
 import type { AgentDetail } from '../../types';
-import { backgroundAgentsApi } from '../../api/endpoints/background-agents';
-import type {
-  BackgroundAgentConfig,
-  BackgroundAgentHistoryEntry,
-} from '../../api/endpoints/background-agents';
 import {
   ChevronLeft,
   Pause,
@@ -35,7 +30,6 @@ import { useDialog } from '../../components/ConfirmDialog';
 import { AgentStatusBadge } from './components/AgentStatusBadge';
 import { SoulEditor } from './components/SoulEditor';
 import type { AgentStatus, ProfileTab } from './types';
-import { mapBackgroundState } from './types';
 import type { Tool } from './components/ToolSelector';
 import {
   OverviewTab,
@@ -58,24 +52,20 @@ export function AgentProfilePage() {
 
   // Agent data
   const [soul, setSoul] = useState<AgentSoul | null>(null);
-  const [bgAgent, setBgAgent] = useState<BackgroundAgentConfig | null>(null);
   const [agentData, setAgentData] = useState<AgentDetail | null>(null);
   const [stats, setStats] = useState<HeartbeatStats | null>(null);
   const [heartbeats, setHeartbeats] = useState<HeartbeatLog[]>([]);
-  const [bgHistory, setBgHistory] = useState<BackgroundAgentHistoryEntry[]>([]);
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [crews, setCrews] = useState<AgentCrew[]>([]);
 
   // Derived
   const isSoul = !!soul;
-  const name = soul?.identity.name ?? bgAgent?.name ?? 'Unknown';
+  const name = soul?.identity.name ?? 'Unknown';
   const emoji = soul?.identity.emoji ?? '🤖';
-  const role = soul?.identity.role ?? 'Background Agent';
-  const status: AgentStatus = bgAgent?.session
-    ? mapBackgroundState(bgAgent.session.state)
-    : soul?.heartbeat.enabled
-      ? 'running'
-      : 'idle';
+  const role = soul?.identity.role ?? 'Agent';
+  const status = (soul?.heartbeat.enabled
+    ? 'running'
+    : 'idle') as AgentStatus;
   const crewId = soul?.relationships?.crewId;
   const crewName = crewId ? (crews.find((c) => c.id === crewId)?.name ?? crewId) : undefined;
 
@@ -84,40 +74,28 @@ export function AgentProfilePage() {
     if (!id) return;
     setFetchError(null);
     try {
-      // First, try to get the soul agent
       let soulData: AgentSoul | null = null;
-      let bgAgentData: BackgroundAgentConfig | null = null;
 
       try {
         soulData = await soulsApi.get(id);
       } catch {
-        // Not a soul agent, try background agent
-        try {
-          bgAgentData = await backgroundAgentsApi.get(id);
-        } catch {
-          // Neither - will show error below
-        }
+        // Not found
       }
 
-      // If neither found, show error
-      if (!soulData && !bgAgentData) {
+      if (!soulData) {
         setFetchError('Agent not found. It may have been deleted.');
         setIsLoading(false);
         return;
       }
 
       setSoul(soulData);
-      setBgAgent(bgAgentData);
 
-      const [statsData, heartbeatsData, messagesData, crewsData, bgHistoryData, agentInfo] =
+      const [statsData, heartbeatsData, messagesData, crewsData, agentInfo] =
         await Promise.all([
           heartbeatLogsApi.getStats(id).catch(() => null),
           heartbeatLogsApi.listByAgent(id, 20, 0).catch(() => [] as HeartbeatLog[]),
           agentMessagesApi.listByAgent(id, 30, 0).catch(() => [] as AgentMessage[]),
           crewsApi.list().catch(() => null),
-          bgAgentData
-            ? backgroundAgentsApi.getHistory(id, 20, 0).catch(() => null)
-            : Promise.resolve(null),
           agentsApi.get(id).catch(() => null),
         ]);
 
@@ -126,12 +104,6 @@ export function AgentProfilePage() {
       setMessages(messagesData);
       if (crewsData) {
         setCrews(crewsData.items ?? []);
-      }
-      // Background agent history (only for background agents)
-      if (bgHistoryData) {
-        setBgHistory(bgHistoryData.entries ?? []);
-      } else {
-        setBgHistory([]);
       }
       if (agentInfo) {
         setAgentData(agentInfo);
@@ -149,17 +121,13 @@ export function AgentProfilePage() {
 
   // Actions
   const handlePause = useCallback(async () => {
-    if (!id || isActionInFlight) return;
+    if (!id || isActionInFlight || !soul) return;
     setIsActionInFlight(true);
     try {
-      if (bgAgent) {
-        await backgroundAgentsApi.pause(id);
-      } else if (soul) {
-        await soulsApi.update(id, {
-          ...soul,
-          heartbeat: { ...soul.heartbeat, enabled: false },
-        });
-      }
+      await soulsApi.update(id, {
+        ...soul,
+        heartbeat: { ...soul.heartbeat, enabled: false },
+      });
       toast.success('Agent paused');
       await fetchData();
     } catch {
@@ -167,20 +135,16 @@ export function AgentProfilePage() {
     } finally {
       setIsActionInFlight(false);
     }
-  }, [id, isActionInFlight, bgAgent, soul, toast, fetchData]);
+  }, [id, isActionInFlight, soul, toast, fetchData]);
 
   const handleResume = useCallback(async () => {
-    if (!id || isActionInFlight) return;
+    if (!id || isActionInFlight || !soul) return;
     setIsActionInFlight(true);
     try {
-      if (bgAgent) {
-        await backgroundAgentsApi.resume(id);
-      } else if (soul) {
-        await soulsApi.update(id, {
-          ...soul,
-          heartbeat: { ...soul.heartbeat, enabled: true },
-        });
-      }
+      await soulsApi.update(id, {
+        ...soul,
+        heartbeat: { ...soul.heartbeat, enabled: true },
+      });
       toast.success('Agent resumed');
       await fetchData();
     } catch {
@@ -188,7 +152,7 @@ export function AgentProfilePage() {
     } finally {
       setIsActionInFlight(false);
     }
-  }, [id, isActionInFlight, bgAgent, soul, toast, fetchData]);
+  }, [id, isActionInFlight, soul, toast, fetchData]);
 
   const handleDelete = useCallback(async () => {
     if (!id) return;
@@ -200,17 +164,13 @@ export function AgentProfilePage() {
     )
       return;
     try {
-      if (bgAgent) {
-        await backgroundAgentsApi.delete(id);
-      } else {
-        await soulsApi.delete(id);
-      }
+      await soulsApi.delete(id);
       toast.success('Agent deleted');
       navigate('/autonomous');
     } catch {
       toast.error('Failed to delete agent');
     }
-  }, [id, name, bgAgent, confirm, toast, navigate]);
+  }, [id, name, confirm, toast, navigate]);
 
   const handleTestRun = useCallback(async () => {
     if (!id || !soul) return;
@@ -278,7 +238,7 @@ export function AgentProfilePage() {
 
   if (isLoading) return <LoadingSpinner message="Loading agent..." />;
 
-  if (!soul && !bgAgent) {
+  if (!soul) {
     return (
       <div className="flex-1 flex items-center justify-center p-6 text-center">
         {fetchError ? (
@@ -402,11 +362,9 @@ export function AgentProfilePage() {
             <OverviewTab
               agentId={id}
               soul={soul}
-              bgAgent={bgAgent}
               agentData={agentData}
               stats={stats}
               heartbeats={heartbeats}
-              bgHistory={bgHistory}
               messages={messages}
               onUpdate={fetchData}
             />
@@ -439,13 +397,13 @@ export function AgentProfilePage() {
 
         {activeTab === 'activity' && (
           <TabContent>
-            <ActivityTab heartbeats={heartbeats} bgHistory={bgHistory} onRefresh={fetchData} />
+            <ActivityTab heartbeats={heartbeats} onRefresh={fetchData} />
           </TabContent>
         )}
 
         {activeTab === 'budget' && (
           <TabContent>
-            <BudgetTab soul={soul} bgAgent={bgAgent} stats={stats} />
+            <BudgetTab soul={soul} stats={stats} />
           </TabContent>
         )}
       </div>

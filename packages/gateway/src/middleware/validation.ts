@@ -1017,7 +1017,7 @@ export const spawnSubagentSchema = z.object({
   name: z.string().min(1).max(200),
   task: z.string().min(1).max(50000),
   parentId: z.string().max(200).optional(),
-  parentType: z.enum(['chat', 'background-agent', 'subagent']).optional(),
+  parentType: z.enum(['chat', 'claw', 'subagent']).optional(),
   context: z.string().max(50000).optional(),
   allowedTools: z.array(z.string().max(200)).max(200).optional(),
   provider: z.string().max(100).optional(),
