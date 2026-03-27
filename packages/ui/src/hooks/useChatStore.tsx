@@ -113,7 +113,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     Array<{ type: string; content: string; importance?: number }>
   >([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionIdState] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  // Wrapper: keep ref in sync with state so sendMessage always sees latest value
+  const setSessionId = (id: string | null) => {
+    sessionIdRef.current = id;
+    setSessionIdState(id);
+  };
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
@@ -259,6 +265,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           /* localStorage unavailable */
         }
 
+        // Use ref to avoid stale closure — sessionId state may not be current in callback
+        const currentSessionId = sessionIdRef.current;
+        console.log('[SESSION-FIX-UI] sendMessage sessionId:', currentSessionId);
         const response = await fetch('/api/v1/chat', {
           method: 'POST',
           headers: chatHeaders,
@@ -266,9 +275,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             message: content,
             provider,
             model,
-            stream: true, // Enable streaming!
+            stream: true,
             // Continue the current conversation by ID so messages are properly linked in DB
-            ...(sessionId && { conversationId: sessionId }),
+            ...(currentSessionId && { conversationId: currentSessionId }),
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),

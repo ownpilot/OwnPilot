@@ -296,6 +296,11 @@ export class ChatRepository extends BaseRepository {
       sets.push(`is_archived = $${paramIndex++}`);
       params.push(updates.isArchived);
     }
+    if (updates.metadata !== undefined) {
+      // JSONB merge: existing metadata is preserved, new keys are added/updated
+      sets.push(`metadata = COALESCE(metadata, '{}'::jsonb) || $${paramIndex++}::jsonb`);
+      params.push(JSON.stringify(updates.metadata));
+    }
 
     if (sets.length === 1) return this.getConversation(id);
 
