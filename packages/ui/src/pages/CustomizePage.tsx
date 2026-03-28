@@ -8,14 +8,13 @@ import { useToast } from '../components/ToastProvider';
 
 /**
  * Build display sections: synthetic "Main" group + 6 navGroups + synthetic "Other" group.
- * /customize is excluded from all groups (always visible in sidebar, never pinnable).
  */
 const DISPLAY_SECTIONS: NavGroup[] = [
   {
     id: 'main',
     label: 'Main',
     icon: LayoutDashboard,
-    items: mainItems.filter((item) => item.to !== '/customize'),
+    items: mainItems,
   },
   ...navGroups,
   {
