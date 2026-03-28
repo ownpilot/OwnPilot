@@ -178,6 +178,9 @@ const EdgeDevicesPage = lazy(() =>
 );
 const FleetPage = lazy(() => import('./pages/FleetPage').then((m) => ({ default: m.FleetPage })));
 const ClawsPage = lazy(() => import('./pages/ClawsPage').then((m) => ({ default: m.ClawsPage })));
+const CustomizePage = lazy(() =>
+  import('./pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
+);
 
 function PageLoader() {
   return (
@@ -255,6 +258,7 @@ export function App() {
         <Route path="edge-devices" element={page(<EdgeDevicesPage />)} />
         <Route path="fleet" element={page(<FleetPage />)} />
         <Route path="claws" element={page(<ClawsPage />)} />
+        <Route path="customize" element={page(<CustomizePage />)} />
         {/* Old autonomous routes → redirect to unified hub */}
         <Route path="background-agents" element={<Navigate to="/autonomous" replace />} />
         <Route path="crews" element={<Navigate to="/autonomous?tab=crews" replace />} />
