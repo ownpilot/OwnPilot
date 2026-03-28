@@ -77,33 +77,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SB-01 | — | Pending |
-| SB-02 | — | Pending |
-| SB-03 | — | Pending |
-| SB-04 | — | Pending |
-| SB-05 | — | Pending |
-| SB-06 | — | Pending |
-| SB-07 | — | Pending |
-| CZ-01 | — | Pending |
-| CZ-02 | — | Pending |
-| CZ-03 | — | Pending |
-| CZ-04 | — | Pending |
-| CZ-05 | — | Pending |
-| INF-01 | — | Pending |
-| INF-02 | — | Pending |
-| INF-03 | — | Pending |
-| TST-01 | — | Pending |
-| TST-02 | — | Pending |
-| TST-03 | — | Pending |
-| TST-04 | — | Pending |
-| TST-05 | — | Pending |
-| TST-06 | — | Pending |
+| SB-01 | Phase 2 | Pending |
+| SB-02 | Phase 2 | Pending |
+| SB-03 | Phase 2 | Pending |
+| SB-04 | Phase 2 | Pending |
+| SB-05 | Phase 1 | Pending |
+| SB-06 | Phase 1 | Pending |
+| SB-07 | Phase 1 | Pending |
+| CZ-01 | Phase 3 | Pending |
+| CZ-02 | Phase 3 | Pending |
+| CZ-03 | Phase 3 | Pending |
+| CZ-04 | Phase 3 | Pending |
+| CZ-05 | Phase 3 | Pending |
+| INF-01 | Phase 1 | Pending |
+| INF-02 | Phase 1 | Pending |
+| INF-03 | Phase 1 | Pending |
+| TST-01 | Phase 4 | Pending |
+| TST-02 | Phase 4 | Pending |
+| TST-03 | Phase 4 | Pending |
+| TST-04 | Phase 4 | Pending |
+| TST-05 | Phase 4 | Pending |
+| TST-06 | Phase 4 | Pending |
 
 **Coverage:**
 - v1.0 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-28*
-*Last updated: 2026-03-28 after initial definition*
+*Last updated: 2026-03-27 — traceability filled after roadmap creation*
