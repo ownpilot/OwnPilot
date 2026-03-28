@@ -45,8 +45,7 @@ export function CustomizePage() {
 
   const handleTogglePin = (path: string) => {
     const isPinned = pinnedItems.includes(path);
-    // Exclude /customize from count -- it is always pinned separately, not user-controlled
-    if (!isPinned && pinnedItems.filter((p) => p !== '/customize').length >= MAX_PINNED_ITEMS) {
+    if (!isPinned && pinnedItems.length >= MAX_PINNED_ITEMS) {
       toast.warning(`Pin limit reached \u2014 max ${MAX_PINNED_ITEMS} items`);
       return;
     }
@@ -55,8 +54,7 @@ export function CustomizePage() {
     );
   };
 
-  // Pinned count excludes /customize (always pinned separately, not user-controlled)
-  const userPinnedCount = pinnedItems.filter((p) => p !== '/customize').length;
+  const userPinnedCount = pinnedItems.length;
 
   return (
     <div className="flex flex-col h-full">

@@ -56,9 +56,7 @@ export function Sidebar({ isMobile, isOpen, onClose, wsStatus, badgeCounts }: Si
   const navigate = useNavigate();
 
   // Resolve NavItem objects from pinned route paths.
-  // /customize is excluded from pinnedItems render (shown separately as Customize link).
   const pinnedNavItems = pinnedItems
-    .filter((path) => path !== '/customize')
     .map((path) => NAV_ITEM_MAP.get(path))
     .filter((item): item is NavItem => item !== undefined);
 
@@ -93,7 +91,7 @@ export function Sidebar({ isMobile, isOpen, onClose, wsStatus, badgeCounts }: Si
       {/* Navigation */}
       <nav className="flex-1 p-2 overflow-y-auto" data-testid="sidebar-nav">
 
-        {/* Pinned items (excluding /customize) */}
+        {/* Pinned items */}
         <div className="space-y-0.5 mb-2" data-testid="sidebar-pinned-items">
           {pinnedNavItems.map((item) => (
             <PinnedNavLink
