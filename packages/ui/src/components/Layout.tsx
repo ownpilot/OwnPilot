@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { useAuth } from '../hooks/useAuth';
 import {
-  ChevronDown,
-  ChevronRight,
   Menu,
-  X,
-  LogOut,
 } from './icons';
-import type { NavItem, NavGroup } from '../constants/nav-items';
-import { mainItems, navGroups, bottomItems } from '../constants/nav-items';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
@@ -20,88 +13,7 @@ import { DebugDrawer } from './DebugDrawer';
 import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
 import { MiniPomodoro } from './MiniPomodoro';
-
-function NavItemLink({
-  item,
-  compact = false,
-  badge,
-}: {
-  item: NavItem;
-  compact?: boolean;
-  badge?: number;
-}) {
-  const Icon = item.icon;
-  return (
-    <NavLink
-      to={item.to}
-      end={item.to === '/'}
-      className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-sm ${
-          isActive
-            ? 'bg-primary text-white shadow-sm border-l-[3px] border-white/50'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
-        } ${compact ? 'pl-8' : ''}`
-      }
-    >
-      <Icon className="w-4 h-4 shrink-0" />
-      <span className="truncate flex-1">{item.label}</span>
-      {badge != null && badge > 0 && (
-        <span className="ml-auto min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-error text-white text-[10px] font-bold leading-none">
-          {badge > 99 ? '99+' : badge}
-        </span>
-      )}
-    </NavLink>
-  );
-}
-
-function CollapsibleGroup({
-  group,
-  isOpen,
-  onToggle,
-}: {
-  group: NavGroup;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  const location = useLocation();
-  const Icon = group.icon;
-  const isActive = group.items.some(
-    (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-  );
-
-  return (
-    <div className="space-y-0.5">
-      <button
-        onClick={onToggle}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-colors text-sm ${
-          isActive && !isOpen
-            ? 'bg-primary/10 text-primary'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-        }`}
-      >
-        <Icon className="w-4 h-4 shrink-0" />
-        <span className="flex-1 text-left font-medium">{group.label}</span>
-        {group.badge && (
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400">
-            {group.badge}
-          </span>
-        )}
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="space-y-0.5">
-          {group.items.map((item) => (
-            <NavItemLink key={item.to} item={item} compact />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import { Sidebar } from './Sidebar';
 
 const CONNECTION_STYLES: Record<
   ConnectionStatus,
@@ -113,22 +25,8 @@ const CONNECTION_STYLES: Record<
   error: { color: 'bg-error', pulse: false, label: 'Connection Error' },
 };
 
-function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
-  const style = CONNECTION_STYLES[status];
-  return (
-    <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`}
-        aria-hidden="true"
-      />
-      <span>{style.label}</span>
-    </div>
-  );
-}
-
 export function Layout() {
   const { status: wsStatus } = useGateway();
-  const { passwordConfigured, logout } = useAuth();
   const isMobile = useIsMobile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
@@ -154,41 +52,6 @@ export function Layout() {
       setBadgeCounts((prev) => (prev.tasks === 0 ? prev : { ...prev, tasks: 0 }));
     }
   }, [location.pathname]);
-
-  // Initialize open groups based on current path
-  const getInitialOpenGroups = () => {
-    const openGroups: Record<string, boolean> = {};
-    navGroups.forEach((group) => {
-      const isActive = group.items.some(
-        (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-      );
-      openGroups[group.id] = isActive || group.defaultOpen || false;
-    });
-    return openGroups;
-  };
-
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    // Restore from localStorage, fallback to initial
-    try {
-      const saved = localStorage.getItem('ownpilot_nav_groups');
-      if (saved) return { ...getInitialOpenGroups(), ...JSON.parse(saved) };
-    } catch {
-      /* ignore */
-    }
-    return getInitialOpenGroups();
-  });
-
-  const toggleGroup = (groupId: string) => {
-    setOpenGroups((prev) => {
-      const next = { ...prev, [groupId]: !prev[groupId] };
-      try {
-        localStorage.setItem('ownpilot_nav_groups', JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  };
 
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
@@ -229,92 +92,13 @@ export function Layout() {
           />
         )}
 
-        {/* MOBILE CONTRACT: <aside> is the sole CSS transform target.
-            Do NOT wrap in additional divs with position:fixed.
-            Mobile slide animation: translate-x-0 (open) / -translate-x-full (closed). */}
-        {/* Left Sidebar - Navigation */}
-        <aside
-          className={
-            isMobile
-              ? `fixed inset-y-0 left-0 z-40 w-64 bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col transform transition-transform duration-200 ease-out ${
-                  isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`
-              : 'w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col'
-          }
-        >
-          {/* Mobile close button */}
-          {isMobile && (
-            <div className="p-3 border-b border-border dark:border-dark-border flex items-center justify-end">
-              <button
-                onClick={() => setIsMobileSidebarOpen(false)}
-                className="p-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-                aria-label="Close menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <nav className="flex-1 p-2 overflow-y-auto">
-            {/* Main Items */}
-            <div className="space-y-0.5 mb-3">
-              {mainItems.map((item) => (
-                <NavItemLink
-                  key={item.to}
-                  item={item}
-                  badge={
-                    item.to === '/inbox'
-                      ? badgeCounts.inbox
-                      : item.to === '/tasks'
-                        ? badgeCounts.tasks
-                        : undefined
-                  }
-                />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-border dark:border-dark-border my-2" />
-
-            {/* Grouped Items */}
-            <div className="space-y-1">
-              {navGroups.map((group) => (
-                <CollapsibleGroup
-                  key={group.id}
-                  group={group}
-                  isOpen={openGroups[group.id] || false}
-                  onToggle={() => toggleGroup(group.id)}
-                />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-border dark:border-dark-border my-2" />
-
-            {/* Bottom Items */}
-            <div className="space-y-0.5">
-              {bottomItems.map((item) => (
-                <NavItemLink key={item.to} item={item} />
-              ))}
-            </div>
-          </nav>
-
-          {/* Status */}
-          <div className="p-2 border-t border-border dark:border-dark-border space-y-1">
-            {passwordConfigured && (
-              <button
-                onClick={() => logout()}
-                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-error/10 hover:text-error transition-colors"
-                title="Log out"
-              >
-                <LogOut className="w-3.5 h-3.5 shrink-0" />
-                <span className="flex-1 text-left">Log Out</span>
-              </button>
-            )}
-            <ConnectionIndicator status={wsStatus} />
-          </div>
-        </aside>
+        <Sidebar
+          isMobile={isMobile}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          wsStatus={wsStatus}
+          badgeCounts={badgeCounts}
+        />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
