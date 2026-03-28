@@ -27,7 +27,11 @@ This milestone transforms OwnPilot's chaotic 63-item collapsible sidebar into a 
   3. A user who had `ownpilot_nav_groups` in their browser localStorage sees the sidebar load correctly on first run of the new code (old key read, new key written, old key cleared)
   4. Default pinned items (Chat, Dashboard, Customize) appear in the sidebar on first load for a brand-new user with no localStorage state
   5. Sidebar state (pinned items, section collapse) survives a full browser refresh
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Extract constants/nav-items.ts + update STORAGE_KEYS (INF-01, INF-02)
+- [ ] 01-02-PLAN.md — Create usePinnedItems hook + update Layout.tsx imports (INF-01, INF-03, SB-05, SB-06, SB-07)
 
 ### Phase 2: Sidebar Rebuild
 **Goal**: The old Layout.tsx aside block is replaced by a new Sidebar component — pinned items render in place of the 63-item collapsible list, the Recents section shows the 6 most recent conversations, and the mobile slide-in behavior is fully preserved
@@ -71,11 +75,11 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/2 | Planning done | - |
 | 2. Sidebar Rebuild | 0/TBD | Not started | - |
 | 3. Customize Page | 0/TBD | Not started | - |
 | 4. Tests + Polish | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-03-27 — v1.0 Sidebar Overhaul*
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-27 — Phase 1 planned (2 plans)*
