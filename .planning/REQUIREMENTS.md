@@ -13,9 +13,9 @@ Requirements for sidebar overhaul. Each maps to roadmap phases.
 - [ ] **SB-02**: Customize link is always visible in sidebar
 - [ ] **SB-03**: User sees "Recents" section with last 6 conversations
 - [ ] **SB-04**: User can click a recent conversation to load it
-- [ ] **SB-05**: Default pinned items appear on first load (Chat, Dashboard, Customize)
-- [ ] **SB-06**: Sidebar state persists across page refresh (localStorage)
-- [ ] **SB-07**: Mobile sidebar preserves slide-in/backdrop behavior
+- [x] **SB-05**: Default pinned items appear on first load (Chat, Dashboard, Customize)
+- [x] **SB-06**: Sidebar state persists across page refresh (localStorage)
+- [x] **SB-07**: Mobile sidebar preserves slide-in/backdrop behavior
 
 ### Customize Page
 
@@ -29,7 +29,7 @@ Requirements for sidebar overhaul. Each maps to roadmap phases.
 
 - [x] **INF-01**: Nav items extracted to shared constants (sidebar + customize reuse)
 - [x] **INF-02**: localStorage keys registered in STORAGE_KEYS (no raw strings)
-- [ ] **INF-03**: Old nav group localStorage state handled gracefully (migration)
+- [x] **INF-03**: Old nav group localStorage state handled gracefully (migration)
 
 ### Testing
 
@@ -81,9 +81,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SB-02 | Phase 2 | Pending |
 | SB-03 | Phase 2 | Pending |
 | SB-04 | Phase 2 | Pending |
-| SB-05 | Phase 1 | Pending |
-| SB-06 | Phase 1 | Pending |
-| SB-07 | Phase 1 | Pending |
+| SB-05 | Phase 1 | Complete |
+| SB-06 | Phase 1 | Complete |
+| SB-07 | Phase 1 | Complete |
 | CZ-01 | Phase 3 | Pending |
 | CZ-02 | Phase 3 | Pending |
 | CZ-03 | Phase 3 | Pending |
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CZ-05 | Phase 3 | Pending |
 | INF-01 | Phase 1 | Complete |
 | INF-02 | Phase 1 | Complete |
-| INF-03 | Phase 1 | Pending |
+| INF-03 | Phase 1 | Complete |
 | TST-01 | Phase 4 | Pending |
 | TST-02 | Phase 4 | Pending |
 | TST-03 | Phase 4 | Pending |

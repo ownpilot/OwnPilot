@@ -10,7 +10,7 @@ This milestone transforms OwnPilot's chaotic 63-item collapsible sidebar into a 
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Extract nav items, STORAGE_KEYS, usePinnedItems hook, localStorage migration, mobile sidebar contract
+- [x] **Phase 1: Foundation** - Extract nav items, STORAGE_KEYS, usePinnedItems hook, localStorage migration, mobile sidebar contract (completed 2026-03-28)
 - [ ] **Phase 2: Sidebar Rebuild** - New Sidebar component, Recents section, pinned items rendering, Layout.tsx surgery
 - [ ] **Phase 3: Customize Page** - /customize route, categorized grid, pin/unpin star toggle, search filter
 - [ ] **Phase 4: Tests + Polish** - Playwright E2E suite, mobile regression, Docker build verify, typecheck gate
@@ -31,7 +31,7 @@ This milestone transforms OwnPilot's chaotic 63-item collapsible sidebar into a 
 
 Plans:
 - [x] 01-01-PLAN.md — Extract constants/nav-items.ts + update STORAGE_KEYS (INF-01, INF-02)
-- [ ] 01-02-PLAN.md — Create usePinnedItems hook + update Layout.tsx imports (INF-01, INF-03, SB-05, SB-06, SB-07)
+- [x] 01-02-PLAN.md — Create usePinnedItems hook + update Layout.tsx imports (INF-01, INF-03, SB-05, SB-06, SB-07)
 
 ### Phase 2: Sidebar Rebuild
 **Goal**: The old Layout.tsx aside block is replaced by a new Sidebar component — pinned items render in place of the 63-item collapsible list, the Recents section shows the 6 most recent conversations, and the mobile slide-in behavior is fully preserved
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Planning done | - |
+| 1. Foundation | 2/2 | Complete   | 2026-03-28 |
 | 2. Sidebar Rebuild | 0/TBD | Not started | - |
 | 3. Customize Page | 0/TBD | Not started | - |
 | 4. Tests + Polish | 0/TBD | Not started | - |
