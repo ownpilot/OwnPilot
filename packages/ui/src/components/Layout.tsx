@@ -14,6 +14,7 @@ import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
 import { MiniPomodoro } from './MiniPomodoro';
 import { Sidebar } from './Sidebar';
+import { PinnedItemsProvider } from '../hooks/usePinnedItems';
 
 const CONNECTION_STYLES: Record<
   ConnectionStatus,
@@ -56,6 +57,7 @@ export function Layout() {
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
   return (
+    <PinnedItemsProvider>
     <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
       {/* Global Header Bar */}
       <header className="h-12 flex items-center px-4 gap-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
@@ -129,5 +131,6 @@ export function Layout() {
       {/* Debug Drawer */}
       <DebugDrawer />
     </div>
+    </PinnedItemsProvider>
   );
 }
