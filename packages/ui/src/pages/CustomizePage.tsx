@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   Pin,
   Search,
@@ -41,8 +42,7 @@ export function CustomizePage() {
   const { isOpen, toggle } = useGroupCollapseState();
   const [activeTab, setActiveTab] = useState<TabId>('items');
   const [query, setQuery] = useState('');
-  // TODO(phase-7): selectedItem drives right-side detail panel
-  const [_selectedItem, setSelectedItem] = useState<string | null>(null);
+  const { setSelectedItem } = useOutletContext<{ selectedItem: string | null; setSelectedItem: (item: string | null) => void }>();
 
   const normalizedQuery = query.trim().toLowerCase();
 
