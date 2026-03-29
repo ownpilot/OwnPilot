@@ -31,7 +31,7 @@ export interface SidebarProps {
 // Build a lookup map: route path → NavItem (for icon + label resolution)
 const NAV_ITEM_MAP = new Map<string, NavItem>(ALL_NAV_ITEMS.map((item) => [item.to, item]));
 
-function PinnedNavLink({ item, badge, onCloseCustomize }: { item: NavItem; badge?: number; onCloseCustomize?: () => void }) {
+function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { item: NavItem; badge?: number; onCloseCustomize?: () => void; isCustomizeOpen?: boolean }) {
   const Icon = item.icon;
   return (
     <NavLink
@@ -40,7 +40,7 @@ function PinnedNavLink({ item, badge, onCloseCustomize }: { item: NavItem; badge
       onClick={onCloseCustomize}
       className={({ isActive }) =>
         `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
-          isActive
+          isActive && !isCustomizeOpen
             ? 'bg-primary text-white shadow-sm border-l-[3px] border-white/50'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
         }`
@@ -110,6 +110,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               key={item.to}
               item={item}
               onCloseCustomize={onCloseCustomize}
+              isCustomizeOpen={isCustomizeOpen}
               badge={
                 item.to === '/inbox'
                   ? badgeCounts.inbox
@@ -139,7 +140,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
           data-testid="sidebar-scheduled-link"
           className={({ isActive }) =>
             `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
-              isActive
+              isActive && !isCustomizeOpen
                 ? 'bg-primary text-white shadow-sm border-l-[3px] border-white/50'
                 : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
             }`
