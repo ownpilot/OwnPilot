@@ -13,4 +13,6 @@ export const STORAGE_KEYS = {
   SIDEBAR_PINNED: 'ownpilot-sidebar-pinned',  // string[] of pinned route paths (e.g. ['/', '/dashboard', '/customize'])
   NAV_GROUPS: 'ownpilot_nav_groups',           // legacy key — kept for migration compat, replaced by SIDEBAR_PINNED
   GROUP_COLLAPSE: 'ownpilot-customize-group-state', // Record<string, boolean> — group open/closed state in CustomizePage
+  LOCAL_FILES_DEVICES: 'ownpilot-local-files-devices', // Record<string, boolean> — open/closed state for machine devices
+  LOCAL_FILES_DIRS: 'ownpilot-local-files-dirs',       // Record<string, boolean> — open/closed state for bookmark directories
 } as const;

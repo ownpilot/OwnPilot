@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FolderOpen,
 } from '../components/icons';
+import { LocalFilesTab } from '../components/LocalFilesTab';
 import { navGroups, mainItems, bottomItems } from '../constants/nav-items';
 import type { NavGroup } from '../constants/nav-items';
 import { NAV_DESCRIPTIONS } from '../constants/nav-descriptions';
@@ -198,13 +199,7 @@ export function CustomizePage() {
 
       {/* Local Files tab */}
       {activeTab === 'local-files' && (
-        <div className="flex-1 flex items-center justify-center" data-testid="customize-local-files">
-          <div className="text-center text-text-muted dark:text-dark-text-muted">
-            <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm font-medium">Local file browsing coming soon</p>
-            <p className="text-xs mt-1 opacity-70">Browse and pin files from your workspace</p>
-          </div>
-        </div>
+        <LocalFilesTab onSelectItem={setSelectedItem} />
       )}
 
       {/* Pin counter footer */}
