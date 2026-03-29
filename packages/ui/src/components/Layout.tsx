@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -17,6 +17,10 @@ import { Sidebar } from './Sidebar';
 import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 import { PinnedItemsProvider } from '../hooks/usePinnedItems';
 
+const CustomizePage = lazy(() =>
+  import('../pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
+);
+
 const CONNECTION_STYLES: Record<
   ConnectionStatus,
   { color: string; pulse: boolean; label: string }
@@ -34,6 +38,7 @@ export function Layout() {
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
   const { slots: pulseSlots } = usePulseSlots();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCustomizePanelOpen, setIsCustomizePanelOpen] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
@@ -113,9 +118,18 @@ export function Layout() {
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
           onSearchOpen={() => setIsSearchOpen(true)}
+          onCustomizeToggle={() => setIsCustomizePanelOpen((prev) => !prev)}
+          isCustomizeOpen={isCustomizePanelOpen}
           wsStatus={wsStatus}
           badgeCounts={badgeCounts}
         />
+
+        {/* Customize Panel (persistent — survives route changes) */}
+        {isCustomizePanelOpen && (
+          <Suspense fallback={null}>
+            <CustomizePage />
+          </Suspense>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
