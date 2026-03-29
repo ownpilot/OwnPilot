@@ -15,6 +15,7 @@ import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
 import { MiniPomodoro } from './MiniPomodoro';
 import { Sidebar } from './Sidebar';
+import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 import { PinnedItemsProvider } from '../hooks/usePinnedItems';
 
 const CONNECTION_STYLES: Record<
@@ -33,7 +34,7 @@ export function Layout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
   const { slots: pulseSlots } = usePulseSlots();
-  const [_isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
@@ -62,6 +63,18 @@ export function Layout() {
       setBadgeCounts((prev) => (prev.tasks === 0 ? prev : { ...prev, tasks: 0 }));
     }
   }, [location.pathname]);
+
+  // Global Ctrl+K / Cmd+K to open search overlay
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
@@ -144,6 +157,9 @@ export function Layout() {
 
       {/* Debug Drawer */}
       <DebugDrawer />
+
+      {/* Global Search Overlay */}
+      {isSearchOpen && <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </div>
     </PinnedItemsProvider>
   );
