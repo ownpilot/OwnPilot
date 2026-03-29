@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Pin,
   Search,
@@ -41,6 +41,7 @@ export function CustomizePage() {
   const { pinnedItems, setPinnedItems, MAX_PINNED_ITEMS } = usePinnedItems();
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isOpen, toggle } = useGroupCollapseState();
   const [activeTab, setActiveTab] = useState<TabId>('items');
   const [query, setQuery] = useState('');
@@ -158,16 +159,21 @@ export function CustomizePage() {
                     {groupOpen &&
                       section.items.map((item) => {
                         const isPinned = pinnedItems.includes(item.to);
+                        const isActive = location.pathname === item.to || (item.to === '/' && location.pathname === '/');
                         const Icon = item.icon;
                         return (
                           <div
                             key={item.to}
-                            className="group flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                            className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors ${
+                              isActive
+                                ? 'bg-primary/10 text-primary border-l-[3px] border-primary'
+                                : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                            }`}
                             onClick={() => navigate(item.to)}
                             data-testid={`customize-item-${item.to.replace(/\//g, '-').replace(/^-/, '')}`}
                           >
-                            <Icon className="w-3.5 h-3.5 text-text-secondary dark:text-dark-text-secondary shrink-0" />
-                            <span className="flex-1 text-base text-text-primary dark:text-dark-text-primary truncate">
+                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary dark:text-dark-text-secondary'}`} />
+                            <span className={`flex-1 text-base truncate ${isActive ? 'text-primary font-medium' : 'text-text-primary dark:text-dark-text-primary'}`}>
                               {item.label}
                             </span>
                             <button
