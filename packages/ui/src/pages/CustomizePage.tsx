@@ -41,6 +41,7 @@ export function CustomizePage() {
   const { isOpen, toggle } = useGroupCollapseState();
   const [activeTab, setActiveTab] = useState<TabId>('items');
   const [query, setQuery] = useState('');
+  // TODO(phase-7): selectedItem drives right-side detail panel
   const [_selectedItem, setSelectedItem] = useState<string | null>(null);
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -158,14 +159,14 @@ export function CustomizePage() {
                         const isPinned = pinnedItems.includes(item.to);
                         const Icon = item.icon;
                         return (
-                          <button
+                          <div
                             key={item.to}
-                            className="group w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                            className="group flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
                             onClick={() => setSelectedItem(item.to)}
                             data-testid={`customize-item-${item.to.replace(/\//g, '-').replace(/^-/, '')}`}
                           >
                             <Icon className="w-3.5 h-3.5 text-text-secondary dark:text-dark-text-secondary shrink-0" />
-                            <span className="flex-1 text-left text-base text-text-primary dark:text-dark-text-primary truncate">
+                            <span className="flex-1 text-base text-text-primary dark:text-dark-text-primary truncate">
                               {item.label}
                             </span>
                             <button
@@ -184,7 +185,7 @@ export function CustomizePage() {
                                 style={isPinned ? { fill: 'currentColor' } : undefined}
                               />
                             </button>
-                          </button>
+                          </div>
                         );
                       })}
                   </div>

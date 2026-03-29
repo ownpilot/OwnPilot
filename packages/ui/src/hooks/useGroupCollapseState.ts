@@ -34,7 +34,8 @@ export function useGroupCollapseState() {
 
   const toggle = useCallback((groupId: string) => {
     setState((prev) => {
-      const next = { ...prev, [groupId]: prev[groupId] === false };
+      const wasOpen = prev[groupId] !== false; // default open
+      const next = { ...prev, [groupId]: !wasOpen };
       try {
         localStorage.setItem(STORAGE_KEYS.GROUP_COLLAPSE, JSON.stringify(next));
       } catch {
