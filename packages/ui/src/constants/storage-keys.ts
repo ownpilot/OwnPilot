@@ -12,4 +12,5 @@ export const STORAGE_KEYS = {
   MINI_CHAT_OPEN: 'ownpilot-mini-chat-open',
   SIDEBAR_PINNED: 'ownpilot-sidebar-pinned',  // string[] of pinned route paths (e.g. ['/', '/dashboard', '/customize'])
   NAV_GROUPS: 'ownpilot_nav_groups',           // legacy key — kept for migration compat, replaced by SIDEBAR_PINNED
+  GROUP_COLLAPSE: 'ownpilot-customize-group-state', // Record<string, boolean> — group open/closed state in CustomizePage
 } as const;
