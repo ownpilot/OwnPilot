@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import {
@@ -45,6 +45,19 @@ export function Layout() {
     []
   );
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleCustomizeToggle = useCallback(() => {
+    const willOpen = !isCustomizePanelOpen;
+    setIsCustomizePanelOpen(willOpen);
+    if (willOpen) {
+      navigate('/');
+    }
+  }, [isCustomizePanelOpen, navigate]);
+
+  const handleCloseCustomize = useCallback(() => {
+    setIsCustomizePanelOpen(false);
+  }, []);
 
   // Close mobile sidebar on navigation
   useEffect(() => {
@@ -118,8 +131,9 @@ export function Layout() {
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
           onSearchOpen={() => setIsSearchOpen(true)}
-          onCustomizeToggle={() => setIsCustomizePanelOpen((prev) => !prev)}
+          onCustomizeToggle={handleCustomizeToggle}
           isCustomizeOpen={isCustomizePanelOpen}
+          onCloseCustomize={handleCloseCustomize}
           wsStatus={wsStatus}
           badgeCounts={badgeCounts}
         />

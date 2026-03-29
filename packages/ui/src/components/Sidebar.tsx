@@ -23,6 +23,7 @@ export interface SidebarProps {
   onSearchOpen: () => void;
   onCustomizeToggle: () => void;
   isCustomizeOpen: boolean;
+  onCloseCustomize: () => void;
   wsStatus: ConnectionStatus;
   badgeCounts: { inbox: number; tasks: number };
 }
@@ -30,12 +31,13 @@ export interface SidebarProps {
 // Build a lookup map: route path → NavItem (for icon + label resolution)
 const NAV_ITEM_MAP = new Map<string, NavItem>(ALL_NAV_ITEMS.map((item) => [item.to, item]));
 
-function PinnedNavLink({ item, badge }: { item: NavItem; badge?: number }) {
+function PinnedNavLink({ item, badge, onCloseCustomize }: { item: NavItem; badge?: number; onCloseCustomize?: () => void }) {
   const Icon = item.icon;
   return (
     <NavLink
       to={item.to}
       end={item.to === '/'}
+      onClick={onCloseCustomize}
       className={({ isActive }) =>
         `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
           isActive
@@ -55,7 +57,7 @@ function PinnedNavLink({ item, badge }: { item: NavItem; badge?: number }) {
   );
 }
 
-export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeToggle, isCustomizeOpen, wsStatus, badgeCounts }: SidebarProps) {
+export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeToggle, isCustomizeOpen, onCloseCustomize, wsStatus, badgeCounts }: SidebarProps) {
   const { pinnedItems } = usePinnedItems();
   const { conversations, isLoading: recentsLoading } = useSidebarRecents();
   const { projects, isLoading: projectsLoading } = useSidebarProjects();
@@ -70,6 +72,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
     .filter((item): item is NavItem => item !== undefined);
 
   const handleRecentClick = (conversationId: string) => {
+    onCloseCustomize();
     navigate(`/?conversationId=${conversationId}`);
   };
 
@@ -106,6 +109,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
             <PinnedNavLink
               key={item.to}
               item={item}
+              onCloseCustomize={onCloseCustomize}
               badge={
                 item.to === '/inbox'
                   ? badgeCounts.inbox
@@ -131,6 +135,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
         <NavLink
           to="/calendar"
           end
+          onClick={onCloseCustomize}
           data-testid="sidebar-scheduled-link"
           className={({ isActive }) =>
             `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
@@ -169,7 +174,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               Projects
             </span>
             <button
-              onClick={() => navigate('/workspaces')}
+              onClick={() => { onCloseCustomize(); navigate('/workspaces'); }}
               className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
               aria-label="New project"
             >
@@ -189,7 +194,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               {projects.map((project) => (
                 <button
                   key={project.id}
-                  onClick={() => navigate(`/workspaces`)}
+                  onClick={() => { onCloseCustomize(); navigate(`/workspaces`); }}
                   className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
                   title={project.name}
                 >
@@ -215,7 +220,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               Workflows
             </span>
             <button
-              onClick={() => navigate('/workflows')}
+              onClick={() => { onCloseCustomize(); navigate('/workflows'); }}
               className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
               aria-label="New workflow"
             >
@@ -235,7 +240,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               {workflows.map((wf) => (
                 <button
                   key={wf.id}
-                  onClick={() => navigate(`/workflows`)}
+                  onClick={() => { onCloseCustomize(); navigate(`/workflows`); }}
                   className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
                   title={wf.name}
                 >
@@ -299,6 +304,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
           <NavLink
             to="/history"
             end
+            onClick={onCloseCustomize}
             className="flex items-center px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
           >
             All conversations →
