@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Pin,
   Search,
@@ -40,10 +40,10 @@ const DISPLAY_SECTIONS: NavGroup[] = [
 export function CustomizePage() {
   const { pinnedItems, setPinnedItems, MAX_PINNED_ITEMS } = usePinnedItems();
   const toast = useToast();
+  const navigate = useNavigate();
   const { isOpen, toggle } = useGroupCollapseState();
   const [activeTab, setActiveTab] = useState<TabId>('items');
   const [query, setQuery] = useState('');
-  const { setSelectedItem } = useOutletContext<{ selectedItem: string | null; setSelectedItem: (item: string | null) => void }>();
 
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -163,7 +163,7 @@ export function CustomizePage() {
                           <div
                             key={item.to}
                             className="group flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-                            onClick={() => setSelectedItem(item.to)}
+                            onClick={() => navigate(item.to)}
                             data-testid={`customize-item-${item.to.replace(/\//g, '-').replace(/^-/, '')}`}
                           >
                             <Icon className="w-3.5 h-3.5 text-text-secondary dark:text-dark-text-secondary shrink-0" />
@@ -199,7 +199,7 @@ export function CustomizePage() {
 
       {/* Local Files tab */}
       {activeTab === 'local-files' && (
-        <LocalFilesTab onSelectItem={setSelectedItem} />
+        <LocalFilesTab onSelectItem={(path) => navigate(path)} />
       )}
 
       {/* Pin counter footer */}

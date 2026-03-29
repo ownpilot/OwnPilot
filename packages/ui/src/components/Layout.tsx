@@ -6,7 +6,6 @@ import {
   Menu,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
-import { CustomizeDetailPanel } from './CustomizeDetailPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
 import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
@@ -40,19 +39,12 @@ export function Layout() {
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
     []
   );
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const location = useLocation();
-  const isCustomizePage = location.pathname === '/customize';
 
   // Close mobile sidebar on navigation
   useEffect(() => {
     if (isMobile) setIsMobileSidebarOpen(false);
   }, [location.pathname, isMobile]);
-
-  // Clear detail panel selection when leaving /customize
-  useEffect(() => {
-    if (!isCustomizePage) setSelectedItem(null);
-  }, [isCustomizePage]);
 
   // Reset badges when navigating to their respective pages
   useEffect(() => {
@@ -129,20 +121,16 @@ export function Layout() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <SecurityBanner />
           <main className="flex-1 flex flex-col overflow-y-auto min-h-0">
-            <Outlet context={{ selectedItem, setSelectedItem }} />
+            <Outlet />
           </main>
         </div>
 
         {/* Right Sidebar - Stats or Detail Panel (desktop only) */}
         {!isMobile && (
-          isCustomizePage ? (
-            <CustomizeDetailPanel selectedItemPath={selectedItem} />
-          ) : (
             <StatsPanel
               isCollapsed={isStatsPanelCollapsed}
               onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
             />
-          )
         )}
       </div>
 
