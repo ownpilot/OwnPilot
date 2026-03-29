@@ -72,7 +72,7 @@ export function CustomizePage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-[300px] shrink-0 border-r border-border dark:border-dark-border">
       {/* Tab bar */}
       <div className="flex border-b border-border dark:border-dark-border shrink-0">
         <button
