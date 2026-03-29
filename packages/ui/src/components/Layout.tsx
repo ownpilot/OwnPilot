@@ -32,6 +32,7 @@ export function Layout() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
   const { slots: pulseSlots } = usePulseSlots();
+  const [_isSearchOpen, setIsSearchOpen] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
@@ -98,6 +99,7 @@ export function Layout() {
           isMobile={isMobile}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
+          onSearchOpen={() => setIsSearchOpen(true)}
           wsStatus={wsStatus}
           badgeCounts={badgeCounts}
         />
