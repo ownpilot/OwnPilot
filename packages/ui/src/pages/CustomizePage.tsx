@@ -15,6 +15,7 @@ import type { NavGroup } from '../constants/nav-items';
 import { NAV_DESCRIPTIONS } from '../constants/nav-descriptions';
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { useHeaderItems } from '../hooks/useHeaderItems';
+import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useGroupCollapseState } from '../hooks/useGroupCollapseState';
 import { useToast } from '../components/ToastProvider';
 
@@ -42,6 +43,7 @@ const DISPLAY_SECTIONS: NavGroup[] = [
 export function CustomizePage() {
   const { pinnedItems, setPinnedItems, isGroupPinned, toggleGroup, MAX_PINNED_ITEMS } = usePinnedItems();
   const { headerItems, addItem: addHeaderItem, addGroup: addHeaderGroup, removeByIndex: removeHeaderByIndex, MAX_HEADER_ITEMS } = useHeaderItems();
+  const { config, addZoneEntry, removeZoneEntry, getZone } = useLayoutConfig();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,37 +77,67 @@ export function CustomizePage() {
     );
   };
 
+  // Check both legacy headerItems AND layout config zones for pin status
+  const allZoneEntries = ['left', 'center', 'right'].flatMap((z) => getZone(z as 'left' | 'center' | 'right').entries);
+
   const isHeaderPinnedItem = (path: string) =>
-    headerItems.some((c) => c.type === 'item' && c.path === path);
+    headerItems.some((c) => c.type === 'item' && c.path === path) ||
+    allZoneEntries.some((e) => e.type === 'item' && e.path === path);
 
   const isHeaderPinnedGroup = (groupId: string) =>
-    headerItems.some((c) => c.type === 'group' && c.id === groupId);
+    headerItems.some((c) => c.type === 'group' && c.id === groupId) ||
+    allZoneEntries.some((e) => e.type === 'group' && e.id === groupId);
 
   const handleToggleHeaderPin = (e: React.MouseEvent, path: string) => {
     e.stopPropagation();
-    const idx = headerItems.findIndex((c) => c.type === 'item' && c.path === path);
-    if (idx >= 0) {
-      removeHeaderByIndex(idx);
-    } else {
+
+    // Check legacy store
+    const legacyIdx = headerItems.findIndex((c) => c.type === 'item' && c.path === path);
+    if (legacyIdx >= 0) removeHeaderByIndex(legacyIdx);
+
+    // Check zone entries and remove from whichever zone it's in
+    let foundInZone = false;
+    for (const zoneId of ['left', 'center', 'right'] as const) {
+      const zone = getZone(zoneId);
+      const zIdx = zone.entries.findIndex((e) => e.type === 'item' && e.path === path);
+      if (zIdx >= 0) { removeZoneEntry(zoneId, zIdx); foundInZone = true; }
+    }
+
+    // If was in neither → add to both (legacy + left zone)
+    if (legacyIdx < 0 && !foundInZone) {
       if (headerItems.length >= MAX_HEADER_ITEMS) {
-        toast.warning(`Header pin limit reached \u2014 max ${MAX_HEADER_ITEMS} items`);
+        toast.warning(`Header pin limit reached — max ${MAX_HEADER_ITEMS} items`);
         return;
       }
       addHeaderItem(path);
+      addZoneEntry('left', { type: 'item', path });
     }
   };
 
   const handleToggleHeaderGroupPin = (e: React.MouseEvent, section: NavGroup) => {
     e.stopPropagation();
-    const idx = headerItems.findIndex((c) => c.type === 'group' && c.id === section.id);
-    if (idx >= 0) {
-      removeHeaderByIndex(idx);
-    } else {
+    const groupEntry = { type: 'group' as const, id: section.id, label: section.label, items: section.items.map((i) => i.to) };
+
+    // Check legacy store
+    const legacyIdx = headerItems.findIndex((c) => c.type === 'group' && c.id === section.id);
+    if (legacyIdx >= 0) removeHeaderByIndex(legacyIdx);
+
+    // Check zone entries
+    let foundInZone = false;
+    for (const zoneId of ['left', 'center', 'right'] as const) {
+      const zone = getZone(zoneId);
+      const zIdx = zone.entries.findIndex((e) => e.type === 'group' && e.id === section.id);
+      if (zIdx >= 0) { removeZoneEntry(zoneId, zIdx); foundInZone = true; }
+    }
+
+    // If was in neither → add to both
+    if (legacyIdx < 0 && !foundInZone) {
       if (headerItems.length >= MAX_HEADER_ITEMS) {
-        toast.warning(`Header pin limit reached \u2014 max ${MAX_HEADER_ITEMS} items`);
+        toast.warning(`Header pin limit reached — max ${MAX_HEADER_ITEMS} items`);
         return;
       }
       addHeaderGroup(section.id, section.label, section.items.map((i) => i.to));
+      addZoneEntry('left', groupEntry);
     }
   };
 

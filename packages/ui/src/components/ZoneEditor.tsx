@@ -7,8 +7,9 @@
  */
 import { useState } from 'react';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
+import { useHeaderItems } from '../hooks/useHeaderItems';
 import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
-import { PAGE_LAYOUT_REGISTRY, type PageSection } from '../constants/page-layouts';
+import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
 import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode, HeaderZoneEntry } from '../types/layout-config';
@@ -43,6 +44,7 @@ function isEditableHeaderZone(zone: WireframeZone): zone is 'header-left' | 'hea
 
 export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   const { getZone, setZoneDisplayMode, addZoneEntry, removeZoneEntry } = useLayoutConfig();
+  const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
   const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
 
   const label = ZONE_LABELS[zone];
@@ -95,12 +97,29 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
 
   const handleAddItem = (path: string) => {
     addZoneEntry(zoneId, { type: 'item', path });
+    addLegacyItem(path); // sync to legacy store
     setAddMenuOpen(null);
   };
 
   const handleAddGroup = (group: typeof navGroups[number]) => {
     addZoneEntry(zoneId, { type: 'group', id: group.id, label: group.label, items: group.items.map((i) => i.to) });
+    addLegacyGroup(group.id, group.label, group.items.map((i) => i.to)); // sync to legacy store
     setAddMenuOpen(null);
+  };
+
+  const handleRemoveEntry = (index: number) => {
+    const entry = zoneConfig.entries[index];
+    removeZoneEntry(zoneId, index);
+    // Sync: also remove from legacy store
+    if (entry) {
+      if (entry.type === 'item') {
+        const legIdx = headerItems.findIndex((c) => c.type === 'item' && c.path === entry.path);
+        if (legIdx >= 0) removeLegacyByIndex(legIdx);
+      } else if (entry.type === 'group') {
+        const legIdx = headerItems.findIndex((c) => c.type === 'group' && c.id === entry.id);
+        if (legIdx >= 0) removeLegacyByIndex(legIdx);
+      }
+    }
   };
 
   return (
@@ -163,7 +182,7 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                   <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">{entryLabel}</span>
                   <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">{entry.type}</span>
                   <button
-                    onClick={() => removeZoneEntry(zoneId, i)}
+                    onClick={() => handleRemoveEntry(i)}
                     className="w-5 h-5 flex items-center justify-center rounded hover:bg-error/10 hover:text-error transition-colors text-text-muted dark:text-dark-text-muted"
                     title="Remove"
                   >
