@@ -20,6 +20,7 @@ const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-right': 'Header — Right Zone',
   'header-settings': 'Header — Settings',
   sidebar: 'Sidebar',
+  customize: 'Customize Panel',
   content: 'Content Area',
   'stats-panel': 'Stats Panel',
 };
@@ -64,6 +65,11 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
         {zone === 'header-settings' && (
           <p className="text-xs text-text-muted dark:text-dark-text-muted">
             Fixed zone — shows connection status and settings icon. Not configurable.
+          </p>
+        )}
+        {zone === 'customize' && (
+          <p className="text-xs text-text-muted dark:text-dark-text-muted">
+            The sidebar panel for pinning items and groups to Sidebar/Header. Managed via the Customize button in the sidebar.
           </p>
         )}
         {(zone === 'sidebar' || zone === 'stats-panel') && (

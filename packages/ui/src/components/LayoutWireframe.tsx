@@ -18,6 +18,7 @@ export type WireframeZone =
   | 'header-right'
   | 'header-settings'
   | 'sidebar'
+  | 'customize'
   | 'content'
   | 'stats-panel';
 
@@ -134,7 +135,14 @@ export function LayoutWireframe({ selectedZone, onZoneSelect }: LayoutWireframeP
             label="Sidebar"
             isSelected={selectedZone === 'sidebar'}
             onClick={() => onZoneSelect('sidebar')}
-            className="w-20 shrink-0 flex-col gap-1"
+            className="w-16 shrink-0 flex-col gap-1"
+          />
+          <ZoneBox
+            zone="customize"
+            label="Customize"
+            isSelected={selectedZone === 'customize'}
+            onClick={() => onZoneSelect('customize')}
+            className="w-20 shrink-0 flex-col gap-1 text-[9px]"
           />
           <ZoneBox
             zone="content"
