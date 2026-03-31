@@ -21,5 +21,5 @@ PROXY_PID=$!
 VITE_API_BASE=http://localhost:5174 npx vite --host 0.0.0.0 --port 5173 &
 VITE_PID=$!
 
-# Wait for either to exit
-wait -n $PROXY_PID $VITE_PID
+# Wait for either to exit (wait -n requires bash 4+, macOS ships bash 3.2)
+wait $PROXY_PID $VITE_PID
