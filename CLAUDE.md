@@ -33,6 +33,16 @@ packages/
 - **Fleet Command**: FleetManager + FleetWorker with 5 worker types (ai-chat, coding-cli, api-call, mcp-bridge, claw). 68 tests in `fleet-manager.test.ts`. Task dependencies cascade failures via `failDependentTasks()`
 - **Claw Runtime**: Unified autonomous agent composing LLM + workspace + soul + coding agents + 250+ tools. Types in `core/src/services/claw-types.ts`. Runner/Manager/Service in `gateway/src/services/claw-{runner,manager,service}.ts`. 16 claw tools + 7 management tools in `tools/claw-tools.ts` + `tools/claw-management-tools.ts`. DB: `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` (migrations 022, 023). REST: `/api/v1/claws` (16 endpoints including `/stats`, `/audit`, `/deny-escalation`). UI: ClawsPage (8-tab management panel + search/filter + bulk actions) + ClawsWidget (live WS updates). 117+ tests. Modes: `continuous` / `interval` / `event` / `single-shot`. Limits: MAX_CONCURRENT_CLAWS=50, MAX_CLAW_DEPTH=3, mission 10K chars. `.claw/` directive system: INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md (auto-scaffolded, injected into prompt). Working Memory: `claw_set_context`/`claw_get_context` for persistent cross-cycle state. Stop conditions: `max_cycles:N`, `on_report`, `on_error`, `idle:N`. Auto-fail after 5 consecutive errors. Daily cleanup: 90d history, 30d audit retention. Workflow: `clawNode` type in workflow system. Triggers can call `start_claw` tool action
 
+## UI Preview (Claude Code Preview MCP)
+
+This project is developed across multiple machines. Preview setup differs per environment.
+**Before starting preview**, read the project memory for machine-specific context:
+`~/.claude/projects/-Users-ayazmutlu-ownpilot/memory/project_dev_setup.md`
+
+That file contains: device map, decision tree (which machine → which approach), data flow diagram, and known issues per platform. Do NOT blindly follow steps — understand which machine you're on first.
+
+**Key files:** `packages/ui/dev-proxy.mjs` (reverse proxy), `packages/ui/dev-start.sh` (launcher), `.claude/launch.json` (Preview MCP config)
+
 ## Commands
 
 ```bash
