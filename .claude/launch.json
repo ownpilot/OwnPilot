@@ -4,9 +4,8 @@
     {
       "name": "ui-dev",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["/home/ayaz/ownpilot/packages/ui/dev-start.sh"],
-      "port": 5173,
-      "autoPort": false
+      "runtimeArgs": ["packages/ui/dev-start.sh"],
+      "port": 5173
     }
   ]
 }

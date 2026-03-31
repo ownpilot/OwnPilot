@@ -9,7 +9,7 @@ import { createServer, request } from 'node:http';
 
 const PROXY_PORT = parseInt(process.env.DEV_PROXY_PORT || process.argv[2] || '5174', 10);
 const TARGET_PORT = parseInt(process.env.GATEWAY_PORT || process.argv[3] || '8080', 10);
-const TARGET_HOST = '127.0.0.1';
+const TARGET_HOST = process.env.GATEWAY_HOST || '100.75.115.68';
 const ALLOWED_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
 function addCorsHeaders(res, origin) {
