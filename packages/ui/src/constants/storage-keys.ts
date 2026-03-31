@@ -15,4 +15,5 @@ export const STORAGE_KEYS = {
   GROUP_COLLAPSE: 'ownpilot-customize-group-state', // Record<string, boolean> — group open/closed state in CustomizePage
   LOCAL_FILES_DEVICES: 'ownpilot-local-files-devices', // Record<string, boolean> — open/closed state for machine devices
   LOCAL_FILES_DIRS: 'ownpilot-local-files-dirs',       // Record<string, boolean> — open/closed state for bookmark directories
+  HEADER_ITEMS: 'ownpilot-header-items',               // HeaderItemConfig[] — pinned items/groups in header bar
 } as const;

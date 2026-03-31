@@ -188,3 +188,8 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   ...navGroups.flatMap((g) => g.items),
   ...bottomItems,
 ];
+
+/** Lookup map: route path → NavItem (shared by Sidebar, HeaderItemsBar, etc.) */
+export const NAV_ITEM_MAP = new Map<string, NavItem>(
+  ALL_NAV_ITEMS.map((item) => [item.to, item])
+);

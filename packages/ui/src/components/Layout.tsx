@@ -16,6 +16,8 @@ import { MiniPomodoro } from './MiniPomodoro';
 import { Sidebar } from './Sidebar';
 import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 import { PinnedItemsProvider } from '../hooks/usePinnedItems';
+import { HeaderItemsProvider } from '../hooks/useHeaderItems';
+import { HeaderItemsBar } from './HeaderItemsBar';
 
 const CustomizePage = lazy(() =>
   import('../pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
@@ -90,9 +92,10 @@ export function Layout() {
 
   return (
     <PinnedItemsProvider>
-    <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
+      <HeaderItemsProvider>
+        <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
       {/* Global Header Bar */}
-      <header className="h-12 flex items-center px-4 gap-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
+      <header className="relative h-12 flex items-center px-4 gap-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
         {isMobile && (
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -105,6 +108,7 @@ export function Layout() {
         <h1 className="font-semibold text-text-primary dark:text-dark-text-primary whitespace-nowrap text-sm">
           OwnPilot
         </h1>
+        {!isMobile && <HeaderItemsBar />}
         <div className="flex-1 flex justify-center">
           <PulseSlotGrid slots={pulseSlots} compact={isMobile} />
         </div>
@@ -116,7 +120,7 @@ export function Layout() {
       </header>
 
       {/* Body: sidebar + content + stats */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="relative z-0 flex flex-1 overflow-hidden min-h-0">
         {/* Backdrop (mobile only, when sidebar open) */}
         {isMobile && isMobileSidebarOpen && (
           <div
@@ -176,7 +180,8 @@ export function Layout() {
 
       {/* Global Search Overlay */}
       {isSearchOpen && <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />}
-    </div>
+        </div>
+      </HeaderItemsProvider>
     </PinnedItemsProvider>
   );
 }

@@ -10,3 +10,4 @@ export * from './useModalClose';
 export * from './useAuth';
 export * from './useVoice';
 export * from './useGroupCollapseState';
+export * from './useHeaderItems';

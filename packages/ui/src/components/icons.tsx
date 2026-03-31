@@ -73,6 +73,7 @@ export {
   Minus,
   MonitorCheck,
   PanelRight,
+  PanelTop,
   Pause,
   Phone,
   Pin,
