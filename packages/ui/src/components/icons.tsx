@@ -30,6 +30,7 @@ export {
   Database,
   DollarSign,
   Download,
+  FileCode,
   Edit,
   Edit2,
   Edit3,
