@@ -45,7 +45,9 @@ function isEditableHeaderZone(zone: WireframeZone): zone is 'header-left' | 'hea
 export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   const { getZone, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry } = useLayoutConfig();
   const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
-  const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
+  const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | 'custom' | null>(null);
+  const [customName, setCustomName] = useState('');
+  const [customItems, setCustomItems] = useState<Set<string>>(new Set());
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null); // insertion index (line appears BEFORE this index)
 
@@ -112,6 +114,25 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
     addZoneEntry(zoneId, { type: 'group', id: group.id, label: group.label, items: group.items.map((i) => i.to) });
     addLegacyGroup(group.id, group.label, group.items.map((i) => i.to)); // sync to legacy store
     setAddMenuOpen(null);
+  };
+
+  const handleCreateCustomGroup = () => {
+    if (!customName.trim() || customItems.size === 0) return;
+    const id = `custom-${Date.now()}`;
+    const items = Array.from(customItems);
+    addZoneEntry(zoneId, { type: 'group', id, label: customName.trim(), items });
+    setCustomName('');
+    setCustomItems(new Set());
+    setAddMenuOpen(null);
+  };
+
+  const toggleCustomItem = (path: string) => {
+    setCustomItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
   };
 
   const handleRemoveEntry = (index: number) => {
@@ -284,25 +305,87 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
             <Plus className="w-3 h-3" /> Add Group
           </button>
           {addMenuOpen === 'group' && (
-            <div className="absolute top-full left-0 mt-1 min-w-[200px] max-h-[200px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
-              {availableGroups.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">All groups already added</p>
-              ) : (
-                availableGroups.map((group) => {
-                  const GIcon = group.icon;
-                  return (
-                    <button
-                      key={group.id}
-                      onClick={() => handleAddGroup(group)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                    >
-                      <GIcon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{group.label}</span>
-                      <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">{group.items.length}</span>
-                    </button>
-                  );
-                })
+            <div className="absolute top-full left-0 mt-1 min-w-[220px] max-h-[280px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+              {availableGroups.length > 0 && (
+                <>
+                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">Preset Groups</p>
+                  {availableGroups.map((group) => {
+                    const GIcon = group.icon;
+                    return (
+                      <button
+                        key={group.id}
+                        onClick={() => handleAddGroup(group)}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                      >
+                        <GIcon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{group.label}</span>
+                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">{group.items.length}</span>
+                      </button>
+                    );
+                  })}
+                  <div className="h-px bg-border/50 dark:bg-dark-border/50 my-1" />
+                </>
               )}
+              <button
+                onClick={() => { setAddMenuOpen('custom'); setCustomName(''); setCustomItems(new Set()); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 shrink-0" />
+                <span>Create Custom Group</span>
+              </button>
+            </div>
+          )}
+
+          {/* Custom group creation form */}
+          {addMenuOpen === 'custom' && (
+            <div className="absolute top-full left-0 mt-1 w-[260px] rounded-lg border border-primary/30 bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50 p-3 space-y-3">
+              <p className="text-xs font-medium text-primary">Create Custom Group</p>
+              <input
+                type="text"
+                placeholder="Group name..."
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                autoFocus
+                className="w-full px-2 py-1.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary placeholder-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+              />
+              <div className="max-h-[160px] overflow-y-auto space-y-0.5">
+                {ALL_NAV_ITEMS.slice(0, 25).map((item) => {
+                  const Icon = item.icon;
+                  const checked = customItems.has(item.to);
+                  return (
+                    <label
+                      key={item.to}
+                      className={`flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
+                        checked ? 'bg-primary/10 text-primary' : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleCustomItem(item.to)}
+                        className="w-3 h-3 rounded border-border accent-primary"
+                      />
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setAddMenuOpen(null)}
+                  className="px-2.5 py-1 text-xs rounded text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateCustomGroup}
+                  disabled={!customName.trim() || customItems.size === 0}
+                  className="px-2.5 py-1 text-xs rounded font-medium bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Create ({customItems.size})
+                </button>
+              </div>
             </div>
           )}
         </div>
