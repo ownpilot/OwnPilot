@@ -121,11 +121,11 @@ export function Layout() {
           </>
         )}
 
-        {/* Spacer */}
-        <div className="flex-1" />
+        {/* Spacer — only needed when HeaderItemsBar is hidden (mobile) */}
+        {isMobile && <div className="flex-1" />}
 
         {/* Zone 5: Settings + status (fixed) */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-3">
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
             title={connectionStyle.label}
