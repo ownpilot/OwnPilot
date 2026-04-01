@@ -141,8 +141,8 @@ export function Layout() {
           </>
         )}
 
-        {/* Spacer — only needed when HeaderItemsBar is hidden (mobile) */}
-        {isMobile && <div className="flex-1" />}
+        {/* Spacer — pushes settings to far right */}
+        <div className="flex-1" />
 
         {/* Zone 5: Settings dropdown + status (fixed) */}
         <div className="flex items-center gap-2 shrink-0 ml-3">
