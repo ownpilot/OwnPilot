@@ -35,6 +35,7 @@ export {
   Edit2,
   Edit3,
   ExternalLink,
+  GripVertical,
   Eye,
   EyeOff,
   File,
