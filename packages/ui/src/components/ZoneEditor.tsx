@@ -47,7 +47,7 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
   const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null); // insertion index (line appears BEFORE this index)
 
   const label = ZONE_LABELS[zone];
 
@@ -124,15 +124,28 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
     }
   };
 
+  const handleDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    // If mouse is in top half → insert before this item, else after
+    setDropTarget(e.clientY < midY ? i : i + 1);
+  };
+
   const handleDragEnd = () => {
-    if (dragIdx !== null && dragOverIdx !== null && dragIdx !== dragOverIdx) {
-      const reordered = [...zoneConfig.entries];
-      const [moved] = reordered.splice(dragIdx, 1);
-      reordered.splice(dragOverIdx, 0, moved!);
-      setZoneEntries(zoneId, reordered);
+    if (dragIdx !== null && dropTarget !== null) {
+      // Calculate effective insert position (account for removal shifting indices)
+      let insertAt = dropTarget;
+      if (insertAt > dragIdx) insertAt -= 1; // removing dragIdx shifts everything after it up
+      if (insertAt !== dragIdx) {
+        const reordered = [...zoneConfig.entries];
+        const [moved] = reordered.splice(dragIdx, 1);
+        reordered.splice(insertAt, 0, moved!);
+        setZoneEntries(zoneId, reordered);
+      }
     }
     setDragIdx(null);
-    setDragOverIdx(null);
+    setDropTarget(null);
   };
 
   return (
@@ -185,17 +198,23 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                 entryLabel = `${entry.label} (${entry.items.length} items)`;
               }
 
+              const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
+
               return (
-                <div
-                  key={entry.type === 'item' ? entry.path : entry.type === 'group' ? entry.id : `widget-${i}`}
-                  draggable
-                  onDragStart={() => setDragIdx(i)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i); }}
-                  onDragEnd={handleDragEnd}
-                  className={`flex items-center gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-xs cursor-grab active:cursor-grabbing transition-opacity ${
-                    dragIdx === i ? 'opacity-40' : dragOverIdx === i && dragIdx !== null ? 'ring-1 ring-primary' : ''
-                  }`}
-                >
+                <div key={entry.type === 'item' ? entry.path : entry.type === 'group' ? entry.id : `widget-${i}`}>
+                  {/* Drop indicator line BEFORE this item */}
+                  {showLineBefore && (
+                    <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
+                  )}
+                  <div
+                    draggable
+                    onDragStart={() => setDragIdx(i)}
+                    onDragOver={(e) => handleDragOver(e, i)}
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-xs cursor-grab active:cursor-grabbing transition-opacity ${
+                      dragIdx === i ? 'opacity-30' : ''
+                    }`}
+                  >
                   <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
                   {EntryIcon && <EntryIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />}
                   {entry.type === 'group' && <ChevronDown className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />}
@@ -208,6 +227,11 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                   >
                     <X className="w-3 h-3" />
                   </button>
+                  </div>
+                  {/* Drop indicator line AFTER last item */}
+                  {(i === zoneConfig.entries.length - 1 && dragIdx !== null && dropTarget === zoneConfig.entries.length && dropTarget !== dragIdx) ? (
+                    <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
+                  ) : null}
                 </div>
               );
             })}
