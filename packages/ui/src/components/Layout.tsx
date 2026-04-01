@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import {
   Menu,
   Settings,
+  ChevronDown,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
@@ -16,6 +17,7 @@ import { Sidebar } from './Sidebar';
 import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 import { PinnedItemsProvider } from '../hooks/usePinnedItems';
 import { HeaderItemsProvider } from '../hooks/useHeaderItems';
+import { navGroups } from '../constants/nav-items';
 import { LayoutConfigProvider } from '../hooks/useLayoutConfig';
 import { HeaderItemsBar } from './HeaderItemsBar';
 
@@ -41,6 +43,8 @@ export function Layout() {
   // PulseSlotGrid removed from header — available as widget in zone config
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCustomizePanelOpen, setIsCustomizePanelOpen] = useState(false);
+  const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
@@ -88,6 +92,22 @@ export function Layout() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Close settings dropdown on click-outside or Escape
+  useEffect(() => {
+    if (!isSettingsDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(e.target as Node)) {
+        setIsSettingsDropdownOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsSettingsDropdownOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    window.addEventListener('keydown', handleKey);
+    return () => { document.removeEventListener('mousedown', handleClick); window.removeEventListener('keydown', handleKey); };
+  }, [isSettingsDropdownOpen]);
+
+  const settingsGroup = navGroups.find((g) => g.id === 'settings');
+
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
   return (
@@ -124,20 +144,48 @@ export function Layout() {
         {/* Spacer — only needed when HeaderItemsBar is hidden (mobile) */}
         {isMobile && <div className="flex-1" />}
 
-        {/* Zone 5: Settings + status (fixed) */}
+        {/* Zone 5: Settings dropdown + status (fixed) */}
         <div className="flex items-center gap-2 shrink-0 ml-3">
           <span
             className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
             title={connectionStyle.label}
           />
-          <button
-            onClick={() => navigate('/settings/layout')}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-            title="Settings"
-            aria-label="Layout settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <div ref={settingsDropdownRef} className="relative">
+            <button
+              onClick={() => setIsSettingsDropdownOpen((prev) => !prev)}
+              className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+                isSettingsDropdownOpen
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+              }`}
+              title="Settings"
+              aria-label="Settings menu"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            {isSettingsDropdownOpen && settingsGroup && (
+              <div className="absolute top-full right-0 mt-1 min-w-[200px] max-h-[320px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+                {settingsGroup.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.to;
+                  return (
+                    <button
+                      key={item.to}
+                      onClick={() => { navigate(item.to); setIsSettingsDropdownOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
