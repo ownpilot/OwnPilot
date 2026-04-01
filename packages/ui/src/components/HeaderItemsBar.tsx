@@ -63,24 +63,27 @@ export function HeaderItemsBar() {
     );
   }
 
-  // Zone mode: render 3 zones with separators
+  // Zone mode: left | center | right — each zone gets flex-1 for equal spacing
+  const leftZone = getZone('left');
+  const centerZone = getZone('center');
+  const rightZone = getZone('right');
+
   return (
-    <div className="flex items-center gap-1 flex-1 min-w-0">
-      {ZONE_IDS.map((zoneId, zi) => {
-        const zone = getZone(zoneId);
-        const hasEntries = zone.entries.length > 0;
-        return (
-          <div
-            key={zoneId}
-            className={`flex items-center gap-1 ${hasEntries ? 'shrink-0' : 'flex-1 min-w-0'}`}
-          >
-            {zi > 0 && (ZONE_IDS.slice(0, zi).some((id) => getZone(id).entries.length > 0) || zi === 1) && (
-              <div className="w-px h-4 bg-border/30 dark:bg-dark-border/30 mx-1 shrink-0" />
-            )}
-            <ZoneEntries entries={zone.entries} displayMode={zone.displayMode} />
-          </div>
-        );
-      })}
+    <div className="flex items-center flex-1 min-w-0">
+      {/* Left zone — align start */}
+      <div className="flex-1 flex items-center gap-1 justify-start min-w-0">
+        <ZoneEntries entries={leftZone.entries} displayMode={leftZone.displayMode} />
+      </div>
+
+      {/* Center zone — align center */}
+      <div className="flex-1 flex items-center gap-1 justify-center min-w-0">
+        <ZoneEntries entries={centerZone.entries} displayMode={centerZone.displayMode} />
+      </div>
+
+      {/* Right zone — align end */}
+      <div className="flex-1 flex items-center gap-1 justify-end min-w-0">
+        <ZoneEntries entries={rightZone.entries} displayMode={rightZone.displayMode} />
+      </div>
     </div>
   );
 }
