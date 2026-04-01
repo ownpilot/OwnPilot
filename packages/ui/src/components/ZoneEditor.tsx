@@ -10,7 +10,7 @@ import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useHeaderItems } from '../hooks/useHeaderItems';
 import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
 import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
-import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode } from './icons';
+import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode, HeaderZoneEntry } from '../types/layout-config';
 
@@ -43,9 +43,11 @@ function isEditableHeaderZone(zone: WireframeZone): zone is 'header-left' | 'hea
 }
 
 export function ZoneEditor({ zone }: { zone: WireframeZone }) {
-  const { getZone, setZoneDisplayMode, addZoneEntry, removeZoneEntry } = useLayoutConfig();
+  const { getZone, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry } = useLayoutConfig();
   const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
   const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const label = ZONE_LABELS[zone];
 
@@ -122,6 +124,17 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
     }
   };
 
+  const handleDragEnd = () => {
+    if (dragIdx !== null && dragOverIdx !== null && dragIdx !== dragOverIdx) {
+      const reordered = [...zoneConfig.entries];
+      const [moved] = reordered.splice(dragIdx, 1);
+      reordered.splice(dragOverIdx, 0, moved!);
+      setZoneEntries(zoneId, reordered);
+    }
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/5 p-4 space-y-4">
       {/* Zone title */}
@@ -175,8 +188,15 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
               return (
                 <div
                   key={entry.type === 'item' ? entry.path : entry.type === 'group' ? entry.id : `widget-${i}`}
-                  className="flex items-center gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-xs"
+                  draggable
+                  onDragStart={() => setDragIdx(i)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(i); }}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-2 px-2 py-1 rounded bg-bg-secondary dark:bg-dark-bg-secondary text-xs cursor-grab active:cursor-grabbing transition-opacity ${
+                    dragIdx === i ? 'opacity-40' : dragOverIdx === i && dragIdx !== null ? 'ring-1 ring-primary' : ''
+                  }`}
                 >
+                  <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
                   {EntryIcon && <EntryIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />}
                   {entry.type === 'group' && <ChevronDown className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />}
                   <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">{entryLabel}</span>
