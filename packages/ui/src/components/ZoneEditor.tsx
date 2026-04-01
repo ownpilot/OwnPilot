@@ -90,9 +90,14 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   const zoneConfig = getZone(zoneId);
   const currentMode = zoneConfig.displayMode;
 
-  // Items already in this zone (for filtering add menus)
-  const usedPaths = new Set(zoneConfig.entries.filter((e) => e.type === 'item').map((e) => (e as { path: string }).path));
-  const usedGroupIds = new Set(zoneConfig.entries.filter((e) => e.type === 'group').map((e) => (e as { id: string }).id));
+  // Items already in ANY zone (prevent duplicates across zones)
+  const allZoneIds: (typeof zoneId)[] = ['left', 'center', 'right'];
+  const usedPaths = new Set(
+    allZoneIds.flatMap((z) => getZone(z).entries.filter((e) => e.type === 'item').map((e) => (e as { path: string }).path))
+  );
+  const usedGroupIds = new Set(
+    allZoneIds.flatMap((z) => getZone(z).entries.filter((e) => e.type === 'group').map((e) => (e as { id: string }).id))
+  );
 
   const availableItems = ALL_NAV_ITEMS.filter((item) => !usedPaths.has(item.to));
   const availableGroups = navGroups.filter((g) => !usedGroupIds.has(g.id));
