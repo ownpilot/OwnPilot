@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Pin,
-  PanelTop,
   Search,
   LayoutDashboard,
   Info,
@@ -14,8 +13,6 @@ import { navGroups, mainItems, bottomItems } from '../constants/nav-items';
 import type { NavGroup } from '../constants/nav-items';
 import { NAV_DESCRIPTIONS } from '../constants/nav-descriptions';
 import { usePinnedItems } from '../hooks/usePinnedItems';
-import { useHeaderItems } from '../hooks/useHeaderItems';
-import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useGroupCollapseState } from '../hooks/useGroupCollapseState';
 import { useToast } from '../components/ToastProvider';
 
@@ -42,8 +39,6 @@ const DISPLAY_SECTIONS: NavGroup[] = [
 
 export function CustomizePage() {
   const { pinnedItems, setPinnedItems, isGroupPinned, toggleGroup, MAX_PINNED_ITEMS } = usePinnedItems();
-  const { headerItems, addItem: addHeaderItem, addGroup: addHeaderGroup, removeByIndex: removeHeaderByIndex, MAX_HEADER_ITEMS } = useHeaderItems();
-  const { config, addZoneEntry, removeZoneEntry, getZone } = useLayoutConfig();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,70 +70,6 @@ export function CustomizePage() {
     setPinnedItems((prev) =>
       isPinned ? prev.filter((p) => p !== path) : [...prev, path],
     );
-  };
-
-  // Check both legacy headerItems AND layout config zones for pin status
-  const allZoneEntries = ['left', 'center', 'right'].flatMap((z) => getZone(z as 'left' | 'center' | 'right').entries);
-
-  const isHeaderPinnedItem = (path: string) =>
-    headerItems.some((c) => c.type === 'item' && c.path === path) ||
-    allZoneEntries.some((e) => e.type === 'item' && e.path === path);
-
-  const isHeaderPinnedGroup = (groupId: string) =>
-    headerItems.some((c) => c.type === 'group' && c.id === groupId) ||
-    allZoneEntries.some((e) => e.type === 'group' && e.id === groupId);
-
-  const handleToggleHeaderPin = (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-
-    // Check legacy store
-    const legacyIdx = headerItems.findIndex((c) => c.type === 'item' && c.path === path);
-    if (legacyIdx >= 0) removeHeaderByIndex(legacyIdx);
-
-    // Check zone entries and remove from whichever zone it's in
-    let foundInZone = false;
-    for (const zoneId of ['left', 'center', 'right'] as const) {
-      const zone = getZone(zoneId);
-      const zIdx = zone.entries.findIndex((e) => e.type === 'item' && e.path === path);
-      if (zIdx >= 0) { removeZoneEntry(zoneId, zIdx); foundInZone = true; }
-    }
-
-    // If was in neither → add to both (legacy + left zone)
-    if (legacyIdx < 0 && !foundInZone) {
-      if (headerItems.length >= MAX_HEADER_ITEMS) {
-        toast.warning(`Header pin limit reached — max ${MAX_HEADER_ITEMS} items`);
-        return;
-      }
-      addHeaderItem(path);
-      addZoneEntry('left', { type: 'item', path });
-    }
-  };
-
-  const handleToggleHeaderGroupPin = (e: React.MouseEvent, section: NavGroup) => {
-    e.stopPropagation();
-    const groupEntry = { type: 'group' as const, id: section.id, label: section.label, items: section.items.map((i) => i.to) };
-
-    // Check legacy store
-    const legacyIdx = headerItems.findIndex((c) => c.type === 'group' && c.id === section.id);
-    if (legacyIdx >= 0) removeHeaderByIndex(legacyIdx);
-
-    // Check zone entries
-    let foundInZone = false;
-    for (const zoneId of ['left', 'center', 'right'] as const) {
-      const zone = getZone(zoneId);
-      const zIdx = zone.entries.findIndex((e) => e.type === 'group' && e.id === section.id);
-      if (zIdx >= 0) { removeZoneEntry(zoneId, zIdx); foundInZone = true; }
-    }
-
-    // If was in neither → add to both
-    if (legacyIdx < 0 && !foundInZone) {
-      if (headerItems.length >= MAX_HEADER_ITEMS) {
-        toast.warning(`Header pin limit reached — max ${MAX_HEADER_ITEMS} items`);
-        return;
-      }
-      addHeaderGroup(section.id, section.label, section.items.map((i) => i.to));
-      addZoneEntry('left', groupEntry);
-    }
   };
 
   return (
@@ -201,7 +132,7 @@ export function CustomizePage() {
                 const SectionIcon = section.icon;
                 return (
                   <div key={section.id} data-testid={`customize-group-${section.id}`}>
-                    {/* Group header — drawer toggle + header pin */}
+                    {/* Group header — drawer toggle + sidebar pin */}
                     <div className="group flex items-center">
                       <button
                         className="flex-1 flex items-center gap-1.5 px-2.5 py-2 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider cursor-pointer hover:text-text-secondary dark:hover:text-dark-text-secondary"
@@ -226,7 +157,7 @@ export function CustomizePage() {
                       </button>
                       {/* Sidebar pin for group (accordion) */}
                       <button
-                        className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border transition-all ${
+                        className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border transition-all mr-2 ${
                           isGroupPinned(section.id)
                             ? 'opacity-100 text-primary bg-primary/10 border-primary/30'
                             : 'opacity-0 group-hover:opacity-50 hover:!opacity-100 text-text-muted dark:text-dark-text-muted border-transparent hover:border-primary hover:text-primary hover:bg-primary/10'
@@ -238,22 +169,6 @@ export function CustomizePage() {
                         <Pin
                           className="w-3 h-3"
                           style={isGroupPinned(section.id) ? { fill: 'currentColor' } : undefined}
-                        />
-                      </button>
-                      {/* Header pin for group (accordion) */}
-                      <button
-                        className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border transition-all mr-2 ${
-                          isHeaderPinnedGroup(section.id)
-                            ? 'opacity-100 text-primary bg-primary/10 border-primary/30'
-                            : 'opacity-0 group-hover:opacity-50 hover:!opacity-100 text-text-muted dark:text-dark-text-muted border-transparent hover:border-primary hover:text-primary hover:bg-primary/10'
-                        }`}
-                        onClick={(e) => handleToggleHeaderGroupPin(e, section)}
-                        title={isHeaderPinnedGroup(section.id) ? 'Unpin from header' : 'Pin to header'}
-                        aria-label={`${isHeaderPinnedGroup(section.id) ? 'Unpin' : 'Pin'} ${section.label} to header`}
-                      >
-                        <PanelTop
-                          className="w-3 h-3"
-                          style={isHeaderPinnedGroup(section.id) ? { fill: 'currentColor' } : undefined}
                         />
                       </button>
                     </div>
@@ -296,22 +211,6 @@ export function CustomizePage() {
                                 style={isPinned ? { fill: 'currentColor' } : undefined}
                               />
                             </button>
-                            {/* Header pin */}
-                            <button
-                              className={`w-6 h-6 rounded flex items-center justify-center shrink-0 border transition-all ${
-                                isHeaderPinnedItem(item.to)
-                                  ? 'opacity-100 text-primary bg-primary/10 border-primary/30'
-                                  : 'opacity-0 group-hover:opacity-50 hover:!opacity-100 text-text-muted dark:text-dark-text-muted border-transparent hover:border-primary hover:text-primary hover:bg-primary/10'
-                              }`}
-                              onClick={(e) => handleToggleHeaderPin(e, item.to)}
-                              title={isHeaderPinnedItem(item.to) ? 'Unpin from header' : 'Pin to header'}
-                              aria-label={`${isHeaderPinnedItem(item.to) ? 'Unpin' : 'Pin'} ${item.label} to header`}
-                            >
-                              <PanelTop
-                                className="w-3 h-3"
-                                style={isHeaderPinnedItem(item.to) ? { fill: 'currentColor' } : undefined}
-                              />
-                            </button>
                           </div>
                         );
                       })}
@@ -330,24 +229,21 @@ export function CustomizePage() {
 
       {/* Pin counter footer */}
       <div
-        className="px-3 py-2 border-t border-border dark:border-dark-border flex items-center justify-center gap-3 text-xs text-text-muted dark:text-dark-text-muted shrink-0"
+        className="px-3 py-2 border-t border-border dark:border-dark-border text-center text-xs text-text-muted dark:text-dark-text-muted shrink-0"
         data-testid="customize-pin-footer"
       >
-        <span>
-          <Pin className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-          <span className={pinnedItems.length >= MAX_PINNED_ITEMS ? 'text-error font-semibold' : 'font-semibold'}>
-            {pinnedItems.length}
-          </span>
-          {' / '}{MAX_PINNED_ITEMS} sidebar
+        <Pin className="w-3 h-3 inline-block mr-1 -mt-0.5" />
+        <span
+          className={
+            pinnedItems.length >= MAX_PINNED_ITEMS
+              ? 'text-error font-semibold'
+              : 'font-semibold'
+          }
+        >
+          {pinnedItems.length}
         </span>
-        <span className="text-border dark:text-dark-border">|</span>
-        <span>
-          <PanelTop className="w-3 h-3 inline-block mr-1 -mt-0.5" />
-          <span className={headerItems.length >= MAX_HEADER_ITEMS ? 'text-error font-semibold' : 'font-semibold'}>
-            {headerItems.length}
-          </span>
-          {' / '}{MAX_HEADER_ITEMS} header
-        </span>
+        {' / '}
+        {MAX_PINNED_ITEMS} pinned
       </div>
     </div>
   );
