@@ -50,6 +50,34 @@ const priorityLabels: Record<number, string> = {
 
 export function GoalsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:goals:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to goals if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !searchParams.get('tab')) {
+      setSearchParams({ tab: 'goals' });
+    }
+  }, [skipHome, searchParams, setSearchParams]);
+
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
 
@@ -184,6 +212,9 @@ export function GoalsPage() {
             title="Set and Track Goals"
             subtitle="Define personal or professional goals, track milestones, and let your AI help you stay on track with reminders and suggestions."
             cta={{ label: 'View Goals', icon: Target, onClick: () => setActiveTab('goals') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Goals"
             features={[
               {
                 icon: Target,

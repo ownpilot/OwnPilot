@@ -40,6 +40,35 @@ export function ExtensionsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:extensions:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to extensions if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !searchParams.get('tab')) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'extensions');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, searchParams, navigate]);
+
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
@@ -244,6 +273,9 @@ export function ExtensionsPage() {
               icon: Puzzle,
               onClick: () => setTab('extensions'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Extensions"
             features={[
               {
                 icon: Code,
