@@ -4,7 +4,7 @@
  * Display available AI models from configured providers
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
 import {
@@ -24,8 +24,10 @@ import {
   DollarSign,
   Maximize2,
   Home,
+  RefreshCw,
 } from '../components/icons';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EmptyState } from '../components/EmptyState';
 import { modelsApi, providersApi } from '../api';
 import { PageHomeTab } from '../components/PageHomeTab';
 
@@ -83,6 +85,29 @@ export function ModelsPage() {
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
+
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__models';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('models');
+    }
+  }, [skipHome, tabParam]);
 
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
@@ -199,6 +224,9 @@ export function ModelsPage() {
             icon: Brain,
             onClick: () => setTab('models'),
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Models"
           features={[
             {
               icon: Layers,
@@ -247,27 +275,30 @@ export function ModelsPage() {
             {isLoading ? (
               <LoadingSpinner message="Loading models..." />
             ) : error ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <AlertCircle className="w-16 h-16 text-error mb-4" />
-                <p className="text-text-primary dark:text-dark-text-primary">{error}</p>
-              </div>
+              <EmptyState
+                icon={AlertCircle}
+                title="Failed to load models"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchData,
+                  icon: RefreshCw,
+                }}
+              />
             ) : configuredProviders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <Cpu className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                  No Providers Configured
-                </h3>
-                <p className="text-text-muted dark:text-dark-text-muted mb-4 text-center max-w-md">
-                  Add your API keys in Settings to enable AI models from providers like OpenAI,
-                  Anthropic, and more.
-                </p>
-                <a
-                  href="/settings/api-keys"
-                  className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-                >
-                  Configure API Keys
-                </a>
-              </div>
+              <EmptyState
+                icon={Cpu}
+                title="No Providers Configured"
+                description="Add your API keys in Settings to enable AI models from providers like OpenAI, Anthropic, and more."
+                variant="card"
+                iconBgColor="bg-primary/10 dark:bg-primary/20"
+                iconColor="text-primary"
+                action={{
+                  label: 'Configure API Keys',
+                  onClick: () => window.location.href = '/settings/api-keys',
+                }}
+              />
             ) : (
               <div className="space-y-8">
                 {Object.entries(modelsByProvider).map(([provider, providerModels]) => {

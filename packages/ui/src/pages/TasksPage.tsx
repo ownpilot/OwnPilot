@@ -13,6 +13,7 @@ import {
   Target,
   Sparkles,
   Home,
+  RefreshCw,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -88,12 +89,15 @@ export function TasksPage() {
   };
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'cancelled'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const { animatedItems, handleDelete: animatedDelete } = useAnimatedList(tasks);
 
   const fetchTasks = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await tasksApi.list(
         filter === 'pending'
@@ -105,8 +109,8 @@ export function TasksPage() {
               : undefined
       );
       setTasks(data);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setIsLoading(false);
     }
@@ -296,21 +300,38 @@ export function TasksPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <SkeletonCard count={5} />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load tasks"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchTasks,
+                  icon: RefreshCw,
+                }}
+              />
             ) : tasks.length === 0 ? (
               <EmptyState
                 icon={CheckCircle2}
                 title={filter === 'all' ? 'No tasks yet' : `No ${filter} tasks`}
                 description={
                   filter === 'all'
-                    ? 'Create your first task to get started.'
+                    ? 'Create your first task to get started with your personal productivity system.'
                     : filter === 'pending'
-                      ? "You're all caught up!"
-                      : 'Complete some tasks to see them here.'
+                      ? "You're all caught up! No pending tasks."
+                      : filter === 'completed'
+                        ? 'No completed tasks yet. Complete some tasks to see them here.'
+                        : 'No cancelled tasks.'
                 }
+                variant="card"
+                iconBgColor="bg-primary/10 dark:bg-primary/20"
+                iconColor="text-primary"
                 action={
                   filter === 'all'
                     ? { label: 'Create Task', onClick: () => setShowCreateModal(true), icon: Plus }
-                    : undefined
+                    : { label: 'View All Tasks', onClick: () => setFilter('all') }
                 }
               />
             ) : (

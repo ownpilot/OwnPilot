@@ -18,6 +18,7 @@ import {
   Sparkles,
   Layers,
   Home,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { expensesApi } from '../api';
@@ -28,6 +29,8 @@ import type {
 } from '../api';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonCard } from '../components/Skeleton';
 
 const CATEGORY_LABELS: Record<string, string> = {
   food: 'Food',
@@ -54,6 +57,7 @@ export function ExpensesPage() {
   const [summaryData, setSummaryData] = useState<SummaryResponse | null>(null);
   const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ExpenseEntry | null>(null);
@@ -70,8 +74,32 @@ export function ExpensesPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__expenses';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('expenses');
+    }
+  }, [skipHome, tabParam]);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     try {
       // Fetch monthly data
       const monthlyJson = await expensesApi.monthly(year);
@@ -102,8 +130,8 @@ export function ExpensesPage() {
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
       const listJson = await expensesApi.list(listParams);
       setExpenses(listJson.expenses);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load expenses');
     } finally {
       setIsLoading(false);
     }
@@ -214,6 +242,9 @@ export function ExpensesPage() {
               setShowAddForm(true);
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Expenses"
           features={[
             {
               icon: Plus,
@@ -444,10 +475,42 @@ export function ExpensesPage() {
               </h2>
             </div>
             <div className="divide-y divide-border dark:divide-dark-border max-h-96 overflow-y-auto">
-              {expenses.length === 0 ? (
-                <div className="px-6 py-8 text-center text-text-muted dark:text-dark-text-muted">
-                  No expenses recorded for this period
+              {isLoading ? (
+                <div className="px-6 py-8">
+                  <SkeletonCard count={3} />
                 </div>
+              ) : error ? (
+                <EmptyState
+                  icon={AlertTriangle}
+                  title="Failed to load expenses"
+                  description={error}
+                  variant="minimal"
+                  size="sm"
+                  action={{
+                    label: 'Try Again',
+                    onClick: fetchData,
+                    icon: RefreshCw,
+                  }}
+                />
+              ) : expenses.length === 0 ? (
+                <EmptyState
+                  icon={Receipt}
+                  title="No expenses recorded"
+                  description={
+                    selectedMonth
+                      ? `No expenses for ${monthlyData?.months.find((m) => m.monthNum === selectedMonth)?.month} ${year}. Add your first expense to start tracking.`
+                      : 'Start tracking your expenses by adding your first transaction.'
+                  }
+                  variant="minimal"
+                  size="sm"
+                  iconBgColor="bg-emerald-500/10 dark:bg-emerald-500/20"
+                  iconColor="text-emerald-500"
+                  action={{
+                    label: 'Add Expense',
+                    onClick: () => setShowAddForm(true),
+                    icon: Plus,
+                  }}
+                />
               ) : (
                 expenses.map((expense) => (
                   <div

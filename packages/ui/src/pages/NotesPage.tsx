@@ -11,6 +11,8 @@ import {
   Edit2,
   Brain,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -25,11 +27,33 @@ import { PageHomeTab } from '../components/PageHomeTab';
 export function NotesPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:notes:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -48,7 +72,18 @@ export function NotesPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
+  // Auto-redirect to notes if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'notes');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const fetchNotes = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (debouncedSearch) {
@@ -57,8 +92,8 @@ export function NotesPage() {
 
       const data = await notesApi.list(params);
       setNotes(data);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load notes');
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +211,9 @@ export function NotesPage() {
               setShowCreateModal(true);
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Notes"
           features={[
             {
               icon: Edit2,
@@ -237,19 +275,34 @@ export function NotesPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <SkeletonCard count={5} />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load notes"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchNotes,
+                  icon: RefreshCw,
+                }}
+              />
             ) : notes.length === 0 ? (
               <EmptyState
                 icon={FileText}
                 title={searchQuery ? 'No notes found' : 'No notes yet'}
                 description={
                   searchQuery
-                    ? 'Try a different search term.'
-                    : 'Create your first note to get started.'
+                    ? `No notes matching "${searchQuery}". Try a different search term.`
+                    : 'Create your first note to capture ideas, snippets, or reminders.'
                 }
+                variant="card"
+                iconBgColor="bg-emerald-500/10 dark:bg-emerald-500/20"
+                iconColor="text-emerald-500"
                 action={
                   !searchQuery
                     ? { label: 'Create Note', onClick: () => setShowCreateModal(true), icon: Plus }
-                    : undefined
+                    : { label: 'Clear Search', onClick: () => setSearchQuery('') }
                 }
               />
             ) : (

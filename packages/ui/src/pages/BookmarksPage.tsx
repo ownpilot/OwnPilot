@@ -13,6 +13,8 @@ import {
   Sparkles,
   Hash,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -27,11 +29,33 @@ import { PageHomeTab } from '../components/PageHomeTab';
 export function BookmarksPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:bookmarks:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -52,7 +76,18 @@ export function BookmarksPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
+  // Auto-redirect to bookmarks if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'bookmarks');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const fetchBookmarks = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (debouncedSearch) params.search = debouncedSearch;
@@ -61,8 +96,8 @@ export function BookmarksPage() {
 
       const data = await bookmarksApi.list(params);
       setBookmarks(data);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bookmarks');
     } finally {
       setIsLoading(false);
     }
@@ -183,6 +218,9 @@ export function BookmarksPage() {
               setShowCreateModal(true);
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Bookmarks"
           features={[
             {
               icon: Bookmark,
@@ -287,15 +325,32 @@ export function BookmarksPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <SkeletonCard count={5} />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load bookmarks"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchBookmarks,
+                  icon: RefreshCw,
+                }}
+              />
             ) : bookmarks.length === 0 ? (
               <EmptyState
                 icon={Bookmark}
                 title={searchQuery ? 'No bookmarks found' : 'No bookmarks yet'}
                 description={
                   searchQuery
-                    ? 'Try a different search term.'
-                    : 'Save your favorite links to access them later.'
+                    ? `No bookmarks matching "${searchQuery}". Try a different search term.`
+                    : selectedFolder
+                      ? `No bookmarks in folder "${selectedFolder}".`
+                      : 'Save your favorite links to access them later. Your AI can also reference these bookmarks.'
                 }
+                variant="card"
+                iconBgColor="bg-amber-500/10 dark:bg-amber-500/20"
+                iconColor="text-amber-500"
                 action={
                   !searchQuery
                     ? {
@@ -303,7 +358,7 @@ export function BookmarksPage() {
                         onClick: () => setShowCreateModal(true),
                         icon: Plus,
                       }
-                    : undefined
+                    : { label: 'Clear Search', onClick: () => setSearchQuery('') }
                 }
               />
             ) : (

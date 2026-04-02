@@ -30,6 +30,23 @@
       "releaseDate": "2026-03-05"
     },
     {
+      "id": "gpt-5.3-chat-latest",
+      "name": "GPT-5.3 Chat Latest",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
       "id": "gemini-3.1-flash-lite-preview",
       "name": "Gemini 3.1 Flash Lite Preview",
       "contextWindow": 1048576,
@@ -42,23 +59,6 @@
         "audio",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-01"
-    },
-    {
-      "id": "gpt-5.3-chat-latest",
-      "name": "GPT-5.3 Chat Latest",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -293,6 +293,23 @@
       "releaseDate": "2025-11-13"
     },
     {
+      "id": "gpt-5.1-chat-latest",
+      "name": "GPT-5.1 Chat Latest",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
+    },
+    {
       "id": "gpt-5.1",
       "name": "GPT-5.1",
       "contextWindow": 400000,
@@ -321,23 +338,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-13"
-    },
-    {
-      "id": "gpt-5.1-chat-latest",
-      "name": "GPT-5.1 Chat Latest",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -547,6 +547,22 @@
       "releaseDate": "2025-07-22"
     },
     {
+      "id": "grok-4-fast-non-reasoning",
+      "name": "Grok 4 Fast (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-09"
+    },
+    {
       "id": "grok-4-0709",
       "name": "Grok 4",
       "contextWindow": 256000,
@@ -558,22 +574,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-09"
-    },
-    {
-      "id": "grok-4-fast-non-reasoning",
-      "name": "Grok 4 Fast (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 16384,
-      "inputPrice": 0.2,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -775,22 +775,6 @@
       "releaseDate": "2025-04-16"
     },
     {
-      "id": "gpt-4.1-nano",
-      "name": "GPT-4.1 Nano",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gpt-4.1",
       "name": "GPT-4.1",
       "contextWindow": 1047576,
@@ -813,6 +797,22 @@
       "maxOutput": 32768,
       "inputPrice": 0.4,
       "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 Nano",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -907,12 +907,12 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "deepseek-ai/DeepSeek-R1",
-      "name": "DeepSeek R1",
+      "id": "deepseek/deepseek-v3.1",
+      "name": "DeepSeek V3.1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 7,
+      "inputPrice": 0.55,
+      "outputPrice": 1.66,
       "capabilities": [
         "chat",
         "function_calling",
@@ -923,12 +923,12 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "deepseek/deepseek-v3.1",
-      "name": "DeepSeek V3.1",
+      "id": "deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.55,
-      "outputPrice": 1.66,
+      "inputPrice": 3,
+      "outputPrice": 7,
       "capabilities": [
         "chat",
         "function_calling",

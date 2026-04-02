@@ -45,8 +45,8 @@
       "releaseDate": "2025-08-28"
     },
     {
-      "id": "speakleash/Bielik-11B-v2.6-Instruct",
-      "name": "Bielik 11B v2.6 Instruct",
+      "id": "speakleash/Bielik-11B-v3.0-Instruct",
+      "name": "Bielik 11B v3.0 Instruct",
       "contextWindow": 32000,
       "maxOutput": 32000,
       "inputPrice": 0.67,
@@ -61,8 +61,8 @@
       "releaseDate": "2025-03-13"
     },
     {
-      "id": "speakleash/Bielik-11B-v3.0-Instruct",
-      "name": "Bielik 11B v3.0 Instruct",
+      "id": "speakleash/Bielik-11B-v2.6-Instruct",
+      "name": "Bielik 11B v2.6 Instruct",
       "contextWindow": 32000,
       "maxOutput": 32000,
       "inputPrice": 0.67,

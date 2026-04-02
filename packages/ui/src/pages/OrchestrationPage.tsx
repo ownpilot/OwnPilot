@@ -422,6 +422,29 @@ export function OrchestrationPage() {
     [setSearchParams]
   );
 
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__orchestration';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('orchestration');
+    }
+  }, [skipHome, tabParam, setTab]);
+
   const toast = useToast();
   const gateway = useGateway();
 
@@ -648,6 +671,9 @@ export function OrchestrationPage() {
           title="Orchestrate Complex AI Pipelines"
           subtitle="Chain multiple AI models and tools into sophisticated pipelines — with branching, parallel execution, and intelligent routing."
           cta={{ label: 'View Pipelines', icon: GitMerge, onClick: () => setTab('orchestration') }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Pipelines"
           features={[
             {
               icon: GitMerge,

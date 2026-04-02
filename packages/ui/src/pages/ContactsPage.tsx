@@ -13,6 +13,8 @@ import {
   Bot,
   Download,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -32,6 +34,7 @@ export function ContactsPage() {
   const { subscribe } = useGateway();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -45,6 +48,36 @@ export function ContactsPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
     tabParam && (['home', 'contacts'] as string[]).includes(tabParam) ? tabParam : 'home';
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:contacts:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to contacts if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'contacts');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
@@ -52,6 +85,8 @@ export function ContactsPage() {
   };
 
   const fetchContacts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (debouncedSearch) params.search = debouncedSearch;
@@ -59,8 +94,8 @@ export function ContactsPage() {
 
       const data = await contactsApi.list(params);
       setContacts(data);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load contacts');
     } finally {
       setIsLoading(false);
     }
@@ -197,6 +232,9 @@ export function ContactsPage() {
               setShowCreateModal(true);
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Contacts"
           features={[
             {
               icon: Users,
@@ -280,19 +318,34 @@ export function ContactsPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <SkeletonCard count={5} />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load contacts"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchContacts,
+                  icon: RefreshCw,
+                }}
+              />
             ) : contacts.length === 0 ? (
               <EmptyState
                 icon={Users}
                 title={searchQuery ? 'No contacts found' : 'No contacts yet'}
                 description={
                   searchQuery
-                    ? 'Try a different search term.'
-                    : 'Add your first contact to get started.'
+                    ? `No contacts matching "${searchQuery}". Try a different search term.`
+                    : 'Add your first contact to build your personal address book.'
                 }
+                variant="card"
+                iconBgColor="bg-blue-500/10 dark:bg-blue-500/20"
+                iconColor="text-blue-500"
                 action={
                   !searchQuery
                     ? { label: 'Add Contact', onClick: () => setShowCreateModal(true), icon: Plus }
-                    : undefined
+                    : { label: 'Clear Search', onClick: () => setSearchQuery('') }
                 }
               />
             ) : (

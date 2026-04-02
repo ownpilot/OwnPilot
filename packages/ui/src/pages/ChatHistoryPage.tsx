@@ -108,6 +108,33 @@ const TAB_LABELS: Record<TabId, string> = {
 
 export function ChatHistoryPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:chathistory:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to history if skipHome is enabled
+  useEffect(() => {
+    if (skipHome) {
+      setActiveTab('history');
+    }
+  }, [skipHome]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<(HistoryMessage | UnifiedMessage)[]>([]);
@@ -572,6 +599,9 @@ export function ChatHistoryPage() {
               icon: History,
               onClick: () => setActiveTab('history'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to History"
             features={[
               {
                 icon: History,

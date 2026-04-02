@@ -57,8 +57,36 @@ function formatTimeAgo(dateStr: string): string {
 
 export function ApprovalsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:approvals:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
+  // Auto-redirect to approvals if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !searchParams.get('tab')) {
+      setSearchParams({ tab: 'approvals' });
+    }
+  }, [skipHome, searchParams, setSearchParams]);
 
   const { confirm } = useDialog();
   const toast = useToast();
@@ -203,6 +231,9 @@ export function ApprovalsPage() {
               icon: CheckCircle2,
               onClick: () => setActiveTab('approvals'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Approvals"
             features={[
               {
                 icon: Clock,

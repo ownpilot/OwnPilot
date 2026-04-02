@@ -65,6 +65,27 @@ function getStatusColor(status: string): string {
 export function InboxPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:inbox:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const { subscribe } = useGateway();
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -91,6 +112,15 @@ export function InboxPage() {
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
+
+  // Auto-redirect to inbox if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'inbox');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
 
   // Fetch channels from API
   const fetchChannels = useCallback(async () => {
@@ -319,6 +349,9 @@ export function InboxPage() {
               setTab('inbox');
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Inbox"
           features={[
             {
               icon: Inbox,

@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-01"
+    },
+    {
       "id": "deepseek-reasoner",
       "name": "DeepSeek Reasoner",
       "contextWindow": 128000,
@@ -22,21 +37,6 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2025-12-01"
-    },
-    {
-      "id": "deepseek-chat",
-      "name": "DeepSeek Chat",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.28,
-      "outputPrice": 0.42,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,

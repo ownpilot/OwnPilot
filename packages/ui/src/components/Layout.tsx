@@ -62,6 +62,8 @@ import { DebugDrawer } from './DebugDrawer';
 import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
 import { MiniPomodoro } from './MiniPomodoro';
+import { NotificationCenter } from './NotificationCenter';
+import { useToast } from './ToastProvider';
 
 interface NavItem {
   to: string;
@@ -302,6 +304,7 @@ function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
 export function Layout() {
   const { status: wsStatus } = useGateway();
   const { passwordConfigured, logout } = useAuth();
+  const { history, unreadCount, markAsRead, markAllAsRead, clearHistory, removeFromHistory } = useToast();
   const isMobile = useIsMobile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
@@ -385,6 +388,14 @@ export function Layout() {
           <PulseSlotGrid slots={pulseSlots} compact={isMobile} />
         </div>
         <MiniPomodoro />
+        <NotificationCenter
+          history={history}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          onClear={clearHistory}
+          onRemove={removeFromHistory}
+        />
         <span
           className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
           title={connectionStyle.label}

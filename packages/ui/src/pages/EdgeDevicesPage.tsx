@@ -64,6 +64,30 @@ const FILTER_TABS: FilterTab[] = [
 export function EdgeDevicesPage() {
   const { subscribe } = useGateway();
   const [pageTab, setPageTab] = useState<PageTabId>('home');
+
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__edge_devices';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome) {
+      setPageTab('devices');
+    }
+  }, [skipHome]);
+
   const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -232,6 +256,9 @@ export function EdgeDevicesPage() {
             title="Connect Physical Devices to Your AI"
             subtitle="Stream sensor data from IoT hardware into OwnPilot over MQTT, then query, analyze, and control devices using natural language."
             cta={{ label: 'View Devices', icon: Wifi, onClick: () => setPageTab('devices') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Devices"
             features={[
               {
                 icon: Wifi,

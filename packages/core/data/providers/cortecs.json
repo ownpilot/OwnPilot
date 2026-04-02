@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-4-6-sonnet",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 3.59,
+      "outputPrice": 17.92,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-17"
+    },
+    {
       "id": "minimax-m2.5",
       "name": "MiniMax-M2.5",
       "contextWindow": 196608,
@@ -24,8 +41,25 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "claude-opus4-6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 5.98,
+      "outputPrice": 29.89,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
     },
     {
       "id": "kimi-k2.5",
@@ -77,6 +111,21 @@
       "releaseDate": "2025-12-22"
     },
     {
+      "id": "devstral-2512",
+      "name": "Devstral 2 2512",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
       "id": "devstral-small-2512",
       "name": "Devstral Small 2 2512",
       "contextWindow": 262000,
@@ -86,21 +135,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-09"
-    },
-    {
-      "id": "devstral-2512",
-      "name": "Devstral 2 2512",
-      "contextWindow": 262000,
-      "maxOutput": 262000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "function_calling",
         "streaming"
       ],
@@ -140,6 +174,23 @@
       "releaseDate": "2025-11-26"
     },
     {
+      "id": "claude-opus4-5",
+      "name": "Claude Opus 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 5.98,
+      "outputPrice": 29.89,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-24"
+    },
+    {
       "id": "minimax-m2",
       "name": "MiniMax-M2",
       "contextWindow": 400000,
@@ -154,6 +205,23 @@
       ],
       "default": false,
       "releaseDate": "2025-10-27"
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 1.09,
+      "outputPrice": 5.43,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
     },
     {
       "id": "claude-4-5-sonnet",

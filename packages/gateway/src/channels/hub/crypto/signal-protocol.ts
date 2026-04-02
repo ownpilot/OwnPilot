@@ -488,7 +488,7 @@ export class SignalProtocol {
   }
 
   // These types are imported for potential future use
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   private declare _typeCompatibility: {
     _RootKey: import('./types.js').RootKey;
     _KeyPair: import('./types.js').KeyPair;

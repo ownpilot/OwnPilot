@@ -12,6 +12,34 @@
   },
   "models": [
     {
+      "id": "canopylabs/orpheus-v1-english",
+      "name": "Orpheus V1 English",
+      "contextWindow": 4000,
+      "maxOutput": 50000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-19"
+    },
+    {
+      "id": "canopylabs/orpheus-arabic-saudi",
+      "name": "Orpheus Arabic Saudi",
+      "contextWindow": 4000,
+      "maxOutput": 50000,
+      "inputPrice": 40,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-16"
+    },
+    {
       "id": "moonshotai/kimi-k2-instruct-0905",
       "name": "Kimi K2 Instruct 0905",
       "contextWindow": 262144,
@@ -24,8 +52,40 @@
         "json_mode",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-09-05"
+    },
+    {
+      "id": "groq/compound-mini",
+      "name": "Compound Mini",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-04"
+    },
+    {
+      "id": "groq/compound",
+      "name": "Compound",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-04"
     },
     {
       "id": "openai/gpt-oss-120b",
@@ -77,6 +137,21 @@
       "releaseDate": "2025-07-14"
     },
     {
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
+      "contextWindow": 131072,
+      "maxOutput": 1024,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
       "id": "meta-llama/llama-4-scout-17b-16e-instruct",
       "name": "Llama 4 Scout 17B",
       "contextWindow": 131072,
@@ -88,21 +163,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-05"
-    },
-    {
-      "id": "meta-llama/llama-guard-4-12b",
-      "name": "Llama Guard 4 12B",
-      "contextWindow": 131072,
-      "maxOutput": 1024,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "vision",
         "streaming"
       ],
       "default": false,
@@ -124,6 +184,22 @@
       ],
       "default": false,
       "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "name": "Safety GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-05"
     },
     {
       "id": "mistral-saba-24b",
@@ -160,7 +236,7 @@
       "id": "qwen/qwen3-32b",
       "name": "Qwen3 32B",
       "contextWindow": 131072,
-      "maxOutput": 16384,
+      "maxOutput": 40960,
       "inputPrice": 0.29,
       "outputPrice": 0.59,
       "capabilities": [
@@ -202,6 +278,63 @@
       ],
       "default": false,
       "releaseDate": "2024-11-27"
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "name": "Whisper Large v3 Turbo",
+      "contextWindow": 448,
+      "maxOutput": 448,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "meta-llama/llama-prompt-guard-2-22m",
+      "name": "Llama Prompt Guard 2 22M",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.03,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "meta-llama/llama-prompt-guard-2-86m",
+      "name": "Llama Prompt Guard 2 86M",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-01"
+    },
+    {
+      "id": "allam-2-7b",
+      "name": "ALLaM-2-7b",
+      "contextWindow": 4096,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09"
     },
     {
       "id": "llama-3.1-8b-instant",
@@ -276,6 +409,21 @@
       ],
       "default": false,
       "releaseDate": "2024-04-18"
+    },
+    {
+      "id": "whisper-large-v3",
+      "name": "Whisper Large V3",
+      "contextWindow": 448,
+      "maxOutput": 448,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-09-01"
     }
   ],
   "baseUrl": "https://api.groq.com/openai/v1",

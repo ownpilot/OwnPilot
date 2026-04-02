@@ -17,6 +17,7 @@ import {
   BarChart,
   Sparkles,
   Home,
+  RefreshCw,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -86,11 +87,14 @@ export function GoalsPage() {
   const { subscribe } = useGateway();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<Goal['status'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
   const fetchGoals = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (statusFilter !== 'all') {
@@ -99,8 +103,8 @@ export function GoalsPage() {
 
       const data = await goalsApi.list(params);
       setGoals(data.goals);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setIsLoading(false);
     }
@@ -287,11 +291,30 @@ export function GoalsPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <LoadingSpinner message="Loading goals..." />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load goals"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchGoals,
+                  icon: RefreshCw,
+                }}
+              />
             ) : goals.length === 0 ? (
               <EmptyState
                 icon={Target}
-                title="No goals yet"
-                description="Create goals to track what you want to achieve."
+                title={statusFilter === 'all' ? 'No goals yet' : `No ${statusFilter} goals`}
+                description={
+                  statusFilter === 'all'
+                    ? 'Create goals to track what you want to achieve. The AI can help you break them down into actionable steps.'
+                    : `You don't have any ${statusFilter} goals.`
+                }
+                variant="card"
+                iconBgColor="bg-amber-500/10 dark:bg-amber-500/20"
+                iconColor="text-amber-500"
                 action={{
                   label: 'Create Goal',
                   onClick: () => setShowCreateModal(true),

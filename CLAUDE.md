@@ -1,6 +1,10 @@
-# OwnPilot
+# CLAUDE.md
 
-Privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+OwnPilot is a privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo.
 
 ## Architecture
 
@@ -12,41 +16,7 @@ packages/
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
 ```
 
-## Key Patterns
-
-- **Response helpers**: `apiResponse(c, data, status?)` and `apiError(c, message, code, status)` in `packages/gateway/src/routes/helpers.ts`
-- **Error codes**: `ERROR_CODES` constants in `packages/gateway/src/routes/helpers.ts`
-- **Pagination**: `parsePagination(c)` and `paginatedResponse(c, items, total, page, limit)` helpers
-- **Event system**: EventBus, HookBus, ScopedBus in `packages/core/src/events/`
-- **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
-- **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
-- **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
-- **Edge/IoT**: MQTT broker (Mosquitto) integration for edge device management. Types: `packages/core/src/edge/`. Service: `packages/gateway/src/services/edge-service.ts`. Routes: `/api/v1/edge`
-- **Test framework**: Vitest across all packages. 26,500+ tests total (gateway: 16,294+; core: 9,714; cli: 340; ui: 141). 549 test files
-- **Analytics Page**: `packages/ui/src/pages/AnalyticsPage.tsx` — recharts-powered dashboard at `/analytics`. 6 KPI cards, cost/token area+bar charts, provider donut, agent distribution bar, claw mode/state donuts, task/habit radial gauges, daily requests line chart, claw runtime summary grid, personal data overview. Period toggle (7d/30d). Uses `costsApi.usage()`, `costsApi.getBreakdown()`, `clawsApi.stats()`, `summaryApi.get()` + agent list endpoints
-- **Autonomous Agent Runners**: Shared utilities in `packages/gateway/src/services/agent-runner-utils.ts` — `createConfiguredAgent()`, `registerAllToolSources()`, `resolveProviderAndModel()`, `executeAgentPipeline()`, `calculateExecutionCost()`, `createToolCallCollector()`, `resolveToolFilter()`, `createCancellationPromise()`
-- **Habit Tracking**: 8 AI tools in `packages/gateway/src/tools/habit-tools.ts`, DB repo in `db/repositories/habits.ts` (645 lines), REST API in `routes/productivity.ts`, HabitsPage UI with streak heatmap
-- **Utilities**: `TTLCache<K,V>` in `packages/gateway/src/utils/ttl-cache.ts` — generic cache with auto-prune. `chat-post-processor.ts` in `assistant/` — extracted from conversation-service
-- **Extension splits**: `extension-trigger-manager.ts` (trigger lifecycle), `extension-scanner.ts` (directory scanning), `cli-chat-parsers.ts` (CLI output parsers + arg builders)
-- **Cost tracking**: `calculateExecutionCost(provider, model, usage)` in `agent-runner-utils.ts` — wraps `@ownpilot/core` `calculateCost()`. Used by ClawRunner, SubagentRunner, FleetWorker, SoulHeartbeatService
-- **Workflow system**: 24 node types (including `clawNode`), copilot prompt in `routes/workflow-copilot-prompt.ts`, executors in `services/workflow/node-executors.ts`, service in `services/workflow/workflow-service.ts`. Centralized `dispatchNode()` method handles all node types. Copilot uses short type names (e.g. `"llm"`, `"claw"`) — UI's `convertDefinitionToReactFlow()` converts to `*Node` suffix
-- **Fleet Command**: FleetManager + FleetWorker with 5 worker types (ai-chat, coding-cli, api-call, mcp-bridge, claw). 68 tests in `fleet-manager.test.ts`. Task dependencies cascade failures via `failDependentTasks()`
-- **Claw Runtime**: Unified autonomous agent composing LLM + workspace + soul + coding agents + 250+ tools. Types in `core/src/services/claw-types.ts`. Runner/Manager/Service in `gateway/src/services/claw-{runner,manager,service}.ts`. 16 claw tools + 7 management tools in `tools/claw-tools.ts` + `tools/claw-management-tools.ts`. DB: `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` (migrations 022, 023). REST: `/api/v1/claws` (16 endpoints including `/stats`, `/audit`, `/deny-escalation`). UI: ClawsPage (8-tab management panel + search/filter + bulk actions) + ClawsWidget (live WS updates). 117+ tests. Modes: `continuous` / `interval` / `event` / `single-shot`. Limits: MAX_CONCURRENT_CLAWS=50, MAX_CLAW_DEPTH=3, mission 10K chars. `.claw/` directive system: INSTRUCTIONS.md, TASKS.md, MEMORY.md, LOG.md (auto-scaffolded, injected into prompt). Working Memory: `claw_set_context`/`claw_get_context` for persistent cross-cycle state. Stop conditions: `max_cycles:N`, `on_report`, `on_error`, `idle:N`. Auto-fail after 5 consecutive errors. Daily cleanup: 90d history, 30d audit retention. Workflow: `clawNode` type in workflow system. Triggers can call `start_claw` tool action
-
-## Commands
-
-```bash
-pnpm install          # Install dependencies
-pnpm run test         # Run all tests (turbo)
-pnpm run build        # Build all packages
-pnpm run dev          # Dev mode with hot reload
-pnpm run lint         # ESLint check
-pnpm run lint:fix     # ESLint auto-fix
-pnpm run format       # Prettier format
-pnpm run typecheck    # TypeScript type checking
-```
-
-## Tech Stack
+### Key Dependencies
 
 - **Runtime**: Node.js 22+, pnpm 10+
 - **Language**: TypeScript 5.9
@@ -54,48 +24,217 @@ pnpm run typecheck    # TypeScript type checking
 - **Frontend**: React 19, Vite 7, Tailwind CSS 4
 - **Testing**: Vitest 4.x
 - **Build**: Turborepo 2.x
-- **Linting**: ESLint 10 (flat config), Prettier
+- **Database**: PostgreSQL via pg adapter
 
-## Database
+## Commands
 
-PostgreSQL via pg adapter. Repositories in `packages/gateway/src/db/repositories/`. Adapter abstraction in `packages/gateway/src/db/adapters/`.
-
-### Migration Best Practices
-
-**Critical:** All migrations must be idempotent (`IF NOT EXISTS` / `IF EXISTS`).
-
-**Pattern for new tables:**
-
-1. Add `CREATE TABLE IF NOT EXISTS` to `001_initial_schema.sql` (for fresh installs)
-2. Add same `CREATE TABLE IF NOT EXISTS` to your migration file (for existing installs)
-3. Never assume table exists - always use `IF NOT EXISTS`
-
-**Example (009_skills_platform.sql):**
-
-```sql
--- Create table if not exists (idempotent)
-CREATE TABLE IF NOT EXISTS user_extensions (...);
-
--- Alter table (idempotent)
-ALTER TABLE user_extensions ADD COLUMN IF NOT EXISTS npm_package TEXT;
-```
-
-**Testing migrations:**
+### Root Level (Monorepo)
 
 ```bash
-# Fresh install test
-docker run -d --name test-db -p 35432:5432 \
-  -e POSTGRES_USER=testuser \
-  -e POSTGRES_PASSWORD=testpass \
-  -e POSTGRES_DB=testdb \
-  -v "$(pwd)/packages/gateway/src/db/migrations/postgres:/docker-entrypoint-initdb.d" \
-  pgvector/pgvector:pg16
+pnpm install          # Install dependencies
+pnpm run build        # Build all packages
+pnpm run dev          # Dev mode with hot reload (turbo)
+pnpm run test         # Run all tests (turbo)
+pnpm run test:watch   # Run tests in watch mode
+pnpm run test:coverage # Run tests with coverage
+pnpm run lint         # ESLint check
+pnpm run lint:fix     # ESLint auto-fix
+pnpm run format       # Prettier format
+pnpm run format:check # Prettier format check
+pnpm run typecheck    # TypeScript type checking
+pnpm run clean        # Clean all packages
 ```
 
-## Conventions
+### Package-Specific Commands
+
+```bash
+# Gateway (API server)
+cd packages/gateway
+pnpm run dev                    # Start with hot reload (tsx watch)
+pnpm run start                  # Start production server
+pnpm run seed                   # Seed database
+pnpm run seed:triggers-plans    # Seed triggers and plans
+pnpm run migrate:postgres       # Run PostgreSQL migration
+
+# UI (Frontend)
+cd packages/ui
+pnpm run dev                    # Vite dev server
+pnpm run preview                # Preview production build
+
+# Core / CLI
+cd packages/core   # or packages/cli
+pnpm run dev                    # TypeScript watch mode
+```
+
+### Testing Specific Files
+
+```bash
+# Run a single test file
+pnpm vitest run src/path/to/file.test.ts
+
+# Run tests in a specific package
+cd packages/gateway && pnpm vitest run
+
+# Run tests matching a pattern
+pnpm vitest run --reporter=verbose -t "pattern"
+
+# Run with coverage for specific package
+cd packages/core && pnpm vitest run --coverage
+```
+
+## Key Patterns
+
+### API Response Helpers
+
+All API responses use standardized helpers from `packages/gateway/src/routes/helpers.ts`:
+
+```typescript
+// Success response
+return apiResponse(c, data, status?);
+
+// Error response
+return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: '...' }, 404);
+
+// Legacy string error (avoid in new code)
+return apiError(c, 'message', 400);
+```
+
+### Pagination
+
+Gateway uses `getPaginationParams()` from helpers.ts (returns `{ limit, offset }`):
+
+```typescript
+const { limit, offset } = getPaginationParams(c, defaultLimit = 20, maxLimit = 100);
+```
+
+Repositories use `StandardQuery` interface and return `PaginatedResult<T>`:
+
+```typescript
+// Repository interface
+list(query?: StandardQuery): Promise<PaginatedResult<TEntity>>;
+
+// Use buildPaginatedResult() helper
+return buildPaginatedResult(items, total, limit, offset);
+```
+
+### Event System
+
+Use the typed EventSystem (new API) from `@ownpilot/core/events`:
+
+```typescript
+import { getEventSystem } from '@ownpilot/core/events';
+
+const system = getEventSystem();
+
+// Emit events (compile-time checked)
+system.emit('agent.complete', 'source', { ... });
+
+// Subscribe to events
+system.on('agent.complete', (event) => { ... });
+
+// Hooks
+typeof system.hooks.tap('tool:before-execute', handler);
+
+// Scoped bus
+const scoped = system.scoped('category', 'source');
+```
+
+### Database / Repositories
+
+Repositories extend `BaseRepository` in `packages/gateway/src/db/repositories/base.ts`:
+
+```typescript
+export class FooRepository extends BaseRepository implements IRepository<Foo> {
+  async list(query?: StandardQuery): Promise<PaginatedResult<Foo>> {
+    const { limit, offset } = query ?? {};
+    // ... query logic
+    return buildPaginatedResult(items, total, limit ?? 50, offset ?? 0);
+  }
+}
+```
+
+### Tool Registration
+
+Tools use dot-prefixed namespaces:
+- `core.` - Built-in tools
+- `custom.` - User-created tools
+- `plugin.{id}.` - Plugin tools
+- `skill.{id}.` - Skill tools
+
+Meta-tools (unprefixed) sent to LLM: `search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`
+
+### User Extensions
+
+Native tool bundles with custom tools, triggers, services. Managed via:
+- Service: `packages/gateway/src/services/extension-service.ts`
+- DB table: `user_extensions`
+- API: `/extensions`
+
+### Testing Patterns
+
+Tests colocated with source (`*.test.ts`). Vitest with globals enabled:
+
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock with hoisted for module-level variables
+const { MockClass } = vi.hoisted(() => ({
+  MockClass: vi.fn().mockImplementation(function() { ... })
+}));
+
+vi.mock('./module.js', () => ({ Class: MockClass }));
+
+// Repository test pattern
+beforeEach(() => {
+  resetSingleton();  // Clear module singletons
+  vi.clearAllMocks();
+});
+```
+
+## Database Migrations
+
+**Critical**: All migrations must be idempotent (`IF NOT EXISTS` / `IF EXISTS`).
+
+Pattern for new tables:
+1. Add `CREATE TABLE IF NOT EXISTS` to `001_initial_schema.sql` (fresh installs)
+2. Add same to your migration file (existing installs)
+
+```sql
+-- Idempotent table creation
+CREATE TABLE IF NOT EXISTS my_table (...);
+
+-- Idempotent column addition
+ALTER TABLE my_table ADD COLUMN IF NOT EXISTS new_col TEXT;
+```
+
+## Code Conventions
 
 - Barrel exports via `index.ts` in each module
 - Route files return Hono app instances
-- All API responses use `apiResponse`/`apiError` helpers (standardized)
 - Tests colocated with source (`*.test.ts`)
-- Unused variables prefixed with `_` (ESLint convention)
+- Unused variables prefixed with `_` (ESLint)
+- Use `getLog('ModuleName')` for structured logging (not raw console)
+
+## Key Files Reference
+
+| Purpose | Path |
+|---------|------|
+| API Response Helpers | `packages/gateway/src/routes/helpers.ts` |
+| Error Codes | `packages/gateway/src/routes/error-codes.ts` |
+| Event System | `packages/core/src/events/index.ts` |
+| Base Repository | `packages/gateway/src/db/repositories/base.ts` |
+| Repository Interfaces | `packages/gateway/src/db/repositories/interfaces.ts` |
+| Tool Registry | `packages/core/src/agent/tools/registry.ts` |
+| Plugin System | `packages/core/src/plugins/index.ts` |
+| Gateway Config | `packages/gateway/src/config/defaults.ts` |
+
+## System Components
+
+- **Claw Runtime**: Autonomous agents with workspace + tools (`claw-{runner,manager,service}.ts`)
+- **Soul Agents**: Heartbeat-driven agents with identity (`soul-*-service.ts`)
+- **Subagents**: Fire-and-forget child agents (`subagent-{runner,manager,service}.ts`)
+- **Fleet Command**: Worker-based task queue (`fleet-manager.ts`, `fleet-worker.ts`)
+- **Workflow System**: 24 node types with executors (`workflow-service.ts`, `node-executors.ts`)
+- **Extensions**: User-defined tools/triggers (`extension-service.ts`)
+- **Channels**: Telegram + WhatsApp via plugin system (`channels/`)
+- **MCP**: Client + server for external tool integration (`mcp-client-*.ts`, `mcp-server.ts`)

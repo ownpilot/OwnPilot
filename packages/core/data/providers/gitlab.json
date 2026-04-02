@@ -12,6 +12,60 @@
   },
   "models": [
     {
+      "id": "duo-chat-gpt-5-4-mini",
+      "name": "Agentic Chat (GPT-5.4 Mini)",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-17"
+    },
+    {
+      "id": "duo-chat-gpt-5-4-nano",
+      "name": "Agentic Chat (GPT-5.4 Nano)",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-17"
+    },
+    {
+      "id": "duo-chat-gpt-5-4",
+      "name": "Agentic Chat (GPT-5.4)",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
       "id": "duo-chat-sonnet-4-6",
       "name": "Agentic Chat (Claude Sonnet 4.6)",
       "contextWindow": 1000000,
@@ -25,7 +79,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-17"
     },
     {
@@ -39,6 +93,24 @@
         "chat",
         "vision",
         "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "duo-chat-gpt-5-3-codex",
+      "name": "Agentic Chat (GPT-5.3 Codex)",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -64,26 +136,8 @@
       "releaseDate": "2026-01-23"
     },
     {
-      "id": "duo-chat-gpt-5-2-codex",
-      "name": "Agentic Chat (GPT-5.2 Codex)",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-22"
-    },
-    {
-      "id": "duo-chat-gpt-5-mini",
-      "name": "Agentic Chat (GPT-5 Mini)",
+      "id": "duo-chat-gpt-5-1",
+      "name": "Agentic Chat (GPT-5.1)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -118,8 +172,8 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-gpt-5-1",
-      "name": "Agentic Chat (GPT-5.1)",
+      "id": "duo-chat-gpt-5-mini",
+      "name": "Agentic Chat (GPT-5 Mini)",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0,
@@ -136,8 +190,26 @@
       "releaseDate": "2026-01-22"
     },
     {
-      "id": "duo-chat-sonnet-4-5",
-      "name": "Agentic Chat (Claude Sonnet 4.5)",
+      "id": "duo-chat-gpt-5-2-codex",
+      "name": "Agentic Chat (GPT-5.2 Codex)",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-22"
+    },
+    {
+      "id": "duo-chat-haiku-4-5",
+      "name": "Agentic Chat (Claude Haiku 4.5)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,
@@ -153,8 +225,8 @@
       "releaseDate": "2026-01-08"
     },
     {
-      "id": "duo-chat-haiku-4-5",
-      "name": "Agentic Chat (Claude Haiku 4.5)",
+      "id": "duo-chat-sonnet-4-5",
+      "name": "Agentic Chat (Claude Sonnet 4.5)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 0,

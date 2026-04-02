@@ -328,11 +328,39 @@ export function ConnectedAppsPage() {
   const navigate = useNavigate();
 
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:connectedapps:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
     navigate({ search: params.toString() }, { replace: true });
   };
+
+  // Auto-redirect to apps if skipHome is enabled and on home tab
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setTab('apps');
+    }
+  }, [skipHome, activeTab]);
 
   const [composioConfigured, setComposioConfigured] = useState<boolean | null>(null);
   const [connections, setConnections] = useState<ComposioConnection[]>([]);
@@ -535,6 +563,9 @@ export function ConnectedAppsPage() {
               icon: Link,
               onClick: () => setTab('apps'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Apps"
             features={[
               {
                 icon: Lock,

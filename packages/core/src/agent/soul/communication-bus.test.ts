@@ -229,7 +229,7 @@ describe('AgentCommunicationBus.broadcast()', () => {
     });
     const bus = new AgentCommunicationBus(repo, makeEventBus(), 100);
     const msg = { ...makeMessage('agent-a'), crewId: 'crew-1' };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { to: _to, ...broadcastMsg } = msg;
     const result = await bus.broadcast('crew-1', broadcastMsg);
 
@@ -249,7 +249,7 @@ describe('AgentCommunicationBus.broadcast()', () => {
     });
     const bus = new AgentCommunicationBus(repo, makeEventBus(), 100);
     const msg = makeMessage('agent-a');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { to: _to, ...broadcastMsg } = msg;
     const result = await bus.broadcast('crew-1', broadcastMsg);
 
@@ -264,7 +264,7 @@ describe('AgentCommunicationBus.broadcast()', () => {
     });
     const bus = new AgentCommunicationBus(repo, makeEventBus());
     const msg = makeMessage('agent-a');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { to: _to, ...broadcastMsg } = msg;
     const result = await bus.broadcast('crew-1', broadcastMsg);
     expect(result.delivered).toHaveLength(0);

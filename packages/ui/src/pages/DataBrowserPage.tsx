@@ -164,6 +164,29 @@ export function DataBrowserPage() {
     [setSearchParams]
   );
 
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__data_browser';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('browser');
+    }
+  }, [skipHome, tabParam, setTab]);
+
   const { confirm } = useDialog();
   const toast = useToast();
   const [selectedType, setSelectedType] = useState<DataType>('tasks');
@@ -342,6 +365,9 @@ export function DataBrowserPage() {
             icon: Table,
             onClick: () => setTab('browser'),
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Browser"
           features={[
             {
               icon: Layers,

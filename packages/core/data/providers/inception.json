@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "mercury-edit",
+      "name": "Mercury Edit",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.25,
+      "outputPrice": 0.75,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-24"
+    },
+    {
       "id": "mercury-2",
       "name": "Mercury 2",
       "contextWindow": 128000,
@@ -22,21 +37,6 @@
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-02-24"
-    },
-    {
-      "id": "mercury-edit",
-      "name": "Mercury Edit",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.25,
-      "outputPrice": 0.75,
-      "capabilities": [
-        "chat",
         "reasoning",
         "streaming"
       ],

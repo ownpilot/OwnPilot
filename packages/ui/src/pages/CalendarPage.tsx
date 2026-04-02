@@ -11,11 +11,14 @@ import {
   Sparkles,
   Globe,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { useModalClose, useDebouncedCallback } from '../hooks';
 import { SkeletonCard } from '../components/Skeleton';
+import { EmptyState } from '../components/EmptyState';
 import { calendarApi } from '../api';
 import type { CalendarEvent } from '../api';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -31,11 +34,33 @@ const colorOptions = [
 export function CalendarPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:calendar:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const { confirm } = useDialog();
   const toast = useToast();
   const { subscribe } = useGateway();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]!);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -53,7 +78,18 @@ export function CalendarPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
+  // Auto-redirect to calendar if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'calendar');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const fetchEvents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const startDate = getViewStartDate(selectedDate, viewMode);
       const endDate = getViewEndDate(selectedDate, viewMode);
@@ -65,8 +101,8 @@ export function CalendarPage() {
 
       const data = await calendarApi.list(params);
       setEvents(data as CalendarEvent[]);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load events');
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +222,9 @@ export function CalendarPage() {
               setShowCreateModal(true);
             },
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Calendar"
           features={[
             {
               icon: Calendar,
@@ -257,23 +296,32 @@ export function CalendarPage() {
           <div className="flex-1 overflow-y-auto p-6">
             {isLoading ? (
               <SkeletonCard count={5} />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load events"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchEvents,
+                  icon: RefreshCw,
+                }}
+              />
             ) : events.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <Calendar className="w-16 h-16 text-text-muted dark:text-dark-text-muted mb-4" />
-                <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                  No events scheduled
-                </h3>
-                <p className="text-text-muted dark:text-dark-text-muted mb-4">
-                  Add your first event to get started.
-                </p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Event
-                </button>
-              </div>
+              <EmptyState
+                icon={Calendar}
+                title="No events scheduled"
+                description="Your calendar is empty. Add your first event to start tracking your schedule."
+                variant="card"
+                iconBgColor="bg-violet-500/10 dark:bg-violet-500/20"
+                iconColor="text-violet-500"
+                action={{
+                  label: 'Create Event',
+                  onClick: () => setShowCreateModal(true),
+                  icon: Plus,
+                }}
+              />
             ) : (
               <div className="space-y-3">
                 {groupEventsByDate(events).map(([date, dateEvents]) => (

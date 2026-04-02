@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "cerebras-llama-4-maverick-17b-128e-instruct",
-      "name": "Cerebras-Llama-4-Maverick-17B-128E-Instruct",
+      "id": "cerebras-llama-4-scout-17b-16e-instruct",
+      "name": "Cerebras-Llama-4-Scout-17B-16E-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -27,15 +27,14 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "llama-4-scout-17b-16e-instruct-fp8",
-      "name": "Llama-4-Scout-17B-16E-Instruct-FP8",
+      "id": "cerebras-llama-4-maverick-17b-128e-instruct",
+      "name": "Cerebras-Llama-4-Maverick-17B-128E-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],
@@ -58,14 +57,15 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "cerebras-llama-4-scout-17b-16e-instruct",
-      "name": "Cerebras-Llama-4-Scout-17B-16E-Instruct",
+      "id": "llama-4-scout-17b-16e-instruct-fp8",
+      "name": "Llama-4-Scout-17B-16E-Instruct-FP8",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "streaming"
       ],
@@ -89,8 +89,8 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "llama-3.3-8b-instruct",
-      "name": "Llama-3.3-8B-Instruct",
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama-3.3-70B-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -104,8 +104,8 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "llama-3.3-70b-instruct",
-      "name": "Llama-3.3-70B-Instruct",
+      "id": "llama-3.3-8b-instruct",
+      "name": "Llama-3.3-8B-Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,

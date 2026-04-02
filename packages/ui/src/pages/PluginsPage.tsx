@@ -98,12 +98,41 @@ const TAB_LABELS: Record<TabId, string> = {
 
 export function PluginsPage() {
   const toast = useToast();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:plugins:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const [plugins, setPlugins] = useState<PluginInfo[]>([]);
   const [stats, setStats] = useState<PluginStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | null>(null);
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Auto-redirect to installed if skipHome is enabled
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('installed');
+    }
+  }, [skipHome, activeTab]);
 
   useEffect(() => {
     fetchPlugins();
@@ -111,11 +140,13 @@ export function PluginsPage() {
   }, []);
 
   const fetchPlugins = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await pluginsApi.list();
       setPlugins(Array.isArray(data) ? data : []);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load plugins');
     } finally {
       setIsLoading(false);
     }
@@ -206,6 +237,9 @@ export function PluginsPage() {
               icon: Puzzle,
               onClick: () => setActiveTab('installed'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Plugins"
             features={[
               {
                 icon: Layers,
@@ -329,15 +363,30 @@ export function PluginsPage() {
           <div className="flex-1 overflow-y-auto p-6">
             {isLoading ? (
               <LoadingSpinner message="Loading plugins..." />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load plugins"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchPlugins,
+                  icon: RefreshCw,
+                }}
+              />
             ) : filteredPlugins.length === 0 ? (
               <EmptyState
                 icon={Puzzle}
-                title={`No plugins ${filter !== 'all' ? filter : 'installed'}`}
+                title={`No ${filter !== 'all' ? filter : 'plugins installed'}`}
                 description={
                   filter === 'all'
-                    ? 'Install plugins to extend your AI assistant.'
+                    ? 'Install plugins to extend your AI assistant with new tools and capabilities.'
                     : `No ${filter} plugins found.`
                 }
+                variant="card"
+                iconBgColor="bg-cyan-500/10 dark:bg-cyan-500/20"
+                iconColor="text-cyan-500"
               />
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

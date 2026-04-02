@@ -58,6 +58,21 @@
       "releaseDate": "2025-25-11"
     },
     {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 260000,
+      "maxOutput": 16384,
+      "inputPrice": 0.75,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-01"
+    },
+    {
       "id": "voxtral-small-24b-2507",
       "name": "Voxtral Small 24B 2507",
       "contextWindow": 32000,
@@ -67,21 +82,6 @@
       "capabilities": [
         "chat",
         "audio",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-01"
-    },
-    {
-      "id": "qwen3-235b-a22b-instruct-2507",
-      "name": "Qwen3 235B A22B Instruct 2507",
-      "contextWindow": 260000,
-      "maxOutput": 16384,
-      "inputPrice": 0.75,
-      "outputPrice": 2.25,
-      "capabilities": [
-        "chat",
         "function_calling",
         "streaming"
       ],

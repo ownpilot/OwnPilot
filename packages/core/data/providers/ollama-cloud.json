@@ -189,21 +189,6 @@
       "releaseDate": "2025-12-15"
     },
     {
-      "id": "devstral-2:123b",
-      "name": "devstral-2:123b",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-09"
-    },
-    {
       "id": "devstral-small-2:24b",
       "name": "devstral-small-2:24b",
       "contextWindow": 262144,
@@ -213,6 +198,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "devstral-2:123b",
+      "name": "devstral-2:123b",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],
@@ -472,22 +472,6 @@
       "releaseDate": "2025-06-15"
     },
     {
-      "id": "ministral-3:8b",
-      "name": "ministral-3:8b",
-      "contextWindow": 262144,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
       "id": "ministral-3:14b",
       "name": "ministral-3:14b",
       "contextWindow": 262144,
@@ -513,6 +497,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "ministral-3:8b",
+      "name": "ministral-3:8b",
+      "contextWindow": 262144,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,

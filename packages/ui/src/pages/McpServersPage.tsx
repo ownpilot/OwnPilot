@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { EmptyState } from '../components/EmptyState';
 import {
   Server,
   Terminal,
@@ -89,10 +90,23 @@ function OwnPilotServerSection() {
 
   if (error || !info) {
     return (
-      <div className="border border-error/30 rounded-xl bg-error/5 p-4 flex items-center gap-3">
-        <AlertCircle className="w-5 h-5 text-error shrink-0" />
-        <span className="text-sm text-error">{error ?? 'Failed to load MCP server info'}</span>
-      </div>
+      <EmptyState
+        icon={AlertCircle}
+        title="Failed to load MCP server info"
+        description={error ?? 'Could not retrieve server information'}
+        variant="card"
+        iconBgColor="bg-red-500/10 dark:bg-red-500/20"
+        iconColor="text-red-500"
+        action={{
+          label: 'Retry',
+          onClick: () => {
+            setLoading(true);
+            setError(null);
+            mcpApi.serverInfo().then(setInfo).catch((err) => setError(err instanceof Error ? err.message : 'Failed to load')).finally(() => setLoading(false));
+          },
+          icon: RefreshCw,
+        }}
+      />
     );
   }
 
@@ -957,6 +971,29 @@ export function McpServersPage() {
     [setSearchParams]
   );
 
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__mcp_servers';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('servers');
+    }
+  }, [skipHome, tabParam, setTab]);
+
   const [servers, setServers] = useState<McpServer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState<{
@@ -1124,6 +1161,9 @@ export function McpServersPage() {
           title="Connect to MCP Servers"
           subtitle="Model Context Protocol servers extend your AI with external tools and data sources — databases, APIs, file systems, and more."
           cta={{ label: 'Manage Servers', icon: Server, onClick: () => setTab('servers') }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Servers"
           features={[
             {
               icon: Globe,

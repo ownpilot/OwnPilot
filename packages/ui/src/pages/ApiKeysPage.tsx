@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Settings,
@@ -20,6 +20,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api';
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { EmptyState } from '../components/EmptyState';
 
 type TabId = 'home' | 'keys';
 const TAB_LABELS: Record<TabId, string> = { home: 'Home', keys: 'API Keys' };
@@ -36,6 +37,33 @@ export function ApiKeysPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:apikeys:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to keys if skipHome is enabled and on home tab
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('keys');
+    }
+  }, [skipHome, activeTab]);
 
   const { confirm } = useDialog();
   const toast = useToast();
@@ -456,6 +484,9 @@ export function ApiKeysPage() {
             title="Manage API Keys"
             subtitle="Create and manage API keys for programmatic access to your OwnPilot instance. Each key has scoped permissions and usage tracking."
             cta={{ label: 'Manage Keys', icon: Key, onClick: () => setActiveTab('keys') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to API Keys"
             features={[
               {
                 icon: Lock,
@@ -513,10 +544,19 @@ export function ApiKeysPage() {
             <div className="space-y-8">
               {/* Error message */}
               {error && (
-                <div className="p-4 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2 text-error">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <span className="text-sm">{error}</span>
-                </div>
+                <EmptyState
+                  icon={AlertCircle}
+                  title="Failed to load provider list"
+                  description={error}
+                  variant="card"
+                  iconBgColor="bg-red-500/10 dark:bg-red-500/20"
+                  iconColor="text-red-500"
+                  action={{
+                    label: 'Try Again',
+                    onClick: loadData,
+                    icon: RefreshCw,
+                  }}
+                />
               )}
 
               {/* Status banner */}

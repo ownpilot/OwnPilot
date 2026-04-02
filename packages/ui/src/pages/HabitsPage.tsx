@@ -17,6 +17,8 @@ import {
   Activity,
   Calendar,
   Edit,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -94,6 +96,27 @@ export function HabitsPage() {
   const { subscribe } = useGateway();
 
   type TabId = 'home' | 'habits';
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:habits:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const tabParam = searchParams.get('tab') as TabId | null;
   const activeTab: TabId =
     tabParam && (['home', 'habits'] as string[]).includes(tabParam) ? tabParam : 'home';
@@ -103,10 +126,20 @@ export function HabitsPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
+  // Auto-redirect to habits if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'habits');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const [habits, setHabits] = useState<Habit[]>([]);
   const [todayHabits, setTodayHabits] = useState<HabitWithTodayStatus[]>([]);
   const [todayProgress, setTodayProgress] = useState({ total: 0, completed: 0, rate: 0 });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editHabit, setEditHabit] = useState<Habit | null>(null);
   const [filter, setFilter] = useState<'active' | 'archived'>('active');
@@ -117,6 +150,8 @@ export function HabitsPage() {
   // ---- Data fetching ----
 
   const fetchHabits = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const [listRes, todayRes] = await Promise.all([
         habitsApi.list({ archived: filter === 'archived' ? 'true' : 'false' }),
@@ -129,8 +164,8 @@ export function HabitsPage() {
         completed: todayRes.completed ?? 0,
         rate: todayRes.percentage ?? 0,
       });
-    } catch {
-      // API client handles error
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load habits');
     } finally {
       setLoading(false);
     }
@@ -273,6 +308,9 @@ export function HabitsPage() {
                 setShowCreate(true);
               },
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Habits"
             features={[
               {
                 icon: Zap,
@@ -408,6 +446,18 @@ export function HabitsPage() {
                   <SkeletonCard />
                   <SkeletonCard />
                 </div>
+              ) : error ? (
+                <EmptyState
+                  icon={AlertTriangle}
+                  title="Failed to load habits"
+                  description={error}
+                  variant="card"
+                  action={{
+                    label: 'Try Again',
+                    onClick: fetchHabits,
+                    icon: RefreshCw,
+                  }}
+                />
               ) : habits.length === 0 ? (
                 <EmptyState
                   icon={Target}
@@ -415,8 +465,11 @@ export function HabitsPage() {
                   description={
                     filter === 'archived'
                       ? 'Archive habits you no longer track to keep your list clean.'
-                      : 'Create your first habit to start building consistent routines.'
+                      : 'Create your first habit to start building consistent routines and track your progress.'
                   }
+                  variant="card"
+                  iconBgColor="bg-emerald-500/10 dark:bg-emerald-500/20"
+                  iconColor="text-emerald-500"
                   action={
                     filter === 'active'
                       ? { label: 'Create Habit', icon: Plus, onClick: () => setShowCreate(true) }

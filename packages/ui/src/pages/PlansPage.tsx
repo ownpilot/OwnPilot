@@ -24,6 +24,7 @@ import {
   Star,
   LayoutTemplate,
   Sparkles,
+  RefreshCw,
 } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
@@ -76,8 +77,36 @@ export function PlansPage() {
   const toast = useToast();
   const { subscribe } = useGateway();
   const [activeTab, setActiveTab] = useState<PlansTabId>('home');
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:plans:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to goals if skipHome is enabled
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('goals');
+    }
+  }, [skipHome, activeTab]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<Plan['status'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -96,6 +125,8 @@ export function PlansPage() {
   }, []);
 
   const fetchPlans = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (statusFilter !== 'all') {
@@ -104,8 +135,8 @@ export function PlansPage() {
 
       const data = await plansApi.list(params);
       setPlans(data.plans);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load plans');
     } finally {
       setIsLoading(false);
     }
@@ -253,6 +284,9 @@ export function PlansPage() {
               icon: Target,
               onClick: () => setActiveTab('goals'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Goals"
             features={[
               {
                 icon: Target,
@@ -350,11 +384,30 @@ export function PlansPage() {
         <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
           {isLoading ? (
             <LoadingSpinner message="Loading plans..." />
+          ) : error ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Failed to load plans"
+              description={error}
+              variant="card"
+              action={{
+                label: 'Try Again',
+                onClick: fetchPlans,
+                icon: RefreshCw,
+              }}
+            />
           ) : plans.length === 0 ? (
             <EmptyState
               icon={ListChecks}
-              title="No plans yet"
-              description="Plans let the AI execute multi-step workflows autonomously."
+              title={statusFilter === 'all' ? 'No plans yet' : `No ${statusFilter} plans`}
+              description={
+                statusFilter === 'all'
+                  ? 'Plans let the AI execute multi-step workflows autonomously. Create your first plan to get started.'
+                  : `You don't have any ${statusFilter} plans.`
+              }
+              variant="card"
+              iconBgColor="bg-primary/10 dark:bg-primary/20"
+              iconColor="text-primary"
               action={{ label: 'Create Plan', onClick: () => setShowCreateModal(true), icon: Plus }}
             />
           ) : (

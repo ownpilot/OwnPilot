@@ -37,6 +37,33 @@ export function CodingAgentSettingsPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>('home');
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:codingagentsettings:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to providers if skipHome is enabled
+  useEffect(() => {
+    if (skipHome) {
+      setActiveTab('providers');
+    }
+  }, [skipHome]);
   const [statuses, setStatuses] = useState<CodingAgentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
@@ -159,6 +186,9 @@ export function CodingAgentSettingsPage() {
               icon: Terminal,
               onClick: () => setActiveTab('providers'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Providers"
             features={[
               {
                 icon: Layers,

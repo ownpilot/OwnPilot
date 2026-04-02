@@ -104,6 +104,29 @@ export function AutonomousHubPage() {
     [setSearchParams]
   );
 
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__autonomous_hub';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      handleTabChange('agents');
+    }
+  }, [skipHome, tabParam, handleTabChange]);
+
   // Agent actions
   const handlePause = useCallback(
     async (agentId: string) => {
@@ -303,6 +326,9 @@ export function AutonomousHubPage() {
             title="Command Your Autonomous Agents"
             subtitle="Create AI agents that work independently — with their own goals, tools, budgets, and crew coordination."
             cta={{ label: 'View Agents', icon: Bot, onClick: () => handleTabChange('agents') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Agents"
             features={[
               {
                 icon: Bot,

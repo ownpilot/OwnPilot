@@ -17,6 +17,7 @@ import {
   Settings,
   Shuffle,
   Home,
+  AlertTriangle,
 } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -65,6 +66,33 @@ export function WorkspacesPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:workspaces:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to workspaces if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('workspaces');
+    }
+  }, [skipHome, tabParam]);
+
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
     setActiveTab(urlTab);
@@ -82,6 +110,7 @@ export function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState<FileWorkspaceInfo[]>([]);
   const [stats, setStats] = useState<WorkspaceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedWorkspace, setSelectedWorkspace] = useState<FileWorkspaceInfo | null>(null);
   const [workspaceFiles, setWorkspaceFiles] = useState<WorkspaceFile[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
@@ -110,6 +139,7 @@ export function WorkspacesPage() {
 
   const fetchWorkspaces = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const data = await fileWorkspacesApi.list();
       const workspaceList = data;
@@ -122,8 +152,8 @@ export function WorkspacesPage() {
         totalSize,
         totalFiles,
       });
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load workspaces');
     } finally {
       setIsLoading(false);
     }
@@ -314,6 +344,9 @@ export function WorkspacesPage() {
             icon: Folder,
             onClick: () => setTab('workspaces'),
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Workspaces"
           features={[
             {
               icon: Folder,
@@ -398,11 +431,26 @@ export function WorkspacesPage() {
             <div className="w-80 border-r border-border dark:border-dark-border overflow-y-auto">
               {isLoading ? (
                 <LoadingSpinner message="Loading workspaces..." />
+              ) : error ? (
+                <EmptyState
+                  icon={AlertTriangle}
+                  title="Failed to load workspaces"
+                  description={error}
+                  variant="minimal"
+                  size="sm"
+                  action={{
+                    label: 'Try Again',
+                    onClick: fetchWorkspaces,
+                    icon: RefreshCw,
+                  }}
+                />
               ) : workspaces.length === 0 ? (
                 <EmptyState
                   icon={Folder}
                   title="No workspaces yet"
-                  description="They will be created automatically during chat sessions."
+                  description="Workspaces are created automatically during chat sessions with file operations."
+                  variant="minimal"
+                  size="sm"
                 />
               ) : (
                 <div className="p-2">

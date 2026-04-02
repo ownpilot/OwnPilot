@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-ai/DeepSeek-R1-0528",
-      "name": "DeepSeek R1 0528",
-      "contextWindow": 75000,
-      "maxOutput": 163840,
-      "inputPrice": 0.5,
-      "outputPrice": 2.15,
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -59,12 +59,12 @@
       "releaseDate": "2025-08-23"
     },
     {
-      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "name": "Qwen3 235B A22B Thinking 2507",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
+      "id": "deepseek-ai/DeepSeek-R1-0528",
+      "name": "DeepSeek R1 0528",
+      "contextWindow": 75000,
+      "maxOutput": 163840,
+      "inputPrice": 0.5,
+      "outputPrice": 2.15,
       "capabilities": [
         "chat",
         "function_calling",
@@ -75,15 +75,16 @@
       "releaseDate": "2025-08-23"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
-      "name": "Qwen3 Coder 480B A35B Instruct",
+      "id": "Qwen/Qwen3-235B-A22B-Thinking-2507",
+      "name": "Qwen3 235B A22B Thinking 2507",
       "contextWindow": 262144,
-      "maxOutput": 262144,
+      "maxOutput": 131072,
       "inputPrice": 0.2,
-      "outputPrice": 0.8,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -105,16 +106,15 @@
       "releaseDate": "2025-08-23"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.5,
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+      "name": "Qwen3 Coder 480B A35B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

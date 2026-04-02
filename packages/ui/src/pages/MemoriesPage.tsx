@@ -14,6 +14,8 @@ import {
   Edit2,
   Heart,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -77,12 +79,15 @@ export function MemoriesPage() {
   const { subscribe } = useGateway();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [typeFilter, setTypeFilter] = useState<Memory['type'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const fetchMemories = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (debouncedSearch) {
@@ -94,8 +99,8 @@ export function MemoriesPage() {
 
       const data = await memoriesApi.list(params);
       setMemories(data.memories);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load memories');
     } finally {
       setIsLoading(false);
     }
@@ -302,15 +307,30 @@ export function MemoriesPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <LoadingSpinner message="Loading memories..." />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load memories"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchMemories,
+                  icon: RefreshCw,
+                }}
+              />
             ) : memories.length === 0 ? (
               <EmptyState
                 icon={Brain}
                 title={searchQuery ? 'No memories found' : 'No memories yet'}
                 description={
                   searchQuery
-                    ? 'No memories match your search.'
-                    : 'The AI will automatically remember important information from conversations.'
+                    ? `No memories matching "${searchQuery}". Try a different search term.`
+                    : 'The AI will automatically remember important information from conversations. You can also add memories manually.'
                 }
+                variant="card"
+                iconBgColor="bg-violet-500/10 dark:bg-violet-500/20"
+                iconColor="text-violet-500"
                 action={{
                   label: 'Add Memory',
                   onClick: () => setShowCreateModal(true),

@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "name": "Nemotron 3 Super",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-11"
+    },
+    {
       "id": "qwen/qwen3.5-397b-a17b",
       "name": "Qwen3.5-397B-A17B",
       "contextWindow": 262144,
@@ -26,24 +42,8 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2026-02-16"
-    },
-    {
-      "id": "minimaxai/minimax-m2.5",
-      "name": "MiniMax-M2.5",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
       "default": false,
-      "releaseDate": "2026-02-12"
+      "releaseDate": "2026-02-16"
     },
     {
       "id": "z-ai/glm5",
@@ -56,6 +56,22 @@
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "minimaxai/minimax-m2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -578,6 +594,21 @@
       "releaseDate": "2024-12-01"
     },
     {
+      "id": "qwen/qwen3-next-80b-a3b-instruct",
+      "name": "Qwen3-Next-80B-A3B-Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
       "id": "qwen/qwen3-235b-a22b",
       "name": "Qwen3-235B-A22B",
       "contextWindow": 131072,
@@ -588,21 +619,6 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "qwen/qwen3-next-80b-a3b-instruct",
-      "name": "Qwen3-Next-80B-A3B-Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 16384,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -689,6 +705,22 @@
       "releaseDate": "2024-09-22"
     },
     {
+      "id": "meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1b Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-18"
+    },
+    {
       "id": "meta/llama-3.2-11b-vision-instruct",
       "name": "Llama 3.2 11b Vision Instruct",
       "contextWindow": 128000,
@@ -698,22 +730,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-18"
-    },
-    {
-      "id": "meta/llama-3.2-1b-instruct",
-      "name": "Llama 3.2 1b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "function_calling",
         "json_mode",
         "streaming"
@@ -817,8 +833,8 @@
       "releaseDate": "2024-07-16"
     },
     {
-      "id": "meta/llama-3.1-70b-instruct",
-      "name": "Llama 3.1 70b Instruct",
+      "id": "meta/llama-3.1-405b-instruct",
+      "name": "Llama 3.1 405b Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -833,8 +849,8 @@
       "releaseDate": "2024-07-16"
     },
     {
-      "id": "meta/llama-3.1-405b-instruct",
-      "name": "Llama 3.1 405b Instruct",
+      "id": "meta/llama-3.1-70b-instruct",
+      "name": "Llama 3.1 70b Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -944,26 +960,9 @@
       "releaseDate": "2024-05-19"
     },
     {
-      "id": "microsoft/phi-3-small-128k-instruct",
-      "name": "Phi 3 Small 128k Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-07"
-    },
-    {
-      "id": "microsoft/phi-3-medium-128k-instruct",
-      "name": "Phi 3 Medium 128k Instruct",
-      "contextWindow": 128000,
+      "id": "microsoft/phi-3-small-8k-instruct",
+      "name": "Phi 3 Small 8k Instruct",
+      "contextWindow": 8000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -995,9 +994,26 @@
       "releaseDate": "2024-05-07"
     },
     {
-      "id": "microsoft/phi-3-small-8k-instruct",
-      "name": "Phi 3 Small 8k Instruct",
-      "contextWindow": 8000,
+      "id": "microsoft/phi-3-medium-128k-instruct",
+      "name": "Phi 3 Medium 128k Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-05-07"
+    },
+    {
+      "id": "microsoft/phi-3-small-128k-instruct",
+      "name": "Phi 3 Small 128k Instruct",
+      "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -1102,21 +1118,6 @@
       "releaseDate": "2024-01-29"
     },
     {
-      "id": "nvidia/parakeet-tdt-0.6b-v2",
-      "name": "Parakeet TDT 0.6B v2",
-      "contextWindow": 0,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-01"
-    },
-    {
       "id": "nvidia/cosmos-nemotron-34b",
       "name": "Cosmos Nemotron 34B",
       "contextWindow": 131072,
@@ -1142,6 +1143,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-01"
+    },
+    {
+      "id": "nvidia/parakeet-tdt-0.6b-v2",
+      "name": "Parakeet TDT 0.6B v2",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
         "streaming"
       ],
       "default": false,

@@ -122,6 +122,33 @@ export function CodingAgentsPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:codingagents:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to agents if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('agents');
+    }
+  }, [skipHome, tabParam]);
+
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
     setActiveTab(urlTab);
@@ -329,6 +356,9 @@ export function CodingAgentsPage() {
           title="AI-Powered Coding Assistants"
           subtitle="Spin up coding agents that can read, write, and execute code — powered by Claude, Gemini, or Codex with full terminal access."
           cta={{ label: 'View Sessions', icon: Terminal, onClick: () => setTab('agents') }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Agents"
           features={[
             {
               icon: Layers,

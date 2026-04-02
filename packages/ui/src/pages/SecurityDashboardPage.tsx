@@ -5,7 +5,7 @@
  * per-section breakdowns, top risks, and recommendations.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -287,6 +287,30 @@ function RiskList({ risks }: { risks: RiskItem[] }) {
 export function SecurityDashboardPage() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__security_dashboard';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome) {
+      setActiveTab('dashboard');
+    }
+  }, [skipHome]);
+
   const [result, setResult] = useState<PlatformScanResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -378,6 +402,9 @@ export function SecurityDashboardPage() {
               icon: Shield,
               onClick: () => setActiveTab('dashboard'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Dashboard"
             features={[
               {
                 icon: Activity,

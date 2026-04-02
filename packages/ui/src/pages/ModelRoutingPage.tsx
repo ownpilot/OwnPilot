@@ -99,6 +99,33 @@ const emptyResolved: ResolvedRouting = {
 export function ModelRoutingPage() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:modelrouting:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to routing if skipHome is enabled
+  useEffect(() => {
+    if (skipHome) {
+      setActiveTab('routing');
+    }
+  }, [skipHome]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -432,6 +459,9 @@ export function ModelRoutingPage() {
             title="Smart Model Routing"
             subtitle="Route AI requests to the right model based on task complexity, cost limits, or custom rules. Optimize for speed, quality, or budget."
             cta={{ label: 'View Routes', icon: Shuffle, onClick: () => setActiveTab('routing') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Routing"
             features={[
               {
                 icon: Shuffle,

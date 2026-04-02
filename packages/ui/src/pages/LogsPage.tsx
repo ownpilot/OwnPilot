@@ -4,8 +4,9 @@ import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { debugApi } from '../api';
 import type { DebugInfo, DebugLogEntry, LogDetail, RequestLog, LogStats } from '../api';
-import { Home, FileText, Activity, Search, Terminal } from '../components/icons';
+import { Home, FileText, Activity, Search, Terminal, RefreshCw, AlertTriangle } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
+import { EmptyState } from '../components/EmptyState';
 
 type FilterType = 'all' | 'chat' | 'completion' | 'embedding' | 'tool' | 'agent' | 'other';
 type ErrorFilter = 'all' | 'errors' | 'success';
@@ -15,7 +16,35 @@ type DebugFilterType = 'all' | 'tool_call' | 'tool_result' | 'request' | 'respon
 export function LogsPage() {
   const { confirm } = useDialog();
   const toast = useToast();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:logs:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState<TabType>('home');
+
+  // Auto-redirect to requests if skipHome is enabled
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('requests');
+    }
+  }, [skipHome, activeTab]);
 
   // Request logs state
   const [logs, setLogs] = useState<RequestLog[]>([]);
@@ -316,6 +345,9 @@ export function LogsPage() {
               icon: FileText,
               onClick: () => setActiveTab('requests'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Logs"
             features={[
               {
                 icon: FileText,
@@ -490,13 +522,30 @@ export function LogsPage() {
                   <LoadingSpinner size="sm" message="Loading logs..." />
                 </div>
               ) : error ? (
-                <div className="m-4 p-3 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg">
-                  {error}
+                <div className="m-4">
+                  <EmptyState
+                    icon={AlertTriangle}
+                    title="Failed to load logs"
+                    description={error}
+                    variant="card"
+                    iconBgColor="bg-red-500/10 dark:bg-red-500/20"
+                    iconColor="text-red-500"
+                    action={{
+                      label: 'Try Again',
+                      onClick: fetchLogs,
+                      icon: RefreshCw,
+                    }}
+                  />
                 </div>
               ) : logs.length === 0 ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500 dark:text-gray-400">No logs found</div>
-                </div>
+                <EmptyState
+                  icon={FileText}
+                  title="No logs found"
+                  description="Try adjusting your filters or check back later."
+                  variant="card"
+                  iconBgColor="bg-indigo-500/10 dark:bg-indigo-500/20"
+                  iconColor="text-indigo-500"
+                />
               ) : (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {logs.map((log) => (

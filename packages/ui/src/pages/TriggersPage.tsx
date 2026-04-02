@@ -30,6 +30,8 @@ import {
   Target,
   Shuffle,
   ListChecks,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
@@ -118,6 +120,7 @@ export function TriggersPage() {
   const { subscribe } = useGateway();
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<Trigger['type'] | 'all'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTrigger, setEditingTrigger] = useState<Trigger | null>(null);
@@ -173,6 +176,8 @@ export function TriggersPage() {
 
   // Fetch triggers
   const fetchTriggers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (typeFilter !== 'all') {
@@ -181,8 +186,8 @@ export function TriggersPage() {
 
       const data = await triggersApi.list(params);
       setTriggers(data.triggers);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load triggers');
     } finally {
       setIsLoading(false);
     }
@@ -578,11 +583,26 @@ export function TriggersPage() {
           // Triggers List
           isLoading ? (
             <SkeletonCard count={4} />
+          ) : error ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Failed to load triggers"
+              description={error}
+              variant="card"
+              action={{
+                label: 'Try Again',
+                onClick: fetchTriggers,
+                icon: RefreshCw,
+              }}
+            />
           ) : triggers.length === 0 ? (
             <EmptyState
               icon={Zap}
               title="No triggers yet"
-              description="Triggers let the AI act proactively based on schedules, events, or conditions."
+              description="Triggers let the AI act proactively based on schedules, events, or conditions. Create your first trigger to automate tasks."
+              variant="card"
+              iconBgColor="bg-amber-500/10 dark:bg-amber-500/20"
+              iconColor="text-amber-500"
               action={{
                 label: 'Create Trigger',
                 onClick: () => setShowCreateModal(true),

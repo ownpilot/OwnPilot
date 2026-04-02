@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "gemini-3.1-pro-preview-customtools",
-      "name": "Gemini 3.1 Pro Preview Custom Tools",
+      "id": "gemini-3.1-pro-preview",
+      "name": "Gemini 3.1 Pro Preview",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 2,
@@ -31,8 +31,8 @@
       "releaseDate": "2026-02-19"
     },
     {
-      "id": "gemini-3.1-pro-preview",
-      "name": "Gemini 3.1 Pro Preview",
+      "id": "gemini-3.1-pro-preview-customtools",
+      "name": "Gemini 3.1 Pro Preview Custom Tools",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 2,
@@ -157,12 +157,12 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "gemini-flash-latest",
-      "name": "Gemini Flash Latest",
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -175,12 +175,12 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
+      "id": "gemini-flash-latest",
+      "name": "Gemini Flash Latest",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -259,12 +259,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gemini-2.5-flash",
-      "name": "Gemini 2.5 Flash",
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -277,12 +277,12 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "gemini-2.5-flash-lite",
-      "name": "Gemini 2.5 Flash Lite",
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -331,20 +331,6 @@
       "releaseDate": "2025-06-05"
     },
     {
-      "id": "gemini-embedding-001",
-      "name": "Gemini Embedding 001",
-      "contextWindow": 2048,
-      "maxOutput": 3072,
-      "inputPrice": 0.15,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-20"
-    },
-    {
       "id": "gemini-2.5-flash-preview-05-20",
       "name": "Gemini 2.5 Flash Preview 05-20",
       "contextWindow": 1048576,
@@ -357,6 +343,20 @@
         "audio",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "gemini-embedding-001",
+      "name": "Gemini Embedding 001",
+      "contextWindow": 2048,
+      "maxOutput": 3072,
+      "inputPrice": 0.15,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -381,6 +381,22 @@
       "releaseDate": "2025-05-06"
     },
     {
+      "id": "meta/llama-3.3-70b-instruct-maas",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.72,
+      "outputPrice": 0.72,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-29"
+    },
+    {
       "id": "meta/llama-4-maverick-17b-128e-instruct-maas",
       "name": "Llama 4 Maverick 17B 128E Instruct",
       "contextWindow": 524288,
@@ -390,22 +406,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-29"
-    },
-    {
-      "id": "meta/llama-3.3-70b-instruct-maas",
-      "name": "Llama 3.3 70B Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.72,
-      "outputPrice": 0.72,
-      "capabilities": [
-        "chat",
         "function_calling",
         "json_mode",
         "streaming"

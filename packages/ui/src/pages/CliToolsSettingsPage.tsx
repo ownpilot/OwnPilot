@@ -110,6 +110,33 @@ export function CliToolsSettingsPage() {
   const activeTab = (searchParams.get('tab') as TabId) || 'home';
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:clitools:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to settings if skipHome is enabled and on home tab
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('settings');
+    }
+  }, [skipHome, activeTab]);
+
   const toast = useToast();
   const [tools, setTools] = useState<CliToolStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,6 +325,9 @@ export function CliToolsSettingsPage() {
               icon: Settings,
               onClick: () => setActiveTab('settings'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Settings"
             features={[
               {
                 icon: Terminal,

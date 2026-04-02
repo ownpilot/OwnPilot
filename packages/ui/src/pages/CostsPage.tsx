@@ -4,7 +4,8 @@ import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
-import { DollarSign, Home, BarChart, TrendingUp, Calendar, Layers } from '../components/icons';
+import { DollarSign, Home, BarChart, TrendingUp, Calendar, Layers, RefreshCw, AlertTriangle } from '../components/icons';
+import { EmptyState } from '../components/EmptyState';
 import {
   AreaChart,
   Area,
@@ -26,6 +27,27 @@ type Period = 'day' | 'week' | 'month' | 'year';
 
 export function CostsPage() {
   const toast = useToast();
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:costs:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const [period, setPeriod] = useState<Period>('month');
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [budget, setBudget] = useState<BudgetStatus | null>(null);
@@ -36,6 +58,13 @@ export function CostsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'breakdown' | 'budget'>('home');
+
+  // Auto-redirect to overview if skipHome is enabled
+  useEffect(() => {
+    if (skipHome && activeTab === 'home') {
+      setActiveTab('overview');
+    }
+  }, [skipHome, activeTab]);
 
   // Budget form state
   const [dailyLimit, setDailyLimit] = useState<string>('');
@@ -157,6 +186,9 @@ export function CostsPage() {
               icon: Calendar,
               onClick: () => setActiveTab('overview'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Costs"
             features={[
               {
                 icon: Calendar,
@@ -225,7 +257,21 @@ export function CostsPage() {
       {/* Content */}
       {activeTab !== 'home' && (
         <div className="flex-1 overflow-auto p-4 animate-fade-in-up">
-          {error && <div className="mb-4 p-3 bg-error/10 text-error rounded-lg">{error}</div>}
+          {error && (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Failed to load cost data"
+              description={error}
+              variant="card"
+              iconBgColor="bg-orange-500/10 dark:bg-orange-500/20"
+              iconColor="text-orange-500"
+              action={{
+                label: 'Try Again',
+                onClick: fetchCosts,
+                icon: RefreshCw,
+              }}
+            />
+          )}
 
           {activeTab === 'overview' && summary && (
             <div className="space-y-6">

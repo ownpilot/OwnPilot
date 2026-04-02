@@ -16,6 +16,8 @@ import {
   Layers,
   Gauge,
   Home,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
@@ -77,6 +79,7 @@ export function AgentsPage() {
   };
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
@@ -95,11 +98,13 @@ export function AgentsPage() {
   );
 
   const fetchAgents = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await agentsApi.list();
       setAgents(data);
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load agents');
     } finally {
       setIsLoading(false);
     }
@@ -254,11 +259,26 @@ export function AgentsPage() {
           <div className="flex-1 overflow-y-auto p-6 animate-fade-in-up">
             {isLoading ? (
               <LoadingSpinner message="Loading agents..." />
+            ) : error ? (
+              <EmptyState
+                icon={AlertTriangle}
+                title="Failed to load agents"
+                description={error}
+                variant="card"
+                action={{
+                  label: 'Try Again',
+                  onClick: fetchAgents,
+                  icon: RefreshCw,
+                }}
+              />
             ) : agents.length === 0 ? (
               <EmptyState
                 icon={Bot}
                 title="No agents yet"
                 description="Create your first AI agent to get started. Agents can use different models and tools to help with various tasks."
+                variant="card"
+                iconBgColor="bg-violet-500/10 dark:bg-violet-500/20"
+                iconColor="text-violet-500"
                 action={{
                   label: 'Create Agent',
                   onClick: () => setShowCreateModal(true),

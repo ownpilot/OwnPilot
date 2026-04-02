@@ -12,7 +12,7 @@
   },
   "models": [
     {
-      "id": "nvidia/Nemotron-3-Super",
+      "id": "nvidia/Nemotron-120B-A12B",
       "name": "Nemotron 3 Super",
       "contextWindow": 262144,
       "maxOutput": 32678,

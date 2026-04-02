@@ -104,21 +104,6 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "deepseek-v3.2",
-      "name": "DeepSeek-V3.2-Exp",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
       "id": "qwen3-vl-plus",
       "name": "Qwen3-VL-Plus",
       "contextWindow": 256000,
@@ -139,6 +124,21 @@
       "name": "Qwen3-Max",
       "contextWindow": 256000,
       "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek-V3.2-Exp",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -180,6 +180,22 @@
       "releaseDate": "2024-12-01"
     },
     {
+      "id": "qwen3-235b",
+      "name": "Qwen3-235B-A22B",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
       "id": "glm-4.6",
       "name": "GLM-4.6",
       "contextWindow": 200000,
@@ -205,22 +221,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "qwen3-235b",
-      "name": "Qwen3-235B-A22B",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

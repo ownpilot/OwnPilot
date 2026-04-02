@@ -67,6 +67,33 @@ export function ConfigCenterPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam || 'home');
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:configcenter:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to config if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      setTab('config');
+    }
+  }, [skipHome, tabParam]);
+
   useEffect(() => {
     const urlTab = (searchParams.get('tab') as TabId | null) || 'home';
     setActiveTab(urlTab);
@@ -511,6 +538,9 @@ export function ConfigCenterPage() {
             icon: Settings,
             onClick: () => setTab('config'),
           }}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Configuration"
           features={[
             {
               icon: Server,

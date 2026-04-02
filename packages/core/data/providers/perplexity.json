@@ -27,6 +27,20 @@
       "releaseDate": "2025-02-01"
     },
     {
+      "id": "sonar",
+      "name": "Sonar",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 1,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-01"
+    },
+    {
       "id": "sonar-reasoning-pro",
       "name": "Sonar Reasoning Pro",
       "contextWindow": 128000,
@@ -37,20 +51,6 @@
         "chat",
         "vision",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-01"
-    },
-    {
-      "id": "sonar",
-      "name": "Sonar",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 1,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,

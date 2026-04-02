@@ -170,12 +170,12 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "anthropic--claude-4-sonnet",
-      "name": "anthropic--claude-4-sonnet",
+      "id": "anthropic--claude-4-opus",
+      "name": "anthropic--claude-4-opus",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -187,12 +187,12 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "anthropic--claude-4-opus",
-      "name": "anthropic--claude-4-opus",
+      "id": "anthropic--claude-4-sonnet",
+      "name": "anthropic--claude-4-sonnet",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -238,12 +238,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gemini-2.5-flash",
-      "name": "gemini-2.5-flash",
+      "id": "gemini-2.5-pro",
+      "name": "gemini-2.5-pro",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -257,12 +257,12 @@
       "releaseDate": "2025-03-25"
     },
     {
-      "id": "gemini-2.5-pro",
-      "name": "gemini-2.5-pro",
+      "id": "gemini-2.5-flash",
+      "name": "gemini-2.5-flash",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",

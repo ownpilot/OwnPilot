@@ -28,12 +28,12 @@
       "releaseDate": "2026-01-29"
     },
     {
-      "id": "step-2-16k",
-      "name": "Step 2 (16K)",
-      "contextWindow": 16384,
-      "maxOutput": 8192,
-      "inputPrice": 5.21,
-      "outputPrice": 16.44,
+      "id": "step-1-32k",
+      "name": "Step 1 (32K)",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 2.05,
+      "outputPrice": 9.59,
       "capabilities": [
         "chat",
         "function_calling",
@@ -44,12 +44,12 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "step-1-32k",
-      "name": "Step 1 (32K)",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 2.05,
-      "outputPrice": 9.59,
+      "id": "step-2-16k",
+      "name": "Step 2 (16K)",
+      "contextWindow": 16384,
+      "maxOutput": 8192,
+      "inputPrice": 5.21,
+      "outputPrice": 16.44,
       "capabilities": [
         "chat",
         "function_calling",

@@ -56,6 +56,34 @@ const PERMISSION_LABELS: Record<ToolPermission, string> = {
 export function CustomToolsPage() {
   const toast = useToast();
   const [pageTab, setPageTab] = useState<PageTabId>('home');
+
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:customtools:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  // Auto-redirect to tools if skipHome is enabled
+  useEffect(() => {
+    if (skipHome) {
+      setPageTab('tools');
+    }
+  }, [skipHome]);
+
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [stats, setStats] = useState<ToolStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -210,6 +238,9 @@ export function CustomToolsPage() {
             title="Create Custom AI Tools"
             subtitle="Build tools that your AI can call — from simple API wrappers to complex data processors. Define inputs, outputs, and execution logic."
             cta={{ label: 'View Tools', icon: Wrench, onClick: () => setPageTab('tools') }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Tools"
             features={[
               {
                 icon: Edit2,

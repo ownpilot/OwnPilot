@@ -1,8 +1,8 @@
 /**
- * Toast Notification System
+ * Toast Notification System with History
  *
- * Provides lightweight, auto-dismissing toast notifications.
- * Used for API error feedback, success confirmations, and warnings.
+ * Provides lightweight, auto-dismissing toast notifications and
+ * a persistent notification history accessible via bell icon.
  *
  * Usage:
  *   const toast = useToast();
@@ -21,11 +21,21 @@ import {
 } from 'react';
 import { Check, X, AlertCircle, AlertTriangle, Info } from './icons';
 
+// Re-export types for external usage
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+export interface NotificationHistoryItem {
+  id: string;
+  type: ToastType;
+  title?: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
-
-type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface Toast {
   id: string;
@@ -45,6 +55,13 @@ interface ToastContextValue {
   error: (message: string, title?: string) => void;
   warning: (message: string, title?: string) => void;
   info: (message: string, title?: string) => void;
+  // Notification history
+  history: NotificationHistoryItem[];
+  unreadCount: number;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearHistory: () => void;
+  removeFromHistory: (id: string) => void;
 }
 
 // ============================================================================
@@ -60,7 +77,7 @@ export function useToast(): ToastContextValue {
 }
 
 // ============================================================================
-// Styling
+// Constants
 // ============================================================================
 
 const ICONS: Record<ToastType, typeof Check> = {
@@ -99,6 +116,9 @@ const DEFAULT_DURATION: Record<ToastType, number> = {
   warning: 5000,
   info: 4000,
 };
+
+const HISTORY_KEY = 'ownpilot_notification_history';
+const MAX_HISTORY_ITEMS = 50;
 
 // ============================================================================
 // Toast Item Component
@@ -157,7 +177,32 @@ let toastCounter = 0;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [history, setHistory] = useState<NotificationHistoryItem[]>([]);
   const exitTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  // Load history from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(HISTORY_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as NotificationHistoryItem[];
+        // Only load items from last 7 days
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        setHistory(parsed.filter((item) => item.timestamp > weekAgo));
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  // Persist history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [history]);
 
   // Clean up animation timers on unmount
   useEffect(() => {
@@ -168,18 +213,43 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const addToHistory = useCallback((toast: Toast) => {
+    const historyItem: NotificationHistoryItem = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: toast.type,
+      title: toast.title,
+      message: toast.message,
+      timestamp: Date.now(),
+      read: false,
+    };
+
+    setHistory((prev) => {
+      // Add new item at the beginning and keep max 50
+      const updated = [historyItem, ...prev].slice(0, MAX_HISTORY_ITEMS);
+      return updated;
+    });
+  }, []);
+
   const removeToast = useCallback((id: string) => {
     // Prevent double-removal
     if (exitTimersRef.current.has(id)) return;
+
+    // Find toast before removing to add to history
+    const toast = toasts.find((t) => t.id === id);
+    if (toast) {
+      addToHistory(toast);
+    }
+
     // Mark as exiting first for slide-out animation
     setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+
     // Remove from DOM after animation completes
     const timer = setTimeout(() => {
       exitTimersRef.current.delete(id);
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 300);
     exitTimersRef.current.set(id, timer);
-  }, []);
+  }, [toasts, addToHistory]);
 
   const addToast = useCallback((input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
     const id = `toast-${++toastCounter}`;
@@ -213,7 +283,41 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [addToast]
   );
 
-  const value: ToastContextValue = { addToast, removeToast, success, error, warning, info };
+  // History management
+  const markAsRead = useCallback((id: string) => {
+    setHistory((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, read: true } : item))
+    );
+  }, []);
+
+  const markAllAsRead = useCallback(() => {
+    setHistory((prev) => prev.map((item) => ({ ...item, read: true })));
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+  }, []);
+
+  const removeFromHistory = useCallback((id: string) => {
+    setHistory((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const unreadCount = history.filter((item) => !item.read).length;
+
+  const value: ToastContextValue = {
+    addToast,
+    removeToast,
+    success,
+    error,
+    warning,
+    info,
+    history,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearHistory,
+    removeFromHistory,
+  };
 
   return (
     <ToastContext.Provider value={value}>
@@ -221,7 +325,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {/* Toast container — top-right, stacked */}
       {toasts.length > 0 && (
         <div
-          className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-auto"
+          className="fixed top-4 right-16 z-[9998] flex flex-col gap-2 pointer-events-auto"
           aria-live="polite"
         >
           {toasts.map((toast) => (
@@ -232,3 +336,5 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     </ToastContext.Provider>
   );
 }
+
+export default ToastProvider;

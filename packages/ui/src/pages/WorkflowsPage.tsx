@@ -19,6 +19,8 @@ import {
   Layers,
   Shuffle,
   BarChart,
+  RefreshCw,
+  AlertTriangle,
 } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { useDialog } from '../components/ConfirmDialog';
@@ -82,6 +84,7 @@ export function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [recentLogs, setRecentLogs] = useState<WorkflowLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     // Skip home if preference is set
     try {
@@ -93,11 +96,13 @@ export function WorkflowsPage() {
   });
 
   const fetchWorkflows = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const data = await workflowsApi.list({ limit: '100' });
       setWorkflows(data.workflows);
-    } catch {
-      // API client handles errors
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load workflows');
     } finally {
       setIsLoading(false);
     }
@@ -370,11 +375,26 @@ export function WorkflowsPage() {
         {activeTab === 'workflows' ? (
           isLoading ? (
             <SkeletonCard count={4} />
+          ) : error ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title="Failed to load workflows"
+              description={error}
+              variant="card"
+              action={{
+                label: 'Try Again',
+                onClick: fetchWorkflows,
+                icon: RefreshCw,
+              }}
+            />
           ) : workflows.length === 0 ? (
             <EmptyState
               icon={GitBranch}
               title="No workflows yet"
               description="Create visual tool pipelines — drag tools onto a canvas, wire them together, and execute with real-time visualization."
+              variant="card"
+              iconBgColor="bg-violet-500/10 dark:bg-violet-500/20"
+              iconColor="text-violet-500"
               action={{ label: 'Create Workflow', onClick: handleCreate, icon: Plus }}
             />
           ) : (
