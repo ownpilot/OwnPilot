@@ -512,6 +512,7 @@ export function PairingBanner() {
   const [channels, setChannels] = useState<PairingChannel[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [showUnclaimed, setShowUnclaimed] = useState(false);
   const toast = useToast();
   const dialog = useDialog();
 
@@ -565,59 +566,71 @@ export function PairingBanner() {
   const claimedChannels = channels.filter((ch) => ch.claimed);
 
   return (
-    <div className="mx-6 mt-4 space-y-2">
-      {/* Unclaimed channels — prominent warning */}
-      {unclaimedChannels.map((ch) => (
-        <div key={ch.pluginId} className="p-4 rounded-lg border border-warning/40 bg-warning/5">
-          <div className="flex items-start gap-3">
-            <Key className="w-5 h-5 text-warning mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-                Claim ownership — {ch.name}
-              </p>
-              <p className="text-xs text-text-secondary dark:text-dark-text-secondary mt-0.5">
-                Send this command on <span className="capitalize">{ch.platform}</span> to become the
-                owner of this channel.
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md border border-border dark:border-dark-border font-mono text-sm">
-                  <span className="text-text-muted dark:text-dark-text-muted text-xs">
-                    /connect
-                  </span>
-                  <span className="font-bold text-text-primary dark:text-dark-text-primary tracking-widest">
-                    {ch.key}
-                  </span>
-                </div>
-                <button
-                  onClick={() => handleCopy(ch.pluginId, `/connect ${ch.key}`)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-border dark:border-dark-border rounded-md hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-primary dark:text-dark-text-primary"
-                >
-                  {copiedId === ch.pluginId ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      Copy
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-[11px] text-text-muted dark:text-dark-text-muted mt-1.5">
-                Key rotates after each successful claim.
-              </p>
+    <div className="mx-6 mt-4 space-y-3">
+      {/* Unclaimed channels — compact grid layout */}
+      {unclaimedChannels.length > 0 && (
+        <div className="p-3 rounded-lg border border-warning/30 bg-warning/5">
+          <button
+            onClick={() => setShowUnclaimed(!showUnclaimed)}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Key className="w-4 h-4 text-warning" />
+              <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                {unclaimedChannels.length} channel{unclaimedChannels.length !== 1 ? 's' : ''} need setup
+              </span>
             </div>
-          </div>
-        </div>
-      ))}
+            <span className="text-xs text-text-muted dark:text-dark-text-muted">
+              {showUnclaimed ? 'Hide' : 'Show'} setup instructions
+            </span>
+          </button>
 
-      {/* Claimed channels — compact row with revoke option */}
+          {showUnclaimed && (
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {unclaimedChannels.map((ch) => (
+                <div
+                  key={ch.pluginId}
+                  className="p-2.5 rounded-md border border-warning/20 bg-bg-primary dark:bg-dark-bg-primary"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+                      {ch.name}
+                    </span>
+                    <span className="text-[10px] text-text-muted dark:text-dark-text-muted capitalize">
+                      {ch.platform}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 flex items-center gap-1.5 px-2 py-1 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded font-mono text-xs">
+                      <span className="text-text-muted text-[10px]">/connect</span>
+                      <span className="font-bold text-text-primary dark:text-dark-text-primary">
+                        {ch.key}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(ch.pluginId, `/connect ${ch.key}`)}
+                      className="p-1.5 text-xs border border-border dark:border-dark-border rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                      title="Copy command"
+                    >
+                      {copiedId === ch.pluginId ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Claimed channels — compact row */}
       {claimedChannels.map((ch) => (
         <div
           key={ch.pluginId}
-          className="p-3 rounded-lg border border-success/30 bg-success/5 flex items-center gap-3"
+          className="p-2.5 rounded-lg border border-success/30 bg-success/5 flex items-center gap-3"
         >
           <ShieldCheck className="w-4 h-4 text-success shrink-0" />
           <div className="flex-1 min-w-0">
