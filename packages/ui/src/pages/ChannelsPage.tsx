@@ -43,7 +43,38 @@ export function ChannelsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const activeTab = (searchParams.get('tab') as TabId) || 'home';
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:channels:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
+  const tabParam = searchParams.get('tab') as TabId;
+  const activeTab: TabId = tabParam || 'home';
+
+  // Auto-redirect to channels if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !tabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'channels');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, tabParam, searchParams, navigate]);
+
   const setTab = (tab: TabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
@@ -451,6 +482,9 @@ export function ChannelsPage() {
                 onClick: () => setTab('channels'),
               },
             ]}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Channels"
           />
         </div>
       )}

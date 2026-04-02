@@ -65,6 +65,10 @@ export interface PageHomeTabProps {
   footerCta?: { label: string; icon: ComponentType<{ className?: string }>; onClick: () => void };
   /** Optional extra section between features and steps */
   children?: React.ReactNode;
+  /** Skip home preference checkbox */
+  skipHomeChecked?: boolean;
+  onSkipHomeChange?: (checked: boolean) => void;
+  skipHomeLabel?: string;
 }
 
 // =============================================================================
@@ -113,6 +117,9 @@ export function PageHomeTab({
   infoBox,
   footerCta,
   children,
+  skipHomeChecked,
+  onSkipHomeChange,
+  skipHomeLabel = "Skip this screen next time",
 }: PageHomeTabProps) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-10 overflow-y-auto h-full">
@@ -141,6 +148,25 @@ export function PageHomeTab({
           <cta.icon className="w-4 h-4" />
           {cta.label}
         </button>
+
+        {/* Skip home checkbox */}
+        {onSkipHomeChange && (
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <input
+              type="checkbox"
+              id="skip-home"
+              checked={skipHomeChecked}
+              onChange={(e) => onSkipHomeChange(e.target.checked)}
+              className="w-4 h-4 rounded border-border dark:border-dark-border text-primary focus:ring-primary"
+            />
+            <label
+              htmlFor="skip-home"
+              className="text-sm text-text-secondary dark:text-dark-text-secondary cursor-pointer select-none"
+            >
+              {skipHomeLabel}
+            </label>
+          </div>
+        )}
       </div>
 
       {/* Features grid */}

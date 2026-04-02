@@ -65,11 +65,41 @@ export function ArtifactsPage() {
   type PageTabId = 'home' | 'artifacts';
   const PAGE_TAB_LABELS: Record<PageTabId, string> = { home: 'Home', artifacts: 'Artifacts' };
 
+  // Skip home preference from localStorage
+  const SKIP_HOME_KEY = 'ownpilot:artifacts:skipHome';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Save skip home preference
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
+    } catch {
+      // localStorage might be disabled
+    }
+  }, []);
+
   const pageTabParam = searchParams.get('tab') as PageTabId | null;
   const activePageTab: PageTabId =
     pageTabParam && (['home', 'artifacts'] as string[]).includes(pageTabParam)
       ? pageTabParam
       : 'home';
+
+  // Auto-redirect to artifacts if skipHome is enabled and no explicit tab param
+  useEffect(() => {
+    if (skipHome && !pageTabParam) {
+      const params = new URLSearchParams(searchParams);
+      params.set('tab', 'artifacts');
+      navigate({ search: params.toString() }, { replace: true });
+    }
+  }, [skipHome, pageTabParam, searchParams, navigate]);
+
   const setPageTab = (tab: PageTabId) => {
     const params = new URLSearchParams(searchParams);
     params.set('tab', tab);
@@ -235,6 +265,9 @@ export function ArtifactsPage() {
               detail: 'Download, copy, or reference artifacts in future chats.',
             },
           ]}
+          skipHomeChecked={skipHome}
+          onSkipHomeChange={handleSkipHomeChange}
+          skipHomeLabel="Skip this screen and go directly to Artifacts"
         />
       )}
 
