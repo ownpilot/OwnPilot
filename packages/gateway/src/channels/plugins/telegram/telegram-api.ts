@@ -38,8 +38,9 @@ const log = getLog('Telegram');
 /** Reconnection configuration */
 const RECONNECT_CONFIG = {
   maxAttempts: 10,
-  baseDelayMs: 5000,    // Start with 5 seconds
-  maxDelayMs: 60000,    // Cap at 60 seconds
+  initialDelayMs: 15000,   // Start with 15 seconds for 409 conflicts
+  baseDelayMs: 5000,       // Then 5 seconds base for other retries
+  maxDelayMs: 120000,      // Cap at 2 minutes
   backoffMultiplier: 2,
 };
 
@@ -85,6 +86,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   private reconnectAttempts = 0;
   private reconnectTimer?: NodeJS.Timeout;
   private isReconnecting = false;
+  private lastErrorWasConflict = false;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
     this.config = config as unknown as TelegramChannelConfig;
@@ -347,6 +349,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
           this.emitConnectionEvent('error');
           // Trigger automatic reconnect for 409 conflicts
           if (httpCode === 409 && !this.isReconnecting) {
+            this.lastErrorWasConflict = true;
             void this.scheduleReconnect();
           }
         } else {
@@ -396,6 +399,9 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
             this.emitConnectionEvent('error');
             // Trigger reconnect for 409 conflicts or other connection errors
             if (!this.isReconnecting && (httpCode === 409 || !httpCode)) {
+              if (httpCode === 409) {
+                this.lastErrorWasConflict = true;
+              }
               void this.scheduleReconnect();
             }
           });
@@ -412,22 +418,26 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     this.approvalHandler.clearAll();
 
     if (this.bot) {
-      // In webhook mode, deregister the webhook from Telegram and cleanup handler
+      // Always try to delete webhook and drop pending updates
+      // This is critical for 409 conflict recovery
+      try {
+        await this.bot.api.deleteWebhook({ drop_pending_updates: true });
+        log.debug('[Telegram] Webhook deleted, pending updates dropped');
+      } catch (err) {
+        // Ignore errors - bot might not be fully initialized
+        log.debug('[Telegram] deleteWebhook failed (may be normal):', getErrorMessage(err));
+      }
+
+      // In webhook mode, also cleanup handler
       if (this.webhookMode) {
-        // Unregister internal handler first — even if Telegram API call fails,
-        // the local route must not process stale requests
         try {
           const { unregisterWebhookHandler } = await import('./webhook.js');
           unregisterWebhookHandler();
         } catch {
           /* best effort */
         }
-        try {
-          await this.bot.api.deleteWebhook();
-        } catch (err) {
-          log.warn('[Telegram] Failed to delete webhook:', getErrorMessage(err));
-        }
       }
+
       this.bot.stop();
       this.bot = null;
     }
@@ -452,17 +462,27 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     this.isReconnecting = true;
     this.reconnectAttempts++;
 
+    // Use longer initial delay for 409 conflicts to ensure Telegram releases the session
+    const isFirstAttemptAfterConflict = this.lastErrorWasConflict && this.reconnectAttempts === 1;
+    const baseDelay = isFirstAttemptAfterConflict
+      ? RECONNECT_CONFIG.initialDelayMs
+      : RECONNECT_CONFIG.baseDelayMs;
+
     // Calculate delay with exponential backoff
     const delay = Math.min(
-      RECONNECT_CONFIG.baseDelayMs * Math.pow(RECONNECT_CONFIG.backoffMultiplier, this.reconnectAttempts - 1),
+      baseDelay * Math.pow(RECONNECT_CONFIG.backoffMultiplier, this.reconnectAttempts - 1),
       RECONNECT_CONFIG.maxDelayMs
     );
 
-    log.info(`[Telegram] Scheduling reconnect attempt ${this.reconnectAttempts}/${RECONNECT_CONFIG.maxAttempts} in ${delay}ms`);
+    // Add small jitter to prevent thundering herd when multiple instances restart
+    const jitter = Math.floor(Math.random() * 2000);
+    const finalDelay = delay + jitter;
+
+    log.info(`[Telegram] Scheduling reconnect attempt ${this.reconnectAttempts}/${RECONNECT_CONFIG.maxAttempts} in ${finalDelay}ms`);
 
     this.reconnectTimer = setTimeout(() => {
       void this.performReconnect();
-    }, delay);
+    }, finalDelay);
   }
 
   /**
@@ -475,14 +495,16 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       // Fully disconnect first to clean up any stale state
       await this.disconnect();
 
-      // Wait a bit to ensure Telegram API released the session
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait longer after 409 conflicts to ensure Telegram API released the session
+      const waitTime = this.lastErrorWasConflict ? 5000 : 2000;
+      await new Promise(resolve => setTimeout(resolve, waitTime));
 
       // Attempt to reconnect
       await this.connect();
 
       log.info('[Telegram] Reconnected successfully');
       this.reconnectAttempts = 0;
+      this.lastErrorWasConflict = false;
       this.isReconnecting = false;
     } catch (error) {
       log.error('[Telegram] Reconnect attempt failed:', error);
@@ -493,6 +515,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         this.scheduleReconnect();
       } else {
         log.error('[Telegram] Max reconnection attempts reached, giving up');
+        this.lastErrorWasConflict = false;
       }
     }
   }
@@ -511,6 +534,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   /** Manually trigger a reconnect (useful for external recovery) */
   async reconnect(): Promise<void> {
     this.reconnectAttempts = 0;
+    this.lastErrorWasConflict = false;
     this.clearReconnectTimer();
     await this.performReconnect();
   }
