@@ -226,7 +226,7 @@ export class ClawRunner {
     parts.push('8. You can spawn sub-claws for parallel subtasks — delegate when it makes sense.');
 
     if (this.config.stopCondition) {
-      parts.push(`8. Stop condition: ${this.config.stopCondition}`);
+      parts.push(`9. Stop condition: ${this.config.stopCondition}`);
     }
     parts.push('');
 

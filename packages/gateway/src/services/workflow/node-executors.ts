@@ -38,6 +38,35 @@ import vm from 'node:vm';
 
 const log = getLog('WorkflowService');
 
+/** Maximum array size for per-element VM evaluation (filter/map nodes). */
+const MAX_ARRAY_EVAL_SIZE = 10_000;
+
+/**
+ * Safe VM expression evaluator — hardens against prototype-chain sandbox escapes.
+ *
+ * Defenses:
+ * - `codeGeneration.strings: false` blocks `Function()` / `eval()` inside the sandbox
+ * - Dangerous globals (`process`, `require`, `global`, `globalThis`) are frozen as undefined
+ * - Timeout prevents infinite loops
+ */
+function safeVmEval(expression: string, context: Record<string, unknown>, timeoutMs: number): unknown {
+  const sandbox: Record<string, unknown> = {
+    ...context,
+    // Block escape vectors
+    process: undefined,
+    require: undefined,
+    global: undefined,
+    globalThis: undefined,
+    Function: undefined,
+    eval: undefined,
+    import: undefined,
+  };
+  const vmContext = vm.createContext(sandbox, {
+    codeGeneration: { strings: false, wasm: false },
+  });
+  return vm.runInContext(expression, vmContext, { timeout: timeoutMs });
+}
+
 /** Convert ToolServiceResult to ToolExecutionResult. */
 export function toToolExecResult(r: ToolServiceResult): ToolExecutionResult {
   if (r.isError) {
@@ -331,7 +360,7 @@ export function executeConditionNode(
     evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
     const vmTimeout = (node.data as ConditionNodeData).timeoutMs || 5000;
-    const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
+    const result = safeVmEval(resolvedExpr, evalContext, vmTimeout);
     const branch = Boolean(result);
     const durationMs = Date.now() - startTime;
 
@@ -459,7 +488,7 @@ export function executeTransformerNode(
     evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
     const vmTimeout = (node.data as TransformerNodeData).timeoutMs || 5000;
-    const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
+    const result = safeVmEval(resolvedExpr, evalContext, vmTimeout);
     const durationMs = Date.now() - startTime;
 
     log.info('Transformer completed', { nodeId: node.id, durationMs });
@@ -1104,9 +1133,19 @@ export function executeFilterNode(
     }
 
     const vmTimeout = data.timeoutMs || 5000;
+    if (arr.length > MAX_ARRAY_EVAL_SIZE) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `Array too large for per-element evaluation (${arr.length} > ${MAX_ARRAY_EVAL_SIZE})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
     const filtered = arr.filter((item, index) => {
       const ctx = { item, index, ...variables };
-      return vm.runInNewContext(data.condition, ctx, { timeout: vmTimeout });
+      return safeVmEval(data.condition, ctx, vmTimeout);
     });
 
     log.info('Filter completed', {
@@ -1161,9 +1200,19 @@ export function executeMapNode(
     }
 
     const vmTimeout = data.timeoutMs || 5000;
+    if (arr.length > MAX_ARRAY_EVAL_SIZE) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: `Array too large for per-element evaluation (${arr.length} > ${MAX_ARRAY_EVAL_SIZE})`,
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
     const mapped = arr.map((item, index) => {
       const ctx = { item, index, ...variables };
-      return vm.runInNewContext(data.expression, ctx, { timeout: vmTimeout });
+      return safeVmEval(data.expression, ctx, vmTimeout);
     });
 
     log.info('Map completed', { nodeId: node.id, count: arr.length });
@@ -1378,7 +1427,7 @@ export function executeSwitchNode(
     evalContext.data = lastOutput; // convenience alias for the most recent upstream output
 
     const vmTimeout = data.timeoutMs || 5000;
-    const result = vm.runInNewContext(resolvedExpr, evalContext, { timeout: vmTimeout });
+    const result = safeVmEval(resolvedExpr, evalContext, vmTimeout);
     const resultStr = String(result);
 
     // Match against cases

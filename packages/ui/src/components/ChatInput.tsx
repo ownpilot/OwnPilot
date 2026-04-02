@@ -136,10 +136,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     }
   }, [value]);
 
-  // Cleanup object URLs on unmount
+  // Cleanup object URLs on unmount — use ref to access latest imagePreviews
+  const imagePreviewsRef = useRef(imagePreviews);
+  imagePreviewsRef.current = imagePreviews;
   useEffect(() => {
     return () => {
-      for (const p of imagePreviews) URL.revokeObjectURL(p.previewUrl);
+      for (const p of imagePreviewsRef.current) URL.revokeObjectURL(p.previewUrl);
     };
   }, []);
 

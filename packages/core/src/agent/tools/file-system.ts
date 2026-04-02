@@ -10,6 +10,7 @@ import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { isBlockedUrl } from './web-fetch.js';
+import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 import { isOwnPilotPath } from '../../security/self-protection.js';
 
 /** Maximum file size for read/write operations (10 MB) */
@@ -355,6 +356,9 @@ export const listDirectoryExecutor: ToolExecutor = async (
       modified?: string;
     }> = [];
 
+    // Pre-compile glob pattern regex once (not per file entry)
+    const patternRegex = pattern ? safeGlobToRegex(pattern) : null;
+
     async function listDir(dir: string, depth = 0): Promise<void> {
       const items = await fs.readdir(dir, { withFileTypes: true });
 
@@ -363,8 +367,8 @@ export const listDirectoryExecutor: ToolExecutor = async (
         if (!includeHidden && item.name.startsWith('.')) continue;
 
         // Apply pattern filter
-        if (pattern) {
-          if (!safeGlobToRegex(pattern).test(item.name)) continue;
+        if (patternRegex) {
+          if (!patternRegex.test(item.name)) continue;
         }
 
         const fullPath = path.join(dir, item.name);
@@ -616,8 +620,8 @@ export const downloadFileExecutor: ToolExecutor = async (
     // Create directory
     await fs.mkdir(path.dirname(filePath), { recursive: true });
 
-    // SSRF protection: block internal/private URLs
-    if (isBlockedUrl(url)) {
+    // SSRF protection: block internal/private URLs (hostname check + DNS resolution check)
+    if (isBlockedUrl(url) || (await isPrivateUrlAsync(url))) {
       return {
         content: 'Error: URL is blocked. Cannot download from internal or private addresses.',
         isError: true,

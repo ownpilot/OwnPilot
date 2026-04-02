@@ -283,11 +283,11 @@ export function ChatPage() {
         return;
       }
 
-      // Fallback to first configured provider
+      // Fallback to first configured provider (fetchData only runs when provider is empty)
       if (modelsData.configuredProviders.length > 0) {
         const firstProvider = modelsData.configuredProviders[0]!;
         const firstModel = modelsData.models.find((m) => m.provider === firstProvider);
-        if (firstModel && !modelsData.configuredProviders.includes(provider)) {
+        if (firstModel) {
           setProvider(firstProvider);
           setModel(firstModel.id);
         }

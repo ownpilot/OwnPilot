@@ -343,8 +343,8 @@ export class PluginRegistry {
   /**
    * Subscribe to events (delegates to unified EventSystem)
    */
-  onEvent(event: string, handler: (data: unknown) => void): void {
-    getEventSystem().onAny(event, (e) => handler(e.data));
+  onEvent(event: string, handler: (data: unknown) => void): () => void {
+    return getEventSystem().onAny(event, (e) => handler(e.data));
   }
 
   /**

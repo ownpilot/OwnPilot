@@ -33,6 +33,16 @@ vi.mock('./template-resolver.js', () => ({
   resolveTemplates: vi.fn((args: Record<string, unknown>) => args),
 }));
 
+vi.mock('../../utils/ssrf.js', () => ({
+  isBlockedUrl: vi.fn((url: string) => {
+    try {
+      const parsed = new URL(url);
+      return ['localhost', '127.0.0.1', '10.0.0.1', '192.168.1.1'].includes(parsed.hostname);
+    } catch { return true; }
+  }),
+  isPrivateUrlAsync: vi.fn(async () => false),
+}));
+
 vi.mock('../../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((err: unknown, fallback: string) =>
     err instanceof Error ? err.message : fallback

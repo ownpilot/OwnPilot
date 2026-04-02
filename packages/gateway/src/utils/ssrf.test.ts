@@ -219,10 +219,10 @@ describe('isPrivateUrlAsync', () => {
     expect(result).toBe(true);
   });
 
-  it('returns false when DNS lookup throws (fail open)', async () => {
+  it('returns true when DNS lookup throws (fail closed for safety)', async () => {
     mockLookup.mockRejectedValue(new Error('DNS NXDOMAIN'));
     const result = await isPrivateUrlAsync('https://nonexistent-domain-xyz.example.com');
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 
   it('caches DNS results — only calls lookup once for same hostname', async () => {
@@ -232,9 +232,9 @@ describe('isPrivateUrlAsync', () => {
     expect(mockLookup).toHaveBeenCalledTimes(1);
   });
 
-  it('returns false for malformed URL string', async () => {
+  it('returns true for malformed URL string (fail closed)', async () => {
     const result = await isPrivateUrlAsync('not-a-url');
-    expect(result).toBe(false);
+    expect(result).toBe(true);
     expect(mockLookup).not.toHaveBeenCalled();
   });
 });

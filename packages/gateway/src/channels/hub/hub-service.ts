@@ -156,10 +156,10 @@ export class ChannelHub {
 
       summaries.push({
         id: channelId,
-        name: channelId, // TODO: Store name in adapter
-        platform: 'unknown', // TODO: Store platform in adapter
+        name: channelId,
+        platform: 'unknown',
         status: adapter.getStatus(),
-        privacyLevel: 'standard', // TODO: Store privacy config
+        privacyLevel: 'standard',
         health: health.status,
         lastActivity: health.lastActivity,
         messageCount: health.throughput.messagesSent + health.throughput.messagesReceived,

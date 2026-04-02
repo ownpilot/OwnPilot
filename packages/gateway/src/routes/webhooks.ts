@@ -74,9 +74,23 @@ webhookRoutes.post('/sms', async (c) => {
  * POST /webhooks/email/inbound
  *
  * Receives inbound emails via webhook (SendGrid Inbound Parse, Mailgun, or generic JSON).
+ * Requires EMAIL_WEBHOOK_SECRET env var. Pass as ?secret=<value> query param or
+ * X-Webhook-Secret header.
  */
 webhookRoutes.post('/email/inbound', async (c) => {
   try {
+    // Validate shared secret
+    const expectedSecret = process.env.EMAIL_WEBHOOK_SECRET;
+    if (expectedSecret) {
+      const providedSecret =
+        c.req.query('secret') ?? c.req.header('X-Webhook-Secret') ?? '';
+      if (!safeKeyCompare(providedSecret, expectedSecret)) {
+        return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid webhook secret' }, 401);
+      }
+    } else {
+      log.warn('EMAIL_WEBHOOK_SECRET not configured — email webhook is unauthenticated');
+    }
+
     let from = '';
     let to = '';
     let subject = '';
@@ -138,8 +152,12 @@ webhookRoutes.post('/slack/events', async (c) => {
   try {
     const body = await c.req.json();
 
-    // URL verification challenge (Slack sends this when configuring the events URL)
+    // URL verification challenge (Slack sends this when configuring the events URL).
+    // Only respond if a Slack handler is configured — prevents unauthorized URL registration.
     if (body.type === 'url_verification') {
+      if (!handler) {
+        return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Slack not configured' }, 503);
+      }
       return c.json({ challenge: body.challenge });
     }
 

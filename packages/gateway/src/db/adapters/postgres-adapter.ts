@@ -6,8 +6,15 @@
 
 import type { DatabaseAdapter, DatabaseConfig, Row, QueryParams } from './types.js';
 import pg from 'pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { getLog } from '../../services/log.js';
 import { DB_POOL_MAX, DB_IDLE_TIMEOUT_MS, DB_CONNECT_TIMEOUT_MS } from '../../config/defaults.js';
+
+/**
+ * AsyncLocalStorage to thread the transaction client through repository calls.
+ * When inside a transaction, query/queryOne/execute use this client instead of the pool.
+ */
+const txClientStorage = new AsyncLocalStorage<pg.PoolClient>();
 
 // Fix pg timezone handling: TIMESTAMP WITHOUT TIME ZONE (OID 1114) values are stored
 // as UTC in this codebase, but pg's default parser interprets them as local time.
@@ -73,10 +80,17 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.pool !== null;
   }
 
+  /**
+   * Get the query target: transaction client (if inside a transaction) or pool.
+   */
+  private getQueryTarget(): pg.PoolClient | PoolType {
+    return txClientStorage.getStore() ?? this.pool!;
+  }
+
   async query<T extends object = Row>(sql: string, params: QueryParams = []): Promise<T[]> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
-    const result = await this.pool.query(convertedSql, params);
+    const result = await this.getQueryTarget().query(convertedSql, params);
     return result.rows as T[];
   }
 
@@ -91,10 +105,9 @@ export class PostgresAdapter implements DatabaseAdapter {
   ): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
-    const result = await this.pool.query(convertedSql, params);
+    const result = await this.getQueryTarget().query(convertedSql, params);
     return {
       changes: result.rowCount ?? 0,
-      // PostgreSQL doesn't have lastInsertRowid - use RETURNING clause if needed
     };
   }
 
@@ -131,7 +144,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     try {
       await client.query('BEGIN');
-      const result = await fn();
+      const result = await txClientStorage.run(client, fn);
       if (!timedOut) {
         await client.query('COMMIT');
       }

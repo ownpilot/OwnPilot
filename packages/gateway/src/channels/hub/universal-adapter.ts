@@ -111,10 +111,9 @@ export abstract class UniversalChannelAdapter extends EventEmitter {
         throw new Error(`Cannot send message: channel is ${this.status}`);
       }
 
-      // Encrypt if requested and enabled
+      // Encrypt if requested and enabled (E2E encryption not yet implemented)
       if (message.encrypt && this.config.privacy.e2eEnabled) {
-        // TODO: Integrate with SignalProtocol
-        log.debug('Encryption requested but not yet implemented');
+        log.debug('E2E encryption requested but not yet available');
       }
 
       // Send via platform-specific implementation
@@ -186,7 +185,7 @@ export abstract class UniversalChannelAdapter extends EventEmitter {
         timestamp: metadata.timestamp,
         replyTo: metadata.replyTo,
         threadId: metadata.threadId,
-        encrypted: false, // TODO: Detect encrypted messages
+        encrypted: false,
         metadata: strippedMetadata,
       };
 

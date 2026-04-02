@@ -66,6 +66,9 @@ export interface ToolExecutionResult {
 
 let sharedRegistry: ToolRegistry | null = null;
 
+/** Stored unsubscribe functions for event listeners so we can clean up on reset. */
+let eventUnsubscribers: Array<() => void> = [];
+
 /**
  * Get or create a shared ToolRegistry with ALL tools registered.
  * This is the single registry used by routes, triggers, plans, agents, etc.
@@ -153,7 +156,7 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
     }
 
     // Listen for future plugin state changes via EventSystem
-    eventSystem.onAny('plugin.status', (e) => {
+    const unsub = eventSystem.onAny('plugin.status', (e) => {
       try {
         const event = e.data as { pluginId?: string; newStatus?: string };
         if (!event?.pluginId || !event?.newStatus) return;
@@ -172,6 +175,7 @@ function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
         log.warn('[tool-executor] Plugin status event handler failed', { error: err });
       }
     });
+    eventUnsubscribers.push(unsub);
   } catch {
     // Plugin or Event service not initialized yet — plugins will register later
   }
@@ -382,9 +386,9 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
         }
       };
 
-      eventSystem.onAny('extension.installed', resyncExtensionTools);
-      eventSystem.onAny('extension.enabled', resyncExtensionTools);
-      eventSystem.onAny('extension.disabled', resyncExtensionTools);
+      eventUnsubscribers.push(eventSystem.onAny('extension.installed', resyncExtensionTools));
+      eventUnsubscribers.push(eventSystem.onAny('extension.enabled', resyncExtensionTools));
+      eventUnsubscribers.push(eventSystem.onAny('extension.disabled', resyncExtensionTools));
     } catch {
       // EventSystem not available yet
     }
@@ -589,6 +593,8 @@ export async function hasTool(toolName: string): Promise<boolean> {
  * Reset the shared registry (for testing or reinitialization).
  */
 export function resetSharedToolRegistry(): void {
+  for (const unsub of eventUnsubscribers) unsub();
+  eventUnsubscribers = [];
   sharedRegistry = null;
   toolSyncPromise = null;
 }

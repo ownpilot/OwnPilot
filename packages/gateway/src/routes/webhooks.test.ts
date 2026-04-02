@@ -221,8 +221,21 @@ describe('Webhook Routes', () => {
   // ==========================================================================
 
   describe('POST /webhooks/slack/events', () => {
-    it('returns 200 with challenge for url_verification type (no handler needed)', async () => {
+    it('returns 503 for url_verification when handler not configured', async () => {
       mockGetSlackWebhookHandler.mockReturnValue(null);
+
+      const body = { type: 'url_verification', challenge: 'abc123' };
+      const res = await app.request('/webhooks/slack/events', {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      expect(res.status).toBe(503);
+    });
+
+    it('returns 200 with challenge for url_verification when handler is configured', async () => {
+      mockGetSlackWebhookHandler.mockReturnValue({ handle: vi.fn() });
 
       const body = { type: 'url_verification', challenge: 'abc123' };
       const res = await app.request('/webhooks/slack/events', {

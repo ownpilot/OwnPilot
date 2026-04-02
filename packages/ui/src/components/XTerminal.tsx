@@ -139,6 +139,10 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const { send, subscribe, status } = useGateway();
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
   const hasReceivedOutput = useRef(false);
   const [inputText, setInputText] = useState('');
   const [inputError, setInputError] = useState('');
@@ -218,7 +222,7 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
     requestAnimationFrame(() => {
       fitAddon.fit();
       terminal.write('\x1b[90mConnecting to session...\x1b[0m\r\n');
-      onReady?.();
+      onReadyRef.current?.();
     });
 
     const observer = new ResizeObserver(() => {
@@ -228,7 +232,7 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
 
     // Send resize events
     const resizeDisposable = terminal.onResize(({ cols, rows }) => {
-      send('coding-agent:resize', { sessionId, cols, rows });
+      sendRef.current('coding-agent:resize', { sessionId, cols, rows });
     });
 
     return () => {
@@ -238,7 +242,7 @@ export function XTerminal({ sessionId, interactive = false, onReady, className }
       terminalRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [sessionId, interactive, onReady, send]);
+  }, [sessionId, interactive]); // onReady/send use refs to avoid re-init
 
   // Subscribe to WS output + REST fallback
   useEffect(() => {

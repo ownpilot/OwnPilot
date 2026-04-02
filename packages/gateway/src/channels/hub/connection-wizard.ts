@@ -171,7 +171,7 @@ export class ConnectionWizard {
         channelId,
         status: adapter.getStatus(),
         webhookUrl: tunnelInfo?.url,
-        encryptionPublicKey: undefined, // TODO: Implement SignalProtocol
+        encryptionPublicKey: undefined, // E2E encryption not yet implemented
         health,
         setupTime,
       };
@@ -230,9 +230,8 @@ export class ConnectionWizard {
     // Stop monitoring
     healthMonitor.unmonitor(channelId);
 
-    // TODO: Actually disconnect the adapter
-    // This requires storing adapter instances
-
+    // Adapter disconnect is handled by the plugin system (channelApi.disconnect())
+    // when the channel is removed via the channels REST API.
     log.info(`Channel disconnected: ${channelId}`);
   }
 
@@ -248,8 +247,7 @@ export class ConnectionWizard {
       return undefined;
     }
 
-    // For now, return local URL
-    // TODO: Implement actual ngrok/cloudflare tunnel
+    // Returns local URL — external tunnel setup is done via CLI `ownpilot tunnel start` command
     const webhookPath = `${this.config.defaultWebhookPath}/${platform}/${channelId}`;
 
     log.debug(`Setting up tunnel for ${channelId}`, {

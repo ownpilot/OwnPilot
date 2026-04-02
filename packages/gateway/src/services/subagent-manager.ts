@@ -66,8 +66,10 @@ export class SubagentManager {
   constructor(budget?: Partial<SubagentBudget>, repo?: SubagentsRepository) {
     this.budget = { ...DEFAULT_SUBAGENT_BUDGET, ...budget };
     this.repo = repo ?? new SubagentsRepository();
-    // Defer cleanup start to allow EventSystem and other services to initialize
-    setImmediate(() => this.startCleanup());
+    // Defer cleanup start to allow EventSystem and other services to initialize.
+    const immediate = setImmediate(() => this.startCleanup());
+    // Unref so the timer doesn't keep the process alive in tests
+    if (immediate.unref) immediate.unref();
   }
 
   /**

@@ -727,8 +727,13 @@ export class FleetManager {
 
   private emitEvent(eventType: string, data: Record<string, unknown>): void {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (getEventSystem() as any).emit(eventType, 'fleet-manager', data);
+      getEventSystem().emitRaw({
+        type: eventType,
+        category: 'system',
+        source: 'fleet-manager',
+        data,
+        timestamp: new Date().toISOString(),
+      });
     } catch {
       // Event system not available — non-critical
     }

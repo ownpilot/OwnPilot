@@ -33,7 +33,7 @@ const mockPluginService = {
 };
 
 const mockEventSystem = {
-  onAny: vi.fn(),
+  onAny: vi.fn().mockReturnValue(() => {}),
 };
 
 const mockExtensionService = {

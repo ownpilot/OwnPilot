@@ -221,6 +221,7 @@ export function MiniChat() {
   const isResizing = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const dragStartSize = useRef<ChatSize>({ width: 0, height: 0 });
+  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   // Unread tracking
   const lastSeenCountRef = useRef(messages.length);
@@ -326,6 +327,7 @@ export function MiniChat() {
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        dragCleanupRef.current = null;
         setSize((current) => {
           saveSize(current);
           return current;
@@ -336,9 +338,16 @@ export function MiniChat() {
       document.body.style.userSelect = 'none';
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      // Store cleanup for unmount safety
+      dragCleanupRef.current = handleMouseUp;
     },
     [size, isMaximized]
   );
+
+  // Cleanup drag listeners if component unmounts during active drag
+  useEffect(() => {
+    return () => { dragCleanupRef.current?.(); };
+  }, []);
 
   // Compute effective dimensions
   const effectiveSize = isMaximized

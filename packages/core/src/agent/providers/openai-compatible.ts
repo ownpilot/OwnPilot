@@ -20,7 +20,6 @@ import { InternalError, TimeoutError, ValidationError } from '../../types/errors
 import { getErrorMessage } from '../../services/error-utils.js';
 import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
 import type {
-  ProviderConfig as LegacyProviderConfig,
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
@@ -596,82 +595,3 @@ export function createOpenAICompatibleProvider(
   return OpenAICompatibleProvider.fromProviderId(providerId);
 }
 
-/**
- * Create DeepSeek provider
- */
-export function createDeepSeekProvider(
-  config?: LegacyProviderConfig
-): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('deepseek', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('deepseek');
-}
-
-/**
- * Create Groq provider
- */
-export function createGroqProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('groq', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('groq');
-}
-
-/**
- * Create Together AI provider
- */
-export function createTogetherProvider(
-  config?: LegacyProviderConfig
-): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('together', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('together');
-}
-
-/**
- * Create Fireworks AI provider
- */
-export function createFireworksProvider(
-  config?: LegacyProviderConfig
-): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('fireworks', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('fireworks');
-}
-
-/**
- * Create Mistral AI provider
- */
-export function createMistralProvider(
-  config?: LegacyProviderConfig
-): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('mistral', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('mistral');
-}
-
-/**
- * Create xAI (Grok) provider
- */
-export function createXAIProvider(config?: LegacyProviderConfig): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('xai', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('xai');
-}
-
-/**
- * Create Perplexity provider
- */
-export function createPerplexityProvider(
-  config?: LegacyProviderConfig
-): OpenAICompatibleProvider | null {
-  if (config?.apiKey) {
-    return OpenAICompatibleProvider.fromProviderIdWithKey('perplexity', config.apiKey);
-  }
-  return OpenAICompatibleProvider.fromProviderId('perplexity');
-}

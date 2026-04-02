@@ -137,7 +137,8 @@ async function getCachedCrewContext(agentId: string, crewId: string): Promise<st
   const cached = crewContextCache.get(cacheKey);
   if (cached !== null) return cached;
   const value = await buildCrewContextForHeartbeat(agentId, crewId);
-  crewContextCache.set(cacheKey, value);
+  // Cache null results too (as empty string) to avoid repeated DB lookups for solo agents
+  crewContextCache.set(cacheKey, value ?? '');
   return value;
 }
 

@@ -47,7 +47,12 @@ const WHATSAPP_MAX_LENGTH = 4096;
 /** Simple TTL cache (replaces node-cache dependency). */
 class SimpleTTLCache<V> {
   private data = new Map<string, { value: V; expires: number }>();
-  constructor(private readonly ttlMs: number) {}
+  private pruneTimer: ReturnType<typeof setInterval> | null = null;
+  constructor(private readonly ttlMs: number) {
+    // Proactively evict expired entries every 60s to prevent unbounded growth
+    this.pruneTimer = setInterval(() => this.prune(), 60_000);
+    if (this.pruneTimer.unref) this.pruneTimer.unref();
+  }
   set(key: string, value: V): void {
     this.data.set(key, { value, expires: Date.now() + this.ttlMs });
   }
@@ -64,6 +69,16 @@ class SimpleTTLCache<V> {
     this.data.delete(key);
   }
   flushAll(): void {
+    this.data.clear();
+  }
+  private prune(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.data) {
+      if (now > entry.expires) this.data.delete(key);
+    }
+  }
+  destroy(): void {
+    if (this.pruneTimer) { clearInterval(this.pruneTimer); this.pruneTimer = null; }
     this.data.clear();
   }
 }

@@ -415,10 +415,18 @@ export function createSandboxUtils() {
     // --- Password ---
     generatePassword(length: number = 16): string {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=';
+      const charsLen = chars.length;
+      // Rejection sampling to eliminate modulo bias
+      const maxValid = 256 - (256 % charsLen); // largest multiple of charsLen ≤ 256
       let password = '';
-      const bytes = crypto.randomBytes(length);
-      for (let i = 0; i < length; i++) {
-        password += chars[bytes[i]! % chars.length];
+      while (password.length < length) {
+        const bytes = crypto.randomBytes(length - password.length + 16); // over-sample
+        for (const byte of bytes) {
+          if (byte < maxValid) {
+            password += chars[byte % charsLen];
+            if (password.length >= length) break;
+          }
+        }
       }
       return password;
     },

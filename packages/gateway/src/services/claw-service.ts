@@ -101,7 +101,9 @@ export class ClawServiceImpl implements IClawService {
     return getClawManager().stopClaw(clawId, userId);
   }
 
-  async executeNow(clawId: string, _userId: string): Promise<ClawCycleResult> {
+  async executeNow(clawId: string, userId: string): Promise<ClawCycleResult> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
     const result = await getClawManager().executeNow(clawId);
     if (!result) throw new Error('Claw not running or cycle in progress');
     return result;
@@ -109,8 +111,10 @@ export class ClawServiceImpl implements IClawService {
 
   // ---- Sessions ----
 
-  getSession(clawId: string, _userId: string): ClawSession | null {
-    return getClawManager().getSession(clawId);
+  getSession(clawId: string, userId: string): ClawSession | null {
+    const session = getClawManager().getSession(clawId);
+    if (!session || session.config.userId !== userId) return null;
+    return session;
   }
 
   listSessions(userId: string): ClawSession[] {
@@ -121,27 +125,35 @@ export class ClawServiceImpl implements IClawService {
 
   async getHistory(
     clawId: string,
-    _userId: string,
+    userId: string,
     limit = 20,
     offset = 0
   ): Promise<{ entries: ClawHistoryEntry[]; total: number }> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return { entries: [], total: 0 };
     return getClawsRepository().getHistory(clawId, limit, offset);
   }
 
   // ---- Communication ----
 
-  async sendMessage(clawId: string, _userId: string, message: string): Promise<void> {
+  async sendMessage(clawId: string, userId: string, message: string): Promise<void> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
     const sent = await getClawManager().sendMessage(clawId, message);
     if (!sent) throw new Error('Claw not running');
   }
 
   // ---- Escalation ----
 
-  async approveEscalation(clawId: string, _userId: string): Promise<boolean> {
+  async approveEscalation(clawId: string, userId: string): Promise<boolean> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return false;
     return getClawManager().approveEscalation(clawId);
   }
 
-  async denyEscalation(clawId: string, _userId: string, reason?: string): Promise<boolean> {
+  async denyEscalation(clawId: string, userId: string, reason?: string): Promise<boolean> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return false;
     return getClawManager().denyEscalation(clawId, reason);
   }
 

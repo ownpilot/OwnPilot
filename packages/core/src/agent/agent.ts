@@ -332,12 +332,21 @@ export class Agent {
 
         for (const toolCall of response.toolCalls) {
           if (options?.onBeforeToolCall) {
-            const approval = await options.onBeforeToolCall(toolCall);
-            if (!approval.approved) {
-              // Add rejection as tool result
+            try {
+              const approval = await options.onBeforeToolCall(toolCall);
+              if (!approval.approved) {
+                rejectedResults.push({
+                  toolCallId: toolCall.id,
+                  content: `Tool call rejected: ${approval.reason ?? 'Not approved by autonomy settings'}`,
+                  isError: true,
+                });
+                continue;
+              }
+            } catch (approvalErr) {
+              // Treat callback errors as rejections to avoid leaving conversation in invalid state
               rejectedResults.push({
                 toolCallId: toolCall.id,
-                content: `Tool call rejected: ${approval.reason ?? 'Not approved by autonomy settings'}`,
+                content: `Tool call rejected: approval callback error: ${String(approvalErr)}`,
                 isError: true,
               });
               continue;

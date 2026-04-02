@@ -519,6 +519,33 @@ describe('PostgresAdapter', () => {
       ).rejects.toThrow();
       expect(mockClient.release).toHaveBeenCalledOnce();
     });
+
+    it('routes query() calls inside transaction through the transaction client, not the pool', async () => {
+      const adapter = await makeInitializedAdapter();
+      const clientQueries: string[] = [];
+      const poolQueries: string[] = [];
+
+      // Track which target receives the query
+      mockClient.query.mockImplementation((sql: string) => {
+        clientQueries.push(sql);
+        return Promise.resolve({ rows: [{ id: 1 }], rowCount: 1 });
+      });
+      mockPool.query.mockImplementation((sql: string) => {
+        poolQueries.push(sql);
+        return Promise.resolve({ rows: [{ id: 1 }], rowCount: 1 });
+      });
+
+      await adapter.transaction(async () => {
+        await adapter.query('SELECT 1');
+        await adapter.execute('UPDATE foo SET bar = 1');
+      });
+
+      // The SELECT and UPDATE should go through the client (transaction), not the pool
+      expect(clientQueries).toContain('SELECT 1');
+      expect(clientQueries).toContain('UPDATE foo SET bar = 1');
+      expect(poolQueries).not.toContain('SELECT 1');
+      expect(poolQueries).not.toContain('UPDATE foo SET bar = 1');
+    });
   });
   // exec() - tests the raw SQL execution method
   describe('exec()', () => {

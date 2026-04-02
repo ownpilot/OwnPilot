@@ -198,30 +198,25 @@ export function buildSandboxContext(
   // Build timer utilities
   const timers = buildTimers(perms.timers, () => {});
 
-  // Build the context object
+  // Build the context object.
+  // NOTE: Do NOT pass host constructors (Object, Array, Map, etc.) here.
+  // vm.createContext() creates its own V8 built-ins for the sandbox context.
+  // Passing host constructors would share prototype chains, allowing sandbox code
+  // to mutate host prototypes (e.g. Array.prototype.push = ...).
   const context: Record<string, unknown> = {
-    // Safe globals
+    // Safe globals — namespaces and stateless constructors only.
+    // Do NOT add Object, Array, Map, Set, WeakMap, WeakSet, Promise, Symbol, etc.
+    // Those are created by V8 per-context; passing the host versions shares prototypes.
     console: buildConsole(onLog),
     JSON,
     Math,
     Date,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
     RegExp,
     Error,
     TypeError,
     RangeError,
     SyntaxError,
     URIError,
-    Map,
-    Set,
-    WeakMap,
-    WeakSet,
-    Promise,
-    Symbol,
     // Proxy and Reflect intentionally excluded — can be used for sandbox escape attacks
 
     // String utilities

@@ -66,6 +66,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     getEventSystem: () => ({
       emit: mockEmit,
+      emitRaw: mockEmit,
     }),
     getNextRunTime: mockGetNextRunTime,
   };
@@ -921,44 +922,39 @@ describe('FleetManager', () => {
   // =========================================================================
 
   describe('Events', () => {
+    /** Helper to assert emitRaw was called with an event matching type/source/data */
+    function expectEvent(type: string, dataMatcher: Record<string, unknown>) {
+      expect(mockEmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type,
+          source: 'fleet-manager',
+          data: expect.objectContaining(dataMatcher),
+        })
+      );
+    }
+
     it('emits fleet.started on startFleet', async () => {
       await manager.startFleet(makeConfig());
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.started',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1' })
-      );
+      expectEvent('fleet.started', { fleetId: 'fleet-1' });
     });
 
     it('emits fleet.paused on pauseFleet', async () => {
       await manager.startFleet(makeConfig());
       await manager.pauseFleet('fleet-1');
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.paused',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1' })
-      );
+      expectEvent('fleet.paused', { fleetId: 'fleet-1' });
     });
 
     it('emits fleet.resumed on resumeFleet', async () => {
       await manager.startFleet(makeConfig());
       await manager.pauseFleet('fleet-1');
       await manager.resumeFleet('fleet-1');
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.resumed',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1' })
-      );
+      expectEvent('fleet.resumed', { fleetId: 'fleet-1' });
     });
 
     it('emits fleet.stopped on stopFleet', async () => {
       await manager.startFleet(makeConfig());
       await manager.stopFleet('fleet-1', 'test');
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.stopped',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1', reason: 'test' })
-      );
+      expectEvent('fleet.stopped', { fleetId: 'fleet-1', reason: 'test' });
     });
 
     it('emits fleet.cycle.start and fleet.cycle.end during execution', async () => {
@@ -970,16 +966,8 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.cycle.start',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1', taskCount: 1 })
-      );
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.cycle.end',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1', tasksCompleted: 1 })
-      );
+      expectEvent('fleet.cycle.start', { fleetId: 'fleet-1', taskCount: 1 });
+      expectEvent('fleet.cycle.end', { fleetId: 'fleet-1', tasksCompleted: 1 });
     });
 
     it('emits fleet.worker.started and fleet.worker.completed', async () => {
@@ -991,16 +979,8 @@ describe('FleetManager', () => {
       await manager.startFleet(config);
       await vi.advanceTimersByTimeAsync(1100);
 
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.worker.started',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1', taskId: 'task-1' })
-      );
-      expect(mockEmit).toHaveBeenCalledWith(
-        'fleet.worker.completed',
-        'fleet-manager',
-        expect.objectContaining({ fleetId: 'fleet-1', taskId: 'task-1', success: true })
-      );
+      expectEvent('fleet.worker.started', { fleetId: 'fleet-1', taskId: 'task-1' });
+      expectEvent('fleet.worker.completed', { fleetId: 'fleet-1', taskId: 'task-1', success: true });
     });
   });
 

@@ -172,9 +172,11 @@ async function analyzeOutput(
 /** In-memory tracker for active runs (avoids double-execution) */
 const activeRuns = new Map<string, { abort: boolean }>();
 
-function broadcast(event: string, data: unknown) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  wsGateway.broadcast(event as any, data as any);
+function broadcast<K extends keyof import('../ws/types.js').ServerEvents>(
+  event: K,
+  data: import('../ws/types.js').ServerEvents[K]
+) {
+  wsGateway.broadcast(event, data);
 }
 
 /**
@@ -467,7 +469,7 @@ async function runOrchestrationLoop(run: OrchestrationRun, userId: string): Prom
         // No analysis — single step, mark complete
         step.outputSummary = output.length > 200 ? output.slice(-200) + '...' : output;
         await orchestrationRunsRepo.updateSteps(run.id, userId, run.steps, run.currentStep);
-        broadcast('orchestration:step:analyzed', { id: run.id, stepIndex });
+        broadcast('orchestration:step:analyzed', { id: run.id, stepIndex, analysis: null });
         await finishRun(run, userId, 'completed', startTime);
         return;
       }

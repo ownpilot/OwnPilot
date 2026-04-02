@@ -195,7 +195,7 @@ describe('HookBus', () => {
       expect(result.cancelled).toBe(true);
     });
 
-    it('subsequent handlers still run after cancellation', async () => {
+    it('subsequent handlers are skipped after cancellation', async () => {
       const secondHandler = vi.fn();
 
       hooks.tap(
@@ -208,12 +208,13 @@ describe('HookBus', () => {
 
       hooks.tap('tool:before-execute', secondHandler, 20);
 
-      await hooks.call('tool:before-execute', {
+      const result = await hooks.call('tool:before-execute', {
         toolName: 'test',
         args: {},
       });
 
-      expect(secondHandler).toHaveBeenCalledTimes(1);
+      expect(result.cancelled).toBe(true);
+      expect(secondHandler).toHaveBeenCalledTimes(0);
     });
   });
 

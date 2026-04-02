@@ -154,6 +154,7 @@ export class HookBus implements IHookBus {
     // Snapshot entries to prevent concurrent modification if a handler
     // adds/removes taps during execution.
     for (const entry of [...entries]) {
+      if (context.cancelled) break;
       try {
         await entry.handler(context);
       } catch (err) {

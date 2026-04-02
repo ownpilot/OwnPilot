@@ -81,6 +81,6 @@ export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
 
     return ips.some((ip) => PRIVATE_RANGES.some((re) => re.test(ip)));
   } catch {
-    return false; // DNS failure: let the request proceed, will fail at fetch
+    return true; // DNS failure: block the request (fail-closed for safety)
   }
 }

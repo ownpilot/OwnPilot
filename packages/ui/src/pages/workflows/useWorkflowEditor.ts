@@ -277,7 +277,7 @@ export function useWorkflowEditor() {
       .then((tools) =>
         setToolNames(tools.filter((t) => t.workflowUsable !== false).map((t) => t.name))
       )
-      .catch(() => {});
+      .catch((err) => console.warn('Failed to load tool names:', err));
   }, []);
 
   // Auto-execute if ?execute=true

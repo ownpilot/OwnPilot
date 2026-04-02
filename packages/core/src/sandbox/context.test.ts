@@ -269,20 +269,26 @@ describe('buildSandboxContext', () => {
     expect(typeof result.cleanup).toBe('function');
   });
 
-  it('includes safe globals', () => {
+  it('includes safe globals (namespaces and stateless constructors)', () => {
     const { context } = buildSandboxContext();
     expect(context.JSON).toBe(JSON);
     expect(context.Math).toBe(Math);
     expect(context.Date).toBe(Date);
-    expect(context.Array).toBe(Array);
-    expect(context.Object).toBe(Object);
-    expect(context.String).toBe(String);
-    expect(context.Number).toBe(Number);
-    expect(context.Boolean).toBe(Boolean);
     expect(context.RegExp).toBe(RegExp);
-    expect(context.Map).toBe(Map);
-    expect(context.Set).toBe(Set);
-    expect(context.Promise).toBe(Promise);
+    expect(context.Error).toBe(Error);
+  });
+
+  it('excludes host constructors with mutable prototypes to prevent pollution', () => {
+    const { context } = buildSandboxContext();
+    // These must NOT be the host's constructors — vm.createContext() provides its own
+    expect(context.Array).toBeUndefined();
+    expect(context.Object).toBeUndefined();
+    expect(context.String).toBeUndefined();
+    expect(context.Number).toBeUndefined();
+    expect(context.Boolean).toBeUndefined();
+    expect(context.Map).toBeUndefined();
+    expect(context.Set).toBeUndefined();
+    expect(context.Promise).toBeUndefined();
   });
 
   it('includes string utilities', () => {

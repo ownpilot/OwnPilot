@@ -5,7 +5,7 @@
  * and publish custom events via the WebSocket EventBusBridge.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
 import {
@@ -84,6 +84,30 @@ const TAB_LABELS: Record<TabId, string> = {
 
 export function EventMonitorPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
+
+  // Skip home screen preference
+  const SKIP_HOME_KEY = 'ownpilot_skip_home__event_monitor';
+  const [skipHome, setSkipHome] = useState(() => {
+    try {
+      return localStorage.getItem(SKIP_HOME_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const handleSkipHomeChange = useCallback((checked: boolean) => {
+    setSkipHome(checked);
+    try {
+      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+  useEffect(() => {
+    if (skipHome) {
+      setActiveTab('monitor');
+    }
+  }, [skipHome]);
+
   const { send, subscribe, status } = useGateway();
   const toast = useToast();
 
@@ -213,8 +237,11 @@ export function EventMonitorPage() {
       )
     : events;
 
-  // Stats
-  const eventsPerSec = events.filter((e) => e.receivedAt > Date.now() - 10000).length / 10;
+  // Stats — memoize to avoid O(n) filter on every render
+  const eventsPerSec = useMemo(
+    () => events.filter((e) => e.receivedAt > Date.now() - 10000).length / 10,
+    [events.length]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -293,6 +320,9 @@ export function EventMonitorPage() {
               icon: Activity,
               onClick: () => setActiveTab('monitor'),
             }}
+            skipHomeChecked={skipHome}
+            onSkipHomeChange={handleSkipHomeChange}
+            skipHomeLabel="Skip this screen and go directly to Monitor"
             features={[
               {
                 icon: Activity,

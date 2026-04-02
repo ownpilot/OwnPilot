@@ -52,7 +52,7 @@ vi.mock('fs', () => ({
 // Test Data
 // =============================================================================
 
-const mockSearchResults = {
+const _mockSearchResults = {
   packages: [
     {
       name: '@agentskills/weather',
@@ -91,7 +91,7 @@ const mockExtension = {
   },
 };
 
-const mockSkillExtension = {
+const _mockSkillExtension = {
   ...mockExtension,
   settings: {
     npmPackage: '@agentskills/weather',
@@ -1333,7 +1333,7 @@ describe('Happy Path Tests', () => {
   describe('skill_read_reference happy path', () => {
     it('reads a reference file when sourcePath resolves', async () => {
       const { existsSync: mockExistsSync, readFileSync: mockReadFileSync } = await import('fs');
-      const { getExtensionService: getService } = await import('../services/extension-service.js');
+      const { getExtensionService: _getService } = await import('../services/extension-service.js');
 
       const extWithSourcePath = {
         ...happyExtension,

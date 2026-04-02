@@ -4,7 +4,7 @@
  * Uses Node.js built-in crypto module (webcrypto)
  */
 
-import { webcrypto } from 'node:crypto';
+import { webcrypto, timingSafeEqual } from 'node:crypto';
 import { type Result, ok, err } from '../types/result.js';
 import { CryptoError } from '../types/errors.js';
 
@@ -191,9 +191,8 @@ export function fromHex(hex: string): Uint8Array {
  * Prevents timing attacks
  */
 export function secureCompare(a: Uint8Array, b: Uint8Array): boolean {
-  // Use Node.js built-in timing-safe comparison when possible
+  // Use Node.js built-in timing-safe comparison
   try {
-    const { timingSafeEqual } = require('node:crypto');
     if (a.length !== b.length) {
       // Compare against dummy to avoid timing leak on length
       const dummy = new Uint8Array(a.length);

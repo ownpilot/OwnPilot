@@ -703,18 +703,25 @@ async function executeCreateTool(args: Record<string, unknown>): Promise<{
   try {
     const vm = await import('node:vm');
 
+    const logs: string[] = [];
     const sandbox: Record<string, unknown> = {
       args: invokeArgs,
       module: { exports: {} as Record<string, unknown> },
       exports: {} as Record<string, unknown>,
-      require: undefined, // blocked
       __result: undefined,
       console: {
         log: (...a: unknown[]) => logs.push(a.map(String).join(' ')),
         error: (...a: unknown[]) => logs.push('[err] ' + a.map(String).join(' ')),
       },
+      // Block sandbox escape vectors
+      require: undefined,
+      process: undefined,
+      global: undefined,
+      globalThis: undefined,
+      Function: undefined,
+      eval: undefined,
+      import: undefined,
     };
-    const logs: string[] = [];
 
     const wrappedCode = `
 ${code}
@@ -726,7 +733,9 @@ const __fn = typeof ${name} === 'function'
 __result = typeof __fn === 'function' ? __fn(args) : { error: "No function named '${name}' found. Define: function ${name}(args) { ... }" };
 `;
 
-    const vmCtx = vm.createContext(sandbox);
+    const vmCtx = vm.createContext(sandbox, {
+      codeGeneration: { strings: false, wasm: false },
+    });
     vm.runInContext(wrappedCode, vmCtx, { timeout: 10_000 });
 
     // Resolve promises (sync vm can't await, but we can resolve simple thenables)

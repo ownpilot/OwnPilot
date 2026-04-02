@@ -119,6 +119,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [thinkingContent, setThinkingContent] = useState('');
   const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
 
+  // Refs to avoid stale closures in sendMessage callback
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
+  const isThinkingRef = useRef(isThinking);
+  isThinkingRef.current = isThinking;
+
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -268,7 +274,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             model,
             stream: true, // Enable streaming!
             // Continue the current conversation by ID so messages are properly linked in DB
-            ...(sessionId && { conversationId: sessionId }),
+            ...(sessionIdRef.current && { conversationId: sessionIdRef.current }),
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
@@ -374,7 +380,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     if (event.data.delta) {
                       accumulatedContent += event.data.delta;
                       setStreamingContent(accumulatedContent);
-                      if (isThinking) setIsThinking(false);
+                      if (isThinkingRef.current) setIsThinking(false);
                     }
                     if (!event.data.thinkingDelta && !event.data.delta) {
                       setIsThinking(!!event.data.thinking);

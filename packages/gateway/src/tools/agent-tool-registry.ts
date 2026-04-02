@@ -773,10 +773,11 @@ export async function executeUseTool(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<CoreToolResult> {
-  let { tool_name, arguments: toolArgs } = args as {
+  const { arguments: toolArgs } = args as {
     tool_name: string;
     arguments: Record<string, unknown>;
   };
+  let tool_name = (args as { tool_name: string }).tool_name;
 
   // Alias resolution — auto-fix common LLM hallucinations
   if (!tools.has(tool_name)) {
@@ -861,7 +862,8 @@ export async function executeBatchUseTool(
   // Execute all tool calls in parallel
   const results = await Promise.allSettled(
     calls.map(async (call, idx) => {
-      let { tool_name, arguments: toolArgs } = call;
+      const { arguments: toolArgs } = call;
+      let tool_name = call.tool_name;
 
       // Alias resolution
       if (!tools.has(tool_name)) {

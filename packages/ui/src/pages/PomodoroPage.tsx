@@ -121,7 +121,8 @@ export function PomodoroPage() {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          // Timer complete — auto-complete session
+          // Timer complete — clear interval immediately to prevent duplicate calls
+          if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
           pomodoroApi
             .completeSession(activeSession.id)
             .then(() => {

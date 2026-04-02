@@ -62,5 +62,14 @@ export class TTLCache<K = string, V = unknown> {
         this.cache.delete(key);
       }
     }
+    // Hard cap: if still over maxEntries after TTL pruning, evict oldest entries
+    if (this.cache.size > this.maxEntries) {
+      const excess = this.cache.size - this.maxEntries;
+      const iter = this.cache.keys();
+      for (let i = 0; i < excess; i++) {
+        const key = iter.next().value;
+        if (key !== undefined) this.cache.delete(key);
+      }
+    }
   }
 }

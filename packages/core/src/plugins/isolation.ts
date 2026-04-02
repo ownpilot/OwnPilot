@@ -310,6 +310,11 @@ export class IsolationEnforcer {
   recordViolation(violation: AccessViolation): void {
     this.violations.push(violation);
 
+    // Trim old violations to prevent unbounded growth (keep most recent 500)
+    if (this.violations.length > 1000) {
+      this.violations = this.violations.slice(-500);
+    }
+
     // Count violations for this plugin
     const pluginViolations = this.violations.filter(
       (v) => v.pluginId === violation.pluginId

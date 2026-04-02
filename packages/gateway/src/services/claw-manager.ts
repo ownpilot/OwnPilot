@@ -466,11 +466,19 @@ export class ClawManager {
         }
       }
 
-      // Clear inbox for this cycle (consumed by runner via session reference)
+      // Consume inbox messages for this cycle — keep a backup to restore on failure
+      const inboxSnapshot = [...managed.session.inbox];
       managed.session.inbox = [];
 
       // Execute
-      const result = await managed.runner.runCycle(managed.session);
+      let result;
+      try {
+        result = await managed.runner.runCycle(managed.session);
+      } catch (err) {
+        // Restore inbox messages so they aren't lost on cycle failure
+        managed.session.inbox.push(...inboxSnapshot);
+        throw err;
+      }
 
       // Update session
       managed.session.cyclesCompleted = cycleNumber;
@@ -924,7 +932,9 @@ export function getClawManager(): ClawManager {
 
 export function resetClawManager(): void {
   if (_manager) {
-    _manager.stop().catch(() => {});
+    _manager.stop().catch((err) => {
+      getLog('ClawManager').warn('ClawManager stop failed during reset:', String(err));
+    });
     _manager = null;
   }
 }

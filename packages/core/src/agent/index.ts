@@ -249,17 +249,10 @@ export {
   listModelsDevProviders,
 } from './providers/configs/index.js';
 
-// OpenAI-Compatible Provider (DeepSeek, Groq, Together, Mistral, Fireworks, xAI, Perplexity)
+// OpenAI-Compatible Provider
 export {
   OpenAICompatibleProvider,
   createOpenAICompatibleProvider,
-  createDeepSeekProvider,
-  createGroqProvider,
-  createTogetherProvider,
-  createFireworksProvider,
-  createMistralProvider,
-  createXAIProvider,
-  createPerplexityProvider,
 } from './providers/openai-compatible.js';
 
 // Zhipu Provider
