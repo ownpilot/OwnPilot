@@ -360,10 +360,9 @@ export class MemoriesRepository extends BaseRepository {
         break;
     }
 
-    if (query.limit) {
-      sql += ` LIMIT $${paramIndex++}`;
-      params.push(query.limit);
-    }
+    const effectiveLimit = query.limit ?? 200; // Default cap to prevent unbounded queries
+    sql += ` LIMIT $${paramIndex++}`;
+    params.push(effectiveLimit);
 
     if (query.offset) {
       sql += ` OFFSET $${paramIndex++}`;
