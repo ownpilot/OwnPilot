@@ -11,7 +11,7 @@ import QRCode from 'qrcode';
 import { channelsApi } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
 import { useModalClose } from '../hooks';
-import { Telegram, Discord, WhatsApp, SlackIcon, X, Check, AlertTriangle } from './icons';
+import { Telegram, WhatsApp, X, Check, AlertTriangle } from './icons';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useToast } from './ToastProvider';
 
@@ -37,8 +37,6 @@ interface PlatformInfo {
   restrictLabel: string;
   restrictField: string;
   restrictPlaceholder?: string;
-  /** If true, the restrict field is required and shown prominently (not inside advanced). */
-  restrictRequired?: boolean;
   Icon: React.ComponentType<{ className?: string }>;
   validateToken: (v: string) => string | null;
   /** If true, uses QR code authentication instead of token input. */
@@ -67,39 +65,12 @@ const PLATFORMS: PlatformInfo[] = [
     tokenPlaceholder: '',
     tokenHint: 'Scan QR code with your WhatsApp app',
     docsUrl: 'https://github.com/WhiskeySockets/Baileys',
-    restrictLabel: 'Your Phone Number',
+    restrictLabel: 'Your Phone Number (optional)',
     restrictField: 'my_phone',
     restrictPlaceholder: '905551234567',
-    restrictRequired: true,
     Icon: WhatsApp,
     validateToken: () => null,
     qrBased: true,
-  },
-  {
-    id: 'discord',
-    pluginId: 'channel.discord',
-    name: 'Discord',
-    tokenLabel: 'Bot Token',
-    tokenPlaceholder: 'MTExMjM0NTY3ODkw...',
-    tokenHint: 'Get a token from Discord Developer Portal',
-    docsUrl: 'https://discord.com/developers/docs/intro',
-    restrictLabel: 'Allowed Server IDs (comma-separated, optional)',
-    restrictField: 'guild_ids',
-    Icon: Discord,
-    validateToken: (v) => (v.length > 50 ? null : 'Token seems too short'),
-  },
-  {
-    id: 'slack',
-    pluginId: 'channel.slack',
-    name: 'Slack',
-    tokenLabel: 'Bot Token',
-    tokenPlaceholder: 'xoxb-1234567890-...',
-    tokenHint: 'Bot User OAuth Token from Slack App settings',
-    docsUrl: 'https://api.slack.com/quickstart',
-    restrictLabel: 'Allowed Channel IDs (comma-separated, optional)',
-    restrictField: 'allowed_channels',
-    Icon: SlackIcon,
-    validateToken: (v) => (v.startsWith('xoxb-') ? null : 'Token should start with "xoxb-"'),
   },
 ];
 
@@ -465,11 +436,11 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                 </div>
               )}
 
-              {/* Required field — shown prominently (e.g. WhatsApp phone number) */}
-              {platform.restrictRequired && (
+              {/* WhatsApp phone number - optional, shown prominently but not required */}
+              {platform.qrBased && (
                 <div>
                   <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1">
-                    {platform.restrictLabel} <span className="text-error">*</span>
+                    {platform.restrictLabel}
                   </label>
                   <input
                     type="text"
@@ -480,14 +451,13 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                     autoFocus={platform.qrBased}
                   />
                   <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
-                    International format without + or spaces. Used for self-chat and message
-                    routing.
+                    International format without + or spaces. Auto-detected if left empty.
                   </p>
                 </div>
               )}
 
-              {/* Advanced toggle — only for optional restrict fields */}
-              {!platform.restrictRequired && (
+              {/* Advanced toggle — only for token-based platforms with optional restrict fields (Telegram) */}
+              {!platform.qrBased && (
                 <>
                   <button
                     onClick={() => setShowAdvanced(!showAdvanced)}
@@ -523,10 +493,7 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={
-                    (!platform.qrBased && !token.trim()) ||
-                    (!!platform.restrictRequired && !restrictIds.trim())
-                  }
+                  disabled={!platform.qrBased && !token.trim()}
                   className="px-6 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {platform.qrBased ? 'Start Setup' : 'Connect'}
