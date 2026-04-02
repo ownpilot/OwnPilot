@@ -7,6 +7,7 @@
 import { Hono } from 'hono';
 import { ChannelBridgesRepository } from '../db/repositories/channel-bridges.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { validateBody, updateBridgeSchema } from '../middleware/validation.js';
 
 export const bridgeRoutes = new Hono();
 
@@ -136,7 +137,7 @@ bridgeRoutes.patch('/:id', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bridge not found' }, 404);
     }
 
-    const body = await c.req.json();
+    const body = validateBody(updateBridgeSchema, await c.req.json());
 
     // Validate filter pattern if provided
     if (body.filterPattern) {

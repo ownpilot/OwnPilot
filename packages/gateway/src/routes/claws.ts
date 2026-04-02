@@ -20,6 +20,7 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import { validateBody, createClawSchema } from '../middleware/validation.js';
 
 export const clawRoutes = new Hono();
 
@@ -102,72 +103,33 @@ clawRoutes.get('/stats', async (c) => {
 clawRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    const {
-      name,
-      mission,
-      mode,
-      allowed_tools,
-      limits,
-      interval_ms,
-      event_filters,
-      auto_start,
-      stop_condition,
-      provider,
-      model,
-      soul_id,
-      sandbox,
-      coding_agent_provider,
-      skills,
-    } = body as Record<string, unknown>;
-
-    if (!name || typeof name !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
-    }
-    if (!mission || typeof mission !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
-        400
-      );
-    }
-
-    const validModes = ['continuous', 'interval', 'event', 'single-shot'];
-    if (mode && !validModes.includes(mode as string)) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: `mode must be one of: ${validModes.join(', ')}`,
-        },
-        400
-      );
-    }
+    const body = validateBody(createClawSchema, await c.req.json());
 
     const service = getClawService();
 
     const config = await service.createClaw({
       userId,
-      name: name as string,
-      mission: mission as string,
-      mode: (mode as ClawMode) ?? 'continuous',
-      allowedTools: (allowed_tools as string[]) ?? undefined,
-      limits: limits as Record<string, number> | undefined,
-      intervalMs: interval_ms as number | undefined,
-      eventFilters: event_filters as string[] | undefined,
-      autoStart: (auto_start as boolean) ?? false,
-      stopCondition: stop_condition as string | undefined,
-      provider: provider as string | undefined,
-      model: model as string | undefined,
-      soulId: soul_id as string | undefined,
-      sandbox: sandbox as 'docker' | 'local' | 'auto' | undefined,
-      codingAgentProvider: coding_agent_provider as string | undefined,
-      skills: skills as string[] | undefined,
+      name: body.name,
+      mission: body.mission,
+      mode: (body.mode as ClawMode) ?? 'continuous',
+      allowedTools: body.allowed_tools,
+      limits: body.limits as Record<string, number> | undefined,
+      intervalMs: body.interval_ms,
+      eventFilters: body.event_filters,
+      autoStart: body.auto_start ?? false,
+      stopCondition: body.stop_condition,
+      provider: body.provider,
+      model: body.model,
+      soulId: body.soul_id,
+      sandbox: body.sandbox as 'docker' | 'local' | 'auto' | undefined,
+      codingAgentProvider: body.coding_agent_provider,
+      skills: body.skills,
     });
 
     return apiResponse(c, config, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

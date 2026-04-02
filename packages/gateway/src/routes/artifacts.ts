@@ -18,7 +18,7 @@ import {
   notFoundError,
   validateQueryEnum,
 } from './helpers.js';
-import { validateBody, createArtifactSchema } from '../middleware/validation.js';
+import { validateBody, createArtifactSchema, updateArtifactSchema } from '../middleware/validation.js';
 
 export const artifactsRoutes = new Hono();
 
@@ -111,16 +111,16 @@ artifactsRoutes.patch('/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const body = validateBody(updateArtifactSchema, await c.req.json());
     const service = getArtifactService();
 
     const updated = await service.updateArtifact(userId, id, {
       title: body.title,
       content: body.content,
-      dataBindings: body.dataBindings,
+      dataBindings: body.dataBindings as DataBinding[] | undefined,
       pinned: body.pinned,
       dashboardPosition: body.dashboardPosition,
-      dashboardSize: body.dashboardSize,
+      dashboardSize: body.dashboardSize as DashboardSize | undefined,
       tags: body.tags,
     });
 

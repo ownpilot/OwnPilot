@@ -724,6 +724,46 @@ export const createArtifactSchema = z.object({
   tags: z.array(z.string().max(100)).max(50).optional(),
 });
 
+export const updateArtifactSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  content: z.string().min(1).max(500000).optional(),
+  dataBindings: z.array(z.record(z.string(), z.unknown())).max(50).optional(),
+  pinned: z.boolean().optional(),
+  dashboardPosition: z.number().int().min(0).optional(),
+  dashboardSize: z.string().max(50).optional(),
+  tags: z.array(z.string().max(100)).max(50).optional(),
+});
+
+// ─── Claw Schemas ───────────────────────────────────────────────
+
+export const createClawSchema = z.object({
+  name: z.string().min(1).max(200),
+  mission: z.string().min(1).max(10000),
+  mode: z.enum(['continuous', 'event-driven', 'single-shot']).optional(),
+  allowed_tools: z.array(z.string().max(200)).max(500).optional(),
+  limits: z.record(z.string(), z.unknown()).optional(),
+  interval_ms: z.number().int().min(1000).optional(),
+  event_filters: z.array(z.string().max(500)).max(100).optional(),
+  auto_start: z.boolean().optional(),
+  stop_condition: z.string().max(2000).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
+  soul_id: z.string().max(200).optional(),
+  sandbox: z.enum(['auto', 'docker', 'none']).optional(),
+  coding_agent_provider: z.string().max(100).optional(),
+  skills: z.array(z.string().max(200)).max(100).optional(),
+});
+
+// ─── Bridge Schemas ─────────────────────────────────────────────
+
+export const updateBridgeSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  sourceChannelId: z.string().max(200).optional(),
+  targetChannelId: z.string().max(200).optional(),
+  filterPattern: z.string().max(1000).optional(),
+  enabled: z.boolean().optional(),
+});
+
 // ─── Browser Schemas ────────────────────────────────────────────
 
 export const browserNavigateSchema = z.object({
