@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArtifactCard } from '../components/ArtifactCard';
+import { ArtifactDetailModal } from '../components/ArtifactDetailModal';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/Skeleton';
 import {
@@ -130,6 +131,9 @@ export function ArtifactsPage() {
   const handleUpdate = useCallback((updated: Artifact) => {
     setArtifacts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
   }, []);
+
+  // Single artifact detail view
+  const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
 
   return (
     <div className="flex flex-col h-full">
@@ -271,11 +275,11 @@ export function ArtifactsPage() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content - Wider 3-column grid */}
           <div className="flex-1 overflow-y-auto p-6">
             {isLoading ? (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                <SkeletonCard count={6} />
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <SkeletonCard count={8} />
               </div>
             ) : artifacts.length === 0 ? (
               <EmptyState
@@ -288,18 +292,29 @@ export function ArtifactsPage() {
                 }
               />
             ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {artifacts.map((artifact) => (
                   <ArtifactCard
                     key={artifact.id}
                     artifact={artifact}
                     onDelete={handleDelete}
                     onUpdate={handleUpdate}
+                    onClick={() => setSelectedArtifact(artifact)}
                   />
                 ))}
               </div>
             )}
           </div>
+
+          {/* Artifact Detail Modal */}
+          {selectedArtifact && (
+            <ArtifactDetailModal
+              artifact={selectedArtifact}
+              onClose={() => setSelectedArtifact(null)}
+              onDelete={handleDelete}
+              onUpdate={handleUpdate}
+            />
+          )}
         </>
       )}
     </div>

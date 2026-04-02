@@ -18,6 +18,7 @@ interface ArtifactRendererProps {
   content: string;
   dataBindings?: DataBinding[];
   className?: string;
+  fullWidth?: boolean;
 }
 
 function buildIframeDoc(content: string, dataBindings?: DataBinding[]): string {
@@ -68,10 +69,12 @@ function HtmlRenderer({
   content,
   dataBindings,
   className,
+  fullWidth,
 }: {
   content: string;
   dataBindings?: DataBinding[];
   className?: string;
+  fullWidth?: boolean;
 }) {
   const srcdoc = useMemo(() => buildIframeDoc(content, dataBindings), [content, dataBindings]);
 
@@ -80,13 +83,13 @@ function HtmlRenderer({
       srcDoc={srcdoc}
       sandbox="allow-scripts"
       className={`w-full border-0 rounded-lg bg-white dark:bg-dark-bg-tertiary ${className ?? ''}`}
-      style={{ minHeight: 200 }}
+      style={{ minHeight: fullWidth ? 400 : 200 }}
       title="Artifact"
     />
   );
 }
 
-function SvgRenderer({ content, className }: { content: string; className?: string }) {
+function SvgRenderer({ content, className, fullWidth }: { content: string; className?: string; fullWidth?: boolean }) {
   const srcdoc = useMemo(() => buildSvgDoc(content), [content]);
 
   return (
@@ -94,7 +97,7 @@ function SvgRenderer({ content, className }: { content: string; className?: stri
       srcDoc={srcdoc}
       sandbox=""
       className={`w-full border-0 rounded-lg bg-white dark:bg-dark-bg-tertiary ${className ?? ''}`}
-      style={{ minHeight: 150 }}
+      style={{ minHeight: fullWidth ? 300 : 150 }}
       title="SVG Artifact"
     />
   );
@@ -161,13 +164,14 @@ export function ArtifactRenderer({
   content,
   dataBindings,
   className,
+  fullWidth,
 }: ArtifactRendererProps) {
   switch (type) {
     case 'html':
     case 'chart':
-      return <HtmlRenderer content={content} dataBindings={dataBindings} className={className} />;
+      return <HtmlRenderer content={content} dataBindings={dataBindings} className={className} fullWidth={fullWidth} />;
     case 'svg':
-      return <SvgRenderer content={content} className={className} />;
+      return <SvgRenderer content={content} className={className} fullWidth={fullWidth} />;
     case 'markdown':
       return <MarkdownRenderer content={content} className={className} />;
     case 'form':
