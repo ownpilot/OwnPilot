@@ -246,7 +246,7 @@ pnpm start`}
 curl http://localhost:8080/api/v1/health
 
 # Expected response:
-# {"status":"ok","version":"0.3.1"}`}
+# {"status":"ok","version":"0.3.2"}`}
         language="bash"
       />
 
