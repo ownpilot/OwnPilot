@@ -136,26 +136,48 @@ packagingRoutes.get('/:id/package', async (c) => {
 // ---------------------------------------------------------------------------
 
 function buildSkillMd(manifest: Record<string, unknown>): string {
-  const lines: string[] = [];
-  lines.push(`# ${manifest.name ?? 'Skill'}`);
-  lines.push('');
+  // Build YAML frontmatter
+  const fm: string[] = ['---'];
+  fm.push(`name: ${manifest.name ?? 'Skill'}`);
   if (manifest.description) {
-    lines.push(`> ${manifest.description}`);
-    lines.push('');
+    fm.push(`description: ${manifest.description}`);
   }
-  if (manifest.version) {
-    lines.push(`**Version:** ${manifest.version}`);
+  fm.push(`version: ${manifest.version ?? '1.0.0'}`);
+  if (manifest.category) {
+    fm.push(`category: ${manifest.category}`);
   }
-  if (manifest.author) {
-    lines.push(`**Author:** ${manifest.author}`);
+  if (Array.isArray(manifest.tags) && manifest.tags.length > 0) {
+    fm.push(`tags: [${manifest.tags.join(', ')}]`);
   }
-  lines.push('');
-  lines.push('---');
-  lines.push('');
+  if (manifest.license) {
+    fm.push(`license: ${manifest.license}`);
+  }
+
+  // Nested metadata block
+  const author =
+    typeof manifest.author === 'string'
+      ? manifest.author
+      : (manifest.author as { name?: string } | undefined)?.name;
+  if (author) {
+    fm.push('metadata:');
+    fm.push(`  author: ${author}`);
+  }
+
+  // Allowed tools
+  if (Array.isArray(manifest.allowed_tools) && manifest.allowed_tools.length > 0) {
+    fm.push(`allowed-tools: [${manifest.allowed_tools.join(', ')}]`);
+  }
+
+  fm.push('---');
+  fm.push('');
+
+  // Markdown body (instructions)
   if (manifest.instructions) {
-    lines.push(String(manifest.instructions));
+    fm.push(String(manifest.instructions));
   } else {
-    lines.push('*No instructions provided.*');
+    fm.push(`# ${manifest.name ?? 'Skill'}`);
+    fm.push('');
+    fm.push('*No instructions provided.*');
   }
-  return lines.join('\n');
+  return fm.join('\n');
 }

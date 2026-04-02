@@ -160,7 +160,7 @@ describe('Extensions Packaging Routes', () => {
       expect(entries.some((e) => e.endsWith('SKILL.md'))).toBe(true);
     });
 
-    it('SKILL.md content includes name and instructions', async () => {
+    it('SKILL.md content has YAML frontmatter with name and includes instructions', async () => {
       const res1 = await app.request('/ext/ext-1/package');
       const entries = await extractZipEntries(res1);
       const skillMdEntry = entries.find((e) => e.endsWith('SKILL.md'))!;
@@ -168,7 +168,8 @@ describe('Extensions Packaging Routes', () => {
       const res2 = await app.request('/ext/ext-1/package');
       const content = await readZipEntry(res2, skillMdEntry);
 
-      expect(content).toContain('My Skill');
+      expect(content).toMatch(/^---\n/);
+      expect(content).toContain('name: My Skill');
       expect(content).toContain('# Instructions');
     });
 
@@ -232,7 +233,7 @@ describe('Extensions Packaging Routes', () => {
       expect(res.status).toBe(404);
     });
 
-    it('SKILL.md includes description line when manifest has description', async () => {
+    it('SKILL.md includes description in frontmatter when manifest has description', async () => {
       mockExtService.getById.mockReturnValue(
         makeExt({
           manifest: {
@@ -249,10 +250,10 @@ describe('Extensions Packaging Routes', () => {
       const skillMdEntry = entries.find((e) => e.endsWith('SKILL.md'))!;
       const res2 = await app.request('/ext/ext-1/package');
       const content = await readZipEntry(res2, skillMdEntry);
-      expect(content).toContain('> A helpful skill');
+      expect(content).toContain('description: A helpful skill');
     });
 
-    it('SKILL.md includes version and author when manifest has them', async () => {
+    it('SKILL.md includes version and author in frontmatter when manifest has them', async () => {
       mockExtService.getById.mockReturnValue(
         makeExt({
           manifest: {
@@ -270,8 +271,8 @@ describe('Extensions Packaging Routes', () => {
       const skillMdEntry = entries.find((e) => e.endsWith('SKILL.md'))!;
       const res2 = await app.request('/ext/ext-1/package');
       const content = await readZipEntry(res2, skillMdEntry);
-      expect(content).toContain('**Version:** 2.5.0');
-      expect(content).toContain('**Author:** Jane Doe');
+      expect(content).toContain('version: 2.5.0');
+      expect(content).toContain('author: Jane Doe');
     });
 
     it('SKILL.md shows fallback text when manifest has no instructions', async () => {

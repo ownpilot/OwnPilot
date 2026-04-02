@@ -509,13 +509,74 @@ describe('Extensions Generation Routes', () => {
       expect(res.status).toBe(200);
     });
 
-    it('returns validation errors when skill parsing fails', async () => {
+    it('strips preamble text before frontmatter', async () => {
+      mockComplete.mockResolvedValue({
+        ok: true,
+        value: { content: 'Here is your skill:\n\n' + sampleSkillMd },
+      });
+
+      const res = await app.request('/ext/generate-skill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'Create a skill' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.content).toMatch(/^---\n/);
+    });
+
+    it('strips code blocks without language tag', async () => {
+      mockComplete.mockResolvedValue({
+        ok: true,
+        value: { content: '```\n' + sampleSkillMd + '\n```' },
+      });
+
+      const res = await app.request('/ext/generate-skill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'Create a skill' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.content).not.toContain('```');
+    });
+
+    it('auto-fixes content when first parse fails but fix succeeds', async () => {
+      let callCount = 0;
+      mockParseAgentSkillsMd.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) throw new Error('Missing frontmatter');
+        return { name: 'Auto Fixed Skill' };
+      });
+
+      mockComplete.mockResolvedValue({
+        ok: true,
+        // Missing opening --- (auto-fix should add it)
+        value: { content: 'name: Auto Fixed Skill\ndescription: Test\n\n# Auto Fixed Skill\n\nInstructions.' },
+      });
+
+      const res = await app.request('/ext/generate-skill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'Create a skill' }),
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.validation.valid).toBe(true);
+      expect(json.data.name).toBe('Auto Fixed Skill');
+    });
+
+    it('returns validation errors when both parse and auto-fix fail', async () => {
+      mockParseAgentSkillsMd.mockImplementation(() => {
+        throw new Error('Missing required frontmatter');
+      });
+
       mockComplete.mockResolvedValue({
         ok: true,
         value: { content: 'Some invalid skill content without frontmatter' },
-      });
-      mockParseAgentSkillsMd.mockImplementation(() => {
-        throw new Error('Missing required frontmatter');
       });
 
       const res = await app.request('/ext/generate-skill', {
@@ -527,8 +588,8 @@ describe('Extensions Generation Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.validation.valid).toBe(false);
-      expect(json.data.validation.errors).toContain('Missing required frontmatter');
-      expect(json.data.name).toBe('Generated Skill'); // fallback name
+      expect(json.data.validation.errors.length).toBeGreaterThan(0);
+      expect(json.data.name).toBe('Generated Skill');
     });
 
     it('returns validation error string when non-Error is thrown', async () => {

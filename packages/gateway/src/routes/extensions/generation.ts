@@ -629,13 +629,10 @@ generationRoutes.post('/generate-skill', async (c) => {
       );
     }
 
-    // Strip wrapping code blocks if AI added them
-    const codeBlockMatch = content.match(/^```(?:markdown|md|yaml)?\s*\n([\s\S]*?)\n```$/);
-    if (codeBlockMatch) {
-      content = codeBlockMatch[1]!;
-    }
+    // Strip wrapping code blocks if AI added them (handles various formats)
+    content = stripCodeBlocks(content);
 
-    // 6. Validate by parsing
+    // 6. Validate by parsing — if invalid, attempt to auto-fix common issues
     let name = 'Generated Skill';
     const validation: { valid: boolean; errors: string[] } = { valid: true, errors: [] };
 
@@ -643,8 +640,21 @@ generationRoutes.post('/generate-skill', async (c) => {
       const manifest = parseAgentSkillsMd(content);
       name = manifest.name || name;
     } catch (e) {
-      validation.valid = false;
-      validation.errors.push(e instanceof Error ? e.message : String(e));
+      // Try auto-fix before giving up
+      const fixed = attemptYamlAutoFix(content);
+      if (fixed) {
+        try {
+          const manifest = parseAgentSkillsMd(fixed);
+          name = manifest.name || name;
+          content = fixed;
+        } catch (e2) {
+          validation.valid = false;
+          validation.errors.push(e2 instanceof Error ? e2.message : String(e2));
+        }
+      } else {
+        validation.valid = false;
+        validation.errors.push(e instanceof Error ? e.message : String(e));
+      }
     }
 
     return apiResponse(c, { content, name, validation });
@@ -659,3 +669,99 @@ generationRoutes.post('/generate-skill', async (c) => {
     );
   }
 });
+
+// ============================================================================
+// YAML / Code Block Helpers
+// ============================================================================
+
+/**
+ * Strip code block wrappers that AI models commonly add around SKILL.md output.
+ * Handles: ```markdown, ```md, ```yaml, ```, nested blocks, and text before/after.
+ */
+function stripCodeBlocks(content: string): string {
+  let text = content.trim();
+
+  // Pattern 1: entire response wrapped in a single code block (most common)
+  // Matches ```lang\n...\n``` with optional whitespace/text before and after
+  const fullWrap = text.match(
+    /^(?:.*?\n)?```(?:markdown|md|yaml|skill)?\s*\n([\s\S]*?)\n```\s*$/
+  );
+  if (fullWrap) {
+    text = fullWrap[1]!.trim();
+  }
+
+  // Pattern 2: frontmatter is inside a code block but body is outside
+  // e.g. ```yaml\n---\nname: ...\n---\n```\n# Title\n...
+  if (!text.startsWith('---')) {
+    const fmBlock = text.match(
+      /^```(?:yaml|md|markdown)?\s*\n(---\n[\s\S]*?\n---)\s*\n```\s*\n([\s\S]*)$/
+    );
+    if (fmBlock) {
+      text = fmBlock[1]! + '\n\n' + fmBlock[2]!.trim();
+    }
+  }
+
+  // Pattern 3: AI added explanation text before the frontmatter
+  // e.g. "Here is your skill:\n\n---\nname: ..."
+  if (!text.startsWith('---')) {
+    const fmStart = text.indexOf('\n---\n');
+    if (fmStart !== -1) {
+      const candidate = text.substring(fmStart + 1);
+      // Only strip if what comes before looks like preamble (no frontmatter-like content)
+      const before = text.substring(0, fmStart).trim();
+      if (!before.includes('name:') && !before.includes('description:')) {
+        text = candidate;
+      }
+    }
+  }
+
+  return text;
+}
+
+/**
+ * Attempt to auto-fix common YAML frontmatter issues in AI-generated SKILL.md.
+ * Returns the fixed content or null if unfixable.
+ */
+function attemptYamlAutoFix(content: string): string | null {
+  let text = content.trim();
+
+  // Fix 1: Missing opening --- (AI sometimes starts with name: directly)
+  if (!text.startsWith('---') && /^[a-z_-]+:\s/i.test(text)) {
+    const bodyStart = text.search(/\n\n#\s/);
+    if (bodyStart !== -1) {
+      const yamlPart = text.substring(0, bodyStart);
+      const bodyPart = text.substring(bodyStart);
+      text = '---\n' + yamlPart + '\n---\n' + bodyPart;
+    }
+  }
+
+  // Fix 2: Missing closing --- (AI writes --- once then jumps to body)
+  if (text.startsWith('---')) {
+    const afterFirst = text.substring(3).trim();
+    const secondDashes = afterFirst.indexOf('\n---');
+    if (secondDashes === -1) {
+      // Look for where YAML ends and markdown body begins
+      const bodyMarker = afterFirst.search(/\n\n#\s/);
+      if (bodyMarker !== -1) {
+        const yamlPart = afterFirst.substring(0, bodyMarker);
+        const bodyPart = afterFirst.substring(bodyMarker);
+        text = '---\n' + yamlPart + '\n---\n' + bodyPart;
+      }
+    }
+  }
+
+  // Fix 3: Indentation issues — tabs instead of spaces in YAML
+  if (text.startsWith('---')) {
+    const endIdx = text.indexOf('\n---', 3);
+    if (endIdx !== -1) {
+      const yamlBlock = text.substring(3, endIdx);
+      const fixedYaml = yamlBlock.replace(/\t/g, '  ');
+      if (fixedYaml !== yamlBlock) {
+        text = '---' + fixedYaml + text.substring(endIdx);
+      }
+    }
+  }
+
+  // Only return if we actually changed something
+  return text !== content.trim() ? text : null;
+}
