@@ -179,10 +179,17 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // ==========================================================================
 
   async connect(): Promise<void> {
-    if (this.status === 'connected' || this.status === 'connecting') return;
+    if (this.status === 'connected' || this.status === 'connecting') {
+      // Reset reconnecting flag in case it was stuck
+      this.isReconnecting = false;
+      return;
+    }
 
     // Prevent concurrent reconnection attempts
-    if (this.isReconnecting) return;
+    if (this.isReconnecting) {
+      log.debug('WhatsApp connect() skipped — already reconnecting');
+      return;
+    }
     this.isReconnecting = true;
 
     // Clean up any existing socket — remove listeners first, then end

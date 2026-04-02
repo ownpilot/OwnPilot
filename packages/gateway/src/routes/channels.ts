@@ -230,13 +230,16 @@ channelRoutes.post('/:id/logout', async (c) => {
 channelRoutes.post('/:id/reconnect', async (c) => {
   const pluginId = c.req.param('id');
   try {
-    await refreshChannelApi(pluginId);
     const service = getChannelService();
+    // 1. Disconnect OLD API first (before refreshing)
     try {
       await service.disconnect(pluginId);
     } catch {
       /* may already be disconnected */
     }
+    // 2. Create fresh API instance with updated config
+    await refreshChannelApi(pluginId);
+    // 3. Connect the new API
     await service.connect(pluginId);
     wsGateway.broadcast('data:changed', { entity: 'channel', action: 'updated', id: pluginId });
     return apiResponse(c, { pluginId, status: 'reconnected' });
