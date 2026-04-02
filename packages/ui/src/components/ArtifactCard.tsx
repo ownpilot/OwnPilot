@@ -49,6 +49,7 @@ interface ArtifactCardProps {
   onDelete?: (id: string) => void;
   onUpdate?: (artifact: Artifact) => void;
   onVersions?: (id: string) => void;
+  onClick?: () => void;
 }
 
 // =============================================================================
@@ -61,6 +62,7 @@ export function ArtifactCard({
   onDelete,
   onUpdate,
   onVersions,
+  onClick,
 }: ArtifactCardProps) {
   const [expanded, setExpanded] = useState(!compact);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +146,10 @@ export function ArtifactCard({
 
   // ---- Full mode (page / dashboard) ----
   return (
-    <div className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl overflow-hidden">
+    <div
+      className="card-elevated bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/50 dark:hover:border-primary/50 transition-colors"
+      onClick={onClick}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border dark:border-dark-border">
         <div
@@ -166,7 +171,7 @@ export function ArtifactCard({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           {artifact.dataBindings.length > 0 && (
             <button
               onClick={handleRefresh}
