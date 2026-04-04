@@ -319,6 +319,21 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               );
 
             case 'workspaces':
+              if (section.style === 'flat') {
+                return (
+                  <div key="workspaces">
+                    {divider}
+                    <button
+                      onClick={() => { onCloseCustomize(); navigate('/workspaces'); }}
+                      data-testid="sidebar-projects"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
+                    >
+                      <FolderOpen className="w-4 h-4 shrink-0" />
+                      <span className="truncate flex-1">Workspaces</span>
+                    </button>
+                  </div>
+                );
+              }
               return (
                 <div key="workspaces">
                   {divider}
@@ -369,6 +384,21 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               );
 
             case 'workflows':
+              if (section.style === 'flat') {
+                return (
+                  <div key="workflows">
+                    {divider}
+                    <button
+                      onClick={() => { onCloseCustomize(); navigate('/workflows'); }}
+                      data-testid="sidebar-workflows"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
+                    >
+                      <GitBranch className="w-4 h-4 shrink-0" />
+                      <span className="truncate flex-1">Workflows</span>
+                    </button>
+                  </div>
+                );
+              }
               return (
                 <div key="workflows">
                   {divider}
@@ -419,6 +449,21 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               );
 
             case 'recents':
+              if (section.style === 'flat') {
+                return (
+                  <div key="recents">
+                    {divider}
+                    <button
+                      onClick={() => { onCloseCustomize(); navigate('/history'); }}
+                      data-testid="sidebar-recents"
+                      className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
+                    >
+                      <MessageSquare className="w-4 h-4 shrink-0" />
+                      <span className="truncate flex-1">Recent</span>
+                    </button>
+                  </div>
+                );
+              }
               return (
                 <div key="recents">
                   {divider}

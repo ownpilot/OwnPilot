@@ -10,7 +10,7 @@ import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useHeaderItems } from '../hooks/useHeaderItems';
 import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
 import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
-import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, Eye, EyeOff } from './icons';
+import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, Eye, EyeOff, ListChecks, Minus } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
 import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, type SidebarWidth } from '../types/layout-config';
@@ -345,7 +345,7 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
 // ─── Sidebar Zone: Section Visibility, Ordering, Width ──────────────────
 
 function SidebarZoneEditor() {
-  const { config, getSidebarSections, toggleSidebarSection, reorderSidebarSections, setSidebarWidth } = useLayoutConfig();
+  const { config, getSidebarSections, toggleSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth } = useLayoutConfig();
   const sections = getSidebarSections();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -414,6 +414,8 @@ function SidebarZoneEditor() {
           {sections.map((section, i) => {
             const sectionLabel = SIDEBAR_SECTION_LABELS[section.id] ?? section.id;
             const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
+            const isDataSection = ['workspaces', 'workflows', 'recents'].includes(section.id);
+            const isFlat = section.style === 'flat';
 
             return (
               <div key={section.id}>
@@ -433,6 +435,20 @@ function SidebarZoneEditor() {
                   <span className={`flex-1 truncate ${section.visible ? 'text-text-primary dark:text-dark-text-primary' : 'text-text-muted dark:text-dark-text-muted line-through'}`}>
                     {sectionLabel}
                   </span>
+                  {/* Style toggle — only for data sections that support accordion/flat */}
+                  {isDataSection && (
+                    <button
+                      onClick={() => toggleSidebarSectionStyle(section.id)}
+                      className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
+                        isFlat
+                          ? 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                          : 'text-primary hover:bg-primary/10'
+                      }`}
+                      title={isFlat ? 'Switch to accordion (show items)' : 'Switch to flat (link only)'}
+                    >
+                      {isFlat ? <Minus className="w-3.5 h-3.5" /> : <ListChecks className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
                   <button
                     onClick={() => toggleSidebarSection(section.id)}
                     className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${

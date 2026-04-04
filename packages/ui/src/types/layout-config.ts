@@ -56,10 +56,15 @@ export type SidebarSectionId =
  */
 export type SidebarSectionIdOrCustom = SidebarSectionId | (string & {});
 
+/** How a data section header renders in the sidebar */
+export type SidebarSectionStyle = 'accordion' | 'flat';
+
 export interface SidebarSectionConfig {
   id: SidebarSectionIdOrCustom;
   visible: boolean;
   order: number;
+  /** Display style — 'accordion' shows items with collapse, 'flat' shows as single nav link */
+  style?: SidebarSectionStyle;
 }
 
 /** All 7 configurable sidebar sections in their default order (footer is structural, always rendered) */

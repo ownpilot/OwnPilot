@@ -18,6 +18,7 @@ import {
   type CustomGroup,
   type SidebarWidth,
   type SidebarSectionConfig,
+  type SidebarSectionStyle,
   DEFAULT_LAYOUT_CONFIG,
   DEFAULT_SIDEBAR_SECTIONS,
   LAYOUT_CONFIG_VERSION,
@@ -190,6 +191,7 @@ interface LayoutConfigValue {
   updateCustomGroup: (id: string, label: string, items: string[]) => void;
   // Sidebar helpers
   toggleSidebarSection: (sectionId: string) => void;
+  toggleSidebarSectionStyle: (sectionId: string) => void;
   reorderSidebarSections: (sections: SidebarSectionConfig[]) => void;
   setSidebarWidth: (width: SidebarWidth) => void;
   getSidebarSections: () => SidebarSectionConfig[];
@@ -333,6 +335,21 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
     [setConfig],
   );
 
+  const toggleSidebarSectionStyle = useCallback(
+    (sectionId: string) => {
+      setConfig((prev) => ({
+        ...prev,
+        sidebar: {
+          ...prev.sidebar,
+          sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS).map((s) =>
+            s.id === sectionId ? { ...s, style: (s.style === 'flat' ? 'accordion' : 'flat') as SidebarSectionStyle } : s
+          ),
+        },
+      }));
+    },
+    [setConfig],
+  );
+
   const reorderSidebarSections = useCallback(
     (sections: SidebarSectionConfig[]) => {
       setConfig((prev) => ({
@@ -360,7 +377,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
 
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, toggleSidebarSection, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
+      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, toggleSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
     >
       {children}
     </LayoutConfigContext.Provider>
