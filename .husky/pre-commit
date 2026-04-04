@@ -3,5 +3,8 @@
 # Ensure tools are on PATH (macOS doesn't inherit shell profile in git hooks)
 export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:$PATH"
 
+# Prevent shell aliases (e.g. cat=bat) from interfering with toolchain
+unalias cat 2>/dev/null || true
+
 pnpm lint
 pnpm typecheck
