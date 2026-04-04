@@ -10,7 +10,7 @@
  * Brand and Settings are fixed. The 3 middle zones are user-configurable.
  */
 
-export const LAYOUT_CONFIG_VERSION = 6;
+export const LAYOUT_CONFIG_VERSION = 7;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
@@ -38,6 +38,18 @@ export interface LayoutConfigHeader {
 
 /** Sidebar width preset — affects the aside element width class */
 export type SidebarWidth = 'narrow' | 'default' | 'wide';
+
+/** A pinned sidebar item or group — stored in LayoutConfig.sidebar.pinnedItems */
+export type SidebarPinnedConfig =
+  | { type: 'item'; path: string }
+  | { type: 'group'; id: string; label: string; items: string[] };
+
+export const MAX_PINNED_ITEMS = 15;
+
+export const DEFAULT_PINNED_ITEMS: SidebarPinnedConfig[] = [
+  { type: 'item', path: '/' },
+  { type: 'item', path: '/dashboard' },
+];
 
 /** Built-in sidebar section identifiers (footer is structural, not configurable) */
 export type SidebarSectionId =
@@ -167,6 +179,7 @@ export const SIDEBAR_WIDTH_VALUES: Record<SidebarWidth, { class: string; label: 
 export interface LayoutConfigSidebar {
   width: SidebarWidth;
   sections: SidebarSectionConfig[];
+  pinnedItems: SidebarPinnedConfig[];
 }
 
 /** User-defined custom group — global, reusable across zones and sidebar */
@@ -199,6 +212,7 @@ export const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
   sidebar: {
     width: 'default',
     sections: [...DEFAULT_SIDEBAR_SECTIONS],
+    pinnedItems: [...DEFAULT_PINNED_ITEMS],
   },
   customGroups: [],
 };

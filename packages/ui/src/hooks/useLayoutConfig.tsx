@@ -18,8 +18,11 @@ import {
   type CustomGroup,
   type SidebarWidth,
   type SidebarSectionConfig,
+  type SidebarPinnedConfig,
   DEFAULT_LAYOUT_CONFIG,
   DEFAULT_SIDEBAR_SECTIONS,
+  DEFAULT_PINNED_ITEMS,
+  MAX_PINNED_ITEMS,
   LAYOUT_CONFIG_VERSION,
   CORE_SECTION_IDS,
   SECTION_DEFAULT_STYLES,
@@ -59,6 +62,17 @@ function isValidSidebarSection(v: unknown): v is SidebarSectionConfig {
   return typeof obj.id === 'string' && typeof obj.order === 'number';
 }
 
+function isValidPinnedConfig(v: unknown): v is SidebarPinnedConfig {
+  if (!v || typeof v !== 'object') return false;
+  const obj = v as Record<string, unknown>;
+  if (obj.type === 'item') return typeof obj.path === 'string';
+  if (obj.type === 'group') {
+    return typeof obj.id === 'string' && typeof obj.label === 'string' &&
+      Array.isArray(obj.items) && obj.items.every((x: unknown) => typeof x === 'string');
+  }
+  return false;
+}
+
 function isValidConfig(v: unknown): v is LayoutConfig {
   if (!v || typeof v !== 'object') return false;
   const obj = v as Record<string, unknown>;
@@ -76,6 +90,9 @@ function isValidConfig(v: unknown): v is LayoutConfig {
     if (!VALID_SIDEBAR_WIDTHS.includes(s.width as string)) return false;
     if (s.sections !== undefined) {
       if (!Array.isArray(s.sections) || !s.sections.every(isValidSidebarSection)) return false;
+    }
+    if (s.pinnedItems !== undefined) {
+      if (!Array.isArray(s.pinnedItems) || !s.pinnedItems.every(isValidPinnedConfig)) return false;
     }
   }
   return true;
@@ -160,12 +177,42 @@ function migrateConfig(raw: unknown): LayoutConfig {
       .map((s, i) => ({ ...s, order: i }));
     return migrateConfig({
       ...config,
-      version: LAYOUT_CONFIG_VERSION,
+      version: 6, // chain to V6→V7
       sidebar: {
         ...config.sidebar,
         sections: allSections,
       },
     });
+  }
+
+  // V6 → V7: absorb pinnedItems from separate localStorage key into LayoutConfig
+  if (typeof obj.version === 'number' && obj.version === 6) {
+    const config = obj as unknown as LayoutConfig;
+    let pinnedItems: SidebarPinnedConfig[] = [...DEFAULT_PINNED_ITEMS];
+    try {
+      const raw = localStorage.getItem('ownpilot-sidebar-pinned');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (typeof parsed[0] === 'string') {
+            // Legacy string[] format
+            pinnedItems = parsed.map((path: string) => ({ type: 'item' as const, path }));
+          } else if (parsed.every(isValidPinnedConfig)) {
+            pinnedItems = parsed;
+          }
+        }
+        // Clean up old key after successful migration
+        localStorage.removeItem('ownpilot-sidebar-pinned');
+      }
+    } catch { /* ignore malformed data */ }
+    return {
+      ...config,
+      version: LAYOUT_CONFIG_VERSION,
+      sidebar: {
+        ...config.sidebar,
+        pinnedItems,
+      },
+    };
   }
 
   if (isValidConfig(obj)) {
@@ -238,6 +285,14 @@ interface LayoutConfigValue {
   reorderSidebarSections: (sections: SidebarSectionConfig[]) => void;
   setSidebarWidth: (width: SidebarWidth) => void;
   getSidebarSections: () => SidebarSectionConfig[];
+  // Pinned items helpers (data now lives in config.sidebar.pinnedItems)
+  getPinnedConfigs: () => SidebarPinnedConfig[];
+  setPinnedConfigs: (updater: SidebarPinnedConfig[] | ((prev: SidebarPinnedConfig[]) => SidebarPinnedConfig[])) => void;
+  getPinnedItemPaths: () => string[];
+  setPinnedItemPaths: (updater: string[] | ((prev: string[]) => string[])) => void;
+  addPinnedGroup: (id: string, label: string, items: string[]) => void;
+  isPinnedGroup: (groupId: string) => boolean;
+  togglePinnedGroup: (id: string, label: string, items: string[]) => void;
 }
 
 const LayoutConfigContext = createContext<LayoutConfigValue | null>(null);
@@ -440,9 +495,78 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
     [config],
   );
 
+  // --- Pinned items helpers ---
+
+  const getPinnedConfigs = useCallback(
+    (): SidebarPinnedConfig[] => config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS,
+    [config],
+  );
+
+  const setPinnedConfigs = useCallback(
+    (updater: SidebarPinnedConfig[] | ((prev: SidebarPinnedConfig[]) => SidebarPinnedConfig[])) => {
+      setConfig((prev) => {
+        const current = prev.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS;
+        const next = typeof updater === 'function' ? updater(current) : updater;
+        return { ...prev, sidebar: { ...prev.sidebar, pinnedItems: next } };
+      });
+    },
+    [setConfig],
+  );
+
+  const getPinnedItemPaths = useCallback(
+    (): string[] => (config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS)
+      .filter((c): c is Extract<SidebarPinnedConfig, { type: 'item' }> => c.type === 'item')
+      .map((c) => c.path),
+    [config],
+  );
+
+  const setPinnedItemPaths = useCallback(
+    (updater: string[] | ((prev: string[]) => string[])) => {
+      setPinnedConfigs((prevConfigs) => {
+        const prevPaths = prevConfigs
+          .filter((c): c is Extract<SidebarPinnedConfig, { type: 'item' }> => c.type === 'item')
+          .map((c) => c.path);
+        const nextPaths = typeof updater === 'function' ? updater(prevPaths) : updater;
+        const groups = prevConfigs.filter((c) => c.type === 'group');
+        const items: SidebarPinnedConfig[] = nextPaths.map((path) => ({ type: 'item', path }));
+        return [...items, ...groups];
+      });
+    },
+    [setPinnedConfigs],
+  );
+
+  const addPinnedGroup = useCallback(
+    (id: string, label: string, items: string[]) => {
+      setPinnedConfigs((prev) => {
+        if (prev.length >= MAX_PINNED_ITEMS) return prev;
+        if (prev.some((c) => c.type === 'group' && c.id === id)) return prev;
+        return [...prev, { type: 'group', id, label, items }];
+      });
+    },
+    [setPinnedConfigs],
+  );
+
+  const isPinnedGroup = useCallback(
+    (groupId: string): boolean =>
+      (config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS).some((c) => c.type === 'group' && c.id === groupId),
+    [config],
+  );
+
+  const togglePinnedGroup = useCallback(
+    (id: string, label: string, items: string[]) => {
+      setPinnedConfigs((prev) => {
+        const exists = prev.some((c) => c.type === 'group' && c.id === id);
+        if (exists) return prev.filter((c) => !(c.type === 'group' && c.id === id));
+        if (prev.length >= MAX_PINNED_ITEMS) return prev;
+        return [...prev, { type: 'group', id, label, items }];
+      });
+    },
+    [setPinnedConfigs],
+  );
+
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
+      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections, getPinnedConfigs, setPinnedConfigs, getPinnedItemPaths, setPinnedItemPaths, addPinnedGroup, isPinnedGroup, togglePinnedGroup }}
     >
       {children}
     </LayoutConfigContext.Provider>

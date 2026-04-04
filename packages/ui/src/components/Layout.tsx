@@ -110,9 +110,9 @@ export function Layout() {
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
   return (
-    <PinnedItemsProvider>
+    <LayoutConfigProvider>
       <HeaderItemsProvider>
-        <LayoutConfigProvider>
+        <PinnedItemsProvider>
         <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
       {/* Global Header Bar — 5 zones: Brand | Left | Center | Right | Settings */}
       <header className="relative h-12 flex items-center px-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
@@ -250,8 +250,8 @@ export function Layout() {
       {/* Global Search Overlay */}
       {isSearchOpen && <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />}
         </div>
-        </LayoutConfigProvider>
+        </PinnedItemsProvider>
       </HeaderItemsProvider>
-    </PinnedItemsProvider>
+    </LayoutConfigProvider>
   );
 }
