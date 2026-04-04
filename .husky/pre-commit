@@ -1,3 +1,7 @@
 #!/usr/bin/env sh
+
+# Ensure tools are on PATH (macOS doesn't inherit shell profile in git hooks)
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+
 pnpm lint
 pnpm typecheck

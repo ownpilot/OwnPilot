@@ -16,7 +16,10 @@ import {
   type HeaderZoneEntry,
   type HeaderZoneConfig,
   type CustomGroup,
+  type SidebarWidth,
+  type SidebarSectionConfig,
   DEFAULT_LAYOUT_CONFIG,
+  DEFAULT_SIDEBAR_SECTIONS,
   LAYOUT_CONFIG_VERSION,
 } from '../types/layout-config';
 
@@ -46,6 +49,14 @@ function isValidZoneConfig(v: unknown): v is HeaderZoneConfig {
   return obj.entries.every(isValidZoneEntry);
 }
 
+const VALID_SIDEBAR_WIDTHS = ['narrow', 'default', 'wide'];
+
+function isValidSidebarSection(v: unknown): v is SidebarSectionConfig {
+  if (!v || typeof v !== 'object') return false;
+  const obj = v as Record<string, unknown>;
+  return typeof obj.id === 'string' && typeof obj.visible === 'boolean' && typeof obj.order === 'number';
+}
+
 function isValidConfig(v: unknown): v is LayoutConfig {
   if (!v || typeof v !== 'object') return false;
   const obj = v as Record<string, unknown>;
@@ -57,6 +68,14 @@ function isValidConfig(v: unknown): v is LayoutConfig {
   const zones = h.zones as Record<string, unknown>;
   if (!VALID_ZONE_IDS.every((id) => isValidZoneConfig(zones[id]))) return false;
   if (!Array.isArray(obj.customGroups)) return false;
+  // V4+: validate sidebar
+  if (obj.sidebar && typeof obj.sidebar === 'object') {
+    const s = obj.sidebar as Record<string, unknown>;
+    if (s.sections !== undefined) {
+      if (!VALID_SIDEBAR_WIDTHS.includes(s.width as string)) return false;
+      if (!Array.isArray(s.sections) || !s.sections.every(isValidSidebarSection)) return false;
+    }
+  }
   return true;
 }
 
@@ -87,10 +106,22 @@ function migrateConfig(raw: unknown): LayoutConfig {
 
   // V2 → V3: add customGroups array
   if (typeof obj.version === 'number' && obj.version === 2) {
-    return {
-      ...(obj as LayoutConfig),
-      version: LAYOUT_CONFIG_VERSION,
+    return migrateConfig({
+      ...(obj as unknown as LayoutConfig),
+      version: 3,
       customGroups: [],
+    });
+  }
+
+  // V3 → V4: add sidebar sections + width
+  if (typeof obj.version === 'number' && obj.version === 3) {
+    return {
+      ...(obj as unknown as LayoutConfig),
+      version: LAYOUT_CONFIG_VERSION,
+      sidebar: {
+        width: 'default' as const,
+        sections: [...DEFAULT_SIDEBAR_SECTIONS],
+      },
     };
   }
 
@@ -138,6 +169,11 @@ interface LayoutConfigValue {
   addCustomGroup: (label: string, items: string[]) => CustomGroup;
   removeCustomGroup: (id: string) => void;
   updateCustomGroup: (id: string, label: string, items: string[]) => void;
+  // Sidebar helpers
+  toggleSidebarSection: (sectionId: string) => void;
+  reorderSidebarSections: (sections: SidebarSectionConfig[]) => void;
+  setSidebarWidth: (width: SidebarWidth) => void;
+  getSidebarSections: () => SidebarSectionConfig[];
 }
 
 const LayoutConfigContext = createContext<LayoutConfigValue | null>(null);
@@ -261,9 +297,51 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
     [setConfig],
   );
 
+  // --- Sidebar helpers ---
+
+  const toggleSidebarSection = useCallback(
+    (sectionId: string) => {
+      setConfig((prev) => ({
+        ...prev,
+        sidebar: {
+          ...prev.sidebar,
+          sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS).map((s) =>
+            s.id === sectionId ? { ...s, visible: !s.visible } : s
+          ),
+        },
+      }));
+    },
+    [setConfig],
+  );
+
+  const reorderSidebarSections = useCallback(
+    (sections: SidebarSectionConfig[]) => {
+      setConfig((prev) => ({
+        ...prev,
+        sidebar: { ...prev.sidebar, sections },
+      }));
+    },
+    [setConfig],
+  );
+
+  const setSidebarWidth = useCallback(
+    (width: SidebarWidth) => {
+      setConfig((prev) => ({
+        ...prev,
+        sidebar: { ...prev.sidebar, width },
+      }));
+    },
+    [setConfig],
+  );
+
+  const getSidebarSections = useCallback(
+    (): SidebarSectionConfig[] => config.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS,
+    [config],
+  );
+
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup }}
+      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, toggleSidebarSection, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
     >
       {children}
     </LayoutConfigContext.Provider>

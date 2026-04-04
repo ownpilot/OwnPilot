@@ -12,7 +12,7 @@ import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
 import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
 import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
-import type { HeaderZoneId, HeaderItemDisplayMode, HeaderZoneEntry } from '../types/layout-config';
+import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',

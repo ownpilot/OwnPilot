@@ -15,9 +15,9 @@ import { LayoutWireframe, type WireframeZone } from '../components/LayoutWirefra
 import { ZoneEditor } from '../components/ZoneEditor';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useTheme } from '../hooks/useTheme';
-import { ALL_NAV_ITEMS, NAV_ITEM_MAP } from '../constants/nav-items';
+import { ALL_NAV_ITEMS } from '../constants/nav-items';
 import { DEFAULT_LAYOUT_CONFIG } from '../types/layout-config';
-import { RotateCcw, Sun, Moon, Monitor, Palette, Plus, X, Edit2 } from '../components/icons';
+import { RotateCcw, Sun, Moon, Monitor, Palette, Plus, X } from '../components/icons';
 
 type ThemeOption = 'system' | 'light' | 'dark' | 'claude';
 

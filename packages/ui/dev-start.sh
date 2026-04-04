@@ -2,6 +2,9 @@
 # Start dev-proxy + Vite together. Kills both on exit.
 set -e
 
+# Ensure node/npx are on PATH (macOS Preview MCP doesn't inherit zsh profile)
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$DIR"
 

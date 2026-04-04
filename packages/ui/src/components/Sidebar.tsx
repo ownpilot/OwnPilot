@@ -14,11 +14,11 @@ import { useSidebarRecents, getConvTitle } from '../hooks/useSidebarRecents';
 import type { SourceFilter } from '../hooks/useSidebarRecents';
 import { useSidebarProjects } from '../hooks/useSidebarProjects';
 import { useSidebarWorkflows } from '../hooks/useSidebarWorkflows';
-import { ALL_NAV_ITEMS, NAV_ITEM_MAP } from '../constants/nav-items';
+import { NAV_ITEM_MAP } from '../constants/nav-items';
 import { SidebarFooter } from './sidebar/SidebarFooter';
 import { useToast } from './ToastProvider';
 import { useDialog } from './ConfirmDialog';
-import { X, ChevronRight, ChevronDown, Search, Calendar, FolderOpen, GitBranch, Plus, Edit2, Trash2, Globe, MessageSquare, Telegram, WhatsApp } from './icons';
+import { X, ChevronRight, Search, Calendar, FolderOpen, GitBranch, Plus, Edit2, Trash2, Globe, MessageSquare, Telegram, WhatsApp } from './icons';
 import type { NavItem } from '../constants/nav-items';
 import type { Conversation } from '../api/types';
 import { chatApi } from '../api/endpoints/chat';
@@ -128,7 +128,7 @@ function PinnedNavGroup({ config, onCloseCustomize, isCustomizeOpen }: { config:
 }
 
 export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeToggle, isCustomizeOpen, onCloseCustomize, wsStatus, badgeCounts }: SidebarProps) {
-  const { pinnedConfigs, pinnedItems } = usePinnedItems();
+  const { pinnedConfigs } = usePinnedItems();
   const recents = useSidebarRecents();
   const { projects, isLoading: projectsLoading } = useSidebarProjects();
   const { workflows, isLoading: workflowsLoading } = useSidebarWorkflows();
@@ -206,7 +206,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
         {/* Pinned items + groups */}
         <div className="space-y-0.5 mb-2" data-testid="sidebar-pinned-items">
-          {pinnedConfigs.map((config, i) => {
+          {pinnedConfigs.map((config) => {
             if (config.type === 'item') {
               const item = NAV_ITEM_MAP.get(config.path);
               if (!item) return null;

@@ -34,7 +34,7 @@ const HEADER_ZONE_MAP: Record<string, HeaderZoneId> = {
 };
 
 function ZoneBox({
-  zone,
+  zone: _zone,
   label,
   isSelected,
   onClick,

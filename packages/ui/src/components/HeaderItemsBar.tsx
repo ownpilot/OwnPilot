@@ -18,7 +18,7 @@ function ZoneEntries({ entries, displayMode }: { entries: HeaderZoneEntry[]; dis
   if (entries.length === 0) return null;
   return (
     <>
-      {entries.map((entry, i) => {
+      {entries.map((entry) => {
         if (entry.type === 'item') {
           const navItem = NAV_ITEM_MAP.get(entry.path);
           if (!navItem) return null;
@@ -74,15 +74,12 @@ export function HeaderItemsBar() {
     { zone: rightZone, justify: 'justify-end' },
   ];
 
-  const hasAnyEntries = zones.some(({ zone }) => zone.entries.length > 0);
-  const filledCount = zones.filter(({ zone }) => zone.entries.length > 0).length;
-
   return (
     <div className="flex items-center gap-3 shrink-0">
-      {zones.map(({ zone, justify }, i) => {
+      {zones.map(({ zone, justify }, idx) => {
         if (zone.entries.length === 0) return null;
         return (
-          <div key={i} className={`flex items-center gap-1 ${justify}`}>
+          <div key={idx} className={`flex items-center gap-1 ${justify}`}>
             <ZoneEntries entries={zone.entries} displayMode={zone.displayMode} />
           </div>
         );

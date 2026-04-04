@@ -5,7 +5,6 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 import {
   Menu,
   Settings,
-  ChevronDown,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
