@@ -449,7 +449,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         // Don't add if already present
         if (sections.some((s) => s.id === sectionId)) return prev;
         const maxOrder = sections.reduce((m, s) => Math.max(m, s.order), -1);
-        const style = SECTION_DEFAULT_STYLES[sectionId] ?? 'flat';
+        const style = SECTION_DEFAULT_STYLES[sectionId] ?? 'accordion';
         return {
           ...prev,
           sidebar: {

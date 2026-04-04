@@ -14,7 +14,7 @@ import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripV
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
 import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, type SidebarWidth } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, getSectionIcon, getSectionLabel, getSectionGroup as getGroup, type SidebarSectionGroup } from '../constants/sidebar-sections';
+import { SECTION_GROUP_LABELS, getSectionIcon, getSectionLabel, getSectionGroup as getGroup, type SidebarSectionGroup } from '../constants/sidebar-sections';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',
@@ -437,7 +437,6 @@ function SidebarZoneEditor() {
           {sections.map((section, i) => {
             const sectionLabel = getSectionLabel(section.id);
             const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
-            const isDataSection = section.id in SIDEBAR_DATA_SECTIONS_MAP || section.id === 'recents';
             const isCore = CORE_SECTION_IDS.has(section.id);
             const isFlat = section.style === 'flat';
             const SectionIcon = getSectionIcon(section.id);
@@ -464,8 +463,8 @@ function SidebarZoneEditor() {
                   {isCore && (
                     <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">core</span>
                   )}
-                  {/* Style toggle — only for data sections that support accordion/flat */}
-                  {isDataSection && (
+                  {/* Style toggle — available for all non-core sections */}
+                  {!isCore && (
                     <button
                       onClick={() => toggleSidebarSectionStyle(section.id)}
                       className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
