@@ -213,7 +213,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
   }, []);
 
   // Auto-connect on mount - only run once
+  // Skip WS in environments without a gateway (e.g. Claude Desktop Preview)
   useEffect(() => {
+    if (import.meta.env.VITE_DISABLE_WS === 'true') return;
     connect();
 
     return () => {
