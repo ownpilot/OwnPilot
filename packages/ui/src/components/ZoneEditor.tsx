@@ -48,6 +48,7 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   const { config, getZone, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry } = useLayoutConfig();
   const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
   const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
+  const [addItemSearch, setAddItemSearch] = useState('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null); // insertion index (line appears BEFORE this index)
 
@@ -255,30 +256,49 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
       <div className="flex gap-2 relative">
         <div className="relative">
           <button
-            onClick={() => setAddMenuOpen(addMenuOpen === 'item' ? null : 'item')}
+            onClick={() => { setAddMenuOpen(addMenuOpen === 'item' ? null : 'item'); setAddItemSearch(''); }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <Plus className="w-3 h-3" /> Add Item
           </button>
           {addMenuOpen === 'item' && (
-            <div className="absolute top-full left-0 mt-1 min-w-[200px] max-h-[320px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
-              {availableItems.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">All items already added</p>
-              ) : (
-                availableItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.to}
-                      onClick={() => handleAddItem(item.to)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })
-              )}
+            <div className="absolute top-full left-0 mt-1 min-w-[220px] rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+              <div className="px-2 py-1.5 border-b border-border/50 dark:border-dark-border/50">
+                <input
+                  type="text"
+                  value={addItemSearch}
+                  onChange={(e) => setAddItemSearch(e.target.value)}
+                  placeholder="Search items..."
+                  autoFocus
+                  className="w-full px-2 py-1 text-xs rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="max-h-[280px] overflow-y-auto py-1">
+              {(() => {
+                const filtered = availableItems.filter((item) =>
+                  item.label.toLowerCase().includes(addItemSearch.toLowerCase())
+                );
+                return filtered.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">
+                    {availableItems.length === 0 ? 'All items already added' : 'No matches'}
+                  </p>
+                ) : (
+                  filtered.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.to}
+                        onClick={() => handleAddItem(item.to)}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })
+                );
+              })()}
+              </div>
             </div>
           )}
         </div>
