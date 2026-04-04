@@ -10,7 +10,7 @@
  * Brand and Settings are fixed. The 3 middle zones are user-configurable.
  */
 
-export const LAYOUT_CONFIG_VERSION = 5;
+export const LAYOUT_CONFIG_VERSION = 6;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
@@ -88,48 +88,35 @@ export type SidebarSectionStyle = 'accordion' | 'flat';
 
 export interface SidebarSectionConfig {
   id: SidebarSectionIdOrCustom;
-  visible: boolean;
   order: number;
   /** Display style — 'accordion' shows items with collapse, 'flat' shows as single nav link */
   style?: SidebarSectionStyle;
 }
 
-/** All 28 configurable sidebar sections (footer is structural, always rendered) */
+/** Core sections that cannot be removed from sidebar (structural UI controls) */
+export const CORE_SECTION_IDS = new Set<string>(['pinned', 'search', 'scheduled', 'customize']);
+
+/** Default styles for sections when added via "+ Add Section" */
+export const SECTION_DEFAULT_STYLES: Record<string, SidebarSectionStyle> = {
+  workspaces: 'accordion',
+  workflows: 'accordion',
+  recents: 'accordion',
+  agents: 'accordion',
+  claws: 'accordion',
+  tools: 'accordion',
+};
+
+/** Default sidebar sections — only shown sections are in array (add/remove pattern) */
 export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
-  // Core (visible by default)
-  { id: 'pinned', visible: true, order: 0 },
-  { id: 'search', visible: true, order: 1 },
-  { id: 'scheduled', visible: true, order: 2 },
-  { id: 'customize', visible: true, order: 3 },
-  // Data (visible by default)
-  { id: 'workspaces', visible: true, order: 4 },
-  { id: 'workflows', visible: true, order: 5 },
-  { id: 'recents', visible: true, order: 6 },
-  // AI & Automation (hidden, accordion-ready when enabled)
-  { id: 'agents', visible: false, order: 7, style: 'accordion' },
-  { id: 'claws', visible: false, order: 8, style: 'accordion' },
-  { id: 'triggers', visible: false, order: 9, style: 'flat' },
-  { id: 'fleet', visible: false, order: 10, style: 'flat' },
-  { id: 'artifacts', visible: false, order: 11, style: 'flat' },
-  // Tools & Extensions (hidden, accordion-ready when enabled)
-  { id: 'tools', visible: false, order: 12, style: 'accordion' },
-  { id: 'custom-tools', visible: false, order: 13, style: 'flat' },
-  { id: 'extensions', visible: false, order: 14, style: 'flat' },
-  // Personal Data (hidden)
-  { id: 'tasks', visible: false, order: 15, style: 'flat' },
-  { id: 'notes', visible: false, order: 16, style: 'flat' },
-  { id: 'goals', visible: false, order: 17, style: 'flat' },
-  { id: 'plans', visible: false, order: 18, style: 'flat' },
-  { id: 'memories', visible: false, order: 19, style: 'flat' },
-  { id: 'bookmarks', visible: false, order: 20, style: 'flat' },
-  { id: 'contacts', visible: false, order: 21, style: 'flat' },
-  { id: 'habits', visible: false, order: 22, style: 'flat' },
-  // System (hidden)
-  { id: 'channels', visible: false, order: 23, style: 'flat' },
-  { id: 'edge-devices', visible: false, order: 24, style: 'flat' },
-  { id: 'mcp-servers', visible: false, order: 25, style: 'flat' },
-  { id: 'ai-models', visible: false, order: 26, style: 'flat' },
-  { id: 'coding-agents', visible: false, order: 27, style: 'flat' },
+  // Core (always present, cannot be removed)
+  { id: 'pinned', order: 0 },
+  { id: 'search', order: 1 },
+  { id: 'scheduled', order: 2 },
+  { id: 'customize', order: 3 },
+  // Data (shown by default, user can remove)
+  { id: 'workspaces', order: 4, style: 'accordion' },
+  { id: 'workflows', order: 5, style: 'accordion' },
+  { id: 'recents', order: 6, style: 'accordion' },
 ];
 
 /** Human-readable labels for sidebar sections */

@@ -143,12 +143,10 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const dialog = useDialog();
   const editInputRef = useRef<HTMLInputElement>(null);
 
-  // Config-driven section order: visible sections sorted by order
-  // Depends on sidebar.sections specifically (not entire config) to avoid unnecessary re-renders
+  // Config-driven section order: sections in array are shown, sorted by order
   const sidebarSections = layoutConfig.sidebar.sections;
   const visibleSections = useMemo(() =>
-    (sidebarSections ?? DEFAULT_SIDEBAR_SECTIONS)
-      .filter((s) => s.visible)
+    [...(sidebarSections ?? DEFAULT_SIDEBAR_SECTIONS)]
       .sort((a, b) => a.order - b.order),
     [sidebarSections],
   );

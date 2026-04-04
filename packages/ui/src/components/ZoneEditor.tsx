@@ -10,11 +10,11 @@ import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useHeaderItems } from '../hooks/useHeaderItems';
 import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
 import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
-import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, Eye, EyeOff, ListChecks, Minus } from './icons';
+import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, ListChecks, Minus } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
-import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, type SidebarWidth } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP } from '../constants/sidebar-sections';
+import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, SECTION_DEFAULT_STYLES, type SidebarWidth } from '../types/layout-config';
+import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, type SidebarSectionGroup } from '../constants/sidebar-sections';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',
@@ -345,11 +345,25 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
 
 // ─── Sidebar Zone: Section Visibility, Ordering, Width ──────────────────
 
+/** All section IDs available for adding — derived from SIDEBAR_SECTION_LABELS */
+const ALL_ADDABLE_SECTION_IDS = Object.keys(SIDEBAR_SECTION_LABELS).filter(
+  (id) => !CORE_SECTION_IDS.has(id)
+);
+
+/** Group each addable section for the dropdown */
+function getAddableSectionGroup(id: string): SidebarSectionGroup {
+  const def = SIDEBAR_DATA_SECTIONS_MAP[id];
+  if (def) return def.group;
+  if (id === 'recents') return 'data';
+  return 'system';
+}
+
 function SidebarZoneEditor() {
-  const { config, getSidebarSections, toggleSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth } = useLayoutConfig();
+  const { config, getSidebarSections, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth } = useLayoutConfig();
   const sections = getSidebarSections();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
 
   const handleDragOver = (e: React.DragEvent, i: number) => {
     e.preventDefault();
@@ -366,7 +380,6 @@ function SidebarZoneEditor() {
         const reordered = [...sections];
         const [moved] = reordered.splice(dragIdx, 1);
         reordered.splice(insertAt, 0, moved!);
-        // Re-assign order values
         const updated = reordered.map((s, idx) => ({ ...s, order: idx }));
         reorderSidebarSections(updated);
       }
@@ -375,13 +388,22 @@ function SidebarZoneEditor() {
     setDropTarget(null);
   };
 
-  const visibleCount = sections.filter((s) => s.visible).length;
+  // Sections available to add (not already in config)
+  const existingIds = new Set(sections.map((s) => s.id));
+  const availableSections = ALL_ADDABLE_SECTION_IDS.filter((id) => !existingIds.has(id));
+
+  // Group available sections for dropdown
+  const groupedAvailable = availableSections.reduce<Record<string, string[]>>((acc, id) => {
+    const group = getAddableSectionGroup(id);
+    (acc[group] ??= []).push(id);
+    return acc;
+  }, {});
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/5 p-4 space-y-4">
       <h3 className="text-sm font-medium text-primary">Sidebar</h3>
       <p className="text-xs text-text-muted dark:text-dark-text-muted">
-        Toggle section visibility and drag to reorder. Footer is always shown at the bottom.
+        Add or remove sections, drag to reorder. Core sections (Pinned, Search, Scheduled, Customize) are always shown.
       </p>
 
       {/* Width selector */}
@@ -408,7 +430,7 @@ function SidebarZoneEditor() {
       {/* Sections list */}
       <div className="space-y-2">
         <p className="text-xs text-text-muted dark:text-dark-text-muted">
-          Sections ({visibleCount}/{sections.length} visible)
+          Sections ({sections.length})
         </p>
 
         <div className="space-y-1">
@@ -416,6 +438,7 @@ function SidebarZoneEditor() {
             const sectionLabel = SIDEBAR_SECTION_LABELS[section.id] ?? section.id;
             const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
             const isDataSection = section.id in SIDEBAR_DATA_SECTIONS_MAP || section.id === 'recents';
+            const isCore = CORE_SECTION_IDS.has(section.id);
             const isFlat = section.style === 'flat';
 
             return (
@@ -433,9 +456,12 @@ function SidebarZoneEditor() {
                   }`}
                 >
                   <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
-                  <span className={`flex-1 truncate ${section.visible ? 'text-text-primary dark:text-dark-text-primary' : 'text-text-muted dark:text-dark-text-muted line-through'}`}>
+                  <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">
                     {sectionLabel}
                   </span>
+                  {isCore && (
+                    <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">core</span>
+                  )}
                   {/* Style toggle — only for data sections that support accordion/flat */}
                   {isDataSection && (
                     <button
@@ -450,17 +476,16 @@ function SidebarZoneEditor() {
                       {isFlat ? <Minus className="w-3.5 h-3.5" /> : <ListChecks className="w-3.5 h-3.5" />}
                     </button>
                   )}
-                  <button
-                    onClick={() => toggleSidebarSection(section.id)}
-                    className={`w-6 h-6 flex items-center justify-center rounded transition-colors ${
-                      section.visible
-                        ? 'text-primary hover:bg-primary/10'
-                        : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                    }`}
-                    title={section.visible ? 'Hide section' : 'Show section'}
-                  >
-                    {section.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  </button>
+                  {/* Remove button — not shown for core sections */}
+                  {!isCore && (
+                    <button
+                      onClick={() => removeSidebarSection(section.id)}
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-error/10 hover:text-error transition-colors text-text-muted dark:text-dark-text-muted"
+                      title="Remove section"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
                 {/* Drop indicator line AFTER last item */}
                 {i === sections.length - 1 && dragIdx !== null && dropTarget === sections.length && dropTarget !== dragIdx ? (
@@ -471,6 +496,47 @@ function SidebarZoneEditor() {
           })}
         </div>
       </div>
+
+      {/* Add Section button + dropdown */}
+      {availableSections.length > 0 && (
+        <div className="relative">
+          <button
+            onClick={() => setAddMenuOpen(!addMenuOpen)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
+          >
+            <Plus className="w-3 h-3" /> Add Section
+          </button>
+          {addMenuOpen && (
+            <div className="absolute top-full left-0 mt-1 min-w-[220px] max-h-[300px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+              {Object.entries(groupedAvailable).map(([group, ids]) => (
+                <div key={group}>
+                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+                    {SECTION_GROUP_LABELS[group as SidebarSectionGroup] ?? group}
+                  </p>
+                  {ids.map((id) => {
+                    const def = SIDEBAR_DATA_SECTIONS_MAP[id];
+                    const Icon = def?.icon;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => { addSidebarSection(id); setAddMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                      >
+                        {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="truncate">{SIDEBAR_SECTION_LABELS[id] ?? id}</span>
+                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">
+                          {SECTION_DEFAULT_STYLES[id] === 'accordion' ? 'list' : 'link'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <div className="h-px bg-border/50 dark:bg-dark-border/50 my-0.5" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Info note */}
       <p className="text-[10px] text-text-muted dark:text-dark-text-muted">

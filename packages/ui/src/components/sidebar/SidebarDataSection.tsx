@@ -33,8 +33,8 @@ export function SidebarDataSection({
   const label = SIDEBAR_SECTION_LABELS[config.id] ?? config.id;
   const Icon = def.icon;
 
-  // Lazy data fetching — only when visible AND accordion mode
-  const shouldFetch = config.visible && config.style !== 'flat' && !collapsed;
+  // Lazy data fetching — only when accordion mode and expanded
+  const shouldFetch = config.style !== 'flat' && !collapsed;
   const { items, isLoading } = useSidebarItems(def.fetchItems, shouldFetch);
 
   // --- Flat mode: single nav link ---

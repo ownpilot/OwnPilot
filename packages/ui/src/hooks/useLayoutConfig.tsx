@@ -18,10 +18,11 @@ import {
   type CustomGroup,
   type SidebarWidth,
   type SidebarSectionConfig,
-  type SidebarSectionStyle,
   DEFAULT_LAYOUT_CONFIG,
   DEFAULT_SIDEBAR_SECTIONS,
   LAYOUT_CONFIG_VERSION,
+  CORE_SECTION_IDS,
+  SECTION_DEFAULT_STYLES,
 } from '../types/layout-config';
 
 // --- Validation & Migration ---
@@ -55,7 +56,7 @@ const VALID_SIDEBAR_WIDTHS = ['narrow', 'default', 'wide'];
 function isValidSidebarSection(v: unknown): v is SidebarSectionConfig {
   if (!v || typeof v !== 'object') return false;
   const obj = v as Record<string, unknown>;
-  return typeof obj.id === 'string' && typeof obj.visible === 'boolean' && typeof obj.order === 'number';
+  return typeof obj.id === 'string' && typeof obj.order === 'number';
 }
 
 function isValidConfig(v: unknown): v is LayoutConfig {
@@ -127,20 +128,42 @@ function migrateConfig(raw: unknown): LayoutConfig {
   }
 
   // V4 → V5: add 21 new data sections (hidden by default, preserving user's existing prefs)
+  // Note: V5 sections had `visible` field — V5→V6 migration strips it below
   if (typeof obj.version === 'number' && obj.version === 4) {
+    // First migrate to V5 format, then chain to V5→V6
     const config = obj as unknown as LayoutConfig;
-    const existingIds = new Set((config.sidebar?.sections ?? []).map((s) => s.id));
-    const newSections = DEFAULT_SIDEBAR_SECTIONS.filter((s) => !existingIds.has(s.id));
-    const maxOrder = Math.max(0, ...(config.sidebar?.sections ?? []).map((s) => s.order));
+    const existingSections = (config.sidebar?.sections ?? []).filter((s) => s.id !== 'footer');
+    return migrateConfig({
+      ...config,
+      version: 5, // will chain to V5→V6
+      sidebar: {
+        ...config.sidebar,
+        sections: existingSections,
+      },
+    });
+  }
+
+  // V5 → V6: remove `visible` field, keep only visible sections (add/remove pattern)
+  if (typeof obj.version === 'number' && obj.version === 5) {
+    const config = obj as unknown as LayoutConfig;
+    const oldSections = (config.sidebar?.sections ?? []) as (SidebarSectionConfig & { visible?: boolean })[];
+    // Keep sections that were visible (or core sections that must always exist)
+    const keptSections = oldSections
+      .filter((s) => s.visible === true || s.visible === undefined || CORE_SECTION_IDS.has(s.id))
+      .map(({ visible: _, ...rest }, idx) => ({ ...rest, order: idx }));
+    // Ensure core sections exist (in case of corrupted config)
+    const keptIds = new Set(keptSections.map((s) => s.id));
+    const missingCore = DEFAULT_SIDEBAR_SECTIONS
+      .filter((s) => CORE_SECTION_IDS.has(s.id) && !keptIds.has(s.id));
+    // Full reindex to ensure contiguous 0-based order (no gaps)
+    const allSections = [...keptSections, ...missingCore]
+      .map((s, i) => ({ ...s, order: i }));
     return migrateConfig({
       ...config,
       version: LAYOUT_CONFIG_VERSION,
       sidebar: {
         ...config.sidebar,
-        sections: [
-          ...(config.sidebar?.sections ?? []).filter((s) => s.id !== 'footer'),
-          ...newSections.map((s, i) => ({ ...s, order: maxOrder + 1 + i })),
-        ],
+        sections: allSections,
       },
     });
   }
@@ -209,7 +232,8 @@ interface LayoutConfigValue {
   removeCustomGroup: (id: string) => void;
   updateCustomGroup: (id: string, label: string, items: string[]) => void;
   // Sidebar helpers
-  toggleSidebarSection: (sectionId: string) => void;
+  addSidebarSection: (sectionId: string) => void;
+  removeSidebarSection: (sectionId: string) => void;
   toggleSidebarSectionStyle: (sectionId: string) => void;
   reorderSidebarSections: (sections: SidebarSectionConfig[]) => void;
   setSidebarWidth: (width: SidebarWidth) => void;
@@ -339,15 +363,37 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
 
   // --- Sidebar helpers ---
 
-  const toggleSidebarSection = useCallback(
+  const addSidebarSection = useCallback(
     (sectionId: string) => {
+      setConfig((prev) => {
+        const sections = prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS;
+        // Don't add if already present
+        if (sections.some((s) => s.id === sectionId)) return prev;
+        const maxOrder = sections.reduce((m, s) => Math.max(m, s.order), -1);
+        const style = SECTION_DEFAULT_STYLES[sectionId] ?? 'flat';
+        return {
+          ...prev,
+          sidebar: {
+            ...prev.sidebar,
+            sections: [...sections, { id: sectionId, order: maxOrder + 1, style }],
+          },
+        };
+      });
+    },
+    [setConfig],
+  );
+
+  const removeSidebarSection = useCallback(
+    (sectionId: string) => {
+      // Core sections cannot be removed
+      if (CORE_SECTION_IDS.has(sectionId)) return;
       setConfig((prev) => ({
         ...prev,
         sidebar: {
           ...prev.sidebar,
-          sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS).map((s) =>
-            s.id === sectionId ? { ...s, visible: !s.visible } : s
-          ),
+          sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS)
+            .filter((s) => s.id !== sectionId)
+            .map((s, i) => ({ ...s, order: i })),
         },
       }));
     },
@@ -361,7 +407,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         sidebar: {
           ...prev.sidebar,
           sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS).map((s) =>
-            s.id === sectionId ? { ...s, style: (s.style === 'flat' ? 'accordion' : 'flat') as SidebarSectionStyle } : s
+            s.id === sectionId ? { ...s, style: (s.style === 'flat' ? 'accordion' : 'flat') } : s
           ),
         },
       }));
@@ -396,7 +442,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
 
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, toggleSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
+      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
     >
       {children}
     </LayoutConfigContext.Provider>
