@@ -323,12 +323,18 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="workspaces">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-projects">
-                    <div className="flex items-center justify-between px-3 py-1">
+                    <div className="flex items-center px-3 py-1 gap-1">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, workspaces: !prev.workspaces }))}
-                        className="flex items-center gap-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        aria-label={collapsed.workspaces ? 'Expand workspaces' : 'Collapse workspaces'}
                       >
                         <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.workspaces ? 'rotate-90' : ''}`} />
+                      </button>
+                      <button
+                        onClick={() => { onCloseCustomize(); navigate('/workspaces'); }}
+                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                      >
                         Workspaces
                       </button>
                       <button
@@ -367,12 +373,18 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="workflows">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-workflows">
-                    <div className="flex items-center justify-between px-3 py-1">
+                    <div className="flex items-center px-3 py-1 gap-1">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, workflows: !prev.workflows }))}
-                        className="flex items-center gap-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        aria-label={collapsed.workflows ? 'Expand workflows' : 'Collapse workflows'}
                       >
                         <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.workflows ? 'rotate-90' : ''}`} />
+                      </button>
+                      <button
+                        onClick={() => { onCloseCustomize(); navigate('/workflows'); }}
+                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                      >
                         Workflows
                       </button>
                       <button
@@ -411,13 +423,21 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="recents">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-recents">
-                    <button
-                      onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
-                      className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
-                    >
-                      <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.recents ? 'rotate-90' : ''}`} />
-                      Recent
-                    </button>
+                    <div className="flex items-center px-3 py-1 gap-1">
+                      <button
+                        onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
+                        className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        aria-label={collapsed.recents ? 'Expand recents' : 'Collapse recents'}
+                      >
+                        <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.recents ? 'rotate-90' : ''}`} />
+                      </button>
+                      <button
+                        onClick={() => { onCloseCustomize(); navigate('/history'); }}
+                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                      >
+                        Recent
+                      </button>
+                    </div>
                     {!collapsed.recents && <><div className="px-2 pb-1">
                       <input
                         type="text"
