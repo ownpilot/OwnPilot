@@ -77,36 +77,39 @@ html.dark body {
 }
 
 /*
- * Claude Desktop Theme — warm earth tones
+ * Claude Desktop Theme — neutral dark with warm terracotta accent
  *
+ * Updated 2026-04 to match current claude.ai dark mode palette.
  * Sources:
- *   - Anthropic brand: #C15F3C (Crail), #B1ADA1 (Cloudy), #F4F3EE (Pampas)
- *   - jnahian/vscode-claude-theme dark palette (GitHub, 2025)
+ *   - Anthropic brand guidelines: Dark #141413, Light #faf9f5, Orange #d97757
+ *   - github.com/ComposioHQ/awesome-claude-skills/brand-guidelines
+ *   - brandcolorcode.com/claude: Peach #DE7356
  *   - shadcn.io/theme/claude: oklch(0.70 0.14 45) terracotta accent
- *   - mobbin.com/colors/brand/claude: official brand colors
  *
- * Overrides dark-* CSS variables so all dark: utilities work automatically.
- * Accent: warm terracotta (#C15F3C) instead of blue (#3b82f6).
+ * Key change from old theme: neutral grays instead of brown-tinted earth tones.
+ * Accent shifted from old Crail (#C15F3C) to current terracotta (#d97757).
  */
 .claude {
-  /* Override dark-* palette with warm earth tones */
-  --color-dark-bg-primary: #1a1815;
-  --color-dark-bg-secondary: #201d18;
-  --color-dark-bg-tertiary: #2a251d;
+  /* Neutral dark backgrounds — matches claude.ai dark mode */
+  --color-dark-bg-primary: #141413;
+  --color-dark-bg-secondary: #1c1c1b;
+  --color-dark-bg-tertiary: #2a2a28;
 
-  --color-dark-text-primary: #e8e6e3;
-  --color-dark-text-secondary: #b5afa8;
-  --color-dark-text-muted: #6a6158;
+  /* Text — slightly warm white, neutral grays */
+  --color-dark-text-primary: #eae9e6;
+  --color-dark-text-secondary: #b0aea5;
+  --color-dark-text-muted: #6b6963;
 
-  --color-dark-border: #3a352b;
+  /* Border — neutral, not brown */
+  --color-dark-border: #353432;
 
-  /* Claude terracotta accent — Anthropic brand Crail */
-  --color-primary: #C15F3C;
-  --color-primary-dark: #A14A2F;
+  /* Terracotta accent — current Anthropic orange */
+  --color-primary: #d97757;
+  --color-primary-dark: #c4613f;
 
-  /* Shadows with warm undertone */
-  --shadow-card: 0 1px 3px rgba(20, 15, 10, 0.35), 0 1px 2px rgba(20, 15, 10, 0.25);
-  --shadow-card-hover: 0 4px 12px rgba(20, 15, 10, 0.45), 0 2px 4px rgba(20, 15, 10, 0.25);
+  /* Shadows with neutral undertone */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* Claude mode body styles */
