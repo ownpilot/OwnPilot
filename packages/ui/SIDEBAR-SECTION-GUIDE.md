@@ -1,5 +1,79 @@
 # Sidebar Section Developer Guide
 
+## Philosophy: Why Unified Sections?
+
+### The Problem We Solved
+
+Before this architecture, sidebar had fragmented item types: "pinned items" stored in one
+localStorage key, "sections" in another, visibility toggles for 28 entries, and different
+rendering paths for different item types. Adding a new page meant touching 5+ files and
+understanding which "type" of sidebar entry it was.
+
+### The Core Insight
+
+**Every sidebar item is a section.** There's no distinction between a "nav link" and a
+"data section." A section is just an ID in an array. If it's there, it renders. If not, it
+doesn't. Simple.
+
+This single decision eliminated:
+- Dual localStorage stores (pinned vs layout config)
+- The `visible: boolean` field on 28 sections
+- Type confusion between "items" and "sections"
+- The PinnedItemsProvider context (now a 5-line wrapper)
+
+### The Format Standard
+
+```
+Section = { id: string, order: number, style?: 'accordion' | 'flat' }
+```
+
+That's it. Three fields. Every sidebar entry — from Chat to Workflows to AI Models —
+uses the same format. The `style` field controls rendering:
+
+| Style | What Renders | Developer Effort |
+|-------|-------------|-----------------|
+| `accordion` (default) | Collapsible header + API item list | Needs `fetchItems` in registry |
+| `flat` | Single nav link (icon + label) | Zero — works automatically |
+
+If a section has `style: 'accordion'` but no `fetchItems` in the registry, it gracefully
+falls back to flat rendering. No crash, no error — just a link.
+
+### Future Sustainability
+
+**Why this matters for the project long-term:**
+
+1. **Zero-cost page additions**: New pages automatically appear in "+ Add Section" dropdown.
+   No code changes. Users add them, users remove them.
+
+2. **Progressive enhancement**: Start with a flat link. When the API endpoint is ready,
+   add a 10-line registry entry. Accordion "just works." No migration, no breaking change.
+
+3. **User control without developer overhead**: Users can reorder, add, remove, and toggle
+   accordion/flat for ANY section. Developers don't write per-section settings UI.
+
+4. **Single migration path**: LayoutConfig versioning (V1→V7) handles all schema evolution.
+   One `migrateConfig()` function, one localStorage key, one truth.
+
+5. **No feature flags for sidebar visibility**: Old pattern was "add section, default hidden,
+   user toggles visible." New pattern is "section doesn't exist until user adds it."
+   Config array is smaller, rendering is faster, mental model is simpler.
+
+6. **Plugin-ready**: Future plugins/extensions can register sidebar sections via the same
+   registry pattern. The architecture doesn't need to change — just add entries.
+
+### Design Principles
+
+| Principle | Implementation |
+|-----------|---------------|
+| **Config is truth** | `LayoutConfig.sidebar.sections[]` — nothing else determines what's shown |
+| **Add/remove over toggle** | Array presence = visible. No boolean flags. |
+| **Progressive enhancement** | Flat link → accordion → custom UI (Recents-style). Each level is opt-in. |
+| **Deduplication** | Nav item paths matching data section routes resolve to data section ID |
+| **Core protection** | Search + Customize cannot be removed (structural UI) |
+| **Lazy by default** | Accordion fetches data only when expanded. Flat mode = zero API calls. |
+
+---
+
 ## Architecture Overview
 
 Every sidebar item is a **section** identified by an ID in `LayoutConfig.sidebar.sections[]`.
@@ -314,3 +388,44 @@ style: 'flat' → SidebarDataSection renders as single link (no API call)
 - [ ] Test: add section via ZoneEditor → accordion shows items
 - [ ] Test: toggle to flat → shows single link, no API call
 - [ ] Test: remove section → gone from sidebar
+
+---
+
+## Before vs After: Architecture Comparison
+
+| Aspect | Before (V5) | After (V7) |
+|--------|------------|------------|
+| **Storage** | 2 keys: `ownpilot-sidebar-pinned` + `ownpilot-layout-config` | 1 key: `ownpilot-layout-config` |
+| **Sidebar items** | "Pinned items" (paths) + "Sections" (IDs) — two types | Sections only — one type |
+| **Visibility** | `visible: boolean` on 28 entries | Array presence — if in array, shown |
+| **Default config** | 28 entries (7 visible + 21 hidden) | 8 entries (only what's shown) |
+| **Adding a section** | Toggle `visible: true` on existing entry | `addSidebarSection(id)` — push to array |
+| **Adding a page to sidebar** | Pin from Customize (writes to separate store) | Pin → resolves to `addSidebarSection` |
+| **New page support** | Touch 5 files: type + label + default + section + component | Zero code — nav items auto-appear in dropdown |
+| **Style control** | Only "data sections" had accordion/flat toggle | All sections have toggle |
+| **Config size** | 28 objects always in localStorage | 5-15 objects (only what user configured) |
+| **Provider tree** | `PinnedItemsProvider > HeaderItemsProvider > LayoutConfigProvider` | `LayoutConfigProvider > HeaderItemsProvider > PinnedItems(no-op)` |
+
+## Future Roadmap
+
+### Near-term (can be done without architecture changes)
+
+- **Backend sync**: Persist LayoutConfig to server via settings API (currently localStorage only)
+- **Cross-tab sync**: `storage` event listener to sync config across browser tabs
+- **Undo on remove**: Toast with "Undo" button when section is removed (restores position + style)
+- **Section search in ZoneEditor**: Filter the section list when many sections are added
+- **Keyboard navigation**: Arrow keys + Enter in Add Section dropdown
+
+### Medium-term (progressive enhancement)
+
+- **Per-section badges**: Show unread count on accordion headers (e.g., Tasks: 3 pending)
+- **Section-level settings**: Max items, refresh interval, sort order — stored in section config
+- **Custom section renderer registration**: Plugins register custom React components for their sections
+- **Workspace-scoped config**: Different sidebar layouts per workspace
+
+### Long-term (architecture-ready, needs design)
+
+- **Server-side LayoutConfig**: Sync across devices via user settings API
+- **Team/org defaults**: Admin sets default sections for new users
+- **AI-suggested sections**: Based on usage patterns, suggest adding relevant sections
+- **Section templates**: Predefined sidebar layouts (Developer, Manager, Minimal)
