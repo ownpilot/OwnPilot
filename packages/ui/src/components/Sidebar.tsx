@@ -158,6 +158,9 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   // Desktop sidebar width from config (mobile stays fixed w-64)
   const desktopWidthClass = SIDEBAR_WIDTH_VALUES[layoutConfig.sidebar.width]?.class ?? 'w-60';
 
+  // Accordion collapse state for data sections (default: all expanded)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
   const handleRecentClick = (conversationId: string) => {
     onCloseCustomize();
     navigate(`/?conversationId=${conversationId}`);
@@ -322,9 +325,10 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   <div className="mb-2" data-testid="sidebar-projects">
                     <div className="flex items-center justify-between px-3 py-1">
                       <button
-                        onClick={() => { onCloseCustomize(); navigate('/workspaces'); }}
-                        className="text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        onClick={() => setCollapsed((prev) => ({ ...prev, workspaces: !prev.workspaces }))}
+                        className="flex items-center gap-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
+                        <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.workspaces ? 'rotate-90' : ''}`} />
                         Workspaces
                       </button>
                       <button
@@ -335,7 +339,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    {projectsLoading ? (
+                    {!collapsed.workspaces && (projectsLoading ? (
                       <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted">Loading...</div>
                     ) : projects.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted">No projects</div>
@@ -353,7 +357,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                           </button>
                         ))}
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               );
@@ -365,9 +369,10 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   <div className="mb-2" data-testid="sidebar-workflows">
                     <div className="flex items-center justify-between px-3 py-1">
                       <button
-                        onClick={() => { onCloseCustomize(); navigate('/workflows'); }}
-                        className="text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        onClick={() => setCollapsed((prev) => ({ ...prev, workflows: !prev.workflows }))}
+                        className="flex items-center gap-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
+                        <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.workflows ? 'rotate-90' : ''}`} />
                         Workflows
                       </button>
                       <button
@@ -378,7 +383,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
-                    {workflowsLoading ? (
+                    {!collapsed.workflows && (workflowsLoading ? (
                       <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted">Loading...</div>
                     ) : workflows.length === 0 ? (
                       <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted">No workflows</div>
@@ -396,7 +401,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                           </button>
                         ))}
                       </div>
-                    )}
+                    ))}
                   </div>
                 </div>
               );
@@ -406,8 +411,14 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="recents">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-recents">
-                    <div className="px-3 py-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider">Recent</div>
-                    <div className="px-2 pb-1">
+                    <button
+                      onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
+                      className="flex items-center gap-1 px-3 py-1 text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                    >
+                      <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-150 ${!collapsed.recents ? 'rotate-90' : ''}`} />
+                      Recent
+                    </button>
+                    {!collapsed.recents && <><div className="px-2 pb-1">
                       <input
                         type="text"
                         value={recents.search}
@@ -499,6 +510,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                     <NavLink to="/history" end onClick={onCloseCustomize} className="flex items-center px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors">
                       All conversations &rarr;
                     </NavLink>
+                    </>}
                   </div>
                 </div>
               );
