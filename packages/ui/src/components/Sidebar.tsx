@@ -323,7 +323,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="workspaces">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-projects">
-                    <div className="flex items-center pl-1.5 pr-3 py-1 gap-0.5">
+                    <div className="flex items-center px-3 py-1 gap-1.5">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, workspaces: !prev.workspaces }))}
                         className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
@@ -333,7 +333,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                       </button>
                       <button
                         onClick={() => { onCloseCustomize(); navigate('/workspaces'); }}
-                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        className="flex-1 text-left text-[15px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
                         Workspaces
                       </button>
@@ -373,7 +373,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="workflows">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-workflows">
-                    <div className="flex items-center pl-1.5 pr-3 py-1 gap-0.5">
+                    <div className="flex items-center px-3 py-1 gap-1.5">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, workflows: !prev.workflows }))}
                         className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
@@ -383,7 +383,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                       </button>
                       <button
                         onClick={() => { onCloseCustomize(); navigate('/workflows'); }}
-                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        className="flex-1 text-left text-[15px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
                         Workflows
                       </button>
@@ -423,7 +423,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                 <div key="recents">
                   {divider}
                   <div className="mb-2" data-testid="sidebar-recents">
-                    <div className="flex items-center pl-1.5 pr-3 py-1 gap-0.5">
+                    <div className="flex items-center px-3 py-1 gap-1.5">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
                         className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
@@ -433,7 +433,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                       </button>
                       <button
                         onClick={() => { onCloseCustomize(); navigate('/history'); }}
-                        className="flex-1 text-left text-sm font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        className="flex-1 text-left text-[15px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
                         Recent
                       </button>
