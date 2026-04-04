@@ -113,17 +113,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     Array<{ type: string; content: string; importance?: number }>
   >([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionIdState] = useState<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  // Wrapper: keep ref in sync with state so sendMessage always sees latest value
+  const setSessionId = (id: string | null) => {
+    sessionIdRef.current = id;
+    setSessionIdState(id);
+  };
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
   const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
-
-  // Refs to avoid stale closures in sendMessage callback
-  const sessionIdRef = useRef(sessionId);
-  sessionIdRef.current = sessionId;
-  const isThinkingRef = useRef(isThinking);
-  isThinkingRef.current = isThinking;
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -265,6 +265,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           /* localStorage unavailable */
         }
 
+        // Use ref to avoid stale closure — sessionId state may not be current in callback
+        const currentSessionId = sessionIdRef.current;
+        console.log('[SESSION-FIX-UI] sendMessage sessionId:', currentSessionId);
         const response = await fetch('/api/v1/chat', {
           method: 'POST',
           headers: chatHeaders,
@@ -272,9 +275,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             message: content,
             provider,
             model,
-            stream: true, // Enable streaming!
+            stream: true,
             // Continue the current conversation by ID so messages are properly linked in DB
-            ...(sessionIdRef.current && { conversationId: sessionIdRef.current }),
+            ...(currentSessionId && { conversationId: currentSessionId }),
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
@@ -380,7 +383,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     if (event.data.delta) {
                       accumulatedContent += event.data.delta;
                       setStreamingContent(accumulatedContent);
-                      if (isThinkingRef.current) setIsThinking(false);
+                      if (isThinking) setIsThinking(false);
                     }
                     if (!event.data.thinkingDelta && !event.data.delta) {
                       setIsThinking(!!event.data.thinking);

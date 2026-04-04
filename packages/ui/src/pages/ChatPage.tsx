@@ -7,7 +7,8 @@ import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
 import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { ConversationSidebar } from '../components/ConversationSidebar';
+// ConversationSidebar kept as backup — conversation management moved to Sidebar.tsx
+// import { ConversationSidebar } from '../components/ConversationSidebar';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
@@ -299,6 +300,14 @@ export function ChatPage() {
     }
   };
 
+  // Load conversation from URL ?conversationId= param (e.g. from Sidebar Recent click)
+  useEffect(() => {
+    const convId = searchParams.get('conversationId');
+    if (convId) {
+      handleLoadConversation(convId);
+    }
+  }, [searchParams]); // handleLoadConversation stable ref from closure
+
   // Auto-scroll to bottom when new messages or streaming content arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -458,13 +467,7 @@ export function ChatPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Conversation sidebar */}
-      <ConversationSidebar
-        activeId={sessionId}
-        onNew={handleNewChat}
-        onSelect={handleLoadConversation}
-      />
-      {/* Main chat area */}
+      {/* Main chat area — ConversationSidebar moved to left Sidebar */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
