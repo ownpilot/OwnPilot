@@ -264,9 +264,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         } catch {
           /* localStorage unavailable */
         }
-        // Bridge providers: signal which runtime to use (bridge-claude → claude, bridge-opencode → opencode)
-        if (provider.startsWith('bridge-')) {
-          chatHeaders['X-Runtime'] = provider.replace('bridge-', '');
+        // Bridge providers: signal which runtime to use
+        // Provider ID can be a name ('bridge-opencode') or a UUID (local provider).
+        // Check both the ID and the display name stored in localStorage.
+        const providerDisplayName = (() => {
+          try {
+            const names = JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}');
+            return (names[provider] ?? provider) as string;
+          } catch { return provider; }
+        })();
+        const bridgeName = [provider, providerDisplayName].find(n => n.startsWith('bridge-'));
+        if (bridgeName) {
+          chatHeaders['X-Runtime'] = bridgeName.replace('bridge-', '');
         }
 
         // Use ref to avoid stale closure — sessionId state may not be current in callback

@@ -180,6 +180,8 @@ export function ChatPage() {
         namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
+      // Persist for useChatStore bridge detection (provider ID → name lookup)
+      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
     } catch {
@@ -204,6 +206,8 @@ export function ChatPage() {
         namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
+      // Persist for useChatStore bridge detection (provider ID → name lookup)
+      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
 
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
