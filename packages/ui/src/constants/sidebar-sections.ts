@@ -17,7 +17,7 @@ import {
   Wrench, Code, Puzzle, CheckCircle2, FileText, Target,
   ListChecks, Brain, Bookmark, Users, Repeat, Send, Wifi,
   Server, Cpu, Terminal,
-  Pin, Search, Calendar, ChevronRight, MessageSquare,
+  Search, Calendar, ChevronRight, MessageSquare,
 } from '../components/icons';
 import {
   fileWorkspacesApi, workflowsApi, agentsApi, clawsApi, triggersApi,
@@ -26,6 +26,8 @@ import {
   contactsApi, channelsApi, edgeApi, mcpApi, modelsApi, codingAgentsApi,
 } from '../api';
 import { habitsApi } from '../api/endpoints/personal-data';
+import { NAV_ITEM_MAP } from './nav-items';
+import { SIDEBAR_SECTION_LABELS } from '../types/layout-config';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -259,7 +261,6 @@ export const SECTION_GROUP_LABELS: Record<SidebarSectionGroup, string> = {
 
 /** Which group each built-in static section belongs to */
 export const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
-  pinned: 'core',
   search: 'core',
   scheduled: 'core',
   customize: 'core',
@@ -268,29 +269,43 @@ export const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
 
 /** Icons for static sections (not in the data registry) */
 export const STATIC_SECTION_ICONS: Record<string, IconComponent> = {
-  pinned: Pin,
   search: Search,
   scheduled: Calendar,
   customize: ChevronRight,
   recents: MessageSquare,
 };
 
+/** Check if a section ID is a route path (nav item) vs a named section */
+export function isNavItemSection(sectionId: string): boolean {
+  return sectionId.startsWith('/');
+}
+
 /** Check if a section ID is a registry-backed data section */
 export function isDataSection(sectionId: string): boolean {
   return sectionId in SIDEBAR_DATA_SECTIONS;
 }
 
-/** Get the icon for any section (static or data) */
+/** Get the icon for any section — checks static, data registry, and NAV_ITEM_MAP */
 export function getSectionIcon(sectionId: string): IconComponent | undefined {
   if (sectionId in STATIC_SECTION_ICONS) return STATIC_SECTION_ICONS[sectionId];
   const def = SIDEBAR_DATA_SECTIONS[sectionId];
-  return def?.icon;
+  if (def) return def.icon;
+  if (isNavItemSection(sectionId)) return NAV_ITEM_MAP.get(sectionId)?.icon;
+  return undefined;
 }
 
-/** Get the group for any section (static or data) */
+/** Get human label for any section */
+export function getSectionLabel(sectionId: string): string {
+  if (sectionId in SIDEBAR_SECTION_LABELS) return SIDEBAR_SECTION_LABELS[sectionId]!;
+  if (isNavItemSection(sectionId)) return NAV_ITEM_MAP.get(sectionId)?.label ?? sectionId;
+  return sectionId;
+}
+
+/** Get the group for any section (static, data, or nav item) */
 export function getSectionGroup(sectionId: string): SidebarSectionGroup {
   if (sectionId in STATIC_SECTION_GROUPS) return STATIC_SECTION_GROUPS[sectionId]!;
   const def = SIDEBAR_DATA_SECTIONS[sectionId];
   if (def) return def.group;
+  if (isNavItemSection(sectionId)) return 'core'; // nav items are core navigation
   return 'system'; // fallback for unknown sections
 }

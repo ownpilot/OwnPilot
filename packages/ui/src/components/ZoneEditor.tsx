@@ -13,8 +13,8 @@ import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
 import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, ListChecks, Minus } from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
-import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, SECTION_DEFAULT_STYLES, type SidebarWidth } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, getSectionIcon, getSectionGroup as getGroup, type SidebarSectionGroup } from '../constants/sidebar-sections';
+import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, type SidebarWidth } from '../types/layout-config';
+import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, getSectionIcon, getSectionLabel, getSectionGroup as getGroup, type SidebarSectionGroup } from '../constants/sidebar-sections';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',
@@ -345,10 +345,13 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
 
 // ─── Sidebar Zone: Section Visibility, Ordering, Width ──────────────────
 
-/** All section IDs available for adding — derived from SIDEBAR_SECTION_LABELS */
-const ALL_ADDABLE_SECTION_IDS = Object.keys(SIDEBAR_SECTION_LABELS).filter(
-  (id) => !CORE_SECTION_IDS.has(id)
-);
+/** All section IDs available for adding — data sections + nav items */
+const ALL_ADDABLE_SECTION_IDS = [
+  // Data sections from labels (exclude core — they're always present)
+  ...Object.keys(SIDEBAR_SECTION_LABELS).filter((id) => !CORE_SECTION_IDS.has(id)),
+  // Nav items (route paths like '/', '/dashboard')
+  ...ALL_NAV_ITEMS.map((item) => item.to),
+];
 
 /** Group each addable section for the dropdown */
 function getAddableSectionGroup(id: string): SidebarSectionGroup {
@@ -400,7 +403,7 @@ function SidebarZoneEditor() {
     <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/5 p-4 space-y-4">
       <h3 className="text-sm font-medium text-primary">Sidebar</h3>
       <p className="text-xs text-text-muted dark:text-dark-text-muted">
-        Add or remove sections, drag to reorder. Core sections (Pinned, Search, Customize) are always shown.
+        Add or remove sections, drag to reorder. Core sections (Search, Customize) are always shown.
       </p>
 
       {/* Width selector */}
@@ -432,7 +435,7 @@ function SidebarZoneEditor() {
 
         <div className="space-y-1">
           {sections.map((section, i) => {
-            const sectionLabel = SIDEBAR_SECTION_LABELS[section.id] ?? section.id;
+            const sectionLabel = getSectionLabel(section.id);
             const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
             const isDataSection = section.id in SIDEBAR_DATA_SECTIONS_MAP || section.id === 'recents';
             const isCore = CORE_SECTION_IDS.has(section.id);
@@ -513,8 +516,8 @@ function SidebarZoneEditor() {
                     {SECTION_GROUP_LABELS[group as SidebarSectionGroup] ?? group}
                   </p>
                   {ids.map((id) => {
-                    const def = SIDEBAR_DATA_SECTIONS_MAP[id];
-                    const Icon = def?.icon;
+                    const Icon = getSectionIcon(id);
+                    const label = getSectionLabel(id);
                     return (
                       <button
                         key={id}
@@ -522,10 +525,7 @@ function SidebarZoneEditor() {
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
                       >
                         {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
-                        <span className="truncate">{SIDEBAR_SECTION_LABELS[id] ?? id}</span>
-                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">
-                          {SECTION_DEFAULT_STYLES[id] === 'accordion' ? 'list' : 'link'}
-                        </span>
+                        <span className="truncate">{label}</span>
                       </button>
                     );
                   })}

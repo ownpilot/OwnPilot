@@ -21,8 +21,6 @@ import {
   type SidebarPinnedConfig,
   DEFAULT_LAYOUT_CONFIG,
   DEFAULT_SIDEBAR_SECTIONS,
-  DEFAULT_PINNED_ITEMS,
-  MAX_PINNED_ITEMS,
   LAYOUT_CONFIG_VERSION,
   CORE_SECTION_IDS,
   SECTION_DEFAULT_STYLES,
@@ -185,44 +183,79 @@ function migrateConfig(raw: unknown): LayoutConfig {
     });
   }
 
-  // V6 → V7: absorb pinnedItems from separate localStorage key into LayoutConfig
+  // V6 → V7: convert pinned items to nav item sections, remove 'pinned' section, drop pinnedItems field
   if (typeof obj.version === 'number' && obj.version === 6) {
     const config = obj as unknown as LayoutConfig;
-    let pinnedItems: SidebarPinnedConfig[] = [...DEFAULT_PINNED_ITEMS];
-    try {
-      const raw = localStorage.getItem('ownpilot-sidebar-pinned');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          if (typeof parsed[0] === 'string') {
-            // Legacy string[] format
-            pinnedItems = parsed.map((path: string) => ({ type: 'item' as const, path }));
-          } else if (parsed.every(isValidPinnedConfig)) {
-            pinnedItems = parsed;
+    const oldSections = config.sidebar?.sections ?? [];
+
+    // Read pinned items from either config.sidebar.pinnedItems or old localStorage key
+    let pinnedPaths: string[] = [];
+    const sidebarObj = config.sidebar as unknown as Record<string, unknown>;
+    const configPinned = sidebarObj?.pinnedItems;
+    if (Array.isArray(configPinned)) {
+      pinnedPaths = configPinned
+        .filter((c: SidebarPinnedConfig) => c.type === 'item')
+        .map((c: SidebarPinnedConfig) => c.type === 'item' ? c.path : '');
+    }
+    // Fallback: old localStorage key
+    if (pinnedPaths.length === 0) {
+      try {
+        const raw = localStorage.getItem('ownpilot-sidebar-pinned');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            if (parsed.length > 0 && typeof parsed[0] === 'string') {
+              pinnedPaths = parsed;
+            } else if (parsed.every(isValidPinnedConfig)) {
+              pinnedPaths = parsed.filter((c: SidebarPinnedConfig) => c.type === 'item').map((c: SidebarPinnedConfig) => c.type === 'item' ? c.path : '');
+            }
           }
         }
-        // Clean up old key after successful migration
-        localStorage.removeItem('ownpilot-sidebar-pinned');
-      }
-    } catch { /* ignore malformed data */ }
+      } catch { /* ignore */ }
+    }
+    // Default if nothing found
+    if (pinnedPaths.length === 0) pinnedPaths = ['/', '/dashboard'];
+
+    // Remove 'pinned' section, convert pinned paths to nav item sections at the top
+    const withoutPinned = oldSections.filter((s) => s.id !== 'pinned');
+    const existingIds = new Set(withoutPinned.map((s) => s.id));
+    const navSections: SidebarSectionConfig[] = pinnedPaths
+      .filter((p) => !existingIds.has(p))
+      .map((path, i) => ({ id: path, order: i }));
+    const reindexed = [...navSections, ...withoutPinned]
+      .map((s, i) => ({ ...s, order: i }));
+
+    // Clean up old localStorage key
+    try { localStorage.removeItem('ownpilot-sidebar-pinned'); } catch { /* ignore */ }
+
     return {
       ...config,
       version: LAYOUT_CONFIG_VERSION,
       sidebar: {
-        ...config.sidebar,
-        pinnedItems,
+        width: config.sidebar?.width ?? 'default',
+        sections: reindexed,
       },
     };
   }
 
   if (isValidConfig(obj)) {
-    // Strip any leftover 'footer' section from pre-v4.1 configs
+    // Strip leftover 'footer' and 'pinned' sections from old configs
     const config = { ...obj, version: LAYOUT_CONFIG_VERSION } as LayoutConfig;
     if (config.sidebar?.sections) {
-      config.sidebar = {
-        ...config.sidebar,
-        sections: config.sidebar.sections.filter((s) => s.id !== 'footer'),
-      };
+      const hasPinned = config.sidebar.sections.some((s) => s.id === 'pinned');
+      const hasFooter = config.sidebar.sections.some((s) => s.id === 'footer');
+      if (hasPinned || hasFooter) {
+        // If 'pinned' exists, convert to nav item sections
+        let sections = config.sidebar.sections.filter((s) => s.id !== 'footer' && s.id !== 'pinned');
+        if (hasPinned) {
+          // Add default nav items if not already present
+          const ids = new Set(sections.map((s) => s.id));
+          const defaults = ['/', '/dashboard'].filter((p) => !ids.has(p));
+          sections = [...defaults.map((id, i) => ({ id, order: i })), ...sections]
+            .map((s, i) => ({ ...s, order: i }));
+        }
+        config.sidebar = { ...config.sidebar, sections };
+      }
     }
     return config;
   }
@@ -235,14 +268,13 @@ function readConfig(): LayoutConfig {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (isValidConfig(parsed) && parsed.version === LAYOUT_CONFIG_VERSION) {
-        // Strip leftover 'footer' from pre-removal configs (footer is now structural)
-        if (parsed.sidebar?.sections?.some((s: { id: string }) => s.id === 'footer')) {
-          const cleaned = {
-            ...parsed,
-            sidebar: { ...parsed.sidebar, sections: parsed.sidebar.sections.filter((s: { id: string }) => s.id !== 'footer') },
-          };
-          persistConfig(cleaned);
-          return cleaned;
+        // Strip leftover 'footer'/'pinned' from old configs that were already at V7
+        const hasPinned = parsed.sidebar?.sections?.some((s: { id: string }) => s.id === 'pinned');
+        const hasFooter = parsed.sidebar?.sections?.some((s: { id: string }) => s.id === 'footer');
+        if (hasPinned || hasFooter) {
+          const migrated = migrateConfig({ ...parsed, version: 6 }); // re-run V6→V7
+          persistConfig(migrated);
+          return migrated;
         }
         return parsed;
       }
@@ -285,14 +317,6 @@ interface LayoutConfigValue {
   reorderSidebarSections: (sections: SidebarSectionConfig[]) => void;
   setSidebarWidth: (width: SidebarWidth) => void;
   getSidebarSections: () => SidebarSectionConfig[];
-  // Pinned items helpers (data now lives in config.sidebar.pinnedItems)
-  getPinnedConfigs: () => SidebarPinnedConfig[];
-  setPinnedConfigs: (updater: SidebarPinnedConfig[] | ((prev: SidebarPinnedConfig[]) => SidebarPinnedConfig[])) => void;
-  getPinnedItemPaths: () => string[];
-  setPinnedItemPaths: (updater: string[] | ((prev: string[]) => string[])) => void;
-  addPinnedGroup: (id: string, label: string, items: string[]) => void;
-  isPinnedGroup: (groupId: string) => boolean;
-  togglePinnedGroup: (id: string, label: string, items: string[]) => void;
 }
 
 const LayoutConfigContext = createContext<LayoutConfigValue | null>(null);
@@ -495,78 +519,9 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
     [config],
   );
 
-  // --- Pinned items helpers ---
-
-  const getPinnedConfigs = useCallback(
-    (): SidebarPinnedConfig[] => config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS,
-    [config],
-  );
-
-  const setPinnedConfigs = useCallback(
-    (updater: SidebarPinnedConfig[] | ((prev: SidebarPinnedConfig[]) => SidebarPinnedConfig[])) => {
-      setConfig((prev) => {
-        const current = prev.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS;
-        const next = typeof updater === 'function' ? updater(current) : updater;
-        return { ...prev, sidebar: { ...prev.sidebar, pinnedItems: next } };
-      });
-    },
-    [setConfig],
-  );
-
-  const getPinnedItemPaths = useCallback(
-    (): string[] => (config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS)
-      .filter((c): c is Extract<SidebarPinnedConfig, { type: 'item' }> => c.type === 'item')
-      .map((c) => c.path),
-    [config],
-  );
-
-  const setPinnedItemPaths = useCallback(
-    (updater: string[] | ((prev: string[]) => string[])) => {
-      setPinnedConfigs((prevConfigs) => {
-        const prevPaths = prevConfigs
-          .filter((c): c is Extract<SidebarPinnedConfig, { type: 'item' }> => c.type === 'item')
-          .map((c) => c.path);
-        const nextPaths = typeof updater === 'function' ? updater(prevPaths) : updater;
-        const groups = prevConfigs.filter((c) => c.type === 'group');
-        const items: SidebarPinnedConfig[] = nextPaths.map((path) => ({ type: 'item', path }));
-        return [...items, ...groups];
-      });
-    },
-    [setPinnedConfigs],
-  );
-
-  const addPinnedGroup = useCallback(
-    (id: string, label: string, items: string[]) => {
-      setPinnedConfigs((prev) => {
-        if (prev.length >= MAX_PINNED_ITEMS) return prev;
-        if (prev.some((c) => c.type === 'group' && c.id === id)) return prev;
-        return [...prev, { type: 'group', id, label, items }];
-      });
-    },
-    [setPinnedConfigs],
-  );
-
-  const isPinnedGroup = useCallback(
-    (groupId: string): boolean =>
-      (config.sidebar.pinnedItems ?? DEFAULT_PINNED_ITEMS).some((c) => c.type === 'group' && c.id === groupId),
-    [config],
-  );
-
-  const togglePinnedGroup = useCallback(
-    (id: string, label: string, items: string[]) => {
-      setPinnedConfigs((prev) => {
-        const exists = prev.some((c) => c.type === 'group' && c.id === id);
-        if (exists) return prev.filter((c) => !(c.type === 'group' && c.id === id));
-        if (prev.length >= MAX_PINNED_ITEMS) return prev;
-        return [...prev, { type: 'group', id, label, items }];
-      });
-    },
-    [setPinnedConfigs],
-  );
-
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections, getPinnedConfigs, setPinnedConfigs, getPinnedItemPaths, setPinnedItemPaths, addPinnedGroup, isPinnedGroup, togglePinnedGroup }}
+      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
     >
       {children}
     </LayoutConfigContext.Provider>

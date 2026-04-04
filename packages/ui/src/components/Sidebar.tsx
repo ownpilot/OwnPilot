@@ -8,14 +8,13 @@
 import { useRef, useState, useMemo } from 'react';
 import { NavLink, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import type { ConnectionStatus } from '../hooks/useWebSocket';
-import { usePinnedItems, type SidebarPinnedConfig } from '../hooks/usePinnedItems';
 import { useChatStore } from '../hooks/useChatStore';
 import { useSidebarRecents, getConvTitle } from '../hooks/useSidebarRecents';
 import type { SourceFilter } from '../hooks/useSidebarRecents';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { NAV_ITEM_MAP } from '../constants/nav-items';
 import { SIDEBAR_WIDTH_VALUES, DEFAULT_SIDEBAR_SECTIONS } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS, getSectionGroup } from '../constants/sidebar-sections';
+import { SIDEBAR_DATA_SECTIONS, getSectionGroup, isNavItemSection } from '../constants/sidebar-sections';
 import { SidebarFooter } from './sidebar/SidebarFooter';
 import { SidebarDataSection } from './sidebar/SidebarDataSection';
 import { useToast } from './ToastProvider';
@@ -84,56 +83,7 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
   );
 }
 
-function PinnedNavGroup({ config, onCloseCustomize, isCustomizeOpen }: { config: Extract<SidebarPinnedConfig, { type: 'group' }>; onCloseCustomize?: () => void; isCustomizeOpen?: boolean }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const hasActiveChild = config.items.some((path) => location.pathname === path);
-
-  return (
-    <div>
-      <button
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
-          (hasActiveChild && !isCustomizeOpen) || isOpen
-            ? 'bg-primary/10 text-primary'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
-        }`}
-      >
-        <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`} />
-        <span className="truncate flex-1 text-left">{config.label}</span>
-        <span className="text-[10px] opacity-50">{config.items.length}</span>
-      </button>
-      {isOpen && (
-        <div className="ml-3 pl-2 border-l border-border dark:border-dark-border space-y-0.5 mt-0.5">
-          {config.items.map((path) => {
-            const navItem = NAV_ITEM_MAP.get(path);
-            if (!navItem) return null;
-            const Icon = navItem.icon;
-            const isActive = location.pathname === path;
-            return (
-              <button
-                key={path}
-                onClick={() => { onCloseCustomize?.(); navigate(path); }}
-                className={`w-full flex items-center gap-2 px-2 py-1 rounded-md transition-colors text-sm ${
-                  isActive && !isCustomizeOpen
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{navItem.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeToggle, isCustomizeOpen, onCloseCustomize, wsStatus, badgeCounts }: SidebarProps) {
-  const { pinnedConfigs } = usePinnedItems();
   const recents = useSidebarRecents();
   const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
@@ -243,45 +193,28 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
             );
           }
 
-          switch (section.id) {
-            case 'pinned':
-              return (
-                <div key="pinned" className="space-y-0.5" data-testid="sidebar-pinned-items">
-                  {pinnedConfigs.map((cfg) => {
-                    if (cfg.type === 'item') {
-                      const item = NAV_ITEM_MAP.get(cfg.path);
-                      if (!item) return null;
-                      return (
-                        <PinnedNavLink
-                          key={cfg.path}
-                          item={item}
-                          onCloseCustomize={onCloseCustomize}
-                          isCustomizeOpen={isCustomizeOpen}
-                          badge={
-                            cfg.path === '/inbox'
-                              ? badgeCounts.inbox
-                              : cfg.path === '/tasks'
-                                ? badgeCounts.tasks
-                                : undefined
-                          }
-                        />
-                      );
-                    }
-                    if (cfg.type === 'group') {
-                      return (
-                        <PinnedNavGroup
-                          key={cfg.id}
-                          config={cfg}
-                          onCloseCustomize={onCloseCustomize}
-                          isCustomizeOpen={isCustomizeOpen}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-              );
+          // Nav item sections — route paths like '/', '/dashboard'
+          if (isNavItemSection(section.id)) {
+            const navItem = NAV_ITEM_MAP.get(section.id);
+            if (!navItem) return null;
+            return (
+              <PinnedNavLink
+                key={section.id}
+                item={navItem}
+                onCloseCustomize={onCloseCustomize}
+                isCustomizeOpen={isCustomizeOpen}
+                badge={
+                  section.id === '/inbox'
+                    ? badgeCounts.inbox
+                    : section.id === '/tasks'
+                      ? badgeCounts.tasks
+                      : undefined
+                }
+              />
+            );
+          }
 
+          switch (section.id) {
             case 'search':
               return (
                 <button
