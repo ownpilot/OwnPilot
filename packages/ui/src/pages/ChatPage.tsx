@@ -331,8 +331,8 @@ export function ChatPage() {
   // Update model when provider changes
   const handleProviderChange = (newProvider: string) => {
     setProvider(newProvider);
-    // CLI providers don't have model selection — set empty model
-    if (newProvider.startsWith('cli-')) {
+    // CLI and bridge providers don't have model selection — set empty model
+    if (newProvider.startsWith('cli-') || newProvider.startsWith('bridge-')) {
       setModel('default');
     } else {
       const providerModels = modelsByProvider[newProvider];
@@ -532,9 +532,15 @@ export function ChatPage() {
                     <span className="font-medium text-text-primary dark:text-dark-text-primary">
                       {currentProviderName}
                     </span>
-                    {/* CLI providers don't have model selection — they use their own defaults */}
-                    {!provider.startsWith('cli-') && (
+                    {/* CLI and bridge providers don't have model selection */}
+                    {!provider.startsWith('cli-') && !provider.startsWith('bridge-') && (
                       <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
+                    )}
+                    {provider.startsWith('bridge-') && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-accent/10 text-accent">
+                        <Bot className="w-3 h-3" />
+                        {provider.replace('bridge-', '').toUpperCase()}
+                      </span>
                     )}
                   </>
                 )}
@@ -584,8 +590,8 @@ export function ChatPage() {
                         >
                           {providerNames[providerId] ?? providerId}
                         </div>
-                        {/* CLI providers don't need model selection — they handle models internally */}
-                        {provider === providerId && !providerId.startsWith('cli-') && (
+                        {/* CLI and bridge providers don't need model selection */}
+                        {provider === providerId && !providerId.startsWith('cli-') && !providerId.startsWith('bridge-') && (
                           <div className="px-2 pb-2">
                             {providerModels.map((m) => (
                               <button

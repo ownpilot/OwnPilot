@@ -264,6 +264,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         } catch {
           /* localStorage unavailable */
         }
+        // Bridge providers: signal which runtime to use (bridge-claude → claude, bridge-opencode → opencode)
+        if (provider.startsWith('bridge-')) {
+          chatHeaders['X-Runtime'] = provider.replace('bridge-', '');
+        }
 
         // Use ref to avoid stale closure — sessionId state may not be current in callback
         const currentSessionId = sessionIdRef.current;
