@@ -79,8 +79,9 @@ export function LayoutWireframe({ selectedZone, onZoneSelect }: LayoutWireframeP
     return getZone(mapped).entries.length;
   };
 
-  const sidebarVisibleCount = getSidebarSections().filter((s) => s.visible).length;
-  const sidebarTotalCount = getSidebarSections().length;
+  const sidebarSections = getSidebarSections();
+  const sidebarVisibleCount = sidebarSections.filter((s) => s.visible).length;
+  const sidebarTotalCount = sidebarSections.length;
 
   return (
     <div className="w-full max-w-lg mx-auto">
