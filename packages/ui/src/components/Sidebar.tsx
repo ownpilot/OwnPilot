@@ -16,7 +16,7 @@ import { useSidebarProjects } from '../hooks/useSidebarProjects';
 import { useSidebarWorkflows } from '../hooks/useSidebarWorkflows';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { NAV_ITEM_MAP } from '../constants/nav-items';
-import { SIDEBAR_WIDTH_VALUES } from '../types/layout-config';
+import { SIDEBAR_WIDTH_VALUES, DEFAULT_SIDEBAR_SECTIONS } from '../types/layout-config';
 import { SidebarFooter } from './sidebar/SidebarFooter';
 import { useToast } from './ToastProvider';
 import { useDialog } from './ConfirmDialog';
@@ -137,7 +137,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const recents = useSidebarRecents();
   const { projects, isLoading: projectsLoading } = useSidebarProjects();
   const { workflows, isLoading: workflowsLoading } = useSidebarWorkflows();
-  const { getSidebarSections, config: layoutConfig } = useLayoutConfig();
+  const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeConversationId = searchParams.get('conversationId');
@@ -146,11 +146,13 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const editInputRef = useRef<HTMLInputElement>(null);
 
   // Config-driven section order: visible sections sorted by order
+  // Depends on sidebar.sections specifically (not entire config) to avoid unnecessary re-renders
+  const sidebarSections = layoutConfig.sidebar.sections;
   const visibleSections = useMemo(() =>
-    getSidebarSections()
+    (sidebarSections ?? DEFAULT_SIDEBAR_SECTIONS)
       .filter((s) => s.visible)
       .sort((a, b) => a.order - b.order),
-    [getSidebarSections],
+    [sidebarSections],
   );
 
   // Desktop sidebar width from config (mobile stays fixed w-64)

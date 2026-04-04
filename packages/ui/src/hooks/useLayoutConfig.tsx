@@ -71,8 +71,8 @@ function isValidConfig(v: unknown): v is LayoutConfig {
   // V4+: validate sidebar
   if (obj.sidebar && typeof obj.sidebar === 'object') {
     const s = obj.sidebar as Record<string, unknown>;
+    if (!VALID_SIDEBAR_WIDTHS.includes(s.width as string)) return false;
     if (s.sections !== undefined) {
-      if (!VALID_SIDEBAR_WIDTHS.includes(s.width as string)) return false;
       if (!Array.isArray(s.sections) || !s.sections.every(isValidSidebarSection)) return false;
     }
   }
