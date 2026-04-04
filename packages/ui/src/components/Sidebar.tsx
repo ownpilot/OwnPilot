@@ -217,8 +217,9 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
       {/* Navigation — config-driven section rendering */}
       <nav className="flex-1 p-2 overflow-y-auto" data-testid="sidebar-nav">
-        {visibleSections.map((section) => {
-          const divider = DIVIDER_BEFORE.has(section.id) ? (
+        {visibleSections.map((section, sectionIdx) => {
+          // Show divider before data sections, but not if it's the first visible section
+          const divider = DIVIDER_BEFORE.has(section.id) && sectionIdx > 0 ? (
             <div key={`div-${section.id}`} className="border-t border-border dark:border-dark-border my-2" />
           ) : null;
 
