@@ -1,280 +1,28 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import { useAuth } from '../hooks/useAuth';
 import {
-  MessageSquare,
-  History,
-  Bot,
-  Wrench,
-  Cpu,
-  DollarSign,
-  Settings,
-  UserCircle,
-  LayoutDashboard,
-  CheckCircle2,
-  FileText,
-  Calendar,
-  Users,
-  Bookmark,
-  Database,
-  Table,
-  Brain,
-  Target,
-  Zap,
-  ListChecks,
-  Shield,
-  Puzzle,
-  HardDrive,
-  ChevronDown,
-  ChevronRight,
-  Activity,
-  Code,
-  Receipt,
-  Repeat,
-  Clock,
-  Key,
-  Globe,
-  Server,
-  Container,
-  Info,
-  Sparkles,
-  BookOpen,
   Menu,
-  X,
-  GitBranch,
-  Link,
-  LogOut,
-  Terminal,
-  ShieldCheck,
-  Send,
-  MonitorCheck,
-  Layers,
-  LayoutTemplate,
-  Wifi,
+  Settings,
 } from './icons';
 import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
-import { usePulseSlots, PulseSlotGrid } from './PulseSlots';
 import { DebugDrawer } from './DebugDrawer';
 import { MiniChat } from './MiniChat';
 import { MiniTerminal } from './MiniTerminal';
-import { MiniPomodoro } from './MiniPomodoro';
+import { Sidebar } from './Sidebar';
+import { GlobalSearchOverlay } from './GlobalSearchOverlay';
+import { PinnedItemsProvider } from '../hooks/usePinnedItems';
+import { HeaderItemsProvider } from '../hooks/useHeaderItems';
+import { navGroups } from '../constants/nav-items';
+import { LayoutConfigProvider } from '../hooks/useLayoutConfig';
+import { HeaderItemsBar } from './HeaderItemsBar';
 
-interface NavItem {
-  to: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}
-
-interface NavGroup {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  items: NavItem[];
-  defaultOpen?: boolean;
-  /** Optional badge text (e.g. "Beta") shown next to group label */
-  badge?: string;
-}
-
-// Main navigation items (always visible)
-const mainItems: NavItem[] = [
-  { to: '/', icon: MessageSquare, label: 'Chat' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/analytics', icon: Activity, label: 'Analytics' },
-  { to: '/channels', icon: Send, label: 'Channels' },
-  { to: '/history', icon: History, label: 'Conversations' },
-];
-
-// Grouped navigation
-const navGroups: NavGroup[] = [
-  {
-    id: 'data',
-    label: 'Personal Data',
-    icon: Database,
-    items: [
-      { to: '/tasks', icon: CheckCircle2, label: 'Tasks' },
-      { to: '/notes', icon: FileText, label: 'Notes' },
-      { to: '/calendar', icon: Calendar, label: 'Calendar' },
-      { to: '/contacts', icon: Users, label: 'Contacts' },
-      { to: '/bookmarks', icon: Bookmark, label: 'Bookmarks' },
-      { to: '/expenses', icon: Receipt, label: 'Expenses' },
-      { to: '/habits', icon: Repeat, label: 'Habits' },
-      { to: '/pomodoro', icon: Clock, label: 'Pomodoro' },
-    ],
-  },
-  {
-    id: 'ai',
-    label: 'AI & Automation',
-    icon: Brain,
-    items: [
-      { to: '/memories', icon: Brain, label: 'Memories' },
-      { to: '/goals', icon: Target, label: 'Goals' },
-      { to: '/plans', icon: ListChecks, label: 'Plans' },
-      { to: '/triggers', icon: Zap, label: 'Triggers' },
-      { to: '/workflows', icon: GitBranch, label: 'Workflows' },
-      { to: '/autonomous', icon: Bot, label: 'Autonomous Agents' },
-      { to: '/artifacts', icon: LayoutTemplate, label: 'Artifacts' },
-      { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
-      { to: '/autonomy', icon: Shield, label: 'Autonomy' },
-    ],
-  },
-  {
-    id: 'tools',
-    label: 'Tools & Extensions',
-    icon: Wrench,
-    items: [
-      { to: '/tools', icon: Wrench, label: 'Tools' },
-      { to: '/custom-tools', icon: Code, label: 'Custom Tools' },
-      { to: '/skills', icon: BookOpen, label: 'Skills Hub' },
-      { to: '/plugins', icon: Puzzle, label: 'Plugins' },
-    ],
-  },
-  {
-    id: 'system',
-    label: 'System',
-    icon: Cpu,
-    items: [
-      { to: '/agents', icon: Bot, label: 'Agents' },
-      { to: '/models', icon: Cpu, label: 'Models' },
-      { to: '/wizards', icon: Sparkles, label: 'Wizards' },
-      { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
-      { to: '/custom-data', icon: Database, label: 'Custom Data' },
-      { to: '/data-browser', icon: Table, label: 'Data Browser' },
-      { to: '/costs', icon: DollarSign, label: 'Costs' },
-      { to: '/logs', icon: Activity, label: 'Logs' },
-      { to: '/event-monitor', icon: MonitorCheck, label: 'Event Monitor' },
-    ],
-  },
-  {
-    id: 'experimental',
-    label: 'Experimental',
-    icon: Sparkles,
-    badge: 'Beta',
-    items: [
-      { to: '/claws', icon: Zap, label: 'Claws' },
-      { to: '/fleet', icon: Layers, label: 'Fleet Command' },
-      { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
-      { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
-      { to: '/orchestration', icon: Zap, label: 'Orchestration' },
-    ],
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    items: [
-      // Setup essentials
-      { to: '/settings/api-keys', icon: Key, label: 'API Keys' },
-      { to: '/settings/providers', icon: Server, label: 'Providers' },
-      { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
-      { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
-      // Security & access
-      { to: '/settings/security', icon: Shield, label: 'Security' },
-      { to: '/settings/security-scanner', icon: Activity, label: 'Security Scanner' },
-      { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
-      // Tools & integrations
-      { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },
-      { to: '/settings/coding-agents', icon: Terminal, label: 'Coding Agents' },
-      { to: '/settings/mcp-servers', icon: Zap, label: 'MCP Servers' },
-      { to: '/settings/connected-apps', icon: Link, label: 'Connected Apps' },
-      { to: '/settings/workflow-tools', icon: GitBranch, label: 'Workflow Tools' },
-      // System
-      { to: '/settings/config-center', icon: Globe, label: 'Config Center' },
-      { to: '/settings/system', icon: Container, label: 'System' },
-    ],
-  },
-];
-
-// Bottom navigation items
-const bottomItems: NavItem[] = [
-  { to: '/about', icon: Info, label: 'About' },
-  { to: '/profile', icon: UserCircle, label: 'Profile' },
-];
-
-function NavItemLink({
-  item,
-  compact = false,
-  badge,
-}: {
-  item: NavItem;
-  compact?: boolean;
-  badge?: number;
-}) {
-  const Icon = item.icon;
-  return (
-    <NavLink
-      to={item.to}
-      end={item.to === '/'}
-      className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-sm ${
-          isActive
-            ? 'bg-primary text-white shadow-sm border-l-[3px] border-white/50'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
-        } ${compact ? 'pl-8' : ''}`
-      }
-    >
-      <Icon className="w-4 h-4 shrink-0" />
-      <span className="truncate flex-1">{item.label}</span>
-      {badge != null && badge > 0 && (
-        <span className="ml-auto min-w-[1.25rem] h-5 px-1 flex items-center justify-center rounded-full bg-error text-white text-[10px] font-bold leading-none">
-          {badge > 99 ? '99+' : badge}
-        </span>
-      )}
-    </NavLink>
-  );
-}
-
-function CollapsibleGroup({
-  group,
-  isOpen,
-  onToggle,
-}: {
-  group: NavGroup;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  const location = useLocation();
-  const Icon = group.icon;
-  const isActive = group.items.some(
-    (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-  );
-
-  return (
-    <div className="space-y-0.5">
-      <button
-        onClick={onToggle}
-        className={`w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-colors text-sm ${
-          isActive && !isOpen
-            ? 'bg-primary/10 text-primary'
-            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-        }`}
-      >
-        <Icon className="w-4 h-4 shrink-0" />
-        <span className="flex-1 text-left font-medium">{group.label}</span>
-        {group.badge && (
-          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:text-amber-400">
-            {group.badge}
-          </span>
-        )}
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 shrink-0" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 shrink-0" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="space-y-0.5">
-          {group.items.map((item) => (
-            <NavItemLink key={item.to} item={item} compact />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+const CustomizePage = lazy(() =>
+  import('../pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
+);
 
 const CONNECTION_STYLES: Record<
   ConnectionStatus,
@@ -286,32 +34,35 @@ const CONNECTION_STYLES: Record<
   error: { color: 'bg-error', pulse: false, label: 'Connection Error' },
 };
 
-function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
-  const style = CONNECTION_STYLES[status];
-  return (
-    <div className="flex items-center gap-2 px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted">
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${style.color} ${style.pulse ? 'animate-pulse' : ''}`}
-        aria-hidden="true"
-      />
-      <span>{style.label}</span>
-    </div>
-  );
-}
-
 export function Layout() {
   const { status: wsStatus } = useGateway();
-  const { passwordConfigured, logout } = useAuth();
   const isMobile = useIsMobile();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isStatsPanelCollapsed, setIsStatsPanelCollapsed] = useState(true);
-  const { slots: pulseSlots } = usePulseSlots();
+  // PulseSlotGrid removed from header — available as widget in zone config
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCustomizePanelOpen, setIsCustomizePanelOpen] = useState(false);
+  const [isSettingsDropdownOpen, setIsSettingsDropdownOpen] = useState(false);
+  const settingsDropdownRef = useRef<HTMLDivElement>(null);
   const [badgeCounts, setBadgeCounts] = useState<BadgeCounts>({ inbox: 0, tasks: 0 });
   const handleBadgeUpdate = useCallback(
     (updater: (prev: BadgeCounts) => BadgeCounts) => setBadgeCounts(updater),
     []
   );
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleCustomizeToggle = useCallback(() => {
+    const willOpen = !isCustomizePanelOpen;
+    setIsCustomizePanelOpen(willOpen);
+    if (willOpen) {
+      navigate('/');
+    }
+  }, [isCustomizePanelOpen, navigate]);
+
+  const handleCloseCustomize = useCallback(() => {
+    setIsCustomizePanelOpen(false);
+  }, []);
 
   // Close mobile sidebar on navigation
   useEffect(() => {
@@ -328,71 +79,117 @@ export function Layout() {
     }
   }, [location.pathname]);
 
-  // Initialize open groups based on current path
-  const getInitialOpenGroups = () => {
-    const openGroups: Record<string, boolean> = {};
-    navGroups.forEach((group) => {
-      const isActive = group.items.some(
-        (item) => location.pathname === item.to || location.pathname.startsWith(item.to + '/')
-      );
-      openGroups[group.id] = isActive || group.defaultOpen || false;
-    });
-    return openGroups;
-  };
-
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    // Restore from localStorage, fallback to initial
-    try {
-      const saved = localStorage.getItem('ownpilot_nav_groups');
-      if (saved) return { ...getInitialOpenGroups(), ...JSON.parse(saved) };
-    } catch {
-      /* ignore */
-    }
-    return getInitialOpenGroups();
-  });
-
-  const toggleGroup = (groupId: string) => {
-    setOpenGroups((prev) => {
-      const next = { ...prev, [groupId]: !prev[groupId] };
-      try {
-        localStorage.setItem('ownpilot_nav_groups', JSON.stringify(next));
-      } catch {
-        /* ignore */
+  // Global Ctrl+K / Cmd+K to open search overlay
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
       }
-      return next;
-    });
-  };
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Close settings dropdown on click-outside or Escape
+  useEffect(() => {
+    if (!isSettingsDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (settingsDropdownRef.current && !settingsDropdownRef.current.contains(e.target as Node)) {
+        setIsSettingsDropdownOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsSettingsDropdownOpen(false); };
+    document.addEventListener('mousedown', handleClick);
+    window.addEventListener('keydown', handleKey);
+    return () => { document.removeEventListener('mousedown', handleClick); window.removeEventListener('keydown', handleKey); };
+  }, [isSettingsDropdownOpen]);
+
+  const settingsGroup = navGroups.find((g) => g.id === 'settings');
 
   const connectionStyle = CONNECTION_STYLES[wsStatus];
 
   return (
-    <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
-      {/* Global Header Bar */}
-      <header className="h-12 flex items-center px-4 gap-3 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
-        {isMobile && (
-          <button
-            onClick={() => setIsMobileSidebarOpen(true)}
-            className="p-1 -ml-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-            aria-label="Open menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        )}
-        <h1 className="font-semibold text-text-primary dark:text-dark-text-primary whitespace-nowrap text-sm">
-          OwnPilot
-        </h1>
-        <div className="flex-1 flex justify-center">
-          <PulseSlotGrid slots={pulseSlots} compact={isMobile} />
+    <LayoutConfigProvider>
+      <HeaderItemsProvider>
+        <PinnedItemsProvider>
+        <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
+      {/* Global Header Bar — 5 zones: Brand | Left | Center | Right | Settings */}
+      <header className="relative h-12 flex items-center px-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
+        {/* Zone 1: Brand (fixed) */}
+        <div className="flex items-center gap-2 shrink-0">
+          {isMobile && (
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="p-1 -ml-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+          <h1 className="font-semibold text-text-primary dark:text-dark-text-primary whitespace-nowrap text-sm">
+            OwnPilot
+          </h1>
         </div>
-        <MiniPomodoro />
-        <span
-          className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
-          title={connectionStyle.label}
-        />
+
+        {/* Zones 2-4: Configurable header zones (desktop only) */}
+        {!isMobile && (
+          <>
+            <div className="w-px h-5 bg-border dark:bg-dark-border mx-3 shrink-0" />
+            <HeaderItemsBar />
+          </>
+        )}
+
+        {/* Spacer — pushes settings to far right */}
+        <div className="flex-1" />
+
+        {/* Zone 5: Settings dropdown + status (fixed) */}
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+          <span
+            className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
+            title={connectionStyle.label}
+          />
+          <div ref={settingsDropdownRef} className="relative">
+            <button
+              onClick={() => setIsSettingsDropdownOpen((prev) => !prev)}
+              className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+                isSettingsDropdownOpen
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+              }`}
+              title="Settings"
+              aria-label="Settings menu"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            {isSettingsDropdownOpen && settingsGroup && (
+              <div className="absolute top-full right-0 mt-1 min-w-[200px] max-h-[320px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+                {settingsGroup.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.to;
+                  return (
+                    <button
+                      key={item.to}
+                      onClick={() => { navigate(item.to); setIsSettingsDropdownOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm transition-colors ${
+                        isActive
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* Body: sidebar + content + stats */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="relative z-0 flex flex-1 overflow-hidden min-h-0">
         {/* Backdrop (mobile only, when sidebar open) */}
         {isMobile && isMobileSidebarOpen && (
           <div
@@ -402,89 +199,24 @@ export function Layout() {
           />
         )}
 
-        {/* Left Sidebar - Navigation */}
-        <aside
-          className={
-            isMobile
-              ? `fixed inset-y-0 left-0 z-40 w-64 bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col transform transition-transform duration-200 ease-out ${
-                  isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`
-              : 'w-56 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col'
-          }
-        >
-          {/* Mobile close button */}
-          {isMobile && (
-            <div className="p-3 border-b border-border dark:border-dark-border flex items-center justify-end">
-              <button
-                onClick={() => setIsMobileSidebarOpen(false)}
-                className="p-1 rounded-md text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-                aria-label="Close menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+        <Sidebar
+          isMobile={isMobile}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          onSearchOpen={() => setIsSearchOpen(true)}
+          onCustomizeToggle={handleCustomizeToggle}
+          isCustomizeOpen={isCustomizePanelOpen}
+          onCloseCustomize={handleCloseCustomize}
+          wsStatus={wsStatus}
+          badgeCounts={badgeCounts}
+        />
 
-          {/* Navigation */}
-          <nav className="flex-1 p-2 overflow-y-auto">
-            {/* Main Items */}
-            <div className="space-y-0.5 mb-3">
-              {mainItems.map((item) => (
-                <NavItemLink
-                  key={item.to}
-                  item={item}
-                  badge={
-                    item.to === '/inbox'
-                      ? badgeCounts.inbox
-                      : item.to === '/tasks'
-                        ? badgeCounts.tasks
-                        : undefined
-                  }
-                />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-border dark:border-dark-border my-2" />
-
-            {/* Grouped Items */}
-            <div className="space-y-1">
-              {navGroups.map((group) => (
-                <CollapsibleGroup
-                  key={group.id}
-                  group={group}
-                  isOpen={openGroups[group.id] || false}
-                  onToggle={() => toggleGroup(group.id)}
-                />
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-border dark:border-dark-border my-2" />
-
-            {/* Bottom Items */}
-            <div className="space-y-0.5">
-              {bottomItems.map((item) => (
-                <NavItemLink key={item.to} item={item} />
-              ))}
-            </div>
-          </nav>
-
-          {/* Status */}
-          <div className="p-2 border-t border-border dark:border-dark-border space-y-1">
-            {passwordConfigured && (
-              <button
-                onClick={() => logout()}
-                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-text-muted dark:text-dark-text-muted hover:bg-error/10 hover:text-error transition-colors"
-                title="Log out"
-              >
-                <LogOut className="w-3.5 h-3.5 shrink-0" />
-                <span className="flex-1 text-left">Log Out</span>
-              </button>
-            )}
-            <ConnectionIndicator status={wsStatus} />
-          </div>
-        </aside>
+        {/* Customize Panel (persistent — survives route changes) */}
+        {isCustomizePanelOpen && (
+          <Suspense fallback={null}>
+            <CustomizePage />
+          </Suspense>
+        )}
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -494,12 +226,12 @@ export function Layout() {
           </main>
         </div>
 
-        {/* Right Sidebar - Stats Panel (desktop only) */}
+        {/* Right Sidebar - Stats or Detail Panel (desktop only) */}
         {!isMobile && (
-          <StatsPanel
-            isCollapsed={isStatsPanelCollapsed}
-            onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
-          />
+            <StatsPanel
+              isCollapsed={isStatsPanelCollapsed}
+              onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
+            />
         )}
       </div>
 
@@ -514,6 +246,12 @@ export function Layout() {
 
       {/* Debug Drawer */}
       <DebugDrawer />
-    </div>
+
+      {/* Global Search Overlay */}
+      {isSearchOpen && <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />}
+        </div>
+        </PinnedItemsProvider>
+      </HeaderItemsProvider>
+    </LayoutConfigProvider>
   );
 }

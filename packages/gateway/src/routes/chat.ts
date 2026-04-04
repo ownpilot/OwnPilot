@@ -269,10 +269,38 @@ chatRoutes.post('/', async (c) => {
   }
 
   // Load conversation if specified
+  console.log(`[SESSION-FIX] body.conversationId=${body.conversationId ?? 'NONE'}, agent.conv=${agent.getConversation().id.slice(0,8)}`);
   if (body.conversationId) {
-    const loaded = agent.loadConversation(body.conversationId);
+    let loaded = agent.loadConversation(body.conversationId);
+    console.log(`[SESSION-FIX] loadConversation(${body.conversationId.slice(0,8)}) = ${loaded}`);
+
+    // DB fallback: if conversation exists in DB but not in agent memory
+    // (agent was reset/evicted), reconstruct it from database messages.
+    // Pattern reference: LibreChat BaseClient.loadHistory() + Chatwoot session_registry
     if (!loaded) {
-      return notFoundError(c, 'Conversation', body.conversationId);
+      const chatRepo = new ChatRepository(getUserId(c));
+      const dbData = await chatRepo.getConversationWithMessages(body.conversationId);
+      if (dbData) {
+        // Create conversation in agent memory with the ORIGINAL DB ID
+        agent.getMemory().createWithId(
+          dbData.conversation.id,
+          dbData.conversation.systemPrompt ?? undefined,
+          { restoredFromDb: true, restoredAt: new Date().toISOString() }
+        );
+        // Replay messages from DB into agent memory
+        for (const msg of dbData.messages) {
+          if (msg.role === 'user') {
+            agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
+          } else if (msg.role === 'assistant') {
+            agent.getMemory().addAssistantMessage(dbData.conversation.id, msg.content);
+          }
+        }
+        // Now loadConversation should find it in memory
+        loaded = agent.loadConversation(body.conversationId);
+      }
+      if (!loaded) {
+        return notFoundError(c, 'Conversation', body.conversationId);
+      }
     }
   }
 

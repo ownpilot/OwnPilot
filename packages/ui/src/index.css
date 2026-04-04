@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 
 /* Configure dark mode to use class-based selector instead of media query */
-@variant dark (&:where(.dark, .dark *));
+/* Both .dark and .claude are dark themes — claude overrides the color palette */
+@variant dark (&:where(.dark, .dark *, .claude, .claude *));
 
 /* Custom CSS variables for theming */
 @theme {
@@ -73,6 +74,66 @@ html.dark body {
 .dark {
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/*
+ * Claude Desktop Theme — extracted from Claude Desktop app CSS
+ *
+ * Updated 2026-04: colors extracted directly from Claude Desktop app bundle
+ * (/Applications/Claude.app/Contents/Resources/ion-dist/assets/v1/*.css)
+ * using [data-theme=claude][data-mode=dark] + [data-color-version=v2] tokens.
+ *
+ * Palette primitives: _gray-750..900, _brand-clay (HSL values from app CSS)
+ * Converted to hex for CSS variable compatibility.
+ *
+ * bg-000 = _gray-750 (17% lightness) — lightest dark bg (sidebar/cards)
+ * bg-100 = _gray-800 (12% lightness) — main content bg
+ * bg-200 = _gray-840 (9% lightness)  — elevated surfaces
+ * bg-300 = _gray-860 (7% lightness)  — deep backgrounds
+ * text-000 = _gray-20 (97% lightness) — primary text
+ * text-200 = _gray-200 (74% lightness) — secondary text
+ * text-400 = _gray-350 (57% lightness) — muted text
+ * brand-clay = hsl(14.8 63.1% 59.6%) — terracotta accent
+ */
+.claude {
+  /* Backgrounds — from gray-750/800/840 (slightly warm dark grays) */
+  --color-dark-bg-primary: #1f1f1d;
+  --color-dark-bg-secondary: #2c2c2a;
+  --color-dark-bg-tertiary: #353533;
+
+  /* Text — gray-20/200/350 (warm neutral grays) */
+  --color-dark-text-primary: #f8f8f6;
+  --color-dark-text-secondary: #c2c1b6;
+  --color-dark-text-muted: #96948b;
+
+  /* Border — gray-600 at ~20% opacity approximated as solid */
+  --color-dark-border: #3a3a38;
+
+  /* Terracotta accent — _brand-clay from Claude Desktop */
+  --color-primary: #d87756;
+  --color-primary-dark: #c6613f;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Claude mode body styles */
+.claude body,
+html.claude body {
+  background-color: var(--color-dark-bg-primary);
+  color: var(--color-dark-text-primary);
+}
+
+/* Claude mode scrollbar */
+.claude ::-webkit-scrollbar-track {
+  background-color: var(--color-dark-bg-secondary);
+}
+.claude ::-webkit-scrollbar-thumb {
+  background-color: var(--color-dark-text-muted);
+}
+.claude ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-dark-text-secondary);
 }
 
 /* Card elevation utilities */

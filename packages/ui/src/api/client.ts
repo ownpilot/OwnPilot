@@ -322,9 +322,11 @@ function createApiClient(config: ApiClientConfig) {
 // Singleton
 // ============================================================================
 
-/** Global API client instance. Configured with /api/v1 base path. */
+/** Global API client instance. Configured with /api/v1 base path.
+ *  When VITE_API_BASE is set (e.g. "http://localhost:8080"), fetches go directly
+ *  to the gateway — bypassing Vite proxy (which is broken on Node.js 24). */
 export const apiClient = createApiClient({
-  basePath: '/api/v1',
+  basePath: `${import.meta.env.VITE_API_BASE || ''}/api/v1`,
 });
 
 export type ApiClient = ReturnType<typeof createApiClient>;

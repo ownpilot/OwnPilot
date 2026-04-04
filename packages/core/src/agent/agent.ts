@@ -278,6 +278,9 @@ export class Agent {
         toolChoice: 'auto' as const,
         stream: options?.stream ?? false,
         thinking: options?.thinking,
+        metadata: {
+          conversationId: this.state.conversation.id,
+        },
       };
 
       // Notify that we're about to call the model
