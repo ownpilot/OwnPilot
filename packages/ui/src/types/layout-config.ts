@@ -94,7 +94,7 @@ export interface SidebarSectionConfig {
 }
 
 /** Core sections that cannot be removed from sidebar (structural UI controls) */
-export const CORE_SECTION_IDS = new Set<string>(['pinned', 'search', 'scheduled', 'customize']);
+export const CORE_SECTION_IDS = new Set<string>(['pinned', 'search', 'customize']);
 
 /** Default styles for sections when added via "+ Add Section" */
 export const SECTION_DEFAULT_STYLES: Record<string, SidebarSectionStyle> = {
@@ -122,7 +122,7 @@ export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
 /** Human-readable labels for sidebar sections */
 export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
   // Core
-  pinned: 'Pinned Items',
+  pinned: 'Pinned',
   search: 'Search',
   scheduled: 'Scheduled',
   customize: 'Customize',

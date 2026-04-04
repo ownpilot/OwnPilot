@@ -17,6 +17,7 @@ import {
   Wrench, Code, Puzzle, CheckCircle2, FileText, Target,
   ListChecks, Brain, Bookmark, Users, Repeat, Send, Wifi,
   Server, Cpu, Terminal,
+  Pin, Search, Calendar, ChevronRight, MessageSquare,
 } from '../components/icons';
 import {
   fileWorkspacesApi, workflowsApi, agentsApi, clawsApi, triggersApi,
@@ -265,9 +266,25 @@ export const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
   recents: 'data',
 };
 
+/** Icons for static sections (not in the data registry) */
+export const STATIC_SECTION_ICONS: Record<string, IconComponent> = {
+  pinned: Pin,
+  search: Search,
+  scheduled: Calendar,
+  customize: ChevronRight,
+  recents: MessageSquare,
+};
+
 /** Check if a section ID is a registry-backed data section */
 export function isDataSection(sectionId: string): boolean {
   return sectionId in SIDEBAR_DATA_SECTIONS;
+}
+
+/** Get the icon for any section (static or data) */
+export function getSectionIcon(sectionId: string): IconComponent | undefined {
+  if (sectionId in STATIC_SECTION_ICONS) return STATIC_SECTION_ICONS[sectionId];
+  const def = SIDEBAR_DATA_SECTIONS[sectionId];
+  return def?.icon;
 }
 
 /** Get the group for any section (static or data) */

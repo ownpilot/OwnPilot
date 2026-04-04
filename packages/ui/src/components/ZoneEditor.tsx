@@ -14,7 +14,7 @@ import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripV
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
 import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, SECTION_DEFAULT_STYLES, type SidebarWidth } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, type SidebarSectionGroup } from '../constants/sidebar-sections';
+import { SIDEBAR_DATA_SECTIONS as SIDEBAR_DATA_SECTIONS_MAP, SECTION_GROUP_LABELS, getSectionIcon, getSectionGroup as getGroup, type SidebarSectionGroup } from '../constants/sidebar-sections';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',
@@ -352,10 +352,7 @@ const ALL_ADDABLE_SECTION_IDS = Object.keys(SIDEBAR_SECTION_LABELS).filter(
 
 /** Group each addable section for the dropdown */
 function getAddableSectionGroup(id: string): SidebarSectionGroup {
-  const def = SIDEBAR_DATA_SECTIONS_MAP[id];
-  if (def) return def.group;
-  if (id === 'recents') return 'data';
-  return 'system';
+  return getGroup(id);
 }
 
 function SidebarZoneEditor() {
@@ -403,7 +400,7 @@ function SidebarZoneEditor() {
     <div className="rounded-lg border border-primary/30 bg-primary/5 dark:bg-primary/5 p-4 space-y-4">
       <h3 className="text-sm font-medium text-primary">Sidebar</h3>
       <p className="text-xs text-text-muted dark:text-dark-text-muted">
-        Add or remove sections, drag to reorder. Core sections (Pinned, Search, Scheduled, Customize) are always shown.
+        Add or remove sections, drag to reorder. Core sections (Pinned, Search, Customize) are always shown.
       </p>
 
       {/* Width selector */}
@@ -440,6 +437,7 @@ function SidebarZoneEditor() {
             const isDataSection = section.id in SIDEBAR_DATA_SECTIONS_MAP || section.id === 'recents';
             const isCore = CORE_SECTION_IDS.has(section.id);
             const isFlat = section.style === 'flat';
+            const SectionIcon = getSectionIcon(section.id);
 
             return (
               <div key={section.id}>
@@ -456,6 +454,7 @@ function SidebarZoneEditor() {
                   }`}
                 >
                   <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
+                  {SectionIcon && <SectionIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />}
                   <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">
                     {sectionLabel}
                   </span>
