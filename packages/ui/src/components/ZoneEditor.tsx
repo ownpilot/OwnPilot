@@ -261,11 +261,11 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
             <Plus className="w-3 h-3" /> Add Item
           </button>
           {addMenuOpen === 'item' && (
-            <div className="absolute top-full left-0 mt-1 min-w-[200px] max-h-[200px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
+            <div className="absolute top-full left-0 mt-1 min-w-[200px] max-h-[320px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
               {availableItems.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">All items already added</p>
               ) : (
-                availableItems.slice(0, 20).map((item) => {
+                availableItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <button
@@ -562,7 +562,7 @@ function ContentZoneEditor() {
 
       {/* Page grid */}
       <div className="grid grid-cols-5 gap-1.5">
-        {ALL_NAV_ITEMS.slice(0, 20).map((item) => {
+        {ALL_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const hasMapped = item.to in PAGE_LAYOUT_REGISTRY;
           const isSelected = selectedPage === item.to;
