@@ -246,7 +246,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
           switch (section.id) {
             case 'pinned':
               return (
-                <div key="pinned" className="space-y-0.5 mb-2" data-testid="sidebar-pinned-items">
+                <div key="pinned" className="space-y-0.5" data-testid="sidebar-pinned-items">
                   {pinnedConfigs.map((cfg) => {
                     if (cfg.type === 'item') {
                       const item = NAV_ITEM_MAP.get(cfg.path);
@@ -318,7 +318,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
             case 'customize':
               return (
-                <div key="customize" className="mb-3" data-testid="sidebar-customize-link">
+                <div key="customize" data-testid="sidebar-customize-link">
                   <button
                     onClick={onCustomizeToggle}
                     className={`w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-left ${
@@ -352,7 +352,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
               return (
                 <div key="recents">
                   {divider}
-                  <div className="mb-2" data-testid="sidebar-recents">
+                  <div data-testid="sidebar-recents">
                     <div className="flex items-center px-3 py-1 gap-1.5">
                       <button
                         onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
