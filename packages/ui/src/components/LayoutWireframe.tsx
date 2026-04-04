@@ -34,7 +34,7 @@ const HEADER_ZONE_MAP: Record<string, HeaderZoneId> = {
 };
 
 function ZoneBox({
-  zone: _zone,
+  zone: _,
   label,
   isSelected,
   onClick,
@@ -71,13 +71,16 @@ function ZoneBox({
 }
 
 export function LayoutWireframe({ selectedZone, onZoneSelect }: LayoutWireframeProps) {
-  const { getZone } = useLayoutConfig();
+  const { getZone, getSidebarSections } = useLayoutConfig();
 
   const zoneEntryCount = (zoneId: string): number => {
     const mapped = HEADER_ZONE_MAP[zoneId];
     if (!mapped) return 0;
     return getZone(mapped).entries.length;
   };
+
+  const sidebarVisibleCount = getSidebarSections().filter((s) => s.visible).length;
+  const sidebarTotalCount = getSidebarSections().length;
 
   return (
     <div className="w-full max-w-lg mx-auto">
@@ -136,6 +139,7 @@ export function LayoutWireframe({ selectedZone, onZoneSelect }: LayoutWireframeP
             isSelected={selectedZone === 'sidebar'}
             onClick={() => onZoneSelect('sidebar')}
             className="w-16 shrink-0 flex-col gap-1"
+            badge={sidebarVisibleCount < sidebarTotalCount ? sidebarVisibleCount : undefined}
           />
           <ZoneBox
             zone="customize"
