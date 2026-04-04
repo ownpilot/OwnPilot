@@ -114,14 +114,33 @@ function migrateConfig(raw: unknown): LayoutConfig {
     });
   }
 
-  // V3 → V4: add sidebar sections + width (recursive to apply footer-strip)
+  // V3 → V4+: add sidebar sections + width (recursive to apply further migrations)
   if (typeof obj.version === 'number' && obj.version === 3) {
     return migrateConfig({
       ...(obj as unknown as LayoutConfig),
-      version: LAYOUT_CONFIG_VERSION,
+      version: 4,
       sidebar: {
         width: 'default' as const,
         sections: [...DEFAULT_SIDEBAR_SECTIONS],
+      },
+    });
+  }
+
+  // V4 → V5: add 21 new data sections (hidden by default, preserving user's existing prefs)
+  if (typeof obj.version === 'number' && obj.version === 4) {
+    const config = obj as unknown as LayoutConfig;
+    const existingIds = new Set((config.sidebar?.sections ?? []).map((s) => s.id));
+    const newSections = DEFAULT_SIDEBAR_SECTIONS.filter((s) => !existingIds.has(s.id));
+    const maxOrder = Math.max(0, ...(config.sidebar?.sections ?? []).map((s) => s.order));
+    return migrateConfig({
+      ...config,
+      version: LAYOUT_CONFIG_VERSION,
+      sidebar: {
+        ...config.sidebar,
+        sections: [
+          ...(config.sidebar?.sections ?? []).filter((s) => s.id !== 'footer'),
+          ...newSections.map((s, i) => ({ ...s, order: maxOrder + 1 + i })),
+        ],
       },
     });
   }

@@ -10,7 +10,7 @@
  * Brand and Settings are fixed. The 3 middle zones are user-configurable.
  */
 
-export const LAYOUT_CONFIG_VERSION = 4;
+export const LAYOUT_CONFIG_VERSION = 5;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
@@ -41,13 +41,40 @@ export type SidebarWidth = 'narrow' | 'default' | 'wide';
 
 /** Built-in sidebar section identifiers (footer is structural, not configurable) */
 export type SidebarSectionId =
+  // Core (always-visible UI controls)
   | 'pinned'
   | 'search'
   | 'scheduled'
   | 'customize'
+  // Data (API-backed list sections with accordion/flat toggle)
   | 'workspaces'
   | 'workflows'
-  | 'recents';
+  | 'recents'
+  // AI & Automation
+  | 'agents'
+  | 'claws'
+  | 'triggers'
+  | 'fleet'
+  | 'artifacts'
+  // Tools & Extensions
+  | 'tools'
+  | 'custom-tools'
+  | 'extensions'
+  // Personal Data
+  | 'tasks'
+  | 'notes'
+  | 'goals'
+  | 'plans'
+  | 'memories'
+  | 'bookmarks'
+  | 'contacts'
+  | 'habits'
+  // System
+  | 'channels'
+  | 'edge-devices'
+  | 'mcp-servers'
+  | 'ai-models'
+  | 'coding-agents';
 
 /**
  * ID for a sidebar section — built-in IDs are typed as SidebarSectionId,
@@ -67,26 +94,80 @@ export interface SidebarSectionConfig {
   style?: SidebarSectionStyle;
 }
 
-/** All 7 configurable sidebar sections in their default order (footer is structural, always rendered) */
+/** All 28 configurable sidebar sections (footer is structural, always rendered) */
 export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
+  // Core (visible by default)
   { id: 'pinned', visible: true, order: 0 },
   { id: 'search', visible: true, order: 1 },
   { id: 'scheduled', visible: true, order: 2 },
   { id: 'customize', visible: true, order: 3 },
+  // Data (visible by default)
   { id: 'workspaces', visible: true, order: 4 },
   { id: 'workflows', visible: true, order: 5 },
   { id: 'recents', visible: true, order: 6 },
+  // AI & Automation (hidden, accordion-ready when enabled)
+  { id: 'agents', visible: false, order: 7, style: 'accordion' },
+  { id: 'claws', visible: false, order: 8, style: 'accordion' },
+  { id: 'triggers', visible: false, order: 9, style: 'flat' },
+  { id: 'fleet', visible: false, order: 10, style: 'flat' },
+  { id: 'artifacts', visible: false, order: 11, style: 'flat' },
+  // Tools & Extensions (hidden, accordion-ready when enabled)
+  { id: 'tools', visible: false, order: 12, style: 'accordion' },
+  { id: 'custom-tools', visible: false, order: 13, style: 'flat' },
+  { id: 'extensions', visible: false, order: 14, style: 'flat' },
+  // Personal Data (hidden)
+  { id: 'tasks', visible: false, order: 15, style: 'flat' },
+  { id: 'notes', visible: false, order: 16, style: 'flat' },
+  { id: 'goals', visible: false, order: 17, style: 'flat' },
+  { id: 'plans', visible: false, order: 18, style: 'flat' },
+  { id: 'memories', visible: false, order: 19, style: 'flat' },
+  { id: 'bookmarks', visible: false, order: 20, style: 'flat' },
+  { id: 'contacts', visible: false, order: 21, style: 'flat' },
+  { id: 'habits', visible: false, order: 22, style: 'flat' },
+  // System (hidden)
+  { id: 'channels', visible: false, order: 23, style: 'flat' },
+  { id: 'edge-devices', visible: false, order: 24, style: 'flat' },
+  { id: 'mcp-servers', visible: false, order: 25, style: 'flat' },
+  { id: 'ai-models', visible: false, order: 26, style: 'flat' },
+  { id: 'coding-agents', visible: false, order: 27, style: 'flat' },
 ];
 
 /** Human-readable labels for sidebar sections */
 export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
+  // Core
   pinned: 'Pinned Items',
   search: 'Search',
   scheduled: 'Scheduled',
   customize: 'Customize',
+  // Data
   workspaces: 'Workspaces',
   workflows: 'Workflows',
   recents: 'Recent Chats',
+  // AI & Automation
+  agents: 'Agents',
+  claws: 'Claws',
+  triggers: 'Triggers',
+  fleet: 'Fleet Command',
+  artifacts: 'Artifacts',
+  // Tools & Extensions
+  tools: 'Tools',
+  'custom-tools': 'Custom Tools',
+  extensions: 'Skills & Extensions',
+  // Personal Data
+  tasks: 'Tasks',
+  notes: 'Notes',
+  goals: 'Goals',
+  plans: 'Plans',
+  memories: 'Memories',
+  bookmarks: 'Bookmarks',
+  contacts: 'Contacts',
+  habits: 'Habits',
+  // System
+  channels: 'Channels',
+  'edge-devices': 'Edge Devices',
+  'mcp-servers': 'MCP Servers',
+  'ai-models': 'AI Models',
+  'coding-agents': 'Coding Agents',
 };
 
 /** Sidebar width presets — narrow is still text-visible, not icon-only */

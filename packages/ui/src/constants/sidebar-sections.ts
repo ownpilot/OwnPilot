@@ -12,8 +12,19 @@
  * 4. Section auto-renders in sidebar via registry lookup
  */
 import type { ComponentType, SVGProps } from 'react';
-import { FolderOpen, GitBranch } from '../components/icons';
-import { fileWorkspacesApi, workflowsApi } from '../api';
+import {
+  FolderOpen, GitBranch, Bot, Zap, Bell, Layers, FileCode,
+  Wrench, Code, Puzzle, CheckCircle2, FileText, Target,
+  ListChecks, Brain, Bookmark, Users, Repeat, Send, Wifi,
+  Server, Cpu, Terminal,
+} from '../components/icons';
+import {
+  fileWorkspacesApi, workflowsApi, agentsApi, clawsApi, triggersApi,
+  fleetApi, artifactsApi, toolsApi, customToolsApi, extensionsApi,
+  tasksApi, notesApi, goalsApi, plansApi, memoriesApi, bookmarksApi,
+  contactsApi, channelsApi, edgeApi, mcpApi, modelsApi, codingAgentsApi,
+} from '../api';
+import { habitsApi } from '../api/endpoints/personal-data';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -71,6 +82,166 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
           label: wf.name,
           route: `/workflows/${wf.id}`,
         }))
+      ),
+  },
+
+  // ─── AI & Automation ───
+
+  agents: {
+    id: 'agents', icon: Bot, route: '/agents', group: 'ai', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      agentsApi.list().then((items: { id: string; name: string }[]) =>
+        items.slice(0, 5).map((a) => ({ id: a.id, label: a.name, route: `/agents` }))
+      ),
+  },
+  claws: {
+    id: 'claws', icon: Zap, route: '/claws', group: 'ai', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      clawsApi.list().then((items: { id: string; name: string }[]) =>
+        items.slice(0, 5).map((c) => ({ id: c.id, label: c.name, route: `/claws` }))
+      ),
+  },
+  triggers: {
+    id: 'triggers', icon: Bell, route: '/triggers', group: 'ai', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      triggersApi.list().then((res: { triggers?: { id: string; name: string }[] }) =>
+        (res.triggers ?? []).slice(0, 5).map((t) => ({ id: t.id, label: t.name, route: `/triggers` }))
+      ),
+  },
+  fleet: {
+    id: 'fleet', icon: Layers, route: '/fleet', group: 'ai', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      fleetApi.list().then((items: { id: string; name: string }[]) =>
+        items.slice(0, 5).map((f) => ({ id: f.id, label: f.name, route: `/fleet` }))
+      ),
+  },
+  artifacts: {
+    id: 'artifacts', icon: FileCode, route: '/artifacts', group: 'ai', maxItems: 5, showPlus: false,
+    fetchItems: () =>
+      artifactsApi.list().then((res: { artifacts?: { id: string; title: string }[] }) =>
+        (res.artifacts ?? []).slice(0, 5).map((a) => ({ id: a.id, label: a.title, route: `/artifacts` }))
+      ),
+  },
+
+  // ─── Tools & Extensions ───
+
+  tools: {
+    id: 'tools', icon: Wrench, route: '/tools', group: 'tools', maxItems: 5, showPlus: false,
+    fetchItems: () =>
+      toolsApi.list().then((items: { name: string }[]) =>
+        items.slice(0, 5).map((t) => ({ id: t.name, label: t.name, route: `/tools` }))
+      ),
+  },
+  'custom-tools': {
+    id: 'custom-tools', icon: Code, route: '/custom-tools', group: 'tools', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      customToolsApi.list().then((res: { tools?: { id: string; name: string }[] }) =>
+        (res.tools ?? []).slice(0, 5).map((t) => ({ id: t.id, label: t.name, route: `/custom-tools` }))
+      ),
+  },
+  extensions: {
+    id: 'extensions', icon: Puzzle, route: '/skills', group: 'tools', maxItems: 5, showPlus: false,
+    fetchItems: () =>
+      extensionsApi.list().then((items: { name: string; version?: string }[]) =>
+        items.slice(0, 5).map((e) => ({ id: e.name, label: e.name, route: `/skills` }))
+      ),
+  },
+
+  // ─── Personal Data ───
+
+  tasks: {
+    id: 'tasks', icon: CheckCircle2, route: '/tasks', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      tasksApi.list().then((items: { id: string; title?: string; name?: string }[]) =>
+        items.slice(0, 5).map((t) => ({ id: t.id, label: t.title ?? t.name ?? t.id, route: `/tasks` }))
+      ),
+  },
+  notes: {
+    id: 'notes', icon: FileText, route: '/notes', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      notesApi.list().then((items: { id: string; title?: string; name?: string }[]) =>
+        items.slice(0, 5).map((n) => ({ id: n.id, label: n.title ?? n.name ?? n.id, route: `/notes` }))
+      ),
+  },
+  goals: {
+    id: 'goals', icon: Target, route: '/goals', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      goalsApi.list().then((res: { goals?: { id: string; title?: string; name?: string }[] }) =>
+        (res.goals ?? []).slice(0, 5).map((g) => ({ id: g.id, label: g.title ?? g.name ?? g.id, route: `/goals` }))
+      ),
+  },
+  plans: {
+    id: 'plans', icon: ListChecks, route: '/plans', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      plansApi.list().then((res: { plans?: { id: string; title?: string; name?: string }[] }) =>
+        (res.plans ?? []).slice(0, 5).map((p) => ({ id: p.id, label: p.title ?? p.name ?? p.id, route: `/plans` }))
+      ),
+  },
+  memories: {
+    id: 'memories', icon: Brain, route: '/memories', group: 'personal', maxItems: 5, showPlus: false,
+    fetchItems: () =>
+      memoriesApi.list().then((res: { memories?: { id: string; content?: string; key?: string }[] }) =>
+        (res.memories ?? []).slice(0, 5).map((m) => ({ id: m.id, label: m.key ?? m.content?.slice(0, 30) ?? m.id, route: `/memories` }))
+      ),
+  },
+  bookmarks: {
+    id: 'bookmarks', icon: Bookmark, route: '/bookmarks', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      bookmarksApi.list().then((items: { id: string; title?: string; url?: string }[]) =>
+        items.slice(0, 5).map((b) => ({ id: b.id, label: b.title ?? b.url ?? b.id, route: `/bookmarks` }))
+      ),
+  },
+  contacts: {
+    id: 'contacts', icon: Users, route: '/contacts', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      contactsApi.list().then((items: { id: string; name?: string; email?: string }[]) =>
+        items.slice(0, 5).map((c) => ({ id: c.id, label: c.name ?? c.email ?? c.id, route: `/contacts` }))
+      ),
+  },
+  habits: {
+    id: 'habits', icon: Repeat, route: '/habits', group: 'personal', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      habitsApi.list().then((res: { habits?: { id: string; name: string }[] }) =>
+        (res.habits ?? []).slice(0, 5).map((h) => ({ id: h.id, label: h.name, route: `/habits` }))
+      ),
+  },
+
+  // ─── System ───
+
+  channels: {
+    id: 'channels', icon: Send, route: '/channels', group: 'system', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      channelsApi.list().then((res: { channels?: { id: string; name: string }[] }) =>
+        (res.channels ?? []).slice(0, 5).map((ch) => ({ id: ch.id, label: ch.name, route: `/channels` }))
+      ),
+  },
+  'edge-devices': {
+    id: 'edge-devices', icon: Wifi, route: '/edge-devices', group: 'system', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      edgeApi.list().then((res: { devices?: { id: string; name: string }[] }) =>
+        (res.devices ?? []).slice(0, 5).map((d) => ({ id: d.id, label: d.name, route: `/edge-devices` }))
+      ),
+  },
+  'mcp-servers': {
+    id: 'mcp-servers', icon: Server, route: '/settings/mcp-servers', group: 'system', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      mcpApi.list().then((res: { servers?: { id: string; name: string }[] }) =>
+        (res.servers ?? []).slice(0, 5).map((s) => ({ id: s.id, label: s.name, route: `/settings/mcp-servers` }))
+      ),
+  },
+  'ai-models': {
+    id: 'ai-models', icon: Cpu, route: '/settings/ai-models', group: 'system', maxItems: 5, showPlus: false,
+    fetchItems: () =>
+      modelsApi.list().then((res: { models?: { id: string; name: string }[]; merged?: { id: string; name: string }[] }) => {
+        const items = res.merged ?? res.models ?? [];
+        return items.slice(0, 5).map((m) => ({ id: m.id, label: m.name, route: `/settings/ai-models` }));
+      }),
+  },
+  'coding-agents': {
+    id: 'coding-agents', icon: Terminal, route: '/coding-agents', group: 'system', maxItems: 5, showPlus: true,
+    fetchItems: () =>
+      codingAgentsApi.listSessions().then((items: { id: string; displayName?: string; name?: string }[]) =>
+        items.slice(0, 5).map((s) => ({ id: s.id, label: s.displayName ?? s.name ?? s.id, route: `/coding-agents` }))
       ),
   },
 };
