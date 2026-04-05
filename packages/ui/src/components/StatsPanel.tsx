@@ -128,10 +128,16 @@ function ContextBanner() {
 }
 
 function CompactChat() {
-  const { messages, isLoading, streamingContent, sendMessage } = useChatStore();
+  const { messages, isLoading, streamingContent, sendMessage, setContextPath } = useChatStore();
+  const { context } = usePageContext();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync page context path into chat store for X-Project-Dir header
+  useEffect(() => {
+    setContextPath(context.path ?? null);
+  }, [context.path, setContextPath]);
 
   // Auto-scroll to bottom on new messages or streaming content
   useEffect(() => {
