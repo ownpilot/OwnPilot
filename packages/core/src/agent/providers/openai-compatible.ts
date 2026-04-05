@@ -161,6 +161,12 @@ export class OpenAICompatibleProvider {
         (fetchOptions.headers as Record<string, string>)['X-Conversation-Id'] =
           request.metadata.conversationId;
       }
+      // Inject X-Runtime header for bridge multi-provider routing
+      // Provider name 'bridge-opencode' → X-Runtime: opencode
+      if (this.providerId.startsWith('bridge-')) {
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
+          this.providerId.replace('bridge-', '');
+      }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,
         fetchOptions
@@ -232,6 +238,11 @@ export class OpenAICompatibleProvider {
       if (request.metadata?.conversationId) {
         (fetchOptions.headers as Record<string, string>)['X-Conversation-Id'] =
           request.metadata.conversationId;
+      }
+      // Inject X-Runtime header for bridge multi-provider routing (streaming path)
+      if (this.providerId.startsWith('bridge-')) {
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
+          this.providerId.replace('bridge-', '');
       }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,

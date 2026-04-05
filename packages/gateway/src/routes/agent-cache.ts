@@ -240,10 +240,17 @@ export function loadProviderConfig(providerId: string): {
     // Discovery uses its own endpoint paths, but the provider SDK appends /chat/completions
     const base = localProv.baseUrl.replace(/\/+$/, '');
     const baseUrl = base.endsWith('/v1') ? base : `${base}/v1`;
+    // Bridge multi-provider routing: if provider name starts with 'bridge-',
+    // inject X-Runtime header so the bridge routes to the correct runtime
+    const headers: Record<string, string> = {};
+    if (localProv.name.startsWith('bridge-')) {
+      headers['X-Runtime'] = localProv.name.replace('bridge-', '');
+    }
     return {
       baseUrl,
       apiKeyEnv: undefined,
       type: 'openai-compatible',
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
     };
   }
 
