@@ -591,6 +591,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // 120s timeout, and resolveApproval() / clearMessages() handle cleanup.
           // Clearing here would dismiss the dialog before the user can respond.
           abortControllerRef.current = null;
+
+          // Notify sidebar to refresh recents — new/updated conversation
+          window.dispatchEvent(new CustomEvent('ownpilot:chat-updated'));
         }
       }
     },

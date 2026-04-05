@@ -148,6 +148,15 @@ export function useSidebarRecents(): SidebarRecentsState {
     });
   }, [subscribe, load]);
 
+  // Auto-refresh when chat sends a message (new/updated conversation)
+  useEffect(() => {
+    const handler = () => {
+      load(searchRef.current, filterRef.current);
+    };
+    window.addEventListener('ownpilot:chat-updated', handler);
+    return () => window.removeEventListener('ownpilot:chat-updated', handler);
+  }, [load]);
+
   const setSearch = useCallback(
     (q: string) => {
       setSearchState(q);
