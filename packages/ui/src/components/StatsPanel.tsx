@@ -7,7 +7,7 @@
  * - Provider/model info
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
@@ -29,12 +29,14 @@ import {
   TrendingUp,
   Cpu,
   MessageSquare,
+  Send,
 } from './icons';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { SummaryData, CostsData } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { QuickAddGrid } from './QuickAddModal';
+import { useChatStore } from '../hooks/useChatStore';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -80,6 +82,151 @@ function formatCurrency(amount: number): string {
 }
 
 // QuickAddSection is now extracted to QuickAddModal.tsx (shared with DashboardPage)
+
+// ---- Compact Chat (StatsPanel Chat tab) ----
+
+function CompactChat() {
+  const { messages, isLoading, streamingContent, sendMessage } = useChatStore();
+  const [input, setInput] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-scroll to bottom on new messages or streaming content
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages.length, streamingContent]);
+
+  // Auto-resize textarea
+  const adjustTextarea = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 80)}px`;
+  }, []);
+
+  const handleSend = useCallback(() => {
+    const trimmed = input.trim();
+    if (!trimmed || isLoading) return;
+    setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+    sendMessage(trimmed);
+  }, [input, isLoading, sendMessage]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend]
+  );
+
+  return (
+    <div className="flex flex-col h-full -m-4">
+      {/* Message list */}
+      <div
+        ref={scrollRef}
+        data-testid="chat-message-list"
+        className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0"
+      >
+        {messages.length === 0 && !isLoading && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+              Start a conversation...
+            </p>
+          </div>
+        )}
+        {messages.map((msg) => {
+          const isUser = msg.role === 'user';
+          if (msg.isError) {
+            return (
+              <div key={msg.id} className="flex justify-start">
+                <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-error/10 border border-error/30 text-error text-xs break-words">
+                  {msg.content}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={msg.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[90%] px-2.5 py-1.5 rounded-xl text-xs break-words whitespace-pre-wrap ${
+                  isUser
+                    ? 'rounded-tr-sm bg-primary text-white'
+                    : 'rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary'
+                }`}
+              >
+                {isUser
+                  ? msg.content
+                      .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
+                      .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
+                  : msg.content}
+              </div>
+            </div>
+          );
+        })}
+        {/* Streaming / loading indicator */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-xs text-text-primary dark:text-dark-text-primary">
+              {streamingContent ? (
+                <>
+                  <span className="break-words whitespace-pre-wrap">
+                    {streamingContent.length > 150
+                      ? '...' + streamingContent.slice(-150)
+                      : streamingContent}
+                  </span>
+                  <span className="inline-block w-1 h-3 bg-primary ml-0.5 animate-pulse rounded-sm" />
+                </>
+              ) : (
+                <span className="flex items-center gap-1 text-text-muted dark:text-dark-text-muted">
+                  <span className="flex gap-0.5">
+                    <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:0ms]" />
+                    <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
+                    <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input area */}
+      <div className="px-3 py-2 border-t border-border dark:border-dark-border shrink-0">
+        <div className="flex items-end gap-1.5">
+          <textarea
+            ref={textareaRef}
+            data-testid="chat-input"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              adjustTextarea();
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Message..."
+            rows={1}
+            className="flex-1 resize-none bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-xs rounded-lg px-2.5 py-1.5 border border-border dark:border-dark-border focus:outline-none focus:border-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted"
+          />
+          <button
+            data-testid="chat-send-btn"
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="p-1.5 rounded-lg bg-primary text-white disabled:opacity-40 hover:bg-primary-dark transition-colors shrink-0"
+            aria-label="Send message"
+          >
+            <Send className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---- Stats Panel ----
 
@@ -196,7 +343,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
   }
 
   return (
-    <aside className="w-64 border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
+    <aside className="w-80 border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
       {/* Header with Tabs */}
       <div className="border-b border-border dark:border-dark-border">
         <div className="flex items-center justify-between px-4 pt-3 pb-0">
@@ -238,7 +385,10 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6" data-testid="tab-content">
+      <div
+        className={`flex-1 min-h-0 ${activeTab === 'stats' ? 'overflow-y-auto p-4 space-y-6' : 'flex flex-col overflow-hidden p-4'}`}
+        data-testid="tab-content"
+      >
         {activeTab === 'stats' ? (
           <>
             {isLoading ? (
@@ -392,12 +542,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
             )}
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
-            <MessageSquare className="w-10 h-10 text-text-muted dark:text-dark-text-muted mb-3" />
-            <p className="text-sm text-text-muted dark:text-dark-text-muted">
-              Chat coming soon...
-            </p>
-          </div>
+          <CompactChat />
         )}
       </div>
 
