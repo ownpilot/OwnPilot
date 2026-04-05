@@ -533,6 +533,11 @@ export interface StreamChunk {
   readonly usage?: TokenUsage;
   /** Provider-specific metadata (e.g. { type: 'thinking' } for thinking chunks) */
   readonly metadata?: Record<string, unknown>;
+  /** Response metadata from provider (e.g., Bridge session IDs for resume) */
+  readonly responseMetadata?: {
+    readonly bridgeConversationId?: string;
+    readonly bridgeSessionId?: string;
+  };
 }
 
 /**
@@ -594,4 +599,6 @@ export interface AgentState {
   readonly isProcessing: boolean;
   /** Last error (if any) */
   readonly lastError?: string;
+  /** Bridge conversation ID for session resume (set from provider response headers) */
+  readonly bridgeConversationId?: string;
 }
