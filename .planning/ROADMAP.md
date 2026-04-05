@@ -246,15 +246,16 @@ Layout.tsx (4-panel shell)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 11. Workspace Protocol Research | 0/TBD | Not started | - |
-| 12. StatsPanel Tab System | 0/TBD | Not started | - |
-| 13. Compact Chat UI | 0/TBD | Not started | - |
-| 14. Context Detection | 0/TBD | Not started | - |
-| 15. Context Injection | 0/TBD | Not started | - |
-| 16. Multi-Session Research | 0/TBD | Not started | - |
-| 17. E2E Tests | 0/TBD | Not started | - |
+| 11. Workspace Protocol Research | 1/1 | Complete | 2026-04-05 |
+| 12. StatsPanel Tab System | 1/1 | Complete | 2026-04-05 |
+| 13. Compact Chat UI | 1/1 | Complete | 2026-04-05 |
+| 14. Context Detection | 1/1 | Complete | 2026-04-05 |
+| 15. Context Injection | 1/1 | Complete | 2026-04-05 |
+| 16. Multi-Session Research | 1/1 | Complete | 2026-04-05 |
+| 17. E2E Tests | 1/1 | Complete | 2026-04-05 |
 
 ---
 *Roadmap created: 2026-03-28 — v1.0 complete*
 *Updated: 2026-03-29 — v1.1 milestone started (6 phases)*
 *Updated: 2026-04-05 — v2.0 Contextual Sidebar Chat milestone added (7 phases, Phase 11: Workspace Protocol Research)*
+*Updated: 2026-04-05 — v2.0 all 7 phases complete (Phase 11-17, branch: feature/v2-contextual-chat)*
