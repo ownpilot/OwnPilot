@@ -135,7 +135,18 @@ export class OpenAIProvider extends BaseProvider {
     // Use retry wrapper for the actual API call
     const result = await withRetry(async () => {
       try {
-        const response = await fetch(endpoint, this.createFetchOptions(body));
+        const fetchOpts = this.createFetchOptions(body);
+        // Inject bridge headers for session resume + multi-provider routing
+        if (request.metadata?.conversationId) {
+          (fetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+        }
+        if (this.config.headers) {
+          Object.assign(fetchOpts.headers as Record<string, string>, this.config.headers);
+        }
+        if (request.metadata?.projectDir) {
+          (fetchOpts.headers as Record<string, string>)['X-Project-Dir'] = request.metadata.projectDir;
+        }
+        const response = await fetch(endpoint, fetchOpts);
         this.clearRequestTimeout();
 
         if (!response.ok) {
@@ -146,6 +157,8 @@ export class OpenAIProvider extends BaseProvider {
         }
 
         const data = (await response.json()) as OpenAIResponse;
+        const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
+        const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
         const choice = data.choices?.[0];
 
         if (!choice) {
@@ -163,6 +176,9 @@ export class OpenAIProvider extends BaseProvider {
           usage: data.usage ? this.mapUsage(data.usage) : undefined,
           model: data.model ?? request.model.model,
           createdAt: new Date((data.created ?? Date.now() / 1000) * 1000),
+          ...(bridgeConvId || bridgeSessionId ? {
+            responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+          } : {}),
         };
 
         // Log response
@@ -227,11 +243,25 @@ export class OpenAIProvider extends BaseProvider {
     logRequest(streamDebugInfo);
 
     try {
+      const streamFetchOpts = this.createFetchOptions(body);
+      // Inject bridge headers for session resume + multi-provider routing
+      if (request.metadata?.conversationId) {
+        (streamFetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+      }
+      if (this.config.headers) {
+        Object.assign(streamFetchOpts.headers as Record<string, string>, this.config.headers);
+      }
+      if (request.metadata?.projectDir) {
+        (streamFetchOpts.headers as Record<string, string>)['X-Project-Dir'] = request.metadata.projectDir;
+      }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,
-        this.createFetchOptions(body)
+        streamFetchOpts
       );
       this.clearRequestTimeout();
+
+      const bridgeConvId = response.ok ? (response.headers.get('x-conversation-id') ?? undefined) : undefined;
+      const bridgeSessionId = response.ok ? (response.headers.get('x-session-id') ?? undefined) : undefined;
 
       if (!response.ok || !response.body) {
         const errorText = await response.text().catch(() => '');
@@ -272,7 +302,13 @@ export class OpenAIProvider extends BaseProvider {
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6).trim();
             if (data === '[DONE]') {
-              yield ok({ id: '', done: true });
+              yield ok({
+                id: '',
+                done: true,
+                ...(bridgeConvId || bridgeSessionId ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
+              });
               return;
             }
 
