@@ -44,8 +44,9 @@ export interface SidebarProps {
 function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { item: NavItem; badge?: number; onCloseCustomize?: () => void; isCustomizeOpen?: boolean }) {
   const Icon = item.icon;
   const location = useLocation();
-  const { clearMessages, provider, model } = useChatStore();
+  const { clearMessages, provider, model, sessionId } = useChatStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleClick = (e: React.MouseEvent) => {
     onCloseCustomize?.();
@@ -59,6 +60,9 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
     }
   };
 
+  // Chat link: de-highlight when a conversation is active (sessionId or URL param)
+  const hasActiveConversation = item.to === '/' && (sessionId || searchParams.get('conversationId'));
+
   return (
     <NavLink
       to={item.to}
@@ -66,7 +70,7 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
       onClick={handleClick}
       className={({ isActive }) =>
         `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
-          isActive && !isCustomizeOpen
+          isActive && !isCustomizeOpen && !hasActiveConversation
             ? 'bg-primary/10 text-primary border-l-[3px] border-primary'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
         }`
@@ -88,7 +92,9 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const activeConversationId = searchParams.get('conversationId');
+  const { sessionId: chatStoreSessionId } = useChatStore();
+  // Active conversation: prefer URL param (sidebar click), fallback to chat store (new chat)
+  const activeConversationId = searchParams.get('conversationId') || chatStoreSessionId;
   const toast = useToast();
   const dialog = useDialog();
   const editInputRef = useRef<HTMLInputElement>(null);
