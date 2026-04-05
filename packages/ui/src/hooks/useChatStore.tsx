@@ -118,18 +118,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionIdState] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   // Wrapper: keep ref in sync with state so sendMessage always sees latest value
-  // Also update URL so sidebar highlights the active conversation
   const setSessionId = (id: string | null) => {
-    const prev = sessionIdRef.current;
     sessionIdRef.current = id;
     setSessionIdState(id);
-    // When a new conversation is created (null → id), update URL for sidebar highlight
-    if (id && !prev && window.location.pathname === '/') {
-      const newUrl = `/?conversationId=${id}`;
-      window.history.replaceState(null, '', newUrl);
-      // Trigger React Router to re-read searchParams via popstate
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }
   };
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -600,9 +591,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // 120s timeout, and resolveApproval() / clearMessages() handle cleanup.
           // Clearing here would dismiss the dialog before the user can respond.
           abortControllerRef.current = null;
-
-          // Notify sidebar to refresh recents — new/updated conversation
-          window.dispatchEvent(new CustomEvent('ownpilot:chat-updated'));
         }
       }
     },
