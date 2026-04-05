@@ -279,7 +279,7 @@ export class Agent {
         stream: options?.stream ?? false,
         thinking: options?.thinking,
         metadata: {
-          conversationId: this.state.conversation.id,
+          conversationId: this.state.bridgeConversationId ?? this.state.conversation.id,
         },
       };
 
@@ -311,6 +311,11 @@ export class Agent {
           return result;
         }
         response = result.value;
+      }
+
+      // Store bridge conversation ID for session resume across bridge restarts
+      if (response.responseMetadata?.bridgeConversationId) {
+        this.state = { ...this.state, bridgeConversationId: response.responseMetadata.bridgeConversationId };
       }
 
       // Add assistant message (include thinking blocks in metadata for tool use roundtrips)
@@ -456,6 +461,7 @@ export class Agent {
     let usage: CompletionResponse['usage'];
     let responseId = '';
     let thinkingBlocks: Record<string, unknown>[] | undefined;
+    let responseMetadata: CompletionResponse['responseMetadata'];
 
     const generator = this.provider.stream(request);
 
@@ -483,6 +489,11 @@ export class Agent {
       // Capture thinking blocks from done chunk metadata (for tool use roundtrips)
       if (chunk.done && chunk.metadata?.thinkingBlocks) {
         thinkingBlocks = chunk.metadata.thinkingBlocks as Record<string, unknown>[];
+      }
+
+      // Capture bridge response metadata (for session resume)
+      if (chunk.done && chunk.responseMetadata) {
+        responseMetadata = chunk.responseMetadata;
       }
 
       // Accumulate tool calls (use index for parallel tool call support)
@@ -531,6 +542,7 @@ export class Agent {
       createdAt: new Date(),
       thinkingContent: thinkingContent || undefined,
       thinkingBlocks,
+      responseMetadata,
     });
   }
 

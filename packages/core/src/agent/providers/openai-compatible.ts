@@ -260,6 +260,10 @@ export class OpenAICompatibleProvider {
         return;
       }
 
+      // Extract Bridge session IDs from response headers (streaming path — mirrors complete() line 197)
+      const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
+      const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
+
       const reader = response.body.getReader();
       try {
         const decoder = new TextDecoder();
@@ -279,7 +283,13 @@ export class OpenAICompatibleProvider {
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6).trim();
             if (data === '[DONE]') {
-              yield ok({ id: '', done: true });
+              yield ok({
+                id: '',
+                done: true,
+                ...(bridgeConvId || bridgeSessionId ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
+              });
               return;
             }
 
@@ -323,6 +333,9 @@ export class OpenAICompatibleProvider {
                   ? this.mapFinishReason(choice.finish_reason)
                   : undefined,
                 usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
+                ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId) ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
               });
             } catch {
               // Skip malformed chunks
