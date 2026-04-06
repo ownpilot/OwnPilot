@@ -44,8 +44,9 @@ export interface SidebarProps {
 function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { item: NavItem; badge?: number; onCloseCustomize?: () => void; isCustomizeOpen?: boolean }) {
   const Icon = item.icon;
   const location = useLocation();
-  const { clearMessages, provider, model } = useChatStore();
+  const { clearMessages, provider, model, sessionId, messages } = useChatStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const handleClick = (e: React.MouseEvent) => {
     onCloseCustomize?.();
@@ -59,6 +60,12 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
     }
   };
 
+  // Chat link: de-highlight when a conversation is active
+  // Active = has sessionId, has URL param, OR has messages (user sent a message, waiting for AI)
+  const hasActiveConversation = item.to === '/' && (
+    sessionId || searchParams.get('conversationId') || messages.length > 0
+  );
+
   return (
     <NavLink
       to={item.to}
@@ -66,7 +73,7 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
       onClick={handleClick}
       className={({ isActive }) =>
         `flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base ${
-          isActive && !isCustomizeOpen
+          isActive && !isCustomizeOpen && !hasActiveConversation
             ? 'bg-primary/10 text-primary border-l-[3px] border-primary'
             : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5'
         }`
@@ -88,7 +95,27 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const activeConversationId = searchParams.get('conversationId');
+  const { sessionId: chatStoreSessionId, messages: chatMessages } = useChatStore();
+  // Active conversation: prefer URL param (sidebar click), fallback to chat store (new chat)
+  const activeConversationId = searchParams.get('conversationId') || chatStoreSessionId;
+
+  // Optimistic sidebar entry: when user sent a message but conversation not yet in recents
+  const optimisticEntry = useMemo(() => {
+    if (chatMessages.length === 0) return null;
+    const firstUserMsg = chatMessages.find(m => m.role === 'user');
+    if (!firstUserMsg) return null;
+    const convId = chatStoreSessionId || '__optimistic__';
+    // Check if this conversation is already in recents
+    const alreadyInRecents = recents.conversations.some(c => c.id === convId);
+    if (alreadyInRecents) return null;
+    return {
+      id: convId,
+      title: firstUserMsg.content.slice(0, 80),
+      updatedAt: firstUserMsg.timestamp || new Date().toISOString(),
+      createdAt: firstUserMsg.timestamp || new Date().toISOString(),
+      source: 'web' as const,
+    } as import('../api/types').Conversation;
+  }, [chatMessages, chatStoreSessionId, recents.conversations]);
   const toast = useToast();
   const dialog = useDialog();
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -342,7 +369,19 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                         {recents.search ? 'No results' : 'No conversations yet'}
                       </div>
                     ) : (
-                      recents.groups.map((group) => (
+                      <>
+                      {/* Optimistic entry: shows immediately when user sends a message */}
+                      {optimisticEntry && (
+                        <div>
+                          <div
+                            className="group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors bg-primary/10 text-primary"
+                          >
+                            <MessageSquare className="w-3 h-3 shrink-0 opacity-50" />
+                            <span className="truncate text-xs flex-1">{optimisticEntry.title}</span>
+                          </div>
+                        </div>
+                      )}
+                      {recents.groups.map((group) => (
                         <div key={group.label}>
                           <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted dark:text-dark-text-muted">{group.label}</p>
                           {group.items.map((conv) => {
@@ -385,7 +424,8 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                             );
                           })}
                         </div>
-                      ))
+                      ))}
+                      </>
                     )}
                     {recents.total > recents.conversations.length && (
                       <p className="px-3 py-1 text-[10px] text-text-muted dark:text-dark-text-muted text-center">+{recents.total - recents.conversations.length} older</p>

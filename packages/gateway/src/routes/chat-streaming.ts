@@ -600,6 +600,13 @@ export async function processStreamingViaBus(
         budgetTokens?: number;
         effort?: 'low' | 'medium' | 'high' | 'max';
       };
+      pageContext?: {
+        pageType: string;
+        entityId?: string;
+        path?: string;
+        contextData?: Record<string, unknown>;
+        systemPromptHint?: string;
+      };
     };
     provider: string;
     model: string;
@@ -670,6 +677,7 @@ export async function processStreamingViaBus(
       conversationId,
       directTools: body.directTools,
       thinking: body.thinking,
+      pageContext: body.pageContext,
     },
   });
 

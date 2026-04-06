@@ -415,17 +415,20 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
 export async function getOrCreateChatAgent(
   provider: string,
   model: string,
-  fallback?: { provider: string; model: string }
+  fallback?: { provider: string; model: string },
+  pageContext?: { path?: string } | null
 ): Promise<Agent> {
   // CLI providers are NOT cached — each request may need fresh MCP session state
   // while still reusing the persistent ~/.ownpilot/workspace directory.
   if (isCliChatProvider(provider)) {
-    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback);
+    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback, pageContext);
   }
 
+  // Sidebar requests with path context get unique cache keys (different CWD = different agent)
   const sanitize = (s: string) => s.replace(/\|/g, '_');
   const fbSuffix = fallback ? `|fb_${sanitize(fallback.provider)}_${sanitize(fallback.model)}` : '';
-  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}`;
+  const pathSuffix = pageContext?.path ? `|dir_${sanitize(pageContext.path)}` : '';
+  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}${pathSuffix}`;
 
   const cached = lruGet(chatAgentCache, cacheKey);
   if (cached) return cached;
@@ -433,7 +436,7 @@ export async function getOrCreateChatAgent(
   const pending = pendingChatAgents.get(cacheKey);
   if (pending) return pending;
 
-  const promise = createChatAgentInstance(provider, model, cacheKey, fallback).finally(() => {
+  const promise = createChatAgentInstance(provider, model, cacheKey, fallback, pageContext).finally(() => {
     pendingChatAgents.delete(cacheKey);
   });
   pendingChatAgents.set(cacheKey, promise);
@@ -450,7 +453,8 @@ async function createChatAgentInstance(
   provider: string,
   model: string,
   cacheKey: string,
-  fallback?: { provider: string; model: string }
+  fallback?: { provider: string; model: string },
+  _pageContext?: { path?: string } | null
 ): Promise<Agent> {
   // ── CLI Chat Provider path ──
   // CLI providers (cli-claude, cli-codex, cli-gemini) use login-based auth

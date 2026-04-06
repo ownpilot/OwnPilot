@@ -148,6 +148,13 @@ export function useSidebarRecents(): SidebarRecentsState {
     });
   }, [subscribe, load]);
 
+  // Auto-refresh when backend confirms DB persistence (authoritative signal)
+  useEffect(() => {
+    return subscribe('chat:history:updated', () => {
+      load(searchRef.current, filterRef.current);
+    });
+  }, [subscribe, load]);
+
   const setSearch = useCallback(
     (q: string) => {
       setSearchState(q);

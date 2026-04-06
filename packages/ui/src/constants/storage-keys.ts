@@ -17,4 +17,5 @@ export const STORAGE_KEYS = {
   LOCAL_FILES_DIRS: 'ownpilot-local-files-dirs',       // Record<string, boolean> — open/closed state for bookmark directories
   HEADER_ITEMS: 'ownpilot-header-items',               // HeaderItemConfig[] — pinned items/groups in header bar
   LAYOUT_CONFIG: 'ownpilot-layout-config',             // LayoutConfig — header/sidebar display preferences
+  STATS_PANEL_TAB: 'ownpilot-stats-panel-tab',         // 'stats' | 'chat' — active tab in StatsPanel
 } as const;

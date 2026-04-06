@@ -3,6 +3,7 @@
  */
 
 // Re-export domain types from dedicated modules
+export type { PageCopilotConfig, PageContextData, PageAction } from './page-copilot';
 export type { CustomTool, ToolStats, ToolStatus, ToolPermission } from './tools';
 export type { Task } from './tasks';
 export type {

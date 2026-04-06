@@ -12,3 +12,6 @@ export * from './useVoice';
 export * from './useGroupCollapseState';
 export * from './useHeaderItems';
 export * from './useLayoutConfig';
+export * from './usePageContext';
+export { useSidebarChat, SidebarChatProvider } from './useSidebarChat';
+export { usePageCopilotContext } from './usePageCopilotContext';

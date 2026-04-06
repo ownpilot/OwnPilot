@@ -162,6 +162,7 @@ async function processNonStreamingViaBus(
       requestId,
       directTools: body.directTools,
       thinking: body.thinking,
+      pageContext: body.pageContext,
     },
   });
 }
@@ -299,7 +300,19 @@ chatRoutes.post('/', async (c) => {
         loaded = agent.loadConversation(body.conversationId);
       }
       if (!loaded) {
-        return notFoundError(c, 'Conversation', body.conversationId);
+        // Sidebar chat sends new conversation IDs (sidebar-*) that don't exist yet.
+        // Create a fresh conversation instead of returning 404.
+        if (body.conversationId.startsWith('sidebar-')) {
+          agent.getMemory().createWithId(
+            body.conversationId,
+            undefined,
+            { source: 'sidebar-chat', createdAt: new Date().toISOString() }
+          );
+          loaded = agent.loadConversation(body.conversationId);
+        }
+        if (!loaded) {
+          return notFoundError(c, 'Conversation', body.conversationId);
+        }
       }
     }
   }

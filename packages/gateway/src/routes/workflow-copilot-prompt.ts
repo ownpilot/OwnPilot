@@ -12,7 +12,7 @@ interface WorkflowState {
   variables?: Record<string, unknown>;
 }
 
-const STATIC_PROMPT = `You are a Workflow Copilot for OwnPilot, a visual workflow automation builder.
+export const STATIC_PROMPT = `You are a Workflow Copilot for OwnPilot, a visual workflow automation builder.
 You help users create and edit automation workflows by generating workflow JSON definitions.
 
 ## Your Capabilities

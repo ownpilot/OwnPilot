@@ -563,74 +563,144 @@ export function ChatPage() {
                 </svg>
               </button>
 
-              {/* Dropdown Menu */}
-              {showProviderMenu && (
-                <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
-                  {configuredProviders.length === 0 ? (
-                    <div className="p-4 text-center">
-                      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
-                        No providers configured
-                      </p>
-                      <a
-                        href="/settings"
-                        className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
-                      >
-                        <Settings className="w-4 h-4" /> Configure API Keys
-                      </a>
-                    </div>
-                  ) : (
-                    Object.entries(modelsByProvider).map(([providerId, providerModels]) => (
-                      <div
-                        key={providerId}
-                        className="border-b border-border dark:border-dark-border last:border-b-0"
-                      >
-                        <div
-                          className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
-                            provider === providerId
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-text-primary dark:text-dark-text-primary'
-                          }`}
-                          onClick={() => handleProviderChange(providerId)}
+              {/* Dropdown Menu — API / Bridge grouped */}
+              {showProviderMenu && (() => {
+                const isBridgeProv = (pid: string) => {
+                  const name = providerNames[pid] ?? pid;
+                  return pid.startsWith('bridge-') || pid.startsWith('cli-') || name.toLowerCase().startsWith('bridge-');
+                };
+                const apiEntries = Object.entries(modelsByProvider).filter(([pid]) => !isBridgeProv(pid));
+                const bridgeEntries = Object.entries(modelsByProvider).filter(([pid]) => isBridgeProv(pid));
+
+                return (
+                  <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
+                    {configuredProviders.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
+                          No providers configured
+                        </p>
+                        <a
+                          href="/settings"
+                          className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
                         >
-                          {providerNames[providerId] ?? providerId}
-                        </div>
-                        {/* CLI and bridge providers don't need model selection */}
-                        {provider === providerId && !providerId.startsWith('cli-') && !providerId.startsWith('bridge-') && (
-                          <div className="px-2 pb-2">
-                            {providerModels.map((m) => (
-                              <button
-                                key={m.id}
-                                onClick={() => {
-                                  setModel(m.id);
-                                  setShowProviderMenu(false);
-                                  // Keep agent context - just update the model being used
-                                }}
-                                className={`w-full text-left px-2 py-1.5 text-xs rounded ${
-                                  model === m.id
-                                    ? 'bg-primary text-white'
-                                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{m.name}</span>
-                                  {m.recommended && (
-                                    <span className="text-[10px] opacity-70">Recommended</span>
-                                  )}
+                          <Settings className="w-4 h-4" /> Configure API Keys
+                        </a>
+                      </div>
+                    ) : (
+                      <>
+                        {/* API Section */}
+                        <div className="border-b border-border dark:border-dark-border">
+                          <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+                            API — Context Inject
+                          </div>
+                          {apiEntries.length > 0 ? (
+                            apiEntries.map(([providerId, providerModels]) => (
+                              <div key={providerId}>
+                                <div
+                                  className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
+                                    provider === providerId
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-text-primary dark:text-dark-text-primary'
+                                  }`}
+                                  onClick={() => handleProviderChange(providerId)}
+                                >
+                                  {providerNames[providerId] ?? providerId}
                                 </div>
-                                {m.description && (
-                                  <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
-                                    {m.description}
-                                  </p>
+                                {provider === providerId && providerModels.length > 0 && (
+                                  <div className="px-2 pb-2">
+                                    {providerModels.map((m) => (
+                                      <button
+                                        key={m.id}
+                                        onClick={() => {
+                                          setModel(m.id);
+                                          setShowProviderMenu(false);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-xs rounded ${
+                                          model === m.id
+                                            ? 'bg-primary text-white'
+                                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{m.name}</span>
+                                          {m.recommended && (
+                                            <span className="text-[10px] opacity-70">Recommended</span>
+                                          )}
+                                        </div>
+                                        {m.description && (
+                                          <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
+                                            {m.description}
+                                          </p>
+                                        )}
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
-                              </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2.5 text-xs text-text-muted dark:text-dark-text-muted">
+                              No API providers configured —{' '}
+                              <a
+                                href="/models?tab=models"
+                                className="text-primary hover:underline not-italic font-medium"
+                                onClick={() => setShowProviderMenu(false)}
+                              >
+                                add in Settings
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bridge Section */}
+                        {bridgeEntries.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+                              Bridge — CLI Spawn
+                            </div>
+                            {bridgeEntries.map(([providerId, providerModels]) => (
+                              <div key={providerId}>
+                                <div
+                                  className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
+                                    provider === providerId
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-text-primary dark:text-dark-text-primary'
+                                  }`}
+                                  onClick={() => handleProviderChange(providerId)}
+                                >
+                                  {providerNames[providerId] ?? providerId}
+                                </div>
+                                {provider === providerId && providerModels.length > 0 && (
+                                  <div className="px-2 pb-2">
+                                    {providerModels.map((m) => (
+                                      <button
+                                        key={m.id}
+                                        onClick={() => {
+                                          setModel(m.id);
+                                          setShowProviderMenu(false);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-xs rounded ${
+                                          model === m.id
+                                            ? 'bg-primary text-white'
+                                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{m.name}</span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
