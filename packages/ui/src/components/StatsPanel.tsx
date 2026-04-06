@@ -34,7 +34,14 @@ import {
   FolderOpen,
   Terminal,
   Bot,
+  StopCircle,
+  Link,
+  Zap,
+  Wrench,
+  Layers,
+  Settings,
 } from './icons';
+import { MarkdownContent } from './MarkdownContent';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { SummaryData, CostsData } from '../types';
@@ -94,6 +101,12 @@ const CONTEXT_ICONS: Record<string, React.ComponentType<{ className?: string }>>
   workspace: FolderOpen,
   'coding-agent': Terminal,
   claw: Bot,
+  workflow: Layers,
+  workflows: Layers,
+  agent: Brain,
+  agents: Brain,
+  tools: Wrench,
+  settings: Settings,
 };
 
 function ContextBanner() {
@@ -135,20 +148,20 @@ function ProviderBadge() {
   const isBridge = provider.startsWith('bridge-');
   const label = isBridge ? 'Bridge' : 'API';
   const isAuto = config?.preferBridge !== undefined;
+  const BadgeIcon = isBridge ? Link : Zap;
 
   return (
-    <div className="px-3 py-1 text-[10px] text-text-muted dark:text-dark-text-muted flex items-center gap-1 border-b border-border dark:border-dark-border">
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${isBridge ? 'bg-green-500' : 'bg-blue-500'}`}
-      />
-      <span>{label}{isAuto ? ' (auto)' : ''}</span>
+    <div className="px-3 py-1.5 text-[10px] text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5 border-b border-border dark:border-dark-border">
+      <BadgeIcon className={`w-3 h-3 ${isBridge ? 'text-green-500' : 'text-blue-500'}`} />
+      <span className="font-medium">{label}{isAuto ? ' (auto)' : ''}</span>
     </div>
   );
 }
 
 function CompactChat() {
-  const { messages, isStreaming, streamingContent, sendMessage, setContext } = useSidebarChat();
+  const { messages, isStreaming, streamingContent, sendMessage, setContext, cancelStream } = useSidebarChat();
   const { context } = usePageContext();
+  const { config } = usePageCopilotContext();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -205,13 +218,25 @@ function CompactChat() {
         data-testid="chat-message-list"
         className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0"
       >
-        {messages.length === 0 && !isStreaming && (
+        {messages.length === 0 && !isStreaming && config?.suggestions?.length ? (
+          <div className="flex flex-col gap-1.5 px-1 py-2">
+            {config.suggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => { setInput(s); }}
+                className="text-left px-2.5 py-1.5 text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        ) : messages.length === 0 && !isStreaming ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-text-muted dark:text-dark-text-muted">
               Start a conversation...
             </p>
           </div>
-        )}
+        ) : null}
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
           if (msg.isError) {
@@ -236,15 +261,15 @@ function CompactChat() {
                   ? msg.content
                       .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
                       .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
-                  : msg.content}
+                  : <MarkdownContent content={msg.content} compact />}
               </div>
             </div>
           );
         })}
         {/* Streaming / loading indicator */}
         {isStreaming && (
-          <div className="flex justify-start">
-            <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-xs text-text-primary dark:text-dark-text-primary">
+          <div className="flex justify-start items-center gap-1">
+            <div className="max-w-[85%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-xs text-text-primary dark:text-dark-text-primary">
               {streamingContent ? (
                 <>
                   <span className="break-words whitespace-pre-wrap">
@@ -264,6 +289,13 @@ function CompactChat() {
                 </span>
               )}
             </div>
+            <button
+              onClick={cancelStream}
+              className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors shrink-0"
+              title="Stop generating"
+            >
+              <StopCircle className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
+            </button>
           </div>
         )}
       </div>
