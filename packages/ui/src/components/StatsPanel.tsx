@@ -15,6 +15,8 @@ import { usePageContext } from '../hooks/usePageContext';
 import {
   Activity,
   Brain,
+  Check,
+  ChevronDown,
   DollarSign,
   Hash,
   PanelRight,
@@ -44,7 +46,7 @@ import {
 import { MarkdownContent } from './MarkdownContent';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import { STORAGE_KEYS } from '../constants/storage-keys';
-import type { SummaryData, CostsData } from '../types';
+import type { SummaryData, CostsData, ProviderInfo } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { QuickAddGrid } from './QuickAddModal';
 import { useSidebarChat } from '../hooks/useSidebarChat';
@@ -141,19 +143,120 @@ function ContextBanner() {
   );
 }
 
-function ProviderBadge() {
-  const { provider } = useSidebarChat();
-  const { config } = usePageCopilotContext();
+function CompactProviderSelector() {
+  const { provider, model, setProvider, setModel } = useSidebarChat();
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    providersApi.list().then((data) => {
+      const configured = (data.providers as ProviderInfo[]).filter((p) => p.isConfigured) ?? [];
+      setProviders(configured);
+    }).catch(() => {});
+  }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
 
   const isBridge = provider.startsWith('bridge-');
-  const label = isBridge ? 'Bridge' : 'API';
-  const isAuto = config?.preferBridge !== undefined;
-  const BadgeIcon = isBridge ? Link : Zap;
+  const selectedProvider = providers.find((p) => p.id === provider);
+  const providerDisplayName = selectedProvider?.name ?? (provider || 'Auto');
+  const modelShort = isBridge
+    ? provider.replace('bridge-', '').toUpperCase().slice(0, 8)
+    : model && model !== 'default'
+    ? (model.split('/').pop()?.slice(0, 8).toUpperCase() ?? 'AUTO')
+    : 'AUTO';
+
+  const bridgeProviders = providers.filter((p) => p.id.startsWith('bridge-'));
+  const apiProviders = providers.filter((p) => !p.id.startsWith('bridge-'));
+
+  const selectProvider = (p: ProviderInfo) => {
+    setProvider(p.id);
+    if (p.id.startsWith('bridge-')) {
+      setModel('default');
+    }
+    setIsOpen(false);
+  };
+
+  const ProviderIcon = isBridge ? Link : Zap;
 
   return (
-    <div className="px-3 py-1.5 text-[10px] text-text-secondary dark:text-dark-text-secondary flex items-center gap-1.5 border-b border-border dark:border-dark-border">
-      <BadgeIcon className={`w-3 h-3 ${isBridge ? 'text-green-500' : 'text-blue-500'}`} />
-      <span className="font-medium">{label}{isAuto ? ' (auto)' : ''}</span>
+    <div ref={dropdownRef} className="relative px-3 py-1.5 border-b border-border dark:border-dark-border">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 px-2 py-1 text-[11px] bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-md w-full hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
+      >
+        <ProviderIcon className={`w-3 h-3 shrink-0 ${isBridge ? 'text-green-500' : 'text-blue-500'}`} />
+        <span className="font-medium text-text-primary dark:text-dark-text-primary truncate flex-1 text-left">
+          {providerDisplayName}
+        </span>
+        <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-accent/10 text-accent">
+          {modelShort}
+        </span>
+        <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted shrink-0" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+          {bridgeProviders.length > 0 && (
+            <>
+              <div className="px-2 py-1 text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+                Bridge
+              </div>
+              {bridgeProviders.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => selectProvider(p)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  <Link className="w-3 h-3 text-green-500 shrink-0" />
+                  <span className="truncate flex-1 text-left text-text-primary dark:text-dark-text-primary">
+                    {p.name}
+                  </span>
+                  {provider === p.id && <Check className="w-3 h-3 text-primary shrink-0" />}
+                </button>
+              ))}
+            </>
+          )}
+          {apiProviders.length > 0 && (
+            <>
+              <div
+                className={`px-2 py-1 text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider${bridgeProviders.length > 0 ? ' border-t border-border dark:border-dark-border' : ''}`}
+              >
+                API
+              </div>
+              {apiProviders.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => selectProvider(p)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
+                >
+                  <Zap className="w-3 h-3 text-blue-500 shrink-0" />
+                  <span className="truncate flex-1 text-left text-text-primary dark:text-dark-text-primary">
+                    {p.name}
+                  </span>
+                  {provider === p.id && <Check className="w-3 h-3 text-primary shrink-0" />}
+                </button>
+              ))}
+            </>
+          )}
+          {providers.length === 0 && (
+            <div className="px-3 py-3 text-xs text-text-muted dark:text-dark-text-muted text-center">
+              No providers configured
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -210,8 +313,8 @@ function CompactChat() {
     <div className="flex flex-col h-full -m-4">
       {/* Context banner */}
       <ContextBanner />
-      {/* Provider badge */}
-      <ProviderBadge />
+      {/* Provider selector */}
+      <CompactProviderSelector />
       {/* Message list */}
       <div
         ref={scrollRef}
