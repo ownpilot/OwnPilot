@@ -1,3 +1,5 @@
+import { getPageCopilotPrompt } from '../../routes/page-prompts/index.js';
+
 export interface PageContext {
   pageType: string;
   entityId?: string;
@@ -32,6 +34,11 @@ export function buildPageContextSection(pageContext: PageContext | undefined | n
 
   if (pageContext.systemPromptHint) {
     parts.push(`\n${pageContext.systemPromptHint}`);
+  }
+
+  const copilotPrompt = getPageCopilotPrompt(pageContext.pageType, pageContext.contextData);
+  if (copilotPrompt) {
+    parts.push(copilotPrompt);
   }
 
   return '\n\n' + parts.join('\n');
