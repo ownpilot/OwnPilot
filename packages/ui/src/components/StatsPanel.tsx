@@ -7,7 +7,7 @@
  * - Provider/model info
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
@@ -37,8 +37,6 @@ import {
   Terminal,
   Bot,
   StopCircle,
-  Link,
-  Zap,
   Wrench,
   Layers,
   Settings,
@@ -155,16 +153,22 @@ function formatProviderName(p: { id: string; name: string }): string {
   return p.name;
 }
 
+interface ModelInfo { id: string; name?: string; provider: string; recommended?: boolean }
+
 function CompactProviderSelector() {
-  const { provider, model, setProvider, setModel } = useSidebarChat();
+  const { provider, model, setProvider, setModel, clearMessages } = useSidebarChat();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedBridge, setExpandedBridge] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Fetch providers + models
   useEffect(() => {
-    providersApi.list().then((data) => {
-      const configured = (data.providers as ProviderInfo[]).filter((p) => p.isConfigured) ?? [];
+    Promise.all([providersApi.list(), modelsApi.list()]).then(([provData, modData]) => {
+      const configured = (provData.providers as ProviderInfo[]).filter((p) => p.isConfigured) ?? [];
       setProviders(configured);
+      setModels((modData.models as ModelInfo[]) ?? []);
     }).catch(() => {});
   }, []);
 
@@ -174,103 +178,243 @@ function CompactProviderSelector() {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        setExpandedBridge(null);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  const selectedProvider = providers.find((p) => p.id === provider);
-  const isBridge = selectedProvider ? isBridgeProvider(selectedProvider) : provider.startsWith('bridge-');
-  const providerDisplayName = selectedProvider ? formatProviderName(selectedProvider) : (provider || 'Auto');
-  const modelShort = isBridge
-    ? (selectedProvider?.name ?? provider)
-        .replace('bridge-', '')
-        .replace('Claude Code (Bridge)', 'claude')
-        .toUpperCase()
-        .slice(0, 8)
-    : model && model !== 'default'
-    ? (model.split('/').pop()?.slice(0, 8).toUpperCase() ?? 'AUTO')
-    : 'AUTO';
+  // Provider name resolution (localStorage cache from ChatPage)
+  const providerNamesCache = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}') as Record<string, string>;
+    } catch { return {} as Record<string, string>; }
+  }, []);
 
+  const selectedProvider = providers.find((p) => p.id === provider);
+  const isBridge = selectedProvider
+    ? isBridgeProvider(selectedProvider)
+    : (providerNamesCache[provider]?.toLowerCase().includes('bridge') || provider.startsWith('bridge-'));
+  const providerDisplayName = selectedProvider
+    ? formatProviderName(selectedProvider)
+    : (providerNamesCache[provider] || provider || 'Select provider');
+
+  // Selected model display
+  const selectedModel = models.find((m) => m.id === model && m.provider === provider);
+  const modelDisplay = selectedModel
+    ? (selectedModel.name || selectedModel.id).split('/').pop() ?? model
+    : model && model !== 'default' ? model.split('/').pop() ?? model : '';
+
+  // Group: bridge vs API
   const bridgeProviders = providers.filter(isBridgeProvider);
   const apiProviders = providers.filter((p) => !isBridgeProvider(p));
 
-  const selectProvider = (p: ProviderInfo) => {
-    setProvider(p.id);
-    if (isBridgeProvider(p)) {
-      setModel('default');
+  // Models grouped by provider
+  const modelsByProvider = useMemo(() => {
+    const map: Record<string, ModelInfo[]> = {};
+    for (const m of models) {
+      if (!map[m.provider]) map[m.provider] = [];
+      map[m.provider]!.push(m);
     }
+    return map;
+  }, [models]);
+
+  const selectProviderAndModel = (p: ProviderInfo, m?: ModelInfo) => {
+    setProvider(p.id);
+    if (m) {
+      setModel(m.id);
+    } else if (isBridgeProvider(p)) {
+      setModel('default');
+    } else {
+      const provModels = modelsByProvider[p.id];
+      const rec = provModels?.find((pm: ModelInfo) => pm.recommended);
+      setModel(rec?.id ?? provModels?.[0]?.id ?? 'default');
+    }
+    setIsOpen(false);
+    setExpandedBridge(null);
+  };
+
+  const handleNewChat = () => {
+    clearMessages();
     setIsOpen(false);
   };
 
-  const ProviderIcon = isBridge ? Link : Zap;
-
   return (
-    <div ref={dropdownRef} className="relative px-3 py-1.5 border-b border-border dark:border-dark-border">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1 text-[11px] bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-md w-full hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
-      >
-        <ProviderIcon className={`w-3 h-3 shrink-0 ${isBridge ? 'text-green-500' : 'text-blue-500'}`} />
-        <span className="font-medium text-text-primary dark:text-dark-text-primary truncate flex-1 text-left">
-          {providerDisplayName}
-        </span>
-        <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-accent/10 text-accent">
-          {modelShort}
-        </span>
-        <ChevronDown className="w-3 h-3 text-text-muted dark:text-dark-text-muted shrink-0" />
-      </button>
+    <div ref={dropdownRef} className="px-3 py-1.5 border-b border-border dark:border-dark-border space-y-1.5">
+      {/* Provider button + New Chat */}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg flex-1 min-w-0 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors"
+        >
+          <span className="font-medium text-text-primary dark:text-dark-text-primary truncate flex-1 text-left">
+            {providerDisplayName}
+          </span>
+          {isBridge ? (
+            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-accent/10 text-accent">
+              <Bot className="w-3 h-3" />
+              {modelDisplay || 'CLI'}
+            </span>
+          ) : modelDisplay ? (
+            <span className="shrink-0 text-text-muted dark:text-dark-text-muted text-xs truncate max-w-[100px]">
+              / {modelDisplay}
+            </span>
+          ) : null}
+          <ChevronDown className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <button
+          onClick={handleNewChat}
+          title="New Chat"
+          className="shrink-0 p-1.5 rounded-lg border border-border dark:border-border hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+        </button>
+      </div>
 
+      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+        <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 max-h-72 overflow-y-auto z-50">
+
+          {/* API Section — always visible, TOP position */}
+          <div className="border-b border-border dark:border-dark-border">
+            <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+              API — Context Inject
+            </div>
+            {apiProviders.length > 0 ? (
+              apiProviders.map((p) => {
+                const provModels = modelsByProvider[p.id] ?? [];
+                const isExpanded = expandedBridge === `api-${p.id}`;
+                const isSelected = provider === p.id;
+                return (
+                  <div key={p.id}>
+                    <div
+                      onClick={() => {
+                        if (provModels.length > 0) {
+                          setExpandedBridge(isExpanded ? null : `api-${p.id}`);
+                        } else {
+                          selectProviderAndModel(p);
+                        }
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center gap-2 ${
+                        isSelected ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      <Cpu className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                      <span className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                        {p.name}
+                      </span>
+                      {provModels.length > 0 && (
+                        <span className="text-[10px] text-text-muted">{provModels.length}</span>
+                      )}
+                      {provModels.length > 0 ? (
+                        <ChevronRight className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      ) : (
+                        isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      )}
+                    </div>
+                    {isExpanded && provModels.length > 0 && (
+                      <div className="bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50">
+                        {provModels.map((m: ModelInfo) => {
+                          const shortName = (m.name || m.id).split('/').pop() ?? m.id;
+                          const isModelSelected = provider === p.id && model === m.id;
+                          return (
+                            <div
+                              key={m.id}
+                              onClick={() => selectProviderAndModel(p, m)}
+                              className={`pl-9 pr-3 py-1.5 text-xs cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center justify-between ${
+                                isModelSelected ? 'text-primary font-medium' : 'text-text-secondary dark:text-dark-text-secondary'
+                              }`}
+                            >
+                              <span className="truncate">{shortName}</span>
+                              {isModelSelected && <Check className="w-3 h-3 text-primary shrink-0" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="px-3 py-2.5 text-xs text-text-muted dark:text-dark-text-muted">
+                No API providers configured —{' '}
+                <a
+                  href="/models?tab=models"
+                  className="text-primary hover:underline not-italic font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  add in Settings
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Bridge Section */}
           {bridgeProviders.length > 0 && (
-            <>
-              <div className="px-2 py-1 text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
-                Bridge
+            <div>
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+                Bridge — CLI Spawn
               </div>
-              {bridgeProviders.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => selectProvider(p)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-                >
-                  <Link className="w-3 h-3 text-green-500 shrink-0" />
-                  <span className="truncate flex-1 text-left text-text-primary dark:text-dark-text-primary">
-                    {formatProviderName(p)}
-                  </span>
-                  {provider === p.id && <Check className="w-3 h-3 text-primary shrink-0" />}
-                </button>
-              ))}
-            </>
-          )}
-          {apiProviders.length > 0 && (
-            <>
-              <div
-                className={`px-2 py-1 text-[10px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider${bridgeProviders.length > 0 ? ' border-t border-border dark:border-dark-border' : ''}`}
-              >
-                API
-              </div>
-              {apiProviders.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => selectProvider(p)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
-                >
-                  <Zap className="w-3 h-3 text-blue-500 shrink-0" />
-                  <span className="truncate flex-1 text-left text-text-primary dark:text-dark-text-primary">
-                    {p.name}
-                  </span>
-                  {provider === p.id && <Check className="w-3 h-3 text-primary shrink-0" />}
-                </button>
-              ))}
-            </>
-          )}
-          {providers.length === 0 && (
-            <div className="px-3 py-3 text-xs text-text-muted dark:text-dark-text-muted text-center">
-              No providers configured
+              {bridgeProviders.map((p) => {
+                const isExpanded = expandedBridge === p.id;
+                const provModels = modelsByProvider[p.id] ?? [];
+                const isSelected = provider === p.id;
+                const runtime = formatProviderName(p);
+                return (
+                  <div key={p.id}>
+                    <div
+                      onClick={() => {
+                        if (provModels.length > 0) {
+                          setExpandedBridge(isExpanded ? null : p.id);
+                        } else {
+                          selectProviderAndModel(p);
+                        }
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center gap-2 ${
+                        isSelected ? 'bg-primary/10' : ''
+                      }`}
+                    >
+                      <Terminal className="w-3.5 h-3.5 text-accent shrink-0" />
+                      <span className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                        {runtime}
+                      </span>
+                      {provModels.length > 0 && (
+                        <span className="text-[10px] text-text-muted">{provModels.length}</span>
+                      )}
+                      {provModels.length > 0 ? (
+                        <ChevronRight className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      ) : (
+                        isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      )}
+                    </div>
+                    {/* Accordion: models for this bridge provider */}
+                    {isExpanded && provModels.length > 0 && (
+                      <div className="bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50">
+                        {provModels.map((m: ModelInfo) => {
+                          const shortName = (m.name || m.id).split('/').pop() ?? m.id;
+                          const isModelSelected = provider === p.id && model === m.id;
+                          return (
+                            <div
+                              key={m.id}
+                              onClick={() => selectProviderAndModel(p, m)}
+                              className={`pl-9 pr-3 py-1.5 text-xs cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center justify-between ${
+                                isModelSelected ? 'text-primary font-medium' : 'text-text-secondary dark:text-dark-text-secondary'
+                              }`}
+                            >
+                              <span className="truncate">{shortName}</span>
+                              {isModelSelected && <Check className="w-3 h-3 text-primary shrink-0" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
+
         </div>
       )}
     </div>
@@ -565,7 +709,7 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
   }
 
   return (
-    <aside className="w-80 border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
+    <aside className="w-96 border-l border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary flex flex-col overflow-hidden">
       {/* Header with Tabs */}
       <div className="border-b border-border dark:border-dark-border">
         <div className="flex items-center justify-between px-4 pt-3 pb-0">
