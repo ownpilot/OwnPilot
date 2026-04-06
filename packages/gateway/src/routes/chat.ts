@@ -162,6 +162,7 @@ async function processNonStreamingViaBus(
       requestId,
       directTools: body.directTools,
       thinking: body.thinking,
+      pageContext: body.pageContext,
     },
   });
 }

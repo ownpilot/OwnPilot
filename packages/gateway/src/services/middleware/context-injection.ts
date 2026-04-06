@@ -24,6 +24,7 @@ import {
 import { buildEnhancedSystemPrompt } from '../../assistant/index.js';
 import { getErrorMessage } from '../../routes/helpers.js';
 import type { RequestRouting } from './request-preprocessor.js';
+import { buildPageContextSection, type PageContext } from './page-context-section.js';
 import { getLog } from '../log.js';
 import { SoulsRepository } from '../../db/repositories/souls.js';
 
@@ -134,6 +135,10 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
       const toolSuggestionSuffix = buildToolSuggestionSection(routing);
       const dataHintSuffix = buildDataHintSection(routing);
 
+      // 4b. Build page context section (per-request)
+      const pageContext = ctx.get<PageContext>('pageContext');
+      const pageContextSuffix = buildPageContextSection(pageContext);
+
       // 5. Build request focus hint
       const focusSuffix = routing?.intentHint
         ? `\n---\n## Request Focus\n${routing.intentHint}`
@@ -198,6 +203,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
                 // Dynamic (uncached) block: fresh time + code/file sections + routing
                 freshTimeContext +
                 afterTimeContext +
+                pageContextSuffix +
                 toolSuggestionSuffix +
                 dataHintSuffix +
                 focusSuffix
@@ -209,6 +215,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
             extensionSuffix +
             skillsSuffix +
             orchestratorSuffix +
+            pageContextSuffix +
             toolSuggestionSuffix +
             dataHintSuffix +
             focusSuffix;
@@ -224,6 +231,7 @@ export function createContextInjectionMiddleware(): MessageMiddleware {
         { name: 'extensions', content: extensionSuffix },
         { name: 'soul_skills', content: skillsSuffix },
         { name: 'orchestrator [static]', content: orchestratorSuffix },
+        { name: 'page_context', content: pageContextSuffix },
         { name: 'tool_suggestions', content: toolSuggestionSuffix },
         { name: 'data_hints', content: dataHintSuffix },
         { name: 'request_focus', content: focusSuffix },

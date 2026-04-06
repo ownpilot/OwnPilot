@@ -61,6 +61,14 @@ export interface ChatRequest {
     mimeType: string;
     filename?: string;
   }>;
+  /** Page context for system prompt enrichment */
+  pageContext?: {
+    pageType: string;
+    entityId?: string;
+    path?: string;
+    contextData?: Record<string, unknown>;
+    systemPromptHint?: string;
+  };
 }
 
 /**
