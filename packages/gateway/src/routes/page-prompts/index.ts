@@ -9,11 +9,12 @@
 import { buildAgentCopilotSection } from './agent-copilot-prompt.js';
 import { buildMcpCopilotSection } from './mcp-copilot-prompt.js';
 import { buildToolCopilotSection } from './tool-copilot-prompt.js';
+import { STATIC_PROMPT as WORKFLOW_FULL_PROMPT } from '../workflow-copilot-prompt.js';
 
-export function getPageCopilotPrompt(pageType: string, contextData?: Record<string, unknown>): string {
+export function getPageCopilotPrompt(pageType: string, contextData?: Record<string, unknown>, hasEntity = false): string {
   switch (pageType) {
     case 'workflow':
-      return buildWorkflowCopilotSection();
+      return hasEntity ? buildWorkflowCopilotFull() : buildWorkflowCopilotSection();
     case 'agent':
       return buildAgentCopilotSection(contextData);
     case 'tool':
@@ -104,4 +105,14 @@ psql -h localhost -p 25432 -U ownpilot -d ownpilot
 SELECT nodes, edges, variables FROM workflows WHERE id = '<workflow_id>';
 SELECT * FROM workflow_logs WHERE workflow_id = '<workflow_id>' ORDER BY started_at DESC LIMIT 5;
 \`\`\``;
+}
+
+/**
+ * Full workflow copilot prompt (~6,700 tokens) — used when viewing a SPECIFIC workflow.
+ * Reuses the same 600-line STATIC_PROMPT from workflow-copilot-prompt.ts
+ * that the dedicated Copilot panel uses. Ensures sidebar chat has identical
+ * workflow editing capabilities when user is on /workflows/:id.
+ */
+function buildWorkflowCopilotFull(): string {
+  return '\n### Workflow Editor (Full)\n\n' + WORKFLOW_FULL_PROMPT;
 }

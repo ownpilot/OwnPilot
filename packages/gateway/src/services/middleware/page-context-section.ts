@@ -36,7 +36,11 @@ export function buildPageContextSection(pageContext: PageContext | undefined | n
     parts.push(`\n${pageContext.systemPromptHint}`);
   }
 
-  const copilotPrompt = getPageCopilotPrompt(pageContext.pageType, pageContext.contextData);
+  const copilotPrompt = getPageCopilotPrompt(
+    pageContext.pageType,
+    pageContext.contextData,
+    !!pageContext.entityId,
+  );
   if (copilotPrompt) {
     parts.push(copilotPrompt);
   }
