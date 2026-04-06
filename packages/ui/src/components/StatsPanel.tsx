@@ -41,6 +41,7 @@ import type { SummaryData, CostsData } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { QuickAddGrid } from './QuickAddModal';
 import { useSidebarChat } from '../hooks/useSidebarChat';
+import { usePageCopilotContext } from '../hooks/usePageCopilotContext';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -127,6 +128,24 @@ function ContextBanner() {
   );
 }
 
+function ProviderBadge() {
+  const { provider } = useSidebarChat();
+  const { config } = usePageCopilotContext();
+
+  const isBridge = provider.startsWith('bridge-');
+  const label = isBridge ? 'Bridge' : 'API';
+  const isAuto = config?.preferBridge !== undefined;
+
+  return (
+    <div className="px-3 py-1 text-[10px] text-text-muted dark:text-dark-text-muted flex items-center gap-1 border-b border-border dark:border-dark-border">
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${isBridge ? 'bg-green-500' : 'bg-blue-500'}`}
+      />
+      <span>{label}{isAuto ? ' (auto)' : ''}</span>
+    </div>
+  );
+}
+
 function CompactChat() {
   const { messages, isStreaming, streamingContent, sendMessage, setContext } = useSidebarChat();
   const { context } = usePageContext();
@@ -178,6 +197,8 @@ function CompactChat() {
     <div className="flex flex-col h-full -m-4">
       {/* Context banner */}
       <ContextBanner />
+      {/* Provider badge */}
+      <ProviderBadge />
       {/* Message list */}
       <div
         ref={scrollRef}

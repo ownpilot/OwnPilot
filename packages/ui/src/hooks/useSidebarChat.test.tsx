@@ -9,6 +9,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { createElement, act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { SidebarChatProvider, useSidebarChat } from './useSidebarChat';
 
 // ---- Minimal renderHook (no @testing-library/react needed) ----
@@ -49,8 +50,9 @@ function renderHook<T>(useHook: () => T, options?: { wrapper?: React.FC<{ childr
 }
 
 // ---- Provider wrapper ----
+// SidebarChatProvider now calls usePageCopilotContext which requires a Router
 const wrapper: React.FC<{ children: ReactNode }> = ({ children }) =>
-  createElement(SidebarChatProvider, null, children);
+  createElement(MemoryRouter, null, createElement(SidebarChatProvider, null, children));
 
 // ---- Tests ----
 

@@ -18,6 +18,7 @@ import {
 } from 'react';
 import { parseSSELine } from '../utils/sse-parser';
 import { STORAGE_KEYS } from '../constants/storage-keys';
+import { usePageCopilotContext } from './usePageCopilotContext';
 
 export interface SidebarMessage {
   id: string;
@@ -54,6 +55,8 @@ type SidebarChatStore = SidebarChatState & SidebarChatActions;
 const SidebarChatContext = createContext<SidebarChatStore | null>(null);
 
 export function SidebarChatProvider({ children }: { children: ReactNode }) {
+  const { config, contextData } = usePageCopilotContext();
+
   const [messages, setMessages] = useState<SidebarMessage[]>([]);
   const [input, setInputState] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -84,6 +87,8 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
   const contextTypeRef = useRef<string | null>(null);
   const providerRef = useRef(provider);
   const modelRef = useRef(model);
+  const contextDataRef = useRef(contextData);
+  const configRef = useRef(config);
 
   // Keep refs in sync with state on every render
   conversationIdRef.current = conversationId;
@@ -92,6 +97,8 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
   contextTypeRef.current = contextType;
   providerRef.current = provider;
   modelRef.current = model;
+  contextDataRef.current = contextData;
+  configRef.current = config;
 
   // Abort on unmount to prevent state updates on unmounted component
   useEffect(() => {
@@ -99,6 +106,38 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  // Auto-select provider based on page's preferBridge flag
+  useEffect(() => {
+    if (!config) return;
+
+    if (config.preferBridge) {
+      try {
+        const providerNames = JSON.parse(
+          localStorage.getItem('ownpilot-provider-names') ?? '{}'
+        ) as Record<string, unknown>;
+        const bridgeEntry = Object.entries(providerNames).find(
+          ([_id, name]) => typeof name === 'string' && name.startsWith('bridge-')
+        );
+        if (bridgeEntry) {
+          setProviderState(bridgeEntry[0]);
+          providerRef.current = bridgeEntry[0];
+        }
+      } catch {
+        /* ignore */
+      }
+    } else {
+      try {
+        const defaultProvider = localStorage.getItem('ownpilot-default-provider') ?? '';
+        if (defaultProvider) {
+          setProviderState(defaultProvider);
+          providerRef.current = defaultProvider;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [config?.preferBridge]);
 
   const cancelStream = useCallback(() => {
     if (abortControllerRef.current) {
@@ -188,6 +227,16 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
 
       const historyLength = messagesRef.current.filter((m) => !m.isError).length;
 
+      const currentConfig = configRef.current;
+      const pageContextBody = currentConfig
+        ? {
+            pageType: currentConfig.pageType,
+            path: contextPathRef.current ?? undefined,
+            contextData: contextDataRef.current ?? undefined,
+            systemPromptHint: currentConfig.systemPromptHint ?? undefined,
+          }
+        : undefined;
+
       const response = await fetch('/api/v1/chat', {
         method: 'POST',
         headers,
@@ -198,6 +247,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
           stream: true,
           conversationId: currentConvId,
           historyLength,
+          ...(pageContextBody && { pageContext: pageContextBody }),
         }),
         signal: controller.signal,
       });
