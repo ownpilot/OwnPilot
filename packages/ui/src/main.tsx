@@ -18,6 +18,7 @@ import { App } from './App';
 import { WebSocketProvider } from './hooks/useWebSocket';
 import { ThemeProvider } from './hooks/useTheme';
 import { ChatProvider } from './hooks/useChatStore';
+import { SidebarChatProvider } from './hooks/useSidebarChat';
 import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DialogProvider } from './components/ConfirmDialog';
@@ -32,11 +33,13 @@ createRoot(document.getElementById('root')!).render(
           <AuthProvider>
             <WebSocketProvider>
               <ChatProvider>
-                <DialogProvider>
-                  <ToastProvider>
-                    <App />
-                  </ToastProvider>
-                </DialogProvider>
+                <SidebarChatProvider>
+                  <DialogProvider>
+                    <ToastProvider>
+                      <App />
+                    </ToastProvider>
+                  </DialogProvider>
+                </SidebarChatProvider>
               </ChatProvider>
             </WebSocketProvider>
           </AuthProvider>

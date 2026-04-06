@@ -93,8 +93,6 @@ interface ChatStore extends ChatState {
   rejectMemory: (index: number) => void;
   resolveApproval: (approved: boolean) => void;
   setThinkingConfig: (config: ChatState['thinkingConfig']) => void;
-  contextPath: string | null;
-  setContextPath: (path: string | null) => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -126,25 +124,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
   const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
-  const [contextPath, setContextPathState] = useState<string | null>(null);
-
-  const setContextPath = useCallback((path: string | null) => {
-    setContextPathState((prev) => {
-      if (prev === path) return prev;
-      // When context path changes, clear messages and reset session
-      setMessages([]);
-      setError(null);
-      setLastFailedMessage(null);
-      setStreamingContent('');
-      setProgressEvents([]);
-      setSuggestions([]);
-      setExtractedMemories([]);
-      setPendingApproval(null);
-      setSessionId(null);
-      setSessionInfo(null);
-      return path;
-    });
-  }, []);
 
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -297,9 +276,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const bridgeName = [provider, providerDisplayName].find(n => n.startsWith('bridge-'));
         if (bridgeName) {
           chatHeaders['X-Runtime'] = bridgeName.replace('bridge-', '');
-        }
-        if (contextPath) {
-          chatHeaders['X-Project-Dir'] = contextPath;
         }
 
         // Use ref to avoid stale closure — sessionId state may not be current in callback
@@ -594,7 +570,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [provider, model, agentId, workspaceId, thinkingConfig, contextPath]
+    [provider, model, agentId, workspaceId, thinkingConfig]
   );
 
   const retryLastMessage = useCallback(async () => {
@@ -666,8 +642,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     rejectMemory,
     resolveApproval,
     setThinkingConfig,
-    contextPath,
-    setContextPath,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
