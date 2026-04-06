@@ -40,7 +40,7 @@ import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { SummaryData, CostsData } from '../types';
 import { LoadingSpinner } from './LoadingSpinner';
 import { QuickAddGrid } from './QuickAddModal';
-import { useChatStore } from '../hooks/useChatStore';
+import { useSidebarChat } from '../hooks/useSidebarChat';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -128,16 +128,16 @@ function ContextBanner() {
 }
 
 function CompactChat() {
-  const { messages, isLoading, streamingContent, sendMessage, setContextPath } = useChatStore();
+  const { messages, isStreaming, streamingContent, sendMessage, setContext } = useSidebarChat();
   const { context } = usePageContext();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync page context path into chat store for X-Project-Dir header
+  // Sync page context path + type into sidebar chat store for X-Project-Dir header
   useEffect(() => {
-    setContextPath(context.path ?? null);
-  }, [context.path, setContextPath]);
+    setContext(context.path ?? null, context.type ?? null);
+  }, [context.path, context.type, setContext]);
 
   // Auto-scroll to bottom on new messages or streaming content
   useEffect(() => {
@@ -156,13 +156,13 @@ function CompactChat() {
 
   const handleSend = useCallback(() => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isStreaming) return;
     setInput('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
     sendMessage(trimmed);
-  }, [input, isLoading, sendMessage]);
+  }, [input, isStreaming, sendMessage]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -184,7 +184,7 @@ function CompactChat() {
         data-testid="chat-message-list"
         className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0"
       >
-        {messages.length === 0 && !isLoading && (
+        {messages.length === 0 && !isStreaming && (
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-text-muted dark:text-dark-text-muted">
               Start a conversation...
@@ -221,7 +221,7 @@ function CompactChat() {
           );
         })}
         {/* Streaming / loading indicator */}
-        {isLoading && (
+        {isStreaming && (
           <div className="flex justify-start">
             <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-xs text-text-primary dark:text-dark-text-primary">
               {streamingContent ? (
@@ -266,7 +266,7 @@ function CompactChat() {
           <button
             data-testid="chat-send-btn"
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isStreaming}
             className="p-1.5 rounded-lg bg-primary text-white disabled:opacity-40 hover:bg-primary-dark transition-colors shrink-0"
             aria-label="Send message"
           >
