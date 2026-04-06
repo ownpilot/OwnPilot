@@ -143,6 +143,18 @@ function ContextBanner() {
   );
 }
 
+const isBridgeProvider = (p: { id: string; name: string }) =>
+  p.id.startsWith('bridge-') || p.name.startsWith('bridge-');
+
+function formatProviderName(p: { id: string; name: string }): string {
+  if (p.name === 'Claude Code (Bridge)') return p.name;
+  if (p.name.startsWith('bridge-')) {
+    const runtime = p.name.replace('bridge-', '');
+    return runtime.charAt(0).toUpperCase() + runtime.slice(1);
+  }
+  return p.name;
+}
+
 function CompactProviderSelector() {
   const { provider, model, setProvider, setModel } = useSidebarChat();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -168,21 +180,25 @@ function CompactProviderSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  const isBridge = provider.startsWith('bridge-');
   const selectedProvider = providers.find((p) => p.id === provider);
-  const providerDisplayName = selectedProvider?.name ?? (provider || 'Auto');
+  const isBridge = selectedProvider ? isBridgeProvider(selectedProvider) : provider.startsWith('bridge-');
+  const providerDisplayName = selectedProvider ? formatProviderName(selectedProvider) : (provider || 'Auto');
   const modelShort = isBridge
-    ? provider.replace('bridge-', '').toUpperCase().slice(0, 8)
+    ? (selectedProvider?.name ?? provider)
+        .replace('bridge-', '')
+        .replace('Claude Code (Bridge)', 'claude')
+        .toUpperCase()
+        .slice(0, 8)
     : model && model !== 'default'
     ? (model.split('/').pop()?.slice(0, 8).toUpperCase() ?? 'AUTO')
     : 'AUTO';
 
-  const bridgeProviders = providers.filter((p) => p.id.startsWith('bridge-'));
-  const apiProviders = providers.filter((p) => !p.id.startsWith('bridge-'));
+  const bridgeProviders = providers.filter(isBridgeProvider);
+  const apiProviders = providers.filter((p) => !isBridgeProvider(p));
 
   const selectProvider = (p: ProviderInfo) => {
     setProvider(p.id);
-    if (p.id.startsWith('bridge-')) {
+    if (isBridgeProvider(p)) {
       setModel('default');
     }
     setIsOpen(false);
@@ -221,7 +237,7 @@ function CompactProviderSelector() {
                 >
                   <Link className="w-3 h-3 text-green-500 shrink-0" />
                   <span className="truncate flex-1 text-left text-text-primary dark:text-dark-text-primary">
-                    {p.name}
+                    {formatProviderName(p)}
                   </span>
                   {provider === p.id && <Check className="w-3 h-3 text-primary shrink-0" />}
                 </button>
