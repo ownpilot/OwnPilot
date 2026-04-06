@@ -393,6 +393,22 @@ async function main() {
   const { getArtifactService } = await import('./services/artifact-service.js');
   registry.register(Services.Artifact, getArtifactService());
 
+  // 25. Graph RAG Service (knowledge graph + hybrid retrieval)
+  const { getGraphRagService } = await import('./services/graph-rag-service.js');
+  registry.register(Services.GraphRag, getGraphRagService());
+
+  // 26. HITL Service (Human-in-the-Loop approvals)
+  const { getHitlService } = await import('./services/hitl-service.js');
+  registry.register(Services.Hitl, getHitlService());
+
+  // 27. Workflow Generator Service (LLM-powered DAG creation)
+  const { getWorkflowGeneratorService } = await import('./services/workflow-generator-service.js');
+  registry.register(Services.WorkflowGenerator, getWorkflowGeneratorService());
+
+  // 28. Workflow Hooks Service (lifecycle hooks)
+  const { getWorkflowHooksService } = await import('./services/workflow-hooks-service.js');
+  registry.register(Services.WorkflowHooks, getWorkflowHooksService());
+
   // Start trigger engine (proactive automation)
   log.info('Starting Trigger Engine...');
   try {

@@ -1,5 +1,18 @@
+# docker-compose.dev.yml — Development configuration
+#
+# Code is mounted via volumes — changes apply on save (hot reload).
+# node_modules live INSIDE the container (named volumes) — never on host.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml --profile postgres up -d   # start all (gateway + postgres)
+#   docker compose -f docker-compose.dev.yml up -d                      # gateway only (external DB)
+#   docker compose -f docker-compose.dev.yml restart gateway             # apply code changes (if hot reload misses)
+#   docker compose -f docker-compose.dev.yml build gateway               # ONLY when deps change (package.json / pnpm-lock.yaml)
+#   docker compose -f docker-compose.dev.yml --profile lightrag up -d   # with LightRAG
+#   docker compose -f docker-compose.dev.yml logs -f gateway             # follow logs
+
 services:
-  # PostgreSQL Database
+  # ── PostgreSQL (pgvector) ─────────────────────────────────────────────
   postgres:
     image: pgvector/pgvector:pg16
     container_name: ownpilot-postgres
@@ -24,23 +37,24 @@ services:
     profiles:
       - postgres
 
-  # OwnPilot (API + UI in a single container)
-  # To use pre-built image instead of local build:
-  # image: ghcr.io/ownpilot/ownpilot:latest
+  # ── Gateway (API + UI, hot reload via tsx watch) ──────────────────────
   gateway:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: ownpilot
     restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
-      - '${PORT:-8080}:8080'
+      # - '${PORT:-8080}:8080'
+      - '8501:8080'
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=8080
       - HOST=0.0.0.0
       - OWNPILOT_DATA_DIR=/app/data
-      # Database (always connects to the postgres service inside Docker network)
+      # Database
       - DATABASE_URL=${DATABASE_URL:-}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
@@ -56,24 +70,38 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
       # Rate Limiting
-      - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-false}
+      - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-true}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-500}
       # MQTT (Edge Delegation)
       - MQTT_BROKER_URL=${MQTT_BROKER_URL:-}
       # Logging
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
       # LightRAG (Graph RAG — optional, requires lightrag profile)
-      - LIGHTRAG_URL=${LIGHTRAG_URL:-}
+      - LIGHTRAG_URL=${LIGHTRAG_URL:-http://lightrag:9621}
       - LIGHTRAG_API_KEY=${LIGHTRAG_API_KEY:-ownpilot-lightrag-key}
     volumes:
+      # Source code — mounted for hot reload (tsx watch picks up changes)
+      - ./packages/core/src:/app/packages/core/src:ro
+      - ./packages/core/data:/app/packages/core/data:ro
+      - ./packages/core/tsconfig.json:/app/packages/core/tsconfig.json:ro
+      - ./packages/gateway/src:/app/packages/gateway/src:ro
+      - ./packages/gateway/data:/app/packages/gateway/data:ro
+      - ./packages/gateway/tsconfig.json:/app/packages/gateway/tsconfig.json:ro
+      - ./packages/cli/src:/app/packages/cli/src:ro
+      - ./packages/cli/tsconfig.json:/app/packages/cli/tsconfig.json:ro
+      - ./tsconfig.base.json:/app/tsconfig.base.json:ro
+      - ./turbo.json:/app/turbo.json:ro
+      # Tests directory
+      - ./tests:/app/tests:ro
+      # Persistent data
       - gateway-data:/app/data
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:8080/health']
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     networks:
       - ownpilot-network
     depends_on:
@@ -81,10 +109,7 @@ services:
         condition: service_healthy
         required: false
 
-  # LightRAG — Graph-based RAG service (entity extraction + knowledge graph)
-  # Provides hybrid retrieval: vector similarity + graph traversal
-  # WebUI: http://localhost:${LIGHTRAG_PORT:-9621}/webui
-  # Swagger: http://localhost:${LIGHTRAG_PORT:-9621}/docs
+  # ── LightRAG (Graph RAG — optional) ──────────────────────────────────
   lightrag:
     image: ghcr.io/hkuds/lightrag:latest
     container_name: ownpilot-lightrag
@@ -96,26 +121,20 @@ services:
       - PORT=9621
       - WORKING_DIR=/data/rag_storage
       - INPUT_DIR=/data/inputs
-      # LLM for entity extraction (uses gateway's configured provider)
       - LLM_BINDING=${LIGHTRAG_LLM_BINDING:-openai}
       - LLM_BINDING_HOST=${LIGHTRAG_LLM_HOST:-https://api.openai.com/v1}
       - LLM_MODEL=${LIGHTRAG_LLM_MODEL:-gpt-4.1-nano}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      # Embeddings
       - EMBEDDING_BINDING=${LIGHTRAG_EMBEDDING_BINDING:-openai}
       - EMBEDDING_BINDING_HOST=${LIGHTRAG_EMBEDDING_HOST:-https://api.openai.com/v1}
       - EMBEDDING_MODEL=${LIGHTRAG_EMBEDDING_MODEL:-text-embedding-3-small}
-      # Storage (uses internal KV store by default, no Neo4j required)
       - LIGHTRAG_KV_STORAGE=JsonKVStorage
       - LIGHTRAG_GRAPH_STORAGE=NetworkXStorage
-      # Chunking
       - LIGHTRAG_CHUNK_TOKEN_SIZE=1200
       - LIGHTRAG_CHUNK_OVERLAP_TOKEN_SIZE=100
       - LIGHTRAG_ENABLE_LLM_CACHE=true
-      # Auth
       - LIGHTRAG_API_KEY=${LIGHTRAG_API_KEY:-ownpilot-lightrag-key}
-      # Language
       - SUMMARY_LANGUAGE=${LIGHTRAG_LANGUAGE:-the same language as the source document}
     volumes:
       - lightrag-data:/data
@@ -130,7 +149,48 @@ services:
     profiles:
       - lightrag
 
-  # Eclipse Mosquitto MQTT Broker (for Edge Delegation)
+  # ── Host-loopback proxy (local AI servers) ───────────────────────────
+  # Local AI servers (LM Studio, Ollama, etc.) often bind to 127.0.0.1
+  # which Docker containers can't reach via host.docker.internal.
+  # This container runs on the host network and binds to 0.0.0.0 on each
+  # configured port (SO_REUSEADDR — coexists with the loopback-only
+  # server on 127.0.0.1).  Gateway connects via host.docker.internal on
+  # the *same* port — no port offsets, no host modifications.
+  #
+  # Usage:
+  #   LOCAL_AI_PORTS=1234,11434 docker compose -f docker-compose.dev.yml --profile local-ai up -d
+  host-proxy:
+    image: alpine/socat:latest
+    container_name: ownpilot-host-proxy
+    restart: unless-stopped
+    network_mode: host
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        PORTS="$${LOCAL_AI_PORTS:-1234}"
+        # Bind to all Docker bridge IPs (172.x.x.1) — does not conflict
+        # with servers on 127.0.0.1 and lets gateway reach them via
+        # host.docker.internal.
+        BRIDGE_IPS=$$(ip -4 addr show | sed -n 's|.*inet \(172\.[0-9]*\.[0-9]*\.1\)/.*|\1|p')
+        if [ -z "$$BRIDGE_IPS" ]; then
+          echo "[host-proxy] ERROR: no docker bridge IPs found"; exit 1
+        fi
+        echo "[host-proxy] bridge IPs: $$BRIDGE_IPS"
+        echo "[host-proxy] ports: $$PORTS"
+        for port in $$(echo "$$PORTS" | tr ',' ' '); do
+          for ip in $$BRIDGE_IPS; do
+            socat TCP-LISTEN:$$port,fork,reuseaddr,bind=$$ip TCP:127.0.0.1:$$port &
+            echo "  ✓ $$ip:$$port → 127.0.0.1:$$port"
+          done
+        done
+        wait
+    environment:
+      - LOCAL_AI_PORTS=${LOCAL_AI_PORTS:-1234}
+    profiles:
+      - local-ai
+
+  # ── Mosquitto MQTT (Edge Delegation — optional) ──────────────────────
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: ownpilot-mosquitto

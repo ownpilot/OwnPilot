@@ -5,3 +5,4 @@
 export { extractSuggestions } from './suggestions.js';
 export { extractMemoriesFromResponse } from './memory-extraction.js';
 export { isBlockedUrl, isPrivateUrlAsync } from './ssrf.js';
+export { rewriteLocalUrl } from './docker-url.js';

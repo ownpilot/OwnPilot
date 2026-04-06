@@ -41,6 +41,10 @@ import type { ISubagentService } from './subagent-service.js';
 import type { IOrchestraService } from '../agent/orchestra/types.js';
 import type { IArtifactService } from './artifact-service.js';
 import type { IEdgeService } from './edge-service.js';
+import type { IGraphRagService } from './graph-rag-service.js';
+import type { IHitlService } from './hitl-service.js';
+import type { IWorkflowGeneratorService } from './workflow-generator-service.js';
+import type { IWorkflowHooksService } from './workflow-hooks-service.js';
 
 /**
  * All service tokens.
@@ -132,4 +136,16 @@ export const Services = {
 
   /** Edge device management (IoT/MQTT delegation) */
   Edge: new ServiceToken<IEdgeService>('edge'),
+
+  /** Graph RAG (knowledge graph + hybrid retrieval) */
+  GraphRag: new ServiceToken<IGraphRagService>('graph-rag'),
+
+  /** HITL (Human-in-the-Loop approval system) */
+  Hitl: new ServiceToken<IHitlService>('hitl'),
+
+  /** Workflow Generator (LLM-powered DAG creation) */
+  WorkflowGenerator: new ServiceToken<IWorkflowGeneratorService>('workflow-generator'),
+
+  /** Workflow Hooks (lifecycle event hooks) */
+  WorkflowHooks: new ServiceToken<IWorkflowHooksService>('workflow-hooks'),
 } as const;

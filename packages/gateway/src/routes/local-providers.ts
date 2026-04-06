@@ -326,19 +326,23 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
   const id = c.req.param('id');
 
   try {
-    const body = await parseJsonBody(c);
-    const { toggleEnabledSchema } = await import('../middleware/validation.js');
-    const parsed = toggleEnabledSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return zodValidationError(c, parsed.error.issues);
-    }
-
-    const { enabled } = parsed.data;
-
     const existing = await localProvidersRepo.getProvider(id);
     if (!existing || existing.userId !== userId) {
       return notFoundError(c, 'Local provider', id);
+    }
+
+    // Support both explicit { enabled: bool } and no-body toggle (invert current)
+    const body = await parseJsonBody(c).catch(() => null);
+    let enabled: boolean;
+    if (body && typeof body === 'object' && 'enabled' in body) {
+      const { toggleEnabledSchema } = await import('../middleware/validation.js');
+      const parsed = toggleEnabledSchema.safeParse(body);
+      if (!parsed.success) {
+        return zodValidationError(c, parsed.error.issues);
+      }
+      enabled = parsed.data.enabled;
+    } else {
+      enabled = !existing.isEnabled;
     }
 
     const updated = await localProvidersRepo.updateProvider(id, { isEnabled: enabled });

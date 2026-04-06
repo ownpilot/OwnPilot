@@ -102,8 +102,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
-  const [provider, setProvider] = useState('');
-  const [model, setModel] = useState('');
+  const [provider, setProviderState] = useState(() => localStorage.getItem('ownpilot-chat-provider') || '');
+  const [model, setModelState] = useState(() => localStorage.getItem('ownpilot-chat-model') || '');
+  const setProvider = (v: string) => { setProviderState(v); localStorage.setItem('ownpilot-chat-provider', v); };
+  const setModel = (v: string) => { setModelState(v); localStorage.setItem('ownpilot-chat-model', v); };
   const [agentId, setAgentId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState('');

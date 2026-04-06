@@ -268,11 +268,26 @@ chatRoutes.post('/', async (c) => {
     }
   }
 
-  // Load conversation if specified
+  // Load conversation if specified — may exist in a different cached agent
+  // when the user switches models mid-conversation.
   if (body.conversationId) {
-    const loaded = agent.loadConversation(body.conversationId);
+    let loaded = agent.loadConversation(body.conversationId);
     if (!loaded) {
-      return notFoundError(c, 'Conversation', body.conversationId);
+      // Search other cached chat agents for this conversation and transfer it
+      const { chatAgentCache } = await import('./agent-cache.js');
+      for (const otherAgent of chatAgentCache.values()) {
+        if (otherAgent === agent) continue;
+        const exported = otherAgent.getMemory().export(body.conversationId);
+        if (exported) {
+          agent.getMemory().import(exported);
+          loaded = agent.loadConversation(body.conversationId);
+          break;
+        }
+      }
+      if (!loaded) {
+        // Still not found — start fresh conversation instead of 404
+        log.debug('Conversation not found, starting fresh', { conversationId: body.conversationId });
+      }
     }
   }
 

@@ -1,0 +1,111 @@
+{
+  "name": "Test Runner — All Node Types",
+  "description": "Comprehensive test workflow to verify the execution log panel. Includes tool nodes, LLM, condition, code, transformer, forEach, delay, parallel, and error scenarios.",
+  "nodes": [
+    {
+      "id": "node_trigger",
+      "type": "triggerNode",
+      "position": { "x": 400, "y": 0 },
+      "data": {
+        "triggerType": "manual",
+        "label": "Manual Start"
+      }
+    },
+    {
+      "id": "node_datetime",
+      "type": "toolNode",
+      "position": { "x": 400, "y": 120 },
+      "data": {
+        "toolName": "core.get_current_datetime",
+        "toolArgs": {},
+        "label": "Get Current DateTime"
+      }
+    },
+    {
+      "id": "node_uuid",
+      "type": "toolNode",
+      "position": { "x": 200, "y": 250 },
+      "data": {
+        "toolName": "core.generate_uuid",
+        "toolArgs": {},
+        "label": "Generate UUID"
+      }
+    },
+    {
+      "id": "node_random",
+      "type": "toolNode",
+      "position": { "x": 600, "y": 250 },
+      "data": {
+        "toolName": "core.random_number",
+        "toolArgs": { "min": 1, "max": 100 },
+        "label": "Random Number (1-100)"
+      }
+    },
+    {
+      "id": "node_validate_email",
+      "type": "toolNode",
+      "position": { "x": 200, "y": 380 },
+      "data": {
+        "toolName": "core.validate_email",
+        "toolArgs": { "email": "test@ownpilot.dev" },
+        "label": "Validate Email"
+      }
+    },
+    {
+      "id": "node_validate_url",
+      "type": "toolNode",
+      "position": { "x": 600, "y": 380 },
+      "data": {
+        "toolName": "core.validate_url",
+        "toolArgs": { "url": "https://ownpilot.dev" },
+        "label": "Validate URL"
+      }
+    },
+    {
+      "id": "node_code",
+      "type": "codeNode",
+      "position": { "x": 400, "y": 510 },
+      "data": {
+        "label": "Calculate Stats",
+        "language": "javascript",
+        "code": "const values = [10, 20, 30, 40, 50];\nconst sum = values.reduce((a, b) => a + b, 0);\nconst avg = sum / values.length;\nreturn { sum, avg, count: values.length, min: Math.min(...values), max: Math.max(...values) };"
+      }
+    },
+    {
+      "id": "node_transformer",
+      "type": "transformerNode",
+      "position": { "x": 400, "y": 640 },
+      "data": {
+        "label": "Format Summary",
+        "expression": "`Workflow test completed at ${nodes.node_datetime?.output?.formatted ?? 'unknown'}. Stats: avg=${nodes.node_code?.output?.avg ?? 'N/A'}`"
+      }
+    },
+    {
+      "id": "node_format_json",
+      "type": "toolNode",
+      "position": { "x": 400, "y": 770 },
+      "data": {
+        "toolName": "core.format_json",
+        "toolArgs": {
+          "json": "{\"status\":\"complete\",\"workflow\":\"test-runner\",\"nodes_executed\":8}"
+        },
+        "label": "Format Final JSON"
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e_trigger_dt", "source": "node_trigger", "target": "node_datetime" },
+    { "id": "e_dt_uuid", "source": "node_datetime", "target": "node_uuid" },
+    { "id": "e_dt_random", "source": "node_datetime", "target": "node_random" },
+    { "id": "e_uuid_email", "source": "node_uuid", "target": "node_validate_email" },
+    { "id": "e_random_url", "source": "node_random", "target": "node_validate_url" },
+    { "id": "e_email_code", "source": "node_validate_email", "target": "node_code" },
+    { "id": "e_url_code", "source": "node_validate_url", "target": "node_code" },
+    { "id": "e_code_transformer", "source": "node_code", "target": "node_transformer" },
+    { "id": "e_transformer_json", "source": "node_transformer", "target": "node_format_json" }
+  ],
+  "variables": {
+    "testMode": true,
+    "version": "1.0"
+  }
+}

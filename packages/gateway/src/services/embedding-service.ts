@@ -8,6 +8,7 @@
 import type { IEmbeddingService } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
+import { rewriteLocalUrl } from '../utils/docker-url.js';
 import {
   EmbeddingCacheRepository,
   embeddingCacheRepo,
@@ -166,7 +167,7 @@ export class EmbeddingService implements IEmbeddingService {
     const apiKey = this.getApiKey();
     const baseUrl = this.getBaseUrl();
 
-    const response = await fetch(`${baseUrl}/embeddings`, {
+    const response = await fetch(`${rewriteLocalUrl(baseUrl)}/embeddings`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

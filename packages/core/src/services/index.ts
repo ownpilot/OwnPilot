@@ -308,6 +308,47 @@ export type {
   EdgeCommandInput,
 } from './edge-service.js';
 
+// Graph RAG Service
+export type {
+  IGraphRagService,
+  KnowledgeEntity,
+  KnowledgeRelation,
+  KnowledgeCollection,
+  GraphQueryResult,
+  ExtractedKnowledge,
+  HybridSearchOptions,
+} from './graph-rag-service.js';
+
+// HITL Service
+export type {
+  IHitlService,
+  HITLInteractionType,
+  HITLMode,
+  HITLStatus,
+  HITLDecision,
+  HITLRequest,
+  HITLResponse,
+  CreateHITLRequestInput,
+} from './hitl-service.js';
+
+// Workflow Generator Service
+export type {
+  IWorkflowGeneratorService,
+  DecompositionMetrics,
+  SubTask,
+  GeneratedWorkflow,
+  WorkflowGenerateOptions,
+} from './workflow-generator-service.js';
+
+// Workflow Hooks Service
+export type {
+  IWorkflowHooksService,
+  WorkflowHookType,
+  WorkflowHookEvent,
+  WorkflowHookConfig,
+  WorkflowHookContext,
+} from './workflow-hooks-service.js';
+
 // Config Center
 export * from './config-center.js';
 

@@ -109,6 +109,25 @@ function buildContextBlock(attachments: ResourceAttachment[]): string {
   return lines.join('\n');
 }
 
+// ── Input history (arrow-up/down to cycle through sent messages) ──────────
+const HISTORY_KEY = 'ownpilot-chat-input-history';
+const MAX_HISTORY = 50;
+
+function loadHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(history: string[]) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+  } catch { /* quota exceeded — ignore */ }
+}
+
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput(
   { onSend, onStop, isLoading, placeholder = 'Type a message...' },
   ref
@@ -118,6 +137,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Input history state (newest first: [last, ..., oldest])
+  const historyRef = useRef<string[]>(loadHistory());
+  const [historyIndex, setHistoryIndex] = useState(-1); // -1 = not navigating
+  const draftRef = useRef('');
 
   useImperativeHandle(ref, () => ({
     setValue: (text: string) => {
@@ -221,6 +245,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         directToolNames.length > 0 ? directToolNames : undefined,
         imageAttachments.length > 0 ? imageAttachments : undefined
       );
+
+      // Push to input history
+      const trimmed = value.trim();
+      if (trimmed) {
+        historyRef.current = [trimmed, ...historyRef.current.filter((h) => h !== trimmed)].slice(0, MAX_HISTORY);
+        saveHistory(historyRef.current);
+      }
+      setHistoryIndex(-1);
+      draftRef.current = '';
+
       setValue('');
       setAttachments([]);
       // Cleanup previews
@@ -233,6 +267,43 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+      return;
+    }
+
+    const textarea = textareaRef.current;
+    const history = historyRef.current;
+
+    // ArrowUp — navigate to older messages (only when cursor is at the very start)
+    if (e.key === 'ArrowUp' && history.length > 0) {
+      const cursorAtStart = textarea ? textarea.selectionStart === 0 && textarea.selectionEnd === 0 : true;
+      if (cursorAtStart) {
+        e.preventDefault();
+        const nextIndex = historyIndex + 1;
+        if (nextIndex < history.length) {
+          if (historyIndex === -1) draftRef.current = value;
+          setHistoryIndex(nextIndex);
+          setValue(history[nextIndex]!);
+        }
+      }
+      return;
+    }
+
+    // ArrowDown — navigate to newer messages
+    if (e.key === 'ArrowDown' && historyIndex >= 0) {
+      const cursorAtEnd = textarea
+        ? textarea.selectionStart === textarea.value.length && textarea.selectionEnd === textarea.value.length
+        : true;
+      if (cursorAtEnd) {
+        e.preventDefault();
+        const nextIndex = historyIndex - 1;
+        if (nextIndex >= 0) {
+          setHistoryIndex(nextIndex);
+          setValue(history[nextIndex]!);
+        } else {
+          setHistoryIndex(-1);
+          setValue(draftRef.current);
+        }
+      }
     }
   };
 

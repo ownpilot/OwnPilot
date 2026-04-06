@@ -45,6 +45,15 @@ export abstract class BaseProvider implements IProvider {
   protected requestTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: ProviderConfig) {
+    // When running inside Docker, rewrite localhost URLs to host.docker.internal
+    if (config.baseUrl && (process.env.OWNPILOT_DATA_DIR === '/app/data' || process.env.DOCKER === '1')) {
+      config = {
+        ...config,
+        baseUrl: config.baseUrl
+          .replace(/\/\/127\.0\.0\.1([:/])/g, '//host.docker.internal$1')
+          .replace(/\/\/localhost([:/])/g, '//host.docker.internal$1'),
+      };
+    }
     this.config = config;
   }
 

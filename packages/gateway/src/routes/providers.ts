@@ -408,7 +408,25 @@ app.get('/:id', async (c) => {
 
   const config = loadProviderConfig(id);
 
+  // Fallback: check local providers (LMStudio, Ollama, etc.) by UUID
   if (!config) {
+    const localProv = await localProvidersRepo.getProvider(id);
+    if (localProv) {
+      return apiResponse(c, {
+        id: localProv.id,
+        name: localProv.name,
+        type: 'openai-compatible',
+        baseUrl: localProv.baseUrl,
+        apiKeyEnv: '',
+        isConfigured: true,
+        isEnabled: localProv.isEnabled,
+        isDefault: localProv.isDefault,
+        hasOverride: false,
+        color: '#22c55e',
+        providerType: localProv.providerType,
+        local: true,
+      });
+    }
     return apiError(
       c,
       { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },
@@ -457,7 +475,7 @@ app.get('/:id', async (c) => {
 /**
  * GET /providers/:id/models - Get models for a provider
  */
-app.get('/:id/models', (c) => {
+app.get('/:id/models', async (c) => {
   const id = c.req.param('id');
 
   // Check CLI chat providers first (cli-claude, cli-codex, cli-gemini)
@@ -475,6 +493,17 @@ app.get('/:id/models', (c) => {
   const config = loadProviderConfig(id);
 
   if (!config) {
+    // Fallback: local provider models are managed via /local-providers/:id/models
+    const localProv = await localProvidersRepo.getProvider(id);
+    if (localProv) {
+      return apiResponse(c, {
+        provider: localProv.id,
+        providerName: localProv.name,
+        models: [],
+        isConfigured: true,
+        local: true,
+      });
+    }
     return apiError(
       c,
       { code: ERROR_CODES.PROVIDER_NOT_FOUND, message: `Provider '${id}' not found` },

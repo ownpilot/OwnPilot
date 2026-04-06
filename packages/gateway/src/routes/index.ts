@@ -64,3 +64,7 @@ export { cliChatRoutes } from './cli-chat.js';
 export { fleetRoutes } from './fleet.js';
 export { notificationRoutes } from './notifications.js';
 export { clawRoutes } from './claws.js';
+export { knowledgeGraphRoutes } from './knowledge-graph.js';
+export { hitlRoutes } from './hitl.js';
+export { workflowGeneratorRoutes } from './workflow-generator.js';
+export { workflowHooksRoutes } from './workflow-hooks.js';

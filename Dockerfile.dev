@@ -1,0 +1,38 @@
+# Dockerfile.dev — Development image
+# Installs ALL dependencies (dev + prod). Source code mounted via volumes.
+# Rebuild ONLY when package.json or pnpm-lock.yaml changes.
+
+FROM node:22-alpine
+
+# Install Chromium for headless browser automation (puppeteer-core)
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
+
+WORKDIR /app
+
+# Copy package files (layer cached unless deps change)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/core/package.json ./packages/core/
+COPY packages/gateway/package.json ./packages/gateway/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/ui/package.json ./packages/ui/
+
+# Install ALL dependencies (dev + prod)
+RUN pnpm install --frozen-lockfile
+
+# Copy all source (will be overridden by volume mounts in dev)
+COPY tsconfig.base.json turbo.json ./
+COPY packages/ ./packages/
+
+# Build core (gateway depends on it) and UI (static assets served by gateway)
+RUN pnpm --filter @ownpilot/core build && pnpm --filter @ownpilot/ui build
+
+ENV NODE_ENV=development
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+EXPOSE 8080 5173
+
+# Default: run gateway in dev mode (tsx watch)
+CMD ["pnpm", "--filter", "@ownpilot/gateway", "dev"]

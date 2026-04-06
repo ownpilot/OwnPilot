@@ -8,6 +8,7 @@
 
 import type { LocalProvider } from '../db/repositories/local-providers.js';
 import { getErrorMessage } from '../routes/helpers.js';
+import { rewriteLocalUrl } from '../utils/docker-url.js';
 
 // ============================================================================
 // Types
@@ -62,7 +63,7 @@ async function timedFetch(url: string, headers: Record<string, string>): Promise
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(rewriteLocalUrl(url), {
       method: 'GET',
       headers,
       signal: controller.signal,
