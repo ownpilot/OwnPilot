@@ -486,3 +486,192 @@ context-injection.ts (MODIFIED):
 | Sidebar chat UI | CompactChat (Phase 13) | StatsPanel.tsx |
 
 **%80 mevcut altyapi yeniden kullaniliyor. Sadece "## Page Context" section builder + UI registry eklenmesi gerekiyor.**
+
+---
+
+## 8. Workflow Copilot Deep Analysis (Pattern Reference)
+
+### Architecture
+
+```
+WorkflowCopilotPanel (UI, 1113 LOC)
+  │  w-96, sag panel, border-l, flex-col
+  │  State: useState<CopilotMessage[]> (LOCAL — global store degil!)
+  │
+  │  workflowsApi.copilot() → stream()
+  ▼
+POST /workflows/copilot (gateway, SSE streaming)
+  │  resolveProviderAndModel() → kullanicinin ayarli provider/model
+  │  createProvider() → dogrudan LLM API cagrisi (bridge degil!)
+  │  buildCopilotSystemPrompt() → 600 satir static prompt
+  │    ↳ 24 node type dokumantasyonu
+  │    ↳ mevcut workflow JSON (varsa)
+  │    ↳ 230 available tool name listesi
+  │    ↳ workflow template ideas (inspiration)
+  │
+  │  provider.stream() → SSE chunks
+  ▼
+UI: delta → streamingContent → done → extractWorkflowJson()
+  │  JSON code block'tan workflow parse
+  │  "Apply to Canvas" butonu → onApplyWorkflow()
+  │  convertDefinitionToReactFlow() → ReactFlow nodes/edges
+```
+
+### Key Patterns from Copilot
+
+| Pattern | Detail | Reuse for Contextual Chat |
+|---------|--------|---------------------------|
+| Local state (not global store) | useState<CopilotMessage[]> | YES → SidebarChatStore |
+| SSE streaming + AbortController | abort.current?.abort() + stop button | YES → streaming cancel |
+| JSON extraction from response | extractWorkflowJson() regex | ADAPT → per-page action extraction |
+| Action button on AI output | "Apply to Canvas" button | YES → per-page actions |
+| 30+ suggestions + shuffle | SuggestionsList + pickRandom() | YES → per-page suggestions |
+| Context injection via prompt | buildCopilotSystemPrompt(currentWorkflow) | YES → buildPageContextSection() |
+| Tool name resolver | buildToolNameResolver() fuzzy matching | MAYBE → tool page copilot |
+| MarkdownContent rendering | <MarkdownContent content={} compact /> | YES → replace plain text bubbles |
+
+### Files Reference
+
+| File | LOC | Purpose |
+|------|-----|---------|
+| packages/ui/src/components/workflows/WorkflowCopilotPanel.tsx | 1113 | UI panel + JSON converter |
+| packages/gateway/src/routes/workflow-copilot.ts | 147 | SSE streaming endpoint |
+| packages/gateway/src/routes/workflow-copilot-prompt.ts | 657 | System prompt (24 node types) |
+| packages/gateway/src/routes/workflow-template-ideas.ts | ~200 | Suggestion templates |
+
+---
+
+## 9. Web Research: CLI Tool Comparison (External Sources)
+
+### Claude Code CLI
+- **No `--cwd` flag** — Feature request #26287 closed as NOT_PLANNED (2026-03-18)
+- Duplicate issues: #750, #1628, #3473, #15075, #36937
+- SDK supports `cwd` option: `ClaudeAgentOptions(cwd="/path")`
+- Security: blocks `cd` to parent/sibling directories
+- Project root: walks up from CWD looking for `.claude/`
+- Docs: https://platform.claude.com/docs/en/agent-sdk/claude-code-features
+
+### OpenAI Codex CLI
+- **`--cd` / `-C` flag** — sets working directory before agent starts
+- `--add-dir <path>` — grants additional writable directories
+- Sandbox: **Landlock + seccomp on Linux (ON by default)** — only CLI with default sandbox
+- Requires Git repository by default (override: `--skip-git-repo-check`)
+- Docs: https://developers.openai.com/codex/cli/reference
+
+### Google Gemini CLI
+- **No `--cwd` flag** — runtime `/directory add` command only
+- `--include-directories` flag reportedly broken (#13669)
+- 5 sandbox modes: macOS Seatbelt, Docker/Podman, Windows, gVisor, LXC
+- Project context: GEMINI.md hierarchy (like CLAUDE.md)
+- Docs: https://geminicli.com/docs/reference/commands/
+
+### OpenCode CLI
+- `--cwd` for ACP server mode, `--dir` for TUI attach
+- ACP: `session/new` requires `cwd` parameter
+- Session routing: walks up from CWD to nearest git root
+- Docs: https://opencode.ai/docs/cli/
+
+### Aider
+- **No `--cwd` flag** — uses shell CWD
+- `--subtree-only` restricts scope to current subtree
+- Shell commands CWD = git repo root
+- Docs: https://aider.chat/docs/config/options.html
+
+### ACP (Agent Client Protocol) — Emerging Standard
+- Supported by: OpenCode, Gemini CLI, Claude Code (adopting), Codex (adopting)
+- `session/new` requires `cwd` parameter — standardized
+- JetBrains, Zed editors adopting
+- Source: https://blog.jetbrains.com/ai/2026/01/acp-agent-registry/
+
+### Multi-Runtime Orchestrators
+- **Overstory** (github.com/jayminwest/overstory): 11 runtime support, git worktree isolation
+- **pi-builder**: TypeScript monorepo, capability-based routing, SQLite persistence
+- **Composio Agent Orchestrator**: Plans tasks, spawns agents, handles CI fixes
+
+### Security CVEs (Directory Routing)
+- CVE-2025-53109/53110: MCP Filesystem Server symlink bypass → read /etc/sudoers
+- CVE-2025-68143/44/45: Anthropic Git MCP Server path traversal + argument injection → RCE
+- CVE-2026-20669: Agent Safehouse improved macOS directory path validation
+- Claude Code Bubblewrap escape: /proc/self/root bypass to disable sandbox
+
+---
+
+## 10. Behavior Scenarios (UX Reference)
+
+### Scenario 1: Workspace Page (PATH VAR)
+```
+URL: /workspaces?id=ws_abc
+Context: { pageType: 'workspace', path: '/home/ayaz/projects/myproject' }
+Provider: Bridge (auto — path var)
+Bridge CWD: /home/ayaz/projects/myproject
+AI: dosya erisimi, git, terminal — GUCLU
+```
+
+### Scenario 2: Page Navigation (Context Change)
+```
+/workspaces → /workflows/wf_xyz
+Sidebar chat: SIFIRLANIR (messages=[], conversationId=null)
+Yeni context: { pageType: 'workflow', definition: {...} }
+Yeni suggestions: workflow-specific
+Eski konusmalar: /chat gecmisinde hala mevcut
+```
+
+### Scenario 3: Same Page Multiple Messages
+```
+Mesaj 1: pageContext gonderilir + yeni conversationId olusur
+Mesaj 2-N: ayni conversationId devam — session-based context
+Bridge: ayni session, ayni CWD, onceki context hatirlanir
+```
+
+### Scenario 4: No-Path Page (Tools, Notes)
+```
+URL: /tools
+Context: { pageType: 'tools', contextData: { tools: [...230] } }
+Provider: LLM API (auto — path yok)
+Bridge: SPAWN YOK — direkt LLM call
+AI: tool listesini bilir (system prompt'tan), dosya erisimi YOK
+```
+
+### Scenario 5: MCP Servers Page
+```
+URL: /settings/mcp-servers
+Context: { pageType: 'mcp-server', contextData: { servers: [...] } }
+Provider: LLM API (auto)
+AI: server durumlarini bilir, diagnostik yapabilir, dosya erisimi YOK
+```
+
+### Session-Based pageContext Decision
+```
+ILK MESAJ:    pageContext gonderilir → gateway KAYEDER (conversationId bazli)
+SONRAKILER:   pageContext GONDERILMEZ → gateway kayitlidan yukler
+CONTEXT DEGISIMI: yeni conversationId → pageContext TEKRAR gonderilir
+```
+
+---
+
+## 11. Docker Bind Mount Strategy
+
+### Deployment Config
+```yaml
+services:
+  ownpilot:
+    volumes:
+      - /home/ayaz:/host-home:rw        # Full home access (Profile 1)
+    environment:
+      - OWNPILOT_HOST_FS=/host-home          # Container mount point
+      - OWNPILOT_HOST_FS_HOST_PREFIX=/home/ayaz  # Host path prefix
+```
+
+### Path Mapping Flow
+```
+Container: /host-home/projects/myproject  ← gateway gorunur (bind mount)
+Host:      /home/ayaz/projects/myproject  ← bridge/CLI gorunur
+
+Donusum: containerPath.replace(HOST_FS, HOST_PREFIX) = hostPath
+  /host-home/projects/x → /home/ayaz/projects/x
+```
+
+### Reference Doc: HOST-FILESYSTEM-ACCESS.md
+3 security profile documented (Profile 1: Full, 2: Selective, 3: Read-Only)
+OWNPILOT_HOST_FS + OWNPILOT_HOST_FS_LABEL env vars
+Currently NOT IMPLEMENTED — Phase 20 will activate

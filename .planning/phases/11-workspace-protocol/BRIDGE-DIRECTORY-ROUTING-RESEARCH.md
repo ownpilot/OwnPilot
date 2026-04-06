@@ -331,3 +331,79 @@ Just add X-Project-Dir forwarding alongside X-Runtime in agent-cache.ts `loadPro
 7. **ACP integration** — Use ACP protocol for runtimes that support it (OpenCode first)
 8. **Per-workspace sandbox** — Different security profiles per workspace type
 9. **Path mapping config** — Configurable Docker → host path translations
+
+---
+
+## 11. Security CVEs — Real-World Directory Routing Vulnerabilities
+
+| CVE | Tool | Attack | Impact |
+|-----|------|--------|--------|
+| CVE-2025-53109 | MCP Filesystem Server | Symlink bypass past path prefix validation | Read /etc/sudoers |
+| CVE-2025-53110 | MCP Filesystem Server | Symlink write exploit | Write macOS Launch Agents |
+| CVE-2025-68143/44/45 | Anthropic Git MCP Server | Path traversal + argument injection | RCE via prompt injection |
+| CVE-2026-20669 | Agent Safehouse | macOS sandbox path validation gap | Improved in patch |
+| — | Claude Code | Bubblewrap escape via /proc/self/root | Sandbox disabled entirely |
+
+**Lesson:** Simple path prefix checking is INSUFFICIENT (CVE-2025-53109). Use `realpathSync()` to resolve symlinks before validation. Kernel-level isolation (gVisor, microVMs) is the only robust approach.
+
+---
+
+## 12. Multi-Runtime Orchestrator Patterns (Industry)
+
+### Overstory (github.com/jayminwest/overstory)
+- 11 runtime support (Claude Code, Codex, Gemini, Aider, Goose, OpenCode, Amp, Copilot, Cursor, Pi, Sapling)
+- Each agent gets isolated git worktree — no file conflicts
+- Runtime adapters deploy runtime-specific config (.claude/, .codex/, GEMINI.md)
+- SQLite mail system for inter-agent coordination
+- Tiered conflict resolution on merge
+
+### pi-builder
+- TypeScript monorepo wrapping 10+ CLI agents
+- Capability-based routing, health caching, fallback chains
+- Streaming OrchestratorService with SQLite persistence
+
+### Composio Agent Orchestrator (github.com/ComposioHQ/agent-orchestrator)
+- Plans tasks, spawns agents autonomously
+- Handles CI fixes, merge conflicts, code reviews
+
+### Wit (Function-Level Locking)
+- Tree-sitter AST parsing to lock specific functions (not files)
+- Agents declare intents, acquire symbol-level locks
+- Conflict warnings before writing
+
+---
+
+## 13. Sandbox Comparison Table
+
+| Tool | Linux Sandbox | macOS Sandbox | Default State | Mechanism |
+|------|--------------|---------------|---------------|-----------|
+| Claude Code | Bubblewrap | Seatbelt | **Off** | Process namespace |
+| Codex | Landlock + seccomp | N/A (Docker) | **On** | Kernel LSM |
+| Gemini CLI | gVisor / LXC / Docker | Seatbelt | Off | Container/microVM |
+| OpenCode | None | None | — | No sandbox |
+| Aider | None | None | — | No sandbox |
+
+**NVIDIA AI Red Team Mandatory Controls:**
+1. Network egress controls (no unrestricted outbound)
+2. File write restrictions (designated workspace only)
+3. Configuration file protection (block .bashrc, .gitconfig, .zshrc writes)
+
+---
+
+## 14. External Sources & References
+
+- [Claude Code --cwd feature request #26287](https://github.com/anthropics/claude-code/issues/26287) — Closed NOT_PLANNED
+- [Claude Code SDK cwd option](https://platform.claude.com/docs/en/agent-sdk/claude-code-features)
+- [Codex CLI Reference](https://developers.openai.com/codex/cli/reference) — --cd flag
+- [Codex Config Reference](https://developers.openai.com/codex/config-reference) — .codex/config.toml
+- [Gemini CLI Configuration](https://geminicli.com/docs/cli/sandbox/) — 5 sandbox modes
+- [Gemini --include-directories bug #13669](https://github.com/google-gemini/gemini-cli/issues/13669)
+- [OpenCode ACP Support](https://opencode.ai/docs/acp/) — session/new requires cwd
+- [ACP Agent Registry (JetBrains)](https://blog.jetbrains.com/ai/2026/01/acp-agent-registry/)
+- [Aider Options Reference](https://aider.chat/docs/config/options.html) — no --cwd
+- [Overstory multi-agent](https://github.com/jayminwest/overstory) — 11 runtime orchestrator
+- [Composio Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator)
+- [AI Agent Sandbox Security (Northflank)](https://northflank.com/blog/how-to-sandbox-ai-agents)
+- [OWASP AI Agent Security Top 10 2026](https://medium.com/@oracle_43885/owasps-ai-agent-security-top-10-agent-security-risks-2026)
+- [MCP Filesystem CVEs (symlink bypass)](https://blog.cyberdesserts.com/ai-agent-security-risks/)
+- OwnPilot HOST-FILESYSTEM-ACCESS.md — 3 security profiles (documented, not implemented)
