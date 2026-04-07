@@ -9,6 +9,14 @@
 import { buildAgentCopilotSection } from './agent-copilot-prompt.js';
 import { buildMcpCopilotSection } from './mcp-copilot-prompt.js';
 import { buildToolCopilotSection } from './tool-copilot-prompt.js';
+import { buildSkillCopilotSection } from './skill-copilot-prompt.js';
+import { buildClawCopilotSection } from './claw-copilot-prompt.js';
+import { buildWorkspaceCopilotSection } from './workspace-copilot-prompt.js';
+import { buildCodingAgentCopilotSection } from './coding-agent-copilot-prompt.js';
+import { buildAutonomousCopilotSection } from './autonomous-copilot-prompt.js';
+import { buildCliToolsCopilotSection } from './cli-tools-copilot-prompt.js';
+import { buildToolGroupsCopilotSection } from './tool-groups-copilot-prompt.js';
+import { buildWorkflowToolsCopilotSection } from './workflow-tools-copilot-prompt.js';
 import { STATIC_PROMPT as WORKFLOW_FULL_PROMPT } from '../workflow-copilot-prompt.js';
 
 export function getPageCopilotPrompt(pageType: string, contextData?: Record<string, unknown>, hasEntity = false): string {
@@ -22,6 +30,22 @@ export function getPageCopilotPrompt(pageType: string, contextData?: Record<stri
       return buildToolCopilotSection(contextData);
     case 'mcp-server':
       return buildMcpCopilotSection(contextData);
+    case 'skill':
+      return buildSkillCopilotSection(contextData);
+    case 'claw':
+      return buildClawCopilotSection(contextData);
+    case 'workspace':
+      return buildWorkspaceCopilotSection(contextData);
+    case 'coding-agent':
+      return buildCodingAgentCopilotSection(contextData);
+    case 'autonomous':
+      return buildAutonomousCopilotSection(contextData);
+    case 'cli-tool':
+      return buildCliToolsCopilotSection(contextData);
+    case 'tool-group':
+      return buildToolGroupsCopilotSection(contextData);
+    case 'workflow-tool':
+      return buildWorkflowToolsCopilotSection(contextData);
     default:
       return '';
   }
