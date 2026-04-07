@@ -97,6 +97,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
             id: claw.id,
             name: claw.name,
             mode: claw.mode,
+            state: claw.session?.state,
+            mission: claw.mission,
           },
         };
       } catch {
@@ -218,6 +220,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   'edge-devices': {
     pageType: 'edge-device',
+    systemPromptHint:
+      'You are helping manage IoT/edge devices connected via MQTT broker (Mosquitto). Focus on device status, telemetry data, command sending, and connection diagnostics.',
     suggestions: [
       'What edge devices are currently online?',
       'Help me send a command to a device',
@@ -227,6 +231,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   tasks: {
     pageType: 'task',
+    systemPromptHint:
+      'You are helping manage personal tasks. Focus on task creation, prioritization, due dates, status tracking, and productivity insights.',
     suggestions: [
       'Help me prioritize my tasks for today',
       'Create a new task from this description',
@@ -236,6 +242,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   notes: {
     pageType: 'note',
+    systemPromptHint:
+      'You are helping manage personal notes. Focus on note organization, search, summarization, and topic-based grouping.',
     suggestions: [
       'Summarize my recent notes',
       'Help me organize my notes by topic',
@@ -245,6 +253,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   goals: {
     pageType: 'goal',
+    systemPromptHint:
+      'You are helping manage personal goals. Focus on goal setting, progress tracking, milestone breakdown, and risk assessment for at-risk goals.',
     suggestions: [
       'What progress have I made on my goals?',
       'Help me break down this goal into steps',
@@ -254,6 +264,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   habits: {
     pageType: 'habit',
+    systemPromptHint:
+      'You are helping manage habit tracking. Focus on streak analysis, consistency metrics, habit routine building, and motivation. OwnPilot has 8 AI habit tools for logging, analysis, and recommendations.',
     suggestions: [
       'Show my habit streak summary',
       'Which habits have I been most consistent with?',
@@ -263,6 +275,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   memories: {
     pageType: 'memory',
+    systemPromptHint:
+      'You are helping manage AI memories — facts and context the AI remembers about the user. Focus on memory review, cleanup, topic search, and accuracy verification.',
     suggestions: [
       'What do you remember about me?',
       'Find memories related to a specific topic',
@@ -272,6 +286,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   bookmarks: {
     pageType: 'bookmark',
+    systemPromptHint:
+      'You are helping manage saved bookmarks. Focus on bookmark organization, categorization, search, and curation.',
     suggestions: [
       'Show my most recently saved bookmarks',
       'Help me organize bookmarks into categories',
@@ -281,6 +297,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   contacts: {
     pageType: 'contact',
+    systemPromptHint:
+      'You are helping manage personal contacts. Focus on contact search, organization, communication history, and relationship management.',
     suggestions: [
       'Find contacts I haven\'t spoken to recently',
       'Help me draft a message to a contact',
@@ -290,6 +308,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   channels: {
     pageType: 'channel',
+    systemPromptHint:
+      'You are helping manage communication channels (WhatsApp, Telegram, etc.). Focus on channel status, message monitoring, configuration, and connection troubleshooting.',
     suggestions: [
       'What channels are currently active?',
       'Help me configure a new notification channel',
@@ -299,6 +319,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   fleet: {
     pageType: 'fleet',
+    systemPromptHint:
+      'You are helping manage Fleet Command — parallel task execution across multiple worker types (ai-chat, coding-cli, api-call, mcp-bridge, claw). Focus on task status, worker health, dependency cascades, and failure diagnosis.',
     suggestions: [
       'What is the current status of my fleet?',
       'Show failed tasks across all fleet workers',
@@ -308,6 +330,8 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   triggers: {
     pageType: 'trigger',
+    systemPromptHint:
+      'You are helping manage automation triggers — rules that fire agents or workflows in response to events (schedule, webhook, condition, email). Focus on trigger creation, execution history, and debugging.',
     suggestions: [
       'What triggers are currently active?',
       'Help me create a new automation trigger',
@@ -317,10 +341,62 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
 
   artifacts: {
     pageType: 'artifact',
+    systemPromptHint:
+      'You are helping manage AI-generated artifacts — code snippets, documents, images, and other outputs created during conversations. Focus on artifact content, usage in workflows, and organization.',
     suggestions: [
       'What artifacts have been created recently?',
       'Help me understand this artifact\'s content',
       'How can I use this artifact in a workflow?',
+    ],
+  },
+
+  // ─── MISSING PAGES (added for full coverage) ─────────────────────────────
+
+  autonomous: {
+    pageType: 'autonomous',
+    systemPromptHint:
+      'You are helping the user manage autonomous agents (Souls), crews, and background agent plans. Focus on agent lifecycle, crew collaboration, budget control, and activity monitoring.',
+    suggestions: [
+      'What autonomous agents are currently running?',
+      'Help me create a new agent crew for a task',
+      'Show the activity feed and heartbeat status',
+      'How do I set budget limits for an autonomous agent?',
+    ],
+  },
+
+  'cli-tools': {
+    pageType: 'cli-tool',
+    systemPromptHint:
+      'You are helping the user manage CLI tool discovery, installation, and security policies. Focus on tool categories, risk levels, and execution policies (allowed/prompt/blocked).',
+    suggestions: [
+      'What CLI tools are available and installed?',
+      'Help me set security policies for high-risk tools',
+      'How do I register a custom CLI tool?',
+      'Show tools by category (linters, formatters, build)',
+    ],
+  },
+
+  'tool-groups': {
+    pageType: 'tool-group',
+    systemPromptHint:
+      'You are helping the user organize tools into logical groups for agent assignment. Focus on enabling/disabling groups, understanding tool counts, and managing access control.',
+    suggestions: [
+      'Which tool groups are currently enabled?',
+      'Help me understand what each tool group contains',
+      'How do I create a minimal tool set for a specific agent?',
+      'What tools are in the "always enabled" system groups?',
+    ],
+  },
+
+  'workflow-tools': {
+    pageType: 'workflow-tool',
+    systemPromptHint:
+      'You are helping the user control which custom tools and MCP server tools are available inside workflows. Focus on the workflowUsable toggle, active workflow dependencies, and MCP tool discovery.',
+    suggestions: [
+      'Which tools are enabled for use in workflows?',
+      'Help me understand which workflows depend on this tool',
+      'How do I enable an MCP server tool for workflow use?',
+      'Show tools that are used in active workflows',
     ],
   },
 };
