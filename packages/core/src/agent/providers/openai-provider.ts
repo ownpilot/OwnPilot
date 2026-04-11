@@ -136,15 +136,14 @@ export class OpenAIProvider extends BaseProvider {
     const result = await withRetry(async () => {
       try {
         const fetchOpts = this.createFetchOptions(body);
-        // Inject bridge headers for session resume + multi-provider routing
+        // Inject bridge headers for session resume + multi-provider routing.
+        // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
+        // container path invalid for host bridge, bridge's default CWD is sufficient.
         if (request.metadata?.conversationId) {
           (fetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
         }
         if (this.config.headers) {
           Object.assign(fetchOpts.headers as Record<string, string>, this.config.headers);
-        }
-        if (request.metadata?.projectDir) {
-          (fetchOpts.headers as Record<string, string>)['X-Project-Dir'] = request.metadata.projectDir;
         }
         const response = await fetch(endpoint, fetchOpts);
         this.clearRequestTimeout();
@@ -244,15 +243,14 @@ export class OpenAIProvider extends BaseProvider {
 
     try {
       const streamFetchOpts = this.createFetchOptions(body);
-      // Inject bridge headers for session resume + multi-provider routing
+      // Inject bridge headers for session resume + multi-provider routing.
+      // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
+      // container path invalid for host bridge, bridge's default CWD is sufficient.
       if (request.metadata?.conversationId) {
         (streamFetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
       }
       if (this.config.headers) {
         Object.assign(streamFetchOpts.headers as Record<string, string>, this.config.headers);
-      }
-      if (request.metadata?.projectDir) {
-        (streamFetchOpts.headers as Record<string, string>)['X-Project-Dir'] = request.metadata.projectDir;
       }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,
