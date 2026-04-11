@@ -561,7 +561,15 @@ export class Agent {
   }
 
   /**
-   * Load a conversation
+   * Load a conversation.
+   *
+   * CRITICAL: Must reset `bridgeConversationId` to undefined. The gateway caches
+   * Agent instances at (provider, model) level, so the same Agent handles MANY
+   * distinct conversations via `loadConversation()`. Without this reset, the
+   * bridgeConversationId captured from a prior conversation leaks into the new
+   * one, making agent.ts:282 send the WRONG `X-Conversation-Id` header to the
+   * bridge, which then resumes the WRONG CLI session → catastrophic context mix.
+   * See: cross-conversation leak reproduced in f2303c32 inheriting from 65d4ce66.
    */
   loadConversation(conversationId: string): boolean {
     const conversation = this.memory.get(conversationId);
@@ -570,17 +578,20 @@ export class Agent {
     this.state = {
       ...this.state,
       conversation,
+      bridgeConversationId: undefined,
     };
     return true;
   }
 
   /**
-   * Fork current conversation
+   * Fork current conversation.
+   * Resets `bridgeConversationId` because a forked conversation has a new
+   * identity and must map to a new bridge session. See loadConversation() docs.
    */
   fork(): Conversation | undefined {
     const forked = this.memory.fork(this.state.conversation.id);
     if (forked) {
-      this.state = { ...this.state, conversation: forked };
+      this.state = { ...this.state, conversation: forked, bridgeConversationId: undefined };
     }
     return forked;
   }
