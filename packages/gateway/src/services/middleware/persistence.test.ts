@@ -204,6 +204,49 @@ describe('createPersistenceMiddleware', () => {
   });
 
   // =========================================================================
+  // skipPersistenceMessages flag → skip all message persistence
+  // =========================================================================
+
+  describe('when skipPersistenceMessages is true (web streaming path)', () => {
+    it('should return result without saving any messages or broadcasting', async () => {
+      const ctx = createContext({
+        store: {
+          agentResult: createAgentResult(),
+          conversationId: 'conv-1',
+          skipPersistenceMessages: true,
+        },
+      });
+      const msg = createMessage();
+      const nextResult = createNextResult();
+      const next = vi.fn().mockResolvedValue(nextResult);
+
+      const result = await middleware(msg, ctx, next);
+
+      expect(next).toHaveBeenCalledOnce();
+      expect(result).toBe(nextResult);
+      expect(ChatRepository).not.toHaveBeenCalled();
+      expect(mockChatRepo.addMessage).not.toHaveBeenCalled();
+      expect(mockBroadcast).not.toHaveBeenCalled();
+      expect(ctx.addWarning).not.toHaveBeenCalled();
+    });
+
+    it('should still call next() when flag is set', async () => {
+      const ctx = createContext({
+        store: {
+          agentResult: createAgentResult(),
+          conversationId: 'conv-1',
+          skipPersistenceMessages: true,
+        },
+      });
+      const next = vi.fn().mockResolvedValue(createNextResult());
+
+      await middleware(createMessage(), ctx, next);
+
+      expect(next).toHaveBeenCalledOnce();
+    });
+  });
+
+  // =========================================================================
   // Missing conversationId → skip with warning
   // =========================================================================
 

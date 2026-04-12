@@ -665,7 +665,11 @@ export async function processStreamingViaBus(
     timestamp: new Date(),
   };
 
-  // Process through the pipeline
+  // Process through the pipeline.
+  // Set skipPersistenceMessages so the persistence middleware does NOT save messages
+  // here — saveStreamingChat (below) is the sole persistence path for web streaming.
+  // This prevents the double-write bug: middleware + saveStreamingChat both saving
+  // user+assistant messages to the same conversation.
   const result = await bus.process(normalized, {
     stream: callbacks,
     context: {
@@ -678,6 +682,7 @@ export async function processStreamingViaBus(
       directTools: body.directTools,
       thinking: body.thinking,
       pageContext: body.pageContext,
+      skipPersistenceMessages: true,
     },
   });
 
