@@ -95,50 +95,56 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { sessionId: chatStoreSessionId, messages: chatMessages } = useChatStore();
+  const { sessionId: chatStoreSessionId, messages: chatMessages, sessionTabs } = useChatStore();
   // Active conversation: prefer URL param (sidebar click), fallback to chat store (new chat)
   const activeConversationId = searchParams.get('conversationId') || chatStoreSessionId;
 
-  // Sticky optimistic sidebar entry: persists across clearMessages() until DB entry arrives.
-  // Without sticky, clicking "New Chat" before response arrives wipes chatMessages=[],
-  // which kills the optimistic entry, and the conversation vanishes from sidebar.
-  // The ref keeps the entry alive; it only clears when recents has the real DB row.
-  const stickyOptimisticRef = useRef<import('../api/types').Conversation | null>(null);
+  // Multi-session optimistic entries: each session gets its own sticky entry in sidebar.
+  // Map persists entries across createSession/clearMessages until DB row arrives.
+  const stickyOptimisticMapRef = useRef(new Map<string, import('../api/types').Conversation>());
 
-  const optimisticEntry = useMemo(() => {
-    // Build candidate from current chat messages (if any)
+  const optimisticEntries = useMemo(() => {
+    const map = stickyOptimisticMapRef.current;
+
+    // Add/update entry for the ACTIVE session's current messages
     const firstUserMsg = chatMessages.find(m => m.role === 'user');
     if (firstUserMsg) {
       const convId = chatStoreSessionId || '__optimistic__';
-      const alreadyInRecents = recents.conversations.some(c => c.id === convId);
-      if (!alreadyInRecents) {
-        const entry = {
+      if (!recents.conversations.some(c => c.id === convId)) {
+        map.set(convId, {
           id: convId,
           title: firstUserMsg.content.slice(0, 80),
           updatedAt: firstUserMsg.timestamp || new Date().toISOString(),
           createdAt: firstUserMsg.timestamp || new Date().toISOString(),
           source: 'web' as const,
-        } as import('../api/types').Conversation;
-        stickyOptimisticRef.current = entry;
-        return entry;
+        } as import('../api/types').Conversation);
+      } else {
+        map.delete(convId);
       }
-      // DB has it now — clear sticky
-      stickyOptimisticRef.current = null;
-      return null;
     }
 
-    // Chat was cleared (New Chat) — use sticky ref if DB hasn't caught up yet
-    const sticky = stickyOptimisticRef.current;
-    if (sticky) {
-      const alreadyInRecents = recents.conversations.some(c => c.id === sticky.id);
-      if (alreadyInRecents) {
-        stickyOptimisticRef.current = null;
-        return null;
+    // Add entries from session tabs (snapshots of switched-away sessions)
+    for (const tab of sessionTabs) {
+      if (!recents.conversations.some(c => c.id === tab.id) && !map.has(tab.id)) {
+        map.set(tab.id, {
+          id: tab.id,
+          title: tab.title,
+          updatedAt: new Date(tab.createdAt).toISOString(),
+          createdAt: new Date(tab.createdAt).toISOString(),
+          source: 'web' as const,
+        } as import('../api/types').Conversation);
       }
-      return sticky;
     }
-    return null;
-  }, [chatMessages, chatStoreSessionId, recents.conversations]);
+
+    // Prune entries that DB now has
+    for (const [id] of map) {
+      if (recents.conversations.some(c => c.id === id)) {
+        map.delete(id);
+      }
+    }
+
+    return [...map.values()];
+  }, [chatMessages, chatStoreSessionId, recents.conversations, sessionTabs]);
   const toast = useToast();
   const dialog = useDialog();
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -393,25 +399,25 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                       </div>
                     ) : (
                       <>
-                      {/* Optimistic entry: shows immediately when user sends a message.
-                          Clickable + highlight-aware — de-highlights after New Chat,
-                          clicking navigates back to this conversation. */}
-                      {optimisticEntry && (() => {
-                        const isActive = activeConversationId === optimisticEntry.id;
+                      {/* Optimistic entries: one per active session, shows immediately
+                          when user sends a message. Each persists in sidebar until
+                          the DB row arrives via WS chat:history:updated. */}
+                      {optimisticEntries.map((entry) => {
+                        const isActive = activeConversationId === entry.id;
                         return (
-                          <div>
+                          <div key={entry.id}>
                             <div
-                              onClick={() => handleRecentClick(optimisticEntry.id)}
+                              onClick={() => handleRecentClick(entry.id)}
                               className={`group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors ${
                                 isActive ? 'bg-primary/10 text-primary' : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary'
                               }`}
                             >
                               <MessageSquare className="w-3 h-3 shrink-0 opacity-50" />
-                              <span className="truncate text-xs flex-1">{optimisticEntry.title}</span>
+                              <span className="truncate text-xs flex-1">{entry.title}</span>
                             </div>
                           </div>
                         );
-                      })()}
+                      })}
                       {recents.groups.map((group) => (
                         <div key={group.label}>
                           <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted dark:text-dark-text-muted">{group.label}</p>
