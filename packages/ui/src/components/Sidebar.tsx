@@ -99,22 +99,45 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
   // Active conversation: prefer URL param (sidebar click), fallback to chat store (new chat)
   const activeConversationId = searchParams.get('conversationId') || chatStoreSessionId;
 
-  // Optimistic sidebar entry: when user sent a message but conversation not yet in recents
+  // Sticky optimistic sidebar entry: persists across clearMessages() until DB entry arrives.
+  // Without sticky, clicking "New Chat" before response arrives wipes chatMessages=[],
+  // which kills the optimistic entry, and the conversation vanishes from sidebar.
+  // The ref keeps the entry alive; it only clears when recents has the real DB row.
+  const stickyOptimisticRef = useRef<import('../api/types').Conversation | null>(null);
+
   const optimisticEntry = useMemo(() => {
-    if (chatMessages.length === 0) return null;
+    // Build candidate from current chat messages (if any)
     const firstUserMsg = chatMessages.find(m => m.role === 'user');
-    if (!firstUserMsg) return null;
-    const convId = chatStoreSessionId || '__optimistic__';
-    // Check if this conversation is already in recents
-    const alreadyInRecents = recents.conversations.some(c => c.id === convId);
-    if (alreadyInRecents) return null;
-    return {
-      id: convId,
-      title: firstUserMsg.content.slice(0, 80),
-      updatedAt: firstUserMsg.timestamp || new Date().toISOString(),
-      createdAt: firstUserMsg.timestamp || new Date().toISOString(),
-      source: 'web' as const,
-    } as import('../api/types').Conversation;
+    if (firstUserMsg) {
+      const convId = chatStoreSessionId || '__optimistic__';
+      const alreadyInRecents = recents.conversations.some(c => c.id === convId);
+      if (!alreadyInRecents) {
+        const entry = {
+          id: convId,
+          title: firstUserMsg.content.slice(0, 80),
+          updatedAt: firstUserMsg.timestamp || new Date().toISOString(),
+          createdAt: firstUserMsg.timestamp || new Date().toISOString(),
+          source: 'web' as const,
+        } as import('../api/types').Conversation;
+        stickyOptimisticRef.current = entry;
+        return entry;
+      }
+      // DB has it now — clear sticky
+      stickyOptimisticRef.current = null;
+      return null;
+    }
+
+    // Chat was cleared (New Chat) — use sticky ref if DB hasn't caught up yet
+    const sticky = stickyOptimisticRef.current;
+    if (sticky) {
+      const alreadyInRecents = recents.conversations.some(c => c.id === sticky.id);
+      if (alreadyInRecents) {
+        stickyOptimisticRef.current = null;
+        return null;
+      }
+      return sticky;
+    }
+    return null;
   }, [chatMessages, chatStoreSessionId, recents.conversations]);
   const toast = useToast();
   const dialog = useDialog();
