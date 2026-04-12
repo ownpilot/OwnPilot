@@ -302,16 +302,19 @@ chatRoutes.post('/', async (c) => {
         loaded = agent.loadConversation(body.conversationId);
       }
       if (!loaded) {
-        // Sidebar chat sends new conversation IDs (sidebar-*) that don't exist yet.
-        // Create a fresh conversation instead of returning 404.
-        if (body.conversationId.startsWith('sidebar-')) {
-          agent.getMemory().createWithId(
-            body.conversationId,
-            undefined,
-            { source: 'sidebar-chat', createdAt: new Date().toISOString() }
-          );
-          loaded = agent.loadConversation(body.conversationId);
-        }
+        // Accept client-generated conversation IDs (multi-session pattern).
+        // The client pre-generates a UUID at createSession() time and sends it
+        // with the first message. This follows the industry-standard pattern
+        // used by NextChat, LobeChat, big-AGI, and Vercel AI SDK.
+        const source = body.conversationId.startsWith('sidebar-')
+          ? 'sidebar-chat'
+          : 'client-generated';
+        agent.getMemory().createWithId(
+          body.conversationId,
+          undefined,
+          { source, createdAt: new Date().toISOString() }
+        );
+        loaded = agent.loadConversation(body.conversationId);
         if (!loaded) {
           return notFoundError(c, 'Conversation', body.conversationId);
         }

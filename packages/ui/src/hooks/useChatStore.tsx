@@ -354,9 +354,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           chatHeaders['X-Runtime'] = bridgeName.replace('bridge-', '');
         }
 
-        // Use ref to avoid stale closure — sessionId state may not be current in callback
-        const currentSessionId = sessionIdRef.current;
-        console.log('[SESSION-FIX-UI] sendMessage sessionId:', currentSessionId);
+        // Use ref to avoid stale closure — sessionId state may not be current in callback.
+        // Safety net: if sessionId is still null (e.g. fresh page load), pre-generate one.
+        // Backend accepts client-generated UUIDs and auto-creates the conversation.
+        let currentSessionId = sessionIdRef.current;
+        if (!currentSessionId) {
+          currentSessionId = crypto.randomUUID();
+          setSessionId(currentSessionId);
+        }
         const response = await fetch('/api/v1/chat', {
           method: 'POST',
           headers: chatHeaders,
@@ -365,8 +370,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             provider,
             model,
             stream: true,
-            // Continue the current conversation by ID so messages are properly linked in DB
-            ...(currentSessionId && { conversationId: currentSessionId }),
+            // Always send conversationId — client pre-generates if needed (safety net above)
+            conversationId: currentSessionId,
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
@@ -769,8 +774,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const createSession = useCallback((): string => {
     const currentId = activeSessionId;
     const snap = captureSnapshot();
-    // Only save if there's something worth keeping
-    if (snap.messages.length > 0 || snap.sessionId) {
+    // Only save if there are actual messages (sessionId is always set now via pre-generation)
+    if (snap.messages.length > 0) {
       sessionsRef.current.set(currentId, snap);
       const title = snap.messages.find(m => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
       setSessionTabs(prev => {
@@ -785,6 +790,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const newId = crypto.randomUUID();
     setActiveSessionId(newId);
     clearAllState();
+    // Pre-set sessionId so the first message includes conversationId in the request.
+    // This follows the client-generated ID pattern (NextChat, LobeChat, big-AGI).
+    // The backend accepts unknown IDs and auto-creates the conversation (FIX-1).
+    setSessionId(newId);
     // Enforce max sessions — evict oldest
     if (sessionsRef.current.size > MAX_SESSIONS) {
       const entries = [...sessionsRef.current.entries()];
