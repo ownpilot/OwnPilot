@@ -416,7 +416,8 @@ export async function getOrCreateChatAgent(
   provider: string,
   model: string,
   fallback?: { provider: string; model: string },
-  pageContext?: { path?: string } | null
+  pageContext?: { path?: string } | null,
+  conversationId?: string
 ): Promise<Agent> {
   // CLI providers are NOT cached — each request may need fresh MCP session state
   // while still reusing the persistent ~/.ownpilot/workspace directory.
@@ -424,11 +425,14 @@ export async function getOrCreateChatAgent(
     return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback, pageContext);
   }
 
-  // Sidebar requests with path context get unique cache keys (different CWD = different agent)
+  // Per-conversation cache key when conversationId is provided.
+  // Each conversation gets its own agent instance so parallel chats don't block
+  // each other with "Agent is already processing a request" errors.
   const sanitize = (s: string) => s.replace(/\|/g, '_');
   const fbSuffix = fallback ? `|fb_${sanitize(fallback.provider)}_${sanitize(fallback.model)}` : '';
   const pathSuffix = pageContext?.path ? `|dir_${sanitize(pageContext.path)}` : '';
-  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}${pathSuffix}`;
+  const convSuffix = conversationId ? `|conv_${sanitize(conversationId)}` : '';
+  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}${pathSuffix}${convSuffix}`;
 
   const cached = lruGet(chatAgentCache, cacheKey);
   if (cached) return cached;

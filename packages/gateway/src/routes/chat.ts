@@ -258,7 +258,7 @@ chatRoutes.post('/', async (c) => {
     }
   } else {
     try {
-      agent = await getOrCreateChatAgent(provider, model, routingFallback);
+      agent = await getOrCreateChatAgent(provider, model, routingFallback, undefined, body.conversationId);
     } catch (error) {
       return apiError(
         c,
