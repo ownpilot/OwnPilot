@@ -22,7 +22,9 @@ import {
   notFoundError,
   getErrorMessage,
   parseJsonBody,
+  truncate,
 } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 import {
   getAgent,
   getOrCreateDefaultAgent,
@@ -399,6 +401,34 @@ chatRoutes.post('/', async (c) => {
   // Mark prompt as initialized for this conversation
   if (!isPromptInitialized) {
     boundedSetAdd(promptInitializedConversations, conversationId, 1000);
+  }
+
+  // ── Early persistence: create conversation in DB NOW so it appears in sidebar
+  // recents IMMEDIATELY (before AI responds). Without this, users who click
+  // "New Chat" before the response arrives lose the conversation from recents
+  // because the optimistic React entry is cleared and DB save hasn't happened.
+  // The later full save (saveStreamingChat/persistence middleware) is idempotent
+  // via getOrCreateConversation — it will find this row and add messages to it.
+  try {
+    const chatRepo = new ChatRepository(chatUserId);
+    const earlyConv = await chatRepo.getOrCreateConversation(
+      body.conversationId || conversationId,
+      {
+        title: truncate(chatMessage),
+        agentId: body.agentId,
+        agentName: body.agentId ? undefined : 'Chat',
+        provider,
+        model,
+      }
+    );
+    wsGateway.broadcast('chat:history:updated', {
+      conversationId: earlyConv.id,
+      title: earlyConv.title,
+      source: 'web',
+      messageCount: 0,
+    });
+  } catch (err) {
+    log.warn('Early conversation persist failed (non-fatal):', err);
   }
 
   // Handle streaming
