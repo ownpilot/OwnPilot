@@ -44,6 +44,7 @@ vi.mock('../services/conversation-service.js', () => ({
   ConversationService: vi.fn(function () {
     return {
       saveStreamingLog: (...args: unknown[]) => mockSaveStreamingChat(...args),
+      saveStreamingChat: (...args: unknown[]) => mockSaveStreamingChat(...args),
     };
   }),
   runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),

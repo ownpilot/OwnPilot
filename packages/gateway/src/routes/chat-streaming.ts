@@ -699,14 +699,15 @@ export async function processStreamingViaBus(
     error: result.response.metadata.error as string | undefined,
   });
 
-  // Persistence middleware saves to ChatRepository but NOT LogsRepository.
-  // Save streaming trace/logs here to match what the legacy path does.
+  // Save both messages AND logs here. The persistence middleware is unreliable
+  // when resetContext changes the agent's conversationId mid-stream (race condition).
+  // The conversation-service dedup check prevents duplicate user messages.
   const assistantContent = (result.response.content || state.streamedContent)
     .replace(THINK_TAG_REGEX, '')
     .trim();
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
-    await new ConversationService(userId).saveStreamingLog(state, {
+    await new ConversationService(userId).saveStreamingChat(state, {
       conversationId,
       agentId,
       provider,
