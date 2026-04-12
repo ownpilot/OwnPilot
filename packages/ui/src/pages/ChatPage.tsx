@@ -363,6 +363,11 @@ export function ChatPage() {
     setActiveConv(null);
     setChannelInfo(null);
     setChannelMessages([]);
+    // Reset backend agent context so the new session uses the current provider/model.
+    // Without this, the first message in a new chat may use stale agent config
+    // because the UI shows the correct provider/model but the backend agent
+    // hasn't been re-initialized with it.
+    chatApi.resetContext(provider, model).catch(() => {});
   };
 
   const handleLoadConversation = async (id: string) => {
