@@ -155,6 +155,31 @@ export function useSidebarRecents(): SidebarRecentsState {
     });
   }, [subscribe, load]);
 
+  // Optimistic entry: instantly show a new conversation in the sidebar the moment
+  // the user hits Send, before the backend early-persist + WS round-trip completes.
+  // useChatStore dispatches 'chat:optimistic-entry' synchronously after setMessages.
+  // When the DB reload arrives, setConversations replaces the optimistic entry (same id).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { id, title } = (e as CustomEvent<{ id: string; title: string }>).detail;
+      setConversations((prev) => {
+        if (prev.some((c) => c.id === id)) return prev;
+        return [
+          {
+            id,
+            title,
+            updatedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            source: 'web',
+          } as Conversation,
+          ...prev,
+        ];
+      });
+    };
+    window.addEventListener('chat:optimistic-entry', handler);
+    return () => window.removeEventListener('chat:optimistic-entry', handler);
+  }, []);
+
   const setSearch = useCallback(
     (q: string) => {
       setSearchState(q);

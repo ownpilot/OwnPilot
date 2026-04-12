@@ -340,6 +340,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return prev;
       });
 
+      // Instantly inject sidebar entry — fires before backend early-persist so there's no race.
+      // useSidebarRecents listens for this and prepends directly to recents.conversations.
+      if (!isRetry) {
+        const curId = sessionIdRef.current;
+        if (curId) {
+          window.dispatchEvent(
+            new CustomEvent('chat:optimistic-entry', { detail: { id: curId, title: content.slice(0, 80) } })
+          );
+        }
+      }
+
       try {
         // Build headers — include session token for UI auth
         const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
