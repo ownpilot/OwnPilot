@@ -64,7 +64,6 @@ export function ChatPage() {
     sessionInfo,
     sendMessage,
     retryLastMessage,
-    clearMessages,
     loadConversation,
     cancelRequest,
     clearSuggestions,
@@ -73,6 +72,11 @@ export function ChatPage() {
     resolveApproval,
     isThinking,
     thinkingContent,
+    activeSessionId,
+    sessionTabs,
+    createSession,
+    switchSession,
+    closeSession,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -348,24 +352,17 @@ export function ChatPage() {
     setShowProviderMenu(false);
   };
 
-  const handleNewChat = async () => {
-    // Cancel any ongoing request and clear frontend messages
-    clearMessages();
+  const handleNewChat = () => {
+    // Create a new session — saves current conversation to session map
+    createSession();
     setCurrentAgent(null);
-    setAgentId(null); // Clear agent for chat requests
+    setAgentId(null);
     setSearchParams({});
     // Reset channel mode
     setIsChannelMode(false);
     setActiveConv(null);
     setChannelInfo(null);
     setChannelMessages([]);
-
-    // Reset backend context for fresh conversation
-    try {
-      await chatApi.resetContext(provider, model);
-    } catch {
-      // Ignore errors - context reset is best-effort
-    }
   };
 
   const handleLoadConversation = async (id: string) => {
@@ -725,6 +722,41 @@ export function ChatPage() {
             New Chat
           </button>
         </header>
+
+        {/* Session tabs — visible when multiple sessions are open */}
+        {sessionTabs.length > 0 && (
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border dark:border-dark-border bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 overflow-x-auto">
+            {sessionTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => switchSession(tab.id)}
+                className={`group flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
+                  tab.id === activeSessionId
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                }`}
+              >
+                <span className="max-w-[140px] truncate">{tab.title}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); closeSession(tab.id); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); closeSession(tab.id); } }}
+                  className="opacity-0 group-hover:opacity-100 ml-0.5 hover:text-red-500 transition-opacity"
+                >
+                  ×
+                </span>
+              </button>
+            ))}
+            <button
+              onClick={handleNewChat}
+              className="px-2 py-1 text-xs text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-md transition-colors"
+              title="New session"
+            >
+              +
+            </button>
+          </div>
+        )}
 
         {/* Session context bar — visible only in web mode */}
         {!isChannelMode && (
