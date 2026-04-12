@@ -29,6 +29,7 @@ interface ChatInputProps {
 
 export interface ChatInputHandle {
   setValue: (text: string) => void;
+  focus: () => void;
 }
 
 // --- Chip color mapping ---
@@ -123,6 +124,9 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     setValue: (text: string) => {
       setValue(text);
       // Focus and trigger resize after value update
+      setTimeout(() => textareaRef.current?.focus(), 0);
+    },
+    focus: () => {
       setTimeout(() => textareaRef.current?.focus(), 0);
     },
   }));

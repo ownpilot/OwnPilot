@@ -368,6 +368,8 @@ export function ChatPage() {
     // because the UI shows the correct provider/model but the backend agent
     // hasn't been re-initialized with it.
     chatApi.resetContext(provider, model).catch(() => {});
+    // Auto-focus chat input so user can start typing immediately
+    chatInputRef.current?.focus();
   };
 
   const handleLoadConversation = async (id: string) => {
