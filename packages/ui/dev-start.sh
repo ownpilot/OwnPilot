@@ -26,7 +26,7 @@ node dev-proxy.mjs &
 PROXY_PID=$!
 
 # Start Vite in foreground (Preview MCP tracks this process)
-VITE_API_BASE=http://localhost:5174 npx vite --host 0.0.0.0 --port 5173 &
+VITE_API_BASE=http://localhost:5174 npx vite --host 0.0.0.0 ${PORT:+--port $PORT} &
 VITE_PID=$!
 
 # Wait for either to exit (wait -n requires bash 4+, macOS ships bash 3.2)

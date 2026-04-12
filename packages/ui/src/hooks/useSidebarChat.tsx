@@ -248,7 +248,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
           }
         : undefined;
 
-      const response = await fetch('/api/v1/chat', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/v1/chat`, {
         method: 'POST',
         headers,
         body: JSON.stringify({

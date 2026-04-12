@@ -382,7 +382,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           currentSessionId = crypto.randomUUID();
           setSessionId(currentSessionId);
         }
-        const response = await fetch('/api/v1/chat', {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/v1/chat`, {
           method: 'POST',
           headers: chatHeaders,
           body: JSON.stringify({
