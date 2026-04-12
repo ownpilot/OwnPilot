@@ -414,8 +414,9 @@ chatRoutes.post('/', async (c) => {
   // via getOrCreateConversation — it will find this row and add messages to it.
   try {
     const chatRepo = new ChatRepository(chatUserId);
+    const earlyConvId = body.conversationId || conversationId;
     const earlyConv = await chatRepo.getOrCreateConversation(
-      body.conversationId || conversationId,
+      earlyConvId,
       {
         title: truncate(chatMessage),
         agentId: body.agentId,
@@ -424,11 +425,18 @@ chatRoutes.post('/', async (c) => {
         model,
       }
     );
+    // Persist user message NOW so it survives even if AI stream fails/aborts.
+    // The later saveStreamingChat is idempotent — it won't duplicate this message.
+    await chatRepo.addMessage({
+      conversationId: earlyConv.id,
+      role: 'user',
+      content: chatMessage,
+    });
     wsGateway.broadcast('chat:history:updated', {
       conversationId: earlyConv.id,
       title: earlyConv.title,
       source: 'web',
-      messageCount: 0,
+      messageCount: 1,
     });
   } catch (err) {
     log.warn('Early conversation persist failed (non-fatal):', err);

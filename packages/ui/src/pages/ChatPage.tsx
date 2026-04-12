@@ -427,7 +427,12 @@ export function ChatPage() {
             model: m.model ?? undefined,
             isError: m.isError,
           }));
-        loadConversation(id, msgs);
+        if (msgs.length > 0) {
+          loadConversation(id, msgs);
+        } else {
+          // DB has no messages (early persist only) — try in-memory session
+          switchSession(id);
+        }
         // v7.2: Restore provider/model from conversation metadata
         if (conv.provider) {
           setProvider(conv.provider);
