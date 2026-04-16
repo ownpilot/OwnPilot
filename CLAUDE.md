@@ -2,6 +2,14 @@
 
 Privacy-first personal AI assistant platform. TypeScript monorepo with Turborepo.
 
+## Project Rules (auto-loaded)
+
+All files in `.claude/rules/` are loaded as project instructions for every AI agent:
+
+- **`data-safety.md`** — **MANDATORY** data protection rules. Forbidden commands (no `docker compose down -v`, no destructive migrations without backup), volume inventory, pre-action checklist. Read BEFORE any DB/volume/migration work.
+- `page-contexts.md` — Per-page (workflow/agent/MCP/etc.) context templates for sidebar chat spawns.
+- `sidebar-chat.md` — Sidebar chat assistant behavior + API/DB access patterns.
+
 ## Architecture
 
 ```
