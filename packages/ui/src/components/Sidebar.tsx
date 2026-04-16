@@ -301,7 +301,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   }
                 >
                   <Calendar className="w-4 h-4 shrink-0" />
-                  <span className="truncate flex-1">Scheduled</span>
+                  <span className="truncate flex-1">Calendar</span>
                 </NavLink>
               );
 
