@@ -136,7 +136,7 @@ export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
 export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
   // Core
   search: 'Search',
-  scheduled: 'Scheduled',
+  scheduled: 'Calendar',
   customize: 'Customize',
   // Data
   workspaces: 'Workspaces',
