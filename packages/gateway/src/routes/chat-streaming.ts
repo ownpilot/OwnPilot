@@ -600,6 +600,13 @@ export async function processStreamingViaBus(
         budgetTokens?: number;
         effort?: 'low' | 'medium' | 'high' | 'max';
       };
+      pageContext?: {
+        pageType: string;
+        entityId?: string;
+        path?: string;
+        contextData?: Record<string, unknown>;
+        systemPromptHint?: string;
+      };
     };
     provider: string;
     model: string;
@@ -658,7 +665,11 @@ export async function processStreamingViaBus(
     timestamp: new Date(),
   };
 
-  // Process through the pipeline
+  // Process through the pipeline.
+  // Set skipPersistenceMessages so the persistence middleware does NOT save messages
+  // here — saveStreamingChat (below) is the sole persistence path for web streaming.
+  // This prevents the double-write bug: middleware + saveStreamingChat both saving
+  // user+assistant messages to the same conversation.
   const result = await bus.process(normalized, {
     stream: callbacks,
     context: {
@@ -670,6 +681,8 @@ export async function processStreamingViaBus(
       conversationId,
       directTools: body.directTools,
       thinking: body.thinking,
+      pageContext: body.pageContext,
+      skipPersistenceMessages: true,
     },
   });
 
@@ -691,14 +704,15 @@ export async function processStreamingViaBus(
     error: result.response.metadata.error as string | undefined,
   });
 
-  // Persistence middleware saves to ChatRepository but NOT LogsRepository.
-  // Save streaming trace/logs here to match what the legacy path does.
+  // Save both messages AND logs here. The persistence middleware is unreliable
+  // when resetContext changes the agent's conversationId mid-stream (race condition).
+  // The conversation-service dedup check prevents duplicate user messages.
   const assistantContent = (result.response.content || state.streamedContent)
     .replace(THINK_TAG_REGEX, '')
     .trim();
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
-    await new ConversationService(userId).saveStreamingLog(state, {
+    await new ConversationService(userId).saveStreamingChat(state, {
       conversationId,
       agentId,
       provider,

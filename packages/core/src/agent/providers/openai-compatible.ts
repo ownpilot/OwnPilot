@@ -155,9 +155,21 @@ export class OpenAICompatibleProvider {
     const body = this.buildRequestBody(request, model, false);
 
     try {
+      const fetchOptions = this.createFetchOptions(body);
+      // Inject conversation ID for session resume (Bridge uses this for --resume)
+      if (request.metadata?.conversationId) {
+        (fetchOptions.headers as Record<string, string>)['X-Conversation-Id'] =
+          request.metadata.conversationId;
+      }
+      // Inject X-Runtime header for bridge multi-provider routing
+      // Provider name 'bridge-opencode' → X-Runtime: opencode
+      if (this.providerId.startsWith('bridge-')) {
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
+          this.providerId.replace('bridge-', '');
+      }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,
-        this.createFetchOptions(body)
+        fetchOptions
       );
       this.clearRequestTimeout();
 
@@ -181,6 +193,10 @@ export class OpenAICompatibleProvider {
         content = `<thinking>\n${choice.message.reasoning_content}\n</thinking>\n\n${content}`;
       }
 
+      // Extract Bridge session IDs from response headers (for session resume mapping)
+      const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
+      const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
+
       return ok({
         id: data.id ?? '',
         content,
@@ -189,6 +205,9 @@ export class OpenAICompatibleProvider {
         usage: data.usage ? this.mapUsage(data.usage) : undefined,
         model: data.model ?? model,
         createdAt: new Date((data.created ?? Date.now() / 1000) * 1000),
+        ...(bridgeConvId || bridgeSessionId ? {
+          responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+        } : {}),
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -215,9 +234,19 @@ export class OpenAICompatibleProvider {
     const body = this.buildRequestBody(request, model, true);
 
     try {
+      const fetchOptions = this.createFetchOptions(body);
+      if (request.metadata?.conversationId) {
+        (fetchOptions.headers as Record<string, string>)['X-Conversation-Id'] =
+          request.metadata.conversationId;
+      }
+      // Inject X-Runtime header for bridge multi-provider routing (streaming path)
+      if (this.providerId.startsWith('bridge-')) {
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
+          this.providerId.replace('bridge-', '');
+      }
       const response = await fetch(
         `${this.config.baseUrl}/chat/completions`,
-        this.createFetchOptions(body)
+        fetchOptions
       );
       this.clearRequestTimeout();
 
@@ -230,6 +259,10 @@ export class OpenAICompatibleProvider {
         );
         return;
       }
+
+      // Extract Bridge session IDs from response headers (streaming path — mirrors complete() line 197)
+      const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
+      const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
 
       const reader = response.body.getReader();
       try {
@@ -250,7 +283,13 @@ export class OpenAICompatibleProvider {
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6).trim();
             if (data === '[DONE]') {
-              yield ok({ id: '', done: true });
+              yield ok({
+                id: '',
+                done: true,
+                ...(bridgeConvId || bridgeSessionId ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
+              });
               return;
             }
 
@@ -294,6 +333,9 @@ export class OpenAICompatibleProvider {
                   ? this.mapFinishReason(choice.finish_reason)
                   : undefined,
                 usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
+                ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId) ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
               });
             } catch {
               // Skip malformed chunks

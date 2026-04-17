@@ -73,6 +73,32 @@ interface ChatState {
   } | null;
 }
 
+/** Serialized snapshot of a conversation's UI state (stored when switching away) */
+export interface ChatSessionSnapshot {
+  messages: Message[];
+  sessionId: string | null;
+  sessionInfo: SessionInfo | null;
+  isLoading: boolean;
+  error: string | null;
+  lastFailedMessage: string | null;
+  streamingContent: string;
+  thinkingContent: string;
+  isThinking: boolean;
+  progressEvents: ProgressEvent[];
+  suggestions: Array<{ title: string; detail: string }>;
+  extractedMemories: Array<{ type: string; content: string; importance?: number }>;
+  pendingApproval: ApprovalRequest | null;
+}
+
+/** Tab entry for the session tab bar */
+export interface SessionTab {
+  id: string;
+  title: string;
+  createdAt: number;
+}
+
+const MAX_SESSIONS = 10;
+
 interface ChatStore extends ChatState {
   setProvider: (provider: string) => void;
   setModel: (model: string) => void;
@@ -93,6 +119,12 @@ interface ChatStore extends ChatState {
   rejectMemory: (index: number) => void;
   resolveApproval: (approved: boolean) => void;
   setThinkingConfig: (config: ChatState['thinkingConfig']) => void;
+  // Multi-session management
+  activeSessionId: string;
+  sessionTabs: SessionTab[];
+  createSession: () => string;
+  switchSession: (id: string) => void;
+  closeSession: (id: string) => void;
 }
 
 const ChatContext = createContext<ChatStore | null>(null);
@@ -102,8 +134,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
-  const [provider, setProvider] = useState('');
-  const [model, setModel] = useState('');
+  const [provider, setProviderState] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEYS.CHAT_PROVIDER) ?? ''; } catch { return ''; }
+  });
+  const [model, setModelState] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEYS.CHAT_MODEL) ?? ''; } catch { return ''; }
+  });
+  // Persist provider/model to localStorage so they survive page reloads
+  const setProvider = useCallback((v: string) => {
+    setProviderState(v);
+    try { if (v) localStorage.setItem(STORAGE_KEYS.CHAT_PROVIDER, v); else localStorage.removeItem(STORAGE_KEYS.CHAT_PROVIDER); } catch { /* */ }
+  }, []);
+  const setModel = useCallback((v: string) => {
+    setModelState(v);
+    try { if (v) localStorage.setItem(STORAGE_KEYS.CHAT_MODEL, v); else localStorage.removeItem(STORAGE_KEYS.CHAT_MODEL); } catch { /* */ }
+  }, []);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
@@ -113,20 +158,46 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     Array<{ type: string; content: string; importance?: number }>
   >([]);
   const [pendingApproval, setPendingApproval] = useState<ApprovalRequest | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  // Always start with a fresh session on page load.
+  // Old conversations are accessible via sidebar Recents.
+  // Restoring old sessionId caused new messages to silently append to old conversations.
+  const [sessionId, setSessionIdState] = useState<string | null>(() => crypto.randomUUID());
+  const sessionIdRef = useRef<string | null>(null);
+  // Initialize ref from restored state
+  sessionIdRef.current = sessionId;
+  // Wrapper: keep ref + localStorage in sync with state
+  const setSessionId = (id: string | null) => {
+    sessionIdRef.current = id;
+    setSessionIdState(id);
+    try {
+      if (id) localStorage.setItem(STORAGE_KEYS.CHAT_SESSION_ID, id);
+      else localStorage.removeItem(STORAGE_KEYS.CHAT_SESSION_ID);
+    } catch { /* */ }
+  };
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
   const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
 
-  // Refs to avoid stale closures in sendMessage callback
-  const sessionIdRef = useRef(sessionId);
-  sessionIdRef.current = sessionId;
-  const isThinkingRef = useRef(isThinking);
-  isThinkingRef.current = isThinking;
-
   // AbortController persists across navigation
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Stream generation counter — orphaned streams (from New Chat) keep reading
+  // so the backend can finish + persist, but their UI updates are suppressed.
+  const streamGenRef = useRef(0);
+
+  // --- Multi-session management ---
+  const sessionsRef = useRef(new Map<string, ChatSessionSnapshot>());
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => crypto.randomUUID());
+  const [sessionTabs, setSessionTabs] = useState<SessionTab[]>([]);
+
+  // Refs for capturing current state without stale closures
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+  const sessionInfoRef = useRef(sessionInfo);
+  sessionInfoRef.current = sessionInfo;
+  const stateRefsForCapture = useRef({ isLoading, error, lastFailedMessage, streamingContent, thinkingContent, isThinking, progressEvents, suggestions, extractedMemories, pendingApproval });
+  stateRefsForCapture.current = { isLoading, error, lastFailedMessage, streamingContent, thinkingContent, isThinking, progressEvents, suggestions, extractedMemories, pendingApproval };
 
   // Cancel any ongoing request (also rejects pending approval if any)
   const cancelRequest = useCallback(() => {
@@ -210,6 +281,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      // Capture stream generation — if clearMessages/loadConversation increments this,
+      // the stream is "orphaned": it keeps reading (so backend persists to DB) but
+      // all UI state updates are suppressed.
+      const gen = streamGenRef.current;
+      const isCurrentStream = () => streamGenRef.current === gen;
+
       // Auto-accept any remaining memories from previous response
       for (const mem of extractedMemoriesRef.current) {
         memoriesApi
@@ -220,6 +297,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             importance: mem.importance ?? 0.7,
           })
           .catch(() => {});
+      }
+
+      // Pre-set sessionId BEFORE adding user message so sidebar sees both
+      // chatMessages and chatStoreSessionId in the same render batch.
+      // This ensures the optimistic sidebar entry appears the INSTANT the user hits Send.
+      if (!sessionIdRef.current) {
+        const newId = crypto.randomUUID();
+        setSessionId(newId);
       }
 
       setError(null);
@@ -255,6 +340,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         return prev;
       });
 
+      // Instantly inject sidebar entry — fires before backend early-persist so there's no race.
+      // useSidebarRecents listens for this and prepends directly to recents.conversations.
+      if (!isRetry) {
+        const curId = sessionIdRef.current;
+        if (curId) {
+          window.dispatchEvent(
+            new CustomEvent('chat:optimistic-entry', { detail: { id: curId, title: content.slice(0, 80) } })
+          );
+        }
+      }
+
       try {
         // Build headers — include session token for UI auth
         const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -264,17 +360,38 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         } catch {
           /* localStorage unavailable */
         }
+        // Bridge providers: signal which runtime to use
+        // Provider ID can be a name ('bridge-opencode') or a UUID (local provider).
+        // Check both the ID and the display name stored in localStorage.
+        const providerDisplayName = (() => {
+          try {
+            const names = JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}');
+            return (names[provider] ?? provider) as string;
+          } catch { return provider; }
+        })();
+        const bridgeName = [provider, providerDisplayName].find(n => n.startsWith('bridge-'));
+        if (bridgeName) {
+          chatHeaders['X-Runtime'] = bridgeName.replace('bridge-', '');
+        }
 
-        const response = await fetch('/api/v1/chat', {
+        // Use ref to avoid stale closure — sessionId state may not be current in callback.
+        // Safety net: if sessionId is still null (e.g. fresh page load), pre-generate one.
+        // Backend accepts client-generated UUIDs and auto-creates the conversation.
+        let currentSessionId = sessionIdRef.current;
+        if (!currentSessionId) {
+          currentSessionId = crypto.randomUUID();
+          setSessionId(currentSessionId);
+        }
+        const response = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/v1/chat`, {
           method: 'POST',
           headers: chatHeaders,
           body: JSON.stringify({
             message: content,
             provider,
             model,
-            stream: true, // Enable streaming!
-            // Continue the current conversation by ID so messages are properly linked in DB
-            ...(sessionIdRef.current && { conversationId: sessionIdRef.current }),
+            stream: true,
+            // Always send conversationId — client pre-generates if needed (safety net above)
+            conversationId: currentSessionId,
             ...(agentId && { agentId }),
             ...(workspaceId && { workspaceId }),
             ...(directTools?.length && { directTools }),
@@ -351,6 +468,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               const { done, value } = await reader.read();
               if (done) break;
               if (controller.signal.aborted) break;
+              // Orphaned stream — keep draining body so backend completes + persists to DB
+              if (!isCurrentStream()) continue;
 
               buffer += decoder.decode(value, { stream: true });
               const lines = buffer.split('\n');
@@ -380,7 +499,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     if (event.data.delta) {
                       accumulatedContent += event.data.delta;
                       setStreamingContent(accumulatedContent);
-                      if (isThinkingRef.current) setIsThinking(false);
+                      if (isThinking) setIsThinking(false);
                     }
                     if (!event.data.thinkingDelta && !event.data.delta) {
                       setIsThinking(!!event.data.thinking);
@@ -427,6 +546,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           }
 
           if (controller.signal.aborted) return;
+          // Orphaned stream completed — backend persisted, skip UI updates
+          if (!isCurrentStream()) return;
 
           // Stream complete - add final message
           setLastFailedMessage(null);
@@ -480,7 +601,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           // Non-streaming fallback
           const data: ApiResponse<ChatResponse> = await response.json();
 
-          if (controller.signal.aborted) {
+          if (controller.signal.aborted || !isCurrentStream()) {
             return;
           }
 
@@ -519,10 +640,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        // Ignore abort errors
+        // Ignore abort errors and orphaned stream errors
         if (err instanceof Error && err.name === 'AbortError') {
           return;
         }
+        if (!isCurrentStream()) return;
 
         const errorText = err instanceof Error ? err.message : 'An error occurred';
         setError(errorText);
@@ -563,35 +685,193 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [lastFailedMessage, sendMessage]);
 
   const clearMessages = useCallback(() => {
-    cancelRequest();
+    // Orphan any running stream — it keeps reading in background so the backend
+    // can finish processing and persist the response to DB. UI updates are
+    // suppressed via the generation check in sendMessage.
+    streamGenRef.current++;
+    abortControllerRef.current = null;
+    // Reject pending approval so backend doesn't hang waiting for user response
+    if (pendingApproval) {
+      executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+    }
     setMessages([]);
+    setIsLoading(false);
     setError(null);
     setLastFailedMessage(null);
     setStreamingContent('');
+    setThinkingContent('');
     setProgressEvents([]);
+    setIsThinking(false);
     setSuggestions([]);
     setExtractedMemories([]);
     setPendingApproval(null);
     setSessionId(null);
     setSessionInfo(null);
-  }, [cancelRequest]);
+  }, [pendingApproval]);
 
   const loadConversation = useCallback(
-    (id: string, messages: Message[]) => {
-      cancelRequest();
-      setMessages(messages);
+    (id: string, msgs: Message[]) => {
+      // Orphan any running stream (same pattern as clearMessages)
+      streamGenRef.current++;
+      abortControllerRef.current = null;
+      if (pendingApproval) {
+        executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+      }
+      setMessages(msgs);
+      setIsLoading(false);
       setError(null);
       setLastFailedMessage(null);
       setStreamingContent('');
+      setThinkingContent('');
       setProgressEvents([]);
+      setIsThinking(false);
       setSuggestions([]);
       setExtractedMemories([]);
       setPendingApproval(null);
       setSessionId(id);
       setSessionInfo(null);
     },
-    [cancelRequest]
+    [pendingApproval]
   );
+
+  // --- Multi-session methods ---
+
+  const captureSnapshot = useCallback((): ChatSessionSnapshot => {
+    const s = stateRefsForCapture.current;
+    return {
+      messages: messagesRef.current,
+      sessionId: sessionIdRef.current,
+      sessionInfo: sessionInfoRef.current,
+      isLoading: s.isLoading,
+      error: s.error,
+      lastFailedMessage: s.lastFailedMessage,
+      streamingContent: s.streamingContent,
+      thinkingContent: s.thinkingContent,
+      isThinking: s.isThinking,
+      progressEvents: s.progressEvents,
+      suggestions: s.suggestions,
+      extractedMemories: s.extractedMemories,
+      pendingApproval: s.pendingApproval,
+    };
+  }, []);
+
+  const restoreSnapshot = useCallback((snap: ChatSessionSnapshot) => {
+    setMessages(snap.messages);
+    setSessionId(snap.sessionId);
+    setSessionInfo(snap.sessionInfo);
+    setIsLoading(snap.isLoading);
+    setError(snap.error);
+    setLastFailedMessage(snap.lastFailedMessage);
+    setStreamingContent(snap.streamingContent);
+    setThinkingContent(snap.thinkingContent);
+    setIsThinking(snap.isThinking);
+    setProgressEvents(snap.progressEvents);
+    setSuggestions(snap.suggestions);
+    setExtractedMemories(snap.extractedMemories);
+    setPendingApproval(snap.pendingApproval);
+  }, []);
+
+  /** Helper: clear all per-conversation state for a fresh session */
+  const clearAllState = useCallback(() => {
+    streamGenRef.current++;
+    abortControllerRef.current = null;
+    setMessages([]);
+    setIsLoading(false);
+    setError(null);
+    setLastFailedMessage(null);
+    setStreamingContent('');
+    setThinkingContent('');
+    setProgressEvents([]);
+    setIsThinking(false);
+    setSuggestions([]);
+    setExtractedMemories([]);
+    setPendingApproval(null);
+    setSessionId(null);
+    setSessionInfo(null);
+  }, []);
+
+  /** Create a new session — saves current to map, clears UI */
+  const createSession = useCallback((): string => {
+    const currentId = activeSessionId;
+    const snap = captureSnapshot();
+    // Only save if there are actual messages (sessionId is always set now via pre-generation)
+    if (snap.messages.length > 0) {
+      sessionsRef.current.set(currentId, snap);
+      const title = snap.messages.find(m => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
+      setSessionTabs(prev => {
+        if (prev.find(t => t.id === currentId)) return prev;
+        return [...prev, { id: currentId, title, createdAt: Date.now() }];
+      });
+    }
+    // Reject pending approval before switching
+    if (stateRefsForCapture.current.pendingApproval) {
+      executionPermissionsApi.resolveApproval(stateRefsForCapture.current.pendingApproval.approvalId, false).catch(() => {});
+    }
+    const newId = crypto.randomUUID();
+    setActiveSessionId(newId);
+    clearAllState();
+    // Pre-set sessionId so the first message includes conversationId in the request.
+    // This follows the client-generated ID pattern (NextChat, LobeChat, big-AGI).
+    // The backend accepts unknown IDs and auto-creates the conversation (FIX-1).
+    setSessionId(newId);
+    // Enforce max sessions — evict oldest
+    if (sessionsRef.current.size > MAX_SESSIONS) {
+      const entries = [...sessionsRef.current.entries()];
+      const oldestKey = entries[0]?.[0];
+      if (oldestKey) {
+        sessionsRef.current.delete(oldestKey);
+        setSessionTabs(prev => prev.filter(t => t.id !== oldestKey));
+      }
+    }
+    return newId;
+  }, [activeSessionId, captureSnapshot, clearAllState]);
+
+  /** Switch to an existing session (from tab or sidebar) */
+  const switchSession = useCallback((targetId: string) => {
+    if (targetId === activeSessionId) return;
+    // Save current active session
+    const currentId = activeSessionId;
+    const snap = captureSnapshot();
+    sessionsRef.current.set(currentId, snap);
+    setSessionTabs(prev => {
+      if (prev.find(t => t.id === currentId)) return prev;
+      const title = snap.messages.find(m => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
+      return [...prev, { id: currentId, title, createdAt: Date.now() }];
+    });
+    // Orphan current stream
+    streamGenRef.current++;
+    abortControllerRef.current = null;
+    // Restore target from map (if cached) or set sessionId for DB load
+    const target = sessionsRef.current.get(targetId);
+    if (target) {
+      restoreSnapshot(target);
+      sessionsRef.current.delete(targetId);
+    } else {
+      clearAllState();
+      setSessionId(targetId);
+    }
+    setActiveSessionId(targetId);
+  }, [activeSessionId, captureSnapshot, restoreSnapshot, clearAllState]);
+
+  /** Close a session tab */
+  const closeSession = useCallback((targetId: string) => {
+    sessionsRef.current.delete(targetId);
+    setSessionTabs(prev => {
+      const remaining = prev.filter(t => t.id !== targetId);
+      if (targetId === activeSessionId) {
+        if (remaining.length > 0) {
+          const nearest = remaining[remaining.length - 1]!;
+          queueMicrotask(() => switchSession(nearest.id));
+        } else {
+          queueMicrotask(() => {
+            setActiveSessionId(crypto.randomUUID());
+            clearAllState();
+          });
+        }
+      }
+      return remaining;
+    });
+  }, [activeSessionId, switchSession, clearAllState]);
 
   const value: ChatStore = {
     messages,
@@ -626,6 +906,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     rejectMemory,
     resolveApproval,
     setThinkingConfig,
+    activeSessionId,
+    sessionTabs,
+    createSession,
+    switchSession,
+    closeSession,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

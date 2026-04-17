@@ -415,17 +415,24 @@ export async function getOrCreateDefaultAgent(): Promise<Agent> {
 export async function getOrCreateChatAgent(
   provider: string,
   model: string,
-  fallback?: { provider: string; model: string }
+  fallback?: { provider: string; model: string },
+  pageContext?: { path?: string } | null,
+  conversationId?: string
 ): Promise<Agent> {
   // CLI providers are NOT cached — each request may need fresh MCP session state
   // while still reusing the persistent ~/.ownpilot/workspace directory.
   if (isCliChatProvider(provider)) {
-    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback);
+    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback, pageContext);
   }
 
+  // Per-conversation cache key when conversationId is provided.
+  // Each conversation gets its own agent instance so parallel chats don't block
+  // each other with "Agent is already processing a request" errors.
   const sanitize = (s: string) => s.replace(/\|/g, '_');
   const fbSuffix = fallback ? `|fb_${sanitize(fallback.provider)}_${sanitize(fallback.model)}` : '';
-  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}`;
+  const pathSuffix = pageContext?.path ? `|dir_${sanitize(pageContext.path)}` : '';
+  const convSuffix = conversationId ? `|conv_${sanitize(conversationId)}` : '';
+  const cacheKey = `chat|${sanitize(provider)}|${sanitize(model)}${fbSuffix}${pathSuffix}${convSuffix}`;
 
   const cached = lruGet(chatAgentCache, cacheKey);
   if (cached) return cached;
@@ -433,7 +440,7 @@ export async function getOrCreateChatAgent(
   const pending = pendingChatAgents.get(cacheKey);
   if (pending) return pending;
 
-  const promise = createChatAgentInstance(provider, model, cacheKey, fallback).finally(() => {
+  const promise = createChatAgentInstance(provider, model, cacheKey, fallback, pageContext).finally(() => {
     pendingChatAgents.delete(cacheKey);
   });
   pendingChatAgents.set(cacheKey, promise);
@@ -450,7 +457,8 @@ async function createChatAgentInstance(
   provider: string,
   model: string,
   cacheKey: string,
-  fallback?: { provider: string; model: string }
+  fallback?: { provider: string; model: string },
+  _pageContext?: { path?: string } | null
 ): Promise<Agent> {
   // ── CLI Chat Provider path ──
   // CLI providers (cli-claude, cli-codex, cli-gemini) use login-based auth
@@ -670,7 +678,8 @@ async function createChatAgentInstance(
 }
 
 /**
- * Reset chat agent context - clears conversation memory
+ * Reset chat agent context - creates new conversation, preserves old one.
+ * Old conversations stay in memory until the agent cache entry is evicted.
  */
 export function resetChatAgentContext(
   provider: string,
@@ -682,7 +691,7 @@ export function resetChatAgentContext(
   if (agent) {
     const memory = agent.getMemory();
     const currentConversation = agent.getConversation();
-    memory.delete(currentConversation.id);
+    // Preserve old conversation — don't delete it so users can return to it
     const newConversation = memory.create(currentConversation.systemPrompt);
     agent.loadConversation(newConversation.id);
 

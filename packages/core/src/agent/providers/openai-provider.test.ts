@@ -110,6 +110,7 @@ function mockFetchStream(chunks: string[], ok = true, status = 200) {
     ok,
     status,
     body,
+    headers: new Map(),
     json: () => Promise.resolve({}),
     text: () => Promise.resolve(''),
   });

@@ -59,6 +59,15 @@ export const chatMessageSchema = z.object({
     )
     .max(5)
     .optional(),
+  pageContext: z
+    .object({
+      pageType: z.string(),
+      entityId: z.string().optional(),
+      path: z.string().optional(),
+      contextData: z.record(z.string(), z.unknown()).optional(),
+      systemPromptHint: z.string().optional(),
+    })
+    .optional(),
 });
 
 // ─── Trigger Schemas ─────────────────────────────────────────────

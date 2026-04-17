@@ -1269,21 +1269,35 @@ describe('Chat Routes', () => {
   // ─── POST /chat - Additional Coverage ──────────────────────────
 
   describe('POST /chat - Conversation loading', () => {
-    it('should return 404 when conversationId not found in agent', async () => {
-      mockAgent.loadConversation.mockReturnValue(false);
+    it('should auto-create conversation for unknown client-generated conversationId', async () => {
+      const mockMemory = {
+        get: vi.fn(),
+        delete: vi.fn(() => true),
+        createWithId: vi.fn(),
+      };
+      mockAgent.getMemory.mockReturnValue(mockMemory);
+      // First loadConversation returns false (not in memory),
+      // DB fallback also fails, then createWithId + second loadConversation succeeds
+      mockAgent.loadConversation
+        .mockReturnValueOnce(false)   // first attempt (not in memory)
+        .mockReturnValueOnce(true);   // after createWithId
 
       const res = await app.request('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: 'Hello',
-          conversationId: 'nonexistent-conv',
+          conversationId: 'client-generated-uuid',
         }),
       });
 
-      expect(res.status).toBe(404);
-      const data = await res.json();
-      expect(data.error.message).toContain('Conversation not found');
+      // Should NOT return 404 — client-generated IDs are now accepted
+      expect(res.status).not.toBe(404);
+      expect(mockMemory.createWithId).toHaveBeenCalledWith(
+        'client-generated-uuid',
+        undefined,
+        expect.objectContaining({ source: 'client-generated' })
+      );
     });
 
     it('should return 400 when getOrCreateChatAgent throws', async () => {

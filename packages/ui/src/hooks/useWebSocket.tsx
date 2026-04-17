@@ -44,9 +44,10 @@ export interface UseWebSocketResult {
  * WebSocket hook for real-time gateway communication
  */
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketResult {
-  // Use current location for WebSocket (goes through Vite proxy in dev)
+  // Use VITE_API_BASE for WebSocket host when set (dev proxy), else same-origin (production)
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsHost = window.location.host; // includes port
+  const apiBase = import.meta.env.VITE_API_BASE;
+  const wsHost = apiBase ? new URL(apiBase).host : window.location.host;
 
   const {
     url = `${wsProtocol}//${wsHost}/ws`,
@@ -213,7 +214,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
   }, []);
 
   // Auto-connect on mount - only run once
+  // Skip WS in environments without a gateway (e.g. Claude Desktop Preview)
   useEffect(() => {
+    if (import.meta.env.VITE_DISABLE_WS === 'true') return;
     connect();
 
     return () => {

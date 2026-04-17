@@ -78,6 +78,13 @@ vi.mock('./agent-tools.js', () => ({
   },
 }));
 
+const mockToHostPath = vi.fn().mockReturnValue(null);
+vi.mock('../utils/host-path.js', () => ({
+  toHostPath: (...args: unknown[]) => mockToHostPath(...args),
+  isHostFsConfigured: vi.fn().mockReturnValue(false),
+  toContainerPath: vi.fn().mockReturnValue(null),
+}));
+
 const mod = await import('./agent-cache.js');
 
 beforeEach(() => {
@@ -419,6 +426,59 @@ describe('loadProviderConfig', () => {
 
     mod.loadProviderConfig('anthropic');
     expect(mockLocalProvidersRepo.getProviderSync).not.toHaveBeenCalled();
+  });
+
+  it('bridge provider + pageContext.path → X-Project-Dir header present', () => {
+    mockGetProviderConfig.mockReturnValueOnce(null);
+    mockLocalProvidersRepo.getProviderSync.mockReturnValueOnce({
+      name: 'bridge-claude',
+      baseUrl: 'http://localhost:9090',
+    });
+    mockToHostPath.mockReturnValueOnce('/home/ayaz/projects/x');
+
+    const result = mod.loadProviderConfig('bridge-claude', { path: '/host-home/projects/x' });
+    expect(result?.headers?.['X-Project-Dir']).toBe('/home/ayaz/projects/x');
+    expect(result?.headers?.['X-Runtime']).toBe('claude');
+    expect(mockToHostPath).toHaveBeenCalledWith('/host-home/projects/x');
+  });
+
+  it('bridge provider + no path → no X-Project-Dir header', () => {
+    mockGetProviderConfig.mockReturnValueOnce(null);
+    mockLocalProvidersRepo.getProviderSync.mockReturnValueOnce({
+      name: 'bridge-claude',
+      baseUrl: 'http://localhost:9090',
+    });
+
+    const result = mod.loadProviderConfig('bridge-claude', { path: undefined });
+    expect(result?.headers?.['X-Project-Dir']).toBeUndefined();
+    expect(result?.headers?.['X-Runtime']).toBe('claude');
+    expect(mockToHostPath).not.toHaveBeenCalled();
+  });
+
+  it('non-bridge provider + path → no X-Project-Dir header', () => {
+    mockGetProviderConfig.mockReturnValueOnce(null);
+    mockLocalProvidersRepo.getProviderSync.mockReturnValueOnce({
+      name: 'ollama',
+      baseUrl: 'http://localhost:11434',
+    });
+
+    const result = mod.loadProviderConfig('ollama', { path: '/host-home/projects/x' });
+    expect(result?.headers?.['X-Project-Dir']).toBeUndefined();
+    expect(result?.headers?.['X-Runtime']).toBeUndefined();
+    expect(mockToHostPath).not.toHaveBeenCalled();
+  });
+
+  it('bridge provider + path but toHostPath returns null → no X-Project-Dir header', () => {
+    mockGetProviderConfig.mockReturnValueOnce(null);
+    mockLocalProvidersRepo.getProviderSync.mockReturnValueOnce({
+      name: 'bridge-claude',
+      baseUrl: 'http://localhost:9090',
+    });
+    mockToHostPath.mockReturnValueOnce(null); // HOST_FS not configured or path doesn't match
+
+    const result = mod.loadProviderConfig('bridge-claude', { path: '/some/unknown/path' });
+    expect(result?.headers?.['X-Project-Dir']).toBeUndefined();
+    expect(result?.headers?.['X-Runtime']).toBe('claude');
   });
 });
 

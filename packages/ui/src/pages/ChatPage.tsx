@@ -7,7 +7,8 @@ import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
 import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { ConversationSidebar } from '../components/ConversationSidebar';
+// ConversationSidebar kept as backup — conversation management moved to Sidebar.tsx
+// import { ConversationSidebar } from '../components/ConversationSidebar';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
@@ -63,7 +64,6 @@ export function ChatPage() {
     sessionInfo,
     sendMessage,
     retryLastMessage,
-    clearMessages,
     loadConversation,
     cancelRequest,
     clearSuggestions,
@@ -72,6 +72,11 @@ export function ChatPage() {
     resolveApproval,
     isThinking,
     thinkingContent,
+    activeSessionId,
+    sessionTabs,
+    createSession,
+    switchSession,
+    closeSession,
   } = useChatStore();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -179,6 +184,8 @@ export function ChatPage() {
         namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
+      // Persist for useChatStore bridge detection (provider ID → name lookup)
+      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
     } catch {
@@ -203,6 +210,8 @@ export function ChatPage() {
         namesMap[p.id] = p.name;
       }
       setProviderNames(namesMap);
+      // Persist for useChatStore bridge detection (provider ID → name lookup)
+      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
 
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
@@ -299,6 +308,14 @@ export function ChatPage() {
     }
   };
 
+  // Load conversation from URL ?conversationId= param (e.g. from Sidebar Recent click)
+  useEffect(() => {
+    const convId = searchParams.get('conversationId');
+    if (convId) {
+      handleLoadConversation(convId);
+    }
+  }, [searchParams]); // handleLoadConversation stable ref from closure
+
   // Auto-scroll to bottom when new messages or streaming content arrives
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -322,8 +339,8 @@ export function ChatPage() {
   // Update model when provider changes
   const handleProviderChange = (newProvider: string) => {
     setProvider(newProvider);
-    // CLI providers don't have model selection — set empty model
-    if (newProvider.startsWith('cli-')) {
+    // CLI and bridge providers don't have model selection — set empty model
+    if (newProvider.startsWith('cli-') || newProvider.startsWith('bridge-')) {
       setModel('default');
     } else {
       const providerModels = modelsByProvider[newProvider];
@@ -335,24 +352,24 @@ export function ChatPage() {
     setShowProviderMenu(false);
   };
 
-  const handleNewChat = async () => {
-    // Cancel any ongoing request and clear frontend messages
-    clearMessages();
+  const handleNewChat = () => {
+    // Create a new session — saves current conversation to session map
+    createSession();
     setCurrentAgent(null);
-    setAgentId(null); // Clear agent for chat requests
+    setAgentId(null);
     setSearchParams({});
     // Reset channel mode
     setIsChannelMode(false);
     setActiveConv(null);
     setChannelInfo(null);
     setChannelMessages([]);
-
-    // Reset backend context for fresh conversation
-    try {
-      await chatApi.resetContext(provider, model);
-    } catch {
-      // Ignore errors - context reset is best-effort
-    }
+    // Reset backend agent context so the new session uses the current provider/model.
+    // Without this, the first message in a new chat may use stale agent config
+    // because the UI shows the correct provider/model but the backend agent
+    // hasn't been re-initialized with it.
+    chatApi.resetContext(provider, model).catch(() => {});
+    // Auto-focus chat input so user can start typing immediately
+    chatInputRef.current?.focus();
   };
 
   const handleLoadConversation = async (id: string) => {
@@ -382,6 +399,13 @@ export function ChatPage() {
         );
         // Also set the session so the sidebar highlights correctly
         loadConversation(id, []);
+        // v7.2: Restore provider/model from conversation metadata
+        if (conv.provider) {
+          setProvider(conv.provider);
+          if (conv.model) {
+            setModel(conv.model);
+          }
+        }
         setSearchParams({});
       } else {
         // Web mode: load into useChatStore as usual
@@ -403,7 +427,19 @@ export function ChatPage() {
             model: m.model ?? undefined,
             isError: m.isError,
           }));
-        loadConversation(id, msgs);
+        if (msgs.length > 0) {
+          loadConversation(id, msgs);
+        } else {
+          // DB has no messages (early persist only) — try in-memory session
+          switchSession(id);
+        }
+        // v7.2: Restore provider/model from conversation metadata
+        if (conv.provider) {
+          setProvider(conv.provider);
+          if (conv.model) {
+            setModel(conv.model);
+          }
+        }
         setSearchParams({});
       }
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'instant' }), 50);
@@ -458,13 +494,7 @@ export function ChatPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Conversation sidebar */}
-      <ConversationSidebar
-        activeId={sessionId}
-        onNew={handleNewChat}
-        onSelect={handleLoadConversation}
-      />
-      {/* Main chat area */}
+      {/* Main chat area — ConversationSidebar moved to left Sidebar */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
@@ -529,9 +559,15 @@ export function ChatPage() {
                     <span className="font-medium text-text-primary dark:text-dark-text-primary">
                       {currentProviderName}
                     </span>
-                    {/* CLI providers don't have model selection — they use their own defaults */}
-                    {!provider.startsWith('cli-') && (
+                    {/* CLI and bridge providers don't have model selection */}
+                    {!provider.startsWith('cli-') && !provider.startsWith('bridge-') && (
                       <span className="text-text-muted dark:text-dark-text-muted">/ {model}</span>
+                    )}
+                    {provider.startsWith('bridge-') && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-accent/10 text-accent">
+                        <Bot className="w-3 h-3" />
+                        {provider.replace('bridge-', '').toUpperCase()}
+                      </span>
                     )}
                   </>
                 )}
@@ -550,74 +586,144 @@ export function ChatPage() {
                 </svg>
               </button>
 
-              {/* Dropdown Menu */}
-              {showProviderMenu && (
-                <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
-                  {configuredProviders.length === 0 ? (
-                    <div className="p-4 text-center">
-                      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
-                        No providers configured
-                      </p>
-                      <a
-                        href="/settings"
-                        className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
-                      >
-                        <Settings className="w-4 h-4" /> Configure API Keys
-                      </a>
-                    </div>
-                  ) : (
-                    Object.entries(modelsByProvider).map(([providerId, providerModels]) => (
-                      <div
-                        key={providerId}
-                        className="border-b border-border dark:border-dark-border last:border-b-0"
-                      >
-                        <div
-                          className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
-                            provider === providerId
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-text-primary dark:text-dark-text-primary'
-                          }`}
-                          onClick={() => handleProviderChange(providerId)}
+              {/* Dropdown Menu — API / Bridge grouped */}
+              {showProviderMenu && (() => {
+                const isBridgeProv = (pid: string) => {
+                  const name = providerNames[pid] ?? pid;
+                  return pid.startsWith('bridge-') || pid.startsWith('cli-') || name.toLowerCase().startsWith('bridge-');
+                };
+                const apiEntries = Object.entries(modelsByProvider).filter(([pid]) => !isBridgeProv(pid));
+                const bridgeEntries = Object.entries(modelsByProvider).filter(([pid]) => isBridgeProv(pid));
+
+                return (
+                  <div className="absolute top-full left-0 mt-1 w-full sm:w-80 max-w-[90vw] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 z-50 max-h-96 overflow-y-auto">
+                    {configuredProviders.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-sm text-text-muted dark:text-dark-text-muted mb-2">
+                          No providers configured
+                        </p>
+                        <a
+                          href="/settings"
+                          className="text-sm text-primary hover:underline flex items-center justify-center gap-1"
                         >
-                          {providerNames[providerId] ?? providerId}
-                        </div>
-                        {/* CLI providers don't need model selection — they handle models internally */}
-                        {provider === providerId && !providerId.startsWith('cli-') && (
-                          <div className="px-2 pb-2">
-                            {providerModels.map((m) => (
-                              <button
-                                key={m.id}
-                                onClick={() => {
-                                  setModel(m.id);
-                                  setShowProviderMenu(false);
-                                  // Keep agent context - just update the model being used
-                                }}
-                                className={`w-full text-left px-2 py-1.5 text-xs rounded ${
-                                  model === m.id
-                                    ? 'bg-primary text-white'
-                                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span>{m.name}</span>
-                                  {m.recommended && (
-                                    <span className="text-[10px] opacity-70">Recommended</span>
-                                  )}
+                          <Settings className="w-4 h-4" /> Configure API Keys
+                        </a>
+                      </div>
+                    ) : (
+                      <>
+                        {/* API Section */}
+                        <div className="border-b border-border dark:border-dark-border">
+                          <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+                            API — Context Inject
+                          </div>
+                          {apiEntries.length > 0 ? (
+                            apiEntries.map(([providerId, providerModels]) => (
+                              <div key={providerId}>
+                                <div
+                                  className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
+                                    provider === providerId
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-text-primary dark:text-dark-text-primary'
+                                  }`}
+                                  onClick={() => handleProviderChange(providerId)}
+                                >
+                                  {providerNames[providerId] ?? providerId}
                                 </div>
-                                {m.description && (
-                                  <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
-                                    {m.description}
-                                  </p>
+                                {provider === providerId && providerModels.length > 0 && (
+                                  <div className="px-2 pb-2">
+                                    {providerModels.map((m) => (
+                                      <button
+                                        key={m.id}
+                                        onClick={() => {
+                                          setModel(m.id);
+                                          setShowProviderMenu(false);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-xs rounded ${
+                                          model === m.id
+                                            ? 'bg-primary text-white'
+                                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{m.name}</span>
+                                          {m.recommended && (
+                                            <span className="text-[10px] opacity-70">Recommended</span>
+                                          )}
+                                        </div>
+                                        {m.description && (
+                                          <p className="text-[10px] opacity-60 mt-0.5 line-clamp-1">
+                                            {m.description}
+                                          </p>
+                                        )}
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
-                              </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2.5 text-xs text-text-muted dark:text-dark-text-muted">
+                              No API providers configured —{' '}
+                              <a
+                                href="/models?tab=models"
+                                className="text-primary hover:underline not-italic font-medium"
+                                onClick={() => setShowProviderMenu(false)}
+                              >
+                                add in Settings
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bridge Section */}
+                        {bridgeEntries.length > 0 && (
+                          <div>
+                            <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
+                              Bridge — CLI Spawn
+                            </div>
+                            {bridgeEntries.map(([providerId, providerModels]) => (
+                              <div key={providerId}>
+                                <div
+                                  className={`px-3 py-2 text-sm font-medium cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary ${
+                                    provider === providerId
+                                      ? 'bg-primary/10 text-primary'
+                                      : 'text-text-primary dark:text-dark-text-primary'
+                                  }`}
+                                  onClick={() => handleProviderChange(providerId)}
+                                >
+                                  {providerNames[providerId] ?? providerId}
+                                </div>
+                                {provider === providerId && providerModels.length > 0 && (
+                                  <div className="px-2 pb-2">
+                                    {providerModels.map((m) => (
+                                      <button
+                                        key={m.id}
+                                        onClick={() => {
+                                          setModel(m.id);
+                                          setShowProviderMenu(false);
+                                        }}
+                                        className={`w-full text-left px-2 py-1.5 text-xs rounded ${
+                                          model === m.id
+                                            ? 'bg-primary text-white'
+                                            : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <span>{m.name}</span>
+                                        </div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -628,6 +734,41 @@ export function ChatPage() {
             New Chat
           </button>
         </header>
+
+        {/* Session tabs — visible when multiple sessions are open */}
+        {sessionTabs.length > 0 && (
+          <div className="flex items-center gap-1 px-3 py-1.5 border-b border-border dark:border-dark-border bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 overflow-x-auto">
+            {sessionTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => switchSession(tab.id)}
+                className={`group flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors whitespace-nowrap ${
+                  tab.id === activeSessionId
+                    ? 'bg-primary/10 text-primary font-medium'
+                    : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                }`}
+              >
+                <span className="max-w-[140px] truncate">{tab.title}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); closeSession(tab.id); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); closeSession(tab.id); } }}
+                  className="opacity-0 group-hover:opacity-100 ml-0.5 hover:text-red-500 transition-opacity"
+                >
+                  ×
+                </span>
+              </button>
+            ))}
+            <button
+              onClick={handleNewChat}
+              className="px-2 py-1 text-xs text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-md transition-colors"
+              title="New session"
+            >
+              +
+            </button>
+          </div>
+        )}
 
         {/* Session context bar — visible only in web mode */}
         {!isChannelMode && (

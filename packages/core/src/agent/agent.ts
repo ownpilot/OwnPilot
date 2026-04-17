@@ -278,6 +278,9 @@ export class Agent {
         toolChoice: 'auto' as const,
         stream: options?.stream ?? false,
         thinking: options?.thinking,
+        metadata: {
+          conversationId: this.state.bridgeConversationId ?? this.state.conversation.id,
+        },
       };
 
       // Notify that we're about to call the model
@@ -308,6 +311,11 @@ export class Agent {
           return result;
         }
         response = result.value;
+      }
+
+      // Store bridge conversation ID for session resume across bridge restarts
+      if (response.responseMetadata?.bridgeConversationId) {
+        this.state = { ...this.state, bridgeConversationId: response.responseMetadata.bridgeConversationId };
       }
 
       // Add assistant message (include thinking blocks in metadata for tool use roundtrips)
@@ -453,6 +461,7 @@ export class Agent {
     let usage: CompletionResponse['usage'];
     let responseId = '';
     let thinkingBlocks: Record<string, unknown>[] | undefined;
+    let responseMetadata: CompletionResponse['responseMetadata'];
 
     const generator = this.provider.stream(request);
 
@@ -480,6 +489,11 @@ export class Agent {
       // Capture thinking blocks from done chunk metadata (for tool use roundtrips)
       if (chunk.done && chunk.metadata?.thinkingBlocks) {
         thinkingBlocks = chunk.metadata.thinkingBlocks as Record<string, unknown>[];
+      }
+
+      // Capture bridge response metadata (for session resume)
+      if (chunk.done && chunk.responseMetadata) {
+        responseMetadata = chunk.responseMetadata;
       }
 
       // Accumulate tool calls (use index for parallel tool call support)
@@ -528,6 +542,7 @@ export class Agent {
       createdAt: new Date(),
       thinkingContent: thinkingContent || undefined,
       thinkingBlocks,
+      responseMetadata,
     });
   }
 
@@ -546,7 +561,15 @@ export class Agent {
   }
 
   /**
-   * Load a conversation
+   * Load a conversation.
+   *
+   * CRITICAL: Must reset `bridgeConversationId` to undefined. The gateway caches
+   * Agent instances at (provider, model) level, so the same Agent handles MANY
+   * distinct conversations via `loadConversation()`. Without this reset, the
+   * bridgeConversationId captured from a prior conversation leaks into the new
+   * one, making agent.ts:282 send the WRONG `X-Conversation-Id` header to the
+   * bridge, which then resumes the WRONG CLI session → catastrophic context mix.
+   * See: cross-conversation leak reproduced in f2303c32 inheriting from 65d4ce66.
    */
   loadConversation(conversationId: string): boolean {
     const conversation = this.memory.get(conversationId);
@@ -555,17 +578,20 @@ export class Agent {
     this.state = {
       ...this.state,
       conversation,
+      bridgeConversationId: undefined,
     };
     return true;
   }
 
   /**
-   * Fork current conversation
+   * Fork current conversation.
+   * Resets `bridgeConversationId` because a forked conversation has a new
+   * identity and must map to a new bridge session. See loadConversation() docs.
    */
   fork(): Conversation | undefined {
     const forked = this.memory.fork(this.state.conversation.id);
     if (forked) {
-      this.state = { ...this.state, conversation: forked };
+      this.state = { ...this.state, conversation: forked, bridgeConversationId: undefined };
     }
     return forked;
   }
