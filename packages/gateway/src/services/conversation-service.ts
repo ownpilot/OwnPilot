@@ -140,14 +140,18 @@ export class ConversationService {
       });
 
       if (!logOnly) {
-        await this.chatRepo.addMessage({
-          conversationId: conv.id,
-          role: 'user',
-          content: params.userMessage,
-          provider: params.provider,
-          model: params.model,
-          ...(params.attachments?.length && { attachments: params.attachments }),
-        });
+        // Skip user message if early persist already saved it (prevents duplicates).
+        const existing = await this.chatRepo.getMessages(conv.id, { limit: 1 });
+        if (!existing.some((m) => m.role === 'user')) {
+          await this.chatRepo.addMessage({
+            conversationId: conv.id,
+            role: 'user',
+            content: params.userMessage,
+            provider: params.provider,
+            model: params.model,
+            ...(params.attachments?.length && { attachments: params.attachments }),
+          });
+        }
 
         await this.chatRepo.addMessage({
           conversationId: conv.id,

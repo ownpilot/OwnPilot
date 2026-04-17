@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ui-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["packages/ui/dev-start.sh"],
+      "port": 5173,
+      "autoPort": false
+    }
+  ]
+}

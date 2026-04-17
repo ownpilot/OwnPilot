@@ -636,7 +636,7 @@ describe('resetChatAgentContext', () => {
     const result = mod.resetChatAgentContext('openai', 'gpt-4o');
     expect(result.reset).toBe(true);
     expect(result.newSessionId).toBe('new-conv-456');
-    expect(memory.delete).toHaveBeenCalledWith('old-conv');
+    expect(memory.delete).not.toHaveBeenCalled();
     expect(memory.create).toHaveBeenCalled();
     expect(agent.loadConversation).toHaveBeenCalledWith('new-conv-456');
   });
@@ -654,11 +654,11 @@ describe('resetChatAgentContext', () => {
     expect(result.reset).toBe(true);
   });
 
-  it('deletes the old conversation from memory', () => {
-    const { agent, memory } = makeMockAgent({ conversationId: 'conv-to-delete' });
+  it('preserves the old conversation in memory', () => {
+    const { agent, memory } = makeMockAgent({ conversationId: 'conv-to-keep' });
     chatAgentCache.set('chat|openai|gpt-4o', agent);
     mod.resetChatAgentContext('openai', 'gpt-4o');
-    expect(memory.delete).toHaveBeenCalledWith('conv-to-delete');
+    expect(memory.delete).not.toHaveBeenCalled();
   });
 
   it('creates new conversation with old system prompt', () => {

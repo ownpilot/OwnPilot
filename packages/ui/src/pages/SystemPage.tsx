@@ -379,7 +379,7 @@ export function SystemPage() {
                   Theme
                 </label>
                 <div className="flex gap-2">
-                  {(['system', 'light', 'dark'] as const).map((option) => (
+                  {(['system', 'light', 'dark', 'claude'] as const).map((option) => (
                     <button
                       key={option}
                       onClick={() => setTheme(option)}

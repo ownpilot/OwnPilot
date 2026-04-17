@@ -135,7 +135,17 @@ export class OpenAIProvider extends BaseProvider {
     // Use retry wrapper for the actual API call
     const result = await withRetry(async () => {
       try {
-        const response = await fetch(endpoint, this.createFetchOptions(body));
+        const fetchOpts = this.createFetchOptions(body);
+        // Inject bridge headers for session resume + multi-provider routing.
+        // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
+        // container path invalid for host bridge, bridge's default CWD is sufficient.
+        if (request.metadata?.conversationId) {
+          (fetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+        }
+        if (this.config.headers) {
+          Object.assign(fetchOpts.headers as Record<string, string>, this.config.headers);
+        }
+        const response = await fetch(endpoint, fetchOpts);
         this.clearRequestTimeout();
 
         if (!response.ok) {
@@ -146,6 +156,8 @@ export class OpenAIProvider extends BaseProvider {
         }
 
         const data = (await response.json()) as OpenAIResponse;
+        const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
+        const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
         const choice = data.choices?.[0];
 
         if (!choice) {
@@ -163,6 +175,9 @@ export class OpenAIProvider extends BaseProvider {
           usage: data.usage ? this.mapUsage(data.usage) : undefined,
           model: data.model ?? request.model.model,
           createdAt: new Date((data.created ?? Date.now() / 1000) * 1000),
+          ...(bridgeConvId || bridgeSessionId ? {
+            responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+          } : {}),
         };
 
         // Log response
@@ -227,35 +242,51 @@ export class OpenAIProvider extends BaseProvider {
     logRequest(streamDebugInfo);
 
     try {
-      const response = await fetch(
-        `${this.config.baseUrl}/chat/completions`,
-        this.createFetchOptions(body)
-      );
-      this.clearRequestTimeout();
-
-      if (!response.ok || !response.body) {
-        const errorText = await response.text().catch(() => '');
-        const maskedKey = this.config.apiKey
-          ? `${this.config.apiKey.slice(0, 6)}...${this.config.apiKey.slice(-4)}`
-          : '(none)';
-        const detail = [
-          `status=${response.status}`,
-          `url=${this.config.baseUrl}/chat/completions`,
-          `key=${maskedKey}`,
-          errorText ? `body=${errorText}` : null,
-        ]
-          .filter(Boolean)
-          .join(' | ');
-        logError('openai', new InternalError(`Stream error: ${detail}`), `HTTP ${response.status}`);
-        yield err(
-          new InternalError(
-            `OpenAI stream error: ${response.status}${errorText ? ` - ${errorText}` : ''}`
-          )
+      const streamFetchOpts = this.createFetchOptions(body);
+      // Inject bridge headers for session resume + multi-provider routing.
+      // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
+      // container path invalid for host bridge, bridge's default CWD is sufficient.
+      if (request.metadata?.conversationId) {
+        (streamFetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+      }
+      if (this.config.headers) {
+        Object.assign(streamFetchOpts.headers as Record<string, string>, this.config.headers);
+      }
+      // Retry the initial fetch for transient errors (429, 5xx, network).
+      // Once streaming begins (first chunk yielded), no more retries.
+      // Uses withRetry (same as complete()) — mocked in tests to skip delays.
+      const fetchResult = await withRetry(async () => {
+        const resp = await fetch(
+          `${this.config.baseUrl}/chat/completions`,
+          streamFetchOpts
         );
+        this.clearRequestTimeout();
+
+        if (!resp.ok || !resp.body) {
+          const errorText = await resp.text().catch(() => '');
+          return err(new InternalError(
+            `OpenAI stream error: ${resp.status}${errorText ? ` - ${errorText}` : ''}`
+          ));
+        }
+
+        return ok(resp as unknown);
+      }, DEFAULT_RETRY_CONFIG);
+
+      if (!fetchResult.ok) {
+        const fetchError = fetchResult.error instanceof InternalError
+          ? fetchResult.error
+          : new InternalError(fetchResult.error.message);
+        logError('openai', fetchError, 'stream fetch failed');
+        yield err(fetchError);
         return;
       }
 
-      const reader = response.body.getReader();
+      const response = fetchResult.value as Response;
+
+      const bridgeConvId = response.headers?.get?.('x-conversation-id') ?? undefined;
+      const bridgeSessionId = response.headers?.get?.('x-session-id') ?? undefined;
+
+      const reader = response.body!.getReader();
       try {
         const decoder = new TextDecoder();
         let buffer = '';
@@ -272,7 +303,13 @@ export class OpenAIProvider extends BaseProvider {
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6).trim();
             if (data === '[DONE]') {
-              yield ok({ id: '', done: true });
+              yield ok({
+                id: '',
+                done: true,
+                ...(bridgeConvId || bridgeSessionId ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                } : {}),
+              });
               return;
             }
 

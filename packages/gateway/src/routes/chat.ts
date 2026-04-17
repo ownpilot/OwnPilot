@@ -22,7 +22,9 @@ import {
   notFoundError,
   getErrorMessage,
   parseJsonBody,
+  truncate,
 } from './helpers.js';
+import { wsGateway } from '../ws/server.js';
 import {
   getAgent,
   getOrCreateDefaultAgent,
@@ -162,6 +164,7 @@ async function processNonStreamingViaBus(
       requestId,
       directTools: body.directTools,
       thinking: body.thinking,
+      pageContext: body.pageContext,
     },
   });
 }
@@ -255,7 +258,7 @@ chatRoutes.post('/', async (c) => {
     }
   } else {
     try {
-      agent = await getOrCreateChatAgent(provider, model, routingFallback);
+      agent = await getOrCreateChatAgent(provider, model, routingFallback, undefined, body.conversationId);
     } catch (error) {
       return apiError(
         c,
@@ -269,10 +272,64 @@ chatRoutes.post('/', async (c) => {
   }
 
   // Load conversation if specified
+  console.log(`[SESSION-FIX] body.conversationId=${body.conversationId ?? 'NONE'}, agent.conv=${agent.getConversation().id.slice(0,8)}`);
   if (body.conversationId) {
-    const loaded = agent.loadConversation(body.conversationId);
+    // FIX: Capture agent's initial systemPrompt BEFORE any loadConversation switching.
+    // The agent was initialized with a rich 8796-char prompt (OwnPilot identity + tools
+    // + capabilities). When loadConversation switches to a new conversation without a
+    // systemPrompt, that prompt is lost and the middleware falls back to a generic
+    // "You are a helpful AI assistant." — causing identity drift (MiniMax → "I'm Claude").
+    const agentInitialPrompt = agent.getConversation().systemPrompt;
+
+    let loaded = agent.loadConversation(body.conversationId);
+    console.log(`[SESSION-FIX] loadConversation(${body.conversationId.slice(0,8)}) = ${loaded}`);
+
+    // DB fallback: if conversation exists in DB but not in agent memory
+    // (agent was reset/evicted), reconstruct it from database messages.
+    // Pattern reference: LibreChat BaseClient.loadHistory() + Chatwoot session_registry
     if (!loaded) {
-      return notFoundError(c, 'Conversation', body.conversationId);
+      const chatRepo = new ChatRepository(getUserId(c));
+      const dbData = await chatRepo.getConversationWithMessages(body.conversationId);
+      if (dbData) {
+        // Create conversation in agent memory with the ORIGINAL DB ID.
+        // FIX: fall back to agent's rich init prompt if DB stored NULL — otherwise
+        // ContextInjection middleware hits its generic "helpful AI assistant" fallback.
+        agent.getMemory().createWithId(
+          dbData.conversation.id,
+          dbData.conversation.systemPrompt || agentInitialPrompt,
+          { restoredFromDb: true, restoredAt: new Date().toISOString() }
+        );
+        // Replay messages from DB into agent memory
+        for (const msg of dbData.messages) {
+          if (msg.role === 'user') {
+            agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
+          } else if (msg.role === 'assistant') {
+            agent.getMemory().addAssistantMessage(dbData.conversation.id, msg.content);
+          }
+        }
+        // Now loadConversation should find it in memory
+        loaded = agent.loadConversation(body.conversationId);
+      }
+      if (!loaded) {
+        // Accept client-generated conversation IDs (multi-session pattern).
+        // The client pre-generates a UUID at createSession() time and sends it
+        // with the first message. This follows the industry-standard pattern
+        // used by NextChat, LobeChat, big-AGI, and Vercel AI SDK.
+        const source = body.conversationId.startsWith('sidebar-')
+          ? 'sidebar-chat'
+          : 'client-generated';
+        // FIX: use agent's rich init prompt instead of undefined so the new
+        // conversation inherits the configured OwnPilot identity + tool docs.
+        agent.getMemory().createWithId(
+          body.conversationId,
+          agentInitialPrompt,
+          { source, createdAt: new Date().toISOString() }
+        );
+        loaded = agent.loadConversation(body.conversationId);
+        if (!loaded) {
+          return notFoundError(c, 'Conversation', body.conversationId);
+        }
+      }
     }
   }
 
@@ -358,6 +415,42 @@ chatRoutes.post('/', async (c) => {
   // Mark prompt as initialized for this conversation
   if (!isPromptInitialized) {
     boundedSetAdd(promptInitializedConversations, conversationId, 1000);
+  }
+
+  // ── Early persistence: create conversation in DB NOW so it appears in sidebar
+  // recents IMMEDIATELY (before AI responds). Without this, users who click
+  // "New Chat" before the response arrives lose the conversation from recents
+  // because the optimistic React entry is cleared and DB save hasn't happened.
+  // The later full save (saveStreamingChat/persistence middleware) is idempotent
+  // via getOrCreateConversation — it will find this row and add messages to it.
+  try {
+    const chatRepo = new ChatRepository(chatUserId);
+    const earlyConvId = body.conversationId || conversationId;
+    const earlyConv = await chatRepo.getOrCreateConversation(
+      earlyConvId,
+      {
+        title: truncate(chatMessage),
+        agentId: body.agentId,
+        agentName: body.agentId ? undefined : 'Chat',
+        provider,
+        model,
+      }
+    );
+    // Persist user message NOW so it survives even if AI stream fails/aborts.
+    // The later saveStreamingChat is idempotent — it won't duplicate this message.
+    await chatRepo.addMessage({
+      conversationId: earlyConv.id,
+      role: 'user',
+      content: chatMessage,
+    });
+    wsGateway.broadcast('chat:history:updated', {
+      conversationId: earlyConv.id,
+      title: earlyConv.title,
+      source: 'web',
+      messageCount: 1,
+    });
+  } catch (err) {
+    log.warn('Early conversation persist failed (non-fatal):', err);
   }
 
   // Handle streaming

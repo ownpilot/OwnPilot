@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
-type Theme = 'system' | 'light' | 'dark';
+type Theme = 'system' | 'light' | 'dark' | 'claude';
 
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: 'light' | 'dark'; // The actual applied theme
+  resolvedTheme: 'light' | 'dark' | 'claude'; // The actual applied theme
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -16,12 +16,13 @@ function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function applyTheme(theme: 'light' | 'dark') {
+function applyTheme(theme: 'light' | 'dark' | 'claude') {
   const root = document.documentElement;
+  root.classList.remove('dark', 'claude');
   if (theme === 'dark') {
     root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
+  } else if (theme === 'claude') {
+    root.classList.add('claude');
   }
 }
 
@@ -32,16 +33,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return saved || 'system';
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark' | 'claude'>(() => {
     if (typeof window === 'undefined') return 'light';
     const saved = localStorage.getItem(STORAGE_KEYS.THEME) as Theme | null;
-    if (saved === 'light' || saved === 'dark') return saved;
+    if (saved === 'light' || saved === 'dark' || saved === 'claude') return saved;
     return getSystemTheme();
   });
 
   // Apply theme on mount and when theme changes
   useEffect(() => {
-    let resolved: 'light' | 'dark';
+    let resolved: 'light' | 'dark' | 'claude';
 
     if (theme === 'system') {
       resolved = getSystemTheme();

@@ -28,7 +28,54 @@ import {
   parseJsonBody,
 } from './helpers.js';
 
+const log = console;
+
 const app = new Hono();
+
+// ---------------------------------------------------------------------------
+// Bridge model fetching — dynamic discovery for bridge-* local providers
+// ---------------------------------------------------------------------------
+
+interface BridgeModelEntry {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
+/**
+ * Fetch models from a bridge provider's /v1/models endpoint.
+ * Sends X-Runtime header derived from the provider name (e.g., bridge-opencode → opencode).
+ * Returns empty array on failure (never throws).
+ */
+async function fetchBridgeModels(
+  baseUrl: string,
+  providerName: string,
+  apiKey?: string,
+): Promise<BridgeModelEntry[]> {
+  try {
+    const base = baseUrl.replace(/\/+$/, '');
+    // baseUrl may already end with /v1 — normalize
+    const url = base.endsWith('/v1') ? `${base}/models` : `${base}/v1/models`;
+    const runtime = providerName.replace('bridge-', '');
+    const headers: Record<string, string> = {
+      'X-Runtime': runtime,
+    };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    const resp = await fetch(url, {
+      headers,
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!resp.ok) return [];
+    const body = await resp.json() as { data?: BridgeModelEntry[] };
+    return body.data ?? [];
+  } catch {
+    log.warn?.(`Failed to fetch models from bridge provider ${providerName}`);
+    return [];
+  }
+}
 
 /**
  * Model information
@@ -102,11 +149,34 @@ app.get('/', async (c) => {
     }
   }
 
-  // Include models from local providers (LM Studio, Ollama, etc.)
+  // Include models from local providers (LM Studio, Ollama, bridge-*, etc.)
   const localProviders = await localProvidersRepo.listProviders();
   for (const lp of localProviders) {
     if (!lp.isEnabled) continue;
     configuredProviders.push(lp.id);
+
+    // Bridge providers: fetch models dynamically from bridge /v1/models
+    if (lp.name?.startsWith('bridge-')) {
+      const bridgeModels = await fetchBridgeModels(lp.baseUrl, lp.name, lp.apiKey);
+      if (bridgeModels.length > 0) {
+        for (const bm of bridgeModels) {
+          allModels.push({
+            id: bm.id,
+            name: bm.id,
+            provider: lp.id,
+            contextWindow: 128_000,
+            maxOutputTokens: 8192,
+            inputPrice: 0,
+            outputPrice: 0,
+            capabilities: ['chat', 'streaming'],
+            recommended: false,
+          });
+        }
+        continue; // Skip DB models — bridge is the source of truth
+      }
+      // Fall through to DB models if bridge is unreachable
+    }
+
     const localModels = await localProvidersRepo.listModels(undefined, lp.id);
     for (const lm of localModels) {
       if (!lm.isEnabled) continue;

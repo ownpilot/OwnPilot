@@ -101,7 +101,15 @@ export function WorkspacesPage() {
   const setTab = useCallback(
     (tab: TabId) => {
       setActiveTab(tab);
-      setSearchParams(tab === 'home' ? {} : { tab });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === 'home') {
+          next.delete('tab');
+        } else {
+          next.set('tab', tab);
+        }
+        return next;
+      });
     },
     [setSearchParams]
   );
@@ -136,6 +144,21 @@ export function WorkspacesPage() {
   useEffect(() => {
     fetchWorkspaces();
   }, []);
+
+  // Auto-select workspace from URL ?id= param (e.g. from Sidebar click)
+  useEffect(() => {
+    const wsId = searchParams.get('id');
+    if (wsId && workspaces.length > 0) {
+      const match = workspaces.find((w) => w.id === wsId);
+      if (match) {
+        if (match.id !== selectedWorkspace?.id) {
+          handleSelectWorkspace(match);
+        }
+        // Always ensure workspaces tab is active when ?id= present
+        setActiveTab('workspaces');
+      }
+    }
+  }, [workspaces, searchParams]); // handleSelectWorkspace + setActiveTab stable refs
 
   const fetchWorkspaces = async () => {
     setIsLoading(true);

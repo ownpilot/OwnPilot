@@ -16,6 +16,7 @@ import {
 } from '@ownpilot/core';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { getApiKey } from './settings.js';
+import { toHostPath } from '../utils/host-path.js';
 import { getApprovalManager, checkAutonomy, AutonomyLevel } from '../autonomy/index.js';
 import type { ActionCategory } from '../autonomy/index.js';
 import type { SoulAutonomy } from '@ownpilot/core';
@@ -216,7 +217,10 @@ export async function getProviderApiKey(provider: string): Promise<string | unde
  * Load provider config from core module
  * Uses the core's getProviderConfig which properly resolves JSON paths
  */
-export function loadProviderConfig(providerId: string): {
+export function loadProviderConfig(
+  providerId: string,
+  pageContext?: { path?: string } | null
+): {
   baseUrl?: string;
   apiKeyEnv?: string;
   type?: string;
@@ -240,10 +244,24 @@ export function loadProviderConfig(providerId: string): {
     // Discovery uses its own endpoint paths, but the provider SDK appends /chat/completions
     const base = localProv.baseUrl.replace(/\/+$/, '');
     const baseUrl = base.endsWith('/v1') ? base : `${base}/v1`;
+    // Bridge multi-provider routing: if provider name starts with 'bridge-',
+    // inject X-Runtime header so the bridge routes to the correct runtime
+    const headers: Record<string, string> = {};
+    if (localProv.name?.startsWith('bridge-')) {
+      headers['X-Runtime'] = localProv.name.replace('bridge-', '');
+    }
+    // X-Project-Dir: forward host path to bridge for CWD routing
+    if (localProv.name?.startsWith('bridge-') && pageContext?.path) {
+      const hostPath = toHostPath(pageContext.path);
+      if (hostPath) {
+        headers['X-Project-Dir'] = hostPath;
+      }
+    }
     return {
       baseUrl,
       apiKeyEnv: undefined,
       type: 'openai-compatible',
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
     };
   }
 

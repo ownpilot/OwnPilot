@@ -52,6 +52,13 @@ export function createPersistenceMiddleware(): MessageMiddleware {
       return result;
     }
 
+    // Web streaming path sets this flag — saveStreamingChat handles persistence there.
+    // Skipping here prevents the double-write: middleware + saveStreamingChat both
+    // saving user+assistant to the same conversation.
+    if (ctx.get<boolean>('skipPersistenceMessages')) {
+      return result;
+    }
+
     try {
       const chatRepo = new ChatRepository(userId);
 

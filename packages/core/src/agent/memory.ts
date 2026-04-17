@@ -56,6 +56,25 @@ export class ConversationMemory {
   }
 
   /**
+   * Create a conversation with a specific ID (for DB restore scenarios).
+   * Used when reloading a conversation from database after agent memory eviction.
+   */
+  createWithId(id: string, systemPrompt?: string, metadata?: Record<string, unknown>): Conversation {
+    const now = new Date();
+    const conversation: Conversation = {
+      id,
+      systemPrompt,
+      messages: [],
+      createdAt: now,
+      updatedAt: now,
+      metadata,
+    };
+
+    this.conversations.set(id, conversation);
+    return conversation;
+  }
+
+  /**
    * Get a conversation by ID
    */
   get(id: string): Conversation | undefined {
