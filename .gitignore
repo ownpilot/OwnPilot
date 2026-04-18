@@ -121,3 +121,11 @@ packages/**/*.b64
 docs/MINIMAX_CHECK.md
 docs/QWEN_CHECK.md
 .playwright-mcp/
+
+# Internal/private planning docs — never commit
+.planning/
+docs/screenshots/t4f-poc/
+docs/T4F-POC-*.md
+**/HANDOFF-*.md
+**/SESSION_HANDOFF_*.md
+**/POSTMORTEM-*.md
