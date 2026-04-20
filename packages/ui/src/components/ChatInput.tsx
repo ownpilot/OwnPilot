@@ -11,6 +11,7 @@ import { Send, StopCircle, X, Upload } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
 import { VoiceButton } from './VoiceButton';
 import type { MessageAttachment } from '../types';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface AttachmentPreview {
   file: File;
@@ -168,10 +169,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       try {
         const formData = new FormData();
         formData.append('file', file);
+        const token = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
         const res = await fetch('/api/v1/chat/upload-attachment', {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}`,
+            'X-Session-Token': token || '',
           },
           body: formData,
         });

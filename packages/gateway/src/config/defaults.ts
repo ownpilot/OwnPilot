@@ -318,8 +318,8 @@ export const HSTS_MAX_AGE_PRELOAD = 63_072_000;
 /** HSTS max-age without preload (1 year, seconds) */
 export const HSTS_MAX_AGE = 31_536_000;
 
-/** Default HTTP request body size limit (bytes) — 1 MB */
-export const DEFAULT_BODY_LIMIT_BYTES = 1_048_576;
+/** Default HTTP request body size limit (bytes) — 10 MB */
+export const DEFAULT_BODY_LIMIT_BYTES = 10 * 1024 * 1024;
 
 /** HTTP 413 Payload Too Large status code */
 export const HTTP_PAYLOAD_TOO_LARGE = 413;
