@@ -235,6 +235,11 @@ export class ConversationService {
               },
             ]
           : [],
+        autonomyChecks: [],
+        dbOperations: { reads: 0, writes: 0 },
+        memoryOps: { adds: 0, recalls: 0 },
+        triggersFired: [],
+        errors: [],
         mcpToolEvents,
         events: mcpToolEvents.map((event) => ({
           type: event.type,
