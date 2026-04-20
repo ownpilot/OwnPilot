@@ -43,7 +43,7 @@ export function SidebarDataSection({
       <button
         onClick={() => { onCloseCustomize(); navigate(def.route); }}
         data-testid={`sidebar-${config.id}`}
-        className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:text-text-primary dark:hover:text-dark-text-primary text-left"
       >
         <Icon className="w-4 h-4 shrink-0" />
         <span className="truncate flex-1">{label}</span>
@@ -64,7 +64,7 @@ export function SidebarDataSection({
         </button>
         <button
           onClick={() => { onCloseCustomize(); navigate(def.route); }}
-          className="flex-1 text-left text-[15px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+          className="flex-1 text-left text-[11px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
         >
           {label}
         </button>
@@ -84,12 +84,12 @@ export function SidebarDataSection({
         ) : items.length === 0 ? (
           <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted">No {label.toLowerCase()}</div>
         ) : (
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 px-2">
             {items.map((item) => (
               <button
                 key={item.id}
                 onClick={() => { onCloseCustomize(); navigate(item.route); }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
+                className="w-full flex items-center gap-2 pl-7 pr-2 py-1.5 rounded-md transition-colors text-[13px] text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:text-text-primary dark:hover:text-dark-text-primary text-left"
                 title={item.label}
               >
                 <Icon className="w-4 h-4 shrink-0 opacity-60" />
