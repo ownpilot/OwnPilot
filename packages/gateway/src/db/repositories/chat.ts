@@ -409,7 +409,17 @@ export class ChatRepository extends BaseRepository {
         input.isError || false,
         input.inputTokens || null,
         input.outputTokens || null,
-        input.attachments?.length ? JSON.stringify(input.attachments) : null,
+        input.attachments?.length
+          ? JSON.stringify(
+              input.attachments.map((a) => ({
+                type: a.type,
+                mimeType: a.mimeType,
+                filename: a.filename,
+                size: a.size,
+                path: a.path,
+              }))
+            )
+          : null,
         now,
       ]
     );

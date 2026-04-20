@@ -253,6 +253,7 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
         content: msg.role === 'assistant' ? stripInternalTags(msg.content) : msg.content,
         provider: msg.provider,
         model: msg.model,
+        attachments: msg.attachments,
         toolCalls: msg.toolCalls,
         trace: msg.trace,
         isError: msg.isError,
@@ -320,6 +321,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           createdAt: msg.createdAt.toISOString(),
           source: 'web' as const,
           direction: msg.role === 'user' ? 'inbound' : 'outbound',
+          attachments: msg.attachments ?? undefined,
         })),
       });
     }
@@ -356,6 +358,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
       direction: 'inbound' | 'outbound';
       senderName?: string;
       senderId?: string;
+      attachments?: any[];
     };
 
     const unified: UnifiedMessage[] = [];
@@ -371,6 +374,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
         direction: cm.direction,
         senderName: cm.senderName,
         senderId: cm.senderId,
+        attachments: cm.attachments ?? undefined,
       });
     }
 
@@ -405,6 +409,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           createdAt: msg.createdAt.toISOString(),
           source: 'ai',
           direction: msg.role === 'user' ? 'inbound' : 'outbound',
+          attachments: msg.attachments ?? undefined,
         });
       }
     }

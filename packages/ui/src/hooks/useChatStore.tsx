@@ -400,6 +400,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               attachments: imageAttachments.map((a) => ({
                 type: a.type,
                 data: a.data,
+                path: a.path,
                 mimeType: a.mimeType,
                 filename: a.filename,
               })),

@@ -149,7 +149,15 @@ export class ConversationService {
             content: params.userMessage,
             provider: params.provider,
             model: params.model,
-            ...(params.attachments?.length && { attachments: params.attachments }),
+            ...(params.attachments?.length && { 
+              attachments: params.attachments.map(a => ({
+                type: a.type,
+                mimeType: a.mimeType,
+                filename: a.filename,
+                size: a.size,
+                path: a.path
+              }))
+            }),
           });
         }
 

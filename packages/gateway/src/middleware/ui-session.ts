@@ -28,8 +28,8 @@ export const uiSessionMiddleware = createMiddleware(async (c, next) => {
     return next();
   }
 
-  // 2. Check for session token
-  const token = c.req.header('X-Session-Token');
+  // 2. Check for session token (header or query param for images)
+  const token = c.req.header('X-Session-Token') || c.req.query('token');
   if (token && validateSession(token)) {
     c.set('sessionAuthenticated', true);
     c.set('userId', 'default');

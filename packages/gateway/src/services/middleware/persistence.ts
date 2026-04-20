@@ -83,11 +83,12 @@ export function createPersistenceMiddleware(): MessageMiddleware {
               (a): a is typeof a & { type: 'image' | 'file' } =>
                 a.type === 'image' || a.type === 'file'
             )
-            .map((a) => ({
+            .map((a: any) => ({
               type: a.type,
               mimeType: a.mimeType,
               filename: a.filename,
               size: a.size,
+              path: a.path,
             })),
         }),
       });

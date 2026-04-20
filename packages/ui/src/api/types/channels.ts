@@ -78,6 +78,7 @@ export interface HistoryMessage {
   trace?: Record<string, unknown>;
   isError?: boolean;
   createdAt: string;
+  attachments?: any[];
 }
 
 /** Unified message — used in channel conversations to merge AI + channel data. */
@@ -95,6 +96,7 @@ export interface UnifiedMessage {
   direction: 'inbound' | 'outbound';
   senderName?: string;
   senderId?: string;
+  attachments?: any[];
 }
 
 /** Channel info attached to unified conversation response. */

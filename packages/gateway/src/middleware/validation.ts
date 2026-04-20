@@ -52,9 +52,11 @@ export const chatMessageSchema = z.object({
     .array(
       z.object({
         type: z.enum(['image', 'file']),
-        data: z.string().max(20_000_000),
+        data: z.string().max(20_000_000).optional(),
+        path: z.string().max(2000).optional(),
         mimeType: z.string().max(100),
         filename: z.string().max(255).optional(),
+        size: z.number().int().min(0).optional(),
       })
     )
     .max(5)

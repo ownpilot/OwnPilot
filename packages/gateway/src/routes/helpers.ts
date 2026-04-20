@@ -5,10 +5,13 @@
  */
 
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ApiResponse } from '../types/index.js';
 import { ERROR_CODES, type ErrorCode } from './error-codes.js';
+import { getDataDirectoryInfo } from '../paths/index.js';
 
 // Re-export error codes for convenience
 export { ERROR_CODES, type ErrorCode };
@@ -406,5 +409,41 @@ export async function parseJsonBodySafe<T = unknown>(c: Context): Promise<Result
     return { success: true, data: data as T };
   } catch {
     return { success: false, error: 'Invalid JSON in request body' };
+  }
+}
+
+/**
+ * Hydrate attachment data from disk if only path is provided.
+ */
+export function hydrateAttachments(
+  userId: string,
+  attachments?: Array<{
+    type: string;
+    data?: string;
+    path?: string;
+    mimeType?: string;
+    filename?: string;
+  }>
+): void {
+  if (!attachments?.length) return;
+
+  const dataInfo = getDataDirectoryInfo();
+  for (const att of attachments) {
+    if (!att.data && att.path) {
+      // Extract filename from path (e.g., 'attachments/filename.png')
+      const filename = att.path.replace('attachments/', '').replace(/\\/g, '/').split('/').pop();
+      if (filename && !filename.includes('..')) {
+        const filePath = join(dataInfo.root, 'attachments', userId, filename);
+        if (existsSync(filePath)) {
+          try {
+            const buffer = readFileSync(filePath);
+            att.data = buffer.toString('base64');
+          } catch (e) {
+            // Log but don't crash
+            console.error(`[Hydration] Failed to read ${filePath}:`, e);
+          }
+        }
+      }
+    }
   }
 }

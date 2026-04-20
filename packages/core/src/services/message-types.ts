@@ -23,6 +23,7 @@ export interface NormalizedAttachment {
   readonly mimeType?: string;
   readonly filename?: string;
   readonly size?: number;
+  readonly path?: string;
 }
 
 export interface NormalizedToolCall {

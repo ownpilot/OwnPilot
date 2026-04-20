@@ -8,6 +8,13 @@ import {
   ChevronRight,
   ChevronDown,
   Wrench,
+  File,
+  BookOpen,
+  Layout,
+  Database,
+  Globe,
+  Image as ImageIcon,
+  ExternalLink,
   Brain,
 } from './icons';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
@@ -15,6 +22,7 @@ import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
 import { VoicePlayButton } from './VoicePlayButton';
 import type { Message } from '../types';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface MessageListProps {
   messages: Message[];
@@ -55,22 +63,46 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
   const isUser = message.role === 'user';
   const isError = message.isError;
 
-  // Strip hidden context blocks from display (attached context + tool catalog)
-  const hasAttachedContext =
-    isUser &&
-    (message.content.includes('\n---\n[ATTACHED CONTEXT') ||
-      message.content.includes('\n---\n[TOOL CATALOG'));
-  const strippedContent = hasAttachedContext
-    ? message.content
-        .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
-        .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
-        .trim()
-    : message.content;
+  // Professional Context Parsing
+  const { resources: parsedResources, cleanContent } = parseAttachedContext(message.content);
   // Strip any think/thinking tags that may have been saved to message history
-  const displayContent = strippedContent.replace(
+  const displayContent = cleanContent.replace(
     /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g,
     ''
   );
+
+  // Unified Resource Handling
+  // Merge direct attachments (from DB/Upload) with parsed context resources
+  const directAttachments = (message.attachments || []).map((a) => ({
+    type: (a.type === 'image' ? 'image' : 'file') as ParsedResource['type'] | 'image',
+    name: a.filename || 'Unnamed File',
+    source: 'user' as const,
+    size: a.size,
+    path: a.path,
+    mimeType: a.mimeType,
+    previewUrl: a.previewUrl,
+  }));
+
+  const parsedItems = parsedResources.map((r) => ({
+    ...r,
+    source: 'ai' as const,
+  }));
+
+  // Deduplicate by name and path to avoid "double attachments"
+  const galleryItems = [...directAttachments];
+  for (const item of parsedItems) {
+    const isDuplicate = galleryItems.some(
+      (existing) => 
+        existing.name === item.name || 
+        ((existing as any).path && (item as any).path && (existing as any).path === (item as any).path)
+    );
+    if (!isDuplicate) {
+      galleryItems.push(item as any);
+    }
+  }
+
+  const hasResources = galleryItems.length > 0;
+
 
   const copyToClipboard = async () => {
     try {
@@ -83,7 +115,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
   };
 
   return (
-    <div className={`flex gap-4 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-4 w-full ${isUser ? 'flex-row-reverse justify-start' : 'justify-start'}`}>
       {/* Avatar */}
       <div
         className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
@@ -96,31 +128,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
       </div>
 
       {/* Content */}
-      <div className={`group flex-1 max-w-[85%] ${isUser ? 'text-right' : 'text-left'}`}>
-        {/* User image attachments */}
-        {isUser && message.attachments && message.attachments.length > 0 && (
-          <div className={`flex gap-2 mb-2 ${isUser ? 'justify-end' : ''} flex-wrap`}>
-            {message.attachments
-              .filter((a) => a.type === 'image')
-              .map((att, i) => {
-                const src = att.data
-                  ? `data:${att.mimeType || 'image/png'};base64,${att.data}`
-                  : att.path
-                    ? `/api/v1/files/workspace/${att.path}`
-                    : undefined;
-                if (!src) return null;
-                return (
-                  <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
-                    <img
-                      src={src}
-                      alt={att.filename || 'Attached image'}
-                      className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
-                    />
-                  </a>
-                );
-              })}
-          </div>
-        )}
+      <div className={`group max-w-[85%] flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
 
         {/* Message Bubble */}
         {(() => {
@@ -140,12 +148,33 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
           );
         })()}
 
-        {/* Attached context indicator */}
-        {hasAttachedContext && (
-          <div
-            className={`mt-1 text-[11px] text-text-muted/60 dark:text-dark-text-muted/60 ${isUser ? 'text-right' : ''}`}
-          >
-            + context attached
+        {/* Resource Gallery Section */}
+        {hasResources && (
+          <div className={`mt-3 flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+            <div className={`grid grid-cols-1 gap-3 max-w-[600px] ${isUser ? 'justify-items-end' : ''}`}>
+              {galleryItems.map((item, i) => {
+                const isImage = item.type === 'image';
+                const colorClass = getResourceColor(item.type as any);
+                const icon = getResourceIcon(item.type as any, "w-4.5 h-4.5");
+                // Construct file URL for user attachments
+                const token = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+                const cleanPath = item.path?.replace(/^attachments[\\\/]/, '').replace(/^[\\\/]+/, '');
+                const fileUrl = cleanPath 
+                  ? `/api/v1/chat/attachments/${cleanPath}${token ? `?token=${token}` : ''}` 
+                  : item.previewUrl;
+
+                return (
+                  <ResourceCard 
+                    key={i}
+                    item={item}
+                    isImage={isImage}
+                    fileUrl={fileUrl}
+                    colorClass={colorClass}
+                    icon={icon}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -324,6 +353,172 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
           <div className="mt-3">
             <TraceDisplay trace={message.trace} />
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+interface ParsedResource {
+  type: 'file' | 'tool' | 'skill' | 'url' | 'artifact' | 'image' | 'other';
+  name: string;
+  path?: string;
+}
+
+function parseAttachedContext(content: string): { resources: ParsedResource[]; cleanContent: string } {
+  if (!content) return { resources: [], cleanContent: '' };
+  const parts = content.split('\n---\n[TOOL CATALOG');
+  let cleanContent = (parts[0] || '').trim();
+  
+  // 2. Identify the [ATTACHED CONTEXT] boundary
+  const contextMarker = '[ATTACHED CONTEXT';
+  const markerIndex = cleanContent.indexOf(contextMarker);
+
+  if (markerIndex === -1) return { resources: [], cleanContent };
+
+  // Extract the context block and the message text before it
+  const contextPart = cleanContent.substring(markerIndex);
+  
+  // Clean up the trailing "---" and spacing before the marker
+  cleanContent = cleanContent.substring(0, markerIndex)
+    .replace(/\s*---?\s*$/, '') // Strip trailing horizontal rule
+    .trim();
+
+  const resources: ParsedResource[] = [];
+
+  // Pattern matchers for different resource types within the context block
+  const patterns = [
+    { type: 'file' as const, regex: /Attached File: (.*?) \(/g },
+    { type: 'tool' as const, regex: /Tool: (.*?)(?:\n|$)/g },
+    { type: 'skill' as const, regex: /Skill: (.*?)(?:\n|$)/g },
+    { type: 'url' as const, regex: /Web Page: (.*?)(?:\n|$)/g },
+    { type: 'artifact' as const, regex: /Previous AI Artifact: "(.*?)"/g },
+  ];
+
+  patterns.forEach(({ type, regex }) => {
+    let match;
+    // Reset regex index for repeated matches
+    regex.lastIndex = 0;
+    while ((match = regex.exec(contextPart)) !== null) {
+      if (match[1]) {
+        resources.push({ type, name: match[1].trim() });
+      }
+    }
+  });
+
+  return { resources, cleanContent };
+}
+
+function getResourceIcon(type: ParsedResource['type'], className = "w-3 h-3 opacity-60") {
+  switch (type) {
+    case 'image':
+      return <ImageIcon className={className} />;
+    case 'file':
+      return <File className={className} />;
+    case 'tool':
+      return <Wrench className={className} />;
+    case 'skill':
+      return <BookOpen className={className} />;
+    case 'url':
+      return <Globe className={className} />;
+    case 'artifact':
+      return <Layout className={className} />;
+    default:
+      return <Database className={className} />;
+  }
+}
+
+function getResourceColor(type: ParsedResource['type']): string {
+  switch (type) {
+    case 'image':
+      return 'bg-pink-500/10 text-pink-600 dark:text-pink-400';
+    case 'file':
+      return 'bg-orange-500/10 text-orange-600 dark:text-orange-400';
+    case 'tool':
+      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+    case 'skill':
+      return 'bg-violet-500/10 text-violet-600 dark:text-violet-400';
+    case 'url':
+      return 'bg-sky-500/10 text-sky-600 dark:text-sky-400';
+    case 'artifact':
+      return 'bg-rose-500/10 text-rose-600 dark:text-rose-400';
+    default:
+      return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+  }
+}
+
+interface ResourceCardProps {
+  item: any;
+  isImage: boolean;
+  fileUrl?: string;
+  colorClass: string;
+  icon: React.ReactNode;
+}
+
+function ResourceCard({ item, isImage, fileUrl, colorClass, icon }: ResourceCardProps) {
+  const [imageError, setImageError] = useState(false);
+  const showImage = isImage && fileUrl && !imageError;
+
+  return (
+    <div 
+      className={`flex flex-col rounded-xl border border-border/80 dark:border-dark-border/80 bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all hover:shadow-md hover:border-primary/30 group/res overflow-hidden w-full max-w-[280px]`}
+    >
+      {showImage && (
+        <div className="aspect-video w-full overflow-hidden bg-bg-tertiary dark:bg-dark-bg-tertiary border-b border-border/50 dark:border-dark-border/50 relative">
+          <img 
+            src={fileUrl} 
+            alt={item.name} 
+            className="w-full h-full object-cover transition-transform group-hover/res:scale-105"
+            loading="lazy"
+            onError={() => setImageError(true)}
+          />
+        </div>
+      )}
+      
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${colorClass} shadow-sm`}>
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <div 
+            className="text-sm font-bold text-text-primary dark:text-dark-text-primary truncate leading-tight" 
+            title={item.name}
+          >
+            {item.name}
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[9px] text-text-muted dark:text-dark-text-muted font-bold uppercase tracking-wider opacity-80">
+              {item.source === 'user' ? 'Attachment' : 'AI Context'}
+            </span>
+            {item.size && (
+              <>
+                <span className="w-0.5 h-0.5 rounded-full bg-text-muted opacity-30"></span>
+                <span className="text-[9px] text-text-muted opacity-50 font-medium">
+                  {formatFileSize(item.size)}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {item.path && (
+          <a 
+            href={fileUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted hover:text-primary transition-all hover:scale-110 active:scale-95 shadow-sm border border-transparent hover:border-border"
+            title="View original"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
         )}
       </div>
     </div>

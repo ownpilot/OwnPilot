@@ -57,9 +57,11 @@ export interface ChatRequest {
   /** File/image attachments (base64 encoded) */
   attachments?: Array<{
     type: 'image' | 'file';
-    data: string;
+    data?: string;
+    path?: string;
     mimeType: string;
     filename?: string;
+    size?: number;
   }>;
   /** Page context for system prompt enrichment */
   pageContext?: {
