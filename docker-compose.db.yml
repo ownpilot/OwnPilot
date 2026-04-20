@@ -5,7 +5,7 @@
 # Default credentials: ownpilot / ownpilot_secret
 #
 # Then in your .env:
-#   POSTGRES_HOST=localhost
+#   POSTGRES_HOST=127.0.0.1   # use IPv4 literal; "localhost" may resolve to ::1 on Windows
 #   POSTGRES_PORT=25432
 #   POSTGRES_USER=ownpilot
 #   POSTGRES_PASSWORD=ownpilot_secret
@@ -17,7 +17,9 @@ services:
     container_name: ownpilot-db
     restart: unless-stopped
     ports:
-      - '${POSTGRES_PORT:-25432}:5432'
+      # Bind to IPv4 loopback only — avoids localhost/::1 resolution issues on Windows
+      # and prevents exposing the DB to other hosts on the LAN.
+      - '127.0.0.1:${POSTGRES_PORT:-25432}:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ownpilot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ownpilot_secret}

@@ -45,7 +45,7 @@ packages/
 
 This project is developed across multiple machines. Preview setup differs per environment.
 **Before starting preview**, read the project memory for machine-specific context:
-`~/.claude/projects/-Users-ayazmutlu-ownpilot/memory/project_dev_setup.md`
+`~/.claude/projects/<your-project-slug>/memory/project_dev_setup.md`
 
 That file contains: device map, decision tree (which machine → which approach), data flow diagram, and known issues per platform. Do NOT blindly follow steps — understand which machine you're on first.
 

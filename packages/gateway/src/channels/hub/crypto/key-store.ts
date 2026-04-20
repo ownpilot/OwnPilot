@@ -5,6 +5,7 @@
  * Uses database for production, memory for testing.
  */
 
+import { randomInt } from 'node:crypto';
 import { getLog } from '../../../services/log.js';
 import type {
   IKeyStore,
@@ -201,8 +202,8 @@ export class MemoryKeyStore implements IKeyStore, SessionStore {
 
   async getRegistrationId(): Promise<number> {
     if (!this.keys.registrationId) {
-      // Generate random 31-bit registration ID
-      this.keys.registrationId = Math.floor(Math.random() * 0x7fffffff) + 1;
+      // Generate random 31-bit registration ID using CSPRNG
+      this.keys.registrationId = randomInt(1, 0x7fffffff + 1);
     }
     return this.keys.registrationId;
   }

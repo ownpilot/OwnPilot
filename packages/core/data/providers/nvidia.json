@@ -29,6 +29,23 @@
       "releaseDate": "2026-04-02"
     },
     {
+      "id": "z-ai/glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-27"
+    },
+    {
       "id": "minimaxai/minimax-m2.7",
       "name": "MiniMax-M2.7",
       "contextWindow": 204800,

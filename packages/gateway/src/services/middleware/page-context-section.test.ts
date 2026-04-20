@@ -18,9 +18,9 @@ describe('buildPageContextSection', () => {
   });
 
   test('pageType + path → includes working directory', () => {
-    const result = buildPageContextSection({ pageType: 'workspace', path: '/home/ayaz/project' });
+    const result = buildPageContextSection({ pageType: 'workspace', path: '/home/user/project' });
     expect(result).toContain('Working directory');
-    expect(result).toContain('/home/ayaz/project');
+    expect(result).toContain('/home/user/project');
   });
 
   test('pageType + entityId → includes entity', () => {
@@ -49,14 +49,14 @@ describe('buildPageContextSection', () => {
     const result = buildPageContextSection({
       pageType: 'workspace',
       entityId: 'ws_abc',
-      path: '/home/ayaz/project',
+      path: '/home/user/project',
       contextData: { fileCount: 42 },
       systemPromptHint: 'Help with files.',
     });
     expect(result).toContain('## Page Context');
     expect(result).toContain('workspace');
     expect(result).toContain('ws_abc');
-    expect(result).toContain('/home/ayaz/project');
+    expect(result).toContain('/home/user/project');
     expect(result).toContain('42');
     expect(result).toContain('Help with files.');
   });

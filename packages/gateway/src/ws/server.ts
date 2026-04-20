@@ -28,6 +28,7 @@ import {
   WS_MAX_CONNECTIONS,
   WS_READY_STATE_OPEN,
 } from '../config/defaults.js';
+import { createLoginThrottle } from '../utils/login-throttle.js';
 
 // Simple HTML escape to prevent XSS in demo responses
 function escapeHtml(unsafe: string): string {
@@ -45,35 +46,11 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('WebSocket');
 
-/** Rate limiter for WS auth attempts per IP */
-const authAttempts = new Map<string, { count: number; resetAt: number }>();
-const WS_AUTH_MAX_ATTEMPTS = 10;
-const WS_AUTH_WINDOW_MS = 60_000;
-
-// Periodic cleanup to prevent unbounded growth — runs every 2 minutes
-const _authCleanupTimer = setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of authAttempts) {
-    if (entry.resetAt <= now) authAttempts.delete(ip);
-  }
-}, 2 * 60_000);
-if (typeof _authCleanupTimer === 'object' && 'unref' in _authCleanupTimer) {
-  _authCleanupTimer.unref();
-}
-
-function isAuthRateLimited(clientIp: string): boolean {
-  const now = Date.now();
-  const attempts = authAttempts.get(clientIp);
-  if (attempts && attempts.resetAt > now) {
-    if (attempts.count >= WS_AUTH_MAX_ATTEMPTS) {
-      return true;
-    }
-    attempts.count++;
-  } else {
-    authAttempts.set(clientIp, { count: 1, resetAt: now + WS_AUTH_WINDOW_MS });
-  }
-  return false;
-}
+const wsLoginThrottle = createLoginThrottle({
+  maxAttempts: 10,
+  windowMs: 60_000,
+  lockoutMs: 0, // no lockout for WS auth
+});
 
 /**
  * Validate a WebSocket authentication token.
@@ -442,7 +419,7 @@ export class WSGateway {
       if (url.pathname === this.config.path) {
         // Rate limit auth attempts per IP
         const clientIp = request.socket.remoteAddress ?? 'unknown';
-        if (isAuthRateLimited(clientIp)) {
+        if (!wsLoginThrottle.check(clientIp).allowed) {
           log.warn('WebSocket auth rate limited', { clientIp });
           socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
           socket.destroy();
@@ -527,7 +504,7 @@ export class WSGateway {
 
     // Rate limit auth attempts per IP
     const clientIp = request.socket.remoteAddress ?? 'unknown';
-    if (isAuthRateLimited(clientIp)) {
+    if (!wsLoginThrottle.check(clientIp).allowed) {
       log.warn('WebSocket auth rate limited', { clientIp });
       socket.close(1008, 'Rate limited');
       return;
@@ -1240,7 +1217,7 @@ export class WSGateway {
 
 /** Reset auth rate limiter state (for tests) */
 export function resetAuthRateLimit(): void {
-  authAttempts.clear();
+  wsLoginThrottle.reset();
 }
 
 /**

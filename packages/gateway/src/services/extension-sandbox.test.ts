@@ -131,6 +131,8 @@ function makeOptions(overrides: Partial<ExecOptions> = {}): ExecOptions {
     toolName: 'myTool',
     code: 'module.exports = function(args) { return args.x + 1; }',
     args: { x: 41 },
+    ownerUserId: 'test-user',
+    grantedPermissions: [],
     ...overrides,
   };
 }
@@ -423,6 +425,8 @@ describe('ExtensionSandboxManager', () => {
         toolName: 'search',
         toolArgs: { q: 'hello' },
         requestId: 'ct-1',
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
       });
       // Allow async handler to complete
       await Promise.resolve();
@@ -461,12 +465,18 @@ describe('ExtensionSandboxManager', () => {
         toolName: 'lookup',
         toolArgs: { id: '123' },
         requestId: 'ct-2',
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
       });
       // Allow async handler chain to complete
       await Promise.resolve();
       await Promise.resolve();
 
-      expect(handler).toHaveBeenCalledWith('lookup', { id: '123' });
+      expect(handler).toHaveBeenCalledWith(
+        'lookup',
+        { id: '123' },
+        { extensionId: 'ext-1', ownerUserId: 'test-user', grantedPermissions: [] }
+      );
 
       const callToolResultMsg = w.postMessage.mock.calls.find(
         (c: unknown[]) =>
@@ -503,6 +513,8 @@ describe('ExtensionSandboxManager', () => {
         toolName: 'bad_tool',
         toolArgs: {},
         requestId: 'ct-3',
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
       });
       await Promise.resolve();
       await Promise.resolve();
@@ -535,6 +547,8 @@ describe('ExtensionSandboxManager', () => {
         type: 'callTool',
         toolName: 'search',
         toolArgs: {},
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
         // requestId intentionally omitted
       });
       await Promise.resolve();
@@ -559,6 +573,8 @@ describe('ExtensionSandboxManager', () => {
         type: 'callTool',
         requestId: 'ct-99',
         toolArgs: {},
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
         // toolName intentionally omitted
       });
       await Promise.resolve();

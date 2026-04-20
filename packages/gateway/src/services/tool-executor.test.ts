@@ -100,6 +100,7 @@ vi.mock('../db/repositories/extensions.js', () => ({
   extensionsRepo: {
     getById: vi.fn(() => ({
       id: 'ext-default',
+      userId: 'default',
       manifest: {},
       grantedPermissions: [],
     })),
@@ -117,6 +118,12 @@ vi.mock('./extension-sandbox.js', () => ({
 
 vi.mock('./tool-permission-service.js', () => ({
   checkToolPermission: vi.fn(async () => ({ allowed: true, reason: '' })),
+}));
+
+vi.mock('./extension-permissions.js', () => ({
+  checkPermission: vi.fn(() => true),
+  getRequiredPermission: vi.fn(() => null),
+  logPermissionDenied: vi.fn(),
 }));
 
 vi.mock('./config-center-impl.js', () => ({
@@ -1070,14 +1077,18 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('regular_tool', { arg: 'value' });
+      const result = await handler('regular_tool', { arg: 'value' }, {
+        extensionId: 'ext-default',
+        ownerUserId: 'default',
+        grantedPermissions: [],
+      });
 
       expect(result.success).toBe(true);
       expect(result.result).toBe('tool output');
       expect(mockToolRegistry.execute).toHaveBeenCalledWith(
         'regular_tool',
         { arg: 'value' },
-        { userId: 'system', conversationId: 'sandbox' }
+        { userId: 'default', conversationId: 'sandbox' }
       );
     });
 
@@ -1091,7 +1102,11 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('failing_tool', {});
+      const result = await handler('failing_tool', {}, {
+        extensionId: 'ext-default',
+        ownerUserId: 'default',
+        grantedPermissions: [],
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Registry error');
@@ -1107,7 +1122,11 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('error_tool', {});
+      const result = await handler('error_tool', {}, {
+        extensionId: 'ext-default',
+        ownerUserId: 'default',
+        grantedPermissions: [],
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('tool error output');

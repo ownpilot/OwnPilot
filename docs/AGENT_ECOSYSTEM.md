@@ -337,7 +337,7 @@ Mission: "Scan /packages/gateway/src/routes/ (71 files).
           Find routes not using apiResponse helper, fix them,
           run tests, commit. Continue until done."
 Mode:    single-shot
-Workspace: /home/ayaz/ownpilot/
+Workspace: /home/user/ownpilot/
 Coding agent: claude-code
 Stop: on_report
 
@@ -406,7 +406,7 @@ Output:    Ring buffer (100KB) + WebSocket streaming to XTerminal
 ```
 1. Coding Agents → New Session
 2. Provider: claude-code
-3. CWD: /home/ayaz/ownpilot
+3. CWD: /home/user/ownpilot
 4. Mode: auto
 5. Prompt: "Fix the duplicate message bug in
             packages/gateway/src/routes/chat.ts"

@@ -2,7 +2,7 @@
  * useLocalFiles — state management for the Local Files tab.
  *
  * Manages expand/collapse state for devices and bookmark directories,
- * persisted to localStorage. Active device (ownpilot-local) defaults to open.
+ * persisted to localStorage. The device flagged as `active` defaults to open.
  */
 import { useState, useCallback } from 'react';
 import { STORAGE_KEYS } from '../constants/storage-keys';

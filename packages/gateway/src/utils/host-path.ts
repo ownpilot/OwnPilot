@@ -6,7 +6,7 @@
  *
  * Environment variables:
  * - OWNPILOT_HOST_FS: Container mount point (e.g., /host-home)
- * - OWNPILOT_HOST_FS_HOST_PREFIX: Corresponding host path (e.g., /home/ayaz)
+ * - OWNPILOT_HOST_FS_HOST_PREFIX: Corresponding host path (e.g., /home/user)
  */
 
 function getHostFs(): string | undefined {

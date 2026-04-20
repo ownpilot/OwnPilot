@@ -20,8 +20,30 @@ import {
   validateSession,
   getActiveSessionCount,
 } from '../services/ui-session.js';
+import { createLoginThrottle } from '../utils/login-throttle.js';
+import { getEventSystem } from '@ownpilot/core';
+import { MS_PER_MINUTE } from '../config/defaults.js';
 
 const MIN_PASSWORD_LENGTH = 8;
+
+const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
+
+function getClientIpHttp(c: { req: { header: (name: string) => string | undefined } }): string {
+  if (TRUST_PROXY) {
+    return (
+      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
+      c.req.header('X-Real-IP') ??
+      'unknown'
+    );
+  }
+  return 'direct';
+}
+
+const loginThrottle = createLoginThrottle({
+  maxAttempts: 5,
+  windowMs: 5 * MS_PER_MINUTE,
+  lockoutMs: 15 * MS_PER_MINUTE,
+});
 
 export const uiAuthRoutes = new Hono();
 
@@ -47,6 +69,17 @@ uiAuthRoutes.get('/status', (c) => {
  * Authenticate with password, receive a session token.
  */
 uiAuthRoutes.post('/login', async (c) => {
+  const clientIp = getClientIpHttp(c);
+  const throttleResult = loginThrottle.check(clientIp);
+  if (!throttleResult.allowed) {
+    c.header('Retry-After', String(Math.ceil(throttleResult.retryAfterMs / 1000)));
+    return apiError(
+      c,
+      { code: ERROR_CODES.ACCESS_DENIED, message: 'Too many login attempts. Please try again later.' },
+      429
+    );
+  }
+
   const body = ((await parseJsonBody(c)) ?? {}) as { password?: string };
   const { password } = body;
 
@@ -60,9 +93,16 @@ uiAuthRoutes.post('/login', async (c) => {
   }
 
   if (!verifyPassword(password, storedHash)) {
+    loginThrottle.recordFailure(clientIp);
+    getEventSystem().emit('audit.auth.loginFailed' as never, 'ui-auth', {
+      ip: clientIp,
+      attempts: 1,
+      lockedOut: !loginThrottle.check(clientIp).allowed,
+    } as never);
     return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid password' }, 403);
   }
 
+  loginThrottle.recordSuccess(clientIp);
   const session = createSession();
   return apiResponse(c, {
     token: session.token,

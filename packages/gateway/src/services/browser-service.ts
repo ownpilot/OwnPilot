@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs';
 import type { Browser, Page } from 'puppeteer-core';
 import { hasPII, detectPII, getLog } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { isBlockedUrl } from '../utils/ssrf.js';
+import { isBlockedUrl, isPrivateUrlAsync } from '../utils/ssrf.js';
 
 const log = getLog('BrowserService');
 
@@ -119,7 +119,7 @@ export class BrowserService {
     userId: string,
     url: string
   ): Promise<{ url: string; title: string; text: string }> {
-    this.validateUrl(url);
+    await this.validateUrl(url);
     const page = await this.getOrCreatePage(userId);
 
     await page.goto(url, {
@@ -398,15 +398,23 @@ export class BrowserService {
     // Set reasonable viewport
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Block unnecessary resource types for performance
+    // Block unnecessary resource types and SSRF targets
     await page.setRequestInterception(true);
-    page.on('request', (req) => {
+    page.on('request', async (req) => {
       const type = req.resourceType();
       if (type === 'media' || type === 'font') {
         req.abort();
-      } else {
-        req.continue();
+        return;
       }
+
+      // SSRF protection: abort redirects to private/internal addresses
+      const url = req.url();
+      if (isBlockedUrl(url) || await isPrivateUrlAsync(url)) {
+        req.abort();
+        return;
+      }
+
+      req.continue();
     });
 
     const session: PageSession = {
@@ -484,7 +492,7 @@ export class BrowserService {
   // Internal: URL Validation
   // --------------------------------------------------------------------------
 
-  private validateUrl(url: string): void {
+  private async validateUrl(url: string): Promise<void> {
     let parsed: URL;
     try {
       parsed = new URL(url);
@@ -498,6 +506,11 @@ export class BrowserService {
 
     if (isBlockedUrl(url)) {
       throw new Error('URL targets a blocked or private network address.');
+    }
+
+    // DNS-rebinding protection: check resolved IPs before navigation
+    if (await isPrivateUrlAsync(url)) {
+      throw new Error('URL resolves to a private or blocked network address.');
     }
 
     const allowedDomains = this.getAllowedDomains();

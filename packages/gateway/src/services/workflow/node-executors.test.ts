@@ -43,6 +43,41 @@ vi.mock('../../utils/ssrf.js', () => ({
   isPrivateUrlAsync: vi.fn(async () => false),
 }));
 
+// Define SafeFetchError locally for the mock factory
+class MockSafeFetchError extends Error {
+  constructor(
+    message: string,
+    public readonly code: 'SSRF_BLOCKED' | 'TOO_MANY_REDIRECTS' | 'BODY_TOO_LARGE' | 'TIMEOUT' | 'UNKNOWN'
+  ) {
+    super(message);
+    this.name = 'SafeFetchError';
+  }
+}
+
+vi.mock('../../utils/safe-fetch.js', () => ({
+  safeFetch: vi.fn(async (url: string, options?: RequestInit) => {
+    // Simulate SSRF blocking: throw for known private targets
+    const privateTargets = ['192.168.1.1', 'localhost'];
+    const parsedUrl = (() => { try { return new URL(url); } catch { return null; } })();
+    if (parsedUrl && privateTargets.some((t) => parsedUrl.hostname.includes(t))) {
+      throw new MockSafeFetchError(
+        `Request to private/internal address not allowed: ${url}`,
+        'SSRF_BLOCKED'
+      );
+    }
+
+    // Delegate to the current global fetch (which is mockFetch at test runtime)
+    // Use the global directly so vi.stubGlobal('fetch', mockFetch) in beforeEach takes effect
+    const response = await (globalThis as Record<string, unknown>).fetch(url, {
+      ...options,
+      redirect: 'manual',
+    }) as Response;
+
+    return response;
+  }),
+  DEFAULT_MAX_REQUEST_BODY_SIZE: 10 * 1024 * 1024,
+}));
+
 vi.mock('../../routes/helpers.js', () => ({
   getErrorMessage: vi.fn((err: unknown, fallback: string) =>
     err instanceof Error ? err.message : fallback

@@ -58,6 +58,7 @@ interface ManagedClaw {
   persistTimer: ReturnType<typeof setInterval> | null;
   lastCycleToolCalls: number;
   cycleInProgress: boolean;
+  currentCycleNumber: number;
   idleCycles: number;
 }
 
@@ -225,6 +226,7 @@ export class ClawManager {
       persistTimer: null,
       lastCycleToolCalls: 0,
       cycleInProgress: false,
+      currentCycleNumber: 0,
       idleCycles: 0,
     };
 
@@ -435,10 +437,15 @@ export class ClawManager {
   private async executeCycle(clawId: string): Promise<ClawCycleResult | null> {
     const managed = this.claws.get(clawId);
     if (!managed) return null;
-    if (managed.cycleInProgress) return null;
+
+    const cycleNumber = managed.session.cyclesCompleted + 1;
+    if (managed.cycleInProgress) {
+      this.emitEvent('claw.cycle.skipped', { clawId, cycleNumber, reason: 'concurrent' });
+      return null;
+    }
 
     managed.cycleInProgress = true;
-    const cycleNumber = managed.session.cyclesCompleted + 1;
+    managed.currentCycleNumber = cycleNumber;
 
     this.emitEvent('claw.cycle.start', { clawId, cycleNumber });
 

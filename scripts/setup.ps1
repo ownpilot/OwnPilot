@@ -156,7 +156,9 @@ HOST=127.0.0.1
 NODE_ENV=development
 
 # Database
-POSTGRES_HOST=localhost
+# Use 127.0.0.1 instead of "localhost" — on Windows localhost may resolve to ::1
+# while Docker publishes the port on IPv4 only, causing silent connection failures.
+POSTGRES_HOST=127.0.0.1
 POSTGRES_PORT=$POSTGRES_PORT
 POSTGRES_USER=$POSTGRES_USER
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD

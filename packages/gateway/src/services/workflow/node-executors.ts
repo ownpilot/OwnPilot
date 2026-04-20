@@ -31,7 +31,7 @@ import {
 } from '@ownpilot/core';
 import { getErrorMessage } from '../../routes/helpers.js';
 import { getLog } from '../log.js';
-import { isBlockedUrl, isPrivateUrlAsync } from '../../utils/ssrf.js';
+import { safeFetch, DEFAULT_MAX_REQUEST_BODY_SIZE } from '../../utils/safe-fetch.js';
 import { resolveTemplates } from './template-resolver.js';
 import type { ToolExecutionResult } from './types.js';
 import vm from 'node:vm';
@@ -50,8 +50,26 @@ const MAX_ARRAY_EVAL_SIZE = 10_000;
  * - Timeout prevents infinite loops
  */
 function safeVmEval(expression: string, context: Record<string, unknown>, timeoutMs: number): unknown {
+  // Clone context values to sever any prototype-chain leaks from upstream node outputs.
+  // structuredClone strips getters and rejects functions, preventing outer-realm code
+  // from executing when sandbox globals access the cloned values.
+  const cloneContext = new Map<string, unknown>();
+  for (const [k, v] of Object.entries(context)) {
+    if (typeof v === 'object' && v !== null) {
+      try {
+        cloneContext.set(k, structuredClone(v));
+      } catch {
+        throw new Error(
+          `Transformer input "${k}" must be JSON-serializable. Functions, Symbols, and non-cloneable values are not supported.`
+        );
+      }
+    } else {
+      cloneContext.set(k, v);
+    }
+  }
+
   const sandbox: Record<string, unknown> = {
-    ...context,
+    ...Object.fromEntries(cloneContext),
     // Block escape vectors
     process: undefined,
     require: undefined,
@@ -515,15 +533,8 @@ export function executeTransformerNode(
 }
 
 // ============================================================================
-// SSRF protection for HTTP Request node (uses shared utility from utils/ssrf.ts)
+// HTTP Request node
 // ============================================================================
-
-async function isSsrfTarget(url: string): Promise<boolean> {
-  // Quick sync check: protocol, credentials, numeric obfuscation, private ranges
-  if (isBlockedUrl(url)) return true;
-  // Async DNS-rebinding check: resolves hostname and verifies resolved IPs
-  return isPrivateUrlAsync(url);
-}
 
 const MAX_RESPONSE_SIZE = 1_048_576; // 1MB default
 
@@ -561,18 +572,6 @@ export async function executeHttpRequestNode(
 
     const url = resolved._url as string;
 
-    // SSRF protection
-    if (await isSsrfTarget(url)) {
-      log.warn(`HTTP node ${node.id}: blocked request to private/internal address: ${url}`);
-      return {
-        nodeId: node.id,
-        status: 'error',
-        error: 'Requests to private/internal addresses are not allowed',
-        durationMs: Date.now() - startTime,
-        startedAt: new Date(startTime).toISOString(),
-        completedAt: new Date().toISOString(),
-      };
-    }
 
     // Build headers
     const headers: Record<string, string> = {};
@@ -625,7 +624,10 @@ export async function executeHttpRequestNode(
       }
     }
 
-    const response = await fetch(urlObj.toString(), fetchOptions);
+    const response = await safeFetch(urlObj.toString(), {
+      ...fetchOptions,
+      maxRequestBodySize: DEFAULT_MAX_REQUEST_BODY_SIZE,
+    });
 
     // Read response with size limit
     const maxSize = data.maxResponseSize ?? MAX_RESPONSE_SIZE;

@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const {
   mockIsBlockedUrl,
+  mockIsPrivateUrlAsync,
   mockHasPII,
   mockDetectPII,
   mockGetLog,
@@ -39,6 +40,7 @@ const {
   }));
 
   const mockIsBlockedUrl = vi.fn(() => false);
+  const mockIsPrivateUrlAsync = vi.fn(() => Promise.resolve(false));
   const mockHasPII = vi.fn(() => false);
   const mockDetectPII = vi.fn(() => ({ matches: [] }));
   const mockConfigServicesRepoGetFieldValue = vi.fn(() => undefined);
@@ -80,6 +82,7 @@ const {
 
   return {
     mockIsBlockedUrl,
+    mockIsPrivateUrlAsync,
     mockHasPII,
     mockDetectPII,
     mockGetLog,
@@ -101,6 +104,7 @@ const {
 
 vi.mock('../utils/ssrf.js', () => ({
   isBlockedUrl: (...args: unknown[]) => mockIsBlockedUrl(...args),
+  isPrivateUrlAsync: (...args: unknown[]) => mockIsPrivateUrlAsync(...args),
 }));
 
 vi.mock('@ownpilot/core', () => ({
@@ -157,6 +161,7 @@ describe('BrowserService', () => {
 
     // Re-apply stable defaults after clearAllMocks
     mockIsBlockedUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
     mockHasPII.mockReturnValue(false);
     mockDetectPII.mockReturnValue({ matches: [] });
     mockConfigServicesRepoGetFieldValue.mockReturnValue(undefined);
@@ -317,6 +322,15 @@ describe('BrowserService', () => {
 
       await expect(service.navigate('user-1', 'https://192.168.1.1')).rejects.toThrow(
         'URL targets a blocked or private network address.'
+      );
+    });
+
+    it('throws for DNS-rebinding private URL', async () => {
+      mockIsPrivateUrlAsync.mockResolvedValue(true);
+      const service = new BrowserService();
+
+      await expect(service.navigate('user-1', 'https://example.com')).rejects.toThrow(
+        'URL resolves to a private or blocked network address.'
       );
     });
 
@@ -975,23 +989,31 @@ describe('BrowserService', () => {
       expect(requestCall).toBeDefined();
       const handler = requestCall![1] as (req: {
         resourceType: () => string;
+        url: () => string;
         abort: () => void;
         continue: () => void;
       }) => void;
 
+      // The actual handler is async and awaits isPrivateUrlAsync on each request.
+      // Give async handler time to run before asserting.
       const abortFn = vi.fn();
       const continueFn = vi.fn();
 
+      // media: should abort without checking URL
       handler({ resourceType: () => 'media', abort: abortFn, continue: continueFn });
+      await new Promise((r) => setTimeout(r, 200));
       expect(abortFn).toHaveBeenCalled();
       expect(continueFn).not.toHaveBeenCalled();
 
       handler({ resourceType: () => 'font', abort: abortFn, continue: continueFn });
+      await new Promise((r) => setTimeout(r, 200));
       expect(abortFn).toHaveBeenCalledTimes(2);
 
       abortFn.mockClear();
       continueFn.mockClear();
-      handler({ resourceType: () => 'document', abort: abortFn, continue: continueFn });
+      // Use https URL so isBlockedUrl passes and isPrivateUrlAsync is reached
+      handler({ resourceType: () => 'document', url: () => 'https://example.com/doc', abort: abortFn, continue: continueFn });
+      await new Promise((r) => setTimeout(r, 200));
       expect(continueFn).toHaveBeenCalled();
       expect(abortFn).not.toHaveBeenCalled();
     });

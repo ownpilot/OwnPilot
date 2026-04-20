@@ -1,0 +1,33 @@
+{
+  "id": "tencent-token-plan",
+  "name": "Tencent Token Plan",
+  "type": "openai-compatible",
+  "apiKeyEnv": "TENCENT_TOKEN_PLAN_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "hy3-preview",
+      "name": "HY3 Preview",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-20"
+    }
+  ],
+  "baseUrl": "https://api.lkeap.cloud.tencent.com/plan/v3",
+  "docsUrl": "https://cloud.tencent.com/document/product/1823/130060"
+}

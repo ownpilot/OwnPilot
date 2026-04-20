@@ -15,17 +15,17 @@ describe('host-path', () => {
   describe('with env vars configured', () => {
     beforeEach(() => {
       process.env.OWNPILOT_HOST_FS = '/host-home';
-      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/ayaz';
+      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/user';
     });
 
-    test('toHostPath: /host-home/projects/x → /home/ayaz/projects/x', async () => {
+    test('toHostPath: /host-home/projects/x → /home/user/projects/x', async () => {
       const { toHostPath } = await import('./host-path.js');
-      expect(toHostPath('/host-home/projects/x')).toBe('/home/ayaz/projects/x');
+      expect(toHostPath('/host-home/projects/x')).toBe('/home/user/projects/x');
     });
 
-    test('toHostPath: /host-home → /home/ayaz', async () => {
+    test('toHostPath: /host-home → /home/user', async () => {
       const { toHostPath } = await import('./host-path.js');
-      expect(toHostPath('/host-home')).toBe('/home/ayaz');
+      expect(toHostPath('/host-home')).toBe('/home/user');
     });
 
     test('toHostPath: /app/data/something → null (not under HOST_FS)', async () => {
@@ -43,9 +43,9 @@ describe('host-path', () => {
       expect(toHostPath('')).toBeNull();
     });
 
-    test('toContainerPath: /home/ayaz/projects/x → /host-home/projects/x', async () => {
+    test('toContainerPath: /home/user/projects/x → /host-home/projects/x', async () => {
       const { toContainerPath } = await import('./host-path.js');
-      expect(toContainerPath('/home/ayaz/projects/x')).toBe('/host-home/projects/x');
+      expect(toContainerPath('/home/user/projects/x')).toBe('/host-home/projects/x');
     });
 
     test('toContainerPath: /root/something → null (not under HOST_PREFIX)', async () => {
@@ -60,9 +60,9 @@ describe('host-path', () => {
 
     test('trailing slash handling: /host-home/ and /host-home both work', async () => {
       process.env.OWNPILOT_HOST_FS = '/host-home/';
-      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/ayaz/';
+      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/user/';
       const { toHostPath } = await import('./host-path.js');
-      expect(toHostPath('/host-home/projects')).toBe('/home/ayaz/projects');
+      expect(toHostPath('/host-home/projects')).toBe('/home/user/projects');
     });
   });
 
@@ -84,7 +84,7 @@ describe('host-path', () => {
 
     test('toContainerPath returns null (graceful degradation)', async () => {
       const { toContainerPath } = await import('./host-path.js');
-      expect(toContainerPath('/home/ayaz/anything')).toBeNull();
+      expect(toContainerPath('/home/user/anything')).toBeNull();
     });
   });
 
@@ -98,7 +98,7 @@ describe('host-path', () => {
 
     test('isHostFsConfigured: false when only HOST_PREFIX set', async () => {
       delete process.env.OWNPILOT_HOST_FS;
-      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/ayaz';
+      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/user';
       const { isHostFsConfigured } = await import('./host-path.js');
       expect(isHostFsConfigured()).toBe(false);
     });

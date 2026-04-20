@@ -5,7 +5,9 @@ services:
     container_name: ownpilot-postgres
     restart: unless-stopped
     ports:
-      - '${POSTGRES_PORT:-25432}:5432'
+      # Bind to IPv4 loopback only — avoids localhost/::1 resolution issues on Windows
+      # and prevents exposing the DB to other hosts on the LAN.
+      - '127.0.0.1:${POSTGRES_PORT:-25432}:5432'
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-ownpilot}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ownpilot_secret}

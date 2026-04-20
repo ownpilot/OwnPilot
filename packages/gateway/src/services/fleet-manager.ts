@@ -51,6 +51,8 @@ interface ManagedFleet {
   activeWorkerCount: number;
   /** Guard against concurrent runCycle invocations */
   cycleInProgress: boolean;
+  /** Promise of the currently executing cycle (for drain on pause/stop) */
+  currentCyclePromise: Promise<void> | null;
 }
 
 // ============================================================================
@@ -140,6 +142,7 @@ export class FleetManager {
       hourWindow: Math.floor(Date.now() / 3_600_000),
       activeWorkerCount: 0,
       cycleInProgress: false,
+      currentCyclePromise: null,
     };
 
     this.fleets.set(config.id, managed);
@@ -160,7 +163,7 @@ export class FleetManager {
     return session;
   }
 
-  async pauseFleet(fleetId: string): Promise<boolean> {
+    async pauseFleet(fleetId: string): Promise<boolean> {
     const managed = this.fleets.get(fleetId);
     if (!managed) return false;
 
@@ -168,6 +171,10 @@ export class FleetManager {
       clearTimeout(managed.timer);
       managed.timer = null;
     }
+
+    // Note: when called internally (from runCycleInner during a cycle), we do NOT drain
+    // because the cycle is the caller itself. State is set to paused so no new cycles
+    // are scheduled; the in-flight cycle completes naturally.
 
     managed.session.state = 'paused';
     await this.persistSession(fleetId);
@@ -206,6 +213,18 @@ export class FleetManager {
 
     // Unsubscribe from events
     this.clearEventSubscriptions(managed);
+
+    // Drain in-flight cycle before persisting
+    if (managed.currentCyclePromise) {
+      try {
+        await Promise.race([
+          managed.currentCyclePromise,
+          new Promise((resolve) => setTimeout(resolve, 30_000)),
+        ]);
+      } catch (err) {
+        log.warn(`[${fleetId}] Cycle drain error during stop: ${getErrorMessage(err)}`);
+      }
+    }
 
     // Update session
     managed.session.state = 'stopped';
@@ -417,10 +436,13 @@ export class FleetManager {
     }
     managed.cycleInProgress = true;
 
+    const cyclePromise = this.runCycleInner(fleetId, managed);
+    managed.currentCyclePromise = cyclePromise;
     try {
-      await this.runCycleInner(fleetId, managed);
+      await cyclePromise;
     } finally {
       managed.cycleInProgress = false;
+      managed.currentCyclePromise = null;
     }
   }
 

@@ -47,6 +47,11 @@ import type { ToolExecContext } from './permission-utils.js';
 import { getExtensionSandbox } from './extension-sandbox.js';
 import type { SkillPermission } from './extension-types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
+import {
+  checkPermission,
+  getRequiredPermission,
+  logPermissionDenied,
+} from './extension-permissions.js';
 
 const log = getLog('ToolExecutor');
 
@@ -308,6 +313,7 @@ function registerSingleExtensionTool(
           code: def.extensionTool.code,
           args: args as Record<string, unknown>,
           grantedPermissions: grantedPermissions.map(String),
+          ownerUserId: extRecord.userId,
           maxMemory: extRecord.manifest?.runtime?.maxMemory,
           maxExecutionTime: extRecord.manifest?.runtime?.maxExecutionTime,
         });
@@ -405,7 +411,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
 function setupSandboxCallToolHandler(registry: ToolRegistry): void {
   const sandbox = getExtensionSandbox();
 
-  sandbox.setCallToolHandler(async (toolName, args) => {
+  sandbox.setCallToolHandler(async (toolName, args, extensionIdentity) => {
     // Special internal command: list tools
     if (toolName === '__list_tools__') {
       const allTools = registry.getAllTools();
@@ -418,11 +424,61 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
       };
     }
 
-    // Execute the tool via the shared registry
+    const { extensionId, ownerUserId, grantedPermissions } = extensionIdentity;
+    const allowed = checkPermission(toolName, grantedPermissions as SkillPermission[]);
+    const requiredPermission = getRequiredPermission(toolName);
+
+    if (!allowed) {
+      logPermissionDenied(extensionId, toolName, requiredPermission ?? 'network');
+      // Emit audit event for denied call
+      if (hasServiceRegistry()) {
+        try {
+          const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+          audit?.logAudit({
+            userId: ownerUserId,
+            action: 'extension.callTool',
+            resource: 'extension',
+            resourceId: extensionId,
+            details: {
+              tool: toolName,
+              allowed: false,
+              reason: 'permission_denied',
+              requiredPermission: requiredPermission ?? null,
+              callerKind: 'extension',
+            },
+          });
+        } catch { /* audit failure should not affect tool execution */ }
+      }
+      return {
+        success: false,
+        error: `permission_denied: tool "${toolName}" requires "${requiredPermission}" permission`,
+      };
+    }
+
+    // Execute the tool via the shared registry under the extension owner's identity
     const result = await registry.execute(toolName, args, {
-      userId: 'system',
+      userId: ownerUserId,
       conversationId: 'sandbox',
     });
+
+    // Emit audit event for all calls (both allowed and denied above)
+    if (hasServiceRegistry()) {
+      try {
+        const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+        audit?.logAudit({
+          userId: ownerUserId,
+          action: 'extension.callTool',
+          resource: 'extension',
+          resourceId: extensionId,
+          details: {
+            tool: toolName,
+            allowed: true,
+            callerKind: 'extension',
+            success: result.ok,
+          },
+        });
+      } catch { /* audit failure should not affect tool execution */ }
+    }
 
     if (result.ok) {
       return {

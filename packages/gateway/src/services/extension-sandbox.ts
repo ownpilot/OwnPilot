@@ -28,6 +28,8 @@ export interface SandboxExecutionOptions {
   args: Record<string, unknown>;
   /** Tools the extension is allowed to call via utils.callTool() */
   grantedPermissions?: string[];
+  /** Owner user ID for authorization context */
+  ownerUserId?: string;
   /** Max memory in bytes */
   maxMemory?: number;
   /** Max execution time in ms */
@@ -48,6 +50,8 @@ interface WorkerRequest {
   args: Record<string, unknown>;
   extensionId: string;
   toolName: string;
+  ownerUserId: string;
+  grantedPermissions: string[];
 }
 
 interface WorkerResponse {
@@ -61,6 +65,8 @@ interface WorkerResponse {
   toolName?: string;
   toolArgs?: Record<string, unknown>;
   requestId?: string;
+  ownerUserId?: string;
+  grantedPermissions?: string[];
   // log
   level?: string;
   message?: string;
@@ -82,10 +88,16 @@ function workerMain() {
   if (!parentPort) return;
   const port = parentPort;
 
+  // Module-level storage for extension identity (set per execution, single-threaded worker)
+  let _ownerUserId = 'system';
+  let _grantedPermissions: string[] = [];
+
   port.on('message', async (message: WorkerRequest) => {
     if (message.type !== 'execute') return;
 
-    const { code, args, extensionId, toolName } = message;
+    const { code, args, extensionId, toolName, ownerUserId, grantedPermissions } = message;
+    _ownerUserId = ownerUserId ?? 'system';
+    _grantedPermissions = grantedPermissions ?? [];
     const startTime = Date.now();
 
     try {
@@ -113,7 +125,14 @@ function workerMain() {
         const requestId = `ct-${++callToolCounter}`;
         return new Promise((resolve, reject) => {
           pendingCalls.set(requestId, { resolve, reject });
-          port.postMessage({ type: 'callTool', toolName: name, toolArgs, requestId });
+          port.postMessage({
+            type: 'callTool',
+            toolName: name,
+            toolArgs,
+            requestId,
+            ownerUserId: _ownerUserId,
+            grantedPermissions: _grantedPermissions,
+          });
         });
       };
 
@@ -223,7 +242,8 @@ if (!isMainThread && parentPort) {
 /** Callback for handling tool calls from sandboxed code */
 export type CallToolHandler = (
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  extensionIdentity: { extensionId: string; ownerUserId: string; grantedPermissions: string[] }
 ) => Promise<{ success: boolean; result?: unknown; error?: string }>;
 
 export class ExtensionSandboxManager {
@@ -243,6 +263,8 @@ export class ExtensionSandboxManager {
       toolName,
       code,
       args,
+      grantedPermissions = [],
+      ownerUserId = 'system',
       maxMemory = DEFAULT_MAX_MEMORY,
       maxExecutionTime = DEFAULT_MAX_EXECUTION_TIME,
     } = options;
@@ -261,7 +283,7 @@ export class ExtensionSandboxManager {
       let worker: Worker;
       try {
         worker = new Worker(new URL(import.meta.url), {
-          workerData: { cpuTimeout: DEFAULT_CPU_TIMEOUT },
+          workerData: { cpuTimeout: DEFAULT_CPU_TIMEOUT, ownerUserId, grantedPermissions },
           resourceLimits: {
             maxOldGenerationSizeMb: Math.ceil(maxMemory / (1024 * 1024)),
             maxYoungGenerationSizeMb: 16,
@@ -301,6 +323,8 @@ export class ExtensionSandboxManager {
             args,
             extensionId,
             toolName,
+            ownerUserId,
+            grantedPermissions,
           } satisfies WorkerRequest);
           return;
         }
@@ -326,8 +350,18 @@ export class ExtensionSandboxManager {
             return;
           }
 
+          const extensionIdentity = {
+            extensionId,
+            ownerUserId: msg.ownerUserId ?? 'system',
+            grantedPermissions: msg.grantedPermissions ?? [],
+          };
+
           try {
-            const result = await this.callToolHandler(msg.toolName, msg.toolArgs ?? {});
+            const result = await this.callToolHandler(
+              msg.toolName,
+              msg.toolArgs ?? {},
+              extensionIdentity
+            );
             worker.postMessage({
               type: 'callToolResult',
               requestId: msg.requestId,

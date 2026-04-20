@@ -434,10 +434,10 @@ describe('loadProviderConfig', () => {
       name: 'bridge-claude',
       baseUrl: 'http://localhost:9090',
     });
-    mockToHostPath.mockReturnValueOnce('/home/ayaz/projects/x');
+    mockToHostPath.mockReturnValueOnce('/home/user/projects/x');
 
     const result = mod.loadProviderConfig('bridge-claude', { path: '/host-home/projects/x' });
-    expect(result?.headers?.['X-Project-Dir']).toBe('/home/ayaz/projects/x');
+    expect(result?.headers?.['X-Project-Dir']).toBe('/home/user/projects/x');
     expect(result?.headers?.['X-Runtime']).toBe('claude');
     expect(mockToHostPath).toHaveBeenCalledWith('/host-home/projects/x');
   });

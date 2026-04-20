@@ -112,21 +112,6 @@
       "releaseDate": "2025-06-11"
     },
     {
-      "id": "mixtral-8x7b-instruct-v0.1",
-      "name": "Mixtral-8x7B-Instruct-v0.1",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.7,
-      "outputPrice": 0.7,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-01"
-    },
-    {
       "id": "meta-llama-3_3-70b-instruct",
       "name": "Meta-Llama-3_3-70B-Instruct",
       "contextWindow": 131072,
@@ -173,38 +158,6 @@
       ],
       "default": false,
       "releaseDate": "2025-03-31"
-    },
-    {
-      "id": "qwen2.5-coder-32b-instruct",
-      "name": "Qwen2.5-Coder-32B-Instruct",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.96,
-      "outputPrice": 0.96,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-24"
-    },
-    {
-      "id": "deepseek-r1-distill-llama-70b",
-      "name": "DeepSeek-R1-Distill-Llama-70B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.74,
-      "outputPrice": 0.74,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-30"
     },
     {
       "id": "mistral-nemo-instruct-2407",
