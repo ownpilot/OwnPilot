@@ -105,7 +105,7 @@ export function CodeBlock({
               style={{ ...style, background: 'transparent' }}
             >
               {tokens.map((line, lineIndex) => {
-                const lineProps = getLineProps({ line, key: lineIndex });
+                const { key: _lineKey, ...lineProps } = getLineProps({ line, key: lineIndex });
                 return (
                   <div
                     key={lineIndex}
@@ -119,7 +119,7 @@ export function CodeBlock({
                     )}
                     <span className="flex-1">
                       {line.map((token, tokenIndex) => {
-                        const tokenProps = getTokenProps({ token, key: tokenIndex });
+                        const { key: _tokenKey, ...tokenProps } = getTokenProps({ token, key: tokenIndex });
                         return <span key={tokenIndex} {...tokenProps} />;
                       })}
                     </span>

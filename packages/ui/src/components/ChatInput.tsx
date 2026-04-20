@@ -7,17 +7,18 @@ import {
   type KeyboardEvent,
   type FormEvent,
 } from 'react';
-import { Send, StopCircle, X, Image } from './icons';
+import { Send, StopCircle, X, Upload } from './icons';
 import { ToolPicker, type ResourceAttachment, type ResourceType } from './ToolPicker';
 import { VoiceButton } from './VoiceButton';
 import type { MessageAttachment } from '../types';
+import { STORAGE_KEYS } from '../constants/storage-keys';
 
-/** File attachment being previewed (with base64 data) */
-interface ImagePreview {
+interface AttachmentPreview {
   file: File;
-  data: string; // base64
+  path: string; // server path
   mimeType: string;
-  previewUrl: string; // object URL for thumbnail
+  type: 'image' | 'file';
+  previewUrl?: string; // object URL for thumbnail (images only)
 }
 
 interface ChatInputProps {
@@ -116,7 +117,8 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
 ) {
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<ResourceAttachment[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [filePreviews, setFilePreviews] = useState<AttachmentPreview[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,12 +142,14 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     }
   }, [value]);
 
-  // Cleanup object URLs on unmount — use ref to access latest imagePreviews
-  const imagePreviewsRef = useRef(imagePreviews);
-  imagePreviewsRef.current = imagePreviews;
+  // Cleanup object URLs on unmount — use ref to access latest filePreviews
+  const filePreviewsRef = useRef(filePreviews);
+  filePreviewsRef.current = filePreviews;
   useEffect(() => {
     return () => {
-      for (const p of imagePreviewsRef.current) URL.revokeObjectURL(p.previewUrl);
+      for (const p of filePreviewsRef.current) {
+        if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+      }
     };
   }, []);
 
@@ -157,52 +161,65 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     const files = e.target.files;
     if (!files) return;
 
-    const newPreviews: ImagePreview[] = [];
+    setIsUploading(true);
+    const newPreviews: AttachmentPreview[] = [];
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) continue;
-      if (imagePreviews.length + newPreviews.length >= 5) break; // max 5
+      if (filePreviews.length + newPreviews.length >= 5) break; // max 5
 
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          // Strip "data:image/xxx;base64," prefix
-          resolve(result.split(',')[1] ?? '');
-        };
-        reader.readAsDataURL(file);
-      });
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const token = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+        const res = await fetch('/api/v1/chat/upload-attachment', {
+          method: 'POST',
+          headers: {
+            'X-Session-Token': token || '',
+          },
+          body: formData,
+        });
 
-      newPreviews.push({
-        file,
-        data: base64,
-        mimeType: file.type,
-        previewUrl: URL.createObjectURL(file),
-      });
+        if (!res.ok) throw new Error('Upload failed');
+        const resData = await res.json();
+
+        const isImage = file.type.startsWith('image/');
+        newPreviews.push({
+          file,
+          path: resData.data?.path || '',
+          mimeType: file.type,
+          type: isImage ? 'image' : 'file',
+          previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+        });
+      } catch (err) {
+        console.error('Failed to upload file:', err);
+      }
     }
 
-    setImagePreviews((prev) => [...prev, ...newPreviews]);
+    setFilePreviews((prev) => [...prev, ...newPreviews]);
+    setIsUploading(false);
     // Reset input so the same file can be re-selected
     e.target.value = '';
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
-  const removeImage = (index: number) => {
-    setImagePreviews((prev) => {
-      URL.revokeObjectURL(prev[index]!.previewUrl);
+  const removeFile = (index: number) => {
+    setFilePreviews((prev) => {
+      const p = prev[index];
+      if (p?.previewUrl) URL.revokeObjectURL(p.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const hasContent = value.trim() || imagePreviews.length > 0;
+    const hasContent = value.trim() || filePreviews.length > 0;
     if (hasContent && !isLoading) {
       // Prompt attachments prepend their text before the user's message
       const promptPrefixes = attachments
         .filter((a) => a.type === 'prompt' && a.promptText)
         .map((a) => a.promptText!)
         .join('\n\n');
-      const rawUserText = value.trim() || (imagePreviews.length > 0 ? 'Analyze this image.' : '');
+      const hasImage = filePreviews.some(p => p.type === 'image');
+      const rawUserText = value.trim() || (hasImage ? 'Analyze this image.' : 'Analyze these files.');
       const userText = promptPrefixes ? `${promptPrefixes}\n\n${rawUserText}` : rawUserText;
       const contextBlock = buildContextBlock(attachments);
       const finalMessage = userText + contextBlock;
@@ -212,24 +229,24 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         .filter((a) => a.type === 'tool' || a.type === 'custom-tool')
         .map((a) => a.name);
 
-      // Convert image previews to MessageAttachment[]
-      const imageAttachments: MessageAttachment[] = imagePreviews.map((p) => ({
-        type: 'image' as const,
-        data: p.data,
+      // Convert file previews to MessageAttachment[]
+      const msgAttachments: MessageAttachment[] = filePreviews.map((p) => ({
+        type: p.type,
+        path: p.path,
         mimeType: p.mimeType,
         filename: p.file.name,
+        size: p.file.size,
+        previewUrl: p.previewUrl,
       }));
 
       onSend(
         finalMessage,
         directToolNames.length > 0 ? directToolNames : undefined,
-        imageAttachments.length > 0 ? imageAttachments : undefined
+        msgAttachments.length > 0 ? msgAttachments : undefined
       );
       setValue('');
       setAttachments([]);
-      // Cleanup previews
-      for (const p of imagePreviews) URL.revokeObjectURL(p.previewUrl);
-      setImagePreviews([]);
+      setFilePreviews([]);
     }
   };
 
@@ -262,7 +279,6 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
         multiple
         onChange={handleFileChange}
         className="hidden"
@@ -270,23 +286,31 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       />
 
       <div className="flex-1 relative">
-        {/* Image previews */}
-        {imagePreviews.length > 0 && (
-          <div className="flex gap-2 mb-2 px-1">
-            {imagePreviews.map((preview, index) => (
+        {/* Attachment previews */}
+        {filePreviews.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2 px-1">
+            {filePreviews.map((preview, index) => (
               <div
-                key={preview.previewUrl}
-                className="relative group/img w-16 h-16 rounded-lg overflow-hidden border border-border dark:border-dark-border"
+                key={preview.path || index}
+                className="relative group/att"
               >
-                <img
-                  src={preview.previewUrl}
-                  alt={preview.file.name}
-                  className="w-full h-full object-cover"
-                />
+                {preview.type === 'image' ? (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-border dark:border-dark-border">
+                    <img
+                      src={preview.previewUrl}
+                      alt={preview.file.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border rounded-lg text-xs max-w-[160px]">
+                    <span className="truncate">{preview.file.name}</span>
+                  </div>
+                )}
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute top-0 right-0 p-0.5 bg-black/60 text-white rounded-bl-lg opacity-0 group-hover/img:opacity-100 transition-opacity"
+                  onClick={() => removeFile(index)}
+                  className="absolute -top-1.5 -right-1.5 p-0.5 bg-black/60 text-white rounded-full opacity-0 group-hover/att:opacity-100 transition-opacity z-10"
                   aria-label={`Remove ${preview.file.name}`}
                 >
                   <X className="w-3 h-3" />
@@ -327,12 +351,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           <button
             type="button"
             onClick={handleImageSelect}
-            disabled={isLoading || imagePreviews.length >= 5}
-            className="p-2.5 text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            aria-label="Attach image"
-            title="Attach image (max 5)"
+            disabled={isLoading || isUploading || filePreviews.length >= 5}
+            className={`p-2.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              isUploading 
+                ? 'text-primary dark:text-primary animate-pulse' 
+                : 'text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary'
+            }`}
+            aria-label="Attach files"
+            title="Attach files (max 5)"
           >
-            <Image className="w-5 h-5" />
+            <Upload className="w-5 h-5" />
           </button>
 
           {/* Voice Input Button */}
@@ -352,8 +380,8 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                imagePreviews.length > 0
-                  ? 'Describe what you want to know about the image...'
+                filePreviews.length > 0
+                  ? 'Ask what you want to know about the attachments...'
                   : attachments.length > 0
                     ? 'Ask about the attached context...'
                     : placeholder
@@ -380,7 +408,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       ) : (
         <button
           type="submit"
-          disabled={!value.trim() && imagePreviews.length === 0}
+          disabled={(!value.trim() && filePreviews.length === 0) || isUploading}
           className="px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           aria-label="Send message"
         >

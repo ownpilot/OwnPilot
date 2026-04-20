@@ -13,6 +13,10 @@
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { writeFileSync, mkdirSync, existsSync, createReadStream } from 'node:fs';
+import { join, extname } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { getDataDirectoryInfo } from '../paths/index.js';
 import type { ChatRequest } from '../types/index.js';
 import {
   apiResponse,
@@ -23,6 +27,7 @@ import {
   getErrorMessage,
   parseJsonBody,
   truncate,
+  hydrateAttachments,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import {
@@ -108,6 +113,135 @@ chatRoutes.route('/', chatHistoryRoutes);
 import { chatFetchUrlRoutes } from './chat-fetch-url.js';
 chatRoutes.route('/', chatFetchUrlRoutes);
 
+// =============================================================================
+// Attachments
+// =============================================================================
+
+/**
+ * POST /chat/upload-attachment - Upload a file for chat
+ */
+chatRoutes.post('/upload-attachment', async (c) => {
+  const userId = getUserId(c);
+
+  try {
+    const body = await c.req.parseBody();
+    const file = body['file'];
+
+    if (!file || typeof file === 'string') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'file field is required' }, 400);
+    }
+
+    const uploadedFile = file as File;
+    const originalName = uploadedFile.name || 'unknown';
+    const ext = extname(originalName).toLowerCase();
+
+    // Limit size to 10MB
+    if (uploadedFile.size > 10 * 1024 * 1024) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'File too large. Maximum: 10MB' }, 400);
+    }
+
+    const dataInfo = getDataDirectoryInfo();
+    const attachmentsDir = join(dataInfo.root, 'attachments', userId);
+    
+    if (!existsSync(attachmentsDir)) {
+      mkdirSync(attachmentsDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const baseName = originalName.slice(0, -ext.length || undefined).replace(/[^a-zA-Z0-9-]/g, '_');
+    const suffix = randomBytes(4).toString('hex');
+    const filename = `${baseName}-${suffix}${ext}`;
+    
+    const destPath = join(attachmentsDir, filename);
+    const fileBuffer = Buffer.from(await uploadedFile.arrayBuffer());
+    writeFileSync(destPath, fileBuffer);
+
+    const relativePath = `attachments/${filename}`;
+
+    return apiResponse(c, {
+      url: `/api/v1/chat/${relativePath}`,
+      path: relativePath,
+      filename: originalName,
+      mimeType: uploadedFile.type,
+      size: uploadedFile.size,
+    }, 201);
+  } catch (error) {
+    return apiError(c, {
+      code: ERROR_CODES.CREATE_FAILED,
+      message: getErrorMessage(error, 'Failed to upload attachment'),
+    }, 500);
+  }
+});
+
+/**
+ * Secure attachment serving route.
+ * Serves files only from the authenticated user's attachment directory.
+ * Prevents directory traversal and ensures strict isolation.
+ */
+chatRoutes.get('/attachments/:path{.+}', async (c) => {
+  const path = c.req.param('path');
+  const userId = getUserId(c);
+
+  // Security check: prevent directory traversal
+  if (path.includes('..') || path.startsWith('/') || path.includes('\\')) {
+    return apiError(c, { code: ERROR_CODES.FORBIDDEN, message: 'Invalid path' }, 403);
+  }
+
+  const dataInfo = getDataDirectoryInfo();
+  // Files are stored in: attachments/:userId/:filename
+  // The route param 'path' corresponds to the filename (or nested subpath if allowed)
+  const filePath = join(dataInfo.root, 'attachments', userId, path);
+
+  if (!existsSync(filePath)) {
+    return notFoundError(c, 'Attachment', path);
+  }
+
+  try {
+    const mimeType = getMimeType(path);
+    const stream = createReadStream(filePath);
+    
+    return c.body(stream as any, 200, {
+      'Content-Type': mimeType,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Disposition': `inline; filename="${path}"`,
+    });
+  } catch (error) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INTERNAL_ERROR, message: `Failed to serve attachment: ${getErrorMessage(error)}` },
+      500
+    );
+  }
+});
+
+function getMimeType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const types: Record<string, string> = {
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'svg': 'image/svg+xml',
+    'pdf': 'application/pdf',
+    'txt': 'text/plain',
+    'md': 'text/markdown',
+    'json': 'application/json',
+    'csv': 'text/csv',
+    'xml': 'application/xml',
+    'zip': 'application/zip',
+    'js': 'application/javascript',
+    'ts': 'application/x-typescript',
+    'css': 'text/css',
+    'html': 'text/html',
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'mp4': 'video/mp4',
+  };
+  return types[ext] || 'application/octet-stream';
+}
+
+
 /**
  * Process a non-streaming chat message through the MessageBus pipeline.
  */
@@ -135,11 +269,13 @@ async function processNonStreamingViaBus(
     content: chatMessage,
     ...(body.attachments?.length && {
       attachments: body.attachments.map(
-        (a: { type: string; data: string; mimeType: string; filename?: string }) => ({
+        (a: { type: string; data?: string; path?: string; mimeType: string; filename?: string; size?: number }) => ({
           type: a.type as 'image' | 'file',
           data: a.data,
+          path: a.path,
           mimeType: a.mimeType,
           filename: a.filename,
+          size: a.size,
         })
       ),
     }),
@@ -180,6 +316,9 @@ chatRoutes.post('/', async (c) => {
     model?: string;
     workspaceId?: string;
   };
+
+  // Hydrate attachment data from disk for the LLM if only path is provided
+  hydrateAttachments(getUserId(c), body.attachments);
 
   // Resolve provider and model: explicit request body > per-process routing > global default
   let provider: string;
@@ -300,9 +439,23 @@ chatRoutes.post('/', async (c) => {
           { restoredFromDb: true, restoredAt: new Date().toISOString() }
         );
         // Replay messages from DB into agent memory
+        const chatUserId = getUserId(c);
         for (const msg of dbData.messages) {
           if (msg.role === 'user') {
-            agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
+            if (msg.attachments?.length) {
+              hydrateAttachments(chatUserId, msg.attachments as any);
+              const content = [
+                { type: 'text', text: msg.content },
+                ...msg.attachments.map((a) => ({
+                  type: 'image' as const,
+                  data: (a as any).data || '',
+                  mediaType: (a.mimeType || 'image/png') as any,
+                })),
+              ];
+              agent.getMemory().addUserMessage(dbData.conversation.id, content as any);
+            } else {
+              agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
+            }
           } else if (msg.role === 'assistant') {
             agent.getMemory().addAssistantMessage(dbData.conversation.id, msg.content);
           }
@@ -442,6 +595,15 @@ chatRoutes.post('/', async (c) => {
       conversationId: earlyConv.id,
       role: 'user',
       content: chatMessage,
+      ...(body.attachments?.length && { 
+        attachments: body.attachments.map(a => ({
+          type: a.type,
+          mimeType: a.mimeType,
+          filename: a.filename,
+          size: a.size,
+          path: a.path
+        }))
+      }),
     });
     wsGateway.broadcast('chat:history:updated', {
       conversationId: earlyConv.id,

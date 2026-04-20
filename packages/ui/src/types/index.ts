@@ -30,6 +30,8 @@ export interface MessageAttachment {
   path?: string;
   /** Base64 data — only present for local (unsaved) attachments */
   data?: string;
+  /** Local object URL for instant preview (unsaved only) */
+  previewUrl?: string;
 }
 
 export interface Message {

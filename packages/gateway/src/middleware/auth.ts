@@ -50,13 +50,14 @@ export function createAuthMiddleware(config: AuthConfig) {
       return next();
     }
 
-    const authHeader = c.req.header('Authorization');
+      const authHeader = c.req.header('Authorization');
+      const queryToken = c.req.query('token');
 
-    if (config.type === 'api-key') {
-      // Check for API key in header
-      const apiKey = authHeader?.startsWith('Bearer ')
-        ? authHeader.slice(7)
-        : c.req.header('X-API-Key');
+      if (config.type === 'api-key') {
+        // Check for API key in header or query
+        const apiKey = authHeader?.startsWith('Bearer ')
+          ? authHeader.slice(7)
+          : c.req.header('X-API-Key') || queryToken;
 
       if (!apiKey) {
         return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'API key required' }, 401);
@@ -81,11 +82,11 @@ export function createAuthMiddleware(config: AuthConfig) {
         );
       }
 
-      if (!authHeader?.startsWith('Bearer ')) {
+      if (!authHeader?.startsWith('Bearer ') && !queryToken) {
         return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'JWT token required' }, 401);
       }
 
-      const token = authHeader.slice(7);
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : queryToken!;
 
       try {
         const payload = await validateJWT(token, config.jwtSecret);

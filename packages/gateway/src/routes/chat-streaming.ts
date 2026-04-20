@@ -25,6 +25,7 @@ import { generateApprovalId, createApprovalRequest } from '../services/execution
 import type { getAgent } from './agent-service.js';
 import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
 import type { McpToolEvent } from '../mcp/mcp-events.js';
+import { hydrateAttachments } from './helpers.js';
 
 /**
  * Extract display-friendly tool name and args from a ToolCall.
@@ -594,7 +595,14 @@ export async function processStreamingViaBus(
       provider?: string;
       model?: string;
       workspaceId?: string;
-      attachments?: Array<{ type: string; data: string; mimeType: string; filename?: string }>;
+      attachments?: Array<{
+        type: 'image' | 'file';
+        data?: string;
+        path?: string;
+        mimeType: string;
+        filename?: string;
+        size?: number;
+      }>;
       thinking?: {
         type: 'enabled' | 'adaptive';
         budgetTokens?: number;
@@ -640,6 +648,9 @@ export async function processStreamingViaBus(
     contextWindowOverride,
   });
 
+  // Hydrate attachment data from disk for the LLM if only path is provided
+  hydrateAttachments(userId, body.attachments);
+
   // Normalize into NormalizedMessage
   const normalized: NormalizedMessage = {
     id: crypto.randomUUID(),
@@ -650,8 +661,10 @@ export async function processStreamingViaBus(
       attachments: body.attachments.map((a) => ({
         type: a.type as 'image' | 'file',
         data: a.data,
+        path: a.path,
         mimeType: a.mimeType,
         filename: a.filename,
+        size: a.size,
       })),
     }),
     metadata: {
@@ -722,6 +735,7 @@ export async function processStreamingViaBus(
       toolCalls,
       finishReason: result.response.metadata.finishReason as string | undefined,
       historyLength: body.historyLength,
+      attachments: body.attachments,
     });
 
     // Post-processing middleware skips web UI memory extraction.

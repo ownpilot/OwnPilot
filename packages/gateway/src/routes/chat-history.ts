@@ -44,6 +44,21 @@ import type { ChannelIncomingMessage } from '@ownpilot/core';
 
 const log = getLog('ChatHistory');
 
+function normalizeTrace(trace: any): any {
+  if (!trace) return trace;
+  return {
+    ...trace,
+    modelCalls: trace.modelCalls || [],
+    autonomyChecks: trace.autonomyChecks || [],
+    dbOperations: trace.dbOperations || { reads: 0, writes: 0 },
+    memoryOps: trace.memoryOps || { adds: 0, recalls: 0 },
+    triggersFired: trace.triggersFired || [],
+    errors: trace.errors || [],
+    events: trace.events || [],
+    toolCalls: trace.toolCalls || [],
+  };
+}
+
 export const chatHistoryRoutes = new Hono();
 
 // =====================================================
@@ -253,8 +268,9 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
         content: msg.role === 'assistant' ? stripInternalTags(msg.content) : msg.content,
         provider: msg.provider,
         model: msg.model,
+        attachments: msg.attachments,
         toolCalls: msg.toolCalls,
-        trace: msg.trace,
+        trace: normalizeTrace(msg.trace),
         isError: msg.isError,
         createdAt: msg.createdAt.toISOString(),
       })),
@@ -315,11 +331,12 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           provider: msg.provider,
           model: msg.model,
           toolCalls: msg.toolCalls,
-          trace: msg.trace,
+          trace: normalizeTrace(msg.trace),
           isError: msg.isError,
           createdAt: msg.createdAt.toISOString(),
           source: 'web' as const,
           direction: msg.role === 'user' ? 'inbound' : 'outbound',
+          attachments: msg.attachments ?? undefined,
         })),
       });
     }
@@ -356,6 +373,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
       direction: 'inbound' | 'outbound';
       senderName?: string;
       senderId?: string;
+      attachments?: any[];
     };
 
     const unified: UnifiedMessage[] = [];
@@ -371,6 +389,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
         direction: cm.direction,
         senderName: cm.senderName,
         senderId: cm.senderId,
+        attachments: cm.attachments ?? undefined,
       });
     }
 
@@ -400,11 +419,12 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           provider: msg.provider,
           model: msg.model,
           toolCalls: msg.toolCalls,
-          trace: msg.trace,
+          trace: normalizeTrace(msg.trace),
           isError: msg.isError,
           createdAt: msg.createdAt.toISOString(),
           source: 'ai',
           direction: msg.role === 'user' ? 'inbound' : 'outbound',
+          attachments: msg.attachments ?? undefined,
         });
       }
     }

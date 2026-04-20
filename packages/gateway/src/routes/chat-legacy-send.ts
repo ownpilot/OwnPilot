@@ -419,6 +419,7 @@ export async function handleLegacySend(params: LegacySendParams): Promise<Respon
     historyLength: body.historyLength,
     ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
     userAgent: c.req.header('user-agent'),
+    attachments: body.attachments,
   });
 
   return c.json(response);

@@ -395,6 +395,7 @@ export function ChatPage() {
               timestamp: m.createdAt,
               direction: m.direction,
               senderName: m.senderName,
+              attachments: m.attachments,
             }))
         );
         // Also set the session so the sidebar highlights correctly
@@ -426,6 +427,7 @@ export function ChatPage() {
             provider: m.provider ?? undefined,
             model: m.model ?? undefined,
             isError: m.isError,
+            attachments: m.attachments,
           }));
         if (msgs.length > 0) {
           loadConversation(id, msgs);
