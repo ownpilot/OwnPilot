@@ -129,3 +129,5 @@ docs/T4F-POC-*.md
 **/HANDOFF-*.md
 **/SESSION_HANDOFF_*.md
 **/POSTMORTEM-*.md
+
+.dfmt/

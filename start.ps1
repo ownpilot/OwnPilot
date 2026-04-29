@@ -46,7 +46,7 @@ param(
 
     [switch]$Build,
 
-    [int]$Port = 8080,
+    [int]$Port = 8200,
 
     [int]$UIPort = 5173
 )
