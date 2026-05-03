@@ -137,6 +137,32 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('recovers list items that use description instead of detail', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<list data='{\\"items\\":[{\\"title\\":\\"AMD orantisiz vurulur\\",\\"description\\":\\"SK Hynix onceligini Nvidia + OpenAI\\"},{\\"title\\":\\"TAMAMLanmamis' />`}
+      />
+    );
+
+    expect(html).toContain('AMD orantisiz vurulur');
+    expect(html).toContain('SK Hynix onceligini Nvidia + OpenAI');
+    expect(html).not.toContain('Invalid widget data');
+    expect(html).not.toContain('raw');
+  });
+
+  it('recovers tables from malformed escaped widget JSON', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<table data='{\\"headers\\":[\\"Company\\",\\"Risk\\"],\\"rows\\":[[\\"AMD\\",\\"High\\"],[\\"SK Hynix\\",\\"Medium\\"]' />`}
+      />
+    );
+
+    expect(html).toContain('<table');
+    expect(html).toContain('AMD');
+    expect(html).toContain('SK Hynix');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('recovers callout fields from malformed widget JSON', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
@@ -154,7 +180,7 @@ After`}
       <MarkdownContent content={`<progress data='{"value":' />`} />
     );
 
-    expect(html).toContain('Widget tamamlanamadi');
+    expect(html).toContain('Widget could not be rendered');
     expect(html).not.toContain('raw');
     expect(html).not.toContain('{"value":');
   });

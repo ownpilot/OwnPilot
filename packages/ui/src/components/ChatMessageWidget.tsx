@@ -394,21 +394,23 @@ function JsonWidget({ name, data }: ChatMessageWidgetProps) {
   if (isRecord(data) && data.error === 'Invalid widget data') {
     return (
       <WidgetShell
-        title="Widget tamamlanamadi"
+        title="Widget could not be rendered"
         icon={<AlertTriangle className="h-4 w-4" />}
         tone="warning"
       >
         <div className="text-sm leading-6 text-text-secondary dark:text-dark-text-secondary">
-          Bu kart icin gelen veri eksik veya bozuk oldugu icin gorsel widget'a cevrilemedi.
+          The data for this widget was incomplete or malformed, so it was hidden from the chat.
         </div>
       </WidgetShell>
     );
   }
 
+  const visibleData = isRecord(data) && 'raw' in data ? { ...data, raw: '[hidden]' } : data;
+
   return (
     <WidgetShell title={name} icon={<Info className="h-4 w-4" />}>
       <pre className="max-h-64 overflow-auto rounded-md bg-bg-tertiary p-3 text-xs text-text-secondary dark:bg-dark-bg-tertiary dark:text-dark-text-secondary">
-        {JSON.stringify(data, null, 2)}
+        {JSON.stringify(visibleData, null, 2)}
       </pre>
     </WidgetShell>
   );

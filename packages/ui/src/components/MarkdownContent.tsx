@@ -443,6 +443,56 @@ export const MarkdownContent = memo(function MarkdownContent({
     return undefined;
   };
 
+  const recoverStringArray = (source: string, key: string): string[] => {
+    const start = source.search(new RegExp(`"${key}"\\s*:\\s*\\[`));
+    if (start === -1) return [];
+
+    const afterKey = source.slice(start);
+    const arrayStart = afterKey.indexOf('[');
+    if (arrayStart === -1) return [];
+
+    const arrayBody = afterKey.slice(
+      arrayStart + 1,
+      afterKey.indexOf(']', arrayStart + 1) + 1 || undefined
+    );
+    return Array.from(arrayBody.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)).map((match) =>
+      decodeJsonString(match[1] ?? '')
+    );
+  };
+
+  const recoverTableData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const headers = recoverStringArray(normalized, 'headers');
+    const rowsSourceStart = normalized.search(/"rows"\s*:\s*\[/);
+    const rowsSource = rowsSourceStart === -1 ? normalized : normalized.slice(rowsSourceStart);
+
+    const rows = Array.from(rowsSource.matchAll(/\[([^\[\]]*"[^\[\]]*")\s*\]/g))
+      .map((match) =>
+        Array.from((match[1] ?? '').matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)).map((cell) =>
+          decodeJsonString(cell[1] ?? '')
+        )
+      )
+      .filter((row) => row.length >= Math.max(1, Math.min(headers.length || 1, 2)));
+
+    if (headers.length > 0 && rows.length > 0) return { headers, rows };
+    return { error: 'Invalid widget data' };
+  };
+
+  const recoverListData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const items: Array<{ title?: string; detail?: string }> = [];
+
+    for (const chunk of normalized.split('{').slice(1)) {
+      const itemSource = `{${chunk}`;
+      const title = recoverStringField(itemSource, ['title', 'label', 'name']);
+      const detail = recoverStringField(itemSource, ['detail', 'description', 'body', 'text']);
+      if (title || detail) items.push({ title, detail });
+    }
+
+    if (items.length > 0) return { items };
+    return { error: 'Invalid widget data' };
+  };
+
   const recoverWidgetData = (name: string, value: string): unknown => {
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
 
@@ -458,21 +508,15 @@ export const MarkdownContent = memo(function MarkdownContent({
       }
     }
 
+    if (name === 'table') {
+      return recoverTableData(value);
+    }
+
     if (name !== 'list' && name !== 'checklist') {
       return { error: 'Invalid widget data' };
     }
 
-    const items = Array.from(
-      normalized.matchAll(
-        /\{\s*"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\s*,\s*"detail"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g
-      )
-    ).map((match) => ({
-      title: decodeJsonString(match[1] ?? ''),
-      detail: decodeJsonString(match[2] ?? ''),
-    }));
-
-    if (items.length > 0) return { items };
-    return { error: 'Invalid widget data' };
+    return recoverListData(value);
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
