@@ -143,7 +143,7 @@ questions. Save new facts with \`core.create_memory\` (types: fact, preference, 
 8. **Chat widgets.** For structured visual output, place standalone widget tags between
    markdown paragraphs: \`<widget name="metric_grid" data='{"items":[{"label":"Total","value":"12"}]}' />\`.
    Supported names: metric_grid, table, list, checklist, callout, progress, bar_chart, timeline.
-   Use valid JSON in single quotes.
+   Use valid JSON in single quotes. Do not use shorthand tags like \`<callout />\`.
 
 ## Response Format
 

@@ -95,10 +95,32 @@ interface ParsedWidget {
   data: unknown;
 }
 
+const WIDGET_TAG_NAMES = [
+  'widget',
+  'metric',
+  'metrics',
+  'metric_grid',
+  'stats',
+  'table',
+  'list',
+  'checklist',
+  'callout',
+  'note',
+  'progress',
+  'bar',
+  'bar_chart',
+  'timeline',
+] as const;
+
+const WIDGET_TAG_PATTERN = WIDGET_TAG_NAMES.join('|');
+const WIDGET_TAG_REGEX = new RegExp(`<(?:${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?\\/>`, 'gi');
+const WIDGET_TAG_START_REGEX = new RegExp(`^<(${WIDGET_TAG_PATTERN})\\b`, 'i');
+
 export function hideIncompleteStreamingWidgets(content: string): string {
   let inCodeFence = false;
   let index = 0;
   let pendingWidgetStart = -1;
+  const lowerContent = content.toLowerCase();
 
   while (index < content.length) {
     if (content.startsWith('```', index)) {
@@ -107,17 +129,27 @@ export function hideIncompleteStreamingWidgets(content: string): string {
       continue;
     }
 
-    if (!inCodeFence && content.slice(index, index + 7).toLowerCase() === '<widget') {
-      const completedAt = content.indexOf('/>', index + 7);
-      const nextWidgetAt = content.toLowerCase().indexOf('<widget', index + 7);
+    if (!inCodeFence) {
+      const tagStart = content.slice(index).match(WIDGET_TAG_START_REGEX);
+      if (tagStart) {
+        const completedAt = content.indexOf('/>', index + tagStart[0].length);
+        let nextWidgetAt = -1;
 
-      if (completedAt === -1 || (nextWidgetAt !== -1 && nextWidgetAt < completedAt)) {
-        pendingWidgetStart = index;
-        break;
+        for (const tagName of WIDGET_TAG_NAMES) {
+          const candidate = lowerContent.indexOf(`<${tagName}`, index + tagStart[0].length);
+          if (candidate !== -1 && (nextWidgetAt === -1 || candidate < nextWidgetAt)) {
+            nextWidgetAt = candidate;
+          }
+        }
+
+        if (completedAt === -1 || (nextWidgetAt !== -1 && nextWidgetAt < completedAt)) {
+          pendingWidgetStart = index;
+          break;
+        }
+
+        index = completedAt + 2;
+        continue;
       }
-
-      index = completedAt + 2;
-      continue;
     }
 
     index += 1;
@@ -328,17 +360,24 @@ export const MarkdownContent = memo(function MarkdownContent({
       .replace(/&amp;/g, '&');
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
-    const match = tag.trim().match(/^<widget\s+([\s\S]*?)\/>$/i);
-    if (!match?.[1]) return null;
+    const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)\/>$/i);
+    const tagName = match?.[1]?.toLowerCase();
+    if (
+      !tagName ||
+      !match?.[2] ||
+      !WIDGET_TAG_NAMES.includes(tagName as (typeof WIDGET_TAG_NAMES)[number])
+    ) {
+      return null;
+    }
 
     const attrs: Record<string, string> = {};
     const attrRegex = /([a-zA-Z_:][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
     let attrMatch;
-    while ((attrMatch = attrRegex.exec(match[1])) !== null) {
+    while ((attrMatch = attrRegex.exec(match[2])) !== null) {
       attrs[attrMatch[1]!.toLowerCase()] = decodeAttributeValue(attrMatch[2] ?? attrMatch[3] ?? '');
     }
 
-    const name = attrs.name?.trim();
+    const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
     if (!name) return null;
 
     if (!attrs.data) return { name, data: {} };
@@ -508,12 +547,12 @@ export const MarkdownContent = memo(function MarkdownContent({
 
   const renderTextBlocks = (text: string, startKey: number): React.ReactElement[] => {
     const blocks: React.ReactElement[] = [];
-    const widgetRegex = /<widget\b[\s\S]*?\/>/gi;
     let lastIndex = 0;
     let key = startKey;
     let match;
 
-    while ((match = widgetRegex.exec(text)) !== null) {
+    WIDGET_TAG_REGEX.lastIndex = 0;
+    while ((match = WIDGET_TAG_REGEX.exec(text)) !== null) {
       if (match.index > lastIndex) {
         const textBlocks = renderTextBlocksWithoutWidgets(text.slice(lastIndex, match.index), key);
         blocks.push(...textBlocks);

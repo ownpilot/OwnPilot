@@ -100,6 +100,28 @@ After`}
     expect(html).toContain('after');
   });
 
+  it('renders shorthand widget tags produced by models', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<callout data='{"type":"info","title":"Haftanın en kritik maçı","body":"Başakşehir - Trabzonspor maçı önemli."}' />`}
+      />
+    );
+
+    expect(html).toContain('Haftanın en kritik maçı');
+    expect(html).toContain('Başakşehir - Trabzonspor maçı önemli.');
+    expect(html).not.toContain('<callout');
+  });
+
+  it('hides incomplete shorthand widget tags while streaming', () => {
+    const partial = hideIncompleteStreamingWidgets(
+      `Before
+
+<callout data='{"type":"info","title":"Eksik"`
+    );
+
+    expect(partial).toBe('Before');
+  });
+
   it('renders chart and timeline widgets', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
