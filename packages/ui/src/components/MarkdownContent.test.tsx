@@ -137,6 +137,28 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('recovers callout fields from malformed widget JSON', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<callout data='{\\"type\\":\\"info\\",\\"title\\":\\"Tahmin Notu\\",\\"body\\":\\"Veri yarim gelse bile kart korunur' />`}
+      />
+    );
+
+    expect(html).toContain('Tahmin Notu');
+    expect(html).toContain('Veri yarim gelse bile kart korunur');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
+  it('does not expose raw malformed widget JSON when recovery fails', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content={`<progress data='{"value":' />`} />
+    );
+
+    expect(html).toContain('Widget tamamlanamadi');
+    expect(html).not.toContain('raw');
+    expect(html).not.toContain('{"value":');
+  });
+
   it('hides incomplete shorthand widget tags while streaming', () => {
     const partial = hideIncompleteStreamingWidgets(
       `Before

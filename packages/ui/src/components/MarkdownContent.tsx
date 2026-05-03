@@ -402,30 +402,77 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const parseWidgetData = (value: string): unknown => {
+    const candidates = [value, value.replace(/\\"/g, '"').replace(/\\'/g, "'")];
+
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (typeof parsed === 'string' && /^[\s[{]/.test(parsed)) {
+          return JSON.parse(parsed);
+        }
+        return parsed;
+      } catch {
+        // Try the next normalization.
+      }
+    }
+
+    throw new Error('Invalid widget data');
+  };
+
+  const decodeJsonString = (value: string): string => {
     try {
-      return JSON.parse(value);
+      return JSON.parse(`"${value.replace(/"/g, '\\"')}"`);
     } catch {
-      return JSON.parse(value.replace(/\\"/g, '"').replace(/\\'/g, "'"));
+      return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'");
     }
   };
 
-  const recoverWidgetData = (name: string, value: string): unknown => {
-    if (name !== 'list' && name !== 'checklist') {
-      return { error: 'Invalid widget data', raw: value };
+  const recoverStringField = (source: string, keys: string[]): string | undefined => {
+    for (const key of keys) {
+      const closed = source.match(
+        new RegExp(`"${key}"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`)
+      )?.[1];
+      if (closed) return decodeJsonString(closed);
+
+      const partial = source.match(new RegExp(`"${key}"\\s*:\\s*"([\\s\\S]*)$`))?.[1];
+      if (partial) {
+        return decodeJsonString(partial.replace(/[,\]}]\s*$/, ''));
+      }
     }
 
+    return undefined;
+  };
+
+  const recoverWidgetData = (name: string, value: string): unknown => {
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+
+    if (name === 'callout' || name === 'note') {
+      const title = recoverStringField(normalized, ['title']);
+      const body = recoverStringField(normalized, ['body', 'detail', 'text']);
+      if (title || body) {
+        return {
+          title,
+          body,
+          tone: normalized.match(/"(?:type|tone|status)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/)?.[1],
+        };
+      }
+    }
+
+    if (name !== 'list' && name !== 'checklist') {
+      return { error: 'Invalid widget data' };
+    }
+
     const items = Array.from(
       normalized.matchAll(
         /\{\s*"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\s*,\s*"detail"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g
       )
     ).map((match) => ({
-      title: decodeAttributeValue(match[1] ?? ''),
-      detail: decodeAttributeValue(match[2] ?? ''),
+      title: decodeJsonString(match[1] ?? ''),
+      detail: decodeJsonString(match[2] ?? ''),
     }));
 
     if (items.length > 0) return { items };
-    return { error: 'Invalid widget data', raw: value };
+    return { error: 'Invalid widget data' };
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {

@@ -157,7 +157,9 @@ function TableWidget({ data }: { data: unknown }) {
   const record = isRecord(data) ? data : {};
   const title = asText(record.title);
   const rawRows = asArray(Array.isArray(data) ? data : record.rows);
-  const rawColumns = asArray(record.columns ?? record.headers).map(asText).filter(Boolean);
+  const rawColumns = asArray(record.columns ?? record.headers)
+    .map(asText)
+    .filter(Boolean);
   const objectRows = rawRows.filter(isRecord);
   const columns =
     rawColumns.length > 0
@@ -223,7 +225,9 @@ function ListWidget({ data, checklist = false }: { data: unknown; checklist?: bo
         {items.map((item, index) => {
           const itemRecord = isRecord(item) ? item : {};
           const done = itemRecord.done === true || itemRecord.status === 'done';
-          const label = isRecord(item) ? asText(itemRecord.label ?? itemRecord.title) : asText(item);
+          const label = isRecord(item)
+            ? asText(itemRecord.label ?? itemRecord.title)
+            : asText(item);
           const detail = isRecord(item) ? asText(itemRecord.detail ?? itemRecord.description) : '';
           return (
             <div key={index} className="flex gap-2">
@@ -280,9 +284,7 @@ function ProgressWidget({ data }: { data: unknown }) {
     <WidgetShell title={title || undefined} icon={<TrendingUp className="h-4 w-4" />}>
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="font-medium text-text-primary dark:text-dark-text-primary">{label}</span>
-        <span className="text-text-muted dark:text-dark-text-muted">
-          {Math.round(percentage)}%
-        </span>
+        <span className="text-text-muted dark:text-dark-text-muted">{Math.round(percentage)}%</span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary">
         <div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} />
@@ -294,7 +296,9 @@ function ProgressWidget({ data }: { data: unknown }) {
 function BarChartWidget({ data }: { data: unknown }) {
   const record = isRecord(data) ? data : {};
   const title = asText(record.title);
-  const bars = asArray(Array.isArray(data) ? data : record.items).filter(isRecord).slice(0, 12);
+  const bars = asArray(Array.isArray(data) ? data : record.items)
+    .filter(isRecord)
+    .slice(0, 12);
   const maxValue = Math.max(
     1,
     ...bars.map((bar) => {
@@ -314,7 +318,10 @@ function BarChartWidget({ data }: { data: unknown }) {
           const safeValue = Number.isFinite(value) ? value : 0;
           const width = Math.max(2, Math.min(100, (safeValue / maxValue) * 100));
           return (
-            <div key={index} className="grid grid-cols-[minmax(96px,1fr)_minmax(0,2fr)_auto] items-center gap-2 text-sm">
+            <div
+              key={index}
+              className="grid grid-cols-[minmax(96px,1fr)_minmax(0,2fr)_auto] items-center gap-2 text-sm"
+            >
               <div className="truncate font-medium text-text-secondary dark:text-dark-text-secondary">
                 {label}
               </div>
@@ -335,7 +342,9 @@ function BarChartWidget({ data }: { data: unknown }) {
 function TimelineWidget({ data }: { data: unknown }) {
   const record = isRecord(data) ? data : {};
   const title = asText(record.title);
-  const items = asArray(Array.isArray(data) ? data : record.items).filter(isRecord).slice(0, 12);
+  const items = asArray(Array.isArray(data) ? data : record.items)
+    .filter(isRecord)
+    .slice(0, 12);
 
   if (items.length === 0) return <JsonWidget name="timeline" data={data} />;
 
@@ -362,7 +371,9 @@ function TimelineWidget({ data }: { data: unknown }) {
                     {label}
                   </span>
                   {time && (
-                    <span className="text-xs text-text-muted dark:text-dark-text-muted">{time}</span>
+                    <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                      {time}
+                    </span>
                   )}
                 </div>
                 {detail && (
@@ -380,6 +391,20 @@ function TimelineWidget({ data }: { data: unknown }) {
 }
 
 function JsonWidget({ name, data }: ChatMessageWidgetProps) {
+  if (isRecord(data) && data.error === 'Invalid widget data') {
+    return (
+      <WidgetShell
+        title="Widget tamamlanamadi"
+        icon={<AlertTriangle className="h-4 w-4" />}
+        tone="warning"
+      >
+        <div className="text-sm leading-6 text-text-secondary dark:text-dark-text-secondary">
+          Bu kart icin gelen veri eksik veya bozuk oldugu icin gorsel widget'a cevrilemedi.
+        </div>
+      </WidgetShell>
+    );
+  }
+
   return (
     <WidgetShell title={name} icon={<Info className="h-4 w-4" />}>
       <pre className="max-h-64 overflow-auto rounded-md bg-bg-tertiary p-3 text-xs text-text-secondary dark:bg-dark-bg-tertiary dark:text-dark-text-secondary">
@@ -390,7 +415,14 @@ function JsonWidget({ name, data }: ChatMessageWidgetProps) {
 }
 
 export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
-  const normalized = name.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  const normalized = name
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+
+  if (isRecord(data) && data.error === 'Invalid widget data') {
+    return <JsonWidget name={normalized || 'widget'} data={data} />;
+  }
 
   switch (normalized) {
     case 'metric':
