@@ -359,6 +359,75 @@ export const MarkdownContent = memo(function MarkdownContent({
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&');
 
+  const parseTagAttributes = (source: string): Record<string, string> => {
+    const attrs: Record<string, string> = {};
+    let index = 0;
+
+    while (index < source.length) {
+      while (/\s/.test(source[index] ?? '')) index += 1;
+
+      const nameStart = index;
+      while (/[a-zA-Z0-9_:.-]/.test(source[index] ?? '')) index += 1;
+      const attrName = source.slice(nameStart, index).toLowerCase();
+      if (!attrName) break;
+
+      while (/\s/.test(source[index] ?? '')) index += 1;
+      if (source[index] !== '=') continue;
+      index += 1;
+      while (/\s/.test(source[index] ?? '')) index += 1;
+
+      const quote = source[index];
+      if (quote !== '"' && quote !== "'") continue;
+      index += 1;
+
+      let value = '';
+      while (index < source.length) {
+        const char = source[index]!;
+        const next = source[index + 1];
+        if (char === '\\' && next === quote) {
+          value += char + next;
+          index += 2;
+          continue;
+        }
+        if (char === quote) break;
+        value += char;
+        index += 1;
+      }
+
+      attrs[attrName] = decodeAttributeValue(value);
+      if (source[index] === quote) index += 1;
+    }
+
+    return attrs;
+  };
+
+  const parseWidgetData = (value: string): unknown => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return JSON.parse(value.replace(/\\"/g, '"').replace(/\\'/g, "'"));
+    }
+  };
+
+  const recoverWidgetData = (name: string, value: string): unknown => {
+    if (name !== 'list' && name !== 'checklist') {
+      return { error: 'Invalid widget data', raw: value };
+    }
+
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const items = Array.from(
+      normalized.matchAll(
+        /\{\s*"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"\s*,\s*"detail"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g
+      )
+    ).map((match) => ({
+      title: decodeAttributeValue(match[1] ?? ''),
+      detail: decodeAttributeValue(match[2] ?? ''),
+    }));
+
+    if (items.length > 0) return { items };
+    return { error: 'Invalid widget data', raw: value };
+  };
+
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
     const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)\/>$/i);
     const tagName = match?.[1]?.toLowerCase();
@@ -370,22 +439,16 @@ export const MarkdownContent = memo(function MarkdownContent({
       return null;
     }
 
-    const attrs: Record<string, string> = {};
-    const attrRegex = /([a-zA-Z_:][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-    let attrMatch;
-    while ((attrMatch = attrRegex.exec(match[2])) !== null) {
-      attrs[attrMatch[1]!.toLowerCase()] = decodeAttributeValue(attrMatch[2] ?? attrMatch[3] ?? '');
-    }
-
+    const attrs = parseTagAttributes(match[2]);
     const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
     if (!name) return null;
 
     if (!attrs.data) return { name, data: {} };
 
     try {
-      return { name, data: JSON.parse(attrs.data) };
+      return { name, data: parseWidgetData(attrs.data) };
     } catch {
-      return { name, data: { error: 'Invalid widget data', raw: attrs.data } };
+      return { name, data: recoverWidgetData(name, attrs.data) };
     }
   };
 

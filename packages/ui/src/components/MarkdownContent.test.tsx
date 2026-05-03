@@ -112,6 +112,31 @@ After`}
     expect(html).not.toContain('<callout');
   });
 
+  it('renders backslash-escaped widget JSON produced inside attributes', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<list data="{\\"items\\":[{\\"title\\":\\"En kritik mac\\",\\"detail\\":\\"Basaksehir vs Trabzonspor\\"},{\\"title\\":\\"En cekici mac\\",\\"detail\\":\\"Galatasaray vs Samsunspor\\"}]}" />`}
+      />
+    );
+
+    expect(html).toContain('En kritik mac');
+    expect(html).toContain('Basaksehir vs Trabzonspor');
+    expect(html).toContain('En cekici mac');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
+  it('recovers completed list items from truncated widget JSON', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<list data='{\\"items\\":[{\\"title\\":\\"En kritik mac\\",\\"detail\\":\\"Basaksehir vs Trabzonspor\\"},{\\"title\\":\\"En riskli tahmin\\",\\"detail\\":\\"Trabzonspor formda olmasina ragmen' />`}
+      />
+    );
+
+    expect(html).toContain('En kritik mac');
+    expect(html).toContain('Basaksehir vs Trabzonspor');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('hides incomplete shorthand widget tags while streaming', () => {
     const partial = hideIncompleteStreamingWidgets(
       `Before
