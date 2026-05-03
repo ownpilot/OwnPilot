@@ -6,7 +6,7 @@
  */
 
 import { promises as fs } from 'node:fs';
-import { join, resolve, relative, basename, dirname } from 'node:path';
+import { join, resolve, relative, basename, dirname, isAbsolute } from 'node:path';
 import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
 import type { FileInfo, StorageUsage } from './types.js';
@@ -36,16 +36,30 @@ export class IsolatedStorage {
     this.maxStorageBytes = maxStorageGB * 1024 * 1024 * 1024;
   }
 
+  private isWithin(parent: string, child: string): boolean {
+    const rel = relative(parent, child);
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+  }
+
+  private resolveUserPath(userId: string, ...segments: string[]): string {
+    const resolvedPath = resolve(this.basePath, userId, ...segments);
+
+    if (!this.isWithin(this.basePath, resolvedPath)) {
+      throw new StorageSecurityError(`Access denied: Invalid user path for ${userId}`);
+    }
+
+    return resolvedPath;
+  }
+
   /**
    * Validate and resolve a path to ensure it's within the user's workspace
    * Prevents directory traversal attacks
    */
   private validatePath(userId: string, requestedPath: string): string {
-    const userBase = join(this.basePath, userId, 'workspace');
+    const userBase = this.resolveUserPath(userId, 'workspace');
     const resolvedPath = resolve(userBase, requestedPath);
 
-    // Ensure the resolved path starts with the user's base path
-    if (!resolvedPath.startsWith(userBase)) {
+    if (!this.isWithin(userBase, resolvedPath)) {
       throw new StorageSecurityError(`Access denied: Path traversal detected for user ${userId}`);
     }
 
@@ -56,23 +70,22 @@ export class IsolatedStorage {
    * Get the user's workspace base path
    */
   getUserWorkspacePath(userId: string): string {
-    return join(this.basePath, userId, 'workspace');
+    return this.resolveUserPath(userId, 'workspace');
   }
 
   /**
    * Get the user's data path (for config, logs)
    */
   getUserDataPath(userId: string): string {
-    return join(this.basePath, userId, 'data');
+    return this.resolveUserPath(userId, 'data');
   }
 
   /**
    * Create user storage directory structure
    */
   async createUserStorage(userId: string): Promise<string> {
-    const userPath = join(this.basePath, userId);
-    const workspacePath = join(userPath, 'workspace');
-    const dataPath = join(userPath, 'data');
+    const workspacePath = this.resolveUserPath(userId, 'workspace');
+    const dataPath = this.resolveUserPath(userId, 'data');
 
     // Create directories
     await fs.mkdir(workspacePath, { recursive: true });
@@ -122,12 +135,7 @@ export class IsolatedStorage {
    * Delete user storage (careful!)
    */
   async deleteUserStorage(userId: string): Promise<void> {
-    const userPath = join(this.basePath, userId);
-
-    // Safety check - ensure it's within base path
-    if (!userPath.startsWith(this.basePath)) {
-      throw new StorageSecurityError('Invalid user path');
-    }
+    const userPath = this.resolveUserPath(userId);
 
     await fs.rm(userPath, { recursive: true, force: true });
     log.info(`Deleted user storage for: ${userId}`);
@@ -322,7 +330,7 @@ export class IsolatedStorage {
    * Get storage usage for a user
    */
   async getStorageUsage(userId: string): Promise<StorageUsage> {
-    const userPath = join(this.basePath, userId);
+    const userPath = this.resolveUserPath(userId);
 
     let totalSize = 0;
     let fileCount = 0;

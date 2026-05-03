@@ -83,9 +83,17 @@ describe('UI Auth Routes', () => {
       expect(json.data.authenticated).toBe(false);
     });
 
-    it('returns authenticated=true with valid session', async () => {
+    it('ignores X-Session-Token for UI auth status', async () => {
       const res = await app.request('/auth/status', {
         headers: { 'X-Session-Token': 'valid-session-token' },
+      });
+      const json = await res.json();
+      expect(json.data.authenticated).toBe(false);
+    });
+
+    it('returns authenticated=true with valid session cookie', async () => {
+      const res = await app.request('/auth/status', {
+        headers: { Cookie: 'ownpilot_ui_session=valid-session-token' },
       });
       const json = await res.json();
       expect(json.data.authenticated).toBe(true);
@@ -112,7 +120,7 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(400);
     });
 
-    it('returns token on successful login', async () => {
+    it('sets session cookie on successful login without returning the token body', async () => {
       mockIsPasswordConfigured.mockReturnValue(true);
       mockGetPasswordHash.mockReturnValue('salt:correct-hashed');
 
@@ -124,8 +132,11 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(200);
 
       const json = await res.json();
-      expect(json.data.token).toBe('test-token-123');
+      expect(json.data.token).toBeUndefined();
       expect(json.data.expiresAt).toBeDefined();
+      expect(res.headers.get('Set-Cookie')).toContain('ownpilot_ui_session=test-token-123');
+      expect(res.headers.get('Set-Cookie')).toContain('HttpOnly');
+      expect(res.headers.get('Set-Cookie')).toContain('SameSite=Lax');
     });
 
     it('returns 403 on wrong password', async () => {
@@ -225,14 +236,20 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('succeeds with valid session', async () => {
+    it('rejects X-Session-Token logout for UI auth', async () => {
       const res = await app.request('/auth/logout', {
         method: 'POST',
         headers: { 'X-Session-Token': 'valid-session-token' },
       });
+      expect(res.status).toBe(401);
+    });
+
+    it('succeeds with valid session cookie', async () => {
+      const res = await app.request('/auth/logout', {
+        method: 'POST',
+        headers: { Cookie: 'ownpilot_ui_session=valid-session-token' },
+      });
       expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.message).toBe('Logged out');
     });
   });
 
@@ -248,7 +265,8 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toBe('Password set');
-      expect(json.data.token).toBe('test-token-123');
+      expect(json.data.token).toBeUndefined();
+      expect(res.headers.get('Set-Cookie')).toContain('ownpilot_ui_session=test-token-123');
     });
 
     it('rejects password shorter than 8 chars', async () => {
@@ -273,7 +291,7 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(401); // No session token
     });
 
-    it('changes password with valid session and current password', async () => {
+    it('changes password with valid session cookie and current password', async () => {
       mockGetPasswordHash.mockReturnValue('salt:old-hashed');
 
       const res = await app.request('/auth/password', {
@@ -281,7 +299,7 @@ describe('UI Auth Routes', () => {
         body: JSON.stringify({ password: 'new-password-123', currentPassword: 'old' }),
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': 'valid-session-token',
+          Cookie: 'ownpilot_ui_session=valid-session-token',
         },
       });
       expect(res.status).toBe(200);
@@ -297,7 +315,7 @@ describe('UI Auth Routes', () => {
         body: JSON.stringify({ password: 'new-password-123', currentPassword: 'wrong' }),
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': 'valid-session-token',
+          Cookie: 'ownpilot_ui_session=valid-session-token',
         },
       });
       expect(res.status).toBe(403);
@@ -311,7 +329,7 @@ describe('UI Auth Routes', () => {
         body: JSON.stringify({ password: 'new-password-123' }),
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': 'valid-session-token',
+          Cookie: 'ownpilot_ui_session=valid-session-token',
         },
       });
       expect(res.status).toBe(400);
@@ -329,17 +347,17 @@ describe('UI Auth Routes', () => {
     it('returns 400 when no password configured', async () => {
       const res = await app.request('/auth/password', {
         method: 'DELETE',
-        headers: { 'X-Session-Token': 'valid-session-token' },
+        headers: { Cookie: 'ownpilot_ui_session=valid-session-token' },
       });
       expect(res.status).toBe(400);
     });
 
-    it('removes password with valid session', async () => {
+    it('removes password with valid session cookie', async () => {
       mockIsPasswordConfigured.mockReturnValue(true);
 
       const res = await app.request('/auth/password', {
         method: 'DELETE',
-        headers: { 'X-Session-Token': 'valid-session-token' },
+        headers: { Cookie: 'ownpilot_ui_session=valid-session-token' },
       });
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -355,9 +373,9 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('returns active session count', async () => {
+    it('returns active session count with valid session cookie', async () => {
       const res = await app.request('/auth/sessions', {
-        headers: { 'X-Session-Token': 'valid-session-token' },
+        headers: { Cookie: 'ownpilot_ui_session=valid-session-token' },
       });
       expect(res.status).toBe(200);
       const json = await res.json();

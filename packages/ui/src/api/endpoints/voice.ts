@@ -26,23 +26,6 @@ export interface TranscribeResult {
 }
 
 // =============================================================================
-// Helpers
-// =============================================================================
-
-const SESSION_TOKEN_KEY = 'ownpilot-session-token';
-
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {};
-  try {
-    const token = localStorage.getItem(SESSION_TOKEN_KEY);
-    if (token) headers['X-Session-Token'] = token;
-  } catch {
-    // localStorage may not be available
-  }
-  return headers;
-}
-
-// =============================================================================
 // API
 // =============================================================================
 
@@ -58,8 +41,8 @@ export const voiceApi = {
 
     const response = await fetch(`/api/v1/voice/transcribe`, {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: form,
+      credentials: 'same-origin',
     });
 
     if (!response.ok) {
@@ -82,9 +65,9 @@ export const voiceApi = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeaders(),
       },
       body: JSON.stringify({ text, ...options }),
+      credentials: 'same-origin',
     });
 
     if (!response.ok) {

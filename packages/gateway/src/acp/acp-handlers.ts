@@ -11,7 +11,7 @@
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { dirname, isAbsolute, resolve, normalize } from 'node:path';
+import { dirname, isAbsolute, normalize, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import type {
@@ -38,6 +38,7 @@ import { RequestError } from '@agentclientprotocol/sdk';
 import type { AcpPermissionRequestEvent, AcpPermissionResponse } from './types.js';
 import { mapSessionNotification, type MappedAcpEvent } from './acp-event-mapper.js';
 import { getLog } from '../services/log.js';
+import { isWithinDirectory } from '../utils/file-safety.js';
 
 const log = getLog('AcpHandlers');
 
@@ -48,6 +49,7 @@ const log = getLog('AcpHandlers');
 export interface AcpClientHandlerOptions {
   ownerSessionId: string;
   cwd: string;
+  env?: Record<string, string>;
   allowedDirs?: string[];
   onEvent?: (event: MappedAcpEvent) => void;
   onPermissionRequest?: (request: AcpPermissionRequestEvent) => Promise<AcpPermissionResponse>;
@@ -73,18 +75,17 @@ class TerminalManager {
   private terminals = new Map<string, ManagedTerminal>();
   private nextId = 1;
 
-  create(params: CreateTerminalRequest, cwd: string): ManagedTerminal {
+  create(params: CreateTerminalRequest, cwd: string, env: Record<string, string>): ManagedTerminal {
     const id = `acp-term-${this.nextId++}`;
     const maxOutput = params.outputByteLimit ?? 1_048_576;
 
     const child = spawn(params.command, params.args ?? [], {
       cwd: params.cwd ?? cwd,
       env: {
-        ...process.env,
+        ...env,
         ...(params.env ? Object.fromEntries(params.env.map((e) => [e.name, e.value])) : {}),
       },
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32',
     });
 
     const terminal: ManagedTerminal = {
@@ -160,6 +161,7 @@ export function createAcpClientHandler(
   const {
     ownerSessionId,
     cwd,
+    env = {},
     allowedDirs = [],
     onEvent,
     onPermissionRequest,
@@ -169,9 +171,9 @@ export function createAcpClientHandler(
 
   function validatePath(filePath: string): string {
     if (!isAbsolute(filePath)) filePath = resolve(cwd, filePath);
-    const normalized = normalize(filePath);
+    const normalized = normalize(resolve(filePath));
     const allAllowed = [cwd, ...allowedDirs];
-    if (!allAllowed.some((dir) => normalized.startsWith(normalize(dir)))) {
+    if (!allAllowed.some((dir) => isWithinDirectory(dir, normalized))) {
       throw RequestError.invalidParams(
         undefined,
         `Path '${filePath}' is outside allowed directories`
@@ -238,19 +240,17 @@ export function createAcpClientHandler(
         };
       }
 
-      // Default: auto-approve with first allow option
-      const allowOption = params.options?.find(
-        (o) => o.kind === 'allow_once' || o.kind === 'allow_always'
+      const rejectOption = params.options?.find(
+        (o) => o.kind === 'reject_once' || o.kind === 'reject_always'
       );
-      if (allowOption) {
-        log.info(`Auto-approving permission: ${allowOption.name}`, {
-          optionId: allowOption.optionId,
+      if (rejectOption) {
+        log.warn(`Rejecting permission without handler: ${title}`, {
+          optionId: rejectOption.optionId,
         });
-        return { outcome: { outcome: 'selected', optionId: allowOption.optionId } };
+        return { outcome: { outcome: 'selected', optionId: rejectOption.optionId } };
       }
 
-      const rejectOption = params.options?.find((o) => o.kind === 'reject_once');
-      return { outcome: { outcome: 'selected', optionId: rejectOption?.optionId ?? '' } };
+      return { outcome: { outcome: 'cancelled' } };
     },
 
     // fs/read_text_file
@@ -290,11 +290,17 @@ export function createAcpClientHandler(
 
     // terminal/create
     async createTerminal(params: CreateTerminalRequest): Promise<CreateTerminalResponse> {
+      if (!params.command || typeof params.command !== 'string') {
+        throw RequestError.invalidParams(undefined, 'Terminal command is required');
+      }
+      if (params.cwd) {
+        params.cwd = validatePath(params.cwd);
+      }
       log.info(`Agent creating terminal: ${params.command}`, {
         sessionId: ownerSessionId,
         args: params.args,
       });
-      const terminal = terminalManager.create(params, cwd);
+      const terminal = terminalManager.create(params, cwd, env);
       return { terminalId: terminal.id };
     },
 

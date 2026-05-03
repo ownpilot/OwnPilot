@@ -13,7 +13,7 @@ import {
   useContext,
   type ReactNode,
 } from 'react';
-import { STORAGE_KEYS } from '../constants/storage-keys';
+import { onSessionChanged } from '../utils/session-events';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -117,19 +117,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     setStatus('connecting');
 
     try {
-      // Append session token as query param if available
-      let wsUrl = url;
-      try {
-        const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-        if (sessionToken) {
-          const separator = wsUrl.includes('?') ? '&' : '?';
-          wsUrl = `${wsUrl}${separator}token=${encodeURIComponent(sessionToken)}`;
-        }
-      } catch {
-        // localStorage may not be available
-      }
-
-      wsRef.current = new WebSocket(wsUrl);
+      wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
         setStatus('connected');
@@ -224,31 +212,26 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     };
   }, []); // Empty deps - only connect on mount
 
-  // Reconnect when session token changes (login/logout)
-  // Synthetic StorageEvent dispatched by useAuth on login/logout
+  // Reconnect when UI session changes (login/logout).
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEYS.SESSION_TOKEN) return;
-
+    return onSessionChanged(({ authenticated }) => {
       // Close existing connection
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
 
-      if (e.newValue) {
-        // Token added/changed (login) — reconnect with new token
+      if (authenticated) {
+        // Session added/changed (login): reconnect so the cookie-authenticated handshake is retried.
         reconnectAttemptsRef.current = 0;
         connect();
       } else {
-        // Token removed (logout) — just disconnect, don't reconnect
+        // Session removed (logout): just disconnect, don't reconnect
         // (server will reject tokenless WS if password is configured)
         setStatus('disconnected');
         setSessionId(null);
       }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    });
   }, [connect]);
 
   return {

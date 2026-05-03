@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { HardDrive, Plus, Trash2, Download, Folder, FolderOpen, RefreshCw } from './icons';
 import { workspacesApi, apiClient } from '../api';
 import { formatBytes } from '../utils/formatters';
-import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { WorkspaceSelectorInfo } from '../api';
 
 interface WorkspaceSelectorProps {
@@ -76,14 +75,9 @@ export function WorkspaceSelector({
 
   const handleDownloadWorkspace = async (id: string) => {
     try {
-      const headers: Record<string, string> = {};
-      try {
-        const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-        if (t) headers['X-Session-Token'] = t;
-      } catch {
-        /* */
-      }
-      const response = await fetch(`/api/v1/workspaces/${id}/download`, { headers });
+      const response = await fetch(`/api/v1/workspaces/${id}/download`, {
+        credentials: 'same-origin',
+      });
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);

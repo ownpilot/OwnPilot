@@ -1,5 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import { CodeBlock } from './CodeBlock';
+import { ChatMessageWidget } from './ChatMessageWidget';
 
 // =============================================================================
 // URL safety
@@ -78,6 +79,52 @@ interface MarkdownContentProps {
   compact?: boolean;
   /** Workspace ID for resolving relative image paths */
   workspaceId?: string | null;
+}
+
+type TableAlignment = 'left' | 'center' | 'right';
+
+interface MarkdownTable {
+  headers: string[];
+  alignments: TableAlignment[];
+  rows: string[][];
+  nextIndex: number;
+}
+
+interface ParsedWidget {
+  name: string;
+  data: unknown;
+}
+
+export function hideIncompleteStreamingWidgets(content: string): string {
+  let inCodeFence = false;
+  let index = 0;
+  let pendingWidgetStart = -1;
+
+  while (index < content.length) {
+    if (content.startsWith('```', index)) {
+      inCodeFence = !inCodeFence;
+      index += 3;
+      continue;
+    }
+
+    if (!inCodeFence && content.slice(index, index + 7).toLowerCase() === '<widget') {
+      const completedAt = content.indexOf('/>', index + 7);
+      const nextWidgetAt = content.toLowerCase().indexOf('<widget', index + 7);
+
+      if (completedAt === -1 || (nextWidgetAt !== -1 && nextWidgetAt < completedAt)) {
+        pendingWidgetStart = index;
+        break;
+      }
+
+      index = completedAt + 2;
+      continue;
+    }
+
+    index += 1;
+  }
+
+  if (pendingWidgetStart === -1) return content;
+  return content.slice(0, pendingWidgetStart).trimEnd();
 }
 
 export const MarkdownContent = memo(function MarkdownContent({
@@ -177,6 +224,322 @@ export const MarkdownContent = memo(function MarkdownContent({
     return elements;
   };
 
+  const splitTableRow = (line: string): string[] => {
+    let trimmed = line.trim();
+    if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+    if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+    return trimmed.split('|').map((cell) => cell.trim());
+  };
+
+  const parseTableSeparator = (line: string): TableAlignment[] | null => {
+    const cells = splitTableRow(line);
+    if (cells.length < 2) return null;
+
+    const alignments: TableAlignment[] = [];
+    for (const cell of cells) {
+      const normalized = cell.replace(/\s/g, '');
+      if (!/^:?-{1,}:?$/.test(normalized)) return null;
+      if (normalized.startsWith(':') && normalized.endsWith(':')) alignments.push('center');
+      else if (normalized.endsWith(':')) alignments.push('right');
+      else alignments.push('left');
+    }
+
+    return alignments;
+  };
+
+  const parseMarkdownTable = (lines: string[], startIndex: number): MarkdownTable | null => {
+    const headerLine = lines[startIndex];
+    const separatorLine = lines[startIndex + 1];
+    if (!headerLine?.includes('|') || !separatorLine?.includes('|')) return null;
+
+    const headers = splitTableRow(headerLine);
+    const alignments = parseTableSeparator(separatorLine);
+    if (!alignments) return null;
+    while (alignments.length < headers.length) alignments.push('left');
+
+    const rows: string[][] = [];
+    let nextIndex = startIndex + 2;
+
+    while (nextIndex < lines.length) {
+      const line = lines[nextIndex];
+      if (!line || !line.trim() || !line.includes('|')) break;
+
+      const cells = splitTableRow(line);
+      while (cells.length < headers.length) cells.push('');
+      rows.push(cells.slice(0, headers.length));
+      nextIndex += 1;
+    }
+
+    return { headers, alignments, rows, nextIndex };
+  };
+
+  const alignmentClass = (alignment: TableAlignment): string => {
+    if (alignment === 'center') return 'text-center';
+    if (alignment === 'right') return 'text-right';
+    return 'text-left';
+  };
+
+  const renderTable = (table: MarkdownTable, key: number): React.ReactElement => (
+    <div
+      key={key}
+      className="my-3 max-w-full overflow-x-auto rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary"
+    >
+      <table className="min-w-full border-collapse text-sm leading-6">
+        <thead>
+          <tr className="bg-bg-tertiary/80 dark:bg-dark-bg-tertiary/80">
+            {table.headers.map((header, index) => (
+              <th
+                key={`${header}-${index}`}
+                className={`border-b border-border dark:border-dark-border px-3 py-2 font-semibold text-text-secondary dark:text-dark-text-secondary ${alignmentClass(table.alignments[index] ?? 'left')}`}
+              >
+                {renderInlineElements(header)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, rowIndex) => (
+            <tr
+              key={rowIndex}
+              className="odd:bg-bg-primary even:bg-bg-secondary/60 dark:odd:bg-dark-bg-primary dark:even:bg-dark-bg-secondary/60"
+            >
+              {row.map((cell, cellIndex) => (
+                <td
+                  key={`${rowIndex}-${cellIndex}`}
+                  className={`border-b border-border/70 px-3 py-2 align-top text-text-primary last:border-r-0 dark:border-dark-border/70 dark:text-dark-text-primary ${alignmentClass(table.alignments[cellIndex] ?? 'left')}`}
+                >
+                  {renderInlineElements(cell)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const decodeAttributeValue = (value: string): string =>
+    value
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+
+  const parseWidgetTag = (tag: string): ParsedWidget | null => {
+    const match = tag.trim().match(/^<widget\s+([\s\S]*?)\/>$/i);
+    if (!match?.[1]) return null;
+
+    const attrs: Record<string, string> = {};
+    const attrRegex = /([a-zA-Z_:][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+    let attrMatch;
+    while ((attrMatch = attrRegex.exec(match[1])) !== null) {
+      attrs[attrMatch[1]!.toLowerCase()] = decodeAttributeValue(attrMatch[2] ?? attrMatch[3] ?? '');
+    }
+
+    const name = attrs.name?.trim();
+    if (!name) return null;
+
+    if (!attrs.data) return { name, data: {} };
+
+    try {
+      return { name, data: JSON.parse(attrs.data) };
+    } catch {
+      return { name, data: { error: 'Invalid widget data', raw: attrs.data } };
+    }
+  };
+
+  const parseWidgetLine = (line: string): ParsedWidget | null => parseWidgetTag(line);
+
+  const renderTextBlocksWithoutWidgets = (text: string, startKey: number): React.ReactElement[] => {
+    const lines = text.replace(/\r\n/g, '\n').split('\n');
+    const blocks: React.ReactElement[] = [];
+    const paragraphLines: string[] = [];
+    let key = startKey;
+    let index = 0;
+
+    const flushParagraph = () => {
+      if (paragraphLines.length === 0) return;
+      const paragraph = paragraphLines.join('\n').trimEnd();
+      paragraphLines.length = 0;
+      if (!paragraph.trim()) return;
+      blocks.push(
+        <p
+          key={key++}
+          className="my-2 whitespace-pre-wrap break-words leading-7 first:mt-0 last:mb-0"
+        >
+          {renderInlineElements(paragraph)}
+        </p>
+      );
+    };
+
+    while (index < lines.length) {
+      const line = lines[index] ?? '';
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        flushParagraph();
+        index += 1;
+        continue;
+      }
+
+      const table = parseMarkdownTable(lines, index);
+      if (table) {
+        flushParagraph();
+        blocks.push(renderTable(table, key++));
+        index = table.nextIndex;
+        continue;
+      }
+
+      const widget = parseWidgetLine(trimmed);
+      if (widget) {
+        flushParagraph();
+        blocks.push(<ChatMessageWidget key={key++} name={widget.name} data={widget.data} />);
+        index += 1;
+        continue;
+      }
+
+      const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+      if (headingMatch) {
+        flushParagraph();
+        const level = headingMatch[1]!.length;
+        const headingClass =
+          'mb-2 mt-4 text-base font-semibold leading-6 text-text-primary first:mt-0 dark:text-dark-text-primary';
+        const headingContent = renderInlineElements(headingMatch[2]!);
+        if (level === 1) {
+          blocks.push(
+            <h2 key={key++} className={headingClass}>
+              {headingContent}
+            </h2>
+          );
+        } else if (level === 2) {
+          blocks.push(
+            <h3 key={key++} className={headingClass}>
+              {headingContent}
+            </h3>
+          );
+        } else if (level === 3) {
+          blocks.push(
+            <h4 key={key++} className={headingClass}>
+              {headingContent}
+            </h4>
+          );
+        } else {
+          blocks.push(
+            <h5 key={key++} className={headingClass}>
+              {headingContent}
+            </h5>
+          );
+        }
+        index += 1;
+        continue;
+      }
+
+      if (/^[-*_]{3,}$/.test(trimmed)) {
+        flushParagraph();
+        blocks.push(<hr key={key++} className="my-3 border-border dark:border-dark-border" />);
+        index += 1;
+        continue;
+      }
+
+      const unorderedMatch = trimmed.match(/^[-*+]\s+(.+)$/);
+      if (unorderedMatch) {
+        flushParagraph();
+        const items: string[] = [];
+        while (index < lines.length) {
+          const itemMatch = (lines[index] ?? '').trim().match(/^[-*+]\s+(.+)$/);
+          if (!itemMatch) break;
+          items.push(itemMatch[1]!);
+          index += 1;
+        }
+        blocks.push(
+          <ul key={key++} className="my-2 list-disc space-y-1 pl-5 leading-7">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex}>{renderInlineElements(item)}</li>
+            ))}
+          </ul>
+        );
+        continue;
+      }
+
+      const orderedMatch = trimmed.match(/^\d+[.)]\s+(.+)$/);
+      if (orderedMatch) {
+        flushParagraph();
+        const items: string[] = [];
+        while (index < lines.length) {
+          const itemMatch = (lines[index] ?? '').trim().match(/^\d+[.)]\s+(.+)$/);
+          if (!itemMatch) break;
+          items.push(itemMatch[1]!);
+          index += 1;
+        }
+        blocks.push(
+          <ol key={key++} className="my-2 list-decimal space-y-1 pl-5 leading-7">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex}>{renderInlineElements(item)}</li>
+            ))}
+          </ol>
+        );
+        continue;
+      }
+
+      const quoteMatch = trimmed.match(/^>\s?(.+)$/);
+      if (quoteMatch) {
+        flushParagraph();
+        blocks.push(
+          <blockquote
+            key={key++}
+            className="my-2 border-l-2 border-primary/50 pl-3 text-text-secondary dark:text-dark-text-secondary"
+          >
+            {renderInlineElements(quoteMatch[1]!)}
+          </blockquote>
+        );
+        index += 1;
+        continue;
+      }
+
+      paragraphLines.push(line);
+      index += 1;
+    }
+
+    flushParagraph();
+    return blocks;
+  };
+
+  const renderTextBlocks = (text: string, startKey: number): React.ReactElement[] => {
+    const blocks: React.ReactElement[] = [];
+    const widgetRegex = /<widget\b[\s\S]*?\/>/gi;
+    let lastIndex = 0;
+    let key = startKey;
+    let match;
+
+    while ((match = widgetRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        const textBlocks = renderTextBlocksWithoutWidgets(text.slice(lastIndex, match.index), key);
+        blocks.push(...textBlocks);
+        key += textBlocks.length;
+      }
+
+      const widget = parseWidgetTag(match[0]);
+      if (widget) {
+        blocks.push(<ChatMessageWidget key={key++} name={widget.name} data={widget.data} />);
+      } else {
+        const textBlocks = renderTextBlocksWithoutWidgets(match[0], key);
+        blocks.push(...textBlocks);
+        key += textBlocks.length;
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      const textBlocks = renderTextBlocksWithoutWidgets(text.slice(lastIndex), key);
+      blocks.push(...textBlocks);
+    }
+
+    return blocks;
+  };
+
   // Parse markdown-like code blocks
   const renderContent = (text: string) => {
     const codeBlockRegex = /```(\w*)[ \t]*\r?\n?([\s\S]*?)```/g;
@@ -189,11 +552,9 @@ export const MarkdownContent = memo(function MarkdownContent({
       // Add text before the code block
       if (match.index > lastIndex) {
         const textBefore = text.slice(lastIndex, match.index);
-        parts.push(
-          <span key={key++} className="whitespace-pre-wrap break-words">
-            {renderInlineElements(textBefore)}
-          </span>
-        );
+        const textBlocks = renderTextBlocks(textBefore, key);
+        parts.push(...textBlocks);
+        key += textBlocks.length;
       }
 
       // Add the code block
@@ -216,17 +577,14 @@ export const MarkdownContent = memo(function MarkdownContent({
 
     // Add remaining text
     if (lastIndex < text.length) {
-      parts.push(
-        <span key={key++} className="whitespace-pre-wrap break-words">
-          {renderInlineElements(text.slice(lastIndex))}
-        </span>
-      );
+      const textBlocks = renderTextBlocks(text.slice(lastIndex), key);
+      parts.push(...textBlocks);
     }
 
     return parts.length > 0 ? (
       parts
     ) : (
-      <span className="whitespace-pre-wrap break-words">{text}</span>
+      <span className="whitespace-pre-wrap break-words">{renderInlineElements(text)}</span>
     );
   };
 

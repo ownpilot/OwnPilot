@@ -439,9 +439,10 @@ export class PermissionChecker {
     const normalizedPath = filePath.replace(/\\/g, '/').toLowerCase();
 
     return allowedPaths.some((allowed) => {
-      const normalizedAllowed = allowed.replace(/\\/g, '/').toLowerCase();
-      // Allow if path starts with allowed path
-      return normalizedPath.startsWith(normalizedAllowed);
+      const normalizedAllowed = allowed.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+      return (
+        normalizedPath === normalizedAllowed || normalizedPath.startsWith(`${normalizedAllowed}/`)
+      );
     });
   }
 

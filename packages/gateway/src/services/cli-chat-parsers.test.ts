@@ -166,6 +166,12 @@ describe('buildClaudeArgs', () => {
     expect(args).toContain('claude-3.5');
   });
 
+  it('skips unsafe model values', () => {
+    const args = buildClaudeArgs('test', 'claude"; calc', false);
+    expect(args).not.toContain('--model');
+    expect(args).not.toContain('claude"; calc');
+  });
+
   it('skips default model', () => {
     const args = buildClaudeArgs('test', 'default', false);
     expect(args).not.toContain('--model');
@@ -185,6 +191,11 @@ describe('buildCodexArgs', () => {
     expect(args).toContain('--model');
     expect(args).toContain('gpt-4');
   });
+
+  it('skips unsafe model values', () => {
+    const args = buildCodexArgs('test', 'gpt-4 && whoami');
+    expect(args).not.toContain('--model');
+  });
 });
 
 describe('buildGeminiArgs', () => {
@@ -193,6 +204,11 @@ describe('buildGeminiArgs', () => {
     expect(args).toContain('--yolo');
     expect(args).toContain('--output-format');
     expect(args).toContain('json');
+  });
+
+  it('skips unsafe model values', () => {
+    const args = buildGeminiArgs('test', 'gemini\r\nbad');
+    expect(args).not.toContain('--model');
   });
 });
 

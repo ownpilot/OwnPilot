@@ -10,11 +10,23 @@
  */
 
 function getHostFs(): string | undefined {
-  return process.env.OWNPILOT_HOST_FS?.replace(/\/+$/, '');
+  return process.env.OWNPILOT_HOST_FS?.replace(/[\\/]+$/, '');
 }
 
 function getHostPrefix(): string | undefined {
-  return process.env.OWNPILOT_HOST_FS_HOST_PREFIX?.replace(/\/+$/, '');
+  return process.env.OWNPILOT_HOST_FS_HOST_PREFIX?.replace(/[\\/]+$/, '');
+}
+
+function trimTrailingSeparators(path: string): string {
+  return path.replace(/[\\/]+$/, '');
+}
+
+function isSameOrChild(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}\\`);
+}
+
+function replacePrefix(path: string, prefix: string, replacement: string): string {
+  return replacement + path.slice(prefix.length);
 }
 
 export function isHostFsConfigured(): boolean {
@@ -26,9 +38,9 @@ export function toHostPath(containerPath: string | null | undefined): string | n
   const hostFs = getHostFs();
   const hostPrefix = getHostPrefix();
   if (!hostFs || !hostPrefix) return null;
-  const normalized = containerPath.replace(/\/+$/, '');
-  if (!normalized.startsWith(hostFs)) return null;
-  return normalized === hostFs ? hostPrefix : normalized.replace(hostFs, hostPrefix);
+  const normalized = trimTrailingSeparators(containerPath);
+  if (!isSameOrChild(normalized, hostFs)) return null;
+  return normalized === hostFs ? hostPrefix : replacePrefix(normalized, hostFs, hostPrefix);
 }
 
 export function toContainerPath(hostPath: string | null | undefined): string | null {
@@ -36,7 +48,7 @@ export function toContainerPath(hostPath: string | null | undefined): string | n
   const hostFs = getHostFs();
   const hostPrefix = getHostPrefix();
   if (!hostFs || !hostPrefix) return null;
-  const normalized = hostPath.replace(/\/+$/, '');
-  if (!normalized.startsWith(hostPrefix)) return null;
-  return normalized === hostPrefix ? hostFs : normalized.replace(hostPrefix, hostFs);
+  const normalized = trimTrailingSeparators(hostPath);
+  if (!isSameOrChild(normalized, hostPrefix)) return null;
+  return normalized === hostPrefix ? hostFs : replacePrefix(normalized, hostPrefix, hostFs);
 }

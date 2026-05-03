@@ -7,7 +7,6 @@ export const STORAGE_KEYS = {
   SETUP_COMPLETE: 'ownpilot-setup-complete',
   BRIEFING_MODEL: 'briefing-model-preference',
   DESKTOP_NOTIFICATIONS: 'ownpilot-desktop-notifications',
-  SESSION_TOKEN: 'ownpilot-session-token',
   DEBUG_DRAWER: 'ownpilot-debug-drawer',
   MINI_CHAT_OPEN: 'ownpilot-mini-chat-open',
   SIDEBAR_PINNED: 'ownpilot-sidebar-pinned',  // string[] of pinned route paths (e.g. ['/', '/dashboard', '/customize'])

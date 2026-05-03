@@ -26,7 +26,7 @@ describe('claws utils', () => {
       localStorage.clear();
     });
 
-    it('attaches X-Session-Token from localStorage when present', async () => {
+    it('uses same-origin credentials for cookie authentication', async () => {
       localStorage.setItem('ownpilot-session-token', 'abc123');
 
       await authedFetch('/api/v1/claws');
@@ -34,17 +34,18 @@ describe('claws utils', () => {
       expect(fetchMock).toHaveBeenCalledOnce();
       const [url, init] = fetchMock.mock.calls[0]!;
       expect(url).toBe('/api/v1/claws');
-      expect((init as RequestInit).headers).toMatchObject({ 'X-Session-Token': 'abc123' });
+      expect((init as RequestInit).credentials).toBe('same-origin');
+      expect((init as RequestInit).headers).not.toHaveProperty('X-Session-Token');
     });
 
-    it('omits the header when no token is stored', async () => {
+    it('omits legacy localStorage token headers', async () => {
       await authedFetch('/api/v1/claws');
 
       const [, init] = fetchMock.mock.calls[0]!;
       expect((init as RequestInit).headers).not.toHaveProperty('X-Session-Token');
     });
 
-    it('merges caller-supplied headers with the auth header', async () => {
+    it('preserves caller-supplied headers and request options', async () => {
       localStorage.setItem('ownpilot-session-token', 'tok');
 
       await authedFetch('/api/v1/claws/x', {
@@ -57,19 +58,8 @@ describe('claws utils', () => {
       const req = init as RequestInit;
       expect(req.method).toBe('POST');
       expect(req.body).toBe('{}');
-      expect(req.headers).toMatchObject({
-        'Content-Type': 'application/json',
-        'X-Session-Token': 'tok',
-      });
-    });
-
-    it('does not throw when localStorage access fails', async () => {
-      const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-        throw new Error('denied');
-      });
-
-      await expect(authedFetch('/api/v1/claws')).resolves.toBeDefined();
-      spy.mockRestore();
+      expect(req.headers).toMatchObject({ 'Content-Type': 'application/json' });
+      expect(req.headers).not.toHaveProperty('X-Session-Token');
     });
   });
 

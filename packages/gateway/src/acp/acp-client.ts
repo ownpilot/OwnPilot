@@ -144,6 +144,7 @@ export class AcpClient {
     this.clientHandler = createAcpClientHandler({
       ownerSessionId: this.options.ownerSessionId,
       cwd,
+      env: this.options.env,
       onEvent: (event) => this.handleEvent(event),
       onPermissionRequest: this.options.onPermissionRequest,
       onTextOutput: (text) => {

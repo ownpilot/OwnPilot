@@ -417,12 +417,20 @@ export async function getOrCreateChatAgent(
   model: string,
   fallback?: { provider: string; model: string },
   pageContext?: { path?: string } | null,
-  conversationId?: string
+  conversationId?: string,
+  gatewayUrl?: string
 ): Promise<Agent> {
   // CLI providers are NOT cached — each request may need fresh MCP session state
   // while still reusing the persistent ~/.ownpilot/workspace directory.
   if (isCliChatProvider(provider)) {
-    return createChatAgentInstance(provider, model, `cli-${Date.now()}`, fallback, pageContext);
+    return createChatAgentInstance(
+      provider,
+      model,
+      `cli-${Date.now()}`,
+      fallback,
+      pageContext,
+      gatewayUrl
+    );
   }
 
   // Per-conversation cache key when conversationId is provided.
@@ -440,7 +448,14 @@ export async function getOrCreateChatAgent(
   const pending = pendingChatAgents.get(cacheKey);
   if (pending) return pending;
 
-  const promise = createChatAgentInstance(provider, model, cacheKey, fallback, pageContext).finally(() => {
+  const promise = createChatAgentInstance(
+    provider,
+    model,
+    cacheKey,
+    fallback,
+    pageContext,
+    gatewayUrl
+  ).finally(() => {
     pendingChatAgents.delete(cacheKey);
   });
   pendingChatAgents.set(cacheKey, promise);
@@ -458,7 +473,8 @@ async function createChatAgentInstance(
   model: string,
   cacheKey: string,
   fallback?: { provider: string; model: string },
-  _pageContext?: { path?: string } | null
+  _pageContext?: { path?: string } | null,
+  gatewayUrl?: string
 ): Promise<Agent> {
   // ── CLI Chat Provider path ──
   // CLI providers (cli-claude, cli-codex, cli-gemini) use login-based auth
@@ -602,6 +618,7 @@ async function createChatAgentInstance(
     const { createMcpSession } = await import('../services/ui-session.js');
     const mcpSession = await createMcpSession();
     const workspace = await createTempWorkspace({
+      ...(gatewayUrl && { gatewayUrl }),
       correlationId,
       sessionToken: mcpSession.token,
     });

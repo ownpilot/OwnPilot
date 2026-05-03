@@ -41,7 +41,7 @@ describe('extractSuggestions', () => {
     // Regex matches [...] but content is invalid JSON → catch block
     const raw = 'Response.\n<suggestions>[invalid json here]</suggestions>';
     const result = extractSuggestions(raw);
-    expect(result.content).toBe(raw);
+    expect(result.content).toBe('Response.');
     expect(result.suggestions).toEqual([]);
   });
 
@@ -105,7 +105,7 @@ describe('extractSuggestions', () => {
   it('returns empty suggestions for empty array', () => {
     const raw = 'Response.\n<suggestions>[]</suggestions>';
     const result = extractSuggestions(raw);
-    expect(result.content).toBe(raw);
+    expect(result.content).toBe('Response.');
     expect(result.suggestions).toEqual([]);
   });
 
@@ -169,5 +169,30 @@ Here is a detailed response.
       { title: 'good', detail: 'good' },
       { title: 'fine', detail: 'fine' },
     ]);
+  });
+
+  it('extracts suggestions from an unclosed suggestions tag at end of content', () => {
+    const raw =
+      'Response.\n<suggestions>[{"title":"Günlük harcamalarımı kaydet","detail":"Bugünkü harcamalarımı girelim"},{"title":"Süper Lig durumu","detail":"Puan durumu ve maç sonuçlarını göster"}]';
+    const result = extractSuggestions(raw);
+    expect(result.content).toBe('Response.');
+    expect(result.suggestions).toEqual([
+      { title: 'Günlük harcamalarımı kaydet', detail: 'Bugünkü harcamalarımı girelim' },
+      { title: 'Süper Lig durumu', detail: 'Puan durumu ve maç sonuçlarını göster' },
+    ]);
+  });
+
+  it('strips an unclosed suggestions tag even when no valid suggestions remain', () => {
+    const raw = 'Response.\n<suggestions>[{"title":"Missing detail"}]';
+    const result = extractSuggestions(raw);
+    expect(result.content).toBe('Response.');
+    expect(result.suggestions).toEqual([]);
+  });
+
+  it('strips an unclosed suggestions tag even when the JSON array is truncated', () => {
+    const raw = 'Response.\n<suggestions>[{"title":"Broken","detail":"Missing bracket"';
+    const result = extractSuggestions(raw);
+    expect(result.content).toBe('Response.');
+    expect(result.suggestions).toEqual([]);
   });
 });

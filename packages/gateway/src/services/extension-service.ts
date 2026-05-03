@@ -6,7 +6,7 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { resolve, relative } from 'path';
+import { resolve } from 'path';
 import {
   getEventBus,
   getEventSystem,
@@ -39,6 +39,7 @@ import {
   scanSingleDirectory,
   type ScanResult,
 } from './extension-scanner.js';
+import { isWithinDirectory } from '../utils/file-safety.js';
 
 const log = getLog('ExtService');
 
@@ -465,9 +466,7 @@ export class ExtensionService implements IExtensionService {
 
           // Path traversal protection: resolve and verify path is within skillDir
           const fullPath = resolve(skillDir, scriptPath);
-          const resolvedSkillDir = resolve(skillDir);
-          const rel = relative(resolvedSkillDir, fullPath);
-          if (rel.startsWith('..') || resolve(fullPath) !== fullPath) {
+          if (!isWithinDirectory(skillDir, fullPath)) {
             log.warn(`Path traversal detected for ${pkg.id}: ${scriptPath}`);
             continue; // Skip this script
           }

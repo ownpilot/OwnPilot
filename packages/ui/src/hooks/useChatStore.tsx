@@ -19,6 +19,7 @@ import type { ApprovalRequest } from '../api';
 import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
 import { STORAGE_KEYS } from '../constants/storage-keys';
+import { dispatchSessionChanged } from '../utils/session-events';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -135,19 +136,37 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [provider, setProviderState] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEYS.CHAT_PROVIDER) ?? ''; } catch { return ''; }
+    try {
+      return localStorage.getItem(STORAGE_KEYS.CHAT_PROVIDER) ?? '';
+    } catch {
+      return '';
+    }
   });
   const [model, setModelState] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEYS.CHAT_MODEL) ?? ''; } catch { return ''; }
+    try {
+      return localStorage.getItem(STORAGE_KEYS.CHAT_MODEL) ?? '';
+    } catch {
+      return '';
+    }
   });
   // Persist provider/model to localStorage so they survive page reloads
   const setProvider = useCallback((v: string) => {
     setProviderState(v);
-    try { if (v) localStorage.setItem(STORAGE_KEYS.CHAT_PROVIDER, v); else localStorage.removeItem(STORAGE_KEYS.CHAT_PROVIDER); } catch { /* */ }
+    try {
+      if (v) localStorage.setItem(STORAGE_KEYS.CHAT_PROVIDER, v);
+      else localStorage.removeItem(STORAGE_KEYS.CHAT_PROVIDER);
+    } catch {
+      /* */
+    }
   }, []);
   const setModel = useCallback((v: string) => {
     setModelState(v);
-    try { if (v) localStorage.setItem(STORAGE_KEYS.CHAT_MODEL, v); else localStorage.removeItem(STORAGE_KEYS.CHAT_MODEL); } catch { /* */ }
+    try {
+      if (v) localStorage.setItem(STORAGE_KEYS.CHAT_MODEL, v);
+      else localStorage.removeItem(STORAGE_KEYS.CHAT_MODEL);
+    } catch {
+      /* */
+    }
   }, []);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
@@ -172,7 +191,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       if (id) localStorage.setItem(STORAGE_KEYS.CHAT_SESSION_ID, id);
       else localStorage.removeItem(STORAGE_KEYS.CHAT_SESSION_ID);
-    } catch { /* */ }
+    } catch {
+      /* */
+    }
   };
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -196,8 +217,30 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   messagesRef.current = messages;
   const sessionInfoRef = useRef(sessionInfo);
   sessionInfoRef.current = sessionInfo;
-  const stateRefsForCapture = useRef({ isLoading, error, lastFailedMessage, streamingContent, thinkingContent, isThinking, progressEvents, suggestions, extractedMemories, pendingApproval });
-  stateRefsForCapture.current = { isLoading, error, lastFailedMessage, streamingContent, thinkingContent, isThinking, progressEvents, suggestions, extractedMemories, pendingApproval };
+  const stateRefsForCapture = useRef({
+    isLoading,
+    error,
+    lastFailedMessage,
+    streamingContent,
+    thinkingContent,
+    isThinking,
+    progressEvents,
+    suggestions,
+    extractedMemories,
+    pendingApproval,
+  });
+  stateRefsForCapture.current = {
+    isLoading,
+    error,
+    lastFailedMessage,
+    streamingContent,
+    thinkingContent,
+    isThinking,
+    progressEvents,
+    suggestions,
+    extractedMemories,
+    pendingApproval,
+  };
 
   // Cancel any ongoing request (also rejects pending approval if any)
   const cancelRequest = useCallback(() => {
@@ -346,20 +389,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const curId = sessionIdRef.current;
         if (curId) {
           window.dispatchEvent(
-            new CustomEvent('chat:optimistic-entry', { detail: { id: curId, title: content.slice(0, 80) } })
+            new CustomEvent('chat:optimistic-entry', {
+              detail: { id: curId, title: content.slice(0, 80) },
+            })
           );
         }
       }
 
       try {
-        // Build headers — include session token for UI auth
+        // Build headers. UI auth is carried by the HttpOnly session cookie.
         const chatHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
-        try {
-          const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-          if (sessionToken) chatHeaders['X-Session-Token'] = sessionToken;
-        } catch {
-          /* localStorage unavailable */
-        }
         // Bridge providers: signal which runtime to use
         // Provider ID can be a name ('bridge-opencode') or a UUID (local provider).
         // Check both the ID and the display name stored in localStorage.
@@ -367,9 +406,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           try {
             const names = JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}');
             return (names[provider] ?? provider) as string;
-          } catch { return provider; }
+          } catch {
+            return provider;
+          }
         })();
-        const bridgeName = [provider, providerDisplayName].find(n => n.startsWith('bridge-'));
+        const bridgeName = [provider, providerDisplayName].find((n) => n.startsWith('bridge-'));
         if (bridgeName) {
           chatHeaders['X-Runtime'] = bridgeName.replace('bridge-', '');
         }
@@ -385,6 +426,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const response = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/v1/chat`, {
           method: 'POST',
           headers: chatHeaders,
+          credentials: import.meta.env.VITE_API_BASE ? 'include' : 'same-origin',
           body: JSON.stringify({
             message: content,
             provider,
@@ -435,15 +477,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           // Handle 401 — clear session and let AuthGuard redirect to login
           if (response.status === 401) {
-            try {
-              localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-            } catch {
-              /* */
-            }
-            // Trigger a page-level auth refresh by dispatching a storage event
-            window.dispatchEvent(
-              new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null })
-            );
+            dispatchSessionChanged(false);
           }
 
           throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
@@ -577,7 +611,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             content: (accumulatedContent || finalResponse?.response || '')
               .replace(/<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g, '')
               .replace(/<memories>[\s\S]*<\/memories>\s*/, '')
-              .replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '')
+              .replace(/<suggestions>[\s\S]*(?:<\/suggestions>)?\s*$/, '')
               .trimEnd(),
             timestamp: new Date().toISOString(),
             toolCalls: finalResponse?.toolCalls,
@@ -797,15 +831,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Only save if there are actual messages (sessionId is always set now via pre-generation)
     if (snap.messages.length > 0) {
       sessionsRef.current.set(currentId, snap);
-      const title = snap.messages.find(m => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
-      setSessionTabs(prev => {
-        if (prev.find(t => t.id === currentId)) return prev;
+      const title =
+        snap.messages.find((m) => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
+      setSessionTabs((prev) => {
+        if (prev.find((t) => t.id === currentId)) return prev;
         return [...prev, { id: currentId, title, createdAt: Date.now() }];
       });
     }
     // Reject pending approval before switching
     if (stateRefsForCapture.current.pendingApproval) {
-      executionPermissionsApi.resolveApproval(stateRefsForCapture.current.pendingApproval.approvalId, false).catch(() => {});
+      executionPermissionsApi
+        .resolveApproval(stateRefsForCapture.current.pendingApproval.approvalId, false)
+        .catch(() => {});
     }
     const newId = crypto.randomUUID();
     setActiveSessionId(newId);
@@ -820,58 +857,65 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const oldestKey = entries[0]?.[0];
       if (oldestKey) {
         sessionsRef.current.delete(oldestKey);
-        setSessionTabs(prev => prev.filter(t => t.id !== oldestKey));
+        setSessionTabs((prev) => prev.filter((t) => t.id !== oldestKey));
       }
     }
     return newId;
   }, [activeSessionId, captureSnapshot, clearAllState]);
 
   /** Switch to an existing session (from tab or sidebar) */
-  const switchSession = useCallback((targetId: string) => {
-    if (targetId === activeSessionId) return;
-    // Save current active session
-    const currentId = activeSessionId;
-    const snap = captureSnapshot();
-    sessionsRef.current.set(currentId, snap);
-    setSessionTabs(prev => {
-      if (prev.find(t => t.id === currentId)) return prev;
-      const title = snap.messages.find(m => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
-      return [...prev, { id: currentId, title, createdAt: Date.now() }];
-    });
-    // Orphan current stream
-    streamGenRef.current++;
-    abortControllerRef.current = null;
-    // Restore target from map (if cached) or set sessionId for DB load
-    const target = sessionsRef.current.get(targetId);
-    if (target) {
-      restoreSnapshot(target);
-      sessionsRef.current.delete(targetId);
-    } else {
-      clearAllState();
-      setSessionId(targetId);
-    }
-    setActiveSessionId(targetId);
-  }, [activeSessionId, captureSnapshot, restoreSnapshot, clearAllState]);
+  const switchSession = useCallback(
+    (targetId: string) => {
+      if (targetId === activeSessionId) return;
+      // Save current active session
+      const currentId = activeSessionId;
+      const snap = captureSnapshot();
+      sessionsRef.current.set(currentId, snap);
+      setSessionTabs((prev) => {
+        if (prev.find((t) => t.id === currentId)) return prev;
+        const title =
+          snap.messages.find((m) => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
+        return [...prev, { id: currentId, title, createdAt: Date.now() }];
+      });
+      // Orphan current stream
+      streamGenRef.current++;
+      abortControllerRef.current = null;
+      // Restore target from map (if cached) or set sessionId for DB load
+      const target = sessionsRef.current.get(targetId);
+      if (target) {
+        restoreSnapshot(target);
+        sessionsRef.current.delete(targetId);
+      } else {
+        clearAllState();
+        setSessionId(targetId);
+      }
+      setActiveSessionId(targetId);
+    },
+    [activeSessionId, captureSnapshot, restoreSnapshot, clearAllState]
+  );
 
   /** Close a session tab */
-  const closeSession = useCallback((targetId: string) => {
-    sessionsRef.current.delete(targetId);
-    setSessionTabs(prev => {
-      const remaining = prev.filter(t => t.id !== targetId);
-      if (targetId === activeSessionId) {
-        if (remaining.length > 0) {
-          const nearest = remaining[remaining.length - 1]!;
-          queueMicrotask(() => switchSession(nearest.id));
-        } else {
-          queueMicrotask(() => {
-            setActiveSessionId(crypto.randomUUID());
-            clearAllState();
-          });
+  const closeSession = useCallback(
+    (targetId: string) => {
+      sessionsRef.current.delete(targetId);
+      setSessionTabs((prev) => {
+        const remaining = prev.filter((t) => t.id !== targetId);
+        if (targetId === activeSessionId) {
+          if (remaining.length > 0) {
+            const nearest = remaining[remaining.length - 1]!;
+            queueMicrotask(() => switchSession(nearest.id));
+          } else {
+            queueMicrotask(() => {
+              setActiveSessionId(crypto.randomUUID());
+              clearAllState();
+            });
+          }
         }
-      }
-      return remaining;
-    });
-  }, [activeSessionId, switchSession, clearAllState]);
+        return remaining;
+      });
+    },
+    [activeSessionId, switchSession, clearAllState]
+  );
 
   const value: ChatStore = {
     messages,

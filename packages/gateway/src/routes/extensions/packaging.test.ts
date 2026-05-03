@@ -123,6 +123,18 @@ describe('Extensions Packaging Routes', () => {
       expect(disposition).toContain('v2.3.1');
     });
 
+    it('sanitizes version before using it in Content-Disposition', async () => {
+      mockExtService.getById.mockReturnValue(makeExt({ version: '1.0.0"\r\nX-Evil: injected' }));
+
+      const res = await app.request('/ext/ext-1/package');
+
+      expect(res.status).toBe(200);
+      const disposition = res.headers.get('Content-Disposition')!;
+      expect(disposition).not.toMatch(/[\r\n]/);
+      expect(disposition).toContain('v1.0.0-x-evil-injected.skill');
+      expect(disposition).toContain('.skill');
+    });
+
     it('returns Content-Length header', async () => {
       const res = await app.request('/ext/ext-1/package');
 

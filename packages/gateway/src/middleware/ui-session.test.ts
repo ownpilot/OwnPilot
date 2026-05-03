@@ -28,6 +28,7 @@ describe('UI Session Middleware', () => {
 
     // Test routes
     app.get('/api/v1/test', (c) => c.json({ ok: true, session: c.get('sessionAuthenticated') }));
+    app.post('/api/v1/test', (c) => c.json({ ok: true, session: c.get('sessionAuthenticated') }));
     app.get('/api/v1/auth/status', (c) => c.json({ ok: true, path: 'status' }));
     app.post('/api/v1/auth/login', (c) => c.json({ ok: true, path: 'login' }));
     app.post('/api/v1/auth/password', (c) =>
@@ -47,6 +48,7 @@ describe('UI Session Middleware', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.CORS_ORIGINS;
     mockValidateSession.mockReturnValue(false);
     mockIsPasswordConfigured.mockReturnValue(false);
   });
@@ -133,16 +135,107 @@ describe('UI Session Middleware', () => {
   // ── Valid session ───────────────────────────────────────────────
 
   describe('valid session', () => {
-    it('sets sessionAuthenticated on valid session token', async () => {
+    it('does not accept X-Session-Token on normal UI API paths', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
       mockValidateSession.mockReturnValue(true);
       const app = createApp();
 
       const res = await app.request('/api/v1/test', {
         headers: { 'X-Session-Token': 'valid-token' },
       });
+      expect(res.status).toBe(401);
+      expect(mockValidateSession).not.toHaveBeenCalled();
+    });
+
+    it('sets sessionAuthenticated on valid session cookie', async () => {
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/test', {
+        headers: { Cookie: 'ownpilot_ui_session=valid-token' },
+      });
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.session).toBe(true);
+      expect(mockValidateSession).toHaveBeenCalledWith('valid-token');
+    });
+
+    it('rejects unsafe cookie-authenticated requests without Origin or Referer', async () => {
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/test', {
+        method: 'POST',
+        headers: { Cookie: 'ownpilot_ui_session=valid-token' },
+      });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects unsafe cookie-authenticated requests with a malformed Referer', async () => {
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/test', {
+        method: 'POST',
+        headers: {
+          Cookie: 'ownpilot_ui_session=valid-token',
+          Referer: 'not-a-valid-url',
+        },
+      });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('allows unsafe cookie-authenticated requests from the same origin', async () => {
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('http://localhost/api/v1/test', {
+        method: 'POST',
+        headers: {
+          Cookie: 'ownpilot_ui_session=valid-token',
+          Origin: 'http://localhost',
+        },
+      });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.session).toBe(true);
+    });
+
+    it('allows unsafe cookie-authenticated requests from configured CORS origins', async () => {
+      process.env.CORS_ORIGINS = 'http://localhost:5173';
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      try {
+        const res = await app.request('http://localhost:8080/api/v1/test', {
+          method: 'POST',
+          headers: {
+            Cookie: 'ownpilot_ui_session=valid-token',
+            Origin: 'http://localhost:5173',
+          },
+        });
+
+        expect(res.status).toBe(200);
+      } finally {
+        delete process.env.CORS_ORIGINS;
+      }
+    });
+
+    it('does not accept header-token authenticated unsafe requests on normal UI API paths', async () => {
+      mockIsPasswordConfigured.mockReturnValue(true);
+      mockValidateSession.mockReturnValue(true);
+      const app = createApp();
+
+      const res = await app.request('/api/v1/test', {
+        method: 'POST',
+        headers: { 'X-Session-Token': 'valid-token' },
+      });
+
+      expect(res.status).toBe(401);
+      expect(mockValidateSession).not.toHaveBeenCalled();
     });
   });
 

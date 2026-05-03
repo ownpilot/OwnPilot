@@ -73,6 +73,16 @@ describe('IsolatedStorage', () => {
         StorageSecurityError
       );
     });
+
+    it('blocks sibling-prefix workspace escapes', async () => {
+      await expect(storage.readFile('user1', '../workspace-evil/secret.txt')).rejects.toThrow(
+        StorageSecurityError
+      );
+    });
+
+    it('blocks user path traversal during storage creation', async () => {
+      await expect(storage.createUserStorage('../outside')).rejects.toThrow(StorageSecurityError);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -134,7 +144,13 @@ describe('IsolatedStorage', () => {
 
     it('throws error for invalid user path', async () => {
       // Try to delete with path traversal attempt
-      await expect(storage.deleteUserStorage('../etc')).rejects.toThrow('Invalid user path');
+      await expect(storage.deleteUserStorage('../etc')).rejects.toThrow(StorageSecurityError);
+    });
+
+    it('blocks sibling-prefix user storage deletion', async () => {
+      await expect(storage.deleteUserStorage('../workspaces-evil')).rejects.toThrow(
+        StorageSecurityError
+      );
     });
   });
 

@@ -410,6 +410,25 @@ describe('PermissionChecker', () => {
       expect(result.allowed).toBe(true);
     });
 
+    it('denies sibling-prefix paths outside an allowed path', () => {
+      const policy = makePolicy({
+        defaultLevel: 'admin',
+        defaultCategories: ['file_read'],
+        users: {
+          'user-1': {
+            userId: 'user-1',
+            maxLevel: 'admin',
+            allowedCategories: ['file_read'],
+            allowedPaths: ['/home/user/safe'],
+          },
+        },
+      });
+      const c = new PermissionChecker(policy);
+      const result = c.check('read_file', ctx, { path: '/home/user/safe-evil/file.txt' });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('not allowed');
+    });
+
     it('normalizes backslashes in paths', () => {
       const policy = makePolicy({
         defaultLevel: 'admin',

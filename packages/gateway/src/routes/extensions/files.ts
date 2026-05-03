@@ -16,11 +16,12 @@ import {
   readdirSync,
   statSync,
 } from 'node:fs';
-import { join, dirname, basename, resolve, sep } from 'node:path';
+import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError } from '../helpers.js';
+import { isWithinDirectory } from '../../utils/file-safety.js';
 
 export const fileRoutes = new Hono();
 
@@ -39,13 +40,6 @@ function isPathSafe(filePath: string): boolean {
     return false;
   }
   return true;
-}
-
-/** Verify the resolved path stays within the skill directory */
-function isWithinDir(resolvedPath: string, baseDir: string): boolean {
-  const normalizedBase = resolve(baseDir) + sep;
-  const normalizedPath = resolve(resolvedPath);
-  return normalizedPath.startsWith(normalizedBase) || normalizedPath === resolve(baseDir);
 }
 
 interface FileEntry {
@@ -161,7 +155,7 @@ fileRoutes.get('/:id/files/:path{.+}', (c) => {
   }
 
   const fullPath = join(skillDir, filePath);
-  if (!isWithinDir(fullPath, skillDir)) {
+  if (!isWithinDirectory(skillDir, fullPath)) {
     return apiError(
       c,
       { code: ERROR_CODES.VALIDATION_ERROR, message: 'Path traversal not allowed' },
@@ -236,7 +230,7 @@ fileRoutes.put('/:id/files/:path{.+}', async (c) => {
   }
 
   const fullPath = join(skillDir, filePath);
-  if (!isWithinDir(fullPath, skillDir)) {
+  if (!isWithinDirectory(skillDir, fullPath)) {
     return apiError(
       c,
       { code: ERROR_CODES.VALIDATION_ERROR, message: 'Path traversal not allowed' },
@@ -318,7 +312,7 @@ fileRoutes.delete('/:id/files/:path{.+}', (c) => {
   }
 
   const fullPath = join(skillDir, filePath);
-  if (!isWithinDir(fullPath, skillDir)) {
+  if (!isWithinDirectory(skillDir, fullPath)) {
     return apiError(
       c,
       { code: ERROR_CODES.VALIDATION_ERROR, message: 'Path traversal not allowed' },

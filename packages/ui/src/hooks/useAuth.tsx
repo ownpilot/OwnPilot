@@ -8,7 +8,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { authApi } from '../api/endpoints/auth';
 import { apiClient } from '../api/client';
-import { STORAGE_KEYS } from '../constants/storage-keys';
+import { dispatchSessionChanged, onSessionChanged } from '../utils/session-events';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -51,25 +51,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch {
-      // If status call fails, check if we have a token (optimistic)
-      const hasToken = !!localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+      // Cookie-backed sessions are HttpOnly, so the server status endpoint is the source of truth.
       setState((prev) => ({
         ...prev,
-        isAuthenticated: hasToken,
+        isAuthenticated: prev.isAuthenticated,
         isLoading: false,
       }));
     }
   }, []);
 
   const login = useCallback(async (password: string) => {
-    const result = await authApi.login(password);
-    localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, result.token);
+    await authApi.login(password);
     setState((prev) => ({ ...prev, isAuthenticated: true }));
-    // Notify other components (e.g. WebSocket) to reconnect with the new token.
-    // StorageEvent only fires cross-tab natively, so dispatch synthetic event for same-tab.
-    window.dispatchEvent(
-      new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: result.token })
-    );
+    dispatchSessionChanged(true);
   }, []);
 
   const logout = useCallback(async () => {
@@ -78,24 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Ignore logout errors (token might already be invalid)
     }
-    localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
     setState((prev) => ({ ...prev, isAuthenticated: false }));
-    // Notify other components (WebSocket will close/reconnect without token)
-    window.dispatchEvent(
-      new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null })
-    );
+    dispatchSessionChanged(false);
   }, []);
 
   // Set up global 401 handler on mount.
   // When the server returns 401 (session expired / server restart),
-  // clear the token and force re-authentication.
+  // mark the cookie-backed session invalid and force re-authentication.
   useEffect(() => {
     return apiClient.addOnError((error) => {
       if (error.status === 401) {
-        localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-        window.dispatchEvent(
-          new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null })
-        );
+        dispatchSessionChanged(false);
         setState((prev) => {
           if (!prev.isAuthenticated) return prev;
           return { ...prev, isAuthenticated: false, passwordConfigured: true };
@@ -104,18 +91,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Listen for session token removal (from raw fetch 401 handlers or other tabs)
+  // Listen for session invalidation from raw fetch 401 handlers.
   useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.SESSION_TOKEN && e.newValue === null) {
+    return onSessionChanged((detail) => {
+      if (!detail.authenticated) {
         setState((prev) => {
           if (!prev.isAuthenticated) return prev;
           return { ...prev, isAuthenticated: false, passwordConfigured: true };
         });
       }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    });
   }, []);
 
   // Fetch status on mount

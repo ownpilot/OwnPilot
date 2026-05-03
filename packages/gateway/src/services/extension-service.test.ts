@@ -767,6 +767,20 @@ describe('ExtensionService', () => {
       // Path traversal should be detected and skipped
       expect(defs).toHaveLength(0);
     });
+
+    it('allows sibling-looking names that remain inside the skill directory', () => {
+      const manifest = makeManifest({
+        format: 'agentskills',
+        tools: [],
+        script_paths: ['..evil/analyze.py'],
+      });
+      const record = makeRecord({ manifest, sourcePath: '/skills/mypkg/SKILL.md' });
+      mockRepo.getEnabled.mockReturnValue([record]);
+
+      const defs = svc.getToolDefinitions();
+      expect(defs).toHaveLength(1);
+      expect(defs[0].extensionTool.code).toContain('/skills/mypkg/..evil/analyze.py');
+    });
   });
 
   // ==========================================================================

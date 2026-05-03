@@ -149,6 +149,8 @@ vi.mock('../services/ui-session.js', () => ({
   isPasswordConfigured: vi.fn(() => false),
 }));
 
+import { validateSession, isPasswordConfigured } from '../services/ui-session.js';
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -223,6 +225,8 @@ describe('WSGateway', () => {
     mockWss.clients.clear();
     mockWss.close.mockImplementation((cb?: (err?: Error) => void) => cb?.());
     delete process.env.API_KEYS;
+    vi.mocked(isPasswordConfigured).mockReturnValue(false);
+    vi.mocked(validateSession).mockResolvedValue(false);
 
     // Restore channel service defaults
     mockChannelServiceInst.connect.mockResolvedValue(undefined);
@@ -273,9 +277,9 @@ describe('WSGateway', () => {
   });
 
   // =========================================================================
-  // validateWsToken (tested through handleConnection)
+  // validateWsAuth (tested through handleConnection)
   // =========================================================================
-  describe('validateWsToken (via handleConnection)', () => {
+  describe('validateWsAuth (via handleConnection)', () => {
     it('allows connection when no API_KEYS configured', async () => {
       delete process.env.API_KEYS;
       const gw = new WSGateway();
@@ -319,6 +323,41 @@ describe('WSGateway', () => {
 
       expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
       expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('accepts connection with valid UI session cookie', async () => {
+      vi.mocked(validateSession).mockResolvedValueOnce(true);
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/', {
+        cookie: 'ownpilot_ui_session=valid-session-token',
+      });
+
+      await handler(socket, request);
+
+      expect(validateSession).toHaveBeenCalledWith('valid-session-token');
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('rejects UI session tokens passed in the WebSocket query string', async () => {
+      vi.mocked(isPasswordConfigured).mockReturnValue(true);
+      vi.mocked(validateSession).mockResolvedValueOnce(true);
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/?token=valid-session-token');
+
+      await handler(socket, request);
+
+      expect(validateSession).not.toHaveBeenCalled();
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
     it('rejects connection with invalid token', async () => {
@@ -1278,6 +1317,50 @@ describe('WSGateway', () => {
 
       expect(mockWss.handleUpgrade).toHaveBeenCalled();
       expect(mockSocket.write).not.toHaveBeenCalled();
+    });
+
+    it('allows upgrade when valid UI session cookie is provided', async () => {
+      vi.mocked(validateSession).mockResolvedValueOnce(true);
+      const { upgradeHandler } = setupGatewayWithUpgrade();
+      const mockSocket = { write: vi.fn(), destroy: vi.fn() };
+      const request = {
+        url: '/ws',
+        headers: { host: 'localhost', cookie: 'ownpilot_ui_session=valid-session-token' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
+      const head = Buffer.from('');
+
+      mockWss.handleUpgrade.mockImplementation(
+        (_req: unknown, _sock: unknown, _head: unknown, cb: (ws: unknown) => void) => {
+          cb({});
+        }
+      );
+
+      await upgradeHandler(request, mockSocket, head);
+
+      expect(validateSession).toHaveBeenCalledWith('valid-session-token');
+      expect(mockWss.handleUpgrade).toHaveBeenCalled();
+      expect(mockSocket.write).not.toHaveBeenCalled();
+    });
+
+    it('rejects upgrade when a UI session token is passed in the query string', async () => {
+      vi.mocked(isPasswordConfigured).mockReturnValue(true);
+      vi.mocked(validateSession).mockResolvedValueOnce(true);
+      const { upgradeHandler } = setupGatewayWithUpgrade();
+      const mockSocket = { write: vi.fn(), destroy: vi.fn() };
+      const request = {
+        url: '/ws?token=valid-session-token',
+        headers: { host: 'localhost' },
+        socket: { remoteAddress: '127.0.0.1' },
+      };
+      const head = Buffer.from('');
+
+      await upgradeHandler(request, mockSocket, head);
+
+      expect(validateSession).not.toHaveBeenCalled();
+      expect(mockWss.handleUpgrade).not.toHaveBeenCalled();
+      expect(mockSocket.write).toHaveBeenCalledWith('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      expect(mockSocket.destroy).toHaveBeenCalled();
     });
   });
 

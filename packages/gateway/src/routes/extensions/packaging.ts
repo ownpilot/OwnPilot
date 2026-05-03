@@ -11,6 +11,7 @@ import { getServiceRegistry, Services } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
 import { getUserId, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';
+import { attachmentDisposition, sanitizeFilenameSegment } from '../../utils/file-safety.js';
 
 const log = getLog('ExtensionPackaging');
 
@@ -48,7 +49,10 @@ packagingRoutes.get('/:id/package', async (c) => {
 
   try {
     const zip = new AdmZipClass();
-    const skillName = pkg.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const skillName = sanitizeFilenameSegment(pkg.name, {
+      fallback: 'extension',
+      lowerCase: true,
+    });
     const zipFolder = `${skillName}/`;
 
     // Determine manifest file content
@@ -111,13 +115,17 @@ packagingRoutes.get('/:id/package', async (c) => {
     zip.addFile(`${zipFolder}skill.meta.json`, Buffer.from(JSON.stringify(meta, null, 2), 'utf-8'));
 
     const zipBuffer: Buffer = zip.toBuffer();
-    const filename = `${skillName}-v${pkg.version}.skill`;
+    const safeVersion = sanitizeFilenameSegment(pkg.version, {
+      fallback: '1.0.0',
+      lowerCase: true,
+    });
+    const filename = `${skillName}-v${safeVersion}.skill`;
 
     return new Response(zipBuffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': attachmentDisposition(filename),
         'Content-Length': String(zipBuffer.length),
       },
     });

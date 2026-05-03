@@ -277,6 +277,22 @@ describe('POST /ext/upload — extension validation', () => {
     expect(json.error.message).toContain('No extension manifest found');
   });
 
+  it('rejects ZIP entries that escape the extraction directory', async () => {
+    mockEntries.mockReturnValue([
+      {
+        entryName: '../escape/SKILL.md',
+        isDirectory: false,
+        getData: vi.fn(() => Buffer.from('# Escape')),
+      },
+    ]);
+
+    const res = await app.request(makeUploadRequest('escape.zip', 'PK'));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.message).toContain('unsafe entry path');
+    expect(mockExtService.install).not.toHaveBeenCalled();
+  });
+
   it('returns 400 from ZIP inner catch when ExtensionError thrown', async () => {
     // existsSync: true everywhere (manifest found)
     mockExistsSync.mockReturnValue(true);
@@ -301,6 +317,16 @@ describe('POST /ext/upload — extension validation', () => {
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(json.data.message).toContain('installed');
+  });
+
+  it('sanitizes uploaded single-file names before creating the destination directory', async () => {
+    mockExtService.install.mockResolvedValue({ id: 'ext-json', manifest: {} });
+
+    const res = await app.request(makeUploadRequest('../evil.json', '{}'));
+    expect(res.status).toBe(201);
+    const installPath = mockExtService.install.mock.calls[0][0] as string;
+    expect(installPath).toContain('evil-deadbeef');
+    expect(installPath).not.toContain('..');
   });
 
   it('returns 400 when single-file install throws ExtensionError (outer catch)', async () => {

@@ -12,13 +12,11 @@ export interface AuthStatus {
 }
 
 export interface LoginResponse {
-  token: string;
   expiresAt: string;
 }
 
 export interface PasswordResponse {
   message: string;
-  token?: string;
   expiresAt?: string;
 }
 

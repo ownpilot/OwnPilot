@@ -19,34 +19,60 @@ import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
  */
 /** Default timeout for fetch calls in dynamic tools (30 seconds) */
 const SAFE_FETCH_TIMEOUT_MS = 30_000;
+const SAFE_FETCH_MAX_REDIRECTS = 5;
 
 export function createSafeFetch(toolName: string): typeof globalThis.fetch {
   return async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
-    const url =
+    let currentUrl =
       typeof input === 'string'
         ? input
         : input instanceof URL
           ? input.href
           : (input as Request).url;
-    if (await isPrivateUrlAsync(url)) {
-      throw new Error(
-        `[SSRF blocked] Tool '${toolName}' attempted to access a private/internal URL: ${new URL(url).hostname}. ` +
-          `Only public URLs are allowed.`
-      );
-    }
 
     // Add timeout via AbortController if caller didn't provide a signal
-    if (!init?.signal) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), SAFE_FETCH_TIMEOUT_MS);
-      try {
-        return await globalThis.fetch(input, { ...init, signal: controller.signal });
-      } finally {
+    const controller = init?.signal ? null : new AbortController();
+    const timer = controller ? setTimeout(() => controller.abort(), SAFE_FETCH_TIMEOUT_MS) : null;
+
+    try {
+      for (let attempt = 0; attempt <= SAFE_FETCH_MAX_REDIRECTS; attempt++) {
+        if (await isPrivateUrlAsync(currentUrl)) {
+          throw new Error(
+            `[SSRF blocked] Tool '${toolName}' attempted to access a private/internal URL: ${new URL(currentUrl).hostname}. ` +
+              `Only public URLs are allowed.`
+          );
+        }
+
+        const response = await globalThis.fetch(attempt === 0 ? input : currentUrl, {
+          ...init,
+          redirect: 'manual',
+          signal: init?.signal ?? controller!.signal,
+        });
+
+        if (response.status < 300 || response.status > 399) {
+          return response;
+        }
+
+        const location = response.headers.get('location');
+        if (!location) {
+          return response;
+        }
+
+        if (attempt >= SAFE_FETCH_MAX_REDIRECTS) {
+          throw new Error(
+            `[SSRF blocked] Tool '${toolName}' exceeded safe redirect limit (${SAFE_FETCH_MAX_REDIRECTS})`
+          );
+        }
+
+        currentUrl = new URL(location, currentUrl).toString();
+      }
+
+      throw new Error(`[SSRF blocked] Tool '${toolName}' exceeded safe redirect limit`);
+    } finally {
+      if (timer) {
         clearTimeout(timer);
       }
     }
-
-    return globalThis.fetch(input, init);
   };
 }
 

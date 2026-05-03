@@ -248,10 +248,24 @@ describe('createAdapter()', () => {
     await expect(createAdapter()).rejects.toThrow('schema failure');
   });
 
+  it('closes the adapter when initializeSchema throws', async () => {
+    const { createAdapter } = await freshModule();
+    mockInitializeSchema.mockRejectedValueOnce(new Error('schema failure'));
+    await expect(createAdapter()).rejects.toThrow('schema failure');
+    expect(mockPgAdapterInstance.close).toHaveBeenCalledTimes(1);
+  });
+
   it('propagates errors thrown by pgAdapter.initialize()', async () => {
     const { createAdapter } = await freshModule();
     mockPgAdapterInstance.initialize.mockRejectedValueOnce(new Error('connection refused'));
     await expect(createAdapter()).rejects.toThrow('connection refused');
+  });
+
+  it('closes the adapter when pgAdapter.initialize() throws', async () => {
+    const { createAdapter } = await freshModule();
+    mockPgAdapterInstance.initialize.mockRejectedValueOnce(new Error('connection refused'));
+    await expect(createAdapter()).rejects.toThrow('connection refused');
+    expect(mockPgAdapterInstance.close).toHaveBeenCalledTimes(1);
   });
 
   it('creates a new PostgresAdapter instance on each call', async () => {
@@ -651,8 +665,7 @@ describe('Integration scenarios', () => {
     mockInitializeSchema.mockClear();
     await getAdapter();
     expect(MockPostgresAdapter).toHaveBeenCalledTimes(1);
-    // schemaInitialized is still true from the first run — schema should NOT run again
-    expect(mockInitializeSchema).not.toHaveBeenCalled();
+    expect(mockInitializeSchema).toHaveBeenCalledTimes(1);
   });
 
   it('initializeAdapter → closeAdapter → initializeAdapter creates fresh adapter', async () => {
@@ -665,13 +678,13 @@ describe('Integration scenarios', () => {
     expect(MockPostgresAdapter).toHaveBeenCalledTimes(1);
   });
 
-  it('schema is NOT re-run after close → re-init because schemaInitialized persists in module scope', async () => {
+  it('schema is re-run after close and re-init so a fresh database is initialized', async () => {
     const { initializeAdapter, closeAdapter } = await freshModule();
     await initializeAdapter();
     await closeAdapter();
     mockInitializeSchema.mockClear();
     await initializeAdapter();
-    expect(mockInitializeSchema).not.toHaveBeenCalled();
+    expect(mockInitializeSchema).toHaveBeenCalledTimes(1);
   });
 
   it('multiple concurrent getAdapter() calls resolve to the same instance', async () => {

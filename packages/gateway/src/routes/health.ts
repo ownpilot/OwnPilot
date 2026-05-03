@@ -16,8 +16,58 @@ import { getDatabaseConfig } from '../db/adapters/types.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 
 const startTime = Date.now();
+const CRITICAL_TABLES = ['settings', 'conversations', 'messages', 'user_extensions', 'ui_sessions'];
 
 export const healthRoutes = new Hono();
+
+async function checkDatabaseReadiness(): Promise<{
+  status: 'pass' | 'fail';
+  connected: boolean;
+  missingTables: string[];
+  message: string;
+}> {
+  let adapter;
+  try {
+    adapter = getAdapterSync();
+  } catch {
+    return {
+      status: 'fail',
+      connected: false,
+      missingTables: [],
+      message: 'Database adapter not initialized',
+    };
+  }
+
+  if (!adapter.isConnected()) {
+    return {
+      status: 'fail',
+      connected: false,
+      missingTables: [],
+      message: 'Database not connected',
+    };
+  }
+
+  const missingTables: string[] = [];
+  for (const table of CRITICAL_TABLES) {
+    const row = await adapter.queryOne<{ exists: string | null }>(
+      'SELECT to_regclass($1) AS exists',
+      [table]
+    );
+    if (!row?.exists) {
+      missingTables.push(table);
+    }
+  }
+
+  return {
+    status: missingTables.length === 0 ? 'pass' : 'fail',
+    connected: true,
+    missingTables,
+    message:
+      missingTables.length === 0
+        ? 'Database ready'
+        : `Missing critical tables: ${missingTables.join(', ')}`,
+  };
+}
 
 /**
  * Basic health check - includes Docker sandbox status
@@ -129,9 +179,28 @@ healthRoutes.get('/live', (c) => {
 /**
  * Readiness probe (Kubernetes)
  */
-healthRoutes.get('/ready', (c) => {
-  // Could check database connections, external services, etc.
-  return apiResponse(c, { status: 'ok' });
+healthRoutes.get('/ready', async (c) => {
+  try {
+    const database = await checkDatabaseReadiness();
+    const ready = database.status === 'pass';
+    return apiResponse(
+      c,
+      {
+        status: ready ? 'ready' : 'not_ready',
+        checks: [{ name: 'database', ...database }],
+      },
+      ready ? 200 : 503
+    );
+  } catch (error) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.SYSTEM_STATUS_ERROR,
+        message: getErrorMessage(error, 'Failed to check readiness'),
+      },
+      503
+    );
+  }
 });
 
 /**

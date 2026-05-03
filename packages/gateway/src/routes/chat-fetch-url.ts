@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES } from './helpers.js';
 import { isBlockedUrl, isPrivateUrlAsync } from '../utils/ssrf.js';
+import { safeFetch } from '../utils/safe-fetch.js';
 
 export const chatFetchUrlRoutes = new Hono();
 
@@ -44,13 +45,10 @@ chatFetchUrlRoutes.get('/fetch-url', async (c) => {
   }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
-    const resp = await fetch(parsedUrl.href, {
-      signal: controller.signal,
+    const resp = await safeFetch(parsedUrl.href, {
+      timeoutMs: 10_000,
       headers: { 'User-Agent': 'OwnPilot/1.0 URL Fetcher', Accept: 'text/html,text/plain,*/*' },
     });
-    clearTimeout(timeout);
 
     if (!resp.ok) {
       return apiError(

@@ -129,19 +129,11 @@ export const extensionsApi = {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Use raw fetch for multipart upload (apiClient only supports JSON)
-    const headers: Record<string, string> = {};
-    try {
-      const token = localStorage.getItem('ownpilot-session-token');
-      if (token) headers['X-Session-Token'] = token;
-    } catch {
-      /* ignore */
-    }
-
+    // Use raw fetch for multipart upload (apiClient only supports JSON).
     const response = await fetch('/api/v1/extensions/upload', {
       method: 'POST',
-      headers,
       body: formData,
+      credentials: 'same-origin',
     });
 
     const body = await response.json();

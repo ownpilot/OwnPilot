@@ -701,6 +701,63 @@ describe('PluginIsolatedNetwork', () => {
       expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('should reject non-http protocols', async () => {
+      const result = await network.fetch('file:///etc/passwd');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('protocol_not_allowed');
+        expect(result.error).toHaveProperty('protocol', 'file:');
+      }
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should block private hosts even when wildcard domains are allowed', async () => {
+      const wildcardNetwork = new PluginIsolatedNetwork(pluginA, ['*']);
+      const result = await wildcardNetwork.fetch('http://127.0.0.1:8080/admin');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('private_address_blocked');
+        expect(result.error).toHaveProperty('host', '127.0.0.1');
+      }
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should block redirects to private hosts', async () => {
+      const redirectResponse = {
+        status: 302,
+        statusText: 'Found',
+        headers: new Headers({ location: 'http://localhost/admin' }),
+        text: vi.fn().mockResolvedValue(''),
+      };
+      vi.mocked(globalThis.fetch).mockResolvedValue(redirectResponse as unknown as Response);
+
+      const result = await network.fetch('https://api.example.com/data');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('private_address_blocked');
+        expect(result.error).toHaveProperty('host', 'localhost');
+      }
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('should block redirects outside the allowed domains', async () => {
+      const redirectResponse = {
+        status: 302,
+        statusText: 'Found',
+        headers: new Headers({ location: 'https://evil.com/data' }),
+        text: vi.fn().mockResolvedValue(''),
+      };
+      vi.mocked(globalThis.fetch).mockResolvedValue(redirectResponse as unknown as Response);
+
+      const result = await network.fetch('https://api.example.com/data');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.type).toBe('domain_not_allowed');
+        expect(result.error).toHaveProperty('domain', 'evil.com');
+      }
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('should make request to allowed domains', async () => {
       const mockResponse = {
         status: 200,

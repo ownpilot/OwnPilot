@@ -1360,6 +1360,28 @@ describe('Happy Path Tests', () => {
       expect(r.skillId).toBe('ext-123');
       expect(r.content).toBe('# API Docs\n\nWeather API reference.');
     });
+
+    it('rejects sibling-prefix reference path traversal', async () => {
+      const { existsSync: mockExistsSync, readFileSync: mockReadFileSync } = await import('fs');
+
+      stableMocks.mockService.getById.mockReturnValue({
+        ...happyExtension,
+        sourcePath: '/skills/weather/SKILL.md',
+        settings: {},
+      });
+
+      vi.mocked(mockExistsSync).mockReturnValueOnce(true);
+
+      const result = await executeSkillTool(
+        'skill_read_reference',
+        { skillId: 'ext-123', referencePath: '../weather-evil/secret.md' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('path traversal');
+      expect(mockReadFileSync).not.toHaveBeenCalled();
+    });
   });
 
   // ==========================================================================
@@ -1395,6 +1417,28 @@ describe('Happy Path Tests', () => {
       const r = result.result as Record<string, unknown>;
       expect(r.content).toBe('function getWeather(city) { return fetch(...); }');
       expect(r.skillId).toBe('ext-123');
+    });
+
+    it('rejects sibling-prefix script path traversal', async () => {
+      const { existsSync: mockExistsSync, readFileSync: mockReadFileSync } = await import('fs');
+
+      stableMocks.mockService.getById.mockReturnValue({
+        ...happyExtension,
+        sourcePath: '/skills/weather/SKILL.md',
+        settings: {},
+      });
+
+      vi.mocked(mockExistsSync).mockReturnValueOnce(true);
+
+      const result = await executeSkillTool(
+        'skill_read_script',
+        { skillId: 'ext-123', scriptPath: '../weather-evil/steal.js' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('path traversal');
+      expect(mockReadFileSync).not.toHaveBeenCalled();
     });
   });
 

@@ -65,14 +65,18 @@ describe('agent-prompt', () => {
       expect(BASE_SYSTEM_PROMPT).toContain('## Behavior');
     });
 
+    it('contains "## Chat Widgets"', () => {
+      expect(BASE_SYSTEM_PROMPT).toContain('## Chat Widgets');
+    });
+
     it('contains "## Suggestions"', () => {
       expect(BASE_SYSTEM_PROMPT).toContain('## Suggestions');
     });
 
-    it('has exactly 6 level-2 headings', () => {
+    it('has exactly 7 level-2 headings', () => {
       const h2Matches = BASE_SYSTEM_PROMPT.match(/^## /gm);
       expect(h2Matches).not.toBeNull();
-      expect(h2Matches!.length).toBe(6);
+      expect(h2Matches!.length).toBe(7);
     });
   });
 
@@ -381,6 +385,21 @@ describe('agent-prompt', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Chat Widgets
+  // ---------------------------------------------------------------------------
+  describe('chat widgets section', () => {
+    it('documents widget tag format and supported widgets', () => {
+      const widgetsSection = BASE_SYSTEM_PROMPT.split('## Chat Widgets')[1]!.split('\n##')[0]!;
+      expect(widgetsSection).toContain('<widget');
+      expect(widgetsSection).toContain('metric_grid');
+      expect(widgetsSection).toContain('table');
+      expect(widgetsSection).toContain('bar_chart');
+      expect(widgetsSection).toContain('timeline');
+      expect(widgetsSection).toContain('valid JSON');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Suggestions
   // ---------------------------------------------------------------------------
   describe('suggestions section', () => {
@@ -442,12 +461,15 @@ describe('agent-prompt', () => {
       const capabilitiesIdx = BASE_SYSTEM_PROMPT.indexOf('## Capabilities & Key Tools');
       const memoryIdx = BASE_SYSTEM_PROMPT.indexOf('## Memory Protocol');
       const behaviorIdx = BASE_SYSTEM_PROMPT.indexOf('## Behavior');
+      const widgetsIdx = BASE_SYSTEM_PROMPT.indexOf('## Chat Widgets');
       const suggestionsIdx = BASE_SYSTEM_PROMPT.indexOf('## Suggestions');
 
       expect(identityIdx).toBeLessThan(toolsIdx);
       expect(toolsIdx).toBeLessThan(capabilitiesIdx);
       expect(capabilitiesIdx).toBeLessThan(memoryIdx);
       expect(memoryIdx).toBeLessThan(behaviorIdx);
+      expect(behaviorIdx).toBeLessThan(widgetsIdx);
+      expect(widgetsIdx).toBeLessThan(suggestionsIdx);
       expect(behaviorIdx).toBeLessThan(suggestionsIdx);
     });
 

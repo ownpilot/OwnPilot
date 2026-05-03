@@ -25,12 +25,22 @@ let schemaInitialized = false;
 export async function createAdapter(config?: DatabaseConfig): Promise<DatabaseAdapter> {
   const dbConfig = config ?? getDatabaseConfig();
   const pgAdapter = new PostgresAdapter(dbConfig);
-  await pgAdapter.initialize();
 
-  // Initialize schema on first connection
-  if (!schemaInitialized) {
-    await initializeSchema(async (sql) => pgAdapter.exec(sql));
-    schemaInitialized = true;
+  try {
+    await pgAdapter.initialize();
+
+    // Initialize schema on first connection
+    if (!schemaInitialized) {
+      await initializeSchema(async (sql) => pgAdapter.exec(sql));
+      schemaInitialized = true;
+    }
+  } catch (err) {
+    try {
+      await pgAdapter.close();
+    } catch (closeErr) {
+      log.warn('[Database] Failed to close adapter after initialization error', closeErr);
+    }
+    throw err;
   }
 
   return pgAdapter;
@@ -89,5 +99,6 @@ export async function closeAdapter(): Promise<void> {
     await adapter.close();
     adapter = null;
     adapterPromise = null;
+    schemaInitialized = false;
   }
 }

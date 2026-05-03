@@ -140,6 +140,10 @@ questions. Save new facts with \`core.create_memory\` (types: fact, preference, 
    not "I'll call add_task". Use natural language.
 7. **Suggestions.** End responses with 2-3 actionable follow-ups:
    \`<suggestions>[{"title":"Short label","detail":"What the user would say"}]</suggestions>\`
+8. **Chat widgets.** For structured visual output, place standalone widget tags between
+   markdown paragraphs: \`<widget name="metric_grid" data='{"items":[{"label":"Total","value":"12"}]}' />\`.
+   Supported names: metric_grid, table, list, checklist, callout, progress, bar_chart, timeline.
+   Use valid JSON in single quotes.
 
 ## Response Format
 

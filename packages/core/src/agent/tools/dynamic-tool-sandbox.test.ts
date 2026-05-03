@@ -102,9 +102,49 @@ describe('createSafeFetch', () => {
     const safeFetch = createSafeFetch('my_tool');
     const controller = new AbortController();
     await safeFetch('https://example.com', { signal: controller.signal });
-    expect(globalThis.fetch).toHaveBeenCalledWith('https://example.com', {
-      signal: controller.signal,
-    });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      'https://example.com',
+      expect.objectContaining({
+        redirect: 'manual',
+        signal: controller.signal,
+      })
+    );
+  });
+
+  it('manually follows public redirects', async () => {
+    mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValue(false);
+    vi.mocked(globalThis.fetch)
+      .mockResolvedValueOnce(
+        new Response(null, { status: 302, headers: { location: 'https://cdn.example.com/data' } })
+      )
+      .mockResolvedValueOnce(new Response('ok'));
+
+    const safeFetch = createSafeFetch('my_tool');
+    await safeFetch('https://example.com/redirect');
+
+    expect(globalThis.fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://example.com/redirect',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+    expect(globalThis.fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://cdn.example.com/data',
+      expect.objectContaining({ redirect: 'manual' })
+    );
+  });
+
+  it('blocks redirects to private URLs before following them', async () => {
+    mockIsPrivateUrl.mockReturnValue(false);
+    mockIsPrivateUrlAsync.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+      new Response(null, { status: 302, headers: { location: 'http://localhost/admin' } })
+    );
+
+    const safeFetch = createSafeFetch('my_tool');
+    await expect(safeFetch('https://example.com/redirect')).rejects.toThrow('SSRF blocked');
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });
 

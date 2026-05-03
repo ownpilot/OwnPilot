@@ -13,7 +13,7 @@ import { useDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../api/endpoints/auth';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { STORAGE_KEYS } from '../constants/storage-keys';
+import { dispatchSessionChanged } from '../utils/session-events';
 
 type TabId = 'home' | 'security';
 
@@ -126,18 +126,13 @@ export function SecurityPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await authApi.setPassword({
+      await authApi.setPassword({
         password: newPassword,
         currentPassword: passwordConfigured ? currentPassword : undefined,
       });
 
-      // Store the new session token and notify other components (WebSocket reconnect)
-      if (result.token) {
-        localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, result.token);
-        window.dispatchEvent(
-          new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: result.token })
-        );
-      }
+      // Notify other components (WebSocket reconnect) after the server sets the HttpOnly cookie.
+      dispatchSessionChanged(true);
 
       toast.success(passwordConfigured ? 'Password changed' : 'Password set');
       resetForm();
@@ -161,10 +156,7 @@ export function SecurityPage() {
 
     try {
       await authApi.removePassword();
-      localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-      window.dispatchEvent(
-        new StorageEvent('storage', { key: STORAGE_KEYS.SESSION_TOKEN, newValue: null })
-      );
+      dispatchSessionChanged(false);
       toast.success('Password removed');
       await refreshStatus();
       setActiveSessions(null);

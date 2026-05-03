@@ -15,6 +15,7 @@ import { parseSkillMdFrontmatter, scanSkillDirectory } from '../services/agentsk
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { isWithinDirectory } from '../utils/file-safety.js';
 
 // =============================================================================
 // Tool Definitions
@@ -696,7 +697,7 @@ export async function executeSkillTool(
         }
 
         const filePath = resolve(skillDir, referencePath);
-        if (!filePath.startsWith(resolve(skillDir))) {
+        if (!isWithinDirectory(skillDir, filePath)) {
           return { success: false, error: 'Invalid reference path: path traversal detected' };
         }
         if (!existsSync(filePath)) {
@@ -738,7 +739,7 @@ export async function executeSkillTool(
         }
 
         const filePath = resolve(skillDir, scriptPath);
-        if (!filePath.startsWith(resolve(skillDir))) {
+        if (!isWithinDirectory(skillDir, filePath)) {
           return { success: false, error: 'Invalid script path: path traversal detected' };
         }
         if (!existsSync(filePath)) {

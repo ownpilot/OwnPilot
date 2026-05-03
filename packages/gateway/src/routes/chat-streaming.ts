@@ -358,6 +358,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
           memoryOps: { adds: 0, recalls: 0 },
           triggersFired: [],
           errors: [],
+          mcpToolEvents: state.mcpToolEvents,
           events: [
             ...state.traceToolCalls.map((tc) => ({
               type: 'tool_call',
@@ -614,6 +615,7 @@ export async function processStreamingViaBus(
     agentId: string;
     conversationId: string;
     contextWindowOverride?: number;
+    onStateReady?: (state: StreamState) => void;
   }
 ): Promise<void> {
   const {
@@ -639,6 +641,7 @@ export async function processStreamingViaBus(
     historyLength: body.historyLength ?? 0,
     contextWindowOverride,
   });
+  params.onStateReady?.(state);
 
   // Normalize into NormalizedMessage
   const normalized: NormalizedMessage = {
@@ -707,9 +710,14 @@ export async function processStreamingViaBus(
   // Save both messages AND logs here. The persistence middleware is unreliable
   // when resetContext changes the agent's conversationId mid-stream (race condition).
   // The conversation-service dedup check prevents duplicate user messages.
-  const assistantContent = (result.response.content || state.streamedContent)
+  const rawAssistantContent = (result.response.content || state.streamedContent)
     .replace(THINK_TAG_REGEX, '')
     .trim();
+  const { content: memStripped } = extractMemoriesFromResponse(rawAssistantContent);
+  const { content: suggestionsStripped } = extractSuggestions(memStripped);
+  const assistantContent =
+    suggestionsStripped.trim() ||
+    (/<(?:memories|suggestions)>/.test(rawAssistantContent) ? '' : rawAssistantContent);
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;
     await new ConversationService(userId).saveStreamingChat(state, {

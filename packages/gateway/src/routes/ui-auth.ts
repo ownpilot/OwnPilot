@@ -21,6 +21,11 @@ import {
   getActiveSessionCount,
 } from '../services/ui-session.js';
 import { createLoginThrottle } from '../utils/login-throttle.js';
+import {
+  clearUiSessionCookie,
+  getUiSessionToken,
+  setUiSessionCookie,
+} from '../utils/ui-session-cookie.js';
 import { getEventSystem } from '@ownpilot/core';
 import { MS_PER_MINUTE } from '../config/defaults.js';
 
@@ -63,7 +68,7 @@ uiAuthRoutes.get('/status', async (c) => {
   const passwordConfigured = isPasswordConfigured();
 
   // Check if the request has a valid session token
-  const token = c.req.header('X-Session-Token');
+  const token = getUiSessionToken(c);
   const authenticated = token ? await validateSession(token) : false;
 
   return apiResponse(c, {
@@ -74,7 +79,7 @@ uiAuthRoutes.get('/status', async (c) => {
 
 /**
  * POST /auth/login — Public
- * Authenticate with password, receive a session token.
+ * Authenticate with password and set a HttpOnly session cookie.
  */
 uiAuthRoutes.post('/login', async (c) => {
   const clientIp = getClientIpHttp(c);
@@ -83,7 +88,10 @@ uiAuthRoutes.post('/login', async (c) => {
     c.header('Retry-After', String(Math.ceil(throttleResult.retryAfterMs / 1000)));
     return apiError(
       c,
-      { code: ERROR_CODES.ACCESS_DENIED, message: 'Too many login attempts. Please try again later.' },
+      {
+        code: ERROR_CODES.ACCESS_DENIED,
+        message: 'Too many login attempts. Please try again later.',
+      },
       429
     );
   }
@@ -112,8 +120,8 @@ uiAuthRoutes.post('/login', async (c) => {
 
   loginThrottle.recordSuccess(clientIp);
   const session = await createSession();
+  setUiSessionCookie(c, session.token, session.expiresAt);
   return apiResponse(c, {
-    token: session.token,
     expiresAt: session.expiresAt.toISOString(),
   });
 });
@@ -123,12 +131,13 @@ uiAuthRoutes.post('/login', async (c) => {
  * Invalidate the current session.
  */
 uiAuthRoutes.post('/logout', async (c) => {
-  const token = c.req.header('X-Session-Token');
+  const token = getUiSessionToken(c);
   if (!token || !(await validateSession(token))) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Not authenticated' }, 401);
   }
 
   await invalidateSession(token);
+  clearUiSessionCookie(c);
   return apiResponse(c, { message: 'Logged out' });
 });
 
@@ -162,7 +171,7 @@ uiAuthRoutes.post('/password', async (c) => {
 
   if (existingHash) {
     // Changing password — require valid session + current password
-    const token = c.req.header('X-Session-Token');
+    const token = getUiSessionToken(c);
     if (!token || !(await validateSession(token))) {
       return apiError(
         c,
@@ -200,10 +209,10 @@ uiAuthRoutes.post('/password', async (c) => {
 
   // Create a fresh session for the user who just set/changed the password
   const session = await createSession();
+  setUiSessionCookie(c, session.token, session.expiresAt);
 
   return apiResponse(c, {
     message: existingHash ? 'Password changed' : 'Password set',
-    token: session.token,
     expiresAt: session.expiresAt.toISOString(),
   });
 });
@@ -213,7 +222,7 @@ uiAuthRoutes.post('/password', async (c) => {
  * Remove the UI password (disables UI authentication).
  */
 uiAuthRoutes.delete('/password', async (c) => {
-  const token = c.req.header('X-Session-Token');
+  const token = getUiSessionToken(c);
   if (!token || !(await validateSession(token))) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
@@ -223,6 +232,7 @@ uiAuthRoutes.delete('/password', async (c) => {
   }
 
   await removePassword();
+  clearUiSessionCookie(c);
   return apiResponse(c, { message: 'Password removed' });
 });
 
@@ -231,7 +241,7 @@ uiAuthRoutes.delete('/password', async (c) => {
  * Returns count of active sessions (for Security settings page).
  */
 uiAuthRoutes.get('/sessions', async (c) => {
-  const token = c.req.header('X-Session-Token');
+  const token = getUiSessionToken(c);
   if (!token || !(await validateSession(token))) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }

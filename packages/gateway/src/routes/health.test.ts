@@ -47,6 +47,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 const mockIsConnected = vi.fn();
+const mockQueryOne = vi.fn();
 const mockGetAdapterSync = vi.fn();
 
 vi.mock('../db/adapters/index.js', () => ({
@@ -82,8 +83,9 @@ describe('Health Routes', { timeout: 15_000 }, () => {
       postgresDatabase: 'testdb',
       postgresPassword: 'testpass',
     });
-    mockGetAdapterSync.mockReturnValue({ isConnected: mockIsConnected });
+    mockGetAdapterSync.mockReturnValue({ isConnected: mockIsConnected, queryOne: mockQueryOne });
     mockIsConnected.mockReturnValue(false);
+    mockQueryOne.mockResolvedValue({ exists: 'settings' });
     mockGetExecutionMode.mockReturnValue('local');
     mockGetSandboxStatus.mockResolvedValue({
       dockerAvailable: false,
@@ -290,11 +292,42 @@ describe('Health Routes', { timeout: 15_000 }, () => {
   });
 
   describe('GET /health/ready', () => {
-    it('returns readiness status', async () => {
+    it('returns 503 when database is disconnected', async () => {
+      const res = await app.request('/health/ready');
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.data.status).toBe('not_ready');
+      expect(json.data.checks[0].message).toBe('Database not connected');
+    });
+
+    it('returns ready when database is connected and critical tables exist', async () => {
+      mockIsConnected.mockReturnValue(true);
+      mockQueryOne.mockResolvedValue({ exists: 'table' });
+
       const res = await app.request('/health/ready');
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.status).toBe('ok');
+      expect(json.data.status).toBe('ready');
+      expect(json.data.checks[0]).toMatchObject({
+        name: 'database',
+        status: 'pass',
+        connected: true,
+        missingTables: [],
+      });
+    });
+
+    it('returns not ready with missing critical tables', async () => {
+      mockIsConnected.mockReturnValue(true);
+      mockQueryOne.mockImplementation(async (_sql: string, params: string[]) => ({
+        exists: params[0] === 'ui_sessions' ? null : params[0],
+      }));
+
+      const res = await app.request('/health/ready');
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.data.status).toBe('not_ready');
+      expect(json.data.checks[0].missingTables).toEqual(['ui_sessions']);
+      expect(json.data.checks[0].message).toContain('ui_sessions');
     });
   });
 

@@ -2,13 +2,7 @@ import type { ClawState } from '../../api/endpoints/claws';
 
 export function authedFetch(url: string, init?: RequestInit): Promise<Response> {
   const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) };
-  try {
-    const token = localStorage.getItem('ownpilot-session-token');
-    if (token) headers['X-Session-Token'] = token;
-  } catch {
-    /* ignore */
-  }
-  return fetch(url, { ...init, headers });
+  return fetch(url, { ...init, headers, credentials: init?.credentials ?? 'same-origin' });
 }
 
 export function getStateBadge(state: ClawState | null): { text: string; classes: string } {

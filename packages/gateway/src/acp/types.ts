@@ -209,7 +209,7 @@ export interface AcpClientOptions {
   mcpServers?: AcpMcpServerConfig[];
   /** Callback for session/update events (mapped to OwnPilot event payloads) */
   onUpdate?: (eventType: string, payload: Record<string, unknown>) => void;
-  /** Callback for permission requests (auto-approve if not provided) */
+  /** Callback for permission requests (reject/cancel if not provided) */
   onPermissionRequest?: (request: AcpPermissionRequestEvent) => Promise<AcpPermissionResponse>;
   /** Callback for connection state changes */
   onStateChange?: (state: AcpConnectionState) => void;

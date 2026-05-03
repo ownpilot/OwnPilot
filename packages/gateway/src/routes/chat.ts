@@ -250,6 +250,10 @@ chatRoutes.post('/', async (c) => {
 
   // Get agent based on agentId or provider/model from request
   let agent: Awaited<ReturnType<typeof getAgent>>;
+  const requestUrl = new URL(c.req.url);
+  const gatewayProtocol = c.req.header('x-forwarded-proto') ?? requestUrl.protocol.replace(':', '');
+  const gatewayHost = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? requestUrl.host;
+  const gatewayUrl = `${gatewayProtocol}://${gatewayHost}`;
 
   if (body.agentId) {
     agent = await getAgent(body.agentId);
@@ -258,7 +262,14 @@ chatRoutes.post('/', async (c) => {
     }
   } else {
     try {
-      agent = await getOrCreateChatAgent(provider, model, routingFallback, undefined, body.conversationId);
+      agent = await getOrCreateChatAgent(
+        provider,
+        model,
+        routingFallback,
+        undefined,
+        body.conversationId,
+        gatewayUrl
+      );
     } catch (error) {
       return apiError(
         c,
@@ -464,25 +475,6 @@ chatRoutes.post('/', async (c) => {
 
         // ── MCP tool event forwarding for CLI providers ──
         let unsubMcp: (() => void) | undefined;
-        const cliCorrelationId = getCliCorrelationId(agent);
-        if (cliCorrelationId) {
-          unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
-            stream.writeSSE({
-              data: JSON.stringify({
-                type: event.type,
-                tool: {
-                  id: `mcp-${event.toolName}-${Date.now()}`,
-                  name: event.toolName,
-                  ...(event.arguments && { arguments: event.arguments }),
-                },
-                ...(event.result && { result: event.result }),
-                timestamp: event.timestamp,
-              }),
-              event: 'progress',
-            });
-          });
-        }
-
         try {
           await processStreamingViaBus(streamBus, stream, {
             agent: agent!,
@@ -494,6 +486,28 @@ chatRoutes.post('/', async (c) => {
             agentId: streamAgentId,
             conversationId,
             contextWindowOverride: userContextWindow,
+            onStateReady: (state) => {
+              const cliCorrelationId = getCliCorrelationId(agent);
+              if (!cliCorrelationId) return;
+              unsubMcp = onMcpToolEvents(cliCorrelationId, (event) => {
+                state.mcpToolEvents.push(toMcpTraceEvent(event));
+                void stream
+                  .writeSSE({
+                    data: JSON.stringify({
+                      type: event.type,
+                      tool: {
+                        id: `mcp-${event.toolName}-${Date.now()}`,
+                        name: event.toolName,
+                        ...(event.arguments && { arguments: event.arguments }),
+                      },
+                      ...(event.result && { result: event.result }),
+                      timestamp: event.timestamp,
+                    }),
+                    event: 'progress',
+                  })
+                  .catch(() => {});
+              });
+            },
           });
         } finally {
           unsubMcp?.();
@@ -584,13 +598,15 @@ chatRoutes.post('/', async (c) => {
           });
 
           // Save streaming chat to database
+          const { content: legacyMemStripped } = extractMemoriesFromResponse(result.value.content);
+          const { content: legacyCleanContent } = extractSuggestions(legacyMemStripped);
           await new ConversationService(streamUserId).saveStreamingChat(state, {
             conversationId: body.conversationId || conversationId,
             agentId: body.agentId,
             provider,
             model,
             userMessage: body.message,
-            assistantContent: result.value.content,
+            assistantContent: legacyCleanContent,
             toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
             finishReason: result.value.finishReason,
             historyLength: body.historyLength,

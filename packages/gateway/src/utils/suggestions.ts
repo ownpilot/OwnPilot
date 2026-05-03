@@ -19,6 +19,7 @@ export interface SuggestionExtractionResult {
 }
 
 const SUGGESTIONS_REGEX = /<suggestions>\s*(\[[\s\S]*?\])\s*<\/suggestions>\s*$/;
+const UNCLOSED_SUGGESTIONS_REGEX = /<suggestions>\s*(\[[\s\S]*\])\s*$/;
 const MAX_SUGGESTIONS = 5;
 const MAX_TITLE_LENGTH = 40;
 const MAX_DETAIL_LENGTH = 200;
@@ -61,16 +62,25 @@ function normalizeItem(item: unknown): Suggestion | null {
  * On any parse failure, returns content as-is with empty suggestions.
  */
 export function extractSuggestions(rawContent: string): SuggestionExtractionResult {
-  const match = rawContent.match(SUGGESTIONS_REGEX);
+  const match = rawContent.match(SUGGESTIONS_REGEX) ?? rawContent.match(UNCLOSED_SUGGESTIONS_REGEX);
 
   if (!match?.[1]) {
+    const unclosedTagIndex = rawContent.lastIndexOf('<suggestions>');
+    if (
+      unclosedTagIndex !== -1 &&
+      rawContent.indexOf('</suggestions>', unclosedTagIndex) === -1
+    ) {
+      return { content: rawContent.slice(0, unclosedTagIndex).trimEnd(), suggestions: [] };
+    }
     return { content: rawContent, suggestions: [] };
   }
+
+  const content = rawContent.slice(0, match.index).trimEnd();
 
   try {
     const parsed: unknown = JSON.parse(match[1]);
     if (!Array.isArray(parsed)) {
-      return { content: rawContent, suggestions: [] };
+      return { content, suggestions: [] };
     }
 
     const suggestions = parsed
@@ -79,12 +89,11 @@ export function extractSuggestions(rawContent: string): SuggestionExtractionResu
       .slice(0, MAX_SUGGESTIONS);
 
     if (suggestions.length === 0) {
-      return { content: rawContent, suggestions: [] };
+      return { content, suggestions: [] };
     }
 
-    const content = rawContent.slice(0, match.index).trimEnd();
     return { content, suggestions };
   } catch {
-    return { content: rawContent, suggestions: [] };
+    return { content, suggestions: [] };
   }
 }

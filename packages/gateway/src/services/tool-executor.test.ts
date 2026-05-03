@@ -922,7 +922,7 @@ describe('Tool Executor', () => {
       );
     });
 
-    it('extension tool executor uses dynamic registry when sandbox is not enabled', async () => {
+    it('extension tool executor uses dynamic registry only when sandbox is explicitly disabled', async () => {
       const extToolDef = {
         name: 'no_sandbox_tool',
         description: 'Tool without sandbox',
@@ -935,6 +935,13 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'ext result', isError: false });
+      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      vi.mocked(extensionsRepo.getById).mockReturnValue({
+        id: 'ext-ns',
+        userId: 'default',
+        manifest: { runtime: { sandbox: 'none' } },
+        grantedPermissions: [],
+      } as never);
 
       getSharedToolRegistry('user-1');
 
@@ -948,6 +955,46 @@ describe('Tool Executor', () => {
 
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('no_sandbox_tool', { x: 1 }, {});
       expect(result.content).toContain('ext result');
+    });
+
+    it('extension tool executor uses sandbox by default', async () => {
+      const extToolDef = {
+        name: 'default_sandbox_tool',
+        description: 'Default sandbox tool',
+        parameters: {},
+        category: 'Extension',
+        format: 'ownpilot',
+        extensionId: 'ext-default-sandbox',
+        extensionTool: { code: 'code here', parameters: {}, permissions: [] },
+      };
+      mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
+      mockDynamicRegistry.has.mockReturnValue(true);
+      mockSandbox.execute.mockResolvedValue({ success: true, result: 'sandbox result' });
+      const { extensionsRepo } = await import('../db/repositories/extensions.js');
+      vi.mocked(extensionsRepo.getById).mockReturnValue({
+        id: 'ext-default-sandbox',
+        userId: 'default',
+        manifest: {},
+        grantedPermissions: [],
+      } as never);
+
+      getSharedToolRegistry('user-1');
+
+      const registerCall = vi.mocked(mockToolRegistry.register).mock.calls[0];
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const result = (await executor({ x: 1 }, {})) as { content: string; isError: boolean };
+
+      expect(mockSandbox.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          extensionId: 'ext-default-sandbox',
+          toolName: 'default_sandbox_tool',
+        })
+      );
+      expect(mockDynamicRegistry.execute).not.toHaveBeenCalled();
+      expect(result.isError).toBe(false);
     });
 
     it('extension tool executor uses sandbox when sandbox="worker" is configured', async () => {
@@ -1077,11 +1124,15 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('regular_tool', { arg: 'value' }, {
-        extensionId: 'ext-default',
-        ownerUserId: 'default',
-        grantedPermissions: [],
-      });
+      const result = await handler(
+        'regular_tool',
+        { arg: 'value' },
+        {
+          extensionId: 'ext-default',
+          ownerUserId: 'default',
+          grantedPermissions: [],
+        }
+      );
 
       expect(result.success).toBe(true);
       expect(result.result).toBe('tool output');
@@ -1102,11 +1153,15 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('failing_tool', {}, {
-        extensionId: 'ext-default',
-        ownerUserId: 'default',
-        grantedPermissions: [],
-      });
+      const result = await handler(
+        'failing_tool',
+        {},
+        {
+          extensionId: 'ext-default',
+          ownerUserId: 'default',
+          grantedPermissions: [],
+        }
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Registry error');
@@ -1122,11 +1177,15 @@ describe('Tool Executor', () => {
       getSharedToolRegistry('user-1');
 
       const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
-      const result = await handler('error_tool', {}, {
-        extensionId: 'ext-default',
-        ownerUserId: 'default',
-        grantedPermissions: [],
-      });
+      const result = await handler(
+        'error_tool',
+        {},
+        {
+          extensionId: 'ext-default',
+          ownerUserId: 'default',
+          grantedPermissions: [],
+        }
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('tool error output');
@@ -1413,7 +1472,7 @@ describe('Tool Executor', () => {
       expect(res.content).toContain('sandboxed result');
     });
 
-    it('uses dynamic executor for resync tools without sandbox (lines 436–444)', async () => {
+    it('uses dynamic executor for resync tools only when sandbox is explicitly disabled', async () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([]);
       getSharedToolRegistry();
       const resync = getResyncCallback();
@@ -1422,11 +1481,10 @@ describe('Tool Executor', () => {
       mockExtensionService.getToolDefinitions.mockReturnValue([dynTool]);
       mockDynamicRegistry.has.mockReturnValue(true);
       mockDynamicRegistry.execute.mockResolvedValue({ content: 'dynamic output', isError: false });
-      // Ensure no sandbox config — extension exists but has no sandbox setting
       const { extensionsRepo } = await import('../db/repositories/extensions.js');
       vi.mocked(extensionsRepo.getById).mockReturnValue({
         id: dynTool.extensionId,
-        manifest: {},
+        manifest: { runtime: { sandbox: 'none' } },
         grantedPermissions: [],
       } as never);
 

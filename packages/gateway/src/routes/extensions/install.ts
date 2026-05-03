@@ -5,7 +5,7 @@
  */
 
 import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
@@ -20,6 +20,12 @@ import {
 } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getDataDirectoryInfo } from '../../paths/index.js';
+import {
+  getLeafName,
+  isWithinDirectory,
+  normalizeArchiveEntryPath,
+  sanitizeFilenameSegment,
+} from '../../utils/file-safety.js';
 
 export const installRoutes = new Hono();
 
@@ -37,10 +43,35 @@ const MAX_ZIP_FILE_SIZE = 5 * 1024 * 1024;
  * Generate a unique filename: originalName-<random8chars>.ext
  */
 function generateUniqueFilename(originalName: string): string {
-  const ext = extname(originalName);
-  const baseName = originalName.slice(0, -ext.length || undefined);
+  const leafName = getLeafName(originalName);
+  const ext = extname(leafName).toLowerCase();
+  const rawBaseName = leafName.slice(0, -ext.length || undefined);
+  const baseName = sanitizeFilenameSegment(rawBaseName, { fallback: 'extension' });
   const suffix = randomBytes(4).toString('hex'); // 8 hex chars
   return `${baseName}-${suffix}${ext}`;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractZipSafely(zip: any, tempDir: string): void {
+  for (const entry of zip.getEntries()) {
+    const entryName = normalizeArchiveEntryPath(String(entry.entryName ?? ''));
+    if (!entryName) {
+      throw new ExtensionError('ZIP contains an unsafe entry path', ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    const destPath = join(tempDir, entryName);
+    if (!isWithinDirectory(tempDir, destPath)) {
+      throw new ExtensionError('ZIP contains an unsafe entry path', ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    if (entry.isDirectory) {
+      mkdirSync(destPath, { recursive: true });
+      continue;
+    }
+
+    mkdirSync(dirname(destPath), { recursive: true });
+    writeFileSync(destPath, entry.getData());
+  }
 }
 
 /**
@@ -118,7 +149,7 @@ installRoutes.post('/upload', async (c) => {
   }
 
   const uploadedFile = file as File;
-  const originalName = uploadedFile.name || 'unknown';
+  const originalName = getLeafName(uploadedFile.name || 'unknown');
   const ext = extname(originalName).toLowerCase();
 
   // Validate file extension
@@ -185,7 +216,7 @@ installRoutes.post('/upload', async (c) => {
 
       try {
         const zip = new AdmZipClass(fileBuffer);
-        zip.extractAllTo(tempDir, true);
+        extractZipSafely(zip, tempDir);
 
         // Look for manifest: first check root of extracted files, then subdirectories
         let manifestPath = findManifestInDir(tempDir);

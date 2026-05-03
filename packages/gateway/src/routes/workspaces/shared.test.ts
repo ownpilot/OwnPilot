@@ -50,6 +50,11 @@ describe('sanitizeFilePath', () => {
     expect(sanitizeFilePath('foo/../../bar')).toBeNull();
   });
 
+  it('normalizes Windows separators before traversal checks', () => {
+    expect(sanitizeFilePath('src\\utils\\index.ts')).toBe('src/utils/index.ts');
+    expect(sanitizeFilePath('safe\\..\\..\\secret.txt')).toBeNull();
+  });
+
   it('returns empty string for . (current dir)', () => {
     // path.posix.normalize('.') = '.' → strip leading slash → '.' (does not start with ..)
     const result = sanitizeFilePath('.');

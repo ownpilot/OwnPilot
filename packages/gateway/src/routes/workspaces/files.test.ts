@@ -95,6 +95,11 @@ describe('Workspace File Routes', () => {
       expect(res.status).toBe(400);
       expect((await res.json()).error.code).toBe('BAD_REQUEST');
     });
+    it('should return 400 for Windows separator traversal path', async () => {
+      const res = await app.request('/workspaces/ws-1/files?path=safe%5C..%5C..%5Cetc%5Cpasswd');
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.code).toBe('BAD_REQUEST');
+    });
     it('should return 404 for non-existent workspace', async () => {
       mockRepo.get.mockResolvedValue(null);
       const res = await app.request('/workspaces/ws-1/files');
@@ -138,6 +143,11 @@ describe('Workspace File Routes', () => {
       const res = await app.request('/workspaces/ws-1/files/../../../etc/passwd');
       // URL normalization prevents the path from reaching the handler
       expect(res.status).toBe(404);
+    });
+    it('should reject Windows separator traversal paths', async () => {
+      const res = await app.request('/workspaces/ws-1/files/safe%5C..%5C..%5Cetc%5Cpasswd');
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.code).toBe('BAD_REQUEST');
     });
     it('should return 404 for non-existent workspace', async () => {
       mockRepo.get.mockResolvedValue(null);
@@ -193,6 +203,15 @@ describe('Workspace File Routes', () => {
       });
       // URL normalization prevents the path from reaching the handler
       expect(res.status).toBe(404);
+    });
+    it('should reject Windows separator traversal paths', async () => {
+      const res = await app.request('/workspaces/ws-1/files/safe%5C..%5C..%5Cetc%5Cpasswd', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'x' }),
+      });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.code).toBe('BAD_REQUEST');
     });
     it('should return 404 for non-existent workspace', async () => {
       mockRepo.get.mockResolvedValue(null);
@@ -268,6 +287,13 @@ describe('Workspace File Routes', () => {
       });
       // URL normalization prevents the path from reaching the handler
       expect(res.status).toBe(404);
+    });
+    it('should reject Windows separator traversal paths', async () => {
+      const res = await app.request('/workspaces/ws-1/files/safe%5C..%5C..%5Cetc%5Cpasswd', {
+        method: 'DELETE',
+      });
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.code).toBe('BAD_REQUEST');
     });
     it('should return 404 for non-existent workspace', async () => {
       mockRepo.get.mockResolvedValue(null);

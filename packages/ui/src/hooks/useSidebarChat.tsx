@@ -17,7 +17,6 @@ import {
   type ReactNode,
 } from 'react';
 import { parseSSELine } from '../utils/sse-parser';
-import { STORAGE_KEYS } from '../constants/storage-keys';
 import { usePageCopilotContext } from './usePageCopilotContext';
 
 export interface SidebarMessage {
@@ -206,14 +205,8 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Build request headers
+      // Build request headers. UI auth is carried by the HttpOnly session cookie.
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      try {
-        const token = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-        if (token) headers['X-Session-Token'] = token;
-      } catch {
-        /* localStorage unavailable in test environments */
-      }
 
       // Bridge providers: signal which runtime to use.
       // Provider may be a UUID (local provider) or a name ('bridge-opencode').
@@ -224,9 +217,13 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
         try {
           const names = JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}');
           return (names[currentProvider] ?? currentProvider) as string;
-        } catch { return currentProvider; }
+        } catch {
+          return currentProvider;
+        }
       })();
-      const bridgeName = [currentProvider, providerDisplayName].find(n => n.startsWith('bridge-'));
+      const bridgeName = [currentProvider, providerDisplayName].find((n) =>
+        n.startsWith('bridge-')
+      );
       if (bridgeName) {
         headers['X-Runtime'] = bridgeName.replace('bridge-', '');
       }
@@ -251,6 +248,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`${import.meta.env.VITE_API_BASE || ''}/api/v1/chat`, {
         method: 'POST',
         headers,
+        credentials: import.meta.env.VITE_API_BASE ? 'include' : 'same-origin',
         body: JSON.stringify({
           message: content,
           provider: currentProvider,

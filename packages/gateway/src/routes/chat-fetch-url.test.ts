@@ -32,10 +32,10 @@ function createApp() {
 
 describe('chatFetchUrlRoutes', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     mockIsBlockedUrl.mockReturnValue(false);
     mockIsPrivateUrlAsync.mockResolvedValue(false);
-    vi.restoreAllMocks();
   });
 
   describe('GET /fetch-url', () => {
@@ -88,6 +88,25 @@ describe('chatFetchUrlRoutes', () => {
       expect(body.error.message).toContain('URL is not allowed');
     });
 
+    it('blocks redirects to private URLs', async () => {
+      mockIsPrivateUrlAsync
+        .mockResolvedValueOnce(false) // route preflight
+        .mockResolvedValueOnce(false) // safeFetch first hop
+        .mockResolvedValueOnce(true); // safeFetch redirected hop
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 302,
+        headers: { get: vi.fn((name: string) => (name === 'location' ? '/admin' : null)) },
+      });
+
+      const app = createApp();
+      const res = await app.request('/fetch-url?url=https://example.com/redirect');
+
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error.message).toContain('private/internal');
+    });
+
     it('fetches and extracts content from URL', async () => {
       const mockHtml = `
         <html>
@@ -102,7 +121,9 @@ describe('chatFetchUrlRoutes', () => {
       `;
 
       global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
         ok: true,
+        headers: { get: vi.fn(() => null) },
         text: vi.fn().mockResolvedValue(mockHtml),
       });
 
@@ -138,7 +159,9 @@ describe('chatFetchUrlRoutes', () => {
       </body></html>`;
 
       global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
         ok: true,
+        headers: { get: vi.fn(() => null) },
         text: vi.fn().mockResolvedValue(mockHtml),
       });
 
@@ -157,7 +180,9 @@ describe('chatFetchUrlRoutes', () => {
       const mockHtml = `<html><body><p>No title here</p></body></html>`;
 
       global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
         ok: true,
+        headers: { get: vi.fn(() => null) },
         text: vi.fn().mockResolvedValue(mockHtml),
       });
 
@@ -199,7 +224,9 @@ describe('chatFetchUrlRoutes', () => {
       const mockHtml = `<html><head><title>Long</title></head><body>${longText}</body></html>`;
 
       global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
         ok: true,
+        headers: { get: vi.fn(() => null) },
         text: vi.fn().mockResolvedValue(mockHtml),
       });
 
@@ -213,7 +240,9 @@ describe('chatFetchUrlRoutes', () => {
 
     it('respects URL encoding in query parameter', async () => {
       global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
         ok: true,
+        headers: { get: vi.fn(() => null) },
         text: vi
           .fn()
           .mockResolvedValue('<html><head><title>Test</title></head><body>Content</body></html>'),

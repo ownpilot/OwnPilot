@@ -33,6 +33,11 @@ describe('host-path', () => {
       expect(toHostPath('/app/data/something')).toBeNull();
     });
 
+    test('toHostPath rejects sibling-prefix paths', async () => {
+      const { toHostPath } = await import('./host-path.js');
+      expect(toHostPath('/host-home-evil/projects/x')).toBeNull();
+    });
+
     test('toHostPath: null input → null', async () => {
       const { toHostPath } = await import('./host-path.js');
       expect(toHostPath(null)).toBeNull();
@@ -53,6 +58,11 @@ describe('host-path', () => {
       expect(toContainerPath('/root/something')).toBeNull();
     });
 
+    test('toContainerPath rejects sibling-prefix paths', async () => {
+      const { toContainerPath } = await import('./host-path.js');
+      expect(toContainerPath('/home/user-evil/projects/x')).toBeNull();
+    });
+
     test('isHostFsConfigured: true when both env vars set', async () => {
       const { isHostFsConfigured } = await import('./host-path.js');
       expect(isHostFsConfigured()).toBe(true);
@@ -63,6 +73,13 @@ describe('host-path', () => {
       process.env.OWNPILOT_HOST_FS_HOST_PREFIX = '/home/user/';
       const { toHostPath } = await import('./host-path.js');
       expect(toHostPath('/host-home/projects')).toBe('/home/user/projects');
+    });
+
+    test('trailing backslash handling works for configured prefixes', async () => {
+      process.env.OWNPILOT_HOST_FS = 'C:\\host-home\\';
+      process.env.OWNPILOT_HOST_FS_HOST_PREFIX = 'D:\\Users\\owner\\';
+      const { toHostPath } = await import('./host-path.js');
+      expect(toHostPath('C:\\host-home\\projects\\x')).toBe('D:\\Users\\owner\\projects\\x');
     });
   });
 

@@ -23,7 +23,7 @@ import { clamp } from '../helpers.js';
 export function sanitizeFilePath(filePath: string): string | null {
   // Normalize the path using posix to get consistent forward slashes,
   // then resolve any ../ sequences
-  const normalized = path.posix.normalize(filePath);
+  const normalized = path.posix.normalize(filePath.replace(/\\/g, '/'));
 
   // Reject if path tries to escape (starts with .. or is exactly '..')
   if (normalized.startsWith('..') || normalized === '..') {

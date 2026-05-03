@@ -20,6 +20,7 @@
     "lint:fix": "turbo lint:fix",
     "typecheck": "turbo typecheck",
     "typecheck:ci": "turbo typecheck:ci",
+    "audit:prod": "pnpm audit --prod --audit-level high",
     "clean": "turbo clean && rimraf node_modules",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -27,7 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "4.1.5",
     "eslint": "^10.1.0",
     "husky": "^9.1.7",
     "prettier": "^3.8.1",
@@ -46,7 +47,7 @@
       "undici": ">=7.24.0",
       "minimatch": ">=10.2.3",
       "flatted": ">=3.4.0",
-      "dompurify": ">=3.3.3",
+      "dompurify": "3.4.0",
       "file-type": ">=21.3.3",
       "express-rate-limit": ">=8.3.0",
       "lodash": ">=4.18.0",
@@ -54,7 +55,15 @@
       "picomatch": ">=4.0.4",
       "music-metadata": ">=11.12.3",
       "brace-expansion": ">=5.0.5",
-      "nodemailer": ">=8.0.4"
+      "nodemailer": ">=8.0.5",
+      "protobufjs": "7.5.5",
+      "basic-ftp": "5.3.0",
+      "vite": "7.3.2",
+      "hono": "4.12.14",
+      "@hono/node-server": "1.19.13",
+      "axios": "1.15.0",
+      "follow-redirects": "1.16.0",
+      "postcss": "8.5.10"
     }
   },
   "packageManager": "pnpm@10.29.3",

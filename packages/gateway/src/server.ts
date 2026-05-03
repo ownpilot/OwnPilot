@@ -47,6 +47,7 @@ import { initializePlugins, getDefaultPluginRegistry } from './plugins/index.js'
 import { initializeConfigServicesRepo } from './db/repositories/config-services.js';
 import { initializePluginsRepo } from './db/repositories/plugins.js';
 import { initializeLocalProvidersRepo } from './db/repositories/local-providers.js';
+import { initializeUISessionsRepo } from './db/repositories/ui-sessions.js';
 import { seedConfigServices } from './db/seeds/config-services-seed.js';
 import { gatewayConfigCenter } from './services/config-center-impl.js';
 import {
@@ -205,6 +206,10 @@ async function main() {
 
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
+
+  // Initialize UI sessions before auth middleware/session cleanup can query it.
+  log.info('Initializing UI sessions...');
+  await initializeUISessionsRepo();
 
   // Start UI session cleanup (purge expired sessions hourly)
   const { startCleanup: startSessionCleanup } = await import('./services/ui-session.js');

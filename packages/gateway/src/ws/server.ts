@@ -29,6 +29,7 @@ import {
   WS_READY_STATE_OPEN,
 } from '../config/defaults.js';
 import { createLoginThrottle } from '../utils/login-throttle.js';
+import { UI_SESSION_COOKIE } from '../utils/ui-session-cookie.js';
 
 // Simple HTML escape to prevent XSS in demo responses
 function escapeHtml(unsafe: string): string {
@@ -57,9 +58,13 @@ const wsLoginThrottle = createLoginThrottle({
  * Reads API_KEYS from env (same keys used for HTTP auth).
  * Returns true if auth is disabled (no keys) or token is valid.
  */
-async function validateWsToken(token: string | null): Promise<boolean> {
-  // Check UI session token first
-  if (token && (await validateUiSession(token))) return true;
+interface WsAuth {
+  apiToken: string | null;
+  uiSessionToken: string | null;
+}
+
+async function validateWsAuth(auth: WsAuth): Promise<boolean> {
+  if (auth.uiSessionToken && (await validateUiSession(auth.uiSessionToken))) return true;
 
   const apiKeys = process.env.API_KEYS?.split(',').filter(Boolean);
 
@@ -71,13 +76,31 @@ async function validateWsToken(token: string | null): Promise<boolean> {
   }
 
   // Auth enabled but no token provided
-  if (!token) return false;
+  if (!auth.apiToken) return false;
   // Timing-safe comparison against all valid keys
-  const tokenBuf = Buffer.from(token);
+  const tokenBuf = Buffer.from(auth.apiToken);
   return apiKeys.some((key) => {
     const keyBuf = Buffer.from(key);
     return tokenBuf.length === keyBuf.length && timingSafeEqual(tokenBuf, keyBuf);
   });
+}
+
+function getCookieValue(cookieHeader: string | undefined, name: string): string | null {
+  if (!cookieHeader) return null;
+  for (const part of cookieHeader.split(';')) {
+    const [rawKey, ...rawValue] = part.trim().split('=');
+    if (rawKey === name) {
+      return decodeURIComponent(rawValue.join('='));
+    }
+  }
+  return null;
+}
+
+function getWsAuth(request: IncomingMessage, url: URL): WsAuth {
+  return {
+    apiToken: url.searchParams.get('token'),
+    uiSessionToken: getCookieValue(request.headers.cookie, UI_SESSION_COOKIE),
+  };
 }
 
 /** Whitelist of valid client event types (static set, avoid re-creating per message) */
@@ -427,9 +450,9 @@ export class WSGateway {
           return;
         }
 
-        // Authenticate before upgrading: token via query param or Authorization header
-        const token = url.searchParams.get('token') ?? null;
-        if (!(await validateWsToken(token))) {
+        // Authenticate before upgrading: API key via query param or HttpOnly UI session cookie.
+        const auth = getWsAuth(request, url);
+        if (!(await validateWsAuth(auth))) {
           log.warn('WebSocket connection rejected: invalid or missing token');
           socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
           socket.destroy();
@@ -524,8 +547,8 @@ export class WSGateway {
 
     // Authenticate (standalone mode — upgrade handler already checks for attachToServer mode)
     const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
-    const token = url.searchParams.get('token') ?? null;
-    if (!(await validateWsToken(token))) {
+    const auth = getWsAuth(request, url);
+    if (!(await validateWsAuth(auth))) {
       log.warn('Connection rejected: invalid or missing token');
       socket.close(1008, 'Authentication required');
       return;

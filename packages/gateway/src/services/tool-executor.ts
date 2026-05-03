@@ -292,7 +292,7 @@ function registerSingleExtensionTool(
     return false;
   }
 
-  const useSandbox = extRecord.manifest?.runtime?.sandbox === 'worker';
+  const useSandbox = extRecord.manifest?.runtime?.sandbox !== 'none';
   const grantedPermissions = (extRecord.grantedPermissions ?? []) as SkillPermission[];
 
   const toolDef: ToolDefinition = {
@@ -447,7 +447,9 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
               callerKind: 'extension',
             },
           });
-        } catch { /* audit failure should not affect tool execution */ }
+        } catch {
+          /* audit failure should not affect tool execution */
+        }
       }
       return {
         success: false,
@@ -477,7 +479,9 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
             success: result.ok,
           },
         });
-      } catch { /* audit failure should not affect tool execution */ }
+      } catch {
+        /* audit failure should not affect tool execution */
+      }
     }
 
     if (result.ok) {

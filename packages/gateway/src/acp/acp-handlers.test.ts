@@ -113,7 +113,7 @@ describe('acp-handlers', () => {
   // requestPermission
   // ===========================================================================
   describe('requestPermission', () => {
-    it('auto-approves with first allow_once option when no handler', async () => {
+    it('rejects with first reject option when no handler', async () => {
       const result = await handler.requestPermission({
         toolCall: { toolCallId: 'tc-1', title: 'Write file' },
         options: [
@@ -122,7 +122,7 @@ describe('acp-handlers', () => {
         ],
       } as any);
 
-      expect(result).toEqual({ outcome: { outcome: 'selected', optionId: 'allow' } });
+      expect(result).toEqual({ outcome: { outcome: 'selected', optionId: 'reject' } });
     });
 
     it('delegates to onPermissionRequest when provided', async () => {
@@ -167,6 +167,15 @@ describe('acp-handlers', () => {
       } as any);
 
       expect(result).toEqual({ outcome: { outcome: 'selected', optionId: 'rej-1' } });
+    });
+
+    it('cancels when no handler and no reject option exists', async () => {
+      const result = await handler.requestPermission({
+        toolCall: { toolCallId: 'tc-1', title: 'Danger' },
+        options: [{ optionId: 'allow', name: 'Allow', kind: 'allow_once' }],
+      } as any);
+
+      expect(result).toEqual({ outcome: { outcome: 'cancelled' } });
     });
   });
 
@@ -245,6 +254,13 @@ describe('acp-handlers', () => {
         handler.writeTextFile({ path: outsidePath, content: 'x' } as any)
       ).rejects.toThrow(/outside allowed directories/);
     });
+
+    it('does not allow sibling directories that share the cwd prefix', async () => {
+      const siblingPrefixPath = resolve(`${CWD}-evil`, 'file.ts');
+      await expect(
+        handler.writeTextFile({ path: siblingPrefixPath, content: 'x' } as any)
+      ).rejects.toThrow(/outside allowed directories/);
+    });
   });
 
   // ===========================================================================
@@ -275,6 +291,38 @@ describe('acp-handlers', () => {
       } as any);
       expect(result.terminalId).toMatch(/^acp-term-/);
       expect(spawn).toHaveBeenCalledWith('echo', ['hello'], expect.any(Object));
+    });
+
+    it('uses sanitized handler env and does not spawn through a shell', async () => {
+      const envHandler = createAcpClientHandler({
+        ownerSessionId: 'ses-1',
+        cwd: CWD,
+        env: { PATH: '/safe/bin', SAFE_ONLY: '1' },
+      });
+
+      await envHandler.createTerminal({
+        command: 'node',
+        args: ['--version'],
+      } as any);
+
+      const options = vi.mocked(spawn).mock.calls.at(-1)?.[2] as Record<string, unknown>;
+      expect(options).toMatchObject({
+        cwd: CWD,
+        env: { PATH: '/safe/bin', SAFE_ONLY: '1' },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      expect(options).not.toHaveProperty('shell');
+      envHandler.dispose();
+    });
+
+    it('rejects terminal cwd outside allowed directories', async () => {
+      await expect(
+        handler.createTerminal({
+          command: 'echo',
+          args: ['hello'],
+          cwd: resolve('/', 'tmp'),
+        } as any)
+      ).rejects.toThrow(/outside allowed directories/);
     });
 
     it('gets terminal output', async () => {

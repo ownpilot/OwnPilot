@@ -11,9 +11,6 @@
  *   - Configurable global error callback
  */
 
-// Session token key — must match STORAGE_KEYS.SESSION_TOKEN in constants/storage-keys.ts
-const SESSION_TOKEN_KEY = 'ownpilot-session-token';
-
 // ============================================================================
 // Types
 // ============================================================================
@@ -99,6 +96,7 @@ function buildQueryString(
 
 function createApiClient(config: ApiClientConfig) {
   const { basePath } = config;
+  const credentials: RequestCredentials = import.meta.env.VITE_API_BASE ? 'include' : 'same-origin';
 
   /** Multiple error listeners (replaces the old single-handler pattern) */
   const errorListeners = new Set<(error: ApiError) => void>();
@@ -175,18 +173,6 @@ function createApiClient(config: ApiClientConfig) {
     return err;
   }
 
-  /** Inject session token from localStorage if available */
-  function injectSessionToken(headers: Record<string, string>): void {
-    try {
-      const token = localStorage.getItem(SESSION_TOKEN_KEY);
-      if (token) {
-        headers['X-Session-Token'] = token;
-      }
-    } catch {
-      // localStorage may not be available
-    }
-  }
-
   /** Core request method */
   async function request<T>(
     method: string,
@@ -196,8 +182,6 @@ function createApiClient(config: ApiClientConfig) {
   ): Promise<T> {
     const url = buildUrl(path, options?.params);
     const headers: Record<string, string> = { ...options?.headers };
-
-    injectSessionToken(headers);
 
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
@@ -210,6 +194,7 @@ function createApiClient(config: ApiClientConfig) {
         headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: options?.signal,
+        credentials,
       });
     } catch (err) {
       // Network error (offline, CORS, DNS failure, abort)
@@ -259,8 +244,6 @@ function createApiClient(config: ApiClientConfig) {
         ...options?.headers,
       };
 
-      injectSessionToken(headers);
-
       let response: Response;
       try {
         response = await fetch(url, {
@@ -268,6 +251,7 @@ function createApiClient(config: ApiClientConfig) {
           headers,
           body: JSON.stringify(body),
           signal: options?.signal,
+          credentials,
         });
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {

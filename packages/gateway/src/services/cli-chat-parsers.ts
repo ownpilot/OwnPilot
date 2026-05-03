@@ -222,6 +222,13 @@ export const OUTPUT_PARSERS: Record<CliChatBinary, (stdout: string) => string> =
 // CLI Command Builders
 // =============================================================================
 
+const CLI_MODEL_PATTERN = /^[a-zA-Z0-9._:/-]{1,128}$/;
+
+function normalizeCliModel(model?: string): string {
+  if (!model || model === 'default' || model === 'cli-default') return '';
+  return CLI_MODEL_PATTERN.test(model) ? model : '';
+}
+
 const CLAUDE_MCP_ALLOWED_TOOLS = [
   'mcp__ownpilot__search_tools',
   'mcp__ownpilot__get_tool_help',
@@ -241,7 +248,8 @@ export function buildClaudeArgs(
   if (streaming) args.push('--verbose');
   args.push('--dangerously-skip-permissions');
   if (systemPrompt) args.push('--system-prompt', systemPrompt);
-  if (model && model !== 'default') args.push('--model', model);
+  const safeModel = normalizeCliModel(model);
+  if (safeModel) args.push('--model', safeModel);
   args.push('--mcp-config', '.mcp.json');
   args.push('--allowedTools', CLAUDE_MCP_ALLOWED_TOOLS.join(','));
   return args;
@@ -282,8 +290,9 @@ export function injectWorkspaceGuidance(
 export function buildCodexArgs(prompt: string, model?: string, cwd?: string): string[] {
   const effectivePrompt = injectWorkspaceGuidance('codex', prompt, cwd);
   const args = ['exec', '--json', '--full-auto'];
-  if (model && model !== 'default' && model !== 'cli-default') {
-    args.push('--model', model);
+  const safeModel = normalizeCliModel(model);
+  if (safeModel) {
+    args.push('--model', safeModel);
   }
   if (!IS_WIN) args.push(effectivePrompt);
   return args;
@@ -294,8 +303,9 @@ export function buildGeminiArgs(prompt: string, model?: string, cwd?: string): s
   const args = IS_WIN
     ? ['--prompt', '', '--yolo', '--output-format', 'json']
     : ['-p', effectivePrompt, '--yolo', '--output-format', 'json'];
-  if (model && model !== 'default' && model !== 'cli-default') {
-    args.push('--model', model);
+  const safeModel = normalizeCliModel(model);
+  if (safeModel) {
+    args.push('--model', safeModel);
   }
   return args;
 }

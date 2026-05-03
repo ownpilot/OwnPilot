@@ -26,7 +26,6 @@ import { useToast } from '../components/ToastProvider';
 import { fileWorkspacesApi } from '../api';
 import { formatBytes } from '../utils/formatters';
 import { useModalClose } from '../hooks';
-import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { FileWorkspaceInfo, WorkspaceFile } from '../api';
 
 type TabId = 'home' | 'workspaces';
@@ -205,15 +204,8 @@ export function WorkspacesPage() {
 
   const handleDownload = async (workspaceId: string) => {
     try {
-      const dlHeaders: Record<string, string> = {};
-      try {
-        const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-        if (t) dlHeaders['X-Session-Token'] = t;
-      } catch {
-        /* */
-      }
       const response = await fetch(fileWorkspacesApi.downloadUrl(workspaceId), {
-        headers: dlHeaders,
+        credentials: 'same-origin',
       });
       if (!response.ok) throw new Error('Download failed');
 
@@ -659,16 +651,9 @@ export function WorkspacesPage() {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      const hdrs: Record<string, string> = {};
-                                      try {
-                                        const t = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-                                        if (t) hdrs['X-Session-Token'] = t;
-                                      } catch {
-                                        /* */
-                                      }
                                       const res = await fetch(
                                         `/api/v1/file-workspaces/${selectedWorkspace.id}/file/${file.path}?download=true`,
-                                        { headers: hdrs }
+                                        { credentials: 'same-origin' }
                                       );
                                       if (!res.ok) throw new Error('Download failed');
                                       const blob = await res.blob();
