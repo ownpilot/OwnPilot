@@ -48,12 +48,12 @@ const DETAIL_TABS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: 'overview', label: 'Overview', icon: Activity },
+  { id: 'doctor', label: 'Doctor', icon: Wrench },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'skills', label: 'Skills', icon: Puzzle },
   { id: 'files', label: 'Files', icon: FolderOpen },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'audit', label: 'Audit', icon: FileText },
-  { id: 'doctor', label: 'Doctor', icon: Wrench },
   { id: 'output', label: 'Output', icon: Send },
   { id: 'conversation', label: 'Chat', icon: Bot },
 ];
