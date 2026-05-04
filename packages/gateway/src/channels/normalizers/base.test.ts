@@ -54,6 +54,21 @@ describe('stripInternalTags', () => {
     expect(stripInternalTags('Text <suggestions>hint</suggestions>')).toBe('Text');
   });
 
+  it('strips unclosed <suggestions> tags', () => {
+    expect(stripInternalTags('Text <suggestions>[{"title":"A","detail":"B"}]')).toBe('Text');
+  });
+
+  it('strips unclosed <memories> tags', () => {
+    expect(stripInternalTags('Text <memories>[{"type":"fact","content":"x"}]')).toBe('Text');
+  });
+
+  it('strips thinking tags', () => {
+    expect(stripInternalTags('Before <thinking>internal chain</thinking> after')).toBe(
+      'Before  after'
+    );
+    expect(stripInternalTags('Before <think>unfinished')).toBe('Before');
+  });
+
   it('strips <system> tags', () => {
     expect(stripInternalTags('Before <system>internal</system> after')).toBe('Before  after');
   });

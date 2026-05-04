@@ -11,10 +11,16 @@ import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 
 /** Internal tags that should never leak to channel users */
 const INTERNAL_TAG_PATTERNS = [
-  /<memories>[\s\S]*?<\/memories>/g,
-  /<suggestions>[\s\S]*?<\/suggestions>/g,
-  /<system>[\s\S]*?<\/system>/g,
-  /<context>[\s\S]*?<\/context>/g,
+  /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>/gi,
+  /<(?:think|thinking)>[\s\S]*$/gi,
+  /<memories>[\s\S]*?<\/memories>/gi,
+  /<memories>[\s\S]*$/gi,
+  /<suggestions>[\s\S]*?<\/suggestions>/gi,
+  /<suggestions>[\s\S]*$/gi,
+  /<system>[\s\S]*?<\/system>/gi,
+  /<system>[\s\S]*$/gi,
+  /<context>[\s\S]*?<\/context>/gi,
+  /<context>[\s\S]*$/gi,
 ];
 
 /**

@@ -18,6 +18,7 @@ import type {
 } from '@ownpilot/core';
 import type { ChannelSessionsRepository } from '../db/repositories/channel-sessions.js';
 import { truncate } from '../routes/helpers.js';
+import { stripInternalTags } from './normalizers/base.js';
 
 /** Generate the standard demo-mode reply. */
 export function demoModeReply(text: string): string {
@@ -220,10 +221,10 @@ export async function processDirectAgent(message: ChannelIncomingMessage): Promi
   const result = await agent.chat(message.text);
 
   if (result.ok) {
-    // Strip <memories> and <suggestions> tags from channel response
+    // Strip internal tags so channel users never see prompt-control markup.
     const { extractMemoriesFromResponse } = await import('../utils/memory-extraction.js');
     const { content: stripped } = extractMemoriesFromResponse(result.value.content);
-    return stripped.replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '').trimEnd();
+    return stripInternalTags(stripped);
   }
   return `Sorry, I encountered an error: ${result.error.message}`;
 }
