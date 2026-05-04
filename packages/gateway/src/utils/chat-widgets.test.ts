@@ -33,6 +33,20 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('recovers malformed table widgets with object rows', () => {
+    const result = normalizeChatWidgets(
+      `<table data='{\\"columns\\":[\\"Company\\",\\"Risk\\"],\\"rows\\":[{\\"Company\\":\\"AMD\\",\\"Risk\\":\\"High\\"},{\\"Company\\":\\"SK Hynix\\",\\"Risk\\":\\"Medium' />`
+    );
+
+    expect(result).toContain('<widget name="table"');
+    expect(result).toContain('Company');
+    expect(result).toContain('Risk');
+    expect(result).toContain('AMD');
+    expect(result).toContain('SK Hynix');
+    expect(result).toContain('Medium');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('canonicalizes new widget aliases', () => {
     const result = normalizeChatWidgets(
       `<cards data='{"items":[{"title":"A","detail":"B"}]}' />

@@ -159,6 +159,7 @@ function recoverStringArray(source: string, key: string): string[] {
 function recoverTableData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const headers = recoverStringArray(normalized, 'headers');
+  if (headers.length === 0) headers.push(...recoverStringArray(normalized, 'columns'));
   const rowsSourceStart = normalized.search(/"rows"\s*:\s*\[/);
   const rowsSource = rowsSourceStart === -1 ? normalized : normalized.slice(rowsSourceStart);
 
@@ -171,6 +172,33 @@ function recoverTableData(value: string): unknown {
     .filter((row) => row.length >= Math.max(1, Math.min(headers.length || 1, 2)));
 
   if (headers.length > 0 && rows.length > 0) return { headers, rows };
+
+  const objectRows = Array.from(rowsSource.split('{').slice(1))
+    .map((chunk) => {
+      const itemSource = chunk.split('}')[0] ?? chunk;
+      const row: Record<string, string> = {};
+      for (const pair of itemSource.matchAll(
+        /"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g
+      )) {
+        const key = decodeJsonString(pair[1] ?? '');
+        if (key === 'headers' || key === 'columns' || key === 'rows') continue;
+        row[key] = decodeJsonString(pair[2] ?? '');
+      }
+      for (const header of headers) {
+        row[header] ??= recoverStringField(itemSource, [header]) ?? '';
+      }
+      return row;
+    })
+    .filter((row) => Object.keys(row).length > 0);
+
+  if (objectRows.length > 0) {
+    const recoveredHeaders =
+      headers.length > 0
+        ? headers
+        : Array.from(new Set(objectRows.flatMap((row) => Object.keys(row))));
+    return { headers: recoveredHeaders, rows: objectRows };
+  }
+
   return invalidWidgetData();
 }
 

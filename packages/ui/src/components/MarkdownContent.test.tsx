@@ -163,6 +163,22 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('recovers tables from malformed object-row widget JSON', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<table data='{\\"columns\\":[\\"Company\\",\\"Risk\\"],\\"rows\\":[{\\"Company\\":\\"AMD\\",\\"Risk\\":\\"High\\"},{\\"Company\\":\\"SK Hynix\\",\\"Risk\\":\\"Medium' />`}
+      />
+    );
+
+    expect(html).toContain('<table');
+    expect(html).toContain('Company');
+    expect(html).toContain('Risk');
+    expect(html).toContain('AMD');
+    expect(html).toContain('SK Hynix');
+    expect(html).toContain('Medium');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('recovers callout fields from malformed widget JSON', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
