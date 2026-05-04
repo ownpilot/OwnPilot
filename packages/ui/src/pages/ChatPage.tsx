@@ -7,7 +7,8 @@ import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
 import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { MarkdownContent, hideIncompleteStreamingWidgets } from '../components/MarkdownContent';
+import { MarkdownContent } from '../components/MarkdownContent';
+import { cleanStreamingChatContent } from '../utils/chat-content';
 // ConversationSidebar kept as backup — conversation management moved to Sidebar.tsx
 // import { ConversationSidebar } from '../components/ConversationSidebar';
 import { useChatStore } from '../hooks/useChatStore';
@@ -1187,14 +1188,7 @@ export function ChatPage() {
                     {/* Streaming text */}
                     {streamingContent && (
                       <div>
-                        <MarkdownContent
-                          content={hideIncompleteStreamingWidgets(
-                            streamingContent
-                              .replace(/<memories>[\s\S]*$/, '')
-                              .replace(/<suggestions>[\s\S]*(?:<\/suggestions>)?\s*$/, '')
-                              .trimEnd()
-                          )}
-                        />
+                        <MarkdownContent content={cleanStreamingChatContent(streamingContent)} />
                         <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
                       </div>
                     )}

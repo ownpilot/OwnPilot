@@ -20,6 +20,7 @@ import { executionPermissionsApi, memoriesApi } from '../api';
 import { parseSSELine } from '../utils/sse-parser';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import { dispatchSessionChanged } from '../utils/session-events';
+import { stripChatInternalTags } from '../utils/chat-content';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -608,11 +609,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: (accumulatedContent || finalResponse?.response || '')
-              .replace(/<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g, '')
-              .replace(/<memories>[\s\S]*<\/memories>\s*/, '')
-              .replace(/<suggestions>[\s\S]*(?:<\/suggestions>)?\s*$/, '')
-              .trimEnd(),
+            content: stripChatInternalTags(accumulatedContent || finalResponse?.response || ''),
             timestamp: new Date().toISOString(),
             toolCalls: finalResponse?.toolCalls,
             provider,

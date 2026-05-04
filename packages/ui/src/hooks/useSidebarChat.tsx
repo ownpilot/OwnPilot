@@ -18,6 +18,7 @@ import {
 } from 'react';
 import { parseSSELine } from '../utils/sse-parser';
 import { usePageCopilotContext } from './usePageCopilotContext';
+import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
 
 export interface SidebarMessage {
   id: string;
@@ -294,7 +295,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
               if (event.kind === 'delta') {
                 if (event.data.delta) {
                   accumulatedContent += event.data.delta;
-                  setStreamingContent(accumulatedContent);
+                  setStreamingContent(cleanStreamingChatContent(accumulatedContent));
                 }
                 if (event.data.done && event.data.conversationId) {
                   setConversationIdState(event.data.conversationId);
@@ -315,11 +316,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
         const assistantMsg: SidebarMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: accumulatedContent
-            .replace(/<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g, '')
-            .replace(/<memories>[\s\S]*<\/memories>\s*/, '')
-            .replace(/<suggestions>[\s\S]*<\/suggestions>\s*$/, '')
-            .trimEnd(),
+          content: stripChatInternalTags(accumulatedContent),
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
@@ -330,7 +327,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
         const assistantMsg: SidebarMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: data.data?.response ?? '',
+          content: stripChatInternalTags(data.data?.response ?? ''),
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
