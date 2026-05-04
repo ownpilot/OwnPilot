@@ -11,16 +11,8 @@ import { useDialog } from '../components/ConfirmDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EmptyState } from '../components/EmptyState';
 import { clawsApi } from '../api/endpoints/claws';
-import type { ClawConfig } from '../api/endpoints/claws';
-import {
-  Plus,
-  Square,
-  Trash2,
-  RefreshCw,
-  Activity,
-  Home,
-  Zap,
-} from '../components/icons';
+import type { ClawConfig, ClawRecommendation } from '../api/endpoints/claws';
+import { Plus, Square, Trash2, RefreshCw, Activity, Home, Zap, Wrench } from '../components/icons';
 
 import { CreateClawModal } from './claws/CreateClawModal';
 import { ClawCard } from './claws/ClawCard';
@@ -42,7 +34,10 @@ export function ClawsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<string>('');
   const [filterState, setFilterState] = useState<string>('');
+  const [recommendations, setRecommendations] = useState<ClawRecommendation[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [applyingFixIds, setApplyingFixIds] = useState<Set<string>>(new Set());
+  const [isApplyingBatchFixes, setIsApplyingBatchFixes] = useState(false);
 
   const { subscribe } = useGateway();
   const toast = useToast();
@@ -50,8 +45,12 @@ export function ClawsPage() {
 
   const fetchClaws = useCallback(async () => {
     try {
-      const data = await clawsApi.list();
+      const [data, recs] = await Promise.all([
+        clawsApi.list(),
+        clawsApi.recommendations().catch(() => ({ recommendations: [] })),
+      ]);
       setClaws(data);
+      setRecommendations(recs.recommendations);
     } catch {
       toast.error('Failed to load claws');
     } finally {
@@ -170,11 +169,53 @@ export function ClawsPage() {
         interval_ms: source.intervalMs,
         event_filters: source.eventFilters,
         stop_condition: source.stopCondition,
+        preset: source.preset,
+        mission_contract: source.missionContract,
+        autonomy_policy: source.autonomyPolicy,
       });
       toast.success(`Cloned "${source.name}"`);
       fetchClaws();
     } catch {
       toast.error('Failed to clone claw');
+    }
+  };
+
+  const applySafeFixes = async (id: string) => {
+    setApplyingFixIds((prev) => new Set(prev).add(id));
+    try {
+      const result = await clawsApi.applyRecommendations(id);
+      if (result.applied.length > 0) {
+        toast.success(
+          `Applied ${result.applied.length} safe fix${result.applied.length === 1 ? '' : 'es'}`
+        );
+      } else {
+        toast.success('No safe fixes needed');
+      }
+      if (selectedClaw?.id === id) setSelectedClaw(result.claw);
+      fetchClaws();
+    } catch {
+      toast.error('Failed to apply safe fixes');
+    } finally {
+      setApplyingFixIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const applyTopSafeFixes = async () => {
+    setIsApplyingBatchFixes(true);
+    try {
+      const ids = recommendations.slice(0, 4).map((item) => item.clawId);
+      const result = await clawsApi.applyRecommendationBatch(ids);
+      toast.success(`Updated ${result.updated} claw${result.updated === 1 ? '' : 's'}`);
+      if (selectedClaw && ids.includes(selectedClaw.id)) setSelectedClaw(null);
+      fetchClaws();
+    } catch {
+      toast.error('Failed to apply safe fixes');
+    } finally {
+      setIsApplyingBatchFixes(false);
     }
   };
 
@@ -240,6 +281,11 @@ export function ClawsPage() {
     if (filterState) {
       const state = c.session?.state ?? 'stopped';
       if (filterState === 'active' && !['running', 'starting', 'waiting'].includes(state))
+        return false;
+      if (
+        filterState === 'attention' &&
+        !['watch', 'stuck', 'expensive', 'failed'].includes(c.health?.status ?? 'healthy')
+      )
         return false;
       if (filterState === 'stopped' && !['stopped', 'completed', 'failed'].includes(state))
         return false;
@@ -330,6 +376,75 @@ export function ClawsPage() {
           ) : (
             <div className="space-y-4">
               {/* Search + Filter Bar */}
+              {recommendations.length > 0 && (
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        Needs attention
+                      </p>
+                      <p className="text-xs text-amber-700/70 dark:text-amber-300/70">
+                        {recommendations.length} claw{recommendations.length === 1 ? '' : 's'} have
+                        diagnostics or contract suggestions.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setFilterState('attention')}
+                      className="px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                    >
+                      Review
+                    </button>
+                    <button
+                      onClick={applyTopSafeFixes}
+                      disabled={isApplyingBatchFixes}
+                      className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50"
+                    >
+                      <Wrench className="w-3 h-3" />
+                      {isApplyingBatchFixes ? 'Applying' : 'Fix top'}
+                    </button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {recommendations.slice(0, 4).map((item) => (
+                      <div
+                        key={item.clawId}
+                        className="text-left p-2 rounded border border-amber-500/10 bg-bg-primary dark:bg-dark-bg-primary hover:border-amber-500/30"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate">
+                            {item.name}
+                          </span>
+                          <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                            {item.score} - {item.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-text-muted dark:text-dark-text-muted truncate mt-0.5">
+                          {item.recommendations[0] ?? item.signals[0]}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const target = claws.find((c) => c.id === item.clawId);
+                              if (target) setSelectedClaw(target);
+                            }}
+                            className="px-2 py-1 text-[11px] rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                          >
+                            Review
+                          </button>
+                          <button
+                            onClick={() => applySafeFixes(item.clawId)}
+                            disabled={applyingFixIds.has(item.clawId)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50"
+                          >
+                            <Wrench className="w-3 h-3" />
+                            {applyingFixIds.has(item.clawId) ? 'Applying' : 'Safe fix'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px]">
                   <input
@@ -357,6 +472,7 @@ export function ClawsPage() {
                 >
                   <option value="">All states</option>
                   <option value="active">Active</option>
+                  <option value="attention">Needs attention</option>
                   <option value="paused">Paused</option>
                   <option value="stopped">Stopped</option>
                 </select>
@@ -441,4 +557,3 @@ export function ClawsPage() {
     </div>
   );
 }
-

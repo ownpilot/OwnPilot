@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../components/ToastProvider';
 import { clawsApi } from '../../api/endpoints/claws';
+import type { ClawPreset } from '../../api/endpoints/claws';
 import { X, ChevronDown, ChevronRight } from '../../components/icons';
 
-const CLAW_TEMPLATES: Array<{
+type ClawTemplate = {
   name: string;
   icon: string;
   mission: string;
@@ -11,7 +12,13 @@ const CLAW_TEMPLATES: Array<{
   sandbox: 'auto' | 'docker' | 'local';
   codingAgent?: string;
   description: string;
-}> = [
+  preset: string;
+  successCriteria: string[];
+  deliverables: string[];
+  constraints?: string[];
+};
+
+const CLAW_TEMPLATES: ClawTemplate[] = [
   {
     name: 'Research Agent',
     icon: '🔍',
@@ -20,6 +27,9 @@ const CLAW_TEMPLATES: Array<{
     mode: 'single-shot',
     sandbox: 'auto',
     description: 'Web research with final report',
+    preset: 'research',
+    successCriteria: ['Relevant sources reviewed', 'Findings are synthesized, not copied'],
+    deliverables: ['Report with source links', 'Open questions and confidence notes'],
   },
   {
     name: 'Code Reviewer',
@@ -30,6 +40,10 @@ const CLAW_TEMPLATES: Array<{
     sandbox: 'local',
     codingAgent: 'claude-code',
     description: 'Deep code review with CLI tools',
+    preset: 'code-review',
+    successCriteria: ['Findings are actionable', 'Claims reference files, tests, or commands'],
+    deliverables: ['Severity-ranked findings', 'Verification commands'],
+    constraints: ['Avoid style-only nitpicks', 'Do not change files unless explicitly asked'],
   },
   {
     name: 'Data Analyst',
@@ -39,6 +53,9 @@ const CLAW_TEMPLATES: Array<{
     mode: 'single-shot',
     sandbox: 'docker',
     description: 'Python-powered data analysis',
+    preset: 'data-analysis',
+    successCriteria: ['Data assumptions are stated', 'Charts or tables support conclusions'],
+    deliverables: ['Analysis report', 'Generated artifacts'],
   },
   {
     name: 'Monitor & Alert',
@@ -48,6 +65,9 @@ const CLAW_TEMPLATES: Array<{
     mode: 'interval',
     sandbox: 'auto',
     description: 'Periodic health checks with alerts',
+    preset: 'monitor',
+    successCriteria: ['Failures are detected quickly', 'False positives are minimized'],
+    deliverables: ['Status updates', 'Incident summary when issues occur'],
   },
   {
     name: 'Content Creator',
@@ -57,6 +77,9 @@ const CLAW_TEMPLATES: Array<{
     mode: 'single-shot',
     sandbox: 'auto',
     description: 'Write and publish content',
+    preset: 'content',
+    successCriteria: ['Output matches brief and audience', 'Draft is polished before publishing'],
+    deliverables: ['Final content artifact', 'Short editorial rationale'],
   },
   {
     name: 'Event Reactor',
@@ -66,10 +89,44 @@ const CLAW_TEMPLATES: Array<{
     mode: 'event',
     sandbox: 'auto',
     description: 'Event-driven reactive automation',
+    preset: 'event-reactor',
+    successCriteria: [
+      'Only relevant events trigger action',
+      'Actions are idempotent where possible',
+    ],
+    deliverables: ['Action log', 'Escalation when event data is ambiguous'],
   },
 ];
 
-export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+const splitLines = (value: string) =>
+  value
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+function presetToTemplate(preset: ClawPreset): ClawTemplate {
+  return {
+    name: preset.name,
+    icon: preset.icon.slice(0, 1).toUpperCase(),
+    mission: preset.mission,
+    mode: preset.mode,
+    sandbox: preset.sandbox,
+    codingAgent: preset.codingAgentProvider,
+    description: preset.description,
+    preset: preset.id,
+    successCriteria: preset.successCriteria,
+    deliverables: preset.deliverables,
+    constraints: preset.constraints,
+  };
+}
+
+export function CreateClawModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [name, setName] = useState('');
   const [mission, setMission] = useState('');
   const [mode, setMode] = useState<'continuous' | 'interval' | 'event' | 'single-shot'>(
@@ -80,6 +137,16 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
   const [codingAgent, setCodingAgent] = useState('');
   const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
+  const [preset, setPreset] = useState('');
+  const [successCriteria, setSuccessCriteria] = useState('');
+  const [deliverables, setDeliverables] = useState('');
+  const [constraints, setConstraints] = useState('');
+  const [allowSelfModify, setAllowSelfModify] = useState(false);
+  const [allowSubclaws, setAllowSubclaws] = useState(true);
+  const [requireEvidence, setRequireEvidence] = useState(true);
+  const [destructiveActionPolicy, setDestructiveActionPolicy] = useState<'ask' | 'block' | 'allow'>(
+    'ask'
+  );
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [availableSkills, setAvailableSkills] = useState<
     Array<{ id: string; name: string; description?: string; toolCount: number }>
@@ -88,6 +155,7 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
     Array<{ id: string; name: string; provider: string; recommended?: boolean }>
   >([]);
   const [createProviders, setCreateProviders] = useState<string[]>([]);
+  const [clawTemplates, setClawTemplates] = useState<ClawTemplate[]>(CLAW_TEMPLATES);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -100,6 +168,16 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
           setCreateProviders(data.configuredProviders);
         })
       )
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    clawsApi
+      .presets()
+      .then((data) => {
+        if (data.presets.length === 0) return;
+        setClawTemplates(data.presets.map(presetToTemplate));
+      })
       .catch(() => {});
   }, []);
 
@@ -143,6 +221,22 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
         model: model || undefined,
         coding_agent_provider: codingAgent || undefined,
         skills: selectedSkills.length > 0 ? selectedSkills : undefined,
+        preset: preset || undefined,
+        mission_contract: {
+          successCriteria: splitLines(successCriteria),
+          deliverables: splitLines(deliverables),
+          constraints: splitLines(constraints),
+          escalationRules: ['Budget, permissions, destructive actions, or ambiguous success state'],
+          evidenceRequired: requireEvidence,
+          minConfidence: 0.8,
+        },
+        autonomy_policy: {
+          allowSelfModify,
+          allowSubclaws,
+          requireEvidence,
+          destructiveActionPolicy,
+          filesystemScopes: [],
+        },
         event_filters:
           mode === 'event' && eventFilters.trim()
             ? eventFilters
@@ -185,7 +279,7 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
               Start from template
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {CLAW_TEMPLATES.map((tpl) => (
+              {clawTemplates.map((tpl) => (
                 <button
                   key={tpl.name}
                   type="button"
@@ -194,6 +288,10 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
                     setMission(tpl.mission);
                     setMode(tpl.mode);
                     setSandbox(tpl.sandbox);
+                    setPreset(tpl.preset);
+                    setSuccessCriteria(tpl.successCriteria.join('\n'));
+                    setDeliverables(tpl.deliverables.join('\n'));
+                    setConstraints((tpl.constraints ?? []).join('\n'));
                     if (tpl.codingAgent) setCodingAgent(tpl.codingAgent);
                   }}
                   className={`flex flex-col items-center gap-1 p-3 rounded-lg border transition-all text-center ${
@@ -426,6 +524,92 @@ export function CreateClawModal({ onClose, onCreated }: { onClose: () => void; o
                   <option value="codex">Codex CLI</option>
                   <option value="gemini-cli">Gemini CLI</option>
                 </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+                  <input
+                    type="checkbox"
+                    checked={allowSubclaws}
+                    onChange={(e) => setAllowSubclaws(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  Allow sub-claws
+                </label>
+                <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+                  <input
+                    type="checkbox"
+                    checked={allowSelfModify}
+                    onChange={(e) => setAllowSelfModify(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  Self-modify
+                </label>
+                <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+                  <input
+                    type="checkbox"
+                    checked={requireEvidence}
+                    onChange={(e) => setRequireEvidence(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  Require evidence
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                  Destructive Actions
+                </label>
+                <select
+                  value={destructiveActionPolicy}
+                  onChange={(e) =>
+                    setDestructiveActionPolicy(e.target.value as 'ask' | 'block' | 'allow')
+                  }
+                  className={inputClass}
+                >
+                  <option value="ask">Ask first</option>
+                  <option value="block">Block</option>
+                  <option value="allow">Allow</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Success Criteria
+                  </label>
+                  <textarea
+                    value={successCriteria}
+                    onChange={(e) => setSuccessCriteria(e.target.value)}
+                    rows={3}
+                    placeholder="One criterion per line"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Deliverables
+                  </label>
+                  <textarea
+                    value={deliverables}
+                    onChange={(e) => setDeliverables(e.target.value)}
+                    rows={3}
+                    placeholder="One deliverable per line"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary mb-1">
+                    Constraints
+                  </label>
+                  <textarea
+                    value={constraints}
+                    onChange={(e) => setConstraints(e.target.value)}
+                    rows={2}
+                    placeholder="One constraint per line"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
               </div>
             </div>
           )}

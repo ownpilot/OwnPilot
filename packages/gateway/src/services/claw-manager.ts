@@ -406,6 +406,34 @@ export class ClawManager {
     if (!managed) return;
     managed.session.config = config;
     managed.runner.updateConfig(config);
+
+    if (['running', 'waiting'].includes(managed.session.state) && !managed.cycleInProgress) {
+      managed.session.state = config.mode === 'event' ? 'waiting' : 'running';
+
+      if (config.mode === 'single-shot') {
+        this.clearScheduling(managed);
+        managed.timer = setTimeout(() => {
+          this.executeCycle(clawId)
+            .then(async () => {
+              if (this.claws.has(clawId)) {
+                await this.stopClawInternal(clawId, managed, 'completed');
+              }
+            })
+            .catch((err) => {
+              log.error(`Single-shot config update cycle error: ${getErrorMessage(err)}`);
+            });
+        }, 0);
+      } else {
+        this.scheduleNext(clawId, managed);
+      }
+
+      this.persistSession(clawId, managed).catch((err) => {
+        log.warn(
+          `[${clawId}] Failed to persist hot-reloaded config state: ${getErrorMessage(err)}`
+        );
+      });
+    }
+
     log.info(`[${clawId}] Config hot-reloaded`);
   }
 
@@ -809,7 +837,10 @@ export class ClawManager {
       const { ConversationsRepository } = await import('../db/repositories/conversations.js');
       const repo = new ConversationsRepository();
       const existing = await repo.getById(conversationId).catch((err) => {
-        log.debug('Conversation lookup failed (best-effort)', { conversationId, error: String(err) });
+        log.debug('Conversation lookup failed (best-effort)', {
+          conversationId,
+          error: String(err),
+        });
         return null;
       });
       if (!existing) {

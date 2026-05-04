@@ -150,9 +150,15 @@ export type {
   ClawState,
   ClawSandboxMode,
   ClawLimits,
+  ClawMissionContract,
+  ClawAutonomyPolicy,
+  ClawHealthStatus,
+  ClawPreset,
+  ClawRecommendation,
   ClawEscalation,
   ClawToolCall,
   CreateClawInput,
+  UpdateClawInput,
 } from './claws';
 export type {
   FleetConfig,

@@ -55,6 +55,9 @@ export class ClawServiceImpl implements IClawService {
       sandbox: input.sandbox ?? 'auto',
       codingAgentProvider: input.codingAgentProvider,
       skills: input.skills,
+      preset: input.preset,
+      missionContract: input.missionContract,
+      autonomyPolicy: input.autonomyPolicy,
       createdBy: input.createdBy ?? 'user',
     });
   }

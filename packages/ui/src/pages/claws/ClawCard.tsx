@@ -36,6 +36,12 @@ export function ClawCard({
   const isRunning = state === 'running' || state === 'starting' || state === 'waiting';
   const isPaused = state === 'paused';
   const isEscalation = state === 'escalation_pending';
+  const healthTone =
+    claw.health?.status === 'healthy'
+      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+      : claw.health?.status === 'idle'
+        ? 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400';
 
   return (
     <div
@@ -76,6 +82,23 @@ export function ClawCard({
       <p className="text-xs text-text-secondary dark:text-dark-text-secondary line-clamp-2 mb-3">
         {claw.mission}
       </p>
+
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        {claw.health && (
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${healthTone}`}
+            title={claw.health.recommendations[0] ?? claw.health.signals[0]}
+          >
+            {claw.health.score} - {claw.health.status}
+            {claw.health.contractScore < 60 ? ' · contract' : ''}
+          </span>
+        )}
+        {claw.preset && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+            {claw.preset}
+          </span>
+        )}
+      </div>
 
       {/* Stats */}
       {claw.session && (

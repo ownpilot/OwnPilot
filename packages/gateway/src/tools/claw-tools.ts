@@ -796,6 +796,10 @@ async function executeSpawnSubclaw(
 
   const { getClawsRepository } = await import('../db/repositories/claws.js');
   const repo = getClawsRepository();
+  const parentConfig = await repo.getById(ctx.clawId, userId);
+  if (parentConfig?.autonomyPolicy?.allowSubclaws === false) {
+    return { success: false, error: 'Sub-claws are disabled by this claw autonomy policy' };
+  }
 
   const subclawId = generateId('claw');
   const config = await repo.create({
@@ -1164,6 +1168,14 @@ async function executeUpdateConfig(
   try {
     const { getClawsRepository } = await import('../db/repositories/claws.js');
     const repo = getClawsRepository();
+    const current = await repo.getById(ctx.clawId, userId);
+    if (current?.autonomyPolicy?.allowSelfModify === false) {
+      return {
+        success: false,
+        error: 'Self-modification is disabled by this claw autonomy policy',
+      };
+    }
+
     const updated = await repo.update(ctx.clawId, userId, updates);
 
     // Hot-reload in-memory config so changes take effect this cycle

@@ -123,6 +123,8 @@ describe('Claws Routes', () => {
       expect(body.data.byState.running).toBe(1);
       expect(body.data.byState.paused).toBe(1);
       expect(body.data.byState.stopped).toBe(1);
+      expect(body.data.byHealth).toBeDefined();
+      expect(body.data.needsAttention).toBeGreaterThanOrEqual(0);
     });
 
     it('should return empty stats when no claws', async () => {
@@ -136,6 +138,232 @@ describe('Claws Routes', () => {
       expect(body.data.total).toBe(0);
       expect(body.data.running).toBe(0);
       expect(body.data.totalCost).toBe(0);
+    });
+  });
+
+  describe('GET /claws/presets', () => {
+    it('should return productized claw presets', async () => {
+      const res = await app.request('/claws/presets');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.presets.length).toBeGreaterThan(0);
+      expect(body.data.presets[0]).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          mission: expect.any(String),
+          successCriteria: expect.any(Array),
+          deliverables: expect.any(Array),
+        })
+      );
+    });
+  });
+
+  describe('GET /claws/recommendations', () => {
+    it('should return diagnostics recommendations for weak claws', async () => {
+      service.listClaws.mockResolvedValue([
+        {
+          id: 'claw-1',
+          name: 'Weak',
+          mode: 'event',
+          eventFilters: [],
+          missionContract: {
+            successCriteria: [],
+            deliverables: [],
+            constraints: [],
+            escalationRules: [],
+            evidenceRequired: false,
+            minConfidence: 0.8,
+          },
+          autoStart: false,
+          allowedTools: [],
+          limits: {},
+          depth: 0,
+          sandbox: 'auto',
+          createdBy: 'user',
+        },
+      ]);
+      service.listSessions.mockReturnValue([]);
+
+      const res = await app.request('/claws/recommendations');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.recommendations).toHaveLength(1);
+      expect(body.data.recommendations[0].recommendations[0]).toContain('Add success criteria');
+    });
+  });
+
+  describe('POST /claws/recommendations/apply', () => {
+    it('should apply safe fixes to selected attention claws', async () => {
+      const weakClaw = {
+        id: 'claw-1',
+        name: 'Weak',
+        mode: 'single-shot',
+        allowedTools: [],
+        limits: {},
+        autoStart: false,
+        depth: 0,
+        sandbox: 'auto',
+        createdBy: 'user',
+      };
+      const healthyClaw = {
+        id: 'claw-2',
+        name: 'Healthy',
+        mode: 'single-shot',
+        stopCondition: 'on_report',
+        missionContract: {
+          successCriteria: ['Done'],
+          deliverables: ['Report'],
+          constraints: ['No risky actions'],
+          escalationRules: ['Ask on blockers'],
+          evidenceRequired: true,
+          minConfidence: 0.8,
+        },
+        autonomyPolicy: {
+          allowSelfModify: false,
+          allowSubclaws: true,
+          requireEvidence: true,
+          destructiveActionPolicy: 'ask',
+          filesystemScopes: [],
+        },
+        allowedTools: [],
+        limits: {},
+        autoStart: false,
+        depth: 0,
+        sandbox: 'auto',
+        createdBy: 'user',
+      };
+      service.listClaws.mockResolvedValue([weakClaw, healthyClaw]);
+      service.listSessions.mockReturnValue([]);
+      service.updateClaw.mockResolvedValue({
+        ...weakClaw,
+        stopCondition: 'on_report',
+      });
+
+      const res = await app.request('/claws/recommendations/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ['claw-1', 'claw-2'] }),
+      });
+      expect(res.status).toBe(200);
+
+      expect(service.updateClaw).toHaveBeenCalledTimes(1);
+      expect(service.updateClaw).toHaveBeenCalledWith(
+        'claw-1',
+        'user-1',
+        expect.objectContaining({ stopCondition: 'on_report' })
+      );
+
+      const body = await res.json();
+      expect(body.data.updated).toBe(1);
+      expect(body.data.results[0].clawId).toBe('claw-1');
+    });
+  });
+
+  describe('GET /claws/:id/doctor', () => {
+    it('should preview safe config fixes without updating the claw', async () => {
+      service.getClaw.mockResolvedValue({
+        id: 'claw-1',
+        name: 'Weak',
+        mode: 'single-shot',
+        eventFilters: [],
+        allowedTools: [],
+        limits: {},
+        autoStart: false,
+        depth: 0,
+        sandbox: 'auto',
+        createdBy: 'user',
+      });
+
+      const res = await app.request('/claws/claw-1/doctor');
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.data.applied).toEqual(['mission_contract', 'stop_condition', 'autonomy_policy']);
+      expect(body.data.patch.stopCondition).toBe('on_report');
+      expect(body.data.patch.missionContract.evidenceRequired).toBe(true);
+      expect(service.updateClaw).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /claws/:id/apply-recommendations', () => {
+    it('should apply conservative recommendation fixes and hot-reload config', async () => {
+      const weakClaw = {
+        id: 'claw-1',
+        name: 'Weak',
+        mode: 'event',
+        eventFilters: [],
+        missionContract: {
+          successCriteria: [],
+          deliverables: [],
+          constraints: [],
+          escalationRules: [],
+          evidenceRequired: false,
+          minConfidence: 0.4,
+        },
+        autonomyPolicy: {
+          allowSelfModify: true,
+          allowSubclaws: true,
+          requireEvidence: false,
+          destructiveActionPolicy: 'allow',
+          filesystemScopes: [],
+        },
+        allowedTools: [],
+        limits: {},
+        autoStart: false,
+        depth: 0,
+        sandbox: 'auto',
+        createdBy: 'user',
+      };
+      const updatedClaw = {
+        ...weakClaw,
+        stopCondition: 'idle:3',
+        missionContract: {
+          successCriteria: ['Mission outcome is complete, specific, and verifiable'],
+          deliverables: ['Final artifact or report with decisions and evidence'],
+          constraints: ['Do not perform destructive actions without approval'],
+          escalationRules: [
+            'Escalate when permissions, budget, missing context, or destructive actions block progress',
+          ],
+          evidenceRequired: true,
+          minConfidence: 0.8,
+        },
+        autonomyPolicy: {
+          allowSelfModify: false,
+          allowSubclaws: true,
+          requireEvidence: true,
+          destructiveActionPolicy: 'ask',
+          filesystemScopes: [],
+        },
+      };
+      service.getClaw.mockResolvedValue(weakClaw);
+      service.updateClaw.mockResolvedValue(updatedClaw);
+
+      const res = await app.request('/claws/claw-1/apply-recommendations', { method: 'POST' });
+      expect(res.status).toBe(200);
+
+      expect(service.updateClaw).toHaveBeenCalledWith(
+        'claw-1',
+        'user-1',
+        expect.objectContaining({
+          stopCondition: 'idle:3',
+          missionContract: expect.objectContaining({
+            evidenceRequired: true,
+            minConfidence: 0.8,
+          }),
+          autonomyPolicy: expect.objectContaining({
+            allowSelfModify: false,
+            requireEvidence: true,
+            destructiveActionPolicy: 'ask',
+          }),
+        })
+      );
+      expect(mockGetClawManager().updateClawConfig).toHaveBeenCalledWith('claw-1', updatedClaw);
+
+      const body = await res.json();
+      expect(body.data.applied).toContain('autonomy_policy');
+      expect(body.data.skipped[0]).toContain('event_filters');
     });
   });
 
@@ -195,6 +423,31 @@ describe('Claws Routes', () => {
       expect(res.status).toBe(201);
       const body = await res.json();
       expect(body.data.id).toBe('claw-new');
+    });
+
+    it('should accept interval mode and local sandbox', async () => {
+      service.createClaw.mockResolvedValue({ id: 'claw-new', name: 'Research' });
+
+      const res = await app.request('/claws', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Research',
+          mission: 'Do research',
+          mode: 'interval',
+          sandbox: 'local',
+          interval_ms: 60_000,
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(service.createClaw).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'interval',
+          sandbox: 'local',
+          intervalMs: 60_000,
+        })
+      );
     });
 
     it('should require name', async () => {
@@ -260,6 +513,72 @@ describe('Claws Routes', () => {
         body: JSON.stringify({ name: 'Updated' }),
       });
       expect(res.status).toBe(200);
+    });
+
+    it('should map settings payload fields before update', async () => {
+      service.updateClaw.mockResolvedValue({ id: 'claw-1', name: 'Updated' });
+
+      const res = await app.request('/claws/claw-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'event',
+          interval_ms: 60_000,
+          event_filters: ['user.message'],
+          auto_start: true,
+          stop_condition: null,
+          coding_agent_provider: null,
+          provider: null,
+          model: null,
+          preset: 'code-review',
+          mission_contract: {
+            successCriteria: ['Find actionable issues'],
+            deliverables: ['Severity report'],
+            evidenceRequired: true,
+            minConfidence: 0.8,
+          },
+          autonomy_policy: {
+            allowSelfModify: false,
+            allowSubclaws: true,
+            destructiveActionPolicy: 'ask',
+          },
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(service.updateClaw).toHaveBeenCalledWith(
+        'claw-1',
+        'user-1',
+        expect.objectContaining({
+          mode: 'event',
+          intervalMs: 60_000,
+          eventFilters: ['user.message'],
+          autoStart: true,
+          stopCondition: null,
+          codingAgentProvider: null,
+          provider: null,
+          model: null,
+          preset: 'code-review',
+          missionContract: expect.objectContaining({
+            successCriteria: ['Find actionable issues'],
+          }),
+          autonomyPolicy: expect.objectContaining({
+            allowSelfModify: false,
+            allowSubclaws: true,
+          }),
+        })
+      );
+    });
+
+    it('should reject invalid sandbox on update', async () => {
+      const res = await app.request('/claws/claw-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sandbox: 'none' }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(service.updateClaw).not.toHaveBeenCalled();
     });
 
     it('should return 404 for missing claw', async () => {

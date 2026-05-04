@@ -30,6 +30,33 @@ export interface ClawLimits {
   totalBudgetUsd?: number;
 }
 
+export interface ClawMissionContract {
+  successCriteria: string[];
+  deliverables: string[];
+  constraints: string[];
+  escalationRules: string[];
+  evidenceRequired: boolean;
+  minConfidence: number;
+}
+
+export interface ClawAutonomyPolicy {
+  allowSelfModify: boolean;
+  allowSubclaws: boolean;
+  requireEvidence: boolean;
+  destructiveActionPolicy: 'ask' | 'block' | 'allow';
+  filesystemScopes: string[];
+  maxCostUsdBeforePause?: number;
+}
+
+export interface ClawHealthStatus {
+  score: number;
+  status: 'healthy' | 'watch' | 'stuck' | 'expensive' | 'failed' | 'idle';
+  signals: string[];
+  recommendations: string[];
+  contractScore: number;
+  policyWarnings: string[];
+}
+
 export interface ClawEscalation {
   id: string;
   type: string;
@@ -73,6 +100,10 @@ export interface ClawConfig {
   sandbox: ClawSandboxMode;
   codingAgentProvider?: string;
   skills?: string[];
+  preset?: string;
+  missionContract?: ClawMissionContract;
+  autonomyPolicy?: ClawAutonomyPolicy;
+  health?: ClawHealthStatus;
   createdBy: 'user' | 'ai' | 'claw';
   createdAt: string;
   updatedAt: string;
@@ -118,6 +149,77 @@ export interface CreateClawInput {
   sandbox?: ClawSandboxMode;
   coding_agent_provider?: string;
   skills?: string[];
+  preset?: string;
+  mission_contract?: Partial<ClawMissionContract>;
+  autonomy_policy?: Partial<ClawAutonomyPolicy>;
+}
+
+export interface UpdateClawInput extends Omit<
+  Partial<CreateClawInput>,
+  | 'provider'
+  | 'model'
+  | 'soul_id'
+  | 'stop_condition'
+  | 'coding_agent_provider'
+  | 'preset'
+  | 'mission_contract'
+  | 'autonomy_policy'
+> {
+  provider?: string | null;
+  model?: string | null;
+  soul_id?: string | null;
+  stop_condition?: string | null;
+  coding_agent_provider?: string | null;
+  preset?: string | null;
+  mission_contract?: Partial<ClawMissionContract> | null;
+  autonomy_policy?: Partial<ClawAutonomyPolicy> | null;
+}
+
+export interface ClawPreset {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  mission: string;
+  mode: ClawMode;
+  sandbox: ClawSandboxMode;
+  codingAgentProvider?: string;
+  successCriteria: string[];
+  deliverables: string[];
+  constraints?: string[];
+}
+
+export interface ClawRecommendation {
+  clawId: string;
+  name: string;
+  status: ClawHealthStatus['status'];
+  score: number;
+  signals: string[];
+  recommendations: string[];
+}
+
+export interface ClawDoctorResponse {
+  health: ClawHealthStatus;
+  patch: UpdateClawInput;
+  applied: string[];
+  skipped: string[];
+}
+
+export interface ClawApplyRecommendationsResponse {
+  applied: string[];
+  skipped: string[];
+  claw: ClawConfig;
+  health: ClawHealthStatus;
+}
+
+export interface ClawApplyRecommendationsBatchResponse {
+  results: Array<{
+    clawId: string;
+    name: string;
+    applied: string[];
+    skipped: string[];
+  }>;
+  updated: number;
 }
 
 // =============================================================================
@@ -127,12 +229,27 @@ export interface CreateClawInput {
 export const clawsApi = {
   list: () => apiClient.get<ClawConfig[]>('/claws'),
 
+  presets: () => apiClient.get<{ presets: ClawPreset[] }>('/claws/presets'),
+
+  recommendations: () =>
+    apiClient.get<{ recommendations: ClawRecommendation[] }>('/claws/recommendations'),
+
   get: (id: string) => apiClient.get<ClawConfig>(`/claws/${id}`),
+
+  doctor: (id: string) => apiClient.get<ClawDoctorResponse>(`/claws/${id}/doctor`),
 
   create: (input: CreateClawInput) => apiClient.post<ClawConfig>('/claws', input),
 
-  update: (id: string, input: Partial<CreateClawInput>) =>
-    apiClient.put<ClawConfig>(`/claws/${id}`, input),
+  update: (id: string, input: UpdateClawInput) => apiClient.put<ClawConfig>(`/claws/${id}`, input),
+
+  applyRecommendations: (id: string) =>
+    apiClient.post<ClawApplyRecommendationsResponse>(`/claws/${id}/apply-recommendations`),
+
+  applyRecommendationBatch: (ids?: string[]) =>
+    apiClient.post<ClawApplyRecommendationsBatchResponse>(
+      '/claws/recommendations/apply',
+      ids ? { ids } : {}
+    ),
 
   delete: (id: string) => apiClient.delete(`/claws/${id}`),
 
@@ -182,6 +299,8 @@ export const clawsApi = {
       totalToolCalls: number;
       byMode: Record<string, number>;
       byState: Record<string, number>;
+      byHealth: Record<string, number>;
+      needsAttention: number;
     }>('/claws/stats'),
 
   approveEscalation: (id: string) =>

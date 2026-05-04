@@ -12,7 +12,9 @@ import type {
   ClawState,
   ClawSandboxMode,
   ClawCreator,
+  ClawAutonomyPolicy,
   ClawCycleResult,
+  ClawMissionContract,
   ClawHistoryEntry,
   ClawToolCall,
   ClawEscalation,
@@ -45,6 +47,9 @@ interface ClawRow {
   sandbox: string;
   coding_agent_provider: string | null;
   skills: string | null;
+  preset: string | null;
+  mission_contract: string | null;
+  autonomy_policy: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -86,7 +91,46 @@ interface HistoryRow {
 // Row Mappers
 // ============================================================================
 
+function normalizeMissionContract(
+  value: Partial<ClawMissionContract> | null | undefined
+): ClawMissionContract | undefined {
+  if (!value || Object.keys(value).length === 0) return undefined;
+  return {
+    successCriteria: value.successCriteria ?? [],
+    deliverables: value.deliverables ?? [],
+    constraints: value.constraints ?? [],
+    escalationRules: value.escalationRules ?? [],
+    evidenceRequired: value.evidenceRequired ?? true,
+    minConfidence: value.minConfidence ?? 0.8,
+  };
+}
+
+function normalizeAutonomyPolicy(
+  value: Partial<ClawAutonomyPolicy> | null | undefined
+): ClawAutonomyPolicy | undefined {
+  if (!value || Object.keys(value).length === 0) return undefined;
+  return {
+    allowSelfModify: value.allowSelfModify ?? false,
+    allowSubclaws: value.allowSubclaws ?? true,
+    requireEvidence: value.requireEvidence ?? true,
+    destructiveActionPolicy: value.destructiveActionPolicy ?? 'ask',
+    filesystemScopes: value.filesystemScopes ?? [],
+    maxCostUsdBeforePause: value.maxCostUsdBeforePause,
+  };
+}
+
 function rowToConfig(row: ClawRow): ClawConfig {
+  const missionContract = row.mission_contract
+    ? normalizeMissionContract(
+        parseJsonFieldNullable<Partial<ClawMissionContract>>(row.mission_contract)
+      )
+    : undefined;
+  const autonomyPolicy = row.autonomy_policy
+    ? normalizeAutonomyPolicy(
+        parseJsonFieldNullable<Partial<ClawAutonomyPolicy>>(row.autonomy_policy)
+      )
+    : undefined;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -110,6 +154,9 @@ function rowToConfig(row: ClawRow): ClawConfig {
     sandbox: row.sandbox as ClawSandboxMode,
     codingAgentProvider: row.coding_agent_provider ?? undefined,
     skills: parseJsonField<string[]>(row.skills ?? '[]', []),
+    preset: row.preset ?? undefined,
+    missionContract,
+    autonomyPolicy,
     createdBy: row.created_by as ClawCreator,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -163,14 +210,19 @@ export class ClawsRepository extends BaseRepository {
     sandbox: ClawSandboxMode;
     codingAgentProvider?: string;
     skills?: string[];
+    preset?: string;
+    missionContract?: Partial<ClawMissionContract>;
+    autonomyPolicy?: Partial<ClawAutonomyPolicy>;
     createdBy: ClawCreator;
   }): Promise<ClawConfig> {
     await this.execute(
       `INSERT INTO claws
        (id, user_id, name, mission, mode, allowed_tools, limits, interval_ms, event_filters,
         auto_start, stop_condition, provider, model, soul_id, parent_claw_id,
-        depth, sandbox, coding_agent_provider, skills, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+        depth, sandbox, coding_agent_provider, skills, preset, mission_contract, autonomy_policy,
+        created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+        $17, $18, $19, $20, $21, $22, $23)`,
       [
         data.id,
         data.userId,
@@ -191,6 +243,9 @@ export class ClawsRepository extends BaseRepository {
         data.sandbox,
         data.codingAgentProvider ?? null,
         JSON.stringify(data.skills ?? []),
+        data.preset ?? null,
+        JSON.stringify(data.missionContract ?? {}),
+        JSON.stringify(data.autonomyPolicy ?? {}),
         data.createdBy,
       ]
     );
@@ -254,8 +309,18 @@ export class ClawsRepository extends BaseRepository {
       sandbox: ClawSandboxMode;
       codingAgentProvider: string | null;
       skills: string[];
+      preset: string | null;
+      missionContract: Partial<ClawMissionContract> | null;
+      autonomyPolicy: Partial<ClawAutonomyPolicy> | null;
     }>
   ): Promise<ClawConfig | null> {
+    let mergedLimits: ClawLimits | undefined;
+    if (updates.limits !== undefined) {
+      const current = await this.getById(id, userId);
+      if (!current) return null;
+      mergedLimits = { ...current.limits, ...updates.limits };
+    }
+
     const sets: string[] = [];
     const params: unknown[] = [];
     let idx = 1;
@@ -278,7 +343,7 @@ export class ClawsRepository extends BaseRepository {
     }
     if (updates.limits !== undefined) {
       sets.push(`limits = $${idx++}`);
-      params.push(JSON.stringify(updates.limits));
+      params.push(JSON.stringify(mergedLimits));
     }
     if (updates.intervalMs !== undefined) {
       sets.push(`interval_ms = $${idx++}`);
@@ -323,6 +388,18 @@ export class ClawsRepository extends BaseRepository {
     if (updates.skills !== undefined) {
       sets.push(`skills = $${idx++}`);
       params.push(JSON.stringify(updates.skills));
+    }
+    if (updates.preset !== undefined) {
+      sets.push(`preset = $${idx++}`);
+      params.push(updates.preset);
+    }
+    if (updates.missionContract !== undefined) {
+      sets.push(`mission_contract = $${idx++}`);
+      params.push(JSON.stringify(updates.missionContract ?? {}));
+    }
+    if (updates.autonomyPolicy !== undefined) {
+      sets.push(`autonomy_policy = $${idx++}`);
+      params.push(JSON.stringify(updates.autonomyPolicy ?? {}));
     }
 
     if (sets.length === 0) return this.getById(id, userId);

@@ -286,10 +286,31 @@ describe('Claw Tools', () => {
       expect(result.error).toContain('required');
     });
 
+    it('should respect autonomy policy when subclaws are disabled', async () => {
+      setClawContext();
+
+      const mockRepo = {
+        getById: vi.fn().mockResolvedValue({ autonomyPolicy: { allowSubclaws: false } }),
+        create: vi.fn(),
+      };
+      mockGetClawsRepository.mockReturnValue(mockRepo);
+
+      const result = await executeClawTool(
+        'claw_spawn_subclaw',
+        { name: 'Sub task', mission: 'Do something' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Sub-claws are disabled');
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
     it('should spawn subclaw with single-shot mode', async () => {
       setClawContext({ depth: 1 });
 
       const mockRepo = {
+        getById: vi.fn().mockResolvedValue({ autonomyPolicy: { allowSubclaws: true } }),
         create: vi.fn().mockResolvedValue({ id: 'sub-claw-1' }),
       };
       mockGetClawsRepository.mockReturnValue(mockRepo);
@@ -322,7 +343,10 @@ describe('Claw Tools', () => {
     it('should spawn subclaw with cyclic mode', async () => {
       setClawContext({ depth: 0 });
 
-      const mockRepo = { create: vi.fn().mockResolvedValue({ id: 'sub-claw-2' }) };
+      const mockRepo = {
+        getById: vi.fn().mockResolvedValue({ autonomyPolicy: { allowSubclaws: true } }),
+        create: vi.fn().mockResolvedValue({ id: 'sub-claw-2' }),
+      };
       mockGetClawsRepository.mockReturnValue(mockRepo);
 
       const mockManager = { startClaw: vi.fn().mockResolvedValue({ state: 'running' }) };
@@ -336,6 +360,28 @@ describe('Claw Tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toEqual(expect.objectContaining({ mode: 'continuous' }));
+    });
+  });
+
+  describe('claw_update_config', () => {
+    it('should respect autonomy policy when self-modification is disabled', async () => {
+      setClawContext();
+
+      const mockRepo = {
+        getById: vi.fn().mockResolvedValue({ autonomyPolicy: { allowSelfModify: false } }),
+        update: vi.fn(),
+      };
+      mockGetClawsRepository.mockReturnValue(mockRepo);
+
+      const result = await executeClawTool(
+        'claw_update_config',
+        { mission: 'New mission' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Self-modification is disabled');
+      expect(mockRepo.update).not.toHaveBeenCalled();
     });
   });
 

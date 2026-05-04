@@ -3,20 +3,8 @@ import type { ClawConfig, ClawHistoryEntry } from '../../api/endpoints/claws';
 import { clawsApi } from '../../api/endpoints/claws';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useToast } from '../../components/ToastProvider';
-import {
-  XCircle,
-  CheckCircle2,
-  FolderOpen,
-  Send,
-  Save,
-} from '../../components/icons';
-import {
-  formatDuration,
-  formatCost,
-  timeAgo,
-  labelClass as lbl,
-  inputClass as ic,
-} from './utils';
+import { XCircle, CheckCircle2, FolderOpen, Send, Save } from '../../components/icons';
+import { formatDuration, formatCost, timeAgo, labelClass as lbl, inputClass as ic } from './utils';
 import { FileBrowser, FileEditorModal } from './FileBrowser';
 
 // ============================================================================
@@ -112,6 +100,16 @@ export function OverviewTab({
       </div>
 
       <div className="flex flex-wrap gap-1.5 text-xs">
+        {claw.health && (
+          <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full">
+            health {claw.health.score} · {claw.health.status}
+          </span>
+        )}
+        {claw.preset && (
+          <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 rounded-full">
+            {claw.preset}
+          </span>
+        )}
         <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full">
           {claw.mode}
         </span>
@@ -160,6 +158,34 @@ export function OverviewTab({
           </span>
         )}
       </div>
+
+      {claw.missionContract &&
+        (claw.missionContract.successCriteria.length > 0 ||
+          claw.missionContract.deliverables.length > 0) && (
+          <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+            <p className={lbl}>Mission Contract</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-xs text-text-secondary dark:text-dark-text-secondary">
+              <div>
+                <p className="font-medium text-text-primary dark:text-dark-text-primary">Success</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {claw.missionContract.successCriteria.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                  Deliverables
+                </p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {claw.missionContract.deliverables.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
       {claw.workspaceId && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
@@ -706,6 +732,12 @@ export interface ModelEntry {
   recommended?: boolean;
 }
 
+const splitLines = (value: string) =>
+  value
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 export function SettingsTab({
   claw,
   models,
@@ -729,6 +761,27 @@ export function SettingsTab({
   const [editProvider, setEditProvider] = useState(claw.provider ?? '');
   const [editModel, setEditModel] = useState(claw.model ?? '');
   const [editBudget, setEditBudget] = useState(claw.limits.totalBudgetUsd ?? 0);
+  const [editSuccessCriteria, setEditSuccessCriteria] = useState(
+    (claw.missionContract?.successCriteria ?? []).join('\n')
+  );
+  const [editDeliverables, setEditDeliverables] = useState(
+    (claw.missionContract?.deliverables ?? []).join('\n')
+  );
+  const [editConstraints, setEditConstraints] = useState(
+    (claw.missionContract?.constraints ?? []).join('\n')
+  );
+  const [editEvidenceRequired, setEditEvidenceRequired] = useState(
+    claw.missionContract?.evidenceRequired ?? true
+  );
+  const [editAllowSelfModify, setEditAllowSelfModify] = useState(
+    claw.autonomyPolicy?.allowSelfModify ?? false
+  );
+  const [editAllowSubclaws, setEditAllowSubclaws] = useState(
+    claw.autonomyPolicy?.allowSubclaws ?? true
+  );
+  const [editDestructivePolicy, setEditDestructivePolicy] = useState<'ask' | 'block' | 'allow'>(
+    claw.autonomyPolicy?.destructiveActionPolicy ?? 'ask'
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -743,6 +796,13 @@ export function SettingsTab({
     setEditProvider(claw.provider ?? '');
     setEditModel(claw.model ?? '');
     setEditBudget(claw.limits.totalBudgetUsd ?? 0);
+    setEditSuccessCriteria((claw.missionContract?.successCriteria ?? []).join('\n'));
+    setEditDeliverables((claw.missionContract?.deliverables ?? []).join('\n'));
+    setEditConstraints((claw.missionContract?.constraints ?? []).join('\n'));
+    setEditEvidenceRequired(claw.missionContract?.evidenceRequired ?? true);
+    setEditAllowSelfModify(claw.autonomyPolicy?.allowSelfModify ?? false);
+    setEditAllowSubclaws(claw.autonomyPolicy?.allowSubclaws ?? true);
+    setEditDestructivePolicy(claw.autonomyPolicy?.destructiveActionPolicy ?? 'ask');
   }, [claw.id]);
 
   const saveSettings = async () => {
@@ -752,9 +812,9 @@ export function SettingsTab({
         mission: editMission,
         mode: editMode,
         sandbox: editSandbox,
-        coding_agent_provider: editCodingAgent || undefined,
-        provider: editProvider || undefined,
-        model: editModel || undefined,
+        coding_agent_provider: editCodingAgent || null,
+        provider: editProvider || null,
+        model: editModel || null,
         interval_ms: editMode === 'interval' ? editIntervalMs : undefined,
         event_filters:
           editMode === 'event' && editEventFilters.trim()
@@ -762,9 +822,25 @@ export function SettingsTab({
                 .split(',')
                 .map((s) => s.trim())
                 .filter(Boolean)
-            : undefined,
+            : [],
         auto_start: editAutoStart,
-        stop_condition: editStopCondition || undefined,
+        stop_condition: editStopCondition.trim() || null,
+        mission_contract: {
+          successCriteria: splitLines(editSuccessCriteria),
+          deliverables: splitLines(editDeliverables),
+          constraints: splitLines(editConstraints),
+          escalationRules: claw.missionContract?.escalationRules ?? [],
+          evidenceRequired: editEvidenceRequired,
+          minConfidence: claw.missionContract?.minConfidence ?? 0.8,
+        },
+        autonomy_policy: {
+          allowSelfModify: editAllowSelfModify,
+          allowSubclaws: editAllowSubclaws,
+          requireEvidence: editEvidenceRequired,
+          destructiveActionPolicy: editDestructivePolicy,
+          filesystemScopes: claw.autonomyPolicy?.filesystemScopes ?? [],
+          maxCostUsdBeforePause: editBudget > 0 ? editBudget : undefined,
+        },
         limits: { ...claw.limits, totalBudgetUsd: editBudget > 0 ? editBudget : undefined },
       });
       toast.success('Settings saved');
@@ -861,11 +937,7 @@ export function SettingsTab({
         </div>
         <div>
           <label className={lbl}>AI Model</label>
-          <select
-            value={editModel}
-            onChange={(e) => setEditModel(e.target.value)}
-            className={ic}
-          >
+          <select value={editModel} onChange={(e) => setEditModel(e.target.value)} className={ic}>
             <option value="">System Default</option>
             {models
               .filter((m) => !editProvider || m.provider === editProvider)
@@ -931,6 +1003,80 @@ export function SettingsTab({
               Auto-start on boot
             </span>
           </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className={lbl}>Success Criteria</label>
+            <textarea
+              value={editSuccessCriteria}
+              onChange={(e) => setEditSuccessCriteria(e.target.value)}
+              rows={4}
+              placeholder="One criterion per line"
+              className={`${ic} resize-none`}
+            />
+          </div>
+          <div>
+            <label className={lbl}>Deliverables</label>
+            <textarea
+              value={editDeliverables}
+              onChange={(e) => setEditDeliverables(e.target.value)}
+              rows={4}
+              placeholder="One deliverable per line"
+              className={`${ic} resize-none`}
+            />
+          </div>
+          <div>
+            <label className={lbl}>Constraints</label>
+            <textarea
+              value={editConstraints}
+              onChange={(e) => setEditConstraints(e.target.value)}
+              rows={4}
+              placeholder="One constraint per line"
+              className={`${ic} resize-none`}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+            <input
+              type="checkbox"
+              checked={editEvidenceRequired}
+              onChange={(e) => setEditEvidenceRequired(e.target.checked)}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            Evidence
+          </label>
+          <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+            <input
+              type="checkbox"
+              checked={editAllowSubclaws}
+              onChange={(e) => setEditAllowSubclaws(e.target.checked)}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            Sub-claws
+          </label>
+          <label className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary">
+            <input
+              type="checkbox"
+              checked={editAllowSelfModify}
+              onChange={(e) => setEditAllowSelfModify(e.target.checked)}
+              className="w-4 h-4 rounded accent-primary"
+            />
+            Self-modify
+          </label>
+          <select
+            value={editDestructivePolicy}
+            onChange={(e) => setEditDestructivePolicy(e.target.value as 'ask' | 'block' | 'allow')}
+            className={ic}
+          >
+            <option value="ask">Ask before destructive</option>
+            <option value="block">Block destructive</option>
+            <option value="allow">Allow destructive</option>
+          </select>
         </div>
       </div>
 

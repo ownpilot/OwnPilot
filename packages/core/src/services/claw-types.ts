@@ -73,6 +73,36 @@ export const DEFAULT_CLAW_LIMITS: ClawLimits = {
   cycleTimeoutMs: 600_000,
 };
 
+/** Explicit contract that defines what good output means for a claw. */
+export interface ClawMissionContract {
+  successCriteria: string[];
+  deliverables: string[];
+  constraints: string[];
+  escalationRules: string[];
+  evidenceRequired: boolean;
+  minConfidence: number;
+}
+
+/** Guardrails that control how much autonomy a claw may exercise. */
+export interface ClawAutonomyPolicy {
+  allowSelfModify: boolean;
+  allowSubclaws: boolean;
+  requireEvidence: boolean;
+  destructiveActionPolicy: 'ask' | 'block' | 'allow';
+  filesystemScopes: string[];
+  maxCostUsdBeforePause?: number;
+}
+
+/** Derived runtime health signal returned by API responses. */
+export interface ClawHealthStatus {
+  score: number;
+  status: 'healthy' | 'watch' | 'stuck' | 'expensive' | 'failed' | 'idle';
+  signals: string[];
+  recommendations: string[];
+  contractScore: number;
+  policyWarnings: string[];
+}
+
 /** Persisted claw configuration */
 export interface ClawConfig {
   id: string;
@@ -105,6 +135,12 @@ export interface ClawConfig {
   codingAgentProvider?: string;
   /** Skill IDs this claw has access to */
   skills?: string[];
+  /** Productized preset/loadout name, if created from one */
+  preset?: string;
+  /** Mission success contract and evidence requirements */
+  missionContract?: ClawMissionContract;
+  /** Autonomy guardrails for self-modification, evidence, and risky actions */
+  autonomyPolicy?: ClawAutonomyPolicy;
   createdBy: ClawCreator;
   createdAt: Date;
   updatedAt: Date;
@@ -129,6 +165,9 @@ export interface CreateClawInput {
   sandbox?: ClawSandboxMode;
   codingAgentProvider?: string;
   skills?: string[];
+  preset?: string;
+  missionContract?: Partial<ClawMissionContract>;
+  autonomyPolicy?: Partial<ClawAutonomyPolicy>;
   createdBy?: ClawCreator;
 }
 
@@ -142,13 +181,16 @@ export interface UpdateClawInput {
   intervalMs?: number;
   eventFilters?: string[];
   autoStart?: boolean;
-  stopCondition?: string;
+  stopCondition?: string | null;
   provider?: string | null;
   model?: string | null;
   soulId?: string | null;
   sandbox?: ClawSandboxMode;
   codingAgentProvider?: string | null;
   skills?: string[];
+  preset?: string | null;
+  missionContract?: Partial<ClawMissionContract> | null;
+  autonomyPolicy?: Partial<ClawAutonomyPolicy> | null;
 }
 
 // ============================================================================

@@ -204,6 +204,47 @@ export class ClawRunner {
     parts.push(this.config.mission);
     parts.push('');
 
+    if (this.config.missionContract) {
+      const contract = this.config.missionContract;
+      parts.push('## Mission Contract');
+      if (contract.successCriteria?.length) {
+        parts.push(`Success criteria: ${contract.successCriteria.join('; ')}`);
+      }
+      if (contract.deliverables?.length) {
+        parts.push(`Required deliverables: ${contract.deliverables.join('; ')}`);
+      }
+      if (contract.constraints?.length) {
+        parts.push(`Constraints: ${contract.constraints.join('; ')}`);
+      }
+      if (contract.escalationRules?.length) {
+        parts.push(`Escalate when: ${contract.escalationRules.join('; ')}`);
+      }
+      if (contract.evidenceRequired) {
+        parts.push(
+          `Every major claim must include evidence. Target confidence: ${Math.round(
+            (contract.minConfidence ?? 0.8) * 100
+          )}%.`
+        );
+      }
+      parts.push('');
+    }
+
+    if (this.config.autonomyPolicy) {
+      const policy = this.config.autonomyPolicy;
+      parts.push('## Autonomy Policy');
+      parts.push(`Self-modification allowed: ${policy.allowSelfModify === true ? 'yes' : 'no'}`);
+      parts.push(`Sub-claws allowed: ${policy.allowSubclaws === false ? 'no' : 'yes'}`);
+      parts.push(`Evidence required: ${policy.requireEvidence === false ? 'no' : 'yes'}`);
+      parts.push(`Destructive actions: ${policy.destructiveActionPolicy ?? 'ask'}`);
+      if (policy.filesystemScopes?.length) {
+        parts.push(`Filesystem scope: ${policy.filesystemScopes.join(', ')}`);
+      }
+      if (policy.maxCostUsdBeforePause !== undefined) {
+        parts.push(`Pause and escalate before cost exceeds $${policy.maxCostUsdBeforePause}.`);
+      }
+      parts.push('');
+    }
+
     // Execution rules
     parts.push('## How You Operate');
     parts.push(

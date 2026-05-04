@@ -745,10 +745,28 @@ export const updateArtifactSchema = z.object({
 
 // ─── Claw Schemas ───────────────────────────────────────────────
 
+const clawMissionContractSchema = z.object({
+  successCriteria: z.array(z.string().max(1000)).max(20).optional(),
+  deliverables: z.array(z.string().max(1000)).max(20).optional(),
+  constraints: z.array(z.string().max(1000)).max(20).optional(),
+  escalationRules: z.array(z.string().max(1000)).max(20).optional(),
+  evidenceRequired: z.boolean().optional(),
+  minConfidence: z.number().min(0).max(1).optional(),
+});
+
+const clawAutonomyPolicySchema = z.object({
+  allowSelfModify: z.boolean().optional(),
+  allowSubclaws: z.boolean().optional(),
+  requireEvidence: z.boolean().optional(),
+  destructiveActionPolicy: z.enum(['ask', 'block', 'allow']).optional(),
+  filesystemScopes: z.array(z.string().max(500)).max(50).optional(),
+  maxCostUsdBeforePause: z.number().min(0).optional(),
+});
+
 export const createClawSchema = z.object({
   name: z.string().min(1).max(200),
   mission: z.string().min(1).max(10000),
-  mode: z.enum(['continuous', 'event-driven', 'single-shot']).optional(),
+  mode: z.enum(['continuous', 'interval', 'event', 'single-shot']).optional(),
   allowed_tools: z.array(z.string().max(200)).max(500).optional(),
   limits: z.record(z.string(), z.unknown()).optional(),
   interval_ms: z.number().int().min(1000).optional(),
@@ -758,9 +776,44 @@ export const createClawSchema = z.object({
   provider: z.string().max(100).optional(),
   model: z.string().max(200).optional(),
   soul_id: z.string().max(200).optional(),
-  sandbox: z.enum(['auto', 'docker', 'none']).optional(),
+  sandbox: z.enum(['auto', 'docker', 'local']).optional(),
   coding_agent_provider: z.string().max(100).optional(),
   skills: z.array(z.string().max(200)).max(100).optional(),
+  preset: z.string().max(100).optional(),
+  mission_contract: clawMissionContractSchema.optional(),
+  missionContract: clawMissionContractSchema.optional(),
+  autonomy_policy: clawAutonomyPolicySchema.optional(),
+  autonomyPolicy: clawAutonomyPolicySchema.optional(),
+});
+
+export const updateClawSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  mission: z.string().min(1).max(10000).optional(),
+  mode: z.enum(['continuous', 'interval', 'event', 'single-shot']).optional(),
+  allowed_tools: z.array(z.string().max(200)).max(500).optional(),
+  allowedTools: z.array(z.string().max(200)).max(500).optional(),
+  limits: z.record(z.string(), z.unknown()).optional(),
+  interval_ms: z.number().int().min(1000).nullable().optional(),
+  intervalMs: z.number().int().min(1000).nullable().optional(),
+  event_filters: z.array(z.string().max(500)).max(100).optional(),
+  eventFilters: z.array(z.string().max(500)).max(100).optional(),
+  auto_start: z.boolean().optional(),
+  autoStart: z.boolean().optional(),
+  stop_condition: z.string().max(2000).nullable().optional(),
+  stopCondition: z.string().max(2000).nullable().optional(),
+  provider: z.string().max(100).nullable().optional(),
+  model: z.string().max(200).nullable().optional(),
+  soul_id: z.string().max(200).nullable().optional(),
+  soulId: z.string().max(200).nullable().optional(),
+  sandbox: z.enum(['auto', 'docker', 'local']).optional(),
+  coding_agent_provider: z.string().max(100).nullable().optional(),
+  codingAgentProvider: z.string().max(100).nullable().optional(),
+  skills: z.array(z.string().max(200)).max(100).optional(),
+  preset: z.string().max(100).nullable().optional(),
+  mission_contract: clawMissionContractSchema.nullable().optional(),
+  missionContract: clawMissionContractSchema.nullable().optional(),
+  autonomy_policy: clawAutonomyPolicySchema.nullable().optional(),
+  autonomyPolicy: clawAutonomyPolicySchema.nullable().optional(),
 });
 
 // ─── Bridge Schemas ─────────────────────────────────────────────

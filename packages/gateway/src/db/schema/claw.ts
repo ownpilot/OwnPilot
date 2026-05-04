@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS claws (
   sandbox TEXT NOT NULL DEFAULT 'auto',
   coding_agent_provider TEXT,
   skills JSONB DEFAULT '[]',
+  preset TEXT,
+  mission_contract JSONB DEFAULT '{}',
+  autonomy_policy JSONB DEFAULT '{}',
   created_by TEXT NOT NULL DEFAULT 'user',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -72,6 +75,9 @@ CREATE TABLE IF NOT EXISTS claw_history (
 export const CLAW_MIGRATIONS_SQL = `
 -- Add event_filters column (for event-driven mode)
 ALTER TABLE claws ADD COLUMN IF NOT EXISTS event_filters JSONB DEFAULT '[]';
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS preset TEXT;
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS mission_contract JSONB DEFAULT '{}';
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS autonomy_policy JSONB DEFAULT '{}';
 
 -- Claw audit log (per-tool-call tracking)
 CREATE TABLE IF NOT EXISTS claw_audit_log (

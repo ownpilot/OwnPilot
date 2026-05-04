@@ -520,6 +520,21 @@ describe('ClawManager', () => {
       expect(manager.getSession('claw-1')?.config.intervalMs).toBe(60_000);
     });
 
+    it('should reschedule active claws when mode changes', async () => {
+      const config = makeConfig({ mode: 'continuous' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+
+      const updated = { ...config, mode: 'interval' as const, intervalMs: 60_000 };
+      manager.updateClawConfig('claw-1', updated);
+
+      await vi.advanceTimersByTimeAsync(600);
+      expect(mockRunCycle).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockRunCycle).toHaveBeenCalledTimes(1);
+    });
+
     it('should no-op for unknown claw', () => {
       const config = makeConfig();
       // Should not throw
