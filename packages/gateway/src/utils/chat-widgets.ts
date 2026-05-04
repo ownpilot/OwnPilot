@@ -311,8 +311,53 @@ function invalidWidgetData(): Record<string, string> {
   };
 }
 
+function recoverGenericCalloutData(value: string): Record<string, string> | null {
+  const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+  const title = recoverStringField(normalized, ['title', 'heading', 'label', 'name']);
+  const body = recoverStringField(normalized, [
+    'body',
+    'detail',
+    'description',
+    'text',
+    'message',
+    'summary',
+    'value',
+  ]);
+
+  if (title || body) {
+    return {
+      title: title ?? 'Recovered widget content',
+      body: body ?? title ?? '',
+      tone: 'info',
+    };
+  }
+
+  const ignoredKeys = new Set(['headers', 'columns', 'rows', 'items', 'entries', 'data']);
+  const extracted = Array.from(
+    normalized.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)
+  )
+    .map((match) => ({
+      key: decodeJsonString(match[1] ?? ''),
+      value: decodeJsonString(match[2] ?? ''),
+    }))
+    .filter((item) => item.key && item.value && !ignoredKeys.has(item.key))
+    .slice(0, 5);
+
+  if (extracted.length === 0) return null;
+
+  return {
+    title: 'Recovered widget content',
+    body: extracted.map((item) => `${item.key}: ${item.value}`).join('\n'),
+    tone: 'info',
+  };
+}
+
 function isInvalidWidgetFallback(data: unknown): boolean {
   return isRecord(data) && data.title === INVALID_WIDGET_TITLE && data.body === INVALID_WIDGET_BODY;
+}
+
+function isCalloutLikeFallback(data: unknown): boolean {
+  return isRecord(data) && typeof data.body === 'string' && !Array.isArray(data.items);
 }
 
 function firstArrayValue(record: Record<string, unknown>, keys: string[]): unknown {
@@ -435,7 +480,7 @@ function recoverWidgetData(name: string, value: string): unknown {
   ) {
     return recoverListData(value, name);
   }
-  return invalidWidgetData();
+  return recoverGenericCalloutData(value) ?? invalidWidgetData();
 }
 
 function parseWidgetTag(tag: string): ParsedWidget | null {
@@ -454,7 +499,7 @@ function parseWidgetTag(tag: string): ParsedWidget | null {
   } catch {
     const data = recoverWidgetData(name, attrs.data);
     return {
-      name: isInvalidWidgetFallback(data) ? 'callout' : name,
+      name: isInvalidWidgetFallback(data) || isCalloutLikeFallback(data) ? 'callout' : name,
       data: normalizeWidgetDataShape(name, data),
     };
   }

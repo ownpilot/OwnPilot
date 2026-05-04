@@ -129,6 +129,19 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('raw');
   });
 
+  it('falls back to a callout when generic text can be recovered', () => {
+    const result = normalizeChatWidgets(
+      `<progress data='{\\"message\\":\\"Only part of the widget arrived\\",\\"value\\":' />`
+    );
+
+    expect(result).toContain('<widget name="callout"');
+    expect(result).toContain('Recovered widget content');
+    expect(result).toContain('Only part of the widget arrived');
+    expect(result).not.toContain('Widget could not be rendered');
+    expect(result).not.toContain('Invalid widget data');
+    expect(result).not.toContain('raw');
+  });
+
   it('keeps canonical valid widget data stable', () => {
     const result = normalizeChatWidgets(
       `<widget name="callout" data='{"title":"Notice","body":"Ready"}' />`

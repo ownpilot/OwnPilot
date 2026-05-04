@@ -201,6 +201,20 @@ After`}
     expect(html).not.toContain('{"value":');
   });
 
+  it('renders a callout when generic text can be recovered from malformed widget data', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<progress data='{\\"message\\":\\"Only part of the widget arrived\\",\\"value\\":' />`}
+      />
+    );
+
+    expect(html).toContain('Recovered widget content');
+    expect(html).toContain('Only part of the widget arrived');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+    expect(html).not.toContain('raw');
+  });
+
   it('hides incomplete shorthand widget tags while streaming', () => {
     const partial = hideIncompleteStreamingWidgets(
       `Before

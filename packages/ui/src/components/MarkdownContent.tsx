@@ -557,8 +557,52 @@ export const MarkdownContent = memo(function MarkdownContent({
     return { error: 'Invalid widget data' };
   };
 
+  const recoverGenericCalloutData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const title = recoverStringField(normalized, ['title', 'heading', 'label', 'name']);
+    const body = recoverStringField(normalized, [
+      'body',
+      'detail',
+      'description',
+      'text',
+      'message',
+      'summary',
+      'value',
+    ]);
+
+    if (title || body) {
+      return {
+        title: title ?? 'Recovered widget content',
+        body: body ?? title ?? '',
+        tone: 'info',
+      };
+    }
+
+    const ignoredKeys = new Set(['headers', 'columns', 'rows', 'items', 'entries', 'data']);
+    const extracted = Array.from(
+      normalized.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g)
+    )
+      .map((match) => ({
+        key: decodeJsonString(match[1] ?? ''),
+        value: decodeJsonString(match[2] ?? ''),
+      }))
+      .filter((item) => item.key && item.value && !ignoredKeys.has(item.key))
+      .slice(0, 5);
+
+    if (extracted.length === 0) return { error: 'Invalid widget data' };
+
+    return {
+      title: 'Recovered widget content',
+      body: extracted.map((item) => `${item.key}: ${item.value}`).join('\n'),
+      tone: 'info',
+    };
+  };
+
   const isInvalidWidgetFallback = (data: unknown): boolean =>
     isRecord(data) && data.error === 'Invalid widget data';
+
+  const isCalloutLikeFallback = (data: unknown): boolean =>
+    isRecord(data) && typeof data.body === 'string' && !Array.isArray(data.items);
 
   const firstArrayValue = (record: Record<string, unknown>, keys: string[]): unknown => {
     for (const key of keys) {
@@ -681,7 +725,7 @@ export const MarkdownContent = memo(function MarkdownContent({
       return recoverListData(value, name);
     }
 
-    return { error: 'Invalid widget data' };
+    return recoverGenericCalloutData(value);
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
@@ -704,7 +748,11 @@ export const MarkdownContent = memo(function MarkdownContent({
     try {
       return { name, data: normalizeWidgetDataShape(name, parseWidgetData(attrs.data)) };
     } catch {
-      return { name, data: normalizeWidgetDataShape(name, recoverWidgetData(name, attrs.data)) };
+      const data = recoverWidgetData(name, attrs.data);
+      return {
+        name: isCalloutLikeFallback(data) ? 'callout' : name,
+        data: normalizeWidgetDataShape(name, data),
+      };
     }
   };
 
