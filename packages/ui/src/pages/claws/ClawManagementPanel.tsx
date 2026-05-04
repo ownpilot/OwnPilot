@@ -62,12 +62,14 @@ export function ClawManagementPanel({
   claw,
   onClose,
   onUpdate,
+  initialTab = 'overview',
 }: {
   claw: ClawConfig;
   onClose: () => void;
   onUpdate: () => void;
+  initialTab?: DetailTab;
 }) {
-  const [tab, setTab] = useState<DetailTab>('overview');
+  const [tab, setTab] = useState<DetailTab>(initialTab);
   const [history, setHistory] = useState<ClawHistoryEntry[]>([]);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -141,7 +143,7 @@ export function ClawManagementPanel({
     setHistory([]);
     setHistoryTotal(0);
     setOutputFeed([]);
-    setTab('overview');
+    setTab(initialTab);
     setSelectedSkills(claw.skills ?? []);
     setWorkspaceFiles([]);
     setCurrentFilePath('');
@@ -152,7 +154,7 @@ export function ClawManagementPanel({
     setAuditTotal(0);
     setAuditFilter('');
     setDoctor(null);
-  }, [claw.id]);
+  }, [claw.id, initialTab]);
 
   // WS output feed
   useEffect(() => {

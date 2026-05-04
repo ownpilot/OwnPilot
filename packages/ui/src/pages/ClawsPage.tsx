@@ -24,12 +24,14 @@ import { ClawManagementPanel } from './claws/ClawManagementPanel';
 // =============================================================================
 
 type PageTab = 'home' | 'claws';
+type DetailTab = 'overview' | 'doctor';
 
 export function ClawsPage() {
   const [pageTab, setPageTab] = useState<PageTab>('claws');
   const [claws, setClaws] = useState<ClawConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClaw, setSelectedClaw] = useState<ClawConfig | null>(null);
+  const [selectedDetailTab, setSelectedDetailTab] = useState<DetailTab>('overview');
   const [showCreate, setShowCreate] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<string>('');
@@ -178,6 +180,11 @@ export function ClawsPage() {
     } catch {
       toast.error('Failed to clone claw');
     }
+  };
+
+  const openClawDetail = (claw: ClawConfig, tab: DetailTab = 'overview') => {
+    setSelectedClaw(claw);
+    setSelectedDetailTab(tab);
   };
 
   const applySafeFixes = async (id: string) => {
@@ -424,11 +431,11 @@ export function ClawsPage() {
                           <button
                             onClick={() => {
                               const target = claws.find((c) => c.id === item.clawId);
-                              if (target) setSelectedClaw(target);
+                              if (target) openClawDetail(target, 'doctor');
                             }}
                             className="px-2 py-1 text-[11px] rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
                           >
-                            Review
+                            Doctor
                           </button>
                           <button
                             onClick={() => applySafeFixes(item.clawId)}
@@ -521,9 +528,10 @@ export function ClawsPage() {
                     onStop={() => stopClaw(claw.id)}
                     onDelete={() => deleteClaw(claw.id, claw.name)}
                     onClone={() => cloneClaw(claw)}
+                    onDoctor={() => openClawDetail(claw, 'doctor')}
                     onApproveEscalation={() => approveEscalation(claw.id)}
                     onDenyEscalation={() => denyEscalation(claw.id)}
-                    onSelect={() => setSelectedClaw(claw)}
+                    onSelect={() => openClawDetail(claw)}
                     isSelected={selectedClaw?.id === claw.id}
                     isChecked={selectedIds.has(claw.id)}
                     onToggleCheck={() => toggleSelect(claw.id)}
@@ -535,6 +543,7 @@ export function ClawsPage() {
               {selectedClaw && (
                 <ClawManagementPanel
                   claw={selectedClaw}
+                  initialTab={selectedDetailTab}
                   onClose={() => setSelectedClaw(null)}
                   onUpdate={fetchClaws}
                 />

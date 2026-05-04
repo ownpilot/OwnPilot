@@ -1,5 +1,5 @@
 import type { ClawConfig } from '../../api/endpoints/claws';
-import { Play, Pause, Square, Copy, Trash2 } from '../../components/icons';
+import { Play, Pause, Square, Copy, Trash2, Wrench } from '../../components/icons';
 import { getStateBadge, formatCost } from './utils';
 
 export function ClawCard({
@@ -10,6 +10,7 @@ export function ClawCard({
   onStop,
   onDelete,
   onClone,
+  onDoctor,
   onApproveEscalation,
   onDenyEscalation,
   onSelect,
@@ -24,6 +25,7 @@ export function ClawCard({
   onStop: () => void;
   onDelete: () => void;
   onClone: () => void;
+  onDoctor: () => void;
   onApproveEscalation: () => void;
   onDenyEscalation: () => void;
   isChecked?: boolean;
@@ -189,6 +191,17 @@ export function ClawCard({
           </button>
         )}
         <div className="flex-1" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDoctor();
+          }}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-[11px] font-medium"
+          title="Open Doctor"
+        >
+          <Wrench className="w-3.5 h-3.5" />
+          Doctor
+        </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
