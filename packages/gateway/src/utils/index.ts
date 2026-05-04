@@ -4,6 +4,7 @@
 
 export { extractSuggestions } from './suggestions.js';
 export { extractMemoriesFromResponse } from './memory-extraction.js';
+export { normalizeChatWidgets } from './chat-widgets.js';
 export { isBlockedUrl, isPrivateUrlAsync } from './ssrf.js';
 export {
   attachmentDisposition,

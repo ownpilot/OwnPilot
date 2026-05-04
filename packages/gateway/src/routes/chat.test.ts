@@ -107,6 +107,7 @@ vi.mock('../workspace/file-workspace.js', () => ({
 vi.mock('../utils/index.js', () => ({
   extractSuggestions: vi.fn((content: string) => ({ content, suggestions: [] })),
   extractMemoriesFromResponse: vi.fn((content: string) => ({ content, memories: [] })),
+  normalizeChatWidgets: vi.fn((content: string) => content),
 }));
 
 vi.mock('../ws/server.js', () => ({

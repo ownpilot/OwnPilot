@@ -33,6 +33,7 @@ vi.mock('./costs.js', () => ({
 vi.mock('../utils/index.js', () => ({
   extractSuggestions: (...args: unknown[]) => mockExtractSuggestions(...args),
   extractMemoriesFromResponse: (...args: unknown[]) => mockExtractMemoriesFromResponse(...args),
+  normalizeChatWidgets: (content: string) => content,
 }));
 
 vi.mock('../services/execution-approval.js', () => ({

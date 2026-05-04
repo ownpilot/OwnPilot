@@ -20,7 +20,11 @@ import type {
 import { checkToolCallApproval } from '../assistant/index.js';
 import { getSessionInfo } from './agent-service.js';
 import { usageTracker } from './costs.js';
-import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
+import {
+  extractSuggestions,
+  extractMemoriesFromResponse,
+  normalizeChatWidgets,
+} from '../utils/index.js';
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
 import type { getAgent } from './agent-service.js';
 import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
@@ -716,7 +720,7 @@ export async function processStreamingViaBus(
   const { content: memStripped } = extractMemoriesFromResponse(rawAssistantContent);
   const { content: suggestionsStripped } = extractSuggestions(memStripped);
   const assistantContent =
-    suggestionsStripped.trim() ||
+    normalizeChatWidgets(suggestionsStripped).trim() ||
     (/<(?:memories|suggestions)>/.test(rawAssistantContent) ? '' : rawAssistantContent);
   if (assistantContent) {
     const toolCalls = result.response.metadata.toolCalls as unknown[] | undefined;

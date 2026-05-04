@@ -26,7 +26,11 @@ import {
   getTraceSummary,
 } from '../tracing/index.js';
 import { debugLog } from '@ownpilot/core';
-import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
+import {
+  extractSuggestions,
+  extractMemoriesFromResponse,
+  normalizeChatWidgets,
+} from '../utils/index.js';
 import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
 import { getLog } from '../services/log.js';
 
@@ -359,8 +363,9 @@ export async function handleLegacySend(params: LegacySendParams): Promise<Respon
   const { content: legacyMemStripped, memories: legacyMemories } = extractMemoriesFromResponse(
     result.value.content
   );
-  const { content: legacyCleanContent, suggestions: legacySuggestions } =
+  const { content: legacySuggestionsStripped, suggestions: legacySuggestions } =
     extractSuggestions(legacyMemStripped);
+  const legacyCleanContent = normalizeChatWidgets(legacySuggestionsStripped);
 
   const response = {
     success: true,

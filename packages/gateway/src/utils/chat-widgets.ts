@@ -1,0 +1,249 @@
+const WIDGET_TAG_NAMES = [
+  'widget',
+  'metric',
+  'metrics',
+  'metric_grid',
+  'stats',
+  'table',
+  'list',
+  'checklist',
+  'callout',
+  'note',
+  'progress',
+  'bar',
+  'bar_chart',
+  'timeline',
+] as const;
+
+const WIDGET_TAG_PATTERN = WIDGET_TAG_NAMES.join('|');
+const WIDGET_TAG_REGEX = new RegExp(`<(?:${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?\\/>`, 'gi');
+
+type WidgetName = (typeof WIDGET_TAG_NAMES)[number];
+
+interface ParsedWidget {
+  name: string;
+  data: unknown;
+}
+
+const INVALID_WIDGET_TITLE = 'Widget could not be rendered';
+const INVALID_WIDGET_BODY =
+  'The data for this widget was incomplete or malformed, so it was hidden from the chat.';
+
+function decodeAttributeValue(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+function parseTagAttributes(source: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  let index = 0;
+
+  while (index < source.length) {
+    while (/\s/.test(source[index] ?? '')) index += 1;
+
+    const nameStart = index;
+    while (/[a-zA-Z0-9_:.-]/.test(source[index] ?? '')) index += 1;
+    const attrName = source.slice(nameStart, index).toLowerCase();
+    if (!attrName) break;
+
+    while (/\s/.test(source[index] ?? '')) index += 1;
+    if (source[index] !== '=') continue;
+    index += 1;
+    while (/\s/.test(source[index] ?? '')) index += 1;
+
+    const quote = source[index];
+    if (quote !== '"' && quote !== "'") continue;
+    index += 1;
+
+    let value = '';
+    while (index < source.length) {
+      const char = source[index]!;
+      const next = source[index + 1];
+      if (char === '\\' && next === quote) {
+        value += char + next;
+        index += 2;
+        continue;
+      }
+      if (char === quote) break;
+      value += char;
+      index += 1;
+    }
+
+    attrs[attrName] = decodeAttributeValue(value);
+    if (source[index] === quote) index += 1;
+  }
+
+  return attrs;
+}
+
+function parseWidgetData(value: string): unknown {
+  const candidates = [value, value.replace(/\\"/g, '"').replace(/\\'/g, "'")];
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed === 'string' && /^[\s[{]/.test(parsed)) {
+        return JSON.parse(parsed);
+      }
+      return parsed;
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  throw new Error('Invalid widget data');
+}
+
+function decodeJsonString(value: string): string {
+  try {
+    return JSON.parse(`"${value.replace(/"/g, '\\"')}"`) as string;
+  } catch {
+    return value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\'/g, "'");
+  }
+}
+
+function recoverStringField(source: string, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const closed = source.match(
+      new RegExp(`"${key}"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`)
+    )?.[1];
+    if (closed) return decodeJsonString(closed);
+
+    const partial = source.match(new RegExp(`"${key}"\\s*:\\s*"([\\s\\S]*)$`))?.[1];
+    if (partial) return decodeJsonString(partial.replace(/[,\]}]\s*$/, ''));
+  }
+
+  return undefined;
+}
+
+function recoverStringArray(source: string, key: string): string[] {
+  const start = source.search(new RegExp(`"${key}"\\s*:\\s*\\[`));
+  if (start === -1) return [];
+
+  const afterKey = source.slice(start);
+  const arrayStart = afterKey.indexOf('[');
+  if (arrayStart === -1) return [];
+
+  const arrayEnd = afterKey.indexOf(']', arrayStart + 1);
+  const arrayBody =
+    arrayEnd === -1 ? afterKey.slice(arrayStart + 1) : afterKey.slice(arrayStart + 1, arrayEnd);
+  return Array.from(arrayBody.matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)).map((match) =>
+    decodeJsonString(match[1] ?? '')
+  );
+}
+
+function recoverTableData(value: string): unknown {
+  const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+  const headers = recoverStringArray(normalized, 'headers');
+  const rowsSourceStart = normalized.search(/"rows"\s*:\s*\[/);
+  const rowsSource = rowsSourceStart === -1 ? normalized : normalized.slice(rowsSourceStart);
+
+  const rows = Array.from(rowsSource.matchAll(/\[([^\[\]]*"[^\[\]]*")\s*\]/g))
+    .map((match) =>
+      Array.from((match[1] ?? '').matchAll(/"([^"\\]*(?:\\.[^"\\]*)*)"/g)).map((cell) =>
+        decodeJsonString(cell[1] ?? '')
+      )
+    )
+    .filter((row) => row.length >= Math.max(1, Math.min(headers.length || 1, 2)));
+
+  if (headers.length > 0 && rows.length > 0) return { headers, rows };
+  return invalidWidgetData();
+}
+
+function recoverListData(value: string): unknown {
+  const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+  const items: Array<{ title?: string; detail?: string }> = [];
+
+  for (const chunk of normalized.split('{').slice(1)) {
+    const itemSource = `{${chunk}`;
+    const title = recoverStringField(itemSource, ['title', 'label', 'name']);
+    const detail = recoverStringField(itemSource, ['detail', 'description', 'body', 'text']);
+    if (title || detail) items.push({ title, detail });
+  }
+
+  if (items.length > 0) return { items };
+  return invalidWidgetData();
+}
+
+function invalidWidgetData(): Record<string, string> {
+  return {
+    title: INVALID_WIDGET_TITLE,
+    body: INVALID_WIDGET_BODY,
+    tone: 'warning',
+  };
+}
+
+function isInvalidWidgetFallback(data: unknown): data is Record<string, unknown> {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    !Array.isArray(data) &&
+    (data as Record<string, unknown>).title === INVALID_WIDGET_TITLE &&
+    (data as Record<string, unknown>).body === INVALID_WIDGET_BODY
+  );
+}
+
+function recoverWidgetData(name: string, value: string): unknown {
+  const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+
+  if (name === 'callout' || name === 'note') {
+    const title = recoverStringField(normalized, ['title']);
+    const body = recoverStringField(normalized, ['body', 'detail', 'description', 'text']);
+    if (title || body) {
+      return {
+        title,
+        body,
+        tone: recoverStringField(normalized, ['type', 'tone', 'status']) ?? 'info',
+      };
+    }
+  }
+
+  if (name === 'table') return recoverTableData(value);
+  if (name === 'list' || name === 'checklist') return recoverListData(value);
+  return invalidWidgetData();
+}
+
+function parseWidgetTag(tag: string): ParsedWidget | null {
+  const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)\/>$/i);
+  const tagName = match?.[1]?.toLowerCase() as WidgetName | undefined;
+  if (!tagName || !match?.[2] || !WIDGET_TAG_NAMES.includes(tagName)) return null;
+
+  const attrs = parseTagAttributes(match[2]);
+  const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
+  if (!name) return null;
+
+  if (!attrs.data) return { name, data: {} };
+
+  try {
+    return { name, data: parseWidgetData(attrs.data) };
+  } catch {
+    const data = recoverWidgetData(name, attrs.data);
+    return { name: isInvalidWidgetFallback(data) ? 'callout' : name, data };
+  }
+}
+
+function encodeAttributeValue(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function renderWidgetTag(widget: ParsedWidget): string {
+  const data = encodeAttributeValue(JSON.stringify(widget.data));
+  return `<widget name="${encodeAttributeValue(widget.name)}" data="${data}" />`;
+}
+
+export function normalizeChatWidgets(content: string): string {
+  WIDGET_TAG_REGEX.lastIndex = 0;
+  return content.replace(WIDGET_TAG_REGEX, (tag) => {
+    const widget = parseWidgetTag(tag);
+    return widget ? renderWidgetTag(widget) : tag;
+  });
+}

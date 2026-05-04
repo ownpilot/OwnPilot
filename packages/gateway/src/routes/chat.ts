@@ -43,7 +43,11 @@ import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core'
 import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
 import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
-import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
+import {
+  extractSuggestions,
+  extractMemoriesFromResponse,
+  normalizeChatWidgets,
+} from '../utils/index.js';
 import { getLog } from '../services/log.js';
 
 // Import from split modules
@@ -599,7 +603,8 @@ chatRoutes.post('/', async (c) => {
 
           // Save streaming chat to database
           const { content: legacyMemStripped } = extractMemoriesFromResponse(result.value.content);
-          const { content: legacyCleanContent } = extractSuggestions(legacyMemStripped);
+          const { content: legacySuggestionsStripped } = extractSuggestions(legacyMemStripped);
+          const legacyCleanContent = normalizeChatWidgets(legacySuggestionsStripped);
           await new ConversationService(streamUserId).saveStreamingChat(state, {
             conversationId: body.conversationId || conversationId,
             agentId: body.agentId,
@@ -696,8 +701,9 @@ chatRoutes.post('/', async (c) => {
     const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(
       busResult.response.content
     );
-    const { content: busCleanContent, suggestions: busSuggestions } =
+    const { content: busSuggestionsStripped, suggestions: busSuggestions } =
       extractSuggestions(busMemStripped);
+    const busCleanContent = normalizeChatWidgets(busSuggestionsStripped);
 
     const busToolCalls = busResult.response.metadata.toolCalls as unknown[] | undefined;
     const busTrace = {
