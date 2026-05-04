@@ -246,6 +246,22 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('recovers key-value widgets that are truncated after key and value fields', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<widget name="key_value" data='{\\"title\\":\\"Survival Formula\\",\\"items\\":[{\\"key\\":\\"Genclerbirligi\\",\\"value\\":\\"Beat Kasimpasa and steal points from Trabzonspor\\"},{\\"key\\":\\"Kayserispor\\",\\"value\\":\\"Needs at least one away point' />`}
+      />
+    );
+
+    expect(html).toContain('Survival Formula');
+    expect(html).toContain('Genclerbirligi');
+    expect(html).toContain('Beat Kasimpasa and steal points from Trabzonspor');
+    expect(html).toContain('Kayserispor');
+    expect(html).toContain('Needs at least one away point');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('does not render widget tags inside code fences', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

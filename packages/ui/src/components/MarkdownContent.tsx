@@ -428,18 +428,47 @@ export const MarkdownContent = memo(function MarkdownContent({
     return { error: 'Invalid widget data' };
   };
 
-  const recoverListData = (value: string): unknown => {
+  const recoverListData = (value: string, name: string): unknown => {
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
-    const items: Array<{ title?: string; detail?: string }> = [];
+    const title = recoverStringField(normalized, ['title']);
+    const collectionStart = normalized.search(/"(?:items|entries|facts|cards|steps)"\s*:\s*\[/);
+    const collectionSource =
+      collectionStart === -1 ? normalized : normalized.slice(collectionStart);
+    const isKeyValue =
+      name === 'key_value' ||
+      name === 'key_values' ||
+      name === 'facts' ||
+      name === 'details' ||
+      name === 'properties';
+    const items: Array<Record<string, string | undefined>> = [];
 
-    for (const chunk of normalized.split('{').slice(1)) {
+    for (const chunk of collectionSource.split('{').slice(1)) {
       const itemSource = `{${chunk}`;
-      const title = recoverStringField(itemSource, ['title', 'label', 'name']);
-      const detail = recoverStringField(itemSource, ['detail', 'description', 'body', 'text']);
-      if (title || detail) items.push({ title, detail });
+      if (isKeyValue) {
+        const key = recoverStringField(itemSource, ['key', 'label', 'name', 'title']);
+        const value = recoverStringField(itemSource, [
+          'value',
+          'detail',
+          'description',
+          'body',
+          'text',
+        ]);
+        if (key || value) items.push({ key, value });
+        continue;
+      }
+
+      const itemTitle = recoverStringField(itemSource, ['title', 'label', 'name', 'key']);
+      const detail = recoverStringField(itemSource, [
+        'detail',
+        'description',
+        'body',
+        'text',
+        'value',
+      ]);
+      if (itemTitle || detail) items.push({ title: itemTitle, detail });
     }
 
-    if (items.length > 0) return { items };
+    if (items.length > 0) return title ? { title, items } : { items };
     return { error: 'Invalid widget data' };
   };
 
@@ -474,7 +503,7 @@ export const MarkdownContent = memo(function MarkdownContent({
       name === 'steps' ||
       name === 'plan'
     ) {
-      return recoverListData(value);
+      return recoverListData(value, name);
     }
 
     return { error: 'Invalid widget data' };

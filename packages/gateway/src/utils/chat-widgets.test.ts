@@ -62,6 +62,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Widget could not be rendered');
   });
 
+  it('recovers malformed key-value widgets that use key and value fields', () => {
+    const result = normalizeChatWidgets(
+      `<widget name="key_value" data='{\\"title\\":\\"Survival Formula\\",\\"items\\":[{\\"key\\":\\"Genclerbirligi\\",\\"value\\":\\"Beat Kasimpasa and steal points from Trabzonspor\\"},{\\"key\\":\\"Kayserispor\\",\\"value\\":\\"Needs at least one away point' />`
+    );
+
+    expect(result).toContain('<widget name="key_value"');
+    expect(result).toContain('Survival Formula');
+    expect(result).toContain('Genclerbirligi');
+    expect(result).toContain('Beat Kasimpasa and steal points from Trabzonspor');
+    expect(result).toContain('Kayserispor');
+    expect(result).toContain('Needs at least one away point');
+    expect(result).not.toContain('Widget could not be rendered');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('turns unrecoverable widgets into a safe callout payload', () => {
     const result = normalizeChatWidgets(`<progress data='{"value":' />`);
 
