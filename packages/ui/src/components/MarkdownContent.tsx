@@ -352,7 +352,7 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const parseWidgetData = (value: string): unknown => {
-    const candidates = [value, value.replace(/\\"/g, '"').replace(/\\'/g, "'")];
+    const candidates = expandWidgetDataCandidates(value);
 
     for (const candidate of candidates) {
       try {
@@ -367,6 +367,60 @@ export const MarkdownContent = memo(function MarkdownContent({
     }
 
     throw new Error('Invalid widget data');
+  };
+
+  const expandWidgetDataCandidates = (value: string): string[] => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    return Array.from(
+      new Set([
+        value,
+        normalized,
+        repairJsonLikeWidgetData(value),
+        repairJsonLikeWidgetData(normalized),
+      ])
+    ).filter(Boolean);
+  };
+
+  const repairJsonLikeWidgetData = (value: string): string => {
+    let repaired = value.trim();
+    if (!repaired) return repaired;
+
+    const stack: string[] = [];
+    let inString = false;
+    let escaped = false;
+
+    for (const char of repaired) {
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (char === '"') {
+        inString = true;
+      } else if (char === '{') {
+        stack.push('}');
+      } else if (char === '[') {
+        stack.push(']');
+      } else if ((char === '}' || char === ']') && stack[stack.length - 1] === char) {
+        stack.pop();
+      }
+    }
+
+    if (escaped) repaired = repaired.slice(0, -1);
+    if (inString) repaired += '"';
+
+    while (stack.length > 0) {
+      repaired = repaired.replace(/,\s*$/, '');
+      repaired += stack.pop();
+    }
+
+    return repaired.replace(/,\s*([}\]])/g, '$1');
   };
 
   const decodeJsonString = (value: string): string => {

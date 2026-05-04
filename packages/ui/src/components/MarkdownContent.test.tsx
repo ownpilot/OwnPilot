@@ -226,6 +226,20 @@ After`}
     expect(html).toContain('Weekly goals');
   });
 
+  it('repairs widget JSON when only closing containers are missing', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<metric_grid data='{"items":[{"label":"Total","value":"12"},{"label":"Open","value":"3"}' />`}
+      />
+    );
+
+    expect(html).toContain('Total');
+    expect(html).toContain('Open');
+    expect(html).toContain('3');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('renders key-value, cards, and steps widgets', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

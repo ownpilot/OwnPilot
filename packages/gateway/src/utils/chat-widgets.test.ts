@@ -62,6 +62,19 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('<key_value');
   });
 
+  it('repairs balanced widget JSON when only closing containers are missing', () => {
+    const result = normalizeChatWidgets(
+      `<metric_grid data='{"items":[{"label":"Total","value":"12"},{"label":"Open","value":"3"}' />`
+    );
+
+    expect(result).toContain('<widget name="metric_grid"');
+    expect(result).toContain('Total');
+    expect(result).toContain('Open');
+    expect(result).toContain('&quot;value&quot;:&quot;3&quot;');
+    expect(result).not.toContain('Widget could not be rendered');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('canonicalizes single-quoted widget JSON with apostrophes inside strings', () => {
     const result = normalizeChatWidgets(
       `<widget name="key_value" data='{"title":"Survival Formula","items":[{"key":"Genclerbirligi","value":"Kasimpasa'yi beat + Trabzonspor'da points stolen -> Play-Out'u skips"},{"key":"Karagumruk","value":"Needs Kayserispor'un loss"}]}' />`
