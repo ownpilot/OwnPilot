@@ -40,6 +40,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('</callout>');
   });
 
+  it('canonicalizes JSX-style unquoted widget attributes', () => {
+    const result = normalizeChatWidgets(
+      `<widget name=callout data={"title":"JSX Notice","body":"Unquoted payload"} />
+<callout data={"title":"JSX Shorthand","body":"Balanced data"} />`
+    );
+
+    expect(result).toContain('<widget name="callout"');
+    expect(result).toContain('JSX Notice');
+    expect(result).toContain('Unquoted payload');
+    expect(result).toContain('JSX Shorthand');
+    expect(result).toContain('Balanced data');
+    expect(result).not.toContain('data={');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('does not normalize widget examples inside fenced code blocks', () => {
     const result = normalizeChatWidgets(`Before
 

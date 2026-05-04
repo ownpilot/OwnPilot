@@ -138,6 +138,24 @@ After`}
     expect(html).not.toContain('&lt;/callout');
   });
 
+  it('renders JSX-style unquoted widget attributes', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`Before <widget name=callout data={"title":"JSX Notice","body":"Unquoted payload"} /> after
+<callout data={"title":"JSX Shorthand","body":"Balanced data"} />`}
+      />
+    );
+
+    expect(html).toContain('Before');
+    expect(html).toContain('JSX Notice');
+    expect(html).toContain('Unquoted payload');
+    expect(html).toContain('after');
+    expect(html).toContain('JSX Shorthand');
+    expect(html).toContain('Balanced data');
+    expect(html).not.toContain('data={');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('renders shorthand widget tags produced by models', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

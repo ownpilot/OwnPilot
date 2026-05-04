@@ -57,6 +57,49 @@ function decodeAttributeValue(value: string): string {
     .replace(/&amp;/g, '&');
 }
 
+function readBalancedAttributeValue(
+  source: string,
+  startIndex: number
+): { value: string; nextIndex: number } | null {
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+  let index = startIndex;
+
+  while (index < source.length) {
+    const char = source[index]!;
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+    } else if (char === '{') {
+      stack.push('}');
+    } else if (char === '[') {
+      stack.push(']');
+    } else if ((char === '}' || char === ']') && stack[stack.length - 1] === char) {
+      stack.pop();
+      if (stack.length === 0) {
+        index += 1;
+        return { value: source.slice(startIndex, index), nextIndex: index };
+      }
+    }
+
+    index += 1;
+  }
+
+  return stack.length > 0 ? { value: source.slice(startIndex), nextIndex: index } : null;
+}
+
 function parseTagAttributes(source: string): Record<string, string> {
   const attrs: Record<string, string> = {};
   let index = 0;
@@ -75,7 +118,22 @@ function parseTagAttributes(source: string): Record<string, string> {
     while (/\s/.test(source[index] ?? '')) index += 1;
 
     const quote = source[index];
-    if (quote !== '"' && quote !== "'") continue;
+    if (quote !== '"' && quote !== "'") {
+      const balanced =
+        attrName === 'data' && (quote === '{' || quote === '[')
+          ? readBalancedAttributeValue(source, index)
+          : null;
+      if (balanced) {
+        attrs[attrName] = decodeAttributeValue(balanced.value);
+        index = balanced.nextIndex;
+        continue;
+      }
+
+      const valueStart = index;
+      while (index < source.length && !/\s/.test(source[index] ?? '')) index += 1;
+      attrs[attrName] = decodeAttributeValue(source.slice(valueStart, index));
+      continue;
+    }
     index += 1;
 
     let value = '';
