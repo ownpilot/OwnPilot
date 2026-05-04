@@ -98,11 +98,14 @@ interface ParsedWidget {
   data: unknown;
 }
 
+interface WidgetTagParts {
+  tagName: string;
+  attrsSource: string;
+  body?: string;
+}
+
 const WIDGET_TAG_PATTERN = CHAT_WIDGET_TAG_NAMES.join('|');
-const WIDGET_TAG_REGEX = new RegExp(
-  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>[\\s\\S]*?<\\/\\1>)`,
-  'gi'
-);
+const WIDGET_TAG_START_REGEX = new RegExp(`<(${WIDGET_TAG_PATTERN})\\b`, 'gi');
 
 export const MarkdownContent = memo(function MarkdownContent({
   content,
@@ -798,12 +801,56 @@ export const MarkdownContent = memo(function MarkdownContent({
     return recoverGenericCalloutData(value);
   };
 
+  const splitWidgetTag = (tag: string): WidgetTagParts | null => {
+    const trimmed = tag.trim();
+    const nameMatch = trimmed.match(/^<([a-zA-Z_][\w.-]*)/);
+    const tagName = nameMatch?.[1];
+    if (!tagName) return null;
+
+    let quote: '"' | "'" | null = null;
+    let escaped = false;
+    const attrsStart = nameMatch[0].length;
+
+    for (let index = attrsStart; index < trimmed.length; index += 1) {
+      const char = trimmed[index]!;
+      if (quote) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === quote) {
+          quote = null;
+        }
+        continue;
+      }
+
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+
+      if (char === '/' && trimmed[index + 1] === '>') {
+        return { tagName, attrsSource: trimmed.slice(attrsStart, index).trim() };
+      }
+
+      if (char === '>') {
+        const closingTag = `</${tagName}>`;
+        if (!trimmed.toLowerCase().endsWith(closingTag.toLowerCase())) return null;
+        return {
+          tagName,
+          attrsSource: trimmed.slice(attrsStart, index).trim(),
+          body: trimmed.slice(index + 1, trimmed.length - closingTag.length),
+        };
+      }
+    }
+
+    return null;
+  };
+
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
-    const match = tag
-      .trim()
-      .match(/^<([a-zA-Z_][\w.-]*)(?:\s+([^>]*?))?\s*(?:\/>|>([\s\S]*?)<\/\1>)$/i);
-    if (!match) return null;
-    const tagName = match?.[1]?.toLowerCase();
+    const parts = splitWidgetTag(tag);
+    if (!parts) return null;
+    const tagName = parts?.tagName.toLowerCase();
     if (
       !tagName ||
       !CHAT_WIDGET_TAG_NAMES.includes(tagName as (typeof CHAT_WIDGET_TAG_NAMES)[number])
@@ -811,11 +858,11 @@ export const MarkdownContent = memo(function MarkdownContent({
       return null;
     }
 
-    const attrs = parseTagAttributes(match[2] ?? '');
+    const attrs = parseTagAttributes(parts.attrsSource);
     const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
     if (!name) return null;
 
-    const dataValue = attrs.data ?? match[3]?.trim();
+    const dataValue = attrs.data ?? parts.body?.trim();
     if (!dataValue) return { name, data: {} };
 
     try {
@@ -830,6 +877,58 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const parseWidgetLine = (line: string): ParsedWidget | null => parseWidgetTag(line);
+
+  const findWidgetTagEnd = (text: string, startIndex: number, tagName: string): number => {
+    const lowerText = text.toLowerCase();
+    const closingTag = `</${tagName.toLowerCase()}>`;
+    let quote: '"' | "'" | null = null;
+    let escaped = false;
+
+    for (let index = startIndex; index < text.length; index += 1) {
+      const char = text[index]!;
+      if (quote) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === quote) {
+          quote = null;
+        }
+        continue;
+      }
+
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+
+      if (char === '/' && text[index + 1] === '>') return index + 2;
+
+      if (char === '>') {
+        const closingAt = lowerText.indexOf(closingTag, index + 1);
+        return closingAt === -1 ? -1 : closingAt + closingTag.length;
+      }
+    }
+
+    return -1;
+  };
+
+  const findNextWidgetTag = (
+    text: string,
+    startIndex: number
+  ): { start: number; end: number } | null => {
+    WIDGET_TAG_START_REGEX.lastIndex = startIndex;
+    let match: RegExpExecArray | null;
+
+    while ((match = WIDGET_TAG_START_REGEX.exec(text)) !== null) {
+      const tagName = match[1];
+      if (!tagName) continue;
+      const end = findWidgetTagEnd(text, match.index, tagName);
+      if (end !== -1) return { start: match.index, end };
+    }
+
+    return null;
+  };
 
   const renderTextBlocksWithoutWidgets = (text: string, startKey: number): React.ReactElement[] => {
     const lines = text.replace(/\r\n/g, '\n').split('\n');
@@ -989,26 +1088,26 @@ export const MarkdownContent = memo(function MarkdownContent({
     const blocks: React.ReactElement[] = [];
     let lastIndex = 0;
     let key = startKey;
-    let match;
+    let match: ReturnType<typeof findNextWidgetTag>;
 
-    WIDGET_TAG_REGEX.lastIndex = 0;
-    while ((match = WIDGET_TAG_REGEX.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        const textBlocks = renderTextBlocksWithoutWidgets(text.slice(lastIndex, match.index), key);
+    while ((match = findNextWidgetTag(text, lastIndex)) !== null) {
+      if (match.start > lastIndex) {
+        const textBlocks = renderTextBlocksWithoutWidgets(text.slice(lastIndex, match.start), key);
         blocks.push(...textBlocks);
         key += textBlocks.length;
       }
 
-      const widget = parseWidgetTag(match[0]);
+      const tag = text.slice(match.start, match.end);
+      const widget = parseWidgetTag(tag);
       if (widget) {
         blocks.push(<ChatMessageWidget key={key++} name={widget.name} data={widget.data} />);
       } else {
-        const textBlocks = renderTextBlocksWithoutWidgets(match[0], key);
+        const textBlocks = renderTextBlocksWithoutWidgets(tag, key);
         blocks.push(...textBlocks);
         key += textBlocks.length;
       }
 
-      lastIndex = match.index + match[0].length;
+      lastIndex = match.end;
     }
 
     if (lastIndex < text.length) {

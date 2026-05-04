@@ -27,16 +27,19 @@ const WIDGET_TAG_NAMES = [
 ] as const;
 
 const WIDGET_TAG_PATTERN = WIDGET_TAG_NAMES.join('|');
-const WIDGET_TAG_REGEX = new RegExp(
-  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>[\\s\\S]*?<\\/\\1>)`,
-  'gi'
-);
+const WIDGET_TAG_START_REGEX = new RegExp(`<(${WIDGET_TAG_PATTERN})\\b`, 'gi');
 
 type WidgetName = (typeof WIDGET_TAG_NAMES)[number];
 
 interface ParsedWidget {
   name: string;
   data: unknown;
+}
+
+interface WidgetTagParts {
+  tagName: string;
+  attrsSource: string;
+  body?: string;
 }
 
 const INVALID_WIDGET_TITLE = 'Widget could not be rendered';
@@ -553,19 +556,63 @@ function recoverWidgetData(name: string, value: string): unknown {
   return recoverGenericCalloutData(value) ?? invalidWidgetData();
 }
 
+function splitWidgetTag(tag: string): WidgetTagParts | null {
+  const trimmed = tag.trim();
+  const nameMatch = trimmed.match(/^<([a-zA-Z_][\w.-]*)/);
+  const tagName = nameMatch?.[1];
+  if (!tagName) return null;
+
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  const attrsStart = nameMatch[0].length;
+
+  for (let index = attrsStart; index < trimmed.length; index += 1) {
+    const char = trimmed[index]!;
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+
+    if (char === '/' && trimmed[index + 1] === '>') {
+      return { tagName, attrsSource: trimmed.slice(attrsStart, index).trim() };
+    }
+
+    if (char === '>') {
+      const closingTag = `</${tagName}>`;
+      if (!trimmed.toLowerCase().endsWith(closingTag.toLowerCase())) return null;
+      return {
+        tagName,
+        attrsSource: trimmed.slice(attrsStart, index).trim(),
+        body: trimmed.slice(index + 1, trimmed.length - closingTag.length),
+      };
+    }
+  }
+
+  return null;
+}
+
 function parseWidgetTag(tag: string): ParsedWidget | null {
-  const match = tag
-    .trim()
-    .match(/^<([a-zA-Z_][\w.-]*)(?:\s+([^>]*?))?\s*(?:\/>|>([\s\S]*?)<\/\1>)$/i);
-  if (!match) return null;
-  const tagName = match?.[1]?.toLowerCase() as WidgetName | undefined;
+  const parts = splitWidgetTag(tag);
+  if (!parts) return null;
+  const tagName = parts?.tagName.toLowerCase() as WidgetName | undefined;
   if (!tagName || !WIDGET_TAG_NAMES.includes(tagName)) return null;
 
-  const attrs = parseTagAttributes(match[2] ?? '');
+  const attrs = parseTagAttributes(parts.attrsSource);
   const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
   if (!name) return null;
 
-  const dataValue = attrs.data ?? match[3]?.trim();
+  const dataValue = attrs.data ?? parts.body?.trim();
   if (!dataValue) return { name, data: {} };
 
   try {
@@ -592,12 +639,73 @@ function renderWidgetTag(widget: ParsedWidget): string {
   return `<widget name="${encodeAttributeValue(widget.name)}" data="${data}" />`;
 }
 
+function findWidgetTagEnd(content: string, startIndex: number, tagName: string): number {
+  const lowerContent = content.toLowerCase();
+  const closingTag = `</${tagName.toLowerCase()}>`;
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+
+  for (let index = startIndex; index < content.length; index += 1) {
+    const char = content[index]!;
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+
+    if (char === '/' && content[index + 1] === '>') return index + 2;
+
+    if (char === '>') {
+      const closingAt = lowerContent.indexOf(closingTag, index + 1);
+      return closingAt === -1 ? -1 : closingAt + closingTag.length;
+    }
+  }
+
+  return -1;
+}
+
+function findNextWidgetTag(
+  content: string,
+  startIndex: number
+): { start: number; end: number } | null {
+  WIDGET_TAG_START_REGEX.lastIndex = startIndex;
+  let match: RegExpExecArray | null;
+
+  while ((match = WIDGET_TAG_START_REGEX.exec(content)) !== null) {
+    const tagName = match[1];
+    if (!tagName) continue;
+    const end = findWidgetTagEnd(content, match.index, tagName);
+    if (end !== -1) return { start: match.index, end };
+  }
+
+  return null;
+}
+
 function normalizeChatWidgetsInText(content: string): string {
-  WIDGET_TAG_REGEX.lastIndex = 0;
-  return content.replace(WIDGET_TAG_REGEX, (tag) => {
+  let index = 0;
+  let result = '';
+  let match: ReturnType<typeof findNextWidgetTag>;
+
+  while ((match = findNextWidgetTag(content, index)) !== null) {
+    result += content.slice(index, match.start);
+    const tag = content.slice(match.start, match.end);
     const widget = parseWidgetTag(tag);
-    return widget ? renderWidgetTag(widget) : tag;
-  });
+    result += widget ? renderWidgetTag(widget) : tag;
+    index = match.end;
+  }
+
+  result += content.slice(index);
+  return result;
 }
 
 export function normalizeChatWidgets(content: string): string {

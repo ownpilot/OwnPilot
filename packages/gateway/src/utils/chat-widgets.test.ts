@@ -55,6 +55,20 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('does not end widget tags on markers inside quoted data strings', () => {
+    const result = normalizeChatWidgets(
+      `<callout data='{"title":"Operators","body":"Use a > b and keep literal /> markers"}' />
+<widget name="callout" data='{"title":"Paired","body":"Body has > and /> safely"}'></widget>`
+    );
+
+    expect(result).toContain('<widget name="callout"');
+    expect(result).toContain('Operators');
+    expect(result).toContain('Use a &gt; b and keep literal /&gt; markers');
+    expect(result).toContain('Paired');
+    expect(result).toContain('Body has &gt; and /&gt; safely');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('does not normalize widget examples inside fenced code blocks', () => {
     const result = normalizeChatWidgets(`Before
 

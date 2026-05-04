@@ -156,6 +156,22 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('does not end widget tags on markers inside quoted data strings', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<callout data='{"title":"Operators","body":"Use a > b and keep literal /> markers"}' />
+<widget name="callout" data='{"title":"Paired","body":"Body has > and /> safely"}'></widget>`}
+      />
+    );
+
+    expect(html).toContain('Operators');
+    expect(html).toContain('Use a &gt; b and keep literal /&gt; markers');
+    expect(html).toContain('Paired');
+    expect(html).toContain('Body has &gt; and /&gt; safely');
+    expect(html).not.toContain('Invalid widget data');
+    expect(html).not.toContain('&lt;callout');
+  });
+
   it('renders shorthand widget tags produced by models', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
