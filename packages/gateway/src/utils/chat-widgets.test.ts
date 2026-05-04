@@ -25,6 +25,22 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('</callout>');
   });
 
+  it('does not normalize widget examples inside fenced code blocks', () => {
+    const result = normalizeChatWidgets(`Before
+
+\`\`\`html
+<widget name="callout" data='{"title":"Example","body":"Do not normalize"}' />
+\`\`\`
+
+<callout data='{"title":"Live","body":"Normalize this"}' />`);
+
+    expect(result).toContain(
+      `<widget name="callout" data='{"title":"Example","body":"Do not normalize"}' />`
+    );
+    expect(result).toContain('<widget name="callout" data="{&quot;title&quot;:&quot;Live&quot;');
+    expect(result).toContain('Normalize this');
+  });
+
   it('recovers list items that use description and truncated escaped JSON', () => {
     const result = normalizeChatWidgets(
       `<list data="{\\"items\\":[{\\"title\\":\\"AMD disproportionate hit\\",\\"description\\":\\"SK Hynix prioritizes Nvidia + OpenAI\\"},{\\"title\\":\\"broken" />`

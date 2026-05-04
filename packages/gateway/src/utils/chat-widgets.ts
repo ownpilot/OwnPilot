@@ -530,10 +530,26 @@ function renderWidgetTag(widget: ParsedWidget): string {
   return `<widget name="${encodeAttributeValue(widget.name)}" data="${data}" />`;
 }
 
-export function normalizeChatWidgets(content: string): string {
+function normalizeChatWidgetsInText(content: string): string {
   WIDGET_TAG_REGEX.lastIndex = 0;
   return content.replace(WIDGET_TAG_REGEX, (tag) => {
     const widget = parseWidgetTag(tag);
     return widget ? renderWidgetTag(widget) : tag;
   });
+}
+
+export function normalizeChatWidgets(content: string): string {
+  const codeBlockRegex = /```[\s\S]*?```/g;
+  let lastIndex = 0;
+  let result = '';
+  let match: RegExpExecArray | null;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    result += normalizeChatWidgetsInText(content.slice(lastIndex, match.index));
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+  }
+
+  result += normalizeChatWidgetsInText(content.slice(lastIndex));
+  return result;
 }
