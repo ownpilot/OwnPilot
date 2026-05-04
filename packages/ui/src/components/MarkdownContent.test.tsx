@@ -230,6 +230,22 @@ After`}
     expect(html).not.toContain('<widget');
   });
 
+  it('renders single-quoted widget JSON with apostrophes inside strings', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<widget name="key_value" data='{"title":"Survival Formula","items":[{"key":"Genclerbirligi","value":"Kasimpasa'yi beat + Trabzonspor'da points stolen -> Play-Out'u skips"},{"key":"Karagumruk","value":"Needs Kayserispor'un loss"}]}' />`}
+      />
+    );
+
+    expect(html).toContain('Survival Formula');
+    expect(html).toContain('Kasimpasa&#x27;yi beat');
+    expect(html).toContain('Trabzonspor&#x27;da points');
+    expect(html).toContain('Play-Out&#x27;u skips');
+    expect(html).toContain('Kayserispor&#x27;un loss');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('does not render widget tags inside code fences', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

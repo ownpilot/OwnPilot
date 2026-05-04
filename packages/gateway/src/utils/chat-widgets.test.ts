@@ -48,6 +48,20 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('<key_value');
   });
 
+  it('canonicalizes single-quoted widget JSON with apostrophes inside strings', () => {
+    const result = normalizeChatWidgets(
+      `<widget name="key_value" data='{"title":"Survival Formula","items":[{"key":"Genclerbirligi","value":"Kasimpasa'yi beat + Trabzonspor'da points stolen -> Play-Out'u skips"},{"key":"Karagumruk","value":"Needs Kayserispor'un loss"}]}' />`
+    );
+
+    expect(result).toContain('<widget name="key_value"');
+    expect(result).toContain('Survival Formula');
+    expect(result).toContain("Kasimpasa'yi beat");
+    expect(result).toContain("Trabzonspor'da points");
+    expect(result).toContain("Play-Out'u skips");
+    expect(result).toContain("Kayserispor'un loss");
+    expect(result).not.toContain('Widget could not be rendered');
+  });
+
   it('turns unrecoverable widgets into a safe callout payload', () => {
     const result = normalizeChatWidgets(`<progress data='{"value":' />`);
 

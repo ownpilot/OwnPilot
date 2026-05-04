@@ -72,6 +72,14 @@ function parseTagAttributes(source: string): Record<string, string> {
     index += 1;
 
     let value = '';
+    if (attrName === 'data' && quote === "'" && /^[\s]*[\[{]/.test(source.slice(index))) {
+      const closingQuote = source.lastIndexOf(quote);
+      if (closingQuote >= index) {
+        value = source.slice(index, closingQuote);
+        index = closingQuote;
+      }
+    }
+
     while (index < source.length) {
       const char = source[index]!;
       const next = source[index + 1];
