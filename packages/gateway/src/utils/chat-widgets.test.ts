@@ -91,6 +91,18 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('normalizes valid table data with row and column aliases', () => {
+    const result = normalizeChatWidgets(
+      `<table data='{"columns":["Company","Risk"],"items":[{"Company":"AMD","Risk":"High"}]}' />`
+    );
+
+    expect(result).toContain('<widget name="table"');
+    expect(result).toContain('&quot;headers&quot;:[&quot;Company&quot;,&quot;Risk&quot;]');
+    expect(result).toContain('&quot;rows&quot;:[{&quot;Company&quot;:&quot;AMD&quot;');
+    expect(result).toContain('&quot;Risk&quot;:&quot;High&quot;');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('canonicalizes single-quoted widget JSON with apostrophes inside strings', () => {
     const result = normalizeChatWidgets(
       `<widget name="key_value" data='{"title":"Survival Formula","items":[{"key":"Genclerbirligi","value":"Kasimpasa'yi beat + Trabzonspor'da points stolen -> Play-Out'u skips"},{"key":"Karagumruk","value":"Needs Kayserispor'un loss"}]}' />`

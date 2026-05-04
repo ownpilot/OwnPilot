@@ -389,6 +389,15 @@ function normalizeWidgetDataShape(name: string, data: unknown): unknown {
     return items && !Array.isArray(data.items) ? { ...data, items } : data;
   }
 
+  if (name === 'table') {
+    const rows = firstArrayValue(data, ['rows', 'items', 'entries', 'data']);
+    const headers = firstArrayValue(data, ['headers', 'columns', 'fields']);
+    const normalized = { ...data };
+    if (rows && !Array.isArray(normalized.rows)) normalized.rows = rows;
+    if (headers && !Array.isArray(normalized.headers)) normalized.headers = headers;
+    return normalized;
+  }
+
   if (
     name === 'key_value' ||
     name === 'key_values' ||

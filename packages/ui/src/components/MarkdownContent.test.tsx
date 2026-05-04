@@ -273,6 +273,22 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('normalizes valid table data with row and column aliases before rendering', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<table data='{"columns":["Company","Risk"],"items":[{"Company":"AMD","Risk":"High"}]}' />`}
+      />
+    );
+
+    expect(html).toContain('<table');
+    expect(html).toContain('Company');
+    expect(html).toContain('Risk');
+    expect(html).toContain('AMD');
+    expect(html).toContain('High');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('renders key-value, cards, and steps widgets', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
