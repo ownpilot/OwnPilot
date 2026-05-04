@@ -33,6 +33,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('canonicalizes new widget aliases', () => {
+    const result = normalizeChatWidgets(
+      `<cards data='{"items":[{"title":"A","detail":"B"}]}' />
+<steps data='{"items":[{"title":"One","detail":"Do it"}]}' />
+<key_value data='{"items":[{"label":"Status","value":"Ready"}]}' />`
+    );
+
+    expect(result).toContain('<widget name="cards"');
+    expect(result).toContain('<widget name="steps"');
+    expect(result).toContain('<widget name="key_value"');
+    expect(result).not.toContain('<cards');
+    expect(result).not.toContain('<steps');
+    expect(result).not.toContain('<key_value');
+  });
+
   it('turns unrecoverable widgets into a safe callout payload', () => {
     const result = normalizeChatWidgets(`<progress data='{"value":' />`);
 

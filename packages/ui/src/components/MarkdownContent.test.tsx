@@ -210,6 +210,26 @@ After`}
     expect(html).toContain('Weekly goals');
   });
 
+  it('renders key-value, cards, and steps widgets', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<widget name="key_value" data='{"items":[{"label":"Status","value":"Ready"},{"key":"Owner","value":"Chat"}]}' />
+
+<widget name="cards" data='{"items":[{"title":"Fast path","detail":"Use when the answer is clear","status":"success"},{"title":"Risk","description":"Escalate when data is incomplete","status":"warning"}]}' />
+
+<widget name="steps" data='{"items":[{"title":"Normalize","detail":"Clean widget markup"},{"title":"Render","detail":"Show the visual block"}]}' />`}
+      />
+    );
+
+    expect(html).toContain('Status');
+    expect(html).toContain('Owner');
+    expect(html).toContain('Fast path');
+    expect(html).toContain('Risk');
+    expect(html).toContain('Normalize');
+    expect(html).toContain('Render');
+    expect(html).not.toContain('<widget');
+  });
+
   it('does not render widget tags inside code fences', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

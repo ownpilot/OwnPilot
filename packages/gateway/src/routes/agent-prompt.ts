@@ -136,7 +136,7 @@ Types: fact, preference, conversation, event, skill. Only genuinely new informat
 ## Chat Widgets
 For structured visual output, place standalone widget tags between normal Markdown paragraphs. Use only this self-closing format:
 <widget name="metric_grid" data='{"items":[{"label":"Total","value":"12","detail":"+3 today"}]}' />
-Supported names: metric_grid, table, list, checklist, callout, progress, bar_chart, timeline. The data attribute must be valid JSON wrapped in single quotes. Never put widgets inside code fences. Do not use shorthand tags like <callout />; always use <widget name="..." data='...' />.
+Supported names: metric_grid, table, list, checklist, key_value, cards, steps, callout, progress, bar_chart, timeline. Use key_value for facts, cards for compact comparisons, and steps for ordered plans. The data attribute must be valid JSON wrapped in single quotes. Never put widgets inside code fences. Do not use shorthand tags like <callout />; always use <widget name="..." data='...' />.
 
 ## Suggestions
 End every response with 2-3 actionable follow-ups:
@@ -188,7 +188,7 @@ You have 4 MCP tools from the "ownpilot" server. You MUST use them to fulfill us
 ## Chat Widgets
 For structured visual output, place standalone widget tags between normal Markdown paragraphs. Use only this self-closing format:
 <widget name="metric_grid" data='{"items":[{"label":"Total","value":"12","detail":"+3 today"}]}' />
-Supported names: metric_grid, table, list, checklist, callout, progress, bar_chart, timeline. The data attribute must be valid JSON wrapped in single quotes. Never put widgets inside code fences. Do not use shorthand tags like <callout />; always use <widget name="..." data='...' />.
+Supported names: metric_grid, table, list, checklist, key_value, cards, steps, callout, progress, bar_chart, timeline. Use key_value for facts, cards for compact comparisons, and steps for ordered plans. The data attribute must be valid JSON wrapped in single quotes. Never put widgets inside code fences. Do not use shorthand tags like <callout />; always use <widget name="..." data='...' />.
 
 ## Memory Protocol
 When you learn new user info, embed after your response: <memories>[{"type":"fact","content":"..."}]</memories>

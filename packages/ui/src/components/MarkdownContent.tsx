@@ -104,6 +104,17 @@ const WIDGET_TAG_NAMES = [
   'table',
   'list',
   'checklist',
+  'key_value',
+  'key_values',
+  'facts',
+  'details',
+  'properties',
+  'card',
+  'cards',
+  'card_grid',
+  'step',
+  'steps',
+  'plan',
   'callout',
   'note',
   'progress',
@@ -508,15 +519,26 @@ export const MarkdownContent = memo(function MarkdownContent({
       }
     }
 
-    if (name === 'table') {
-      return recoverTableData(value);
+    if (name === 'table') return recoverTableData(value);
+    if (
+      name === 'list' ||
+      name === 'checklist' ||
+      name === 'key_value' ||
+      name === 'key_values' ||
+      name === 'facts' ||
+      name === 'details' ||
+      name === 'properties' ||
+      name === 'card' ||
+      name === 'cards' ||
+      name === 'card_grid' ||
+      name === 'step' ||
+      name === 'steps' ||
+      name === 'plan'
+    ) {
+      return recoverListData(value);
     }
 
-    if (name !== 'list' && name !== 'checklist') {
-      return { error: 'Invalid widget data' };
-    }
-
-    return recoverListData(value);
+    return { error: 'Invalid widget data' };
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {

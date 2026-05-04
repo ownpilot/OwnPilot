@@ -393,6 +393,9 @@ describe('agent-prompt', () => {
       expect(widgetsSection).toContain('<widget');
       expect(widgetsSection).toContain('metric_grid');
       expect(widgetsSection).toContain('table');
+      expect(widgetsSection).toContain('key_value');
+      expect(widgetsSection).toContain('cards');
+      expect(widgetsSection).toContain('steps');
       expect(widgetsSection).toContain('bar_chart');
       expect(widgetsSection).toContain('timeline');
       expect(widgetsSection).toContain('valid JSON');

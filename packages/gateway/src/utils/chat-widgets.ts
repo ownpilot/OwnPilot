@@ -7,6 +7,17 @@ const WIDGET_TAG_NAMES = [
   'table',
   'list',
   'checklist',
+  'key_value',
+  'key_values',
+  'facts',
+  'details',
+  'properties',
+  'card',
+  'cards',
+  'card_grid',
+  'step',
+  'steps',
+  'plan',
   'callout',
   'note',
   'progress',
@@ -204,7 +215,23 @@ function recoverWidgetData(name: string, value: string): unknown {
   }
 
   if (name === 'table') return recoverTableData(value);
-  if (name === 'list' || name === 'checklist') return recoverListData(value);
+  if (
+    name === 'list' ||
+    name === 'checklist' ||
+    name === 'key_value' ||
+    name === 'key_values' ||
+    name === 'facts' ||
+    name === 'details' ||
+    name === 'properties' ||
+    name === 'card' ||
+    name === 'cards' ||
+    name === 'card_grid' ||
+    name === 'step' ||
+    name === 'steps' ||
+    name === 'plan'
+  ) {
+    return recoverListData(value);
+  }
   return invalidWidgetData();
 }
 

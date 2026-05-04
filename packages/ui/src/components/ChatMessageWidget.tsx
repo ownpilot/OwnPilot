@@ -3,7 +3,9 @@ import {
   BarChart3,
   CheckCircle2,
   Circle,
+  Clipboard,
   Info,
+  Layers,
   ListChecks,
   Table,
   TrendingUp,
@@ -258,6 +260,144 @@ function ListWidget({ data, checklist = false }: { data: unknown; checklist?: bo
   );
 }
 
+function KeyValueWidget({ data }: { data: unknown }) {
+  const record = isRecord(data) ? data : {};
+  const title = asText(record.title);
+  const entriesSource = Array.isArray(data)
+    ? data
+    : (record.items ?? record.entries ?? record.facts);
+  const entries = asArray(entriesSource).filter(isRecord).slice(0, 24);
+
+  if (entries.length === 0) return <JsonWidget name="key_value" data={data} />;
+
+  return (
+    <WidgetShell title={title || undefined} icon={<Clipboard className="h-4 w-4" />}>
+      <dl className="grid gap-2 sm:grid-cols-2">
+        {entries.map((entry, index) => {
+          const label = asText(entry.label ?? entry.key ?? entry.name ?? entry.title);
+          const value = asText(entry.value ?? entry.text ?? entry.detail ?? entry.description);
+          if (!label && !value) return null;
+          return (
+            <div
+              key={index}
+              className="rounded-md border border-border bg-bg-secondary/70 px-3 py-2 dark:border-dark-border dark:bg-dark-bg-secondary/70"
+            >
+              {label && (
+                <dt className="text-xs font-medium uppercase tracking-wide text-text-muted dark:text-dark-text-muted">
+                  {label}
+                </dt>
+              )}
+              {value && (
+                <dd className="mt-0.5 text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  {value}
+                </dd>
+              )}
+            </div>
+          );
+        })}
+      </dl>
+    </WidgetShell>
+  );
+}
+
+function CardsWidget({ data }: { data: unknown }) {
+  const record = isRecord(data) ? data : {};
+  const title = asText(record.title);
+  const items = asArray(Array.isArray(data) ? data : (record.items ?? record.cards))
+    .filter(isRecord)
+    .slice(0, 9);
+
+  if (items.length === 0) return <JsonWidget name="cards" data={data} />;
+
+  return (
+    <WidgetShell title={title || undefined} icon={<Layers className="h-4 w-4" />}>
+      <div className="grid gap-2 md:grid-cols-2">
+        {items.map((item, index) => {
+          const tone = normalizeTone(item.tone ?? item.status);
+          const classes = toneClasses(tone);
+          const cardTitle = asText(item.title ?? item.label ?? item.name);
+          const detail = asText(item.detail ?? item.description ?? item.body ?? item.text);
+          const meta = asText(item.meta ?? item.subtitle ?? item.value);
+          return (
+            <article
+              key={index}
+              className="rounded-md border border-border bg-bg-secondary/70 p-3 dark:border-dark-border dark:bg-dark-bg-secondary/70"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  {cardTitle && (
+                    <h4 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                      {cardTitle}
+                    </h4>
+                  )}
+                  {meta && (
+                    <div className="mt-0.5 text-xs text-text-muted dark:text-dark-text-muted">
+                      {meta}
+                    </div>
+                  )}
+                </div>
+                <span className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${classes.marker}`} />
+              </div>
+              {detail && (
+                <p className="mt-2 text-sm leading-6 text-text-secondary dark:text-dark-text-secondary">
+                  {detail}
+                </p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </WidgetShell>
+  );
+}
+
+function StepsWidget({ data }: { data: unknown }) {
+  const record = isRecord(data) ? data : {};
+  const title = asText(record.title);
+  const steps = asArray(Array.isArray(data) ? data : (record.items ?? record.steps))
+    .filter((item) => typeof item === 'string' || isRecord(item))
+    .slice(0, 12);
+
+  if (steps.length === 0) return <JsonWidget name="steps" data={data} />;
+
+  return (
+    <WidgetShell title={title || undefined} icon={<ListChecks className="h-4 w-4" />}>
+      <ol className="space-y-3">
+        {steps.map((step, index) => {
+          const item = isRecord(step) ? step : {};
+          const label = isRecord(step)
+            ? asText(item.label ?? item.title ?? item.name)
+            : asText(step);
+          const detail = isRecord(step)
+            ? asText(item.detail ?? item.description ?? item.body ?? item.text)
+            : '';
+          const tone = normalizeTone(item.tone ?? item.status);
+          const classes = toneClasses(tone);
+          return (
+            <li key={index} className="grid grid-cols-[auto_1fr] gap-3">
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white ${classes.marker}`}
+              >
+                {index + 1}
+              </span>
+              <div>
+                <div className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                  {label}
+                </div>
+                {detail && (
+                  <div className="mt-0.5 text-sm leading-6 text-text-secondary dark:text-dark-text-secondary">
+                    {detail}
+                  </div>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </WidgetShell>
+  );
+}
+
 function CalloutWidget({ data }: { data: unknown }) {
   const record = isRecord(data) ? data : {};
   const tone = normalizeTone(record.tone ?? record.status ?? 'info');
@@ -438,6 +578,20 @@ export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
       return <ListWidget data={data} />;
     case 'checklist':
       return <ListWidget data={data} checklist />;
+    case 'key_value':
+    case 'key_values':
+    case 'facts':
+    case 'details':
+    case 'properties':
+      return <KeyValueWidget data={data} />;
+    case 'card':
+    case 'cards':
+    case 'card_grid':
+      return <CardsWidget data={data} />;
+    case 'step':
+    case 'steps':
+    case 'plan':
+      return <StepsWidget data={data} />;
     case 'callout':
     case 'note':
       return <CalloutWidget data={data} />;
