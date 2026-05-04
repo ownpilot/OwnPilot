@@ -40,6 +40,10 @@ const INVALID_WIDGET_TITLE = 'Widget could not be rendered';
 const INVALID_WIDGET_BODY =
   'The data for this widget was incomplete or malformed, so it was hidden from the chat.';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function decodeAttributeValue(value: string): string {
   return value
     .replace(/&quot;/g, '"')
@@ -307,14 +311,95 @@ function invalidWidgetData(): Record<string, string> {
   };
 }
 
-function isInvalidWidgetFallback(data: unknown): data is Record<string, unknown> {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    !Array.isArray(data) &&
-    (data as Record<string, unknown>).title === INVALID_WIDGET_TITLE &&
-    (data as Record<string, unknown>).body === INVALID_WIDGET_BODY
-  );
+function isInvalidWidgetFallback(data: unknown): boolean {
+  return isRecord(data) && data.title === INVALID_WIDGET_TITLE && data.body === INVALID_WIDGET_BODY;
+}
+
+function firstArrayValue(record: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (Array.isArray(record[key])) return record[key];
+  }
+  return undefined;
+}
+
+function normalizeWidgetDataShape(name: string, data: unknown): unknown {
+  if (!isRecord(data)) return data;
+  if (isInvalidWidgetFallback(data)) return data;
+
+  if (name === 'metric' || name === 'metrics' || name === 'metric_grid' || name === 'stats') {
+    const items = firstArrayValue(data, ['items', 'metrics', 'stats', 'values']);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if (name === 'list' || name === 'checklist') {
+    const items = firstArrayValue(data, [
+      'items',
+      'entries',
+      'list',
+      'tasks',
+      'todos',
+      'recommendations',
+      'suggestions',
+    ]);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if (
+    name === 'key_value' ||
+    name === 'key_values' ||
+    name === 'facts' ||
+    name === 'details' ||
+    name === 'properties'
+  ) {
+    const items = firstArrayValue(data, ['items', 'entries', 'facts', 'properties', 'details']);
+    if (items && !Array.isArray(data.items)) return { ...data, items };
+
+    const reserved = new Set([
+      'title',
+      'tone',
+      'status',
+      'type',
+      'items',
+      'entries',
+      'facts',
+      'properties',
+      'details',
+    ]);
+    const scalarItems = Object.entries(data)
+      .filter(
+        ([key, value]) =>
+          !reserved.has(key) &&
+          (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+      )
+      .map(([key, value]) => ({ key, value }));
+    return scalarItems.length > 0 ? { title: data.title, items: scalarItems } : data;
+  }
+
+  if (name === 'card' || name === 'cards' || name === 'card_grid') {
+    const items = firstArrayValue(data, ['items', 'cards', 'entries']);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if (name === 'step' || name === 'steps' || name === 'plan') {
+    const items = firstArrayValue(data, ['items', 'steps', 'plan', 'tasks']);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if (name === 'bar' || name === 'bar_chart') {
+    const items = firstArrayValue(data, ['items', 'bars', 'series', 'values']);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if (name === 'timeline') {
+    const items = firstArrayValue(data, ['items', 'events', 'entries']);
+    return items && !Array.isArray(data.items) ? { ...data, items } : data;
+  }
+
+  if ((name === 'callout' || name === 'note') && data.type && !data.tone) {
+    return { ...data, tone: data.type };
+  }
+
+  return data;
 }
 
 function recoverWidgetData(name: string, value: string): unknown {
@@ -365,10 +450,13 @@ function parseWidgetTag(tag: string): ParsedWidget | null {
   if (!attrs.data) return { name, data: {} };
 
   try {
-    return { name, data: parseWidgetData(attrs.data) };
+    return { name, data: normalizeWidgetDataShape(name, parseWidgetData(attrs.data)) };
   } catch {
     const data = recoverWidgetData(name, attrs.data);
-    return { name: isInvalidWidgetFallback(data) ? 'callout' : name, data };
+    return {
+      name: isInvalidWidgetFallback(data) ? 'callout' : name,
+      data: normalizeWidgetDataShape(name, data),
+    };
   }
 }
 

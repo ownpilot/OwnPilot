@@ -240,6 +240,25 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('normalizes valid widget data with schema aliases before rendering', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<metric_grid data='{"metrics":[{"label":"Total","value":"12"}]}' />
+<key_value data='{"title":"Snapshot","Owner":"OwnPilot","Open":3}' />`}
+      />
+    );
+
+    expect(html).toContain('Total');
+    expect(html).toContain('12');
+    expect(html).toContain('Snapshot');
+    expect(html).toContain('Owner');
+    expect(html).toContain('OwnPilot');
+    expect(html).toContain('Open');
+    expect(html).toContain('3');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('renders key-value, cards, and steps widgets', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

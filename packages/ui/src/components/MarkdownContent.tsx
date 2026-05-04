@@ -301,6 +301,9 @@ export const MarkdownContent = memo(function MarkdownContent({
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&');
 
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
   const parseTagAttributes = (source: string): Record<string, string> => {
     const attrs: Record<string, string> = {};
     let index = 0;
@@ -554,6 +557,96 @@ export const MarkdownContent = memo(function MarkdownContent({
     return { error: 'Invalid widget data' };
   };
 
+  const isInvalidWidgetFallback = (data: unknown): boolean =>
+    isRecord(data) && data.error === 'Invalid widget data';
+
+  const firstArrayValue = (record: Record<string, unknown>, keys: string[]): unknown => {
+    for (const key of keys) {
+      if (Array.isArray(record[key])) return record[key];
+    }
+    return undefined;
+  };
+
+  const normalizeWidgetDataShape = (name: string, data: unknown): unknown => {
+    if (!isRecord(data)) return data;
+    if (isInvalidWidgetFallback(data)) return data;
+
+    if (name === 'metric' || name === 'metrics' || name === 'metric_grid' || name === 'stats') {
+      const items = firstArrayValue(data, ['items', 'metrics', 'stats', 'values']);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if (name === 'list' || name === 'checklist') {
+      const items = firstArrayValue(data, [
+        'items',
+        'entries',
+        'list',
+        'tasks',
+        'todos',
+        'recommendations',
+        'suggestions',
+      ]);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if (
+      name === 'key_value' ||
+      name === 'key_values' ||
+      name === 'facts' ||
+      name === 'details' ||
+      name === 'properties'
+    ) {
+      const items = firstArrayValue(data, ['items', 'entries', 'facts', 'properties', 'details']);
+      if (items && !Array.isArray(data.items)) return { ...data, items };
+
+      const reserved = new Set([
+        'title',
+        'tone',
+        'status',
+        'type',
+        'items',
+        'entries',
+        'facts',
+        'properties',
+        'details',
+      ]);
+      const scalarItems = Object.entries(data)
+        .filter(
+          ([key, value]) =>
+            !reserved.has(key) &&
+            (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+        )
+        .map(([key, value]) => ({ key, value }));
+      return scalarItems.length > 0 ? { title: data.title, items: scalarItems } : data;
+    }
+
+    if (name === 'card' || name === 'cards' || name === 'card_grid') {
+      const items = firstArrayValue(data, ['items', 'cards', 'entries']);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if (name === 'step' || name === 'steps' || name === 'plan') {
+      const items = firstArrayValue(data, ['items', 'steps', 'plan', 'tasks']);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if (name === 'bar' || name === 'bar_chart') {
+      const items = firstArrayValue(data, ['items', 'bars', 'series', 'values']);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if (name === 'timeline') {
+      const items = firstArrayValue(data, ['items', 'events', 'entries']);
+      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+    }
+
+    if ((name === 'callout' || name === 'note') && data.type && !data.tone) {
+      return { ...data, tone: data.type };
+    }
+
+    return data;
+  };
+
   const recoverWidgetData = (name: string, value: string): unknown => {
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
 
@@ -609,9 +702,9 @@ export const MarkdownContent = memo(function MarkdownContent({
     if (!attrs.data) return { name, data: {} };
 
     try {
-      return { name, data: parseWidgetData(attrs.data) };
+      return { name, data: normalizeWidgetDataShape(name, parseWidgetData(attrs.data)) };
     } catch {
-      return { name, data: recoverWidgetData(name, attrs.data) };
+      return { name, data: normalizeWidgetDataShape(name, recoverWidgetData(name, attrs.data)) };
     }
   };
 

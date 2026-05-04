@@ -75,6 +75,22 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('normalizes valid widget data with schema aliases', () => {
+    const result = normalizeChatWidgets(
+      `<metric_grid data='{"metrics":[{"label":"Total","value":"12"}]}' />
+<key_value data='{"title":"Snapshot","Owner":"OwnPilot","Open":3}' />`
+    );
+
+    expect(result).toContain('<widget name="metric_grid"');
+    expect(result).toContain('&quot;items&quot;:[{&quot;label&quot;:&quot;Total&quot;');
+    expect(result).toContain('<widget name="key_value"');
+    expect(result).toContain('&quot;key&quot;:&quot;Owner&quot;');
+    expect(result).toContain('&quot;value&quot;:&quot;OwnPilot&quot;');
+    expect(result).toContain('&quot;key&quot;:&quot;Open&quot;');
+    expect(result).toContain('&quot;value&quot;:3');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('canonicalizes single-quoted widget JSON with apostrophes inside strings', () => {
     const result = normalizeChatWidgets(
       `<widget name="key_value" data='{"title":"Survival Formula","items":[{"key":"Genclerbirligi","value":"Kasimpasa'yi beat + Trabzonspor'da points stolen -> Play-Out'u skips"},{"key":"Karagumruk","value":"Needs Kayserispor'un loss"}]}' />`
