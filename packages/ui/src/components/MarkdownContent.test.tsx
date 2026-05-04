@@ -119,6 +119,25 @@ After`}
     expect(html).not.toContain('&lt;/callout');
   });
 
+  it('renders paired widget tags with JSON body data', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`Before <widget name="callout">{"title":"Body Notice","body":"Body payload"}</widget> after
+<callout>{"title":"Body Inline","body":"Shorthand body"}</callout>`}
+      />
+    );
+
+    expect(html).toContain('Before');
+    expect(html).toContain('Body Notice');
+    expect(html).toContain('Body payload');
+    expect(html).toContain('after');
+    expect(html).toContain('Body Inline');
+    expect(html).toContain('Shorthand body');
+    expect(html).not.toContain('&lt;widget');
+    expect(html).not.toContain('&lt;/widget');
+    expect(html).not.toContain('&lt;/callout');
+  });
+
   it('renders shorthand widget tags produced by models', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

@@ -100,7 +100,7 @@ interface ParsedWidget {
 
 const WIDGET_TAG_PATTERN = CHAT_WIDGET_TAG_NAMES.join('|');
 const WIDGET_TAG_REGEX = new RegExp(
-  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>\\s*<\\/\\1>)`,
+  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>[\\s\\S]*?<\\/\\1>)`,
   'gi'
 );
 
@@ -741,26 +741,29 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
-    const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)(?:\/>|>\s*<\/\1>)$/i);
+    const match = tag
+      .trim()
+      .match(/^<([a-zA-Z_][\w.-]*)(?:\s+([^>]*?))?\s*(?:\/>|>([\s\S]*?)<\/\1>)$/i);
+    if (!match) return null;
     const tagName = match?.[1]?.toLowerCase();
     if (
       !tagName ||
-      !match?.[2] ||
       !CHAT_WIDGET_TAG_NAMES.includes(tagName as (typeof CHAT_WIDGET_TAG_NAMES)[number])
     ) {
       return null;
     }
 
-    const attrs = parseTagAttributes(match[2]);
+    const attrs = parseTagAttributes(match[2] ?? '');
     const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
     if (!name) return null;
 
-    if (!attrs.data) return { name, data: {} };
+    const dataValue = attrs.data ?? match[3]?.trim();
+    if (!dataValue) return { name, data: {} };
 
     try {
-      return { name, data: normalizeWidgetDataShape(name, parseWidgetData(attrs.data)) };
+      return { name, data: normalizeWidgetDataShape(name, parseWidgetData(dataValue)) };
     } catch {
-      const data = recoverWidgetData(name, attrs.data);
+      const data = recoverWidgetData(name, dataValue);
       return {
         name: isCalloutLikeFallback(data) ? 'callout' : name,
         data: normalizeWidgetDataShape(name, data),

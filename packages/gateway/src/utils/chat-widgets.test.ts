@@ -25,6 +25,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('</callout>');
   });
 
+  it('canonicalizes paired widget tags with JSON body data', () => {
+    const result = normalizeChatWidgets(
+      `<widget name="callout">{"title":"Body Notice","body":"Body payload"}</widget>
+<callout>{"title":"Body Inline","body":"Shorthand body"}</callout>`
+    );
+
+    expect(result).toContain('<widget name="callout"');
+    expect(result).toContain('Body Notice');
+    expect(result).toContain('Body payload');
+    expect(result).toContain('Body Inline');
+    expect(result).toContain('Shorthand body');
+    expect(result).not.toContain('</widget>');
+    expect(result).not.toContain('</callout>');
+  });
+
   it('does not normalize widget examples inside fenced code blocks', () => {
     const result = normalizeChatWidgets(`Before
 
