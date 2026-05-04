@@ -9,6 +9,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { Node, Edge } from '@xyflow/react';
 import { workflowsApi } from '../../api';
 import { formatToolName } from '../../utils/formatters';
+import { cleanStreamingChatContent, stripChatInternalTags } from '../../utils/chat-content';
 import { MarkdownContent } from '../MarkdownContent';
 import { Sparkles, Send, StopCircle, X, Play, AlertCircle, RefreshCw } from '../icons';
 
@@ -373,12 +374,13 @@ export function WorkflowCopilotPanel({
 
             if (event.delta) {
               accumulated += event.delta;
-              setStreamingContent(accumulated);
+              setStreamingContent(cleanStreamingChatContent(accumulated));
             }
 
             if (event.done) {
-              const finalContent = event.content ?? accumulated;
-              const workflowJson = extractWorkflowJson(finalContent);
+              const rawFinalContent = event.content ?? accumulated;
+              const finalContent = stripChatInternalTags(rawFinalContent);
+              const workflowJson = extractWorkflowJson(rawFinalContent);
               const assistantMsg: CopilotMessage = {
                 id: `msg_${Date.now()}_a`,
                 role: 'assistant',
@@ -392,18 +394,22 @@ export function WorkflowCopilotPanel({
         }
 
         // If stream ended without a done event, add whatever we accumulated
-        if (accumulated && !messages.some((m) => m.content === accumulated)) {
+        if (
+          accumulated &&
+          !messages.some((m) => m.content === stripChatInternalTags(accumulated))
+        ) {
+          const finalContent = stripChatInternalTags(accumulated);
           const workflowJson = extractWorkflowJson(accumulated);
           setMessages((prev) => {
             // Only add if we haven't already added via done event
             const lastMsg = prev[prev.length - 1];
-            if (lastMsg?.role === 'assistant' && lastMsg.content === accumulated) return prev;
+            if (lastMsg?.role === 'assistant' && lastMsg.content === finalContent) return prev;
             return [
               ...prev,
               {
                 id: `msg_${Date.now()}_a`,
                 role: 'assistant',
-                content: accumulated,
+                content: finalContent,
                 workflowJson,
               },
             ];
@@ -499,7 +505,11 @@ export function WorkflowCopilotPanel({
                   </div>
                 ) : (
                   <div className="px-3 py-2 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
-                    <MarkdownContent content={msg.content} compact className="text-sm" />
+                    <MarkdownContent
+                      content={stripChatInternalTags(msg.content)}
+                      compact
+                      className="text-sm"
+                    />
                     {msg.workflowJson && (
                       <button
                         onClick={() => onApplyWorkflow(msg.workflowJson!)}
@@ -521,7 +531,11 @@ export function WorkflowCopilotPanel({
           <div className="max-w-full">
             <div className="px-3 py-2 rounded-lg bg-bg-tertiary dark:bg-dark-bg-tertiary">
               {streamingContent ? (
-                <MarkdownContent content={streamingContent} compact className="text-sm" />
+                <MarkdownContent
+                  content={cleanStreamingChatContent(streamingContent)}
+                  compact
+                  className="text-sm"
+                />
               ) : (
                 <div className="flex items-center gap-2 text-sm text-text-muted">
                   <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />

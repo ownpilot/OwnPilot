@@ -17,6 +17,7 @@ import { extensionsApi } from '../../../api/endpoints/extensions';
 import type { ExtensionInfo } from '../../../api/types';
 import { useToast } from '../../../components/ToastProvider';
 import { AgentPreviewCard, type ProposedAgentConfig } from './AgentPreviewCard';
+import { cleanStreamingChatContent, stripChatInternalTags } from '../../../utils/chat-content';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -419,12 +420,13 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
 
               if (event.delta) {
                 accumulated += event.delta;
-                setStreamingContent(accumulated);
+                setStreamingContent(cleanStreamingChatContent(accumulated));
               }
 
               if (event.done) {
-                const finalContent = event.content ?? accumulated;
-                const agentConfig = extractAgentConfig(finalContent);
+                const rawFinalContent = event.content ?? accumulated;
+                const finalContent = stripChatInternalTags(rawFinalContent);
+                const agentConfig = extractAgentConfig(rawFinalContent);
                 const assistantMsg: Message = {
                   id: `msg_${Date.now()}_a`,
                   role: 'assistant',
@@ -438,17 +440,21 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
           }
 
           // Stream ended without done event — finalize
-          if (accumulated && !messages.some((m) => m.content === accumulated)) {
+          if (
+            accumulated &&
+            !messages.some((m) => m.content === stripChatInternalTags(accumulated))
+          ) {
+            const finalContent = stripChatInternalTags(accumulated);
             const agentConfig = extractAgentConfig(accumulated);
             setMessages((prev) => {
               const lastMsg = prev[prev.length - 1];
-              if (lastMsg?.role === 'assistant' && lastMsg.content === accumulated) return prev;
+              if (lastMsg?.role === 'assistant' && lastMsg.content === finalContent) return prev;
               return [
                 ...prev,
                 {
                   id: `msg_${Date.now()}_a`,
                   role: 'assistant',
-                  content: accumulated,
+                  content: finalContent,
                   agentConfig,
                 },
               ];
@@ -661,7 +667,7 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
                 {msg.role === 'assistant' && !msg.isError ? (
                   <div className="space-y-3">
                     <div className="text-sm prose-sm">
-                      <MarkdownContent content={msg.content} />
+                      <MarkdownContent content={stripChatInternalTags(msg.content)} />
                     </div>
                     {msg.agentConfig && (
                       <AgentPreviewCard
@@ -684,7 +690,7 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
             <div className="flex justify-start">
               <div className="max-w-[85%] rounded-xl px-4 py-3 bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary">
                 <div className="text-sm prose-sm">
-                  <MarkdownContent content={streamingContent} />
+                  <MarkdownContent content={cleanStreamingChatContent(streamingContent)} />
                 </div>
               </div>
             </div>
