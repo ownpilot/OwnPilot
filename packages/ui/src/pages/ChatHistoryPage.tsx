@@ -36,6 +36,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { TraceDisplay } from '../components/TraceDisplay';
 import type { TraceInfo } from '../types';
+import { stripChatInternalTags } from '../utils/chat-content';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -941,7 +942,13 @@ export function ChatHistoryPage() {
                                 </p>
                               )}
 
-                              <MarkdownContent content={msg.content} compact className="text-sm" />
+                              <MarkdownContent
+                                content={
+                                  isAssistant ? stripChatInternalTags(msg.content) : msg.content
+                                }
+                                compact
+                                className="text-sm"
+                              />
 
                               {/* Tool calls indicator */}
                               {msg.toolCalls && msg.toolCalls.length > 0 && (

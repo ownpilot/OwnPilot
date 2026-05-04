@@ -18,6 +18,7 @@ import { MessageSquare, X, ExternalLink, Maximize2, Minimize2, Plus } from './ic
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import { chatApi } from '../api';
 import { formatNumber } from '../utils/formatters';
+import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
 import type { Message } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -94,7 +95,7 @@ function MiniMessageItem({ message }: { message: Message }) {
 
   const displayContent = useMemo(() => {
     if (isUser) return stripHiddenBlocks(message.content);
-    return message.content;
+    return stripChatInternalTags(message.content);
   }, [message.content, isUser]);
 
   // Tool calls summary
@@ -151,9 +152,10 @@ function StreamingIndicator({
   if (!isLoading) return null;
 
   if (streamingContent) {
+    const cleanContent = cleanStreamingChatContent(streamingContent);
+    if (!cleanContent) return null;
     // Show last ~200 chars of streaming content
-    const tail =
-      streamingContent.length > 200 ? '...' + streamingContent.slice(-200) : streamingContent;
+    const tail = cleanContent.length > 200 ? '...' + cleanContent.slice(-200) : cleanContent;
     return (
       <div className="flex justify-start">
         <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-tl-md bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border text-sm text-text-primary dark:text-dark-text-primary">
@@ -346,7 +348,9 @@ export function MiniChat() {
 
   // Cleanup drag listeners if component unmounts during active drag
   useEffect(() => {
-    return () => { dragCleanupRef.current?.(); };
+    return () => {
+      dragCleanupRef.current?.();
+    };
   }, []);
 
   // Compute effective dimensions

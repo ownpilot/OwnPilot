@@ -49,6 +49,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { QuickAddGrid } from './QuickAddModal';
 import { useSidebarChat } from '../hooks/useSidebarChat';
 import { usePageCopilotContext } from '../hooks/usePageCopilotContext';
+import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -153,7 +154,12 @@ function formatProviderName(p: { id: string; name: string }): string {
   return p.name;
 }
 
-interface ModelInfo { id: string; name?: string; provider: string; recommended?: boolean }
+interface ModelInfo {
+  id: string;
+  name?: string;
+  provider: string;
+  recommended?: boolean;
+}
 
 function CompactProviderSelector() {
   const { provider, model, setProvider, setModel, clearMessages } = useSidebarChat();
@@ -165,11 +171,14 @@ function CompactProviderSelector() {
 
   // Fetch providers + models
   useEffect(() => {
-    Promise.all([providersApi.list(), modelsApi.list()]).then(([provData, modData]) => {
-      const configured = (provData.providers as ProviderInfo[]).filter((p) => p.isConfigured) ?? [];
-      setProviders(configured);
-      setModels((modData.models as ModelInfo[]) ?? []);
-    }).catch(() => {});
+    Promise.all([providersApi.list(), modelsApi.list()])
+      .then(([provData, modData]) => {
+        const configured =
+          (provData.providers as ProviderInfo[]).filter((p) => p.isConfigured) ?? [];
+        setProviders(configured);
+        setModels((modData.models as ModelInfo[]) ?? []);
+      })
+      .catch(() => {});
   }, []);
 
   // Close dropdown on outside click
@@ -188,23 +197,31 @@ function CompactProviderSelector() {
   // Provider name resolution (localStorage cache from ChatPage)
   const providerNamesCache = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}') as Record<string, string>;
-    } catch { return {} as Record<string, string>; }
+      return JSON.parse(localStorage.getItem('ownpilot-provider-names') ?? '{}') as Record<
+        string,
+        string
+      >;
+    } catch {
+      return {} as Record<string, string>;
+    }
   }, []);
 
   const selectedProvider = providers.find((p) => p.id === provider);
   const isBridge = selectedProvider
     ? isBridgeProvider(selectedProvider)
-    : (providerNamesCache[provider]?.toLowerCase().includes('bridge') || provider.startsWith('bridge-'));
+    : providerNamesCache[provider]?.toLowerCase().includes('bridge') ||
+      provider.startsWith('bridge-');
   const providerDisplayName = selectedProvider
     ? formatProviderName(selectedProvider)
-    : (providerNamesCache[provider] || provider || 'Select provider');
+    : providerNamesCache[provider] || provider || 'Select provider';
 
   // Selected model display
   const selectedModel = models.find((m) => m.id === model && m.provider === provider);
   const modelDisplay = selectedModel
-    ? (selectedModel.name || selectedModel.id).split('/').pop() ?? model
-    : model && model !== 'default' ? model.split('/').pop() ?? model : '';
+    ? ((selectedModel.name || selectedModel.id).split('/').pop() ?? model)
+    : model && model !== 'default'
+      ? (model.split('/').pop() ?? model)
+      : '';
 
   // Group: bridge vs API
   const bridgeProviders = providers.filter(isBridgeProvider);
@@ -241,7 +258,10 @@ function CompactProviderSelector() {
   };
 
   return (
-    <div ref={dropdownRef} className="px-3 py-1.5 border-b border-border dark:border-dark-border space-y-1.5">
+    <div
+      ref={dropdownRef}
+      className="px-3 py-1.5 border-b border-border dark:border-dark-border space-y-1.5"
+    >
       {/* Provider button + New Chat */}
       <div className="flex items-center gap-1.5">
         <button
@@ -261,7 +281,9 @@ function CompactProviderSelector() {
               / {modelDisplay}
             </span>
           ) : null}
-          <ChevronDown className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
         </button>
         <button
           onClick={handleNewChat}
@@ -275,7 +297,6 @@ function CompactProviderSelector() {
       {/* Dropdown */}
       {isOpen && (
         <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-lg shadow-lg dark:shadow-black/50 max-h-72 overflow-y-auto z-50">
-
           {/* API Section — always visible, TOP position */}
           <div className="border-b border-border dark:border-dark-border">
             <div className="px-3 py-1.5 text-[10px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider bg-bg-secondary/50 dark:bg-dark-bg-secondary/50">
@@ -301,14 +322,18 @@ function CompactProviderSelector() {
                       }`}
                     >
                       <Cpu className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      <span className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                      <span
+                        className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}
+                      >
                         {p.name}
                       </span>
                       {provModels.length > 0 && (
                         <span className="text-[10px] text-text-muted">{provModels.length}</span>
                       )}
                       {provModels.length > 0 ? (
-                        <ChevronRight className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight
+                          className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        />
                       ) : (
                         isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                       )}
@@ -323,11 +348,15 @@ function CompactProviderSelector() {
                               key={m.id}
                               onClick={() => selectProviderAndModel(p, m)}
                               className={`pl-9 pr-3 py-1.5 text-xs cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center justify-between ${
-                                isModelSelected ? 'text-primary font-medium' : 'text-text-secondary dark:text-dark-text-secondary'
+                                isModelSelected
+                                  ? 'text-primary font-medium'
+                                  : 'text-text-secondary dark:text-dark-text-secondary'
                               }`}
                             >
                               <span className="truncate">{shortName}</span>
-                              {isModelSelected && <Check className="w-3 h-3 text-primary shrink-0" />}
+                              {isModelSelected && (
+                                <Check className="w-3 h-3 text-primary shrink-0" />
+                              )}
                             </div>
                           );
                         })}
@@ -376,14 +405,18 @@ function CompactProviderSelector() {
                       }`}
                     >
                       <Terminal className="w-3.5 h-3.5 text-accent shrink-0" />
-                      <span className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                      <span
+                        className={`font-medium flex-1 truncate ${isSelected ? 'text-primary' : 'text-text-primary dark:text-dark-text-primary'}`}
+                      >
                         {runtime}
                       </span>
                       {provModels.length > 0 && (
                         <span className="text-[10px] text-text-muted">{provModels.length}</span>
                       )}
                       {provModels.length > 0 ? (
-                        <ChevronRight className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight
+                          className={`w-3 h-3 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                        />
                       ) : (
                         isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                       )}
@@ -399,11 +432,15 @@ function CompactProviderSelector() {
                               key={m.id}
                               onClick={() => selectProviderAndModel(p, m)}
                               className={`pl-9 pr-3 py-1.5 text-xs cursor-pointer hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary flex items-center justify-between ${
-                                isModelSelected ? 'text-primary font-medium' : 'text-text-secondary dark:text-dark-text-secondary'
+                                isModelSelected
+                                  ? 'text-primary font-medium'
+                                  : 'text-text-secondary dark:text-dark-text-secondary'
                               }`}
                             >
                               <span className="truncate">{shortName}</span>
-                              {isModelSelected && <Check className="w-3 h-3 text-primary shrink-0" />}
+                              {isModelSelected && (
+                                <Check className="w-3 h-3 text-primary shrink-0" />
+                              )}
                             </div>
                           );
                         })}
@@ -414,7 +451,6 @@ function CompactProviderSelector() {
               })}
             </div>
           )}
-
         </div>
       )}
     </div>
@@ -422,7 +458,8 @@ function CompactProviderSelector() {
 }
 
 function CompactChat() {
-  const { messages, isStreaming, streamingContent, sendMessage, setContext, cancelStream } = useSidebarChat();
+  const { messages, isStreaming, streamingContent, sendMessage, setContext, cancelStream } =
+    useSidebarChat();
   const { context } = usePageContext();
   const { config } = usePageCopilotContext();
   const [input, setInput] = useState('');
@@ -469,6 +506,8 @@ function CompactChat() {
     [handleSend]
   );
 
+  const cleanStreamingContent = cleanStreamingChatContent(streamingContent);
+
   return (
     <div className="flex flex-col h-full -m-4">
       {/* Context banner */}
@@ -486,7 +525,9 @@ function CompactChat() {
             {config.suggestions.map((s, i) => (
               <button
                 key={i}
-                onClick={() => { setInput(s); }}
+                onClick={() => {
+                  setInput(s);
+                }}
                 className="text-left px-2.5 py-1.5 text-xs text-text-secondary dark:text-dark-text-secondary bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg hover:bg-primary/10 hover:text-primary transition-colors"
               >
                 {s}
@@ -502,6 +543,7 @@ function CompactChat() {
         ) : null}
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
+          const cleanAssistantContent = isUser ? msg.content : stripChatInternalTags(msg.content);
           if (msg.isError) {
             return (
               <div key={msg.id} className="flex justify-start">
@@ -520,11 +562,13 @@ function CompactChat() {
                     : 'rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary'
                 }`}
               >
-                {isUser
-                  ? msg.content
-                      .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
-                      .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
-                  : <MarkdownContent content={msg.content} compact />}
+                {isUser ? (
+                  msg.content
+                    .replace(/\n---\n\[ATTACHED CONTEXT[\s\S]*$/, '')
+                    .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
+                ) : (
+                  <MarkdownContent content={cleanAssistantContent} compact />
+                )}
               </div>
             </div>
           );
@@ -533,12 +577,12 @@ function CompactChat() {
         {isStreaming && (
           <div className="flex justify-start items-center gap-1">
             <div className="max-w-[85%] px-2.5 py-1.5 rounded-xl rounded-tl-sm bg-bg-tertiary dark:bg-dark-bg-tertiary text-xs text-text-primary dark:text-dark-text-primary">
-              {streamingContent ? (
+              {cleanStreamingContent ? (
                 <>
                   <span className="break-words whitespace-pre-wrap">
-                    {streamingContent.length > 150
-                      ? '...' + streamingContent.slice(-150)
-                      : streamingContent}
+                    {cleanStreamingContent.length > 150
+                      ? '...' + cleanStreamingContent.slice(-150)
+                      : cleanStreamingContent}
                   </span>
                   <span className="inline-block w-1 h-3 bg-primary ml-0.5 animate-pulse rounded-sm" />
                 </>
@@ -796,7 +840,9 @@ export function StatsPanel({ isCollapsed, onToggle }: StatsPanelProps) {
                       icon={FileText}
                       label="Notes"
                       value={summary.notes.total}
-                      subValue={summary.notes.pinned > 0 ? `${summary.notes.pinned} pinned` : undefined}
+                      subValue={
+                        summary.notes.pinned > 0 ? `${summary.notes.pinned} pinned` : undefined
+                      }
                       color="text-warning"
                     />
                     <StatCard

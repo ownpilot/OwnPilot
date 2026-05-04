@@ -14,6 +14,7 @@ import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
 import { VoicePlayButton } from './VoicePlayButton';
+import { stripChatInternalTags } from '../utils/chat-content';
 import type { Message } from '../types';
 
 interface MessageListProps {
@@ -66,11 +67,7 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
         .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
         .trim()
     : message.content;
-  // Strip any think/thinking tags that may have been saved to message history
-  const displayContent = strippedContent.replace(
-    /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g,
-    ''
-  );
+  const displayContent = isUser ? strippedContent : stripChatInternalTags(strippedContent);
 
   const copyToClipboard = async () => {
     try {
