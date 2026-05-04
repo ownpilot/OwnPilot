@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useGateway } from '../../hooks/useWebSocket';
 import { useToast } from '../../components/ToastProvider';
 import { clawsApi } from '../../api/endpoints/claws';
-import type { ClawConfig, ClawHistoryEntry } from '../../api/endpoints/claws';
+import type { ClawConfig, ClawDoctorResponse, ClawHistoryEntry } from '../../api/endpoints/claws';
 import {
   Activity,
   Settings,
@@ -13,6 +13,7 @@ import {
   Send,
   Bot,
   Zap,
+  Wrench,
   X,
 } from '../../components/icons';
 import { authedFetch, getStateBadge, inputClass as ic } from './utils';
@@ -25,6 +26,7 @@ import {
   FilesTab,
   OutputTab,
   ConversationTab,
+  DoctorTab,
   type ClawOutputEvent,
   type AuditEntry,
 } from './ClawDetailTabs';
@@ -36,6 +38,7 @@ type DetailTab =
   | 'files'
   | 'history'
   | 'audit'
+  | 'doctor'
   | 'output'
   | 'conversation';
 
@@ -50,6 +53,7 @@ const DETAIL_TABS: {
   { id: 'files', label: 'Files', icon: FolderOpen },
   { id: 'history', label: 'History', icon: Clock },
   { id: 'audit', label: 'Audit', icon: FileText },
+  { id: 'doctor', label: 'Doctor', icon: Wrench },
   { id: 'output', label: 'Output', icon: Send },
   { id: 'conversation', label: 'Chat', icon: Bot },
 ];
@@ -88,6 +92,11 @@ export function ClawManagementPanel({
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditFilter, setAuditFilter] = useState('');
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+
+  // Doctor state
+  const [doctor, setDoctor] = useState<ClawDoctorResponse | null>(null);
+  const [isLoadingDoctor, setIsLoadingDoctor] = useState(false);
+  const [isApplyingDoctorFixes, setIsApplyingDoctorFixes] = useState(false);
 
   // Files state
   const [workspaceFiles, setWorkspaceFiles] = useState<
@@ -142,6 +151,7 @@ export function ClawManagementPanel({
     setAuditEntries([]);
     setAuditTotal(0);
     setAuditFilter('');
+    setDoctor(null);
   }, [claw.id]);
 
   // WS output feed
@@ -177,6 +187,21 @@ export function ClawManagementPanel({
   useEffect(() => {
     if (tab === 'audit') loadAudit(auditFilter || undefined);
   }, [tab, claw.id, auditFilter]);
+
+  const loadDoctor = useCallback(async () => {
+    setIsLoadingDoctor(true);
+    try {
+      setDoctor(await clawsApi.doctor(claw.id));
+    } catch {
+      toast.error('Failed to load doctor report');
+    } finally {
+      setIsLoadingDoctor(false);
+    }
+  }, [claw.id, toast]);
+
+  useEffect(() => {
+    if (tab === 'doctor') loadDoctor();
+  }, [tab, claw.id, loadDoctor]);
 
   // Load conversation on conversation tab
   useEffect(() => {
@@ -301,6 +326,29 @@ export function ClawManagementPanel({
     }
   };
 
+  const applyDoctorFixes = async () => {
+    setIsApplyingDoctorFixes(true);
+    try {
+      const result = await clawsApi.applyRecommendations(claw.id);
+      toast.success(
+        result.applied.length > 0
+          ? `Applied ${result.applied.length} safe fix${result.applied.length === 1 ? '' : 'es'}`
+          : 'No safe fixes needed'
+      );
+      setDoctor({
+        health: result.health,
+        patch: {},
+        applied: [],
+        skipped: result.skipped,
+      });
+      onUpdate();
+    } catch {
+      toast.error('Failed to apply safe fixes');
+    } finally {
+      setIsApplyingDoctorFixes(false);
+    }
+  };
+
   const badge = getStateBadge(claw.session?.state ?? null);
 
   return (
@@ -401,6 +449,17 @@ export function ClawManagementPanel({
             setAuditFilter={setAuditFilter}
             isLoadingAudit={isLoadingAudit}
             loadAudit={loadAudit}
+          />
+        )}
+
+        {tab === 'doctor' && (
+          <DoctorTab
+            claw={claw}
+            doctor={doctor}
+            isLoadingDoctor={isLoadingDoctor}
+            isApplyingDoctorFixes={isApplyingDoctorFixes}
+            loadDoctor={loadDoctor}
+            applyDoctorFixes={applyDoctorFixes}
           />
         )}
 

@@ -1,9 +1,18 @@
 import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
-import type { ClawConfig, ClawHistoryEntry } from '../../api/endpoints/claws';
+import type { ClawConfig, ClawDoctorResponse, ClawHistoryEntry } from '../../api/endpoints/claws';
 import { clawsApi } from '../../api/endpoints/claws';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useToast } from '../../components/ToastProvider';
-import { XCircle, CheckCircle2, FolderOpen, Send, Save } from '../../components/icons';
+import {
+  XCircle,
+  CheckCircle2,
+  FolderOpen,
+  Send,
+  Save,
+  Wrench,
+  RefreshCw,
+  AlertTriangle,
+} from '../../components/icons';
 import { formatDuration, formatCost, timeAgo, labelClass as lbl, inputClass as ic } from './utils';
 import { FileBrowser, FileEditorModal } from './FileBrowser';
 
@@ -269,6 +278,183 @@ export function OverviewTab({
             <Send className="w-4 h-4" />
           </button>
         </div>
+      )}
+    </>
+  );
+}
+
+// ============================================================================
+// Doctor
+// ============================================================================
+
+const patchLabel: Record<string, string> = {
+  mission_contract: 'Mission contract',
+  missionContract: 'Mission contract',
+  stop_condition: 'Stop condition',
+  stopCondition: 'Stop condition',
+  autonomy_policy: 'Autonomy policy',
+  autonomyPolicy: 'Autonomy policy',
+};
+
+function formatPatchValue(value: unknown): string {
+  if (Array.isArray(value)) return value.join(', ');
+  if (value && typeof value === 'object') return JSON.stringify(value, null, 2);
+  if (value === null) return 'clear';
+  if (value === undefined) return '-';
+  return String(value);
+}
+
+export function DoctorTab({
+  claw,
+  doctor,
+  isLoadingDoctor,
+  isApplyingDoctorFixes,
+  loadDoctor,
+  applyDoctorFixes,
+}: {
+  claw: ClawConfig;
+  doctor: ClawDoctorResponse | null;
+  isLoadingDoctor: boolean;
+  isApplyingDoctorFixes: boolean;
+  loadDoctor: () => void;
+  applyDoctorFixes: () => void;
+}) {
+  const patchEntries = Object.entries(doctor?.patch ?? {});
+  const health = doctor?.health ?? claw.health;
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+            Doctor report
+          </p>
+          <p className="text-xs text-text-muted dark:text-dark-text-muted">
+            Safe config fixes generated from health, contract, and autonomy policy.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadDoctor}
+            disabled={isLoadingDoctor}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border dark:border-dark-border hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary disabled:opacity-50"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
+          <button
+            onClick={applyDoctorFixes}
+            disabled={isLoadingDoctor || isApplyingDoctorFixes || patchEntries.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            {isApplyingDoctorFixes ? 'Applying...' : 'Apply safe fixes'}
+          </button>
+        </div>
+      </div>
+
+      {isLoadingDoctor ? (
+        <LoadingSpinner message="Loading doctor report..." />
+      ) : (
+        <>
+          {health && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg p-3">
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">Health</p>
+                <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                  {health.score}
+                </p>
+              </div>
+              <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg p-3">
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">Status</p>
+                <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                  {health.status}
+                </p>
+              </div>
+              <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg p-3">
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">Contract</p>
+                <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                  {health.contractScore}
+                </p>
+              </div>
+              <div className="bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg p-3">
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">Warnings</p>
+                <p className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+                  {health.policyWarnings.length}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(health?.signals.length ?? 0) > 0 && (
+            <div className="p-3 rounded-lg border border-border dark:border-dark-border">
+              <p className={lbl}>Signals</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {health!.signals.map((signal) => (
+                  <span
+                    key={signal}
+                    className="px-2 py-0.5 text-xs rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  >
+                    {signal}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {patchEntries.length > 0 ? (
+            <div className="space-y-2">
+              <p className={lbl}>Safe patch preview</p>
+              {patchEntries.map(([field, value]) => (
+                <div
+                  key={field}
+                  className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border"
+                >
+                  <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+                    {patchLabel[field] ?? field}
+                  </p>
+                  <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap text-xs text-text-secondary dark:text-dark-text-secondary font-mono">
+                    {formatPatchValue(value)}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                No safe config fixes are pending.
+              </p>
+            </div>
+          )}
+
+          {(doctor?.skipped.length ?? 0) > 0 && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  Manual decisions needed
+                </p>
+                <ul className="mt-1 list-disc list-inside text-xs text-amber-700/80 dark:text-amber-300/80">
+                  {doctor!.skipped.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {(health?.recommendations.length ?? 0) > 0 && (
+            <div className="p-3 rounded-lg border border-border dark:border-dark-border">
+              <p className={lbl}>Recommendations</p>
+              <ul className="mt-2 list-disc list-inside text-xs text-text-secondary dark:text-dark-text-secondary space-y-1">
+                {health!.recommendations.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
     </>
   );
