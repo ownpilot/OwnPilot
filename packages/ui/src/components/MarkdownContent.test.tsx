@@ -413,6 +413,25 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('recovers malformed metric, progress, chart, and timeline widgets', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<metric_grid data='{\\"items\\":[{\\"label\\":\\"Total\\",\\"value\\":\\"12\\"},{\\"label\\":\\"Open\\",\\"value\\":' />
+<progress data='{\\"label\\":\\"Setup\\",\\"value\\":' />
+<bar_chart data='{\\"items\\":[{\\"label\\":\\"Done\\",\\"value\\":8},{\\"label\\":\\"Waiting\\",\\"value\\":' />
+<timeline data='{\\"items\\":[{\\"time\\":\\"09:00\\",\\"label\\":\\"Plan\\",\\"detail\\":\\"Start\\"},{\\"time\\":\\"10:00\\",\\"label\\":\\"Review' />`}
+      />
+    );
+
+    expect(html).toContain('Total');
+    expect(html).toContain('Setup');
+    expect(html).toContain('Done');
+    expect(html).toContain('09:00');
+    expect(html).toContain('Plan');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('does not render widget tags inside code fences', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

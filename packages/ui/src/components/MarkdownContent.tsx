@@ -531,6 +531,78 @@ export const MarkdownContent = memo(function MarkdownContent({
     );
   };
 
+  const parseRecoveredNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value !== 'string') return undefined;
+    const parsed = Number(value.replace(/%$/, '').trim());
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const recoverNumberField = (source: string, keys: string[]): number | undefined => {
+    for (const key of keys) {
+      const direct = source.match(new RegExp(`"${key}"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)`))?.[1];
+      const parsedDirect = parseRecoveredNumber(direct);
+      if (parsedDirect !== undefined) return parsedDirect;
+
+      const quoted = recoverStringField(source, [key]);
+      const parsedQuoted = parseRecoveredNumber(quoted);
+      if (parsedQuoted !== undefined) return parsedQuoted;
+    }
+
+    return undefined;
+  };
+
+  const recoverScalarPairs = (
+    source: string,
+    ignoredKeys = new Set<string>()
+  ): Array<{ key: string; value: string | number | boolean }> => {
+    const pairs = new Map<string, string | number | boolean>();
+
+    for (const match of source.matchAll(
+      /"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/g
+    )) {
+      const key = decodeJsonString(match[1] ?? '');
+      const value = decodeJsonString(match[2] ?? '');
+      if (key && value && !ignoredKeys.has(key)) pairs.set(key, value);
+    }
+
+    for (const match of source.matchAll(
+      /"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*(-?\d+(?:\.\d+)?|true|false)\b/g
+    )) {
+      const key = decodeJsonString(match[1] ?? '');
+      const rawValue = match[2] ?? '';
+      if (!key || ignoredKeys.has(key) || pairs.has(key)) continue;
+      pairs.set(key, rawValue === 'true' ? true : rawValue === 'false' ? false : Number(rawValue));
+    }
+
+    return Array.from(pairs, ([key, value]) => ({ key, value })).slice(0, 12);
+  };
+
+  const compactRecoveredRecord = (
+    record: Record<string, string | number | boolean | undefined>
+  ): Record<string, string | number | boolean> =>
+    Object.fromEntries(
+      Object.entries(record).filter(([, value]) => value !== undefined && value !== '')
+    ) as Record<string, string | number | boolean>;
+
+  const recoverObjectItems = (
+    source: string,
+    collectionKeys: string[],
+    mapItem: (itemSource: string) => Record<string, string | number | boolean>
+  ): Array<Record<string, string | number | boolean>> => {
+    const collectionStart = source.search(
+      new RegExp(`"(?:${collectionKeys.join('|')})"\\s*:\\s*\\[`)
+    );
+    const collectionSource = collectionStart === -1 ? source : source.slice(collectionStart);
+
+    return collectionSource
+      .split('{')
+      .slice(1)
+      .map((chunk) => mapItem(`{${chunk}`))
+      .filter((item) => Object.keys(item).length > 0)
+      .slice(0, 12);
+  };
+
   const recoverTableData = (value: string): unknown => {
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
     const headers = recoverStringArray(normalized, 'headers');
@@ -575,6 +647,96 @@ export const MarkdownContent = memo(function MarkdownContent({
     }
 
     return { error: 'Invalid widget data' };
+  };
+
+  const recoverMetricData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const title = recoverStringField(normalized, ['title', 'heading']);
+    const items = recoverObjectItems(normalized, ['items', 'metrics', 'stats', 'values'], (item) =>
+      compactRecoveredRecord({
+        label: recoverStringField(item, ['label', 'name', 'title', 'key']),
+        value:
+          recoverStringField(item, ['value', 'count', 'total', 'amount']) ??
+          recoverNumberField(item, ['value', 'count', 'total', 'amount']),
+        detail: recoverStringField(item, ['detail', 'description', 'change', 'status']),
+        tone: recoverStringField(item, ['tone', 'status', 'type']),
+      })
+    );
+
+    if (items.length > 0) return title ? { title, items } : { items };
+
+    const scalarItems = recoverScalarPairs(
+      normalized,
+      new Set(['title', 'heading', 'tone', 'status', 'type', 'items', 'metrics', 'stats', 'values'])
+    ).map((item) => ({ label: item.key, value: item.value }));
+
+    if (scalarItems.length > 0)
+      return title ? { title, items: scalarItems } : { items: scalarItems };
+    return recoverGenericCalloutData(value);
+  };
+
+  const recoverProgressData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const title = recoverStringField(normalized, ['title', 'heading']);
+    const label = recoverStringField(normalized, ['label', 'name']) ?? title;
+    const recoveredValue = recoverNumberField(normalized, [
+      'value',
+      'percent',
+      'progress',
+      'current',
+    ]);
+    const max = recoverNumberField(normalized, ['max', 'total', 'target']);
+    const body = recoverStringField(normalized, [
+      'body',
+      'detail',
+      'description',
+      'text',
+      'message',
+      'summary',
+    ]);
+
+    if (recoveredValue !== undefined || label || title) {
+      return {
+        ...(title ? { title } : {}),
+        label: label ?? body ?? 'Progress',
+        value: recoveredValue ?? 0,
+        max: max ?? 100,
+      };
+    }
+
+    return recoverGenericCalloutData(value);
+  };
+
+  const recoverBarChartData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const title = recoverStringField(normalized, ['title', 'heading']);
+    const items = recoverObjectItems(normalized, ['items', 'bars', 'series', 'values'], (item) => {
+      const numericValue = recoverNumberField(item, ['value', 'count', 'total', 'amount']);
+      return compactRecoveredRecord({
+        label: recoverStringField(item, ['label', 'name', 'title', 'key']),
+        value: numericValue ?? 0,
+        displayValue: recoverStringField(item, ['displayValue', 'display', 'value']),
+      });
+    });
+
+    if (items.length > 0) return title ? { title, items } : { items };
+    return recoverGenericCalloutData(value);
+  };
+
+  const recoverTimelineData = (value: string): unknown => {
+    const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
+    const title = recoverStringField(normalized, ['title', 'heading']);
+    const items = recoverObjectItems(normalized, ['items', 'events', 'entries'], (item) =>
+      compactRecoveredRecord({
+        time: recoverStringField(item, ['time', 'date', 'when']),
+        label: recoverStringField(item, ['label', 'title', 'name']),
+        detail: recoverStringField(item, ['detail', 'description', 'body', 'text']),
+        tone: recoverStringField(item, ['tone', 'status', 'type']),
+      })
+    );
+
+    if (items.length > 0) return title ? { title, items } : { items };
+    return recoverGenericCalloutData(value);
   };
 
   const recoverListData = (value: string, name: string): unknown => {
@@ -780,6 +942,12 @@ export const MarkdownContent = memo(function MarkdownContent({
     }
 
     if (name === 'table') return recoverTableData(value);
+    if (name === 'metric' || name === 'metrics' || name === 'metric_grid' || name === 'stats') {
+      return recoverMetricData(value);
+    }
+    if (name === 'progress') return recoverProgressData(value);
+    if (name === 'bar' || name === 'bar_chart') return recoverBarChartData(value);
+    if (name === 'timeline') return recoverTimelineData(value);
     if (
       name === 'list' ||
       name === 'checklist' ||

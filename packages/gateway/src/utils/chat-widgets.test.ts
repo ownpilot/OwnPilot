@@ -207,6 +207,26 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('recovers malformed metric, progress, chart, and timeline widgets', () => {
+    const result = normalizeChatWidgets(
+      `<metric_grid data='{\\"items\\":[{\\"label\\":\\"Total\\",\\"value\\":\\"12\\"},{\\"label\\":\\"Open\\",\\"value\\":' />
+<progress data='{\\"label\\":\\"Setup\\",\\"value\\":' />
+<bar_chart data='{\\"items\\":[{\\"label\\":\\"Done\\",\\"value\\":8},{\\"label\\":\\"Waiting\\",\\"value\\":' />
+<timeline data='{\\"items\\":[{\\"time\\":\\"09:00\\",\\"label\\":\\"Plan\\",\\"detail\\":\\"Start\\"},{\\"time\\":\\"10:00\\",\\"label\\":\\"Review' />`
+    );
+
+    expect(result).toContain('<widget name="metric_grid"');
+    expect(result).toContain('Total');
+    expect(result).toContain('Setup');
+    expect(result).toContain('<widget name="progress"');
+    expect(result).toContain('<widget name="bar_chart"');
+    expect(result).toContain('Done');
+    expect(result).toContain('<widget name="timeline"');
+    expect(result).toContain('09:00');
+    expect(result).not.toContain('Widget could not be rendered');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('turns unrecoverable widgets into a safe callout payload', () => {
     const result = normalizeChatWidgets(`<progress data='{"value":' />`);
 
