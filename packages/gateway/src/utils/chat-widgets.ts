@@ -27,7 +27,10 @@ const WIDGET_TAG_NAMES = [
 ] as const;
 
 const WIDGET_TAG_PATTERN = WIDGET_TAG_NAMES.join('|');
-const WIDGET_TAG_REGEX = new RegExp(`<(?:${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?\\/>`, 'gi');
+const WIDGET_TAG_REGEX = new RegExp(
+  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>\\s*<\\/\\1>)`,
+  'gi'
+);
 
 type WidgetName = (typeof WIDGET_TAG_NAMES)[number];
 
@@ -493,7 +496,7 @@ function recoverWidgetData(name: string, value: string): unknown {
 }
 
 function parseWidgetTag(tag: string): ParsedWidget | null {
-  const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)\/>$/i);
+  const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)(?:\/>|>\s*<\/\1>)$/i);
   const tagName = match?.[1]?.toLowerCase() as WidgetName | undefined;
   if (!tagName || !match?.[2] || !WIDGET_TAG_NAMES.includes(tagName)) return null;
 

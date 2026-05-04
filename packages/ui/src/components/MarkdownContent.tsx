@@ -99,7 +99,10 @@ interface ParsedWidget {
 }
 
 const WIDGET_TAG_PATTERN = CHAT_WIDGET_TAG_NAMES.join('|');
-const WIDGET_TAG_REGEX = new RegExp(`<(?:${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?\\/>`, 'gi');
+const WIDGET_TAG_REGEX = new RegExp(
+  `<(${WIDGET_TAG_PATTERN})\\b[\\s\\S]*?(?:\\/>|>\\s*<\\/\\1>)`,
+  'gi'
+);
 
 export const MarkdownContent = memo(function MarkdownContent({
   content,
@@ -738,7 +741,7 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const parseWidgetTag = (tag: string): ParsedWidget | null => {
-    const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)\/>$/i);
+    const match = tag.trim().match(/^<([a-zA-Z_][\w.-]*)\s+([\s\S]*?)(?:\/>|>\s*<\/\1>)$/i);
     const tagName = match?.[1]?.toLowerCase();
     if (
       !tagName ||

@@ -100,6 +100,25 @@ After`}
     expect(html).toContain('after');
   });
 
+  it('renders paired widget tags produced by models', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`Before <widget name="callout" data='{"title":"Notice","body":"Ready"}'></widget> after
+<callout data='{"title":"Inline","body":"Paired shorthand"}'></callout>`}
+      />
+    );
+
+    expect(html).toContain('Before');
+    expect(html).toContain('Notice');
+    expect(html).toContain('Ready');
+    expect(html).toContain('after');
+    expect(html).toContain('Inline');
+    expect(html).toContain('Paired shorthand');
+    expect(html).not.toContain('&lt;widget');
+    expect(html).not.toContain('&lt;/widget');
+    expect(html).not.toContain('&lt;/callout');
+  });
+
   it('renders shorthand widget tags produced by models', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

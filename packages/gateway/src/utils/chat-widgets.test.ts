@@ -10,6 +10,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('<list');
   });
 
+  it('canonicalizes paired widget tags', () => {
+    const result = normalizeChatWidgets(
+      `<widget name="callout" data='{"title":"Notice","body":"Ready"}'></widget>
+<callout data='{"title":"Inline","body":"Paired shorthand"}'></callout>`
+    );
+
+    expect(result).toContain('<widget name="callout"');
+    expect(result).toContain('Notice');
+    expect(result).toContain('Ready');
+    expect(result).toContain('Inline');
+    expect(result).toContain('Paired shorthand');
+    expect(result).not.toContain('</widget>');
+    expect(result).not.toContain('</callout>');
+  });
+
   it('recovers list items that use description and truncated escaped JSON', () => {
     const result = normalizeChatWidgets(
       `<list data="{\\"items\\":[{\\"title\\":\\"AMD disproportionate hit\\",\\"description\\":\\"SK Hynix prioritizes Nvidia + OpenAI\\"},{\\"title\\":\\"broken" />`

@@ -34,6 +34,16 @@ describe('chat content cleanup', () => {
     );
   });
 
+  it('handles paired widget tags while streaming', () => {
+    expect(hideIncompleteStreamingWidgets('Before\n<callout data=\'{"title":"A"}\'>')).toBe(
+      'Before'
+    );
+
+    expect(
+      hideIncompleteStreamingWidgets('Before\n<callout data=\'{"title":"A"}\'></callout>\nAfter')
+    ).toBe('Before\n<callout data=\'{"title":"A"}\'></callout>\nAfter');
+  });
+
   it('combines internal tag cleanup and streaming widget hiding', () => {
     expect(
       cleanStreamingChatContent(

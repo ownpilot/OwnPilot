@@ -44,7 +44,23 @@ export function hideIncompleteStreamingWidgets(content: string): string {
     if (!inCodeFence) {
       const tagStart = content.slice(index).match(WIDGET_TAG_START_REGEX);
       if (tagStart) {
-        const completedAt = content.indexOf('/>', index + tagStart[0].length);
+        const tagName = tagStart[1]!.toLowerCase();
+        const searchFrom = index + tagStart[0].length;
+        const selfClosingAt = content.indexOf('/>', searchFrom);
+        const closingTag = `</${tagName}>`;
+        const closingAt = lowerContent.indexOf(closingTag, searchFrom);
+        const completionStart =
+          selfClosingAt === -1
+            ? closingAt
+            : closingAt === -1
+              ? selfClosingAt
+              : Math.min(selfClosingAt, closingAt);
+        const completedAt =
+          completionStart === -1
+            ? -1
+            : completionStart === closingAt
+              ? closingAt + closingTag.length
+              : selfClosingAt + 2;
         let nextWidgetAt = -1;
 
         for (const tagName of CHAT_WIDGET_TAG_NAMES) {
@@ -54,12 +70,12 @@ export function hideIncompleteStreamingWidgets(content: string): string {
           }
         }
 
-        if (completedAt === -1 || (nextWidgetAt !== -1 && nextWidgetAt < completedAt)) {
+        if (completedAt === -1 || (nextWidgetAt !== -1 && nextWidgetAt < completionStart)) {
           pendingWidgetStart = index;
           break;
         }
 
-        index = completedAt + 2;
+        index = completedAt;
         continue;
       }
     }
