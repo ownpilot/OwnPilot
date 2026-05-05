@@ -32,6 +32,54 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function parseJsonPayload(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeRenderableData(name: string, data: unknown): unknown {
+  const parsed = typeof data === 'string' ? parseJsonPayload(data) : data;
+  if (!isRecord(parsed)) return parsed;
+
+  if (
+    name === 'key_value' ||
+    name === 'key_values' ||
+    name === 'facts' ||
+    name === 'details' ||
+    name === 'properties'
+  ) {
+    const items =
+      parsed.items ?? parsed.entries ?? parsed.facts ?? parsed.properties ?? parsed.details;
+    if (Array.isArray(items) && !Array.isArray(parsed.items)) return { ...parsed, items };
+
+    const singleLabel = parsed.key ?? parsed.label ?? parsed.name;
+    const singleValue = parsed.value ?? parsed.text ?? parsed.detail ?? parsed.description;
+    if (
+      (typeof singleLabel === 'string' || typeof singleLabel === 'number') &&
+      (typeof singleValue === 'string' ||
+        typeof singleValue === 'number' ||
+        typeof singleValue === 'boolean')
+    ) {
+      return { title: parsed.title, items: [{ key: singleLabel, value: singleValue }] };
+    }
+  }
+
+  if (name === 'card' || name === 'cards' || name === 'card_grid') {
+    const items = parsed.items ?? parsed.cards ?? parsed.entries;
+    if (Array.isArray(items) && !Array.isArray(parsed.items)) return { ...parsed, items };
+
+    const hasCardFields = ['title', 'label', 'name', 'detail', 'description', 'body', 'text'].some(
+      (key) => parsed[key] !== undefined
+    );
+    if (hasCardFields && !Array.isArray(parsed.items)) return { items: [parsed] };
+  }
+
+  return parsed;
+}
+
 function toneClasses(tone: WidgetTone): {
   shell: string;
   icon: string;
@@ -561,9 +609,10 @@ export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
     .trim()
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
+  const renderData = normalizeRenderableData(normalized, data);
 
-  if (isRecord(data) && data.error === 'Invalid widget data') {
-    return <JsonWidget name={normalized || 'widget'} data={data} />;
+  if (isRecord(renderData) && renderData.error === 'Invalid widget data') {
+    return <JsonWidget name={normalized || 'widget'} data={renderData} />;
   }
 
   switch (normalized) {
@@ -571,38 +620,38 @@ export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
     case 'metrics':
     case 'metric_grid':
     case 'stats':
-      return <MetricGrid data={data} />;
+      return <MetricGrid data={renderData} />;
     case 'table':
-      return <TableWidget data={data} />;
+      return <TableWidget data={renderData} />;
     case 'list':
-      return <ListWidget data={data} />;
+      return <ListWidget data={renderData} />;
     case 'checklist':
-      return <ListWidget data={data} checklist />;
+      return <ListWidget data={renderData} checklist />;
     case 'key_value':
     case 'key_values':
     case 'facts':
     case 'details':
     case 'properties':
-      return <KeyValueWidget data={data} />;
+      return <KeyValueWidget data={renderData} />;
     case 'card':
     case 'cards':
     case 'card_grid':
-      return <CardsWidget data={data} />;
+      return <CardsWidget data={renderData} />;
     case 'step':
     case 'steps':
     case 'plan':
-      return <StepsWidget data={data} />;
+      return <StepsWidget data={renderData} />;
     case 'callout':
     case 'note':
-      return <CalloutWidget data={data} />;
+      return <CalloutWidget data={renderData} />;
     case 'progress':
-      return <ProgressWidget data={data} />;
+      return <ProgressWidget data={renderData} />;
     case 'bar':
     case 'bar_chart':
-      return <BarChartWidget data={data} />;
+      return <BarChartWidget data={renderData} />;
     case 'timeline':
-      return <TimelineWidget data={data} />;
+      return <TimelineWidget data={renderData} />;
     default:
-      return <JsonWidget name={normalized || 'widget'} data={data} />;
+      return <JsonWidget name={normalized || 'widget'} data={renderData} />;
   }
 }

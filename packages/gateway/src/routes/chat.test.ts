@@ -1691,6 +1691,8 @@ describe('Chat Routes', () => {
     it('returns 200 with title and text on success', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
+        headers: { get: () => null },
         text: async () =>
           '<html><head><title>Hello World</title></head><body><p>Content here</p></body></html>',
       });
@@ -1705,6 +1707,8 @@ describe('Chat Routes', () => {
     it('falls back to hostname as title when <title> is absent', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
+        status: 200,
+        headers: { get: () => null },
         text: async () => '<html><body>No title here</body></html>',
       });
       const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com');
