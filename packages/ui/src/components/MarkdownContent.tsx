@@ -837,7 +837,14 @@ export const MarkdownContent = memo(function MarkdownContent({
     return undefined;
   };
 
+  const canonicalWidgetName = (name: string): string =>
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+
   const normalizeWidgetDataShape = (name: string, data: unknown): unknown => {
+    name = canonicalWidgetName(name);
     if (!isRecord(data)) return data;
     if (isInvalidWidgetFallback(data)) return data;
 
@@ -878,6 +885,20 @@ export const MarkdownContent = memo(function MarkdownContent({
       const items = firstArrayValue(data, ['items', 'entries', 'facts', 'properties', 'details']);
       if (items && !Array.isArray(data.items)) return { ...data, items };
 
+      const singleLabel = data.key ?? data.label ?? data.name;
+      const singleValue = data.value ?? data.text ?? data.detail ?? data.description;
+      if (
+        (typeof singleLabel === 'string' || typeof singleLabel === 'number') &&
+        (typeof singleValue === 'string' ||
+          typeof singleValue === 'number' ||
+          typeof singleValue === 'boolean')
+      ) {
+        return {
+          title: data.title,
+          items: [{ key: singleLabel, value: singleValue }],
+        };
+      }
+
       const reserved = new Set([
         'title',
         'tone',
@@ -901,7 +922,18 @@ export const MarkdownContent = memo(function MarkdownContent({
 
     if (name === 'card' || name === 'cards' || name === 'card_grid') {
       const items = firstArrayValue(data, ['items', 'cards', 'entries']);
-      return items && !Array.isArray(data.items) ? { ...data, items } : data;
+      if (items && !Array.isArray(data.items)) return { ...data, items };
+
+      const hasCardFields = [
+        'title',
+        'label',
+        'name',
+        'detail',
+        'description',
+        'body',
+        'text',
+      ].some((key) => data[key] !== undefined);
+      return hasCardFields ? { items: [data] } : data;
     }
 
     if (name === 'step' || name === 'steps' || name === 'plan') {
@@ -927,6 +959,7 @@ export const MarkdownContent = memo(function MarkdownContent({
   };
 
   const recoverWidgetData = (name: string, value: string): unknown => {
+    name = canonicalWidgetName(name);
     const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
 
     if (name === 'callout' || name === 'note') {
@@ -1027,7 +1060,10 @@ export const MarkdownContent = memo(function MarkdownContent({
     }
 
     const attrs = parseTagAttributes(parts.attrsSource);
-    const name = tagName === 'widget' ? attrs.name?.trim() : tagName;
+    const name =
+      tagName === 'widget'
+        ? canonicalWidgetName(attrs.name ?? attrs.type ?? attrs.widget ?? attrs.kind ?? '')
+        : canonicalWidgetName(tagName);
     if (!name) return null;
 
     const dataValue = attrs.data ?? parts.body?.trim();

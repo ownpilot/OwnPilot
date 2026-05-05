@@ -166,6 +166,21 @@ describe('normalizeChatWidgets', () => {
     expect(result).not.toContain('Invalid widget data');
   });
 
+  it('normalizes widget type aliases and single-item key-value/card payloads', () => {
+    const result = normalizeChatWidgets(
+      `<widget type="key_value" data='{"key":"Status","value":"Ready"}' />
+<widget type="cards" data='{"title":"Fast path","detail":"Render as a card"}' />`
+    );
+
+    expect(result).toContain('<widget name="key_value"');
+    expect(result).toContain('&quot;items&quot;:[{&quot;key&quot;:&quot;Status&quot;');
+    expect(result).toContain('&quot;value&quot;:&quot;Ready&quot;');
+    expect(result).toContain('<widget name="cards"');
+    expect(result).toContain('&quot;items&quot;:[{&quot;title&quot;:&quot;Fast path&quot;');
+    expect(result).toContain('Render as a card');
+    expect(result).not.toContain('Invalid widget data');
+  });
+
   it('normalizes valid table data with row and column aliases', () => {
     const result = normalizeChatWidgets(
       `<table data='{"columns":["Company","Risk"],"items":[{"Company":"AMD","Risk":"High"}]}' />`

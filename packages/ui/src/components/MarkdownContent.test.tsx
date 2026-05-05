@@ -345,6 +345,23 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('renders widget type aliases and single-item key-value/card payloads', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<widget type="key_value" data='{"key":"Status","value":"Ready"}' />
+<widget type="cards" data='{"title":"Fast path","detail":"Render as a card"}' />`}
+      />
+    );
+
+    expect(html).toContain('Status');
+    expect(html).toContain('Ready');
+    expect(html).toContain('Fast path');
+    expect(html).toContain('Render as a card');
+    expect(html).not.toContain('key_value');
+    expect(html).not.toContain('Widget could not be rendered');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('normalizes valid table data with row and column aliases before rendering', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent
