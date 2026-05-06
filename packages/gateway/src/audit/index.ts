@@ -50,6 +50,7 @@ export async function logToolExecution(params: {
   error?: string;
   durationMs: number;
   requestId?: string;
+  reason?: string;
 }): Promise<void> {
   const logger = getAuditLogger();
 
@@ -71,6 +72,7 @@ export async function logToolExecution(params: {
       output: params.output ? sanitizeForAudit(params.output) : undefined,
       error: params.error,
       durationMs: params.durationMs,
+      reason: params.reason,
     },
     correlationId: params.requestId,
   };

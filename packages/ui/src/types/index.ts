@@ -66,6 +66,7 @@ export interface TraceInfo {
     error?: string;
     arguments?: Record<string, unknown>;
     result?: string;
+    reason?: string;
   }>;
   modelCalls: Array<{
     provider?: string;

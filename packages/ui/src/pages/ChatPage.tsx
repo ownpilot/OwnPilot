@@ -1103,7 +1103,13 @@ export function ChatPage() {
                               <>
                                 <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
                                 <span>
-                                  🔧 Running <strong>{event.tool?.name}</strong>...
+                                  🔧 Running <strong>{event.tool?.name}</strong>
+                                  {event.tool?.reason && (
+                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
+                                      — {event.tool.reason}
+                                    </span>
+                                  )}
+                                  ...
                                 </span>
                               </>
                             )}
@@ -1117,6 +1123,11 @@ export function ChatPage() {
                                   <span className="opacity-60 ml-1">
                                     ({event.result?.durationMs}ms)
                                   </span>
+                                  {event.tool?.reason && (
+                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
+                                      — {event.tool.reason}
+                                    </span>
+                                  )}
                                 </span>
                                 {event.result?.preview?.includes(
                                   'blocked in Execution Security'

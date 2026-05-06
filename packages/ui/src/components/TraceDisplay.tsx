@@ -625,6 +625,11 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
                   <span className="text-text-primary dark:text-dark-text-primary break-all">
                     {event.name}
                   </span>
+                  {toolCallData?.reason && (
+                    <span className="text-text-secondary dark:text-dark-text-secondary text-xs italic ml-1">
+                      — {toolCallData.reason}
+                    </span>
+                  )}
                   {hasDetails && (
                     <span className="text-text-muted dark:text-dark-text-muted">
                       {isEventExpanded ? (

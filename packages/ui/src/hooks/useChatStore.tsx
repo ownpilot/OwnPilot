@@ -30,6 +30,7 @@ export interface ProgressEvent {
     id: string;
     name: string;
     arguments?: Record<string, unknown>;
+    reason?: string;
   };
   result?: {
     success: boolean;
