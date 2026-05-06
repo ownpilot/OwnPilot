@@ -263,14 +263,15 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
-  it('does not expose raw malformed widget JSON when recovery fails', () => {
+  it('exposes raw malformed widget data behind a disclosure when recovery fails', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent content={`<progress data='{"value":' />`} />
     );
 
     expect(html).toContain('Widget could not be rendered');
-    expect(html).not.toContain('raw');
-    expect(html).not.toContain('{"value":');
+    expect(html).toContain('Show raw data');
+    expect(html).toContain('<details');
+    expect(html).toContain('{&quot;value&quot;:');
   });
 
   it('renders a callout when generic text can be recovered from malformed widget data', () => {

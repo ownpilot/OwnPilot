@@ -43,6 +43,19 @@ describe('ChatMessageWidget', () => {
     expect(html).not.toContain('<pre');
   });
 
+  it('shows raw data disclosure when widget data is malformed', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget
+        name="cards"
+        data={{ error: 'Invalid widget data', raw: '{ broken json " missing close' }}
+      />
+    );
+
+    expect(html).toContain('Widget could not be rendered');
+    expect(html).toContain('Show raw data');
+    expect(html).toContain('broken json');
+  });
+
   it('renders key-value items instead of falling back to JSON', () => {
     const html = renderToStaticMarkup(
       <ChatMessageWidget

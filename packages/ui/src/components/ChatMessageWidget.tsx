@@ -40,6 +40,13 @@ function parseJsonPayload(value: string): unknown {
   }
 }
 
+function warnFallback(widget: string, reason: string, data: unknown): void {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn(`[ChatMessageWidget] ${widget} → JsonWidget fallback (${reason})`, data);
+  }
+}
+
 function normalizeRenderableData(name: string, data: unknown): unknown {
   const parsed = typeof data === 'string' ? parseJsonPayload(data) : data;
   if (!isRecord(parsed)) return parsed;
@@ -167,7 +174,10 @@ function MetricGrid({ data }: { data: unknown }) {
   const itemsSource = Array.isArray(data) ? data : record.items;
   const items = asArray(itemsSource).filter(isRecord).slice(0, 8);
 
-  if (items.length === 0) return <JsonWidget name="metric_grid" data={data} />;
+  if (items.length === 0) {
+    warnFallback('metric_grid', 'no items after filter', data);
+    return <JsonWidget name="metric_grid" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<BarChart3 className="h-4 w-4" />}>
@@ -218,7 +228,10 @@ function TableWidget({ data }: { data: unknown }) {
         ? Object.keys(objectRows[0]!)
         : asArray(rawRows[0]).map((_, index) => `Column ${index + 1}`);
 
-  if (columns.length === 0 || rawRows.length === 0) return <JsonWidget name="table" data={data} />;
+  if (columns.length === 0 || rawRows.length === 0) {
+    warnFallback('table', `columns=${columns.length} rows=${rawRows.length}`, data);
+    return <JsonWidget name="table" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<Table className="h-4 w-4" />}>
@@ -267,7 +280,11 @@ function ListWidget({ data, checklist = false }: { data: unknown; checklist?: bo
   const title = asText(record.title);
   const items = asArray(Array.isArray(data) ? data : record.items).slice(0, 20);
 
-  if (items.length === 0) return <JsonWidget name={checklist ? 'checklist' : 'list'} data={data} />;
+  if (items.length === 0) {
+    const widgetName = checklist ? 'checklist' : 'list';
+    warnFallback(widgetName, 'no items after filter', data);
+    return <JsonWidget name={widgetName} data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<ListChecks className="h-4 w-4" />}>
@@ -316,7 +333,10 @@ function KeyValueWidget({ data }: { data: unknown }) {
     : (record.items ?? record.entries ?? record.facts);
   const entries = asArray(entriesSource).filter(isRecord).slice(0, 24);
 
-  if (entries.length === 0) return <JsonWidget name="key_value" data={data} />;
+  if (entries.length === 0) {
+    warnFallback('key_value', 'no entries after filter', data);
+    return <JsonWidget name="key_value" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<Clipboard className="h-4 w-4" />}>
@@ -355,7 +375,10 @@ function CardsWidget({ data }: { data: unknown }) {
     .filter(isRecord)
     .slice(0, 9);
 
-  if (items.length === 0) return <JsonWidget name="cards" data={data} />;
+  if (items.length === 0) {
+    warnFallback('cards', 'no items after filter', data);
+    return <JsonWidget name="cards" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<Layers className="h-4 w-4" />}>
@@ -406,7 +429,10 @@ function StepsWidget({ data }: { data: unknown }) {
     .filter((item) => typeof item === 'string' || isRecord(item))
     .slice(0, 12);
 
-  if (steps.length === 0) return <JsonWidget name="steps" data={data} />;
+  if (steps.length === 0) {
+    warnFallback('steps', 'no steps after filter', data);
+    return <JsonWidget name="steps" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<ListChecks className="h-4 w-4" />}>
@@ -495,7 +521,10 @@ function BarChartWidget({ data }: { data: unknown }) {
     })
   );
 
-  if (bars.length === 0) return <JsonWidget name="bar_chart" data={data} />;
+  if (bars.length === 0) {
+    warnFallback('bar_chart', 'no bars after filter', data);
+    return <JsonWidget name="bar_chart" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<BarChart3 className="h-4 w-4" />}>
@@ -534,7 +563,10 @@ function TimelineWidget({ data }: { data: unknown }) {
     .filter(isRecord)
     .slice(0, 12);
 
-  if (items.length === 0) return <JsonWidget name="timeline" data={data} />;
+  if (items.length === 0) {
+    warnFallback('timeline', 'no items after filter', data);
+    return <JsonWidget name="timeline" data={data} />;
+  }
 
   return (
     <WidgetShell title={title || undefined} icon={<TrendingUp className="h-4 w-4" />}>
@@ -580,6 +612,7 @@ function TimelineWidget({ data }: { data: unknown }) {
 
 function JsonWidget({ name, data }: ChatMessageWidgetProps) {
   if (isRecord(data) && data.error === 'Invalid widget data') {
+    const raw = typeof data.raw === 'string' ? data.raw : undefined;
     return (
       <WidgetShell
         title="Widget could not be rendered"
@@ -589,11 +622,24 @@ function JsonWidget({ name, data }: ChatMessageWidgetProps) {
         <div className="text-sm leading-6 text-text-secondary dark:text-dark-text-secondary">
           The data for this widget was incomplete or malformed, so it was hidden from the chat.
         </div>
+        {raw && (
+          <details className="mt-2">
+            <summary className="cursor-pointer text-xs text-text-muted hover:text-text-primary dark:text-dark-text-muted dark:hover:text-dark-text-primary">
+              Show raw data
+            </summary>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-bg-tertiary p-3 text-xs text-text-secondary dark:bg-dark-bg-tertiary dark:text-dark-text-secondary">
+              {raw}
+            </pre>
+          </details>
+        )}
       </WidgetShell>
     );
   }
 
-  const visibleData = isRecord(data) && 'raw' in data ? { ...data, raw: '[hidden]' } : data;
+  const visibleData =
+    isRecord(data) && 'raw' in data && typeof data.raw === 'string' && data.raw.length > 200
+      ? { ...data, raw: '[hidden — truncated for display]' }
+      : data;
 
   return (
     <WidgetShell title={name} icon={<Info className="h-4 w-4" />}>

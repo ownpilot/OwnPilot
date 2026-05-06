@@ -1072,7 +1072,10 @@ export const MarkdownContent = memo(function MarkdownContent({
     try {
       return { name, data: normalizeWidgetDataShape(name, parseWidgetData(dataValue)) };
     } catch {
-      const data = recoverWidgetData(name, dataValue);
+      let data = recoverWidgetData(name, dataValue);
+      if (isRecord(data) && data.error === 'Invalid widget data') {
+        data = { ...data, raw: dataValue };
+      }
       return {
         name: isCalloutLikeFallback(data) ? 'callout' : name,
         data: normalizeWidgetDataShape(name, data),
