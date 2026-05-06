@@ -80,21 +80,38 @@ vi.mock('node:fs/promises', () => ({
   mkdir: (...args: unknown[]) => mockFsMkdir(...args),
 }));
 
-vi.mock('node:path', () => ({
-  join: (...parts: string[]) => parts.join('/'),
-  dirname: (p: string) => p.split('/').slice(0, -1).join('/') || '.',
-  basename: (p: string) => p.split('/').pop() ?? p,
-  extname: (p: string) => {
+vi.mock('node:path', () => {
+  const sep = '/';
+  const join = (...parts: string[]) => parts.join('/');
+  const dirname = (p: string) => p.split('/').slice(0, -1).join('/') || '.';
+  const basename = (p: string) => p.split('/').pop() ?? p;
+  const extname = (p: string) => {
     const base = p.split('/').pop() ?? '';
     const dotIdx = base.lastIndexOf('.');
     return dotIdx >= 0 ? base.slice(dotIdx) : '';
-  },
-  relative: (from: string, to: string) => {
-    // Simplified relative: just strip workDir prefix
-    if (to.startsWith(from)) return to.slice(from.length + 1);
+  };
+  const relative = (from: string, to: string) => {
+    if (to.startsWith(from + sep)) return to.slice(from.length + 1);
+    if (to === from) return '';
     return to;
-  },
-}));
+  };
+  const resolve = (...parts: string[]) => {
+    const resolved = parts.join('/');
+    return resolved.startsWith('/') ? resolved : join(process.cwd(), resolved);
+  };
+  const isAbsolute = (p: string) => p.startsWith('/');
+
+  return {
+    sep,
+    join,
+    dirname,
+    basename,
+    extname,
+    relative,
+    resolve,
+    isAbsolute,
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import under test

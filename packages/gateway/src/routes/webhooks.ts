@@ -79,7 +79,7 @@ webhookRoutes.post('/sms', async (c) => {
  */
 webhookRoutes.post('/email/inbound', async (c) => {
   try {
-    // Validate shared secret
+    // Validate shared secret — fail-closed if secret is configured but not provided (AUTH-001)
     const expectedSecret = process.env.EMAIL_WEBHOOK_SECRET;
     if (expectedSecret) {
       const providedSecret =
@@ -88,7 +88,12 @@ webhookRoutes.post('/email/inbound', async (c) => {
         return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid webhook secret' }, 401);
       }
     } else {
-      log.warn('EMAIL_WEBHOOK_SECRET not configured — email webhook is unauthenticated');
+      // No secret configured — reject the request to prevent unauthenticated access (AUTH-001)
+      return apiError(
+        c,
+        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Email webhook secret not configured' },
+        503
+      );
     }
 
     let from = '';
@@ -169,10 +174,17 @@ webhookRoutes.post('/slack/events', async (c) => {
       );
     }
 
-    // Signature validation
+    // Signature validation — if handler has signingSecret, require valid signature (AUTH-002)
     const timestamp = c.req.header('x-slack-request-timestamp');
     const signature = c.req.header('x-slack-signature');
-    if (timestamp && signature) {
+    if (handler.signingSecret) {
+      if (!timestamp || !signature) {
+        return apiError(
+          c,
+          { code: ERROR_CODES.ACCESS_DENIED, message: 'Missing Slack signature headers' },
+          403
+        );
+      }
       const rawBody = JSON.stringify(body);
       const sigBaseString = `v0:${timestamp}:${rawBody}`;
       const expected =
@@ -224,7 +236,7 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
     );
   }
 
-  // HMAC-SHA256 signature validation if secret is configured
+  // HMAC-SHA256 signature validation — fail-closed if trigger expects secret but none configured (AUTH-003)
   const config = trigger.config as WebhookConfig;
   if (config.secret) {
     const signature = c.req.header('x-webhook-signature');
@@ -246,6 +258,13 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
         403
       );
     }
+  } else {
+    // No secret configured — reject to prevent unauthenticated trigger execution (AUTH-003)
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Webhook trigger secret not configured' },
+      503
+    );
   }
 
   // Fire the workflow via the trigger's action
@@ -297,7 +316,7 @@ webhookRoutes.post('/workflow/:path', async (c) => {
   const triggerNode = workflow.nodes.find((n) => n.type === 'triggerNode');
   const triggerData = triggerNode?.data as TriggerNodeData | undefined;
 
-  // HMAC-SHA256 signature validation if webhookSecret is configured
+  // HMAC-SHA256 signature validation — fail-closed if webhookSecret expected but not configured (AUTH-004)
   if (triggerData?.webhookSecret) {
     const signature = c.req.header('x-webhook-signature');
     if (!signature) {
@@ -318,6 +337,13 @@ webhookRoutes.post('/workflow/:path', async (c) => {
         403
       );
     }
+  } else {
+    // No webhookSecret configured — reject to prevent unauthenticated workflow execution (AUTH-004)
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Workflow webhook secret not configured' },
+      503
+    );
   }
 
   // Parse the webhook body

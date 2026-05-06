@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { apiResponse, apiError, ERROR_CODES, parseJsonBody } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, parseJsonBody, safeKeyCompare } from './helpers.js';
 import {
   hashPassword,
   verifyPassword,
@@ -144,6 +144,10 @@ uiAuthRoutes.post('/logout', async (c) => {
 /**
  * POST /auth/password — Conditional auth
  * Set (first time) or change (requires current password) the UI password.
+ *
+ * SECURITY: First-time setup requires BOOTSTRAP_TOKEN env var to prevent
+ * unauthenticated race condition (PRIVESC-001). The bootstrap token must
+ * be supplied in the X-Bootstrap-Token header.
  */
 uiAuthRoutes.post('/password', async (c) => {
   const body = ((await parseJsonBody(c)) ?? {}) as {
@@ -195,6 +199,33 @@ uiAuthRoutes.post('/password', async (c) => {
       return apiError(
         c,
         { code: ERROR_CODES.ACCESS_DENIED, message: 'Current password is incorrect' },
+        403
+      );
+    }
+  } else {
+    // First-time setup — require bootstrap token to prevent race condition (PRIVESC-001)
+    const bootstrapToken = process.env.BOOTSTRAP_TOKEN;
+    if (!bootstrapToken) {
+      getEventSystem().emit('audit.security.privesc_blocked' as never, 'ui-auth', {
+        reason: 'first_password_setup_no_bootstrap_token',
+        ip: getClientIpHttp(c),
+      } as never);
+      return apiError(
+        c,
+        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Initial password setup is disabled. Set BOOTSTRAP_TOKEN environment variable to enable first-time setup.' },
+        503
+      );
+    }
+
+    const providedToken = c.req.header('X-Bootstrap-Token') ?? '';
+    if (!providedToken || !safeKeyCompare(providedToken, bootstrapToken)) {
+      getEventSystem().emit('audit.security.privesc_blocked' as never, 'ui-auth', {
+        reason: 'first_password_setup_invalid_token',
+        ip: getClientIpHttp(c),
+      } as never);
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid bootstrap token' },
         403
       );
     }

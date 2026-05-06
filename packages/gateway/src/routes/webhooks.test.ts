@@ -264,12 +264,9 @@ describe('Webhook Routes', () => {
       expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
     });
 
-    it('returns 200 OK when valid event processed successfully (no signature headers)', async () => {
-      const callback = vi.fn(async () => {});
-      mockGetSlackWebhookHandler.mockReturnValue({
-        signingSecret: SLACK_SIGNING_SECRET,
-        callback,
-      });
+    it('returns 503 when no handler configured', async () => {
+      // No handler → returns 503 (fail-closed)
+      mockGetSlackWebhookHandler.mockReturnValue(null);
 
       const body = { type: 'event_callback', event: { type: 'message' } };
       const res = await app.request('/webhooks/slack/events', {
@@ -278,10 +275,9 @@ describe('Webhook Routes', () => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      expect(res.status).toBe(200);
-      const text = await res.text();
-      expect(text).toBe('OK');
-      expect(callback).toHaveBeenCalledTimes(1);
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
     });
 
     it('returns 403 when signature is invalid (after handler is configured)', async () => {
@@ -343,11 +339,18 @@ describe('Webhook Routes', () => {
 
       const event = { type: 'message', user: 'U123', text: 'hello', ts: '1234', channel: 'C1' };
       const body = { type: 'event_callback', event };
+      const rawBody = JSON.stringify(body);
+      const timestamp = '1609459200';
+      const sigHeaders = {
+        'Content-Type': 'application/json',
+        'x-slack-request-timestamp': timestamp,
+        'x-slack-signature': computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET),
+      };
 
       const res = await app.request('/webhooks/slack/events', {
         method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+        body: rawBody,
+        headers: sigHeaders,
       });
 
       expect(res.status).toBe(200);
@@ -366,11 +369,18 @@ describe('Webhook Routes', () => {
         type: 'event_callback',
         event: { type: 'message', subtype: 'bot_message', text: 'bot said hi' },
       };
+      const rawBody = JSON.stringify(body);
+      const timestamp = '1609459200';
+      const sigHeaders = {
+        'Content-Type': 'application/json',
+        'x-slack-request-timestamp': timestamp,
+        'x-slack-signature': computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET),
+      };
 
       const res = await app.request('/webhooks/slack/events', {
         method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+        body: rawBody,
+        headers: sigHeaders,
       });
 
       expect(res.status).toBe(200);
@@ -386,11 +396,18 @@ describe('Webhook Routes', () => {
       });
 
       const body = { type: 'event_callback', event: { type: 'reaction_added' } };
+      const rawBody = JSON.stringify(body);
+      const timestamp = '1609459200';
+      const sigHeaders = {
+        'Content-Type': 'application/json',
+        'x-slack-request-timestamp': timestamp,
+        'x-slack-signature': computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET),
+      };
 
       const res = await app.request('/webhooks/slack/events', {
         method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+        body: rawBody,
+        headers: sigHeaders,
       });
 
       expect(res.status).toBe(200);
@@ -405,11 +422,18 @@ describe('Webhook Routes', () => {
       });
 
       const body = { type: 'event_callback' };
+      const rawBody = JSON.stringify(body);
+      const timestamp = '1609459200';
+      const sigHeaders = {
+        'Content-Type': 'application/json',
+        'x-slack-request-timestamp': timestamp,
+        'x-slack-signature': computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET),
+      };
 
       const res = await app.request('/webhooks/slack/events', {
         method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+        body: rawBody,
+        headers: sigHeaders,
       });
 
       expect(res.status).toBe(200);
@@ -425,10 +449,18 @@ describe('Webhook Routes', () => {
       });
 
       const body = { type: 'event_callback', event: { type: 'message' } };
+      const rawBody = JSON.stringify(body);
+      const timestamp = '1609459200';
+      const sigHeaders = {
+        'Content-Type': 'application/json',
+        'x-slack-request-timestamp': timestamp,
+        'x-slack-signature': computeSlackSignature(rawBody, timestamp, SLACK_SIGNING_SECRET),
+      };
+
       const res = await app.request('/webhooks/slack/events', {
         method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+        body: rawBody,
+        headers: sigHeaders,
       });
 
       expect(res.status).toBe(500);
@@ -508,7 +540,7 @@ describe('Webhook Routes', () => {
       expect(json.error.code).toBe('NOT_FOUND');
     });
 
-    it('returns 200 when trigger found and no secret configured', async () => {
+    it('returns 503 when trigger found and no secret configured (fail-closed)', async () => {
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(
         makeTrigger({ config: {}, action: { type: 'chat', payload: {} } })
       );
@@ -519,10 +551,9 @@ describe('Webhook Routes', () => {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(503);
       const json = await res.json();
-      expect(json.success).toBe(true);
-      expect(json.data.triggerId).toBe('trig-001');
+      expect(json.error.code).toBe('SERVICE_UNAVAILABLE');
     });
 
     it('returns 403 when secret configured but X-Webhook-Signature header missing', async () => {
@@ -585,9 +616,10 @@ describe('Webhook Routes', () => {
     });
 
     it('returns 200 and fires workflow when action type is workflow', async () => {
+      // AUTH-003: trigger must have a secret configured
       const workflowId = 'wf-123';
       const trigger = makeTrigger({
-        config: {},
+        config: { secret: 'test-secret' },
         action: { type: 'workflow', payload: { workflowId } },
       });
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(trigger);
@@ -597,10 +629,13 @@ describe('Webhook Routes', () => {
         get: vi.fn(() => mockWorkflowService),
       });
 
+      const body = '{}';
+      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
+
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
-        body: '{}',
-        headers: { 'Content-Type': 'application/json' },
+        body,
+        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
       });
 
       expect(res.status).toBe(200);
@@ -613,8 +648,9 @@ describe('Webhook Routes', () => {
     });
 
     it('returns 200 when trigger action type is not workflow (no executeWorkflow call)', async () => {
+      // AUTH-003: trigger must have a secret configured
       const trigger = makeTrigger({
-        config: {},
+        config: { secret: 'test-secret' },
         action: { type: 'notification', payload: {} },
       });
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(trigger);
@@ -624,10 +660,13 @@ describe('Webhook Routes', () => {
         get: vi.fn(() => mockWorkflowService),
       });
 
+      const body = '{}';
+      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
+
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
-        body: '{}',
-        headers: { 'Content-Type': 'application/json' },
+        body,
+        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
       });
 
       expect(res.status).toBe(200);
@@ -636,8 +675,9 @@ describe('Webhook Routes', () => {
     });
 
     it('returns 200 when workflow action has no workflowId (no workflow fire)', async () => {
+      // AUTH-003: trigger must have a secret configured
       const trigger = makeTrigger({
-        config: {},
+        config: { secret: 'test-secret' },
         action: { type: 'workflow', payload: {} }, // missing workflowId
       });
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(trigger);
@@ -647,10 +687,13 @@ describe('Webhook Routes', () => {
         get: vi.fn(() => mockWorkflowService),
       });
 
+      const body = '{}';
+      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
+
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
-        body: '{}',
-        headers: { 'Content-Type': 'application/json' },
+        body,
+        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
       });
 
       expect(res.status).toBe(200);
@@ -659,8 +702,9 @@ describe('Webhook Routes', () => {
     });
 
     it('returns 200 even when getServiceRegistry throws (workflow fire-and-forget errors silently)', async () => {
+      // AUTH-003: trigger must have a secret configured
       const trigger = makeTrigger({
-        config: {},
+        config: { secret: 'test-secret' },
         action: { type: 'workflow', payload: { workflowId: 'wf-fail' } },
       });
       mockTriggersRepo.getByIdGlobal.mockResolvedValue(trigger);
@@ -668,10 +712,13 @@ describe('Webhook Routes', () => {
         throw new Error('Registry unavailable');
       });
 
+      const body = '{}';
+      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
+
       const res = await app.request('/webhooks/trigger/trig-001', {
         method: 'POST',
-        body: '{}',
-        headers: { 'Content-Type': 'application/json' },
+        body,
+        headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
       });
 
       // Route still returns 200 because service error is caught internally
@@ -681,12 +728,21 @@ describe('Webhook Routes', () => {
     });
 
     it('includes triggerId in response data', async () => {
-      mockTriggersRepo.getByIdGlobal.mockResolvedValue(makeTrigger({ id: 'trig-xyz' }));
+      // AUTH-003: trigger must have a secret configured
+      mockTriggersRepo.getByIdGlobal.mockResolvedValue(
+        makeTrigger({ id: 'trig-xyz', config: { secret: 'test-secret' } })
+      );
+
+      const body = '{}';
+      const signature = createHmac('sha256', 'test-secret').update(body).digest('hex');
 
       const res = await app.request('/webhooks/trigger/trig-xyz', {
         method: 'POST',
-        body: '{}',
-        headers: { 'Content-Type': 'application/json' },
+        body,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Signature': signature,
+        },
       });
 
       expect(res.status).toBe(200);

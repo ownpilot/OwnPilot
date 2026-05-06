@@ -82,6 +82,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 vi.mock('node:path', () => ({
+  sep: '/',
   join: (...parts: string[]) => parts.join('/'),
   dirname: (p: string) => {
     const idx = p.lastIndexOf('/');
@@ -96,6 +97,13 @@ vi.mock('node:path', () => ({
     const base = p.split('/').pop() ?? p;
     const dotIdx = base.lastIndexOf('.');
     return dotIdx >= 0 ? base.substring(dotIdx) : '';
+  },
+  resolve: (...parts: string[]) => parts.join('/'),
+  isAbsolute: (p: string) => p.startsWith('/'),
+  relative: (from: string, to: string) => {
+    if (to.startsWith(from + '/')) return to.slice(from.length + 1);
+    if (to === from) return '';
+    return to;
   },
 }));
 
@@ -703,14 +711,14 @@ describe('textToSpeechOverride', () => {
     const result = await executors.text_to_speech!(
       {
         text: 'Hello',
-        outputPath: '/custom/output/speech.wav',
+        outputPath: '/workspace/custom/output/speech.wav', // PT-001: must be within workspaceDir
         format: 'wav',
       },
       defaultContext
     );
 
-    expect(result.content.path).toBe('/custom/output/speech.wav');
-    expect(mockFsMkdir).toHaveBeenCalledWith('/custom/output', { recursive: true });
+    expect(result.content.path).toBe('/workspace/custom/output/speech.wav');
+    expect(mockFsMkdir).toHaveBeenCalledWith('/workspace/custom/output', { recursive: true });
   });
 
   it('should default workspaceDir to . when not provided', async () => {
@@ -1593,13 +1601,13 @@ describe('splitAudioOverride', () => {
     const result = await executors.split_audio!(
       {
         source: '/audio/test.mp3',
-        outputDir: '/custom/output',
+        outputDir: '/workspace/custom/output', // PT-001: must be within workspaceDir
       },
       defaultContext
     );
 
-    expect(result.content.outputDir).toBe('/custom/output');
-    expect(mockFsMkdir).toHaveBeenCalledWith('/custom/output', { recursive: true });
+    expect(result.content.outputDir).toBe('/workspace/custom/output');
+    expect(mockFsMkdir).toHaveBeenCalledWith('/workspace/custom/output', { recursive: true });
   });
 
   it('should fall back to source dirname when no workspaceDir', async () => {

@@ -1568,20 +1568,18 @@ describe('news_add_feed executor', () => {
     );
   });
 
-  it('handles fetch error by updating feed status to "error"', async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
-
+  it('returns error for private/loopback URLs (SSRF protection)', async () => {
+    // isPrivateUrlAsync returns true for bad-url.example.com (DNS rebinding check)
     const exec = await captureNewsRssTool('news_add_feed');
     const result = (await exec!({ url: 'http://bad-url.example.com/feed.rss' })) as {
-      content: { success: boolean };
+      content: { error?: string };
+      isError: boolean;
     };
 
-    expect(mockDatabaseRepo.updateRecord).toHaveBeenCalledWith(
-      'feed-1',
-      expect.objectContaining({ status: 'error' })
-    );
-    // Still returns success: true (the feed record was created)
-    expect(result.content.success).toBe(true);
+    expect(result.isError).toBe(true);
+    expect(result.content.error).toContain('Private or loopback');
+    // Feed record should NOT be created since URL was rejected before DB write
+    expect(mockDatabaseRepo.addRecord).not.toHaveBeenCalled();
   });
 
   it('returns 0 itemsFetched when fetch fails', async () => {

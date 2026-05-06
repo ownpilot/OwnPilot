@@ -9,7 +9,7 @@
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { createContext, Script } from 'node:vm';
 import { getLog } from './log.js';
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage, validateToolCode } from '@ownpilot/core';
 
 const log = getLog('ExtSandbox');
 
@@ -153,6 +153,9 @@ function workerMain() {
       port.on('message', responseHandler);
 
       // Build the sandbox context
+      // NOTE: Do NOT pass host constructors (Object, Array, Map, Set, String, Number, Boolean, Promise).
+      // vm.createContext() creates its own V8 built-ins per context.
+      // Passing host constructors shares prototype chains, enabling prototype pollution attacks.
       const sandboxGlobals = {
         console: consoleMethods,
         JSON,
@@ -160,15 +163,8 @@ function workerMain() {
         Date,
         URL,
         URLSearchParams,
-        Array,
-        Object,
-        String,
-        Number,
-        Boolean,
+        // Safe constructors only — RegExp, Error, etc. are fine as they're stateless
         RegExp,
-        Map,
-        Set,
-        Promise,
         Error,
         TypeError,
         RangeError,
@@ -268,6 +264,16 @@ export class ExtensionSandboxManager {
       maxMemory = DEFAULT_MAX_MEMORY,
       maxExecutionTime = DEFAULT_MAX_EXECUTION_TIME,
     } = options;
+
+    // F-002: Validate extension code before execution (same as custom/dynamic tools)
+    const validation = validateToolCode(code);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: `Code validation failed: ${validation.errors.join('; ')}`,
+        executionTime: 0,
+      };
+    }
 
     return new Promise<SandboxExecutionResult>((resolve) => {
       const startTime = Date.now();

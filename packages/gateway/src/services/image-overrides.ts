@@ -173,7 +173,7 @@ const analyzeImageOverride: ToolExecutor = async (
     } else {
       // File path
       const fs = await import('node:fs/promises');
-      const path = await import('node:path');
+      const pathModule = await import('node:path');
 
       try {
         const stats = await fs.stat(source);
@@ -189,7 +189,7 @@ const analyzeImageOverride: ToolExecutor = async (
         return { content: { error: `Image file not found: ${source}` }, isError: true };
       }
 
-      const ext = path.extname(source).slice(1).toLowerCase();
+      const ext = pathModule.extname(source).slice(1).toLowerCase();
       if (!SUPPORTED_FORMATS.includes(ext)) {
         return {
           content: {

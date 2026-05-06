@@ -16,6 +16,7 @@ import { resolveProviderAndModel } from '../routes/settings.js';
 import { getProviderApiKey, loadProviderConfig } from '../routes/agent-cache.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';
+import { isWithinDirectory } from '../utils/file-safety.js';
 
 const log = getLog('AudioOverrides');
 
@@ -174,11 +175,22 @@ const textToSpeechOverride: ToolExecutor = async (
 
     // Save to file
     const fs = await import('node:fs/promises');
-    const path = await import('node:path');
+    const pathModule = await import('node:path');
     const workDir = context.workspaceDir || '.';
 
-    const filePath = outputPath || path.join(workDir, `tts_${Date.now()}.${format}`);
-    const dir = path.dirname(filePath);
+    // PT-001: Validate outputPath is within workspace
+    const filePath = outputPath
+      ? pathModule.resolve(outputPath)
+      : pathModule.join(workDir, `tts_${Date.now()}.${format}`);
+    const dir = pathModule.dirname(filePath);
+
+    if (outputPath && !isWithinDirectory(workDir, filePath)) {
+      return {
+        content: { error: 'Output path must be within the workspace directory' },
+        isError: true,
+      };
+    }
+
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(filePath, audioBuffer);
 
@@ -278,6 +290,15 @@ const speechToTextOverride: ToolExecutor = async (
     let filename: string;
 
     if (source.startsWith('http://') || source.startsWith('https://')) {
+      // SSRF validation before fetching (SSRF-003)
+      const { isBlockedUrl, isPrivateUrlAsync } = await import('../utils/ssrf.js');
+      if (isBlockedUrl(source)) {
+        return { content: { error: 'Invalid or blocked audio URL' }, isError: true };
+      }
+      if (await isPrivateUrlAsync(source)) {
+        return { content: { error: 'Private or loopback URLs are not allowed' }, isError: true };
+      }
+
       // Download URL
       const resp = await fetch(source);
       if (!resp.ok) throw new Error(`Failed to download: ${resp.status}`);
@@ -511,9 +532,18 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
     // Check source exists
     await fs.access(source);
 
-    // Determine output directory
+    // Determine output directory — PT-001: validate outputDir is within workspace
+    const workDir = context.workspaceDir || '.';
     const outDir =
       outputDir || path.join(context.workspaceDir || path.dirname(source), 'audio_segments');
+    const resolvedOutDir = path.resolve(outDir);
+    if (outputDir && !isWithinDirectory(workDir, resolvedOutDir)) {
+      return {
+        content: { error: 'Output directory must be within the workspace directory' },
+        isError: true,
+      };
+    }
+
     await fs.mkdir(outDir, { recursive: true });
 
     const baseName = path.basename(source, path.extname(source));

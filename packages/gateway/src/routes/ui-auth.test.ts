@@ -50,6 +50,9 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
+// Set BOOTSTRAP_TOKEN before routes are loaded (used by first-time password setup route)
+process.env.BOOTSTRAP_TOKEN = 'test-bootstrap-token';
+
 import { isPasswordConfigured, getPasswordHash, validateSession } from '../services/ui-session.js';
 
 const mockIsPasswordConfigured = vi.mocked(isPasswordConfigured);
@@ -260,7 +263,10 @@ describe('UI Auth Routes', () => {
       const res = await app.request('/auth/password', {
         method: 'POST',
         body: JSON.stringify({ password: 'new-password-123' }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bootstrap-Token': 'test-bootstrap-token',
+        },
       });
       expect(res.status).toBe(200);
       const json = await res.json();

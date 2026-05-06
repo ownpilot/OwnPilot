@@ -195,6 +195,16 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         const repo = getServiceRegistry().get(Services.Database);
         const feedUrl = String(params.url);
 
+        // SSRF validation (SSRF-002)
+        const { isBlockedUrl } = await import('../utils/ssrf.js');
+        if (isBlockedUrl(feedUrl)) {
+          return { content: { error: 'Invalid or blocked feed URL' }, isError: true };
+        }
+        const { isPrivateUrlAsync } = await import('../utils/ssrf.js');
+        if (await isPrivateUrlAsync(feedUrl)) {
+          return { content: { error: 'Private or loopback URLs are not allowed' }, isError: true };
+        }
+
         // Create feed record
         const feedRecord = await repo.addRecord('plugin_rss_feeds', {
           url: feedUrl,
@@ -373,8 +383,20 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         }
 
         let itemCount = 0;
+        const feedUrl = String(feed.data.url);
+
+        // SSRF validation (defense-in-depth — URL was validated on insert but re-check on refresh)
+        const { isBlockedUrl } = await import('../utils/ssrf.js');
+        if (isBlockedUrl(feedUrl)) {
+          return { content: { error: 'Feed URL is blocked' }, isError: true };
+        }
+        const { isPrivateUrlAsync } = await import('../utils/ssrf.js');
+        if (await isPrivateUrlAsync(feedUrl)) {
+          return { content: { error: 'Feed URL points to private/loopback address' }, isError: true };
+        }
+
         try {
-          const response = await fetch(String(feed.data.url), {
+          const response = await fetch(feedUrl, {
             headers: { 'User-Agent': 'OwnPilot RSS Reader/1.0' },
             signal: AbortSignal.timeout(10000),
           });
