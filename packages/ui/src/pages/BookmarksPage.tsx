@@ -416,6 +416,18 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
     }
   };
 
+  /** Only allow http/https URLs — blocks javascript:, data:, and other dangerous protocols */
+  const isSafeUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const safeUrl = isSafeUrl(bookmark.url);
+
   return (
     <div className="card-elevated card-hover flex flex-col p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
       <div className="flex items-start gap-3 flex-1">
@@ -477,16 +489,26 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
         </div>
 
         <div className="flex items-center gap-1">
-          <a
-            href={bookmark.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Open bookmark in new tab"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          {safeUrl ? (
+            <a
+              href={bookmark.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 text-text-muted dark:text-dark-text-muted hover:text-primary transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Open bookmark in new tab"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          ) : (
+            <span
+              className="p-1 text-text-muted dark:text-dark-text-muted cursor-not-allowed opacity-50"
+              title={`Unsafe URL protocol — ${new URL(bookmark.url).protocol}`}
+              aria-label="Cannot open — unsafe URL protocol"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </span>
+          )}
           <button
             onClick={onToggleFavorite}
             className={`p-1 transition-colors ${

@@ -778,9 +778,21 @@ clawRoutes.get('/:id/history', async (c) => {
 // GET /:id/audit — Get audit log (per-tool-call tracking)
 clawRoutes.get('/:id/audit', async (c) => {
   try {
+    const userId = getUserId(c);
     const { id } = c.req.param();
     const { limit, offset } = getPaginationParams(c);
     const category = c.req.query('category');
+
+    // F-003: Enforce ownership — audit log is only accessible to the claw owner
+    const service = getClawService();
+    const config = await service.getClaw(id, userId);
+    if (!config) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' },
+        404
+      );
+    }
 
     const { getClawsRepository } = await import('../db/repositories/claws.js');
     const repo = getClawsRepository();

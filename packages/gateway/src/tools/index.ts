@@ -40,3 +40,4 @@ export {
   CLAW_MANAGEMENT_TOOL_NAMES,
   executeClawManagementTool,
 } from './claw-management-tools.js';
+export { INTERACTIVE_TOOLS, executeInteractiveTool } from './interactive-tools.js';

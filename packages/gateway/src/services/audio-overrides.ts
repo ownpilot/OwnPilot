@@ -285,6 +285,7 @@ const speechToTextOverride: ToolExecutor = async (
   try {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
+    const workDir = _context?.workspaceDir || '.';
 
     let audioBuffer: Buffer;
     let filename: string;
@@ -305,7 +306,15 @@ const speechToTextOverride: ToolExecutor = async (
       audioBuffer = Buffer.from(await resp.arrayBuffer());
       filename = path.basename(new URL(source).pathname) || 'audio.mp3';
     } else {
-      // Local file
+      // Local file — validate workspace containment (PT-002)
+      const resolvedSource = path.resolve(source);
+      if (!isWithinDirectory(workDir, resolvedSource)) {
+        return {
+          content: { error: 'Source path must be within the workspace directory' },
+          isError: true,
+        };
+      }
+
       const ext = path.extname(source).slice(1).toLowerCase();
       if (!SUPPORTED_INPUT_FORMATS.includes(ext)) {
         return {

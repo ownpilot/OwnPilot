@@ -107,6 +107,19 @@ vi.mock('node:path', () => ({
   },
 }));
 
+vi.mock('../utils/file-safety.js', () => ({
+  isWithinDirectory: (baseDir: string, targetPath: string) => {
+    // Simulate: only paths inside /workspace pass the check
+    const sep = '/';
+    const baseResolved = baseDir.split(sep).filter(Boolean).join(sep);
+    const targetResolved = targetPath.split(sep).filter(Boolean).join(sep);
+    const rel = targetResolved.startsWith(baseResolved + sep)
+      ? targetResolved.slice(baseResolved.length + 1)
+      : targetResolved === baseResolved ? '' : targetResolved;
+    return rel === '' || (!rel.startsWith('..') && !rel.startsWith(sep));
+  },
+}));
+
 vi.mock('node:child_process', () => ({
   execFile: mockExecFile,
 }));

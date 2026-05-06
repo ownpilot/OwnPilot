@@ -47,6 +47,13 @@ function warnFallback(widget: string, reason: string, data: unknown): void {
   }
 }
 
+function firstArrayValue(record: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (Array.isArray(record[key])) return record[key];
+  }
+  return undefined;
+}
+
 function normalizeRenderableData(name: string, data: unknown): unknown {
   const parsed = typeof data === 'string' ? parseJsonPayload(data) : data;
   if (!isRecord(parsed)) return parsed;
@@ -72,6 +79,26 @@ function normalizeRenderableData(name: string, data: unknown): unknown {
     ) {
       return { title: parsed.title, items: [{ key: singleLabel, value: singleValue }] };
     }
+
+    const reserved = new Set([
+      'title',
+      'tone',
+      'status',
+      'type',
+      'items',
+      'entries',
+      'facts',
+      'properties',
+      'details',
+    ]);
+    const scalarItems = Object.entries(parsed)
+      .filter(
+        ([key, value]) =>
+          !reserved.has(key) &&
+          (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+      )
+      .map(([key, value]) => ({ key, value }));
+    return scalarItems.length > 0 ? { title: parsed.title, items: scalarItems } : parsed;
   }
 
   if (name === 'card' || name === 'cards' || name === 'card_grid') {
@@ -82,6 +109,48 @@ function normalizeRenderableData(name: string, data: unknown): unknown {
       (key) => parsed[key] !== undefined
     );
     if (hasCardFields && !Array.isArray(parsed.items)) return { items: [parsed] };
+  }
+
+  if (name === 'metric' || name === 'metrics' || name === 'metric_grid' || name === 'stats') {
+    const items = firstArrayValue(parsed, ['items', 'metrics', 'stats', 'values']);
+    return items && !Array.isArray(parsed.items) ? { ...parsed, items } : parsed;
+  }
+
+  if (name === 'list' || name === 'checklist') {
+    const items = firstArrayValue(parsed, [
+      'items',
+      'entries',
+      'list',
+      'tasks',
+      'todos',
+      'recommendations',
+      'suggestions',
+    ]);
+    return items && !Array.isArray(parsed.items) ? { ...parsed, items } : parsed;
+  }
+
+  if (name === 'table') {
+    const rows = firstArrayValue(parsed, ['rows', 'items', 'entries', 'data']);
+    const headers = firstArrayValue(parsed, ['headers', 'columns', 'fields']);
+    const normalized = { ...parsed };
+    if (rows && !Array.isArray(normalized.rows)) normalized.rows = rows;
+    if (headers && !Array.isArray(normalized.headers)) normalized.headers = headers;
+    return normalized;
+  }
+
+  if (name === 'step' || name === 'steps' || name === 'plan') {
+    const items = firstArrayValue(parsed, ['items', 'steps', 'plan', 'tasks']);
+    return items && !Array.isArray(parsed.items) ? { ...parsed, items } : parsed;
+  }
+
+  if (name === 'bar' || name === 'bar_chart') {
+    const items = firstArrayValue(parsed, ['items', 'bars', 'series', 'values']);
+    return items && !Array.isArray(parsed.items) ? { ...parsed, items } : parsed;
+  }
+
+  if (name === 'timeline') {
+    const items = firstArrayValue(parsed, ['items', 'events', 'entries']);
+    return items && !Array.isArray(parsed.items) ? { ...parsed, items } : parsed;
   }
 
   return parsed;

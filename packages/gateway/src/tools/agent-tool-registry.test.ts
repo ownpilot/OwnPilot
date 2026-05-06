@@ -166,6 +166,8 @@ vi.mock('./index.js', () => ({
   executeClawTool: vi.fn(),
   CLAW_MANAGEMENT_TOOLS: [],
   executeClawManagementTool: vi.fn(),
+  INTERACTIVE_TOOLS: [],
+  executeInteractiveTool: vi.fn(),
   FLEET_TOOLS: [],
   executeFleetTool: vi.fn(),
 }));
@@ -1619,6 +1621,26 @@ describe('agent-tools helpers', () => {
       } finally {
         const i = (ARTIFACT_TOOLS as (typeof td)[]).indexOf(td);
         if (i > -1) (ARTIFACT_TOOLS as (typeof td)[]).splice(i, 1);
+      }
+    });
+
+    it('registers and invokes INTERACTIVE_TOOLS executor (no userId needed)', async () => {
+      const { INTERACTIVE_TOOLS } = await import('../tools/index.js');
+      const { executeInteractiveTool } = await import('../tools/index.js');
+      const td = { name: 'deliver_interactive', description: 'Interactive', parameters: {} };
+      (INTERACTIVE_TOOLS as (typeof td)[]).push(td);
+      try {
+        vi.mocked(executeInteractiveTool).mockResolvedValue({
+          success: true,
+          result: { delivered: true, markerText: '<!--WIDGET#1#table#{}<!--WIDGET#1#END-->' },
+        });
+        const { captured } = captureGatewayExecutors(true);
+        const fn = captured[captured.length - 1]!;
+        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
+        expect(result.content).toContain('delivered');
+      } finally {
+        const i = (INTERACTIVE_TOOLS as (typeof td)[]).indexOf(td);
+        if (i > -1) (INTERACTIVE_TOOLS as (typeof td)[]).splice(i, 1);
       }
     });
   });

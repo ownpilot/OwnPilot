@@ -114,7 +114,7 @@ composioRoutes.post('/connections', async (c) => {
       );
     }
 
-    const userId = 'default';
+    const userId = getUserId(c);
     const result = await composioService.initiateConnection(userId, appName, redirectUrl);
 
     return apiResponse(c, {

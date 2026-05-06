@@ -44,22 +44,22 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
     setTimeout(() => setCopiedKey(null), 2000);
   }, []);
 
-  const toolCallCount = trace.toolCalls.length;
+  const toolCallCount = trace.toolCalls?.length ?? 0;
   const successfulTools = trace.toolCalls.filter((t) => t.success).length;
   const failedTools = toolCallCount - successfulTools;
-  const totalInputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
-  const totalOutputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
-  const totalTokens = trace.modelCalls.reduce(
+  const totalInputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
+  const totalOutputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
+  const totalTokens = (trace.modelCalls ?? []).reduce(
     (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
     0
   );
-  const totalModelDuration = trace.modelCalls.reduce((sum, m) => sum + (m.duration ?? 0), 0);
+  const totalModelDuration = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.duration ?? 0), 0);
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'tool_calls', label: 'Tool Calls', count: toolCallCount },
-    { id: 'model_calls', label: 'Model Calls', count: trace.modelCalls.length },
-    { id: 'events', label: 'Events', count: trace.events.length },
+    { id: 'model_calls', label: 'Model Calls', count: trace.modelCalls?.length ?? 0 },
+    { id: 'events', label: 'Events', count: trace.events?.length ?? 0 },
     { id: 'request', label: 'Request / Response' },
     { id: 'raw', label: 'Raw JSON' },
   ];
@@ -204,7 +204,7 @@ function OverviewTab({
         <StatCard
           icon={<Send className="w-5 h-5" />}
           label="Model Calls"
-          value={`${trace.modelCalls.length}`}
+          value={`${trace.modelCalls?.length ?? 0}`}
           sublabel={
             trace.request?.provider ? `${trace.request.provider}/${trace.request.model}` : ''
           }
@@ -214,38 +214,38 @@ function OverviewTab({
 
       {/* Secondary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {trace.dbOperations.reads > 0 || trace.dbOperations.writes > 0 ? (
+        {trace.dbOperations?.reads > 0 || trace.dbOperations?.writes > 0 ? (
           <StatCard
             icon={<Database className="w-5 h-5" />}
             label="DB Operations"
             value={`${trace.dbOperations.reads + trace.dbOperations.writes}`}
-            sublabel={`${trace.dbOperations.reads} reads / ${trace.dbOperations.writes} writes`}
+            sublabel={`${trace.dbOperations?.reads ?? 0} reads / ${trace.dbOperations?.writes ?? 0} writes`}
             color="text-cyan-500"
           />
         ) : null}
-        {trace.memoryOps.adds > 0 || trace.memoryOps.recalls > 0 ? (
+        {trace.memoryOps?.adds > 0 || trace.memoryOps?.recalls > 0 ? (
           <StatCard
             icon={<Brain className="w-5 h-5" />}
             label="Memory Ops"
             value={`${trace.memoryOps.adds + trace.memoryOps.recalls}`}
-            sublabel={`${trace.memoryOps.adds} adds / ${trace.memoryOps.recalls} recalls`}
+            sublabel={`${trace.memoryOps?.adds ?? 0} adds / ${trace.memoryOps?.recalls ?? 0} recalls`}
             color="text-indigo-500"
           />
         ) : null}
-        {trace.triggersFired.length > 0 && (
+        {(trace.triggersFired?.length ?? 0) > 0 && (
           <StatCard
             icon={<Zap className="w-5 h-5" />}
             label="Triggers Fired"
-            value={`${trace.triggersFired.length}`}
-            sublabel={trace.triggersFired.join(', ')}
+            value={`${trace.triggersFired!.length}`}
+            sublabel={trace.triggersFired!.join(', ')}
             color="text-yellow-500"
           />
         )}
-        {trace.errors.length > 0 && (
+        {(trace.errors?.length ?? 0) > 0 && (
           <StatCard
             icon={<XCircle className="w-5 h-5" />}
             label="Errors"
-            value={`${trace.errors.length}`}
+            value={`${trace.errors!.length}`}
             sublabel=""
             color="text-red-500"
           />
@@ -259,19 +259,19 @@ function OverviewTab({
             color="text-amber-500"
           />
         )}
-        {trace.autonomyChecks.length > 0 && (
+        {trace.autonomyChecks?.length > 0 && (
           <StatCard
             icon={<AlertTriangle className="w-5 h-5" />}
             label="Autonomy Checks"
-            value={`${trace.autonomyChecks.length}`}
-            sublabel={`${trace.autonomyChecks.filter((a) => !a.approved).length} blocked`}
+            value={`${trace.autonomyChecks!.length}`}
+            sublabel={`${trace.autonomyChecks!.filter((a) => !a.approved).length} blocked`}
             color="text-orange-500"
           />
         )}
       </div>
 
       {/* Errors list */}
-      {trace.errors.length > 0 && (
+      {trace.errors && trace.errors.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-red-500 mb-2 flex items-center gap-2">
             <XCircle className="w-4 h-4" /> Errors
@@ -315,7 +315,7 @@ function OverviewTab({
       )}
 
       {/* Autonomy Checks */}
-      {trace.autonomyChecks.length > 0 && (
+      {trace.autonomyChecks && trace.autonomyChecks.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-orange-500 mb-2 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4" /> Autonomy Checks
@@ -408,14 +408,14 @@ function ToolCallsTab({
   };
 
   const expandAll = () => {
-    setExpandedTools(new Set(trace.toolCalls.map((_, i) => i)));
+    setExpandedTools(new Set((trace.toolCalls ?? []).map((_, i) => i)));
   };
 
   const collapseAll = () => {
     setExpandedTools(new Set());
   };
 
-  if (trace.toolCalls.length === 0) {
+  if ((trace.toolCalls?.length ?? 0) === 0) {
     return (
       <div className="text-text-muted dark:text-dark-text-muted text-sm">
         No tool calls in this trace.
@@ -549,7 +549,7 @@ function ToolCallsTab({
 // ─────────────────────────────────────────────
 
 function ModelCallsTab({ trace }: { trace: TraceInfo }) {
-  if (trace.modelCalls.length === 0) {
+  if ((trace.modelCalls?.length ?? 0) === 0) {
     return (
       <div className="text-text-muted dark:text-dark-text-muted text-sm">
         No model calls in this trace.
@@ -639,7 +639,7 @@ function EventsTab({
     });
   };
 
-  if (trace.events.length === 0) {
+  if ((trace.events?.length ?? 0) === 0) {
     return (
       <div className="text-text-muted dark:text-dark-text-muted text-sm">
         No events in this trace.
@@ -648,7 +648,7 @@ function EventsTab({
   }
 
   const getToolCallDetails = (eventName: string) => {
-    return trace.toolCalls.find((tc) => tc.name === eventName);
+    return (trace.toolCalls ?? []).find((tc) => tc.name === eventName);
   };
 
   return (
@@ -799,10 +799,10 @@ function RequestResponseTab({ trace }: { trace: TraceInfo }) {
             {trace.request.tools && trace.request.tools.length > 0 && (
               <div className="px-4 py-3 border-t border-border dark:border-dark-border">
                 <span className="text-xs text-text-muted dark:text-dark-text-muted block mb-2">
-                  Tools ({trace.request.tools.length}):
+                  Tools ({(trace.request.tools ?? []).length}):
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {trace.request.tools.map((tool, i) => (
+                  {(trace.request.tools ?? []).map((tool, i) => (
                     <span
                       key={i}
                       className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs font-mono"

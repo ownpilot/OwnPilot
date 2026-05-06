@@ -72,6 +72,8 @@ import {
   executeClawTool,
   CLAW_MANAGEMENT_TOOLS,
   executeClawManagementTool,
+  INTERACTIVE_TOOLS,
+  executeInteractiveTool,
 } from './index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../services/config-tools.js';
 import type { ExtensionService } from '../services/extension-service.js';
@@ -323,6 +325,11 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
       definitions: CLAW_MANAGEMENT_TOOLS,
       executor: executeClawManagementTool,
       needsUserId: true,
+    },
+    {
+      definitions: INTERACTIVE_TOOLS,
+      executor: executeInteractiveTool as ToolExecutor,
+      needsUserId: false,
     },
   ];
 

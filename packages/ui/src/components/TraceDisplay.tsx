@@ -26,15 +26,20 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // Defensive: guard against undefined trace
+  if (!trace) {
+    return null;
+  }
+
   // Calculate summary stats
-  const totalInputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
-  const totalOutputTokens = trace.modelCalls.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
-  const totalTokens = trace.modelCalls.reduce(
+  const totalInputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
+  const totalOutputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
+  const totalTokens = (trace.modelCalls ?? []).reduce(
     (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
     0
   );
-  const hasErrors = trace.errors.length > 0;
-  const autonomyBlocked = trace.autonomyChecks.filter((a) => !a.approved).length;
+  const hasErrors = (trace.errors?.length ?? 0) > 0;
+  const autonomyBlocked = (trace.autonomyChecks?.filter((a) => !a.approved).length ?? 0);
   const hasRetries = (trace.retries?.length ?? 0) > 0;
   const mcpEventCount = trace.mcpToolEvents?.length ?? 0;
 
@@ -86,9 +91,9 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
               {trace.routing && (
                 <span className="flex items-center gap-1 text-purple-500">
                   <Filter className="w-3 h-3" />
-                  {trace.routing.suggestedTools?.length > 0
-                    ? `${trace.routing.suggestedTools.length} tools`
-                    : `${trace.routing.relevantExtensionIds.length} ext`}
+                  {(trace.routing.suggestedTools?.length ?? 0) > 0
+                    ? `${trace.routing.suggestedTools!.length} tools`
+                    : `${trace.routing.relevantExtensionIds?.length ?? 0} ext`}
                   {trace.routing.confidence > 0 && (
                     <span className="opacity-70">
                       ({Math.round(trace.routing.confidence * 100)}%)
@@ -114,7 +119,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
               {hasErrors && (
                 <span className="flex items-center gap-1 text-red-500">
                   <XCircle className="w-3 h-3" />
-                  {trace.errors.length}
+                  {trace.errors?.length}
                 </span>
               )}
             </div>
@@ -165,13 +170,13 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                   )}
 
                   {/* Extensions */}
-                  {trace.routing.relevantExtensionIds.length > 0 && (
+                  {(trace.routing.relevantExtensionIds?.length ?? 0) > 0 && (
                     <div>
                       <div className="text-xs text-text-muted dark:text-dark-text-muted mb-1">
                         Extensions:
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {trace.routing.relevantExtensionIds.map((id) => (
+                        {trace.routing.relevantExtensionIds!.map((id) => (
                           <span
                             key={id}
                             className="px-2 py-0.5 text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded font-mono"
@@ -224,7 +229,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
 
                   {/* Categories + confidence */}
                   <div className="flex flex-wrap gap-2">
-                    {trace.routing.relevantCategories.map((cat) => (
+                    {(trace.routing.relevantCategories?.length ?? 0) > 0 && trace.routing.relevantCategories!.map((cat) => (
                       <span
                         key={cat}
                         className="px-2 py-0.5 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded"
@@ -233,7 +238,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
                       </span>
                     ))}
                     <span className="px-2 py-0.5 text-xs bg-gray-500/10 text-text-muted dark:text-dark-text-muted rounded">
-                      confidence: {Math.round(trace.routing.confidence * 100)}%
+                      confidence: {Math.round((trace.routing.confidence ?? 0) * 100)}%
                     </span>
                   </div>
                 </div>
@@ -241,7 +246,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
             )}
 
             {/* Model Calls */}
-            {trace.modelCalls.length > 0 && (
+            {(trace.modelCalls?.length ?? 0) > 0 && (
               <TraceSection title="Model Calls" icon={<Brain className="w-4 h-4" />}>
                 <div className="space-y-1">
                   {trace.modelCalls.map((model, i) => (
@@ -273,7 +278,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
             )}
 
             {/* Autonomy Checks */}
-            {trace.autonomyChecks.length > 0 && (
+            {(trace.autonomyChecks?.length ?? 0) > 0 && (
               <TraceSection title="Autonomy Checks" icon={<AlertTriangle className="w-4 h-4" />}>
                 <div className="space-y-1">
                   {trace.autonomyChecks.map((check, i) => (
@@ -303,10 +308,10 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
             )}
 
             {/* Database & Memory Operations */}
-            {(trace.dbOperations.reads > 0 ||
-              trace.dbOperations.writes > 0 ||
-              trace.memoryOps.adds > 0 ||
-              trace.memoryOps.recalls > 0) && (
+            {(trace.dbOperations?.reads > 0 ||
+              trace.dbOperations?.writes > 0 ||
+              trace.memoryOps?.adds > 0 ||
+              trace.memoryOps?.recalls > 0) && (
               <TraceSection title="Operations" icon={<Database className="w-4 h-4" />}>
                 <div className="flex flex-wrap gap-2">
                   {trace.dbOperations.reads > 0 && (
@@ -334,7 +339,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
             )}
 
             {/* Triggers Fired */}
-            {trace.triggersFired.length > 0 && (
+            {(trace.triggersFired?.length ?? 0) > 0 && (
               <TraceSection title="Triggers Fired" icon={<Zap className="w-4 h-4" />}>
                 <div className="flex flex-wrap gap-1">
                   {trace.triggersFired.map((trigger, i) => (
@@ -397,7 +402,7 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
             )}
 
             {/* Errors */}
-            {trace.errors.length > 0 && (
+            {trace.errors && trace.errors.length > 0 && (
               <TraceSection title="Errors" icon={<XCircle className="w-4 h-4 text-red-500" />}>
                 <div className="space-y-1">
                   {trace.errors.map((error, i) => (
@@ -560,7 +565,7 @@ function EventsSection({ events, toolCalls = [] }: EventsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
 
-  if (events.length === 0) return null;
+  if (!events || events.length === 0) return null;
 
   const toggleEventExpanded = (index: number) => {
     setExpandedEvents((prev) => {

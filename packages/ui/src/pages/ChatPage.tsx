@@ -1053,6 +1053,10 @@ export function ChatPage() {
                   onRetry={retryLastMessage}
                   canRetry={!!lastFailedMessage && !isLoading}
                   workspaceId={workspaceId || sessionId}
+                  onSuggestionSelect={(_title, detail) => {
+                    clearSuggestions();
+                    chatInputRef.current?.setValue(detail);
+                  }}
                 />
 
                 {/* Streaming content and progress */}

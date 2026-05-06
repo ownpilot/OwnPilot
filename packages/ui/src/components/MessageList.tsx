@@ -13,8 +13,10 @@ import {
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
 import { MarkdownContent } from './MarkdownContent';
+import { ChatMessageWidget } from './ChatMessageWidget';
+import { SuggestionChips } from './SuggestionChips';
 import { VoicePlayButton } from './VoicePlayButton';
-import { stripChatInternalTags } from '../utils/chat-content';
+import { stripChatInternalTags, parseMarkers, type ParsedMarkerWidget } from '../utils/chat-content';
 import type { Message } from '../types';
 
 interface MessageListProps {
@@ -23,9 +25,17 @@ interface MessageListProps {
   canRetry?: boolean;
   /** Workspace ID for resolving relative image paths */
   workspaceId?: string | null;
+  /** Called when user clicks a suggestion chip from marker-based suggestions */
+  onSuggestionSelect?: (title: string, detail: string) => void;
 }
 
-export function MessageList({ messages, onRetry, canRetry, workspaceId }: MessageListProps) {
+export function MessageList({
+  messages,
+  onRetry,
+  canRetry,
+  workspaceId,
+  onSuggestionSelect,
+}: MessageListProps) {
   return (
     <div className="space-y-6">
       {messages.map((message, index) => (
@@ -35,6 +45,7 @@ export function MessageList({ messages, onRetry, canRetry, workspaceId }: Messag
           onRetry={onRetry}
           showRetry={canRetry && message.isError && index === messages.length - 1}
           workspaceId={workspaceId}
+          onSuggestionSelect={onSuggestionSelect}
         />
       ))}
     </div>
@@ -46,9 +57,16 @@ interface MessageBubbleProps {
   onRetry?: () => void;
   showRetry?: boolean;
   workspaceId?: string | null;
+  onSuggestionSelect?: (title: string, detail: string) => void;
 }
 
-function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubbleProps) {
+function MessageBubble({
+  message,
+  onRetry,
+  showRetry,
+  workspaceId,
+  onSuggestionSelect,
+}: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [toolCallsExpanded, setToolCallsExpanded] = useState(false);
@@ -67,6 +85,9 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
         .replace(/\n---\n\[TOOL CATALOG[\s\S]*$/, '')
         .trim()
     : message.content;
+
+  // Parse markers from assistant messages — extract interactive widgets and suggestions
+  const { widgets, suggestions } = !isUser ? parseMarkers(strippedContent) : { widgets: [], suggestions: [] };
   const displayContent = isUser ? strippedContent : stripChatInternalTags(strippedContent);
 
   const copyToClipboard = async () => {
@@ -136,6 +157,28 @@ function MessageBubble({ message, onRetry, showRetry, workspaceId }: MessageBubb
             </div>
           );
         })()}
+
+        {/* Render marker-based widgets inline after the message bubble */}
+        {!isUser && widgets.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {widgets.map((widget: ParsedMarkerWidget) => (
+              <ChatMessageWidget key={widget.id} name={widget.name} data={widget.data} />
+            ))}
+          </div>
+        )}
+
+        {/* Render marker-based suggestions as clickable chips */}
+        {!isUser && suggestions.length > 0 && onSuggestionSelect && (
+          <div className="mt-2">
+            {suggestions.map((s, i) => (
+              <SuggestionChips
+                key={i}
+                suggestions={s.items}
+                onSelect={(item) => onSuggestionSelect(item.title, item.detail)}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Attached context indicator */}
         {hasAttachedContext && (

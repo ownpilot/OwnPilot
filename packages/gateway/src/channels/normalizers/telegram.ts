@@ -10,6 +10,7 @@ import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/cor
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
+import { normalizeChatWidgets } from '../../utils/chat-widgets.js';
 
 const TELEGRAM_MAX_LENGTH = PLATFORM_MESSAGE_LIMITS.telegram ?? 4096;
 
@@ -77,6 +78,9 @@ export const telegramNormalizer: ChannelNormalizer = {
     let cleaned = stripInternalTags(response);
 
     if (!cleaned) return [];
+
+    // Normalize chat widgets (JSX-style <metric_grid>, <list>, etc. → canonical <widget>)
+    cleaned = normalizeChatWidgets(cleaned);
 
     // Decode any HTML entities that might have been escaped
     // (e.g., &lt;b&gt; → <b>)

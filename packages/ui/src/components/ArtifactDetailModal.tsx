@@ -129,14 +129,26 @@ export function ArtifactDetailModal({
   }, [currentArtifact]);
 
   const handleOpenInNewTab = useCallback(() => {
+    if (!currentArtifact) return;
     if (currentArtifact.type === 'html') {
       const blob = new Blob([currentArtifact.content], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      const opened = window.open(url, '_blank');
+      // Revoke immediately — browsers that support navigation tracking revoke on close
+      if (opened) {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        URL.revokeObjectURL(url);
+      }
     } else if (currentArtifact.type === 'svg') {
       const blob = new Blob([currentArtifact.content], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      const opened = window.open(url, '_blank');
+      if (opened) {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        URL.revokeObjectURL(url);
+      }
     } else {
       toast.info('Open in new tab only available for HTML and SVG artifacts');
     }

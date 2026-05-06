@@ -10,6 +10,7 @@ import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/cor
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
+import { normalizeChatWidgets } from '../../utils/chat-widgets.js';
 
 const WHATSAPP_MAX_LENGTH = PLATFORM_MESSAGE_LIMITS.whatsapp ?? 4096;
 
@@ -62,6 +63,9 @@ export const whatsappNormalizer: ChannelNormalizer = {
   normalizeOutgoing(response: string): string[] {
     let cleaned = stripInternalTags(response);
     if (!cleaned) return [];
+
+    // Normalize chat widgets (JSX-style <metric_grid>, <list>, etc. → canonical <widget>)
+    cleaned = normalizeChatWidgets(cleaned);
 
     // Convert standard Markdown to WhatsApp formatting
     cleaned = markdownToWhatsApp(cleaned);

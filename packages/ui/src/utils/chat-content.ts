@@ -87,6 +87,91 @@ export function hideIncompleteStreamingWidgets(content: string): string {
   return content.slice(0, pendingWidgetStart).trimEnd();
 }
 
+// Marker patterns (streaming-friendly, unambiguous)
+const MARKER_WIDGET_REGEX = /<!--WIDGET#(\d+)#([\s\S]*?)<!--WIDGET#\1#END-->/g;
+const MARKER_SUGGESTIONS_REGEX = /<!--SUGGESTIONS#START-->([\s\S]*?)<!--SUGGESTIONS#END-->/g;
+
+export interface ParsedMarkerWidget {
+  type: 'widget';
+  id: number;
+  name: string;
+  data: unknown;
+  markerText: string;
+}
+
+export interface ParsedMarkerSuggestion {
+  type: 'suggestion';
+  items: Array<{ title: string; detail: string }>;
+  markerText: string;
+}
+
+const parseMarkerData = (inner: string): Array<{ title: string; detail: string }> => {
+  try {
+    const parsed = JSON.parse(inner);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => ({
+        title: typeof item === 'string' ? item : (item.title ?? String(item)),
+        detail: typeof item === 'object' ? (item.detail ?? item.description ?? '') : '',
+      }));
+    }
+  } catch {
+    /* fall through to line parsing */
+  }
+  return inner.split('\n').filter(Boolean).map((line) => {
+    try {
+      const obj = JSON.parse(line);
+      return { title: obj.title ?? line, detail: obj.detail ?? obj.description ?? '' };
+    } catch {
+      return { title: line, detail: '' };
+    }
+  });
+};
+
+const parseMarkerWidgetData = (dataStr: string): unknown => {
+  try {
+    return JSON.parse(dataStr);
+  } catch {
+    return dataStr;
+  }
+};
+
+/** Parse widget and suggestion markers — returns clean text and interactive elements */
+export function parseMarkers(content: string): {
+  widgets: ParsedMarkerWidget[];
+  suggestions: ParsedMarkerSuggestion[];
+} {
+  const widgets: ParsedMarkerWidget[] = [];
+  const suggestions: ParsedMarkerSuggestion[] = [];
+
+  let match: RegExpExecArray | null;
+
+  MARKER_WIDGET_REGEX.lastIndex = 0;
+  while ((match = MARKER_WIDGET_REGEX.exec(content)) !== null) {
+    const id = parseInt(match[1]!, 10);
+    const inner = match[2]!;
+    const sep = inner.indexOf('#');
+    if (sep === -1) continue;
+    const name = inner.slice(0, sep).trim();
+    const dataStr = inner.slice(sep + 1);
+    widgets.push({ type: 'widget', id, name, data: parseMarkerWidgetData(dataStr), markerText: match[0] });
+  }
+
+  MARKER_SUGGESTIONS_REGEX.lastIndex = 0;
+  while ((match = MARKER_SUGGESTIONS_REGEX.exec(content)) !== null) {
+    suggestions.push({ type: 'suggestion', items: parseMarkerData(match[1]!), markerText: match[0] });
+  }
+
+  return { widgets, suggestions };
+}
+
+/** Remove all marker tags — returns pure text */
+export function stripMarkerTags(content: string): string {
+  return content
+    .replace(MARKER_WIDGET_REGEX, '')
+    .replace(MARKER_SUGGESTIONS_REGEX, '')
+    .trim();
+}
+
 export function stripChatInternalTags(content: string): string {
   return content
     .replace(/<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/gi, '')
