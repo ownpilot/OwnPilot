@@ -56,6 +56,30 @@ describe('ChatMessageWidget', () => {
     expect(html).toContain('broken json');
   });
 
+  it('promotes string items in cards to titled records', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget name="cards" data={{ items: ['Privacy first', 'Local-only'] }} />
+    );
+
+    expect(html).toContain('Privacy first');
+    expect(html).toContain('Local-only');
+    expect(html).not.toContain('<pre');
+  });
+
+  it('promotes "key: value" strings in key_value to records', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget
+        name="key_value"
+        data={{ items: ['OS: Windows', 'Node.js: v24'] }}
+      />
+    );
+
+    expect(html).toContain('OS');
+    expect(html).toContain('Windows');
+    expect(html).toContain('Node.js');
+    expect(html).not.toContain('<pre');
+  });
+
   it('renders key-value items instead of falling back to JSON', () => {
     const html = renderToStaticMarkup(
       <ChatMessageWidget

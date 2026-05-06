@@ -331,7 +331,20 @@ function KeyValueWidget({ data }: { data: unknown }) {
   const entriesSource = Array.isArray(data)
     ? data
     : (record.items ?? record.entries ?? record.facts);
-  const entries = asArray(entriesSource).filter(isRecord).slice(0, 24);
+  const entries = asArray(entriesSource)
+    .map((entry) => {
+      if (isRecord(entry)) return entry;
+      // Promote `"key: value"` strings to records so we don't drop loose LLM output.
+      if (typeof entry === 'string') {
+        const colonAt = entry.indexOf(':');
+        return colonAt > 0
+          ? { key: entry.slice(0, colonAt).trim(), value: entry.slice(colonAt + 1).trim() }
+          : { value: entry };
+      }
+      return null;
+    })
+    .filter(isRecord)
+    .slice(0, 24);
 
   if (entries.length === 0) {
     warnFallback('key_value', 'no entries after filter', data);
@@ -372,6 +385,12 @@ function CardsWidget({ data }: { data: unknown }) {
   const record = isRecord(data) ? data : {};
   const title = asText(record.title);
   const items = asArray(Array.isArray(data) ? data : (record.items ?? record.cards))
+    .map((item) => {
+      if (isRecord(item)) return item;
+      // Promote bare strings to a card-shaped record so the widget still renders.
+      if (typeof item === 'string') return { title: item };
+      return null;
+    })
     .filter(isRecord)
     .slice(0, 9);
 
