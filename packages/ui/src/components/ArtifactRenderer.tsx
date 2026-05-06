@@ -95,7 +95,7 @@ function SvgRenderer({ content, className, fullWidth }: { content: string; class
   return (
     <iframe
       srcDoc={srcdoc}
-      sandbox=""
+      sandbox="allow-scripts"
       className={`w-full border-0 rounded-lg bg-white dark:bg-dark-bg-tertiary ${className ?? ''}`}
       style={{ minHeight: fullWidth ? 300 : 150 }}
       title="SVG Artifact"

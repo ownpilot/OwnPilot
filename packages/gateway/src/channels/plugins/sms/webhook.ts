@@ -11,7 +11,7 @@
  */
 
 import { Hono } from 'hono';
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
 import { getChannelService } from '@ownpilot/core';
@@ -42,7 +42,12 @@ function validateTwilioSignature(
   }
 
   const expected = createHmac('sha1', authToken).update(data).digest('base64');
-  return expected === signature;
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  return (
+    expectedBuf.length === signatureBuf.length &&
+    timingSafeEqual(expectedBuf, signatureBuf)
+  );
 }
 
 /**
