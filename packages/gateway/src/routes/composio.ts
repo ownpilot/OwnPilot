@@ -203,14 +203,25 @@ composioRoutes.post('/connections/:id/refresh', async (c) => {
 // GET /callback — OAuth callback handler (redirects back to UI)
 // =============================================================================
 
-composioRoutes.get('/callback', (c) => {
+composioRoutes.get('/callback', async (c) => {
   const status = c.req.query('status') ?? 'unknown';
   const appName = c.req.query('appName') ?? '';
+
+  // Validate appName against known Composio apps to prevent open redirect
+  let safeAppName = '';
+  if (appName) {
+    try {
+      const apps = await composioService.getAvailableApps();
+      safeAppName = apps.some((a) => a.slug === appName) ? appName : '';
+    } catch {
+      safeAppName = '';
+    }
+  }
 
   // Redirect back to UI Connected Apps page
   const uiPort = process.env.UI_PORT ?? '5173';
   const uiHost = process.env.UI_HOST ?? `http://localhost:${uiPort}`;
-  const redirectUrl = `${uiHost}/settings/connected-apps?connected=${encodeURIComponent(appName)}&status=${encodeURIComponent(status)}`;
+  const redirectUrl = `${uiHost}/settings/connected-apps${safeAppName ? `?connected=${encodeURIComponent(safeAppName)}&status=${encodeURIComponent(status)}` : `?status=${encodeURIComponent(status)}`}`;
 
   return c.redirect(redirectUrl);
 });

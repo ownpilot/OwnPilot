@@ -6,7 +6,7 @@
 
 import { Hono } from 'hono';
 import { ChannelBridgesRepository } from '../db/repositories/channel-bridges.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getUserId } from './helpers.js';
 import { validateBody, updateBridgeSchema } from '../middleware/validation.js';
 
 export const bridgeRoutes = new Hono();
@@ -39,10 +39,16 @@ bridgeRoutes.get('/', async (c) => {
 bridgeRoutes.get('/:id', async (c) => {
   try {
     const repo = getRepo();
-    const bridge = await repo.getById(c.req.param('id'));
+    const userId = getUserId(c);
+    const id = c.req.param('id');
 
+    const bridge = await repo.getById(id);
     if (!bridge) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bridge not found' }, 404);
+    }
+
+    if (!(await repo.isOwnedByUser(id, userId))) {
+      return apiError(c, { code: ERROR_CODES.FORBIDDEN, message: 'Access denied' }, 403);
     }
 
     return apiResponse(c, bridge);
@@ -130,11 +136,16 @@ bridgeRoutes.post('/', async (c) => {
 bridgeRoutes.patch('/:id', async (c) => {
   try {
     const repo = getRepo();
+    const userId = getUserId(c);
     const id = c.req.param('id');
 
     const existing = await repo.getById(id);
     if (!existing) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bridge not found' }, 404);
+    }
+
+    if (!(await repo.isOwnedByUser(id, userId))) {
+      return apiError(c, { code: ERROR_CODES.FORBIDDEN, message: 'Access denied' }, 403);
     }
 
     const body = validateBody(updateBridgeSchema, await c.req.json());
@@ -171,11 +182,16 @@ bridgeRoutes.patch('/:id', async (c) => {
 bridgeRoutes.delete('/:id', async (c) => {
   try {
     const repo = getRepo();
+    const userId = getUserId(c);
     const id = c.req.param('id');
 
     const existing = await repo.getById(id);
     if (!existing) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Bridge not found' }, 404);
+    }
+
+    if (!(await repo.isOwnedByUser(id, userId))) {
+      return apiError(c, { code: ERROR_CODES.FORBIDDEN, message: 'Access denied' }, 403);
     }
 
     await repo.remove(id);

@@ -20,6 +20,7 @@ const mockRepo = {
   save: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
+  isOwnedByUser: vi.fn(),
 };
 
 vi.mock('../db/repositories/channel-bridges.js', () => ({
@@ -71,6 +72,8 @@ describe('Bridge Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: user owns the bridge
+    mockRepo.isOwnedByUser.mockResolvedValue(true);
     app = createApp();
   });
 

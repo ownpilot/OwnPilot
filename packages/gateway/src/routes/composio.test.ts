@@ -209,6 +209,10 @@ describe('Composio Routes', () => {
   // ========================================================================
 
   describe('GET /composio/callback', () => {
+    beforeEach(() => {
+      mockComposioService.getAvailableApps.mockResolvedValue(sampleApps);
+    });
+
     it('redirects to UI with connection info', async () => {
       const res = await app.request('/composio/callback?appName=github&status=ACTIVE');
       expect(res.status).toBe(302);

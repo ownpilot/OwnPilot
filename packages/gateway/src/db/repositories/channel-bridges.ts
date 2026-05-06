@@ -58,6 +58,23 @@ export class ChannelBridgesRepository extends BaseRepository implements BridgeSt
     return row ? rowToBridge(row) : null;
   }
 
+  /**
+   * Check if a bridge is owned by a user — user must have at least one active
+   * channel session (via channel_users → channel_sessions) for either the
+   * source or target channel of the bridge.
+   */
+  async isOwnedByUser(bridgeId: string, userId: string): Promise<boolean> {
+    const bridge = await this.getById(bridgeId);
+    if (!bridge) return false;
+    const rows = await this.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM channel_sessions cs
+       JOIN channel_users cu ON cu.id = cs.channel_user_id
+       WHERE cs.channel_plugin_id IN ($1, $2) AND cu.ownpilot_user_id = $3`,
+      [bridge.sourceChannelId, bridge.targetChannelId, userId]
+    );
+    return parseInt(rows[0]?.count ?? '0', 10) > 0;
+  }
+
   async getByChannel(channelId: string): Promise<UCPBridgeConfig[]> {
     const rows = await this.query<BridgeRow>(
       `SELECT * FROM channel_bridges
