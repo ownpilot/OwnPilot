@@ -37,6 +37,7 @@ import type { McpToolEvent } from '../mcp/mcp-events.js';
 export function extractToolDisplay(toolCall: ToolCall): {
   displayName: string;
   displayArgs?: Record<string, unknown>;
+  reason?: string;
 } {
   let parsedArgs: Record<string, unknown> | undefined;
   try {
@@ -52,7 +53,12 @@ export function extractToolDisplay(toolCall: ToolCall): {
     toolCall.name === 'use_tool' && parsedArgs?.arguments
       ? (parsedArgs.arguments as Record<string, unknown>)
       : parsedArgs;
-  return { displayName, displayArgs };
+  const reason = displayArgs?._reason as string | undefined;
+  const cleanArgs =
+    displayArgs && reason !== undefined
+      ? Object.fromEntries(Object.entries(displayArgs).filter(([k]) => k !== '_reason'))
+      : displayArgs;
+  return { displayName, displayArgs: cleanArgs, reason };
 }
 
 /**
@@ -121,6 +127,7 @@ export interface StreamState {
     success: boolean;
     duration?: number;
     startTime?: number;
+    reason?: string;
   }>;
   startTime: number;
   /** Raw content before think-tag stripping (for think-tag state detection) */
@@ -201,18 +208,19 @@ export function createStreamCallbacks(config: StreamingConfig): {
         };
 
         if (phase === 'tool_start') {
-          const { displayName, displayArgs } = extractToolDisplay(toolCall);
+          const { displayName, displayArgs, reason } = extractToolDisplay(toolCall);
           state.traceToolCalls.push({
             name: displayName,
             arguments: displayArgs,
             success: true,
             startTime: performance.now(),
+            reason,
           });
 
           sseStream.writeSSE({
             data: JSON.stringify({
               type: 'tool_start',
-              tool: { id: toolCall.id, name: displayName, arguments: displayArgs },
+              tool: { id: toolCall.id, name: displayName, arguments: displayArgs, reason },
               timestamp: new Date().toISOString(),
             }),
             event: 'progress',
@@ -241,7 +249,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
           sseStream.writeSSE({
             data: JSON.stringify({
               type: 'tool_end',
-              tool: { id: toolCall.id, name: displayName },
+              tool: { id: toolCall.id, name: displayName, reason: traceEntry?.reason },
               result: {
                 success: result.success !== false,
                 preview: String(result.preview ?? ''),
@@ -442,13 +450,14 @@ export function createStreamCallbacks(config: StreamingConfig): {
     },
 
     onToolStart(toolCall: ToolCall) {
-      const { displayName, displayArgs } = extractToolDisplay(toolCall);
+      const { displayName, displayArgs, reason } = extractToolDisplay(toolCall);
 
       state.traceToolCalls.push({
         name: displayName,
         arguments: displayArgs,
         success: true,
         startTime: performance.now(),
+        reason,
       });
 
       sseStream.writeSSE({
@@ -458,6 +467,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
             id: toolCall.id,
             name: displayName,
             arguments: displayArgs,
+            reason,
           },
           timestamp: new Date().toISOString(),
         }),
@@ -498,6 +508,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
           tool: {
             id: toolCall.id,
             name: displayName,
+            reason: traceEntry?.reason,
           },
           result: {
             success: !(result.isError ?? false),
