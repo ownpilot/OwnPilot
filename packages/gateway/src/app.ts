@@ -221,9 +221,10 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     app.use('*', logger());
   }
 
-  // Rate limiting
+  // Rate limiting — webhooks too (brute-force / abuse protection on external endpoints)
   if (fullConfig.rateLimit) {
     app.use('/api/*', createRateLimitMiddleware(fullConfig.rateLimit));
+    app.use('/webhooks/*', createRateLimitMiddleware(fullConfig.rateLimit));
   }
 
   // ORDER MATTERS - Authentication middleware sequence:
