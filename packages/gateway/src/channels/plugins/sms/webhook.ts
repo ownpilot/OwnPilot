@@ -11,8 +11,7 @@
  */
 
 import { Hono } from 'hono';
-import { createHmac, timingSafeEqual } from 'node:crypto';
-import { randomUUID } from 'node:crypto';
+import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
 import { getChannelService } from '@ownpilot/core';
 import { getChannelServiceImpl } from '../../service-impl.js';
