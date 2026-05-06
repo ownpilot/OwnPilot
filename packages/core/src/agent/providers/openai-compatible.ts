@@ -504,6 +504,12 @@ export class OpenAICompatibleProvider {
         );
       }
 
+      // A tool role message without toolResults is structurally invalid for OpenAI (code 1214).
+      // Skip it rather than sending an invalid payload.
+      if (msg.role === 'tool') {
+        return [];
+      }
+
       const rawContent =
         typeof msg.content === 'string'
           ? msg.content

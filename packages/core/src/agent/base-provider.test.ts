@@ -528,13 +528,11 @@ describe('BaseProvider', () => {
       expect(result[0].tool_calls).toBeUndefined();
     });
 
-    it('handles tool role message without toolResults (non-expanded path)', () => {
+    it('skips tool role message without toolResults (invalid for OpenAI code 1214)', () => {
       const messages: Message[] = [{ role: 'tool', content: 'raw tool content' }];
 
       const result = provider.testBuildMessages(messages);
-      expect(result).toHaveLength(1);
-      expect(result[0].role).toBe('tool');
-      expect(result[0].content).toBe('raw tool content');
+      expect(result).toHaveLength(0);
     });
   });
 
