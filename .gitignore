@@ -131,3 +131,6 @@ docs/T4F-POC-*.md
 **/POSTMORTEM-*.md
 
 .dfmt/
+
+# Security review output — generated, not source
+security-report/
