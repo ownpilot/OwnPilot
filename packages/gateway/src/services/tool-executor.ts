@@ -53,6 +53,8 @@ import {
   getRequiredPermission,
   logPermissionDenied,
 } from './extension-permissions.js';
+import { createHash } from 'node:crypto';
+import { getIdempotencyKeysRepository } from '../db/repositories/idempotency-keys.js';
 
 const log = getLog('ToolExecutor');
 
@@ -563,8 +565,29 @@ export async function executeTool(
     }
   }
 
+  // Idempotency: check for cached result to avoid duplicate execution
+  const idempotencyKey = `tool:${createHash('sha256').update(`${userId}:${toolName}:${JSON.stringify(args)}`).digest('hex')}`;
+  try {
+    const idempotencyRepo = getIdempotencyKeysRepository();
+    const cached = await idempotencyRepo.getRecord(idempotencyKey);
+    if (cached) {
+      log.debug(`Idempotency hit for ${toolName}`);
+      return cached.result as ToolExecutionResult;
+    }
+  } catch {
+    // Idempotency failures should not block tool execution
+  }
+
   const start = Date.now();
   const result = await executeToolInternal(toolName, args, userId, executionPermissions);
+
+  // Store result for idempotency (fire-and-forget)
+  try {
+    const idempotencyRepo = getIdempotencyKeysRepository();
+    idempotencyRepo.setRecord(idempotencyKey, result).catch(() => {});
+  } catch {
+    // Idempotency store failures should not affect tool result
+  }
 
   // Audit log (fire-and-forget)
   if (hasServiceRegistry()) {

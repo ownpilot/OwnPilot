@@ -96,6 +96,15 @@ vi.mock('./email-overrides.js', () => ({ registerEmailOverrides: vi.fn(async () 
 vi.mock('./audio-overrides.js', () => ({ registerAudioOverrides: vi.fn(async () => {}) }));
 vi.mock('./expense-overrides.js', () => ({ registerExpenseOverrides: vi.fn() }));
 
+const mockIdempotencyRepo = {
+  getRecord: vi.fn(async () => null),
+  setRecord: vi.fn(async () => {}),
+};
+
+vi.mock('../db/repositories/idempotency-keys.js', () => ({
+  getIdempotencyKeysRepository: vi.fn(() => mockIdempotencyRepo),
+}));
+
 vi.mock('../db/repositories/extensions.js', () => ({
   extensionsRepo: {
     getById: vi.fn(() => ({
@@ -218,6 +227,9 @@ describe('Tool Executor', () => {
     mockPluginService.getEnabled.mockReturnValue([]);
     // Reset mockToolRegistry.has — vi.clearAllMocks() clears calls but not mockReturnValue overrides
     mockToolRegistry.has.mockReset();
+    // Reset idempotency repo mocks
+    mockIdempotencyRepo.getRecord.mockResolvedValue(null);
+    mockIdempotencyRepo.setRecord.mockResolvedValue(undefined);
     // Restore functions overridden by individual tests
     vi.mocked(hasServiceRegistry).mockReturnValue(true);
     // Restore getServiceRegistry to default mock (tests may override it via mockReturnValue)
