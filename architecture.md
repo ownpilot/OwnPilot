@@ -1687,7 +1687,7 @@ import { fc } from 'fast-check';
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | Pending |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
-| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Partially done (idempotency keys table + webhook HMAC in place; v2 strategy pending)** |
+| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC verification; v2 strategy pending)** |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
 | 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Done (sandbox part)** |
 | 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
@@ -1761,9 +1761,10 @@ Repository methods added:
 - Used by: ClawManager.tracks, FleetManager.fleets, DynamicToolRegistry, idempotency keys, embedding cache
 - Addresses: unbounded in-memory collections identified in gap 24.5
 
-**P2 — 24.7 Idempotency Keys (partial):**
+**P2 — 24.7 Idempotency Keys:**
 - `packages/gateway/src/db/migrations/postgres/030_idempotency_keys.sql` — idempotency_keys table (TEXT PK, JSONB result, expires_at with index)
 - `packages/gateway/src/db/repositories/idempotency-keys.ts` — IdempotencyKeysRepository: getRecord, setRecord, deleteKey, purgeExpired, countActive
+- `packages/gateway/src/db/schema/core.ts` — idempotency_keys table added to CORE_TABLES_SQL (fresh installs); idx_idempotency_expires_at index added to CORE_INDEXES_SQL
 - 24h TTL on all keys; purgeExpired() called periodically to keep table bounded
 - Existing webhook signature validation: Slack (HMAC-SHA256 via createHmac), Telegram (path secret via safeKeyCompare), Trigger (HMAC-SHA256), Email (secret via safeKeyCompare)
 - Missing: API-level Idempotency-Key middleware for chat endpoints, v2 versioning strategy
