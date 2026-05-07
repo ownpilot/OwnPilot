@@ -68,6 +68,19 @@ export function ChatWidget() {
   const reconnectAttempt = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Knight Rider animation styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes knightRider {
+        0%, 100% { opacity: 0.2; transform: scaleY(0.6); }
+        50% { opacity: 1; transform: scaleY(1.4); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
   // Status helper
   const isConnected = status === 'connected';
 
@@ -273,33 +286,60 @@ const sendMessage = useCallback(() => {
   }
 
   // Expanded chat panel
+  const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
+  const waitingForResponse = isTyping || (lastUserMessage && !messages.find(m => m.sender === 'assistant' && m.timestamp > lastUserMessage.timestamp));
+
   return (
     <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-primary text-white rounded-t-2xl">
+      <div className={`flex items-center justify-between px-4 py-3 rounded-t-2xl transition-colors ${
+        waitingForResponse ? 'bg-amber-500' : 'bg-primary'
+      }`}>
         <div className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          <span className="font-medium text-sm">OwnPilot Chat</span>
-          <span className={`w-2 h-2 rounded-full ${
-            status === 'connected' ? 'bg-green-400' :
-            status === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
-            status === 'connecting' ? 'bg-yellow-400' :
-            'bg-red-400'
-          }`} />
-          {status === 'reconnecting' && (
-            <span className="text-xs text-white/70">Reconnecting...</span>
+          {waitingForResponse ? (
+            // Processing animation — Knight Rider / KITT scanner
+            <div className="flex items-center gap-1">
+              <div className="flex gap-0.5">
+                {[0, 1, 2, 3, 4, 5].map(i => (
+                  <span
+                    key={i}
+                    className="w-1.5 h-4 bg-black/30 rounded-sm"
+                    style={{
+                      animation: `knightRider 1.2s ease-in-out infinite`,
+                      animationDelay: `${i * 80}ms`,
+                      opacity: 0.4,
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="font-medium text-sm text-white/90">Processing</span>
+            </div>
+          ) : (
+            <>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+              <span className="font-medium text-sm">OwnPilot Chat</span>
+              <span className={`w-2 h-2 rounded-full ${
+                status === 'connected' ? 'bg-green-400' :
+                status === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
+                status === 'connecting' ? 'bg-yellow-400' :
+                'bg-red-400'
+              }`} />
+              {status === 'reconnecting' && (
+                <span className="text-xs text-white/70">Reconnecting...</span>
+              )}
+            </>
           )}
         </div>
         <button
@@ -408,7 +448,12 @@ const sendMessage = useCallback(() => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isConnected ? 'Type a message...' : 'Connecting...'}
+            placeholder={
+              status === 'connected' ? 'Type a message...' :
+              status === 'reconnecting' ? 'Reconnecting...' :
+              status === 'connecting' ? 'Connecting...' :
+              'Disconnected'
+            }
             disabled={!isConnected}
             className="flex-1 px-3 py-2 text-sm rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
           />
