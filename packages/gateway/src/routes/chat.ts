@@ -185,6 +185,31 @@ chatRoutes.post('/', async (c) => {
     workspaceId?: string;
   };
 
+  // Idempotency: deduplicate retried requests via Idempotency-Key header
+  const idempotencyKey = c.req.header('Idempotency-Key');
+  if (idempotencyKey) {
+    try {
+      const idempotencyRepo = (await import('../db/repositories/idempotency-keys.js')).getIdempotencyKeysRepository();
+      const cached = await idempotencyRepo.getRecord(idempotencyKey);
+      if (cached) {
+        const result = cached.result as { id: string; conversationId: string; message: string; response: string; model: string; toolCalls: unknown[]; usage: unknown; processingTime: number };
+        return apiResponse(c, {
+          id: result.id,
+          conversationId: result.conversationId,
+          message: result.message,
+          response: result.response,
+          model: result.model,
+          toolCalls: result.toolCalls,
+          usage: result.usage,
+          processingTime: result.processingTime,
+          cached: true,
+        });
+      }
+    } catch {
+      // Idempotency failures should not block the request
+    }
+  }
+
   // Resolve provider and model: explicit request body > per-process routing > global default
   let provider: string;
   let model: string;
@@ -769,33 +794,42 @@ chatRoutes.post('/', async (c) => {
     // Post-processing middleware skips web UI memory extraction — run it here.
     runPostChatProcessing(userId, body.message, busCleanContent, busToolCalls as never);
 
+    // Build response object (used for both JSON return and idempotency cache)
+    const responseObj = {
+      id: busResult.response.id,
+      conversationId: conversation.id,
+      message: busCleanContent,
+      response: busCleanContent,
+      model,
+      toolCalls:
+        (busToolCalls as Array<{
+          id: string;
+          name: string;
+          arguments: Record<string, unknown>;
+        }>) ?? undefined,
+      usage: busUsage
+        ? {
+            promptTokens: busUsage.input,
+            completionTokens: busUsage.output,
+            totalTokens: busUsage.input + busUsage.output,
+          }
+        : undefined,
+      finishReason: 'stop',
+      session: getSessionInfo(agent, provider, model, userContextWindow),
+      suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
+      memories: busMemories.length > 0 ? busMemories : undefined,
+      trace: busTrace,
+    };
+
+    // Store idempotency result before returning (fire-and-forget)
+    if (idempotencyKey) {
+      const idempotencyRepo = (await import('../db/repositories/idempotency-keys.js')).getIdempotencyKeysRepository();
+      idempotencyRepo.setRecord(idempotencyKey, responseObj).catch(() => {});
+    }
+
     return c.json({
       success: true,
-      data: {
-        id: busResult.response.id,
-        conversationId: conversation.id,
-        message: busCleanContent,
-        response: busCleanContent,
-        model,
-        toolCalls:
-          (busToolCalls as Array<{
-            id: string;
-            name: string;
-            arguments: Record<string, unknown>;
-          }>) ?? undefined,
-        usage: busUsage
-          ? {
-              promptTokens: busUsage.input,
-              completionTokens: busUsage.output,
-              totalTokens: busUsage.input + busUsage.output,
-            }
-          : undefined,
-        finishReason: 'stop',
-        session: getSessionInfo(agent, provider, model, userContextWindow),
-        suggestions: busSuggestions.length > 0 ? busSuggestions : undefined,
-        memories: busMemories.length > 0 ? busMemories : undefined,
-        trace: busTrace,
-      },
+      data: responseObj,
       meta: {
         requestId,
         timestamp: new Date().toISOString(),
