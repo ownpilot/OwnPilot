@@ -20,6 +20,7 @@ import {
   EmbedWidget,
   ChartWidget,
   HtmlWidget as HtmlWidgetComponent,
+  WidgetErrorBoundary,
 } from './widgets';
 import type { WidgetTone } from './widgets/widget-types';
 
@@ -734,63 +735,143 @@ export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
     case 'metrics':
     case 'metric_grid':
     case 'stats':
-      return <MetricGrid data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <MetricGrid data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'table':
-      return <TableWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <TableWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'list':
-      return <ListWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <ListWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'checklist':
-      return <ListWidget data={renderData} checklist />;
+      return (
+        <WidgetErrorBoundary>
+          <ListWidget data={renderData} checklist />
+        </WidgetErrorBoundary>
+      );
     case 'key_value':
     case 'key_values':
     case 'facts':
     case 'details':
     case 'properties':
-      return <KeyValueWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <KeyValueWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'card':
     case 'cards':
     case 'card_grid':
-      return <CardsWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <CardsWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'step':
     case 'steps':
     case 'plan':
-      return <StepsWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <StepsWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'callout':
     case 'note':
-      return <CalloutWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <CalloutWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'progress':
-      return <ProgressWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <ProgressWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'bar':
     case 'bar_chart':
-      return <BarChartWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <BarChartWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'timeline':
-      return <TimelineWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <TimelineWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     // Code & Media widgets
     case 'code':
     case 'code_block':
-      return <CodeWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <CodeWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'image':
     case 'images':
-      return <ImageWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <ImageWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'video':
-      return <VideoWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <VideoWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'audio':
-      return <AudioWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <AudioWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'file':
     case 'files':
-      return <FileWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <FileWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     // Advanced chart/embed widgets
     case 'chart':
     case 'pie_chart':
     case 'line_chart':
-      return <ChartWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <ChartWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'embed':
     case 'iframe':
-      return <EmbedWidget data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <EmbedWidget data={renderData} />
+        </WidgetErrorBoundary>
+      );
     case 'html':
-      return <HtmlWidgetComponent data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <HtmlWidgetComponent data={renderData} />
+        </WidgetErrorBoundary>
+      );
     // Fallback
     default:
-      return <JsonWidget name={normalized || 'widget'} data={renderData} />;
+      return (
+        <WidgetErrorBoundary>
+          <JsonWidget name={normalized || 'widget'} data={renderData} />
+        </WidgetErrorBoundary>
+      );
   }
 }
