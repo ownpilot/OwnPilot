@@ -87,9 +87,11 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
 
   // ── Prototype manipulation (sandbox escape vectors) ───────────
   { pattern: /__proto__/, message: '__proto__ access is not allowed' },
-  // Only block .constructor property access (prototype chain escape),
-  // NOT standalone `constructor` keyword (needed for class constructors)
-  { pattern: /\.constructor\b/, message: 'constructor property access is not allowed' },
+  // Only block .constructor property access on instances (prototype chain escape via
+  // [].constructor.constructor or obj.constructor.constructor), NOT the standalone
+  // `constructor` keyword (needed for class constructors and class expressions).
+  // Must use negative lookbehind to avoid matching `constructor` after dot-like contexts.
+  { pattern: /(?<![.[])\bconstructor\b(?!\s*[{(])/, message: 'constructor property access is not allowed' },
   { pattern: /\bgetPrototypeOf\b/, message: 'getPrototypeOf is not allowed' },
   { pattern: /\bsetPrototypeOf\b/, message: 'setPrototypeOf is not allowed' },
   { pattern: /\bReflect\.construct\b/, message: 'Reflect.construct is not allowed' },
@@ -112,6 +114,12 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
   {
     pattern: /Symbol\s*\.\s*unscopables\b/,
     message: 'Symbol.unscopables access is not allowed (scope escape vector)',
+  },
+
+  // ── Object.getOwnPropertyDescriptor on Symbol (prototype pollution vector) ──
+  {
+    pattern: /\b(?:Object|Reflect)\s*\.\s*getOwnPropertyDescriptor\s*\(\s*Symbol/,
+    message: 'getOwnPropertyDescriptor on Symbol is not allowed (scope escape vector)',
   },
 
   // ── Network/data exfiltration (use fetch through sandbox) ─────

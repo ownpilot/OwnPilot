@@ -163,31 +163,17 @@ export class WorkerSandbox {
           const startTime = Date.now();
 
           try {
-            const sandboxGlobals = {
-              console: {
-                log: (...args) => parentPort.postMessage({ type: 'log', level: 'info', message: args.join(' ') }),
-                info: (...args) => parentPort.postMessage({ type: 'log', level: 'info', message: args.join(' ') }),
-                warn: (...args) => parentPort.postMessage({ type: 'log', level: 'warn', message: args.join(' ') }),
-                error: (...args) => parentPort.postMessage({ type: 'log', level: 'error', message: args.join(' ') }),
-                debug: (...args) => parentPort.postMessage({ type: 'log', level: 'debug', message: args.join(' ') }),
-              },
-              JSON,
-              Math,
-              Date,
-              Array,
-              Object,
-              String,
-              Number,
-              Boolean,
-              RegExp,
-              Error,
-              Map,
-              Set,
-              Promise,
-              __context__: context,
-              process: undefined,
-              require: undefined,
-            };
+            const { createContext, Script } = require('vm');
+            const { buildSandboxContext } = require('./context.js');
+
+            const { context: sandboxGlobals } = buildSandboxContext(
+              config.permissions ?? {},
+              config.limits ?? {},
+              { __context__: context },
+              (level, msg) => {
+                port.postMessage({ type: 'log', level, message: msg });
+              }
+            );
 
             const vmContext = createContext(sandboxGlobals, {
               codeGeneration: { strings: false, wasm: false },

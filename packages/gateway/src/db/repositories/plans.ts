@@ -827,6 +827,34 @@ export class PlansRepository extends BaseRepository {
       createdAt: new Date(row.created_at),
     };
   }
+
+  /**
+   * Get plans that appear orphaned — 'running' with started_at older than threshold.
+   */
+  async getOrphanedPlans(
+    thresholdMs: number,
+  ): Promise<Array<{ id: string; name: string }>> {
+    const rows = await this.query<{ id: string; name: string }>(
+      `SELECT id, name FROM plans
+       WHERE status = 'running'
+         AND started_at IS NOT NULL
+         AND EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000 > $1`,
+      [thresholdMs],
+    );
+    return rows;
+  }
+
+  /**
+   * Mark a running plan as failed (used during orphan recovery).
+   */
+  async markPlanFailed(planId: string, reason: string): Promise<void> {
+    await this.execute(
+      `UPDATE plans
+       SET status = 'failed', completed_at = NOW(), error = $2
+       WHERE id = $1 AND status = 'running'`,
+      [planId, `orphan_recovery: ${reason}`],
+    );
+  }
 }
 
 // ============================================================================

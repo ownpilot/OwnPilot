@@ -24,7 +24,7 @@ return \`Hello, \${name}!\`;
 
 describe('DANGEROUS_CODE_PATTERNS', () => {
   it('contains 34 patterns', () => {
-    expect(DANGEROUS_CODE_PATTERNS).toHaveLength(34);
+    expect(DANGEROUS_CODE_PATTERNS).toHaveLength(35);
   });
 });
 

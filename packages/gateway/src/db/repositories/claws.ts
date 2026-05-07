@@ -557,6 +557,35 @@ export class ClawsRepository extends BaseRepository {
     await this.execute(`DELETE FROM claw_sessions WHERE claw_id = $1`, [clawId]);
   }
 
+  /**
+   * Get sessions that appear orphaned — running/waiting but with no recent heartbeat.
+   */
+  async getOrphanedSessions(thresholdMs: number): Promise<
+    Array<{ id: string; name: string; user_id: string }>
+  > {
+    const rows = await this.query<{ id: string; name: string; user_id: string }>(
+      `SELECT c.id, c.name, c.user_id
+       FROM claw_sessions cs
+       JOIN claws c ON c.id = cs.claw_id
+       WHERE cs.state IN ('running', 'waiting')
+         AND (cs.last_cycle_at IS NULL OR EXTRACT(EPOCH FROM (NOW() - cs.last_cycle_at)) * 1000 > $1)`,
+      [thresholdMs]
+    );
+    return rows;
+  }
+
+  /**
+   * Update session state (used during orphan recovery).
+   */
+  async updateSessionStatus(clawId: string, state: string, _reason: string): Promise<void> {
+    await this.execute(
+      `UPDATE claw_sessions
+       SET state = $2, stopped_at = NOW()
+       WHERE claw_id = $1`,
+      [clawId, state]
+    );
+  }
+
   async appendToInbox(clawId: string, message: string): Promise<void> {
     await this.execute(
       `UPDATE claw_sessions

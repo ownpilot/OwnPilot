@@ -542,21 +542,68 @@ export class FleetRepository extends BaseRepository {
 
   /**
    * Re-queue tasks stuck in 'running' status (orphaned from a previous crash).
+   * Pass '__all__' as sessionId to requeue orphaned tasks across ALL sessions.
    */
   async requeueOrphanedTasks(sessionId: string): Promise<number> {
-    const rows = await this.query(
-      `UPDATE fleet_tasks
-       SET status = 'queued',
-           started_at = NULL,
-           assigned_worker = NULL
-       WHERE fleet_id = (
-         SELECT fleet_id FROM fleet_sessions WHERE id = $1
-       )
-         AND status = 'running'
-       RETURNING id`,
-      [sessionId]
-    );
+    let sql: string;
+    let params: string[];
+
+    if (sessionId === '__all__') {
+      // Requeue ALL orphaned tasks across all fleet sessions
+      sql = `UPDATE fleet_tasks
+             SET status = 'queued',
+                 started_at = NULL,
+                 assigned_worker = NULL
+             WHERE status = 'running'
+               AND fleet_id IN (
+                 SELECT id FROM fleet_sessions WHERE state = 'running'
+               )
+             RETURNING id`;
+      params = [];
+    } else {
+      sql = `UPDATE fleet_tasks
+             SET status = 'queued',
+                 started_at = NULL,
+                 assigned_worker = NULL
+             WHERE fleet_id = (
+               SELECT fleet_id FROM fleet_sessions WHERE id = $1
+             )
+               AND status = 'running'
+             RETURNING id`;
+      params = [sessionId];
+    }
+
+    const rows = await this.query(sql, params);
     return rows.length;
+  }
+
+  /**
+   * Get fleet sessions that appear orphaned — running but with no heartbeat within threshold.
+   */
+  async getOrphanedSessions(thresholdMs: number): Promise<Array<{ id: string; name: string }>> {
+    const rows = await this.query<{ id: string; name: string }>(
+      `SELECT fs.id, fs.name
+       FROM fleet_sessions fs
+       WHERE fs.state = 'running'
+         AND (
+           fs.last_cycle_at IS NULL
+           OR EXTRACT(EPOCH FROM (NOW() - fs.last_cycle_at)) * 1000 > $1
+         )`,
+      [thresholdMs],
+    );
+    return rows;
+  }
+
+  /**
+   * Mark a running fleet session as stopped (used during orphan recovery).
+   */
+  async markSessionStopped(sessionId: string, _reason: string): Promise<void> {
+    await this.execute(
+      `UPDATE fleet_sessions
+       SET state = 'stopped', stopped_at = NOW()
+       WHERE id = $1 AND state = 'running'`,
+      [sessionId],
+    );
   }
 
   // ---- Cleanup ----

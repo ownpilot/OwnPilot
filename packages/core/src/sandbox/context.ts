@@ -262,6 +262,9 @@ export function buildSandboxContext(
     // Crypto utilities (if allowed)
     ...(perms.crypto ? { crypto: buildCrypto(true) } : {}),
 
+    // Network utilities (if allowed)
+    ...(perms.network ? { fetch: globalThis.fetch, Response: globalThis.Response, Request: globalThis.Request, Headers: globalThis.Headers } : {}),
+
     // Custom globals
     ...customGlobals,
 

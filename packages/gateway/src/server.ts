@@ -148,6 +148,10 @@ function loadConfig(): Partial<GatewayConfig> {
  * Start the server
  */
 async function main() {
+  // ── Config Validation (fail-fast before any heavy initialization) ─────────
+  const { assertBootConfig } = await import('./config/validation.js');
+  assertBootConfig();
+
   // ── Module resolver (allows core tools to import gateway's npm packages) ──
   setModuleResolver((name) => import(name));
 
@@ -203,6 +207,15 @@ async function main() {
   // Initialize settings repository (creates table and loads cache)
   log.info('Initializing settings...');
   await initializeSettingsRepo();
+
+  // Reconcile orphaned sessions from any previous crash/unclean shutdown
+  log.info('Running orphan session reconciliation...');
+  const { reconcileOrphanedSessions } = await import('./services/orphan-reconciliation.js');
+  const reconcileResults = await reconcileOrphanedSessions();
+  const totalOrphaned = reconcileResults.reduce((sum, r) => sum + r.orphaned, 0);
+  if (totalOrphaned > 0) {
+    log.warn(`Orphan reconciliation found ${totalOrphaned} orphaned sessions`);
+  }
 
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();

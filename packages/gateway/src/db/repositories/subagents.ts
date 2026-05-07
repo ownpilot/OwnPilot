@@ -144,6 +144,34 @@ export class SubagentsRepository extends BaseRepository {
   }
 
   /**
+   * Get sessions that appear orphaned — running (no completed_at) and older than threshold.
+   */
+  async getOrphanedSessions(
+    thresholdMs: number,
+  ): Promise<Array<{ id: string; parent_id: string; name: string }>> {
+    const rows = await this.query<{ id: string; parent_id: string; name: string }>(
+      `SELECT id, parent_id, name FROM subagent_history
+       WHERE state = 'running'
+         AND completed_at IS NULL
+         AND EXTRACT(EPOCH FROM (NOW() - spawned_at)) * 1000 > $1`,
+      [thresholdMs],
+    );
+    return rows;
+  }
+
+  /**
+   * Mark a running session as aborted (used during orphan recovery).
+   */
+  async markAborted(id: string, reason: string): Promise<void> {
+    await this.execute(
+      `UPDATE subagent_history
+       SET state = 'aborted', completed_at = NOW(), error = $2
+       WHERE id = $1 AND state = 'running'`,
+      [id, `orphan_recovery: ${reason}`],
+    );
+  }
+
+  /**
    * Cleanup old history entries
    */
   async cleanupOld(retentionDays = 30): Promise<number> {
@@ -151,7 +179,7 @@ export class SubagentsRepository extends BaseRepository {
       `DELETE FROM subagent_history
        WHERE spawned_at < NOW() - INTERVAL '1 day' * $1
        RETURNING id`,
-      [retentionDays]
+      [retentionDays],
     );
     return rows.length;
   }
