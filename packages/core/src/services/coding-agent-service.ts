@@ -96,6 +96,8 @@ export interface CodingAgentTask {
   cwd?: string;
   /** Override default model */
   model?: string;
+  /** Path to custom CLI settings.json file (e.g. ~/.claude/kimi.json) */
+  settingsFile?: string;
   /** Maximum number of agent turns (Claude Code SDK) */
   maxTurns?: number;
   /** Maximum cost in USD (Claude Code SDK) */
@@ -198,6 +200,8 @@ export interface CreateCodingSessionInput {
   cwd?: string;
   /** Override default model */
   model?: string;
+  /** Path to custom CLI settings.json file (e.g. ~/.claude/kimi.json) */
+  settingsFile?: string;
   /** Session mode: auto (non-interactive) or interactive (user can type) */
   mode?: CodingAgentSessionMode;
   /** Timeout in milliseconds (default: 1800000 = 30 min) */

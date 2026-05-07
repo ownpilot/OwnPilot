@@ -250,11 +250,13 @@ class CodingAgentService implements ICodingAgentService {
     // Build CLI args based on provider
     // "default" is a sentinel — let the CLI pick its own model
     const ptyModel = task.model && task.model !== 'default' ? task.model : undefined;
+    const settingsFile = task.settingsFile;
     let args: string[];
     switch (task.provider) {
       case 'claude-code':
         args = ['-p', task.prompt];
         if (ptyModel) args.push('--model', ptyModel);
+        if (settingsFile) args.push('--settings', settingsFile);
         break;
       case 'codex':
         args = ['exec', '--full-auto', '--skip-git-repo-check', task.prompt];
@@ -507,6 +509,7 @@ class CodingAgentService implements ICodingAgentService {
     switch (input.provider) {
       case 'claude-code': {
         if (isInteractive) return [];
+        const settingsFile = input.settingsFile;
         const args = [
           '-p',
           prompt,
@@ -515,6 +518,8 @@ class CodingAgentService implements ICodingAgentService {
           '--verbose',
           ...(model ? ['--model', model] : []),
         ];
+
+        if (settingsFile) args.push('--settings', settingsFile);
 
         if (perms.autonomy === 'full-auto') {
           args.push('--dangerously-skip-permissions');

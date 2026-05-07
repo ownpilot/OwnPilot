@@ -54,6 +54,8 @@ export interface CliChatProviderConfig {
   binary: CliChatBinary;
   /** Model to use (optional — uses CLI's default when omitted, recommended) */
   model?: string;
+  /** Path to custom CLI settings.json file (e.g. ~/.claude/kimi.json) */
+  settingsFile?: string;
   /** API key (optional — CLIs support login-based auth) */
   apiKey?: string;
   /** Request timeout in ms (default: 120s) */
@@ -240,7 +242,8 @@ export class CliChatProvider implements IProvider {
           effectivePrompt,
           model,
           false,
-          IS_WIN ? undefined : systemPrompt || undefined
+          IS_WIN ? undefined : systemPrompt || undefined,
+          this.config.settingsFile
         );
         break;
       case 'codex':
@@ -440,7 +443,7 @@ export class CliChatProvider implements IProvider {
     timeout: number,
     systemPrompt?: string
   ): AsyncGenerator<Result<StreamChunk, InternalError>, void, unknown> {
-    const args = buildClaudeArgs(prompt, model, true, systemPrompt);
+    const args = buildClaudeArgs(prompt, model, true, systemPrompt, this.config.settingsFile);
     const env = createSanitizedEnv('claude-code', this.config.apiKey);
 
     const proc = spawn(this.config.binary, args, {

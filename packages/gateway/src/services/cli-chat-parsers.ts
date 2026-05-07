@@ -240,7 +240,8 @@ export function buildClaudeArgs(
   prompt: string,
   model?: string,
   streaming?: boolean,
-  systemPrompt?: string
+  systemPrompt?: string,
+  settingsFile?: string
 ): string[] {
   const args = IS_WIN
     ? ['-p', '--output-format', streaming ? 'stream-json' : 'json']
@@ -252,6 +253,7 @@ export function buildClaudeArgs(
   if (safeModel) args.push('--model', safeModel);
   args.push('--mcp-config', '.mcp.json');
   args.push('--allowedTools', CLAUDE_MCP_ALLOWED_TOOLS.join(','));
+  if (settingsFile) args.push('--settings', settingsFile);
   return args;
 }
 
