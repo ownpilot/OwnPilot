@@ -1085,8 +1085,11 @@ export class WSGateway {
     });
 
     // Session pong (response to server ping)
-    this.clientHandler.handle('session:pong', async (data) => {
+    this.clientHandler.handle('session:pong', async (data, sessionId) => {
       log.debug('Session pong', { data });
+      if (sessionId) {
+        sessionManager.touch(sessionId);
+      }
     });
 
     // =========================================================================
