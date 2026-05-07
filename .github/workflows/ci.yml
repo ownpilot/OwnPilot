@@ -65,5 +65,15 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Install Playwright Browsers
+        if: github.event_name == 'pull_request'
+        run: pnpm --filter @ownpilot/ui exec playwright install chromium --with-deps
+
+      - name: Playwright E2E
+        if: github.event_name == 'pull_request'
+        run: pnpm --filter @ownpilot/ui exec playwright test
+        env:
+          CI: 'true'
+
       - name: Format Check
         run: pnpm format:check

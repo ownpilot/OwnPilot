@@ -87,6 +87,27 @@ export abstract class BaseProvider implements IProvider {
   abstract healthCheck(): Promise<Result<ProviderHealthResult, InternalError>>;
 
   /**
+   * Record a telemetry metric for this provider call.
+   * Default no-op - override in subclasses to record actual metrics.
+   */
+  recordMetric(input: {
+    modelId: string;
+    latencyMs: number;
+    error: boolean;
+    errorType?: string | null;
+    promptTokens?: number | null;
+    completionTokens?: number | null;
+    costUsd?: number | null;
+    workflowId?: string | null;
+    agentId?: string | null;
+    userId?: string | null;
+  }): Promise<void> {
+    // Default no-op - override in subclasses to record actual metrics
+    void input;
+    return Promise.resolve();
+  }
+
+  /**
    * Cancel ongoing request
    */
   cancel(): void {

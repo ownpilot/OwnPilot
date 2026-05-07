@@ -461,6 +461,29 @@ export class FallbackProvider implements IProvider {
   }
 
   /**
+   * Record telemetry for the current active provider.
+   * Delegates to the primary provider's recordMetric.
+   */
+  async recordMetric(input: {
+    modelId: string;
+    latencyMs: number;
+    error: boolean;
+    errorType?: string | null;
+    promptTokens?: number | null;
+    completionTokens?: number | null;
+    costUsd?: number | null;
+    workflowId?: string | null;
+    agentId?: string | null;
+    userId?: string | null;
+  }): Promise<void> {
+    // Delegate to primary provider (or first available fallback)
+    const providers = this.getAllProviders();
+    if (providers.length > 0) {
+      await providers[0]!.recordMetric(input);
+    }
+  }
+
+  /**
    * Cancel request on all providers
    */
   cancel(): void {

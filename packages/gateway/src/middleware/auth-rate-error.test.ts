@@ -18,6 +18,7 @@ import { createSecretKey } from 'node:crypto';
 
 vi.hoisted(() => {
   process.env.TRUSTED_PROXY = 'true';
+  process.env.TRUSTED_PROXY_IPS = '*';
 });
 
 // ---------------------------------------------------------------------------
@@ -553,16 +554,17 @@ describe('createRateLimitMiddleware', () => {
   it('should use only the first IP from X-Forwarded-For', async () => {
     const app = createApp({ windowMs: 60_000, maxRequests: 1, burstLimit: 1 });
 
+    // Last IP = 2.2.2.2
     const r1 = await app.request('/test', {
       headers: { 'X-Forwarded-For': '1.1.1.1, 2.2.2.2' },
     });
     expect(r1.status).toBe(200);
 
-    // Same first IP but different chain -- should still count as same client
+    // Different last IP (9.9.9.9) -- different client bucket, fresh budget
     const r2 = await app.request('/test', {
       headers: { 'X-Forwarded-For': '1.1.1.1, 9.9.9.9' },
     });
-    expect(r2.status).toBe(429);
+    expect(r2.status).toBe(200);
   });
 });
 

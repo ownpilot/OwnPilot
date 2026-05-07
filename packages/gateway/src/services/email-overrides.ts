@@ -367,10 +367,14 @@ const sendEmailOverride: ToolExecutor = async (params, _context): Promise<ToolEx
 
     // Attachments
     if (attachments?.length) {
+      const { isPathAllowedAsync } = await import('@ownpilot/core');
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const attachmentList: Array<{ filename: string; path: string }> = [];
       for (const filePath of attachments) {
+        if (!(await isPathAllowedAsync(filePath))) {
+          return { content: { error: `Attachment path not allowed: ${filePath}` }, isError: true };
+        }
         try {
           await fs.access(filePath);
           attachmentList.push({ filename: path.basename(filePath), path: filePath });
@@ -696,10 +700,14 @@ const replyEmailOverride: ToolExecutor = async (params, _context): Promise<ToolE
 
     // Attachments
     if (attachments?.length) {
+      const { isPathAllowedAsync } = await import('@ownpilot/core');
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const attachmentList: Array<{ filename: string; path: string }> = [];
       for (const filePath of attachments) {
+        if (!(await isPathAllowedAsync(filePath))) {
+          return { content: { error: `Attachment path not allowed: ${filePath}` }, isError: true };
+        }
         try {
           await fs.access(filePath);
           attachmentList.push({ filename: path.basename(filePath), path: filePath });

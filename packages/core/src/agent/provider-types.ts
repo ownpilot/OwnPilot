@@ -61,4 +61,22 @@ export interface IProvider {
    * Called at boot to detect unavailable providers early.
    */
   healthCheck(): Promise<Result<ProviderHealthResult, InternalError>>;
+
+  /**
+   * Record a telemetry metric for this provider call.
+   * Used by ModelRoutingService for telemetry-based routing (gap 24.4).
+   * Implementations should call the global provider metrics repository.
+   */
+  recordMetric(input: {
+    modelId: string;
+    latencyMs: number;
+    error: boolean;
+    errorType?: string | null;
+    promptTokens?: number | null;
+    completionTokens?: number | null;
+    costUsd?: number | null;
+    workflowId?: string | null;
+    agentId?: string | null;
+    userId?: string | null;
+  }): Promise<void>;
 }

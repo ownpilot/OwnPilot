@@ -226,6 +226,17 @@ export class HeartbeatLogRepository extends BaseRepository {
     }
     return result;
   }
+
+  /**
+   * Delete heartbeat log entries older than maxAgeDays.
+   * For gap 24.3 retention enforcement.
+   */
+  async cleanupOld(maxAgeDays = 30): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM heartbeat_log WHERE created_at < NOW() - INTERVAL '${maxAgeDays} days'`
+    );
+    return result.changes;
+  }
 }
 
 // ── Singleton ──

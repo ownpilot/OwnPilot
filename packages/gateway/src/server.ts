@@ -401,6 +401,44 @@ async function main() {
   const { getWorkflowService } = await import('./services/workflow-service.js');
   registry.register(Services.Workflow, getWorkflowService());
 
+  // 18.1. Workflow Node Job Worker (gap 24.1 Phase 2 — persistent job queue for nodes)
+  log.info('Starting Workflow Node Job Worker...');
+  let stopWorkflowWorker: (() => void) | null = null;
+  try {
+    const { registerWorkflowNodeWorker, resumeWorkflowFromRecovery } = await import('./services/workflow/workflow-node-job-handler.js');
+    stopWorkflowWorker = registerWorkflowNodeWorker();
+
+    // Recover orphaned workflows at boot (gap 24.1 Phase 2 crash recovery)
+    try {
+      const { createWorkflowsRepository } = await import('./db/repositories/workflows.js');
+      const recoveryRepo = createWorkflowsRepository('default');
+      const runningLogs = await recoveryRepo.listRunningLogs();
+      if (runningLogs.length > 0) {
+        log.info(`Recovering ${runningLogs.length} orphaned workflow runs...`);
+        for (const log of runningLogs) {
+          await resumeWorkflowFromRecovery(log.id, log.userId);
+        }
+        log.info(`Workflow recovery complete.`);
+      }
+    } catch (recoveryError) {
+      log.warn('Workflow recovery error', { error: String(recoveryError) });
+    }
+
+    log.info('Workflow Node Job Worker started.');
+  } catch (error) {
+    log.warn('Workflow Node Job Worker failed to start', { error: String(error) });
+  }
+
+  // 18.2. Retention Cleanup Worker (gap 24.3 — nightly cleanup via JobQueueService)
+  try {
+    const { registerRetentionCleanupWorker, scheduleRetentionCleanup } = await import('./services/retention-service.js');
+    registerRetentionCleanupWorker();
+    scheduleRetentionCleanup();
+    log.info('Retention Cleanup Worker started.');
+  } catch (error) {
+    log.warn('Retention Cleanup Worker failed to start', { error: String(error) });
+  }
+
   // 19. Heartbeat Service
   const { getHeartbeatService } = await import('./services/heartbeat-service.js');
   registry.register(Services.Heartbeat, getHeartbeatService());
@@ -689,6 +727,21 @@ async function main() {
       stopScheduler();
     } catch (e) {
       log.warn('Scheduler stop error', { error: String(e) });
+    }
+
+    // 5.2.1. Stop Job Queue Service (gap 24.1 Phase 2)
+    try {
+      const { JobQueueService } = await import('./services/job-queue-service.js');
+      JobQueueService.getInstance().shutdown();
+    } catch (e) {
+      log.warn('Job Queue Service stop error', { error: String(e) });
+    }
+
+    // 5.2.2. Stop Workflow Node Job Worker
+    try {
+      if (stopWorkflowWorker) stopWorkflowWorker();
+    } catch (e) {
+      log.warn('Workflow Node Job Worker stop error', { error: String(e) });
     }
 
     // 5.3. Stop embedding queue

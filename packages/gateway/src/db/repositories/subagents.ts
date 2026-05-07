@@ -184,3 +184,8 @@ export class SubagentsRepository extends BaseRepository {
     return rows.length;
   }
 }
+
+// Factory function
+export function createSubagentsRepository(_userId = 'default'): SubagentsRepository {
+  return new SubagentsRepository();
+}

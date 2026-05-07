@@ -9,6 +9,7 @@
 import {
   createWorkflowsRepository,
   type WorkflowNode,
+  type WorkflowEdge,
   type LlmNodeData,
   type CodeNodeData,
   type ToolNodeData,
@@ -35,6 +36,7 @@ import {
   getForEachBodyNodes,
 } from './dag-utils.js';
 import { resolveTemplates } from './template-resolver.js';
+import { enqueueWorkflowLevel } from './workflow-node-job-handler.js';
 import {
   executeNode,
   executeLlmNode,
@@ -138,23 +140,49 @@ export class WorkflowService implements IWorkflowService {
 
       const toolService = this.getToolService();
 
+      // Node types that must stay synchronous (not yet jobified)
+      const SYNC_ONLY_TYPES = new Set([
+        'forEachNode',
+        'errorHandlerNode',
+        'triggerNode',
+        'stickyNoteNode',
+        'approvalNode',
+        'parallelNode',
+        'subWorkflowNode',
+      ]);
+
       // Execute level by level
       for (const level of levels) {
         if (abortController.signal.aborted) {
           throw new Error('Workflow execution cancelled');
         }
 
-        const results = await Promise.allSettled(
-          level.map(async (nodeId) => {
-            const node = nodeMap.get(nodeId);
-            if (!node) throw new Error(`Node ${nodeId} not found`);
+        // Separate jobified nodes from sync-only nodes
+        const syncNodeIds: string[] = [];
+        const jobifiedNodeIds: string[] = [];
+        for (const nodeId of level) {
+          const node = nodeMap.get(nodeId);
+          if (!node) throw new Error(`Node ${nodeId} not found`);
+          if (
+            nodeOutputs[nodeId]?.status === 'skipped' ||
+            forEachBodyNodeSet.has(nodeId) ||
+            SYNC_ONLY_TYPES.has(node.type)
+          ) {
+            syncNodeIds.push(nodeId);
+          } else {
+            jobifiedNodeIds.push(nodeId);
+          }
+        }
 
-            // Skip if already marked (e.g., downstream of a failed node)
+        // Execute sync nodes in parallel
+        const syncResults = await Promise.allSettled(
+          syncNodeIds.map(async (nodeId) => {
+            const node = nodeMap.get(nodeId)!;
+
             if (nodeOutputs[nodeId]?.status === 'skipped') {
               return nodeOutputs[nodeId];
             }
 
-            // Skip ForEach body nodes — they're executed inside executeForEachNode
             if (forEachBodyNodeSet.has(nodeId) && !nodeOutputs[nodeId]) {
               const skipped: NodeResult = {
                 nodeId,
@@ -165,7 +193,6 @@ export class WorkflowService implements IWorkflowService {
               return skipped;
             }
 
-            // Skip error handler node during normal execution — invoked only on errors
             if (node.type === 'errorHandlerNode') {
               if (!nodeOutputs[nodeId]) {
                 nodeOutputs[nodeId] = {
@@ -218,11 +245,35 @@ export class WorkflowService implements IWorkflowService {
           })
         );
 
-        // Process results
-        for (let i = 0; i < level.length; i++) {
-          const nodeId = level[i]!;
-          const settled = results[i]!;
+        // Execute jobified nodes via the persistent job queue
+        const jobifiedResults: Record<string, NodeResult> = {};
+        if (jobifiedNodeIds.length > 0 && !dryRun) {
+          const levelNodeMap = new Map(level.map(id => [id, nodeMap.get(id)!]));
+          await this.jobifiedExecuteLevel(
+            jobifiedNodeIds,
+            levelNodeMap,
+            workflow,
+            userId,
+            abortController.signal,
+            repo,
+            wfLog.id
+          );
+          // Read back results from the log (persisted by job handler)
+          const updatedLog = await repo.getLog(wfLog.id);
+          for (const nodeId of jobifiedNodeIds) {
+            jobifiedResults[nodeId] = updatedLog?.nodeResults[nodeId] ?? {
+              nodeId,
+              status: 'error',
+              error: 'Job result not found in log after completion',
+              completedAt: new Date().toISOString(),
+            };
+          }
+        }
 
+        // Process results from both paths
+        for (let i = 0; i < syncNodeIds.length; i++) {
+          const nodeId = syncNodeIds[i]!;
+          const settled = syncResults[i]!;
           if (settled.status === 'fulfilled') {
             nodeOutputs[nodeId] = settled.value;
           } else {
@@ -233,8 +284,16 @@ export class WorkflowService implements IWorkflowService {
               completedAt: new Date().toISOString(),
             };
           }
+        }
+        // Merge jobified results into nodeOutputs
+        for (const [nodeId, result] of Object.entries(jobifiedResults)) {
+          nodeOutputs[nodeId] = result;
+        }
 
+        // Post-processing for all nodes in level
+        for (const nodeId of level) {
           const nodeResult = nodeOutputs[nodeId];
+          if (!nodeResult) continue;
 
           // Mirror result to alias key so {{alias.output}} works in downstream templates
           for (const [alias, mappedNodeId] of aliasToNodeId) {
@@ -1335,6 +1394,48 @@ export class WorkflowService implements IWorkflowService {
       () => executeNode(node, nodeOutputs, workflow.variables, userId, toolService),
       onProgress
     );
+  }
+
+  /**
+   * Execute a batch of nodes at the same topological level via the persistent job queue.
+   * Enqueues all nodes in the level, then polls until all complete (via nodeOutputs persisted
+   * by the job handler in workflow_logs). Returns a map of nodeId -> NodeResult.
+   * Preserves level-by-level sequential execution while making individual nodes async.
+   */
+  private async jobifiedExecuteLevel(
+    levelNodeIds: string[],
+    nodeMap: Map<string, WorkflowNode>,
+    workflow: { edges: WorkflowEdge[]; variables: Record<string, unknown> },
+    userId: string,
+    abortSignal: AbortSignal,
+    repo: ReturnType<typeof createWorkflowsRepository>,
+    logId: string
+  ): Promise<void> {
+    const workflowId = ''; // not used in enqueue call but stored in payload
+    const wfRunId = logId;
+    await enqueueWorkflowLevel(
+      workflowId,
+      wfRunId,
+      userId,
+      levelNodeIds,
+      nodeMap,
+      workflow.edges,
+      workflow.variables,
+      {}
+    );
+
+    // Poll until all level nodes appear in nodeResults (or abort)
+    const pollIntervalMs = 500;
+    while (true) {
+      if (abortSignal.aborted) {
+        throw new Error('Workflow execution cancelled');
+      }
+      const log = await repo.getLog(logId);
+      const results = log?.nodeResults ?? {};
+      const allDone = levelNodeIds.every(id => results[id]?.output !== undefined || results[id]?.status === 'error' || results[id]?.status === 'skipped');
+      if (allDone) break;
+      await sleep(pollIntervalMs);
+    }
   }
 
   /**

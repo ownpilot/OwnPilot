@@ -401,6 +401,17 @@ export class LogsRepository extends BaseRepository {
   }
 
   /**
+   * Delete all request logs older than maxAgeDays (global, all users).
+   * For gap 24.3 retention enforcement.
+   */
+  async cleanupOld(maxAgeDays = 30): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM request_logs WHERE created_at < NOW() - INTERVAL '${maxAgeDays} days'`
+    );
+    return result.changes;
+  }
+
+  /**
    * Clear all logs for this user
    */
   async clearAll(): Promise<number> {

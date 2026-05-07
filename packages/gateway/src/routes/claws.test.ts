@@ -53,6 +53,7 @@ function createMockService() {
     createClaw: vi.fn(),
     getClaw: vi.fn(),
     listClaws: vi.fn().mockResolvedValue([]),
+    listClawsPaginated: vi.fn().mockResolvedValue({ claws: [], total: 0 }),
     updateClaw: vi.fn(),
     deleteClaw: vi.fn(),
     startClaw: vi.fn(),
@@ -371,19 +372,25 @@ describe('Claws Routes', () => {
 
   describe('GET /claws', () => {
     it('should return list of claws', async () => {
-      service.listClaws.mockResolvedValue([{ id: 'claw-1', name: 'Test', mode: 'continuous' }]);
+      service.listClawsPaginated.mockResolvedValue({
+        claws: [{ id: 'claw-1', name: 'Test', mode: 'continuous' }],
+        total: 1,
+      });
       service.listSessions.mockReturnValue([]);
 
       const res = await app.request('/claws');
       expect(res.status).toBe(200);
 
       const body = await res.json();
-      expect(body.data).toHaveLength(1);
-      expect(body.data[0].id).toBe('claw-1');
+      expect(body.data.claws).toHaveLength(1);
+      expect(body.data.claws[0].id).toBe('claw-1');
     });
 
     it('should include session data when running', async () => {
-      service.listClaws.mockResolvedValue([{ id: 'claw-1', name: 'Test' }]);
+      service.listClawsPaginated.mockResolvedValue({
+        claws: [{ id: 'claw-1', name: 'Test' }],
+        total: 1,
+      });
       service.listSessions.mockReturnValue([
         {
           config: { id: 'claw-1' },
@@ -403,8 +410,8 @@ describe('Claws Routes', () => {
 
       const res = await app.request('/claws');
       const body = await res.json();
-      expect(body.data[0].session.state).toBe('running');
-      expect(body.data[0].session.cyclesCompleted).toBe(5);
+      expect(body.data.claws[0].session.state).toBe('running');
+      expect(body.data.claws[0].session.cyclesCompleted).toBe(5);
     });
   });
 

@@ -839,6 +839,20 @@ export class WorkflowsRepository extends BaseRepository {
   }
 
   /**
+   * List all workflow logs with 'running' status across all workflows.
+   * Used at server boot to recover orphaned workflows via the job queue.
+   */
+  async listRunningLogs(): Promise<Array<{ id: string; userId: string }>> {
+    const rows = await this.query<{ id: string; user_id: string }>(
+      `SELECT wl.id, w.user_id
+       FROM workflow_logs wl
+       JOIN workflows w ON wl.workflow_id = w.id
+       WHERE wl.status = 'running'`
+    );
+    return rows.map(r => ({ id: r.id, userId: r.user_id }));
+  }
+
+  /**
    * Find a workflow by its trigger node's webhookPath (global lookup, cross-user).
    * Used by the webhook endpoint to match incoming requests to workflows.
    */
@@ -887,6 +901,53 @@ export class WorkflowsRepository extends BaseRepository {
        WHERE id = $1 AND status = 'running'`,
       [logId, `orphan_recovery: ${reason}`]
     );
+  }
+
+  /**
+   * Persist node outputs to the workflow log (gap 24.1 Phase 2).
+   * Called after each node completes so crash recovery can resume from last successful state.
+   */
+  async persistNodeOutputs(logId: string, nodeOutputs: Record<string, NodeResult>): Promise<void> {
+    await this.updateLog(logId, { nodeResults: nodeOutputs });
+  }
+
+  /**
+   * Get workflow log with node outputs for crash recovery (gap 24.1 Phase 2).
+   * Returns null if log is not found or not in 'running' state.
+   */
+  async getLogForRecovery(logId: string): Promise<{
+    logId: string;
+    workflowId: string;
+    nodeResults: Record<string, NodeResult>;
+  } | null> {
+    const rows = await this.query<{
+      id: string;
+      workflow_id: string;
+      node_results: string;
+      status: WorkflowLogStatus;
+    }>(
+      `SELECT id, workflow_id, node_results, status FROM workflow_logs WHERE id = $1`,
+      [logId]
+    );
+    if (rows.length === 0) return null;
+    const row = rows[0]!;
+    if (row.status !== 'running') return null;
+    return {
+      logId: row.id,
+      workflowId: row.workflow_id ?? '',
+      nodeResults: parseJsonField<Record<string, NodeResult>>(row.node_results, {}),
+    };
+  }
+
+  /**
+   * Delete workflow logs older than maxAgeDays.
+   * For gap 24.3 retention enforcement.
+   */
+  async cleanupOldWorkflowLogs(maxAgeDays = 90): Promise<number> {
+    const result = await this.execute(
+      `DELETE FROM workflow_logs WHERE status IN ('completed', 'failed', 'cancelled') AND updated_at < NOW() - INTERVAL '${maxAgeDays} days'`
+    );
+    return result.changes;
   }
 }
 

@@ -120,3 +120,8 @@ export class OrchestraRepository extends BaseRepository {
     return rows.length;
   }
 }
+
+// Factory function
+export function createOrchestraRepository(_userId = 'default'): OrchestraRepository {
+  return new OrchestraRepository();
+}

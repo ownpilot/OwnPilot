@@ -106,6 +106,13 @@ export class EmbeddingCacheRepository extends BaseRepository {
   }
 
   /**
+   * Alias for evict() for gap 24.3 retention enforcement.
+   */
+  async cleanupOld(maxAgeDays = 7): Promise<number> {
+    return this.evict(maxAgeDays);
+  }
+
+  /**
    * Get cache statistics.
    */
   async getStats(): Promise<{ total: number; totalHits: number }> {

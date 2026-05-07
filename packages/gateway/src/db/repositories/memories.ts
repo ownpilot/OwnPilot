@@ -41,10 +41,12 @@ export interface CreateMemoryInput {
   type: MemoryType;
   content: string;
   embedding?: number[];
+  embeddingModelId?: string;
   source?: string;
   sourceId?: string;
   importance?: number;
   tags?: string[];
+  accessCount?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -162,8 +164,8 @@ export class MemoriesRepository extends BaseRepository {
 
     await this.execute(
       `
-      INSERT INTO memories (id, user_id, type, content, content_hash, embedding, source, source_id, importance, tags, accessed_count, created_at, updated_at, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, $11, $12, $13)
+      INSERT INTO memories (id, user_id, type, content, content_hash, embedding, embedding_model_id, source, source_id, importance, tags, accessed_count, created_at, updated_at, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     `,
       [
         id,
@@ -172,10 +174,12 @@ export class MemoriesRepository extends BaseRepository {
         input.content,
         contentHash,
         input.embedding ? JSON.stringify(input.embedding) : null,
+        input.embeddingModelId ?? null,
         input.source ?? null,
         input.sourceId ?? null,
         input.importance ?? 0.5,
         JSON.stringify(input.tags ?? []),
+        input.accessCount ?? 0,
         now,
         now,
         JSON.stringify(input.metadata ?? {}),

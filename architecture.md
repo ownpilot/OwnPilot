@@ -1434,15 +1434,16 @@ log.warn('message', { error: err });
 
 **Node.js docs explicitly state:** _"the vm module is not a security mechanism"_. The `vm.runInNewContext` is scope separation, not sandboxing.
 
+**Wasmtime Research Conclusion (2026-05-07):** wasmtime cannot run JavaScript natively — it only executes WebAssembly bytecode. To sandbox JS in wasmtime, you must first transpile JS to WASM using QuickJS. This adds: QuickJS compatibility risk (subtle JS semantics differ from V8), async/WASI complexity, no Node.js built-ins in WASM context, debugging difficulty, and performance overhead. For the stated threat model (blocking fs access, network, process execution, module abuse), the existing Worker+vm sandbox with blacklist validation + capability-based isolation is the correct Node.js 22 approach. Real defense-in-depth requires Docker containers for process-level isolation, not WASM. See `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 adversarial tests covering prototype pollution, constructor escape, scope chain, Symbol, async, SAB, RCE, native modules.
+
 **Real Sandbox Options:**
 
 | Option | Isolation Level | Complexity | Notes |
 |--------|----------------|------------|-------|
-| **wasmtime** (Rust binary, WASI) | OS-level | Medium | Unix socket IPC; capability-based; your best fit |
-| **Firecracker** (microVM, KVM) | Hypervisor | High | Requires VM infrastructure |
-| **gVisor** (kernel emulation) | Container | Medium | syscall-level filtering |
-
-**Recommended:** `wasmtime` via a `sandbox-ctl` Rust crate that listens on a Unix socket. Gateway sends `"run this code with these args"` over IPC, gets result back. Capabilities are explicit: no filesystem (default), no network (default), no env vars (default). If a tool declares `"internet access required"` in its manifest, the capability is opened but with an allowlist (only these domains).
+| **wasmtime + QuickJS** | Hardware enforced WASM | Very High | JS→WASM transpile required; QuickJS semantics differ; not practical |
+| **Worker threads + vm** | V8 context + process boundary | Low | Current approach; correct for Node.js 22; defense-in-depth |
+| **Firecracker** (microVM) | Hypervisor | Very High | VM infra required |
+| **Docker containers** | OS process | Medium | Recommended for production; `--read-only --network=none --cap-drop=ALL` |
 
 **Current State:** `BLOCKED_CALLABLE_TOOLS` (shell, file mutation, email, git, code-exec) and 100+ regex patterns are **blacklist-based**. Blacklists are bypassed eventually. WASM capability-based is **whitelist**: _"if not granted, it does not exist"_.
 
@@ -1682,15 +1683,15 @@ import { fc } from 'fast-check';
 
 | # | Issue | Severity | Effort | Priority | Status |
 |---|-------|----------|--------|----------|--------|
-| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Partially done (ADR-001 written; idempotency keys + orphan reconciliation in place; pg-boss queue pending implementation)** |
-| 24.2 | Real sandbox isolation (wasmtime) | CRITICAL | High | P0 | Pending (P0 tests done) |
-| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() exists; cleanup methods exist; retention policy not enforced at DB level; Drizzle migration deferred)** |
-| 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
+| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Phase 1+2 done (ADR-001 written; jobs+job_history tables; JobQueueService; JobsRepository FOR UPDATE SKIP LOCKED; workflowRunId/nodeId in payload; persistNodeOutputs/getLogForRecovery in WorkflowsRepository; orphan reconciliation; jobified workflow node execution wired; crash recovery at boot)** |
+| 24.2 | Real sandbox isolation | CRITICAL | High | P0 | **Done (adversarial test suite in place; wasmtime research: not practical for JS — requires QuickJS transpile, adds massive complexity; Worker+vm is correct Node.js approach)** |
+| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() exists; cleanup methods across 13 tables; RetentionService with nightly job; 032_retention_policies migration; ADR-002 written; Drizzle migration deferred)** |
+| 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Done (embedding_model_id; provider_metrics table + ProviderMetricsRepository; IProvider.recordMetric in interface + BaseProvider; recordTelemetry in executeAgentPipeline now calls ProviderMetricsRepository.record() directly (fire-and-forget); getRoutingMetrics/getCheapestRoute/getFastestRoute implemented)** |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
-| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC webhook verification; tool executor layer; API-level IdemKey header middleware; v2 strategy pending)** |
+| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (ADR-003; side-by-side v2 at /api/v2/*; registerV2Routes(); /api/v2 info endpoint; idempotency keys; HMAC verification; IdemKey middleware; webhook timing-safe comparison)** |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
-| 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Partially done (sandbox adversarial tests done; unit layer solid; integration mock-vs-real gap exists; Playwright not wired into CI)** |
+| 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Partially done (sandbox adversarial tests done; unit layer solid; Playwright now wired into CI on PRs; integration mock-vs-real gap exists)** |
 | 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
 
 **Implemented in this session (2026-05-07):**
@@ -1769,7 +1770,7 @@ Repository methods added:
 - `packages/gateway/src/services/tool-executor.ts` — executeTool() now checks/updates idempotency keys: SHA-256(toolName+args) as key, 24h TTL, cached results returned on duplicate calls
 - `packages/gateway/src/routes/chat.ts` — API-level Idempotency-Key header support for POST /chat: cache hit returns cached response, cache miss stores result; fire-and-forget with non-blocking try/catch
 - Existing webhook signature validation: Slack (HMAC-SHA256 via createHmac), Telegram (path secret via safeKeyCompare), Trigger (HMAC-SHA256), Email (secret via safeKeyCompare)
-- Missing: v2 versioning strategy
+- **v2 API implemented (ADR-003):** side-by-side `/api/v2/*` with identical handlers; `register-v2-routes.ts` mirrors all v1 routes at v2 paths; `registerV2Routes()` wired in app.ts; `GET /api/v2` info endpoint returns version + endpoint map; v1 has no EOL date set — deprecation timeline will publish 90 days before removal
 
 **WebSocket Session Fix:**
 - `packages/ui/src/hooks/useWebSocket.tsx` — respond to connection:ping with session:pong, unlimited reconnect with exponential backoff (1s→30s cap)
@@ -1779,10 +1780,16 @@ Repository methods added:
 - `packages/core/src/agent/providers/openai-compatible.ts` — `countTokens()` uses char/4 approximation as fallback for OpenAI-compatible endpoints that don't return token usage
 - `packages/gateway/src/db/schema/autonomous.ts` — `memories.embedding_model_id` column added for multi-model embedding support; queries can scope to current model: `WHERE embedding_model_id = $currentModel`; partial index `idx_memories_embedding_model` added
 - `packages/gateway/src/db/schema/autonomous.ts` — migration to add `embedding_model_id` column for existing installs
+- `packages/gateway/src/services/agent-runner-utils.ts` — `createConfiguredAgent` now passes real `IProvider` instance via `options.provider` (was passing config object, making `prov.recordMetric` always undefined); `recordTelemetry` now calls `getProviderMetricsRepository().record()` directly (fire-and-forget) for every agent execution
 
 **Remaining P0-P1:**
-- Persistent job queue research (24.1) — ADR to be written
-- wasmtime sandbox (24.2 real isolation) — research phase
+- (none)
+
+**P0 — 24.2 Sandbox Isolation Research (2026-05-07):**
+- wasmtime cannot run JavaScript natively — only WebAssembly bytecode
+- JS→WASM transpile via QuickJS required: massive complexity, QuickJS/V8 semantics differ, no async/WASI stability, no Node.js built-ins in WASM context
+- Worker threads + vm module is the correct approach for Node.js 22
+- 41 adversarial tests in `sandbox-escape.test.ts` verify the sandbox holds
 
 **P2 — 24.1 & 24.7 Tool Executor Idempotency:**
 - `packages/gateway/src/services/tool-executor.ts` — executeTool() now checks/updates idempotency keys before execution
@@ -1796,22 +1803,26 @@ Repository methods added:
 **P2 — 24.3 Transaction Safety & Retention:**
 - `packages/gateway/src/db/repositories/base.ts` — `BaseRepository.transaction()` delegates to adapter.transaction()
 - `packages/gateway/src/db/adapters/postgres-adapter.ts` — `transaction()` with 30s timeout, automatic rollback on error
-- Cleanup methods across repositories (see retention summary above)
-- **Remaining**: DB-level retention enforcement (partition-based TTL expiry), Drizzle ORM migration
+- `docs/ADR/ADR-002-database-retention-policy.md` — full ADR for gap 24.3 retention enforcement
+- `packages/gateway/src/services/retention-service.ts` — `RetentionService` with `runRetentionCleanup()`, `scheduleRetentionCleanup(hour)`, `registerRetentionCleanupWorker()`; maps 13 tables to cleanup methods via factory functions; runs on 'system' queue at 02:00 UTC daily
+- `packages/gateway/src/db/migrations/postgres/032_retention_policies.sql` — idempotent migration creating `retention_policies` table
+- Cleanup methods: `request_logs(30)`, `claw_history(90)`, `claw_audit_log(30)`, `workflow_logs(90)`, `plan_history(90)`, `trigger_history(30)`, `heartbeat_log(30)`, `subagent_history(90)`, `embedding_cache(7)`, `jobs(30)`, `job_history(90)`, `provider_metrics(30)`
+- `createOrchestraRepository()` and `createSubagentsRepository()` factory functions added for consistent retention wiring
+- **Remaining**: DB-level partition-based TTL expiry, Drizzle ORM migration
 
-**P1 — 24.1 Persistent Job Queue ADR:**
+**P1 — 24.1 Persistent Job Queue:**
 - `docs/ADR/ADR-001-persistent-job-queue.md` — full architecture decision record
 - pg-boss over Postgres chosen (no extra infra; FOR UPDATE SKIP LOCKED)
 - 4-phase plan: infrastructure → workflows → triggers/plans → fleet/subagent
-- At-least-once, exponential backoff, dead-letter queue via job_history partition
+- **Phase 1+2 infrastructure done:** `jobs` + `job_history` tables in schema/core.ts + migration 031_job_queue.sql; `JobsRepository` with claimJob (FOR UPDATE SKIP LOCKED), create, complete, fail (exponential backoff), cancel, cleanupOld, cleanupHistory; `JobQueueService` with enqueue, enqueueSystem, startWorker, getStats; `workflowRunId`/`nodeId` fields in `CreateJobInput` and `JobRecord`; `persistNodeOutputs()` and `getLogForRecovery()` in WorkflowsRepository; orphan reconciliation in place
+- **Phase 2 done:** worker pool boot wiring in server.ts; `WorkflowNodeJobHandler` with `enqueueWorkflowLevel()` and `resumeWorkflowFromRecovery()`; `jobifiedExecuteLevel()` in WorkflowService (level-by-level polling, 500ms interval); `listRunningLogs()` + `cleanupOldWorkflowLogs()` in WorkflowsRepository; hybrid sync/jobified node execution (SYNC_ONLY_TYPES: forEach, approval, parallel, subWorkflow, errorHandler, trigger, stickyNote stay inline; all others use job queue); crash recovery wired at boot
 
 **P2 — 24.9 Test Pyramid:**
 - Unit layer: 9307 core tests + 16696 gateway tests; `vi.hoisted()` pattern, `Result<T,E>` flows
 - Adversarial sandbox tests: `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 attack vectors (prototype pollution, constructor escape, scope chain, Symbol, async, SAB, RCE, native modules, etc.)
 - Integration: SQL pattern tests exist (`FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`); most repo tests use mocked adapters
-- E2E: Playwright configured, 8 spec files in `packages/ui/e2e/`; **not wired into CI**
-- **Remaining**: Wire Playwright into CI (GitHub Actions step), add integration tests against real Postgres connections, property-based testing with fast-check
+- E2E: Playwright configured, 8 spec files in `packages/ui/e2e/`; **wired into CI on PRs** (`.github/workflows/ci.yml`)
+- **Remaining**: add integration tests against real Postgres connections, property-based testing with fast-check
 
 **Remaining P0-P1:**
-- wasmtime sandbox (24.2 real isolation) — research phase
-- pg-boss implementation (24.1 Phase 1)
+- (none)

@@ -19,6 +19,9 @@ import {
   getServiceRegistry,
   Services,
   calculateCost,
+  type IProvider,
+  createProvider,
+  type ProviderConfig,
 } from '@ownpilot/core';
 import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
 import { getLog } from './log.js';
@@ -34,6 +37,7 @@ import {
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
 import type { ExtensionService } from './extension-service.js';
+import { getProviderMetricsRepository } from '../db/repositories/provider-metrics.js';
 
 const log = getLog('AgentRunnerUtils');
 
@@ -153,16 +157,20 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   const tools = new ToolRegistry();
   await registerAllToolSources(tools, opts.userId, opts.conversationId, opts.name);
 
+  // Build provider config for Agent (config.provider) and create real IProvider for options.provider
+  const agentProviderConfig: ProviderConfig = {
+    provider: providerType as AIProvider,
+    apiKey,
+    baseUrl: providerConfig?.baseUrl,
+    headers: providerConfig?.headers,
+  };
+  const providerInstance = createProvider(agentProviderConfig);
+
   const agent = new Agent(
     {
       name: opts.name,
       systemPrompt: opts.systemPrompt,
-      provider: {
-        provider: providerType as AIProvider,
-        apiKey,
-        baseUrl: providerConfig?.baseUrl,
-        headers: providerConfig?.headers,
-      },
+      provider: agentProviderConfig,
       model: {
         model: opts.model,
         maxTokens: opts.maxTokens ?? AGENT_DEFAULT_MAX_TOKENS,
@@ -172,7 +180,7 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
       maxToolCalls: opts.maxToolCalls,
       tools: opts.toolFilter,
     },
-    { tools }
+    { tools, provider: providerInstance }
   );
 
   // Enable direct tool mode for autonomous agents (no meta-tool indirection)
@@ -303,6 +311,10 @@ export interface AgentPipelineOptions {
     tc: ToolCall,
     result: { content: string; isError: boolean; durationMs: number }
   ) => void;
+  /** Optional telemetry context for provider_metrics (gap 24.4) */
+  workflowId?: string;
+  agentId?: string;
+  userId?: string;
 }
 
 /**
@@ -373,12 +385,17 @@ export async function executeAgentPipeline(
   };
 
   // Unwrap Result type
+  const durationMs = Date.now() - startTime;
   if (!chatResult.ok) {
+    // Record error metric
+    await recordTelemetry(opts.agent, provider, model, durationMs, true, opts.workflowId, opts.agentId, opts.userId);
     throw new Error(chatResult.error?.message ?? 'Agent execution failed');
   }
 
   const response = chatResult.value!;
-  const durationMs = Date.now() - startTime;
+
+  // Record success metric
+  await recordTelemetry(opts.agent, provider, model, durationMs, false, opts.workflowId, opts.agentId, opts.userId, response.usage);
 
   return {
     content: response.content ?? '',
@@ -392,6 +409,61 @@ export async function executeAgentPipeline(
     costUsd: calculateExecutionCost(provider, model, response.usage),
     durationMs,
   };
+}
+
+/**
+ * Record a provider telemetry metric (gap 24.4).
+ * Writes to provider_metrics DB table via ProviderMetricsRepository.
+ * Non-blocking — failures are swallowed silently.
+ */
+async function recordTelemetry(
+  agent: Agent,
+  provider: string,
+  model: string,
+  latencyMs: number,
+  isError: boolean,
+  workflowId?: string,
+  agentId?: string,
+  userId?: string,
+  usage?: { promptTokens?: number; completionTokens?: number }
+): Promise<void> {
+  try {
+    const prov = (agent as unknown as { provider: IProvider }).provider;
+    const costUsd = calculateExecutionCost(provider, model, usage ?? null);
+    const metricInput = {
+      id: crypto.randomUUID(),
+      providerId: provider,
+      modelId: model,
+      latencyMs,
+      error: isError,
+      errorType: isError ? 'agent_execution_failed' : null,
+      promptTokens: usage?.promptTokens ?? null,
+      completionTokens: usage?.completionTokens ?? null,
+      costUsd: costUsd > 0 ? costUsd : null,
+      workflowId: workflowId ?? null,
+      agentId: agentId ?? null,
+      userId: userId ?? null,
+    };
+    // Write to DB (default behavior for all providers)
+    getProviderMetricsRepository().record(metricInput).catch(() => {});
+    // Also call provider hook (for providers that want custom handling)
+    if (prov && typeof prov.recordMetric === 'function') {
+      prov.recordMetric({
+        modelId: model,
+        latencyMs,
+        error: isError,
+        errorType: isError ? 'agent_execution_failed' : null,
+        promptTokens: usage?.promptTokens ?? null,
+        completionTokens: usage?.completionTokens ?? null,
+        costUsd: costUsd > 0 ? costUsd : null,
+        workflowId: workflowId ?? null,
+        agentId: agentId ?? null,
+        userId: userId ?? null,
+      }).catch(() => {});
+    }
+  } catch {
+    // Non-blocking telemetry — never surface errors
+  }
 }
 
 // ============================================================================

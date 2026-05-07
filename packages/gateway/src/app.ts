@@ -30,6 +30,7 @@ import { registerAgentRoutes } from './routes/register-agent-routes.js';
 import { registerDataRoutes } from './routes/register-data-routes.js';
 import { registerAutomationRoutes } from './routes/register-automation-routes.js';
 import { registerIntegrationRoutes } from './routes/register-integration-routes.js';
+import { registerV2Routes } from './routes/register-v2-routes.js';
 import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS,
@@ -252,6 +253,9 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   registerAutomationRoutes(app);
   registerIntegrationRoutes(app);
 
+  // v2 API (side-by-side with v1 — same handlers, new routes for future breaking changes)
+  registerV2Routes(app);
+
   // Root route (API-only mode, when UI is not bundled)
   if (!UI_AVAILABLE) {
     app.get('/', (c) => {
@@ -351,6 +355,70 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         // Edge devices (IoT/MQTT delegation)
         edge: '/api/v1/edge',
         // Webhooks (external service callbacks, no auth required)
+        webhooks: '/webhooks/telegram/:secret',
+      },
+    });
+  });
+
+  // v2 API info (side-by-side with v1 — same endpoints at /api/v2/*)
+  app.get('/api/v2', (c) => {
+    return c.json({
+      version: 'v2',
+      status: 'active',
+      note: 'v2 is side-by-side with v1. Breaking changes will land in v2 first. v1 is deprecated with no end-of-life date set.',
+      endpoints: {
+        health: '/health',
+        auth: '/api/v2/auth',
+        agents: '/api/v2/agents',
+        chat: '/api/v2/chat',
+        tools: '/api/v2/tools',
+        settings: '/api/v2/settings',
+        channels: '/api/v2/channels',
+        channelAuth: '/api/v2/channels/auth',
+        costs: '/api/v2/costs',
+        models: '/api/v2/models',
+        providers: '/api/v2/providers',
+        profile: '/api/v2/profile',
+        tasks: '/api/v2/tasks',
+        bookmarks: '/api/v2/bookmarks',
+        notes: '/api/v2/notes',
+        calendar: '/api/v2/calendar',
+        contacts: '/api/v2/contacts',
+        summary: '/api/v2/summary',
+        customData: '/api/v2/custom-data',
+        memories: '/api/v2/memories',
+        goals: '/api/v2/goals',
+        triggers: '/api/v2/triggers',
+        plans: '/api/v2/plans',
+        autonomy: '/api/v2/autonomy',
+        debug: '/api/v2/debug',
+        workspaces: '/api/v2/workspaces',
+        fileWorkspaces: '/api/v2/file-workspaces',
+        plugins: '/api/v2/plugins',
+        pomodoro: '/api/v2/pomodoro',
+        habits: '/api/v2/habits',
+        captures: '/api/v2/captures',
+        modelConfigs: '/api/v2/model-configs',
+        dashboard: '/api/v2/dashboard',
+        customTools: '/api/v2/custom-tools',
+        configServices: '/api/v2/config-services',
+        heartbeats: '/api/v2/heartbeats',
+        extensions: '/api/v2/extensions',
+        localProviders: '/api/v2/local-providers',
+        workflows: '/api/v2/workflows',
+        composio: '/api/v2/composio',
+        codingAgents: '/api/v2/coding-agents',
+        cliProviders: '/api/v2/cli-providers',
+        cliTools: '/api/v2/cli-tools',
+        cliChat: '/api/v2/cli-chat',
+        security: '/api/v2/security',
+        subagents: '/api/v2/subagents',
+        orchestra: '/api/v2/orchestra',
+        artifacts: '/api/v2/artifacts',
+        voice: '/api/v2/voice',
+        browser: '/api/v2/browser',
+        skills: '/api/v2/skills',
+        edge: '/api/v2/edge',
         webhooks: '/webhooks/telegram/:secret',
       },
     });

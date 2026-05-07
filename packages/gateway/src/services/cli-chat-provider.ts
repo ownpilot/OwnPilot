@@ -183,6 +183,23 @@ export class CliChatProvider implements IProvider {
     });
   }
 
+  recordMetric(input: {
+    modelId: string;
+    latencyMs: number;
+    error: boolean;
+    errorType?: string | null;
+    promptTokens?: number | null;
+    completionTokens?: number | null;
+    costUsd?: number | null;
+    workflowId?: string | null;
+    agentId?: string | null;
+    userId?: string | null;
+  }): Promise<void> {
+    // CLI provider does not record telemetry (uses Claude Code binary, not HTTP API)
+    void input;
+    return Promise.resolve();
+  }
+
   async complete(request: CompletionRequest): Promise<Result<CompletionResponse, InternalError>> {
     const raw = request.model.model || this.config.model || this.definition.defaultModel;
     // Filter out sentinel values — CLI tools resolve their own model from config/login.

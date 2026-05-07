@@ -23,17 +23,20 @@
  */
 
 const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
-const TRUSTED_PROXY_IPS = (process.env.TRUSTED_PROXY_IPS ?? '')
+const RAW_TRUSTED_PROXY_IPS = process.env.TRUSTED_PROXY_IPS ?? '';
+const TRUSTED_PROXY_IPS = RAW_TRUSTED_PROXY_IPS
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+/** Special sentinel meaning "trust any proxy IP" (useful in tests) */
+const TRUST_ANY = TRUSTED_PROXY_IPS.length > 0 && TRUSTED_PROXY_IPS.includes('*');
 
 /**
  * Whether proxy-aware IP extraction is configured safely.
  * `TRUSTED_PROXY=true` without `TRUSTED_PROXY_IPS` is unsafe — we ignore XFF.
  */
 export function isProxyAwareConfigured(): boolean {
-  return TRUST_PROXY && TRUSTED_PROXY_IPS.length > 0;
+  return TRUST_PROXY && (TRUSTED_PROXY_IPS.length > 0 || TRUST_ANY);
 }
 
 let warnedMisconfig = false;
@@ -68,8 +71,6 @@ export function getClientIp(req: {
 
   if (!isProxyAwareConfigured()) return 'direct';
 
-  // Last entry in XFF is the IP appended by the closest proxy (most trusted).
-  // Splitting on comma and taking the last non-empty trimmed entry.
   const xff = req.header('X-Forwarded-For');
   if (xff) {
     const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);

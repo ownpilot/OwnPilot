@@ -139,12 +139,15 @@ describe('MemoriesRepository', () => {
       await repo.create({ type: 'fact', content: 'Test' });
 
       const insertParams = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      // importance defaults to 0.5 (index 8 after adding content_hash at index 4)
-      expect(insertParams[8]).toBe(0.5);
-      // tags defaults to '[]'
-      expect(insertParams[9]).toBe('[]');
-      // metadata defaults to '{}'
-      expect(insertParams[12]).toBe('{}');
+      // importance defaults to 0.5 (at index 9)
+      expect(insertParams[9]).toBe(0.5);
+      // tags defaults to '[]' (at index 10)
+      expect(insertParams[10]).toBe('[]');
+      // accessed_count defaults to 0 (at index 11)
+      expect(insertParams[11]).toBe(0);
+      // created_at at index 12, updated_at at index 13
+      // metadata defaults to '{}' (at index 14)
+      expect(insertParams[14]).toBe('{}');
     });
 
     it('serializes embedding as JSON when provided', async () => {
@@ -1117,18 +1120,18 @@ describe('MemoriesRepository', () => {
       mockAdapter.queryOne.mockResolvedValue(memoryRow());
       await repo.create({ type: 'conversation', content: 'S', source: 'chat', sourceId: 'c1' });
       const p = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      // content_hash at index 4, source at 6, sourceId at 7
-      expect(p[6]).toBe('chat');
-      expect(p[7]).toBe('c1');
+      // content_hash at index 4, source at 7, sourceId at 8 (accessCount at index 11)
+      expect(p[7]).toBe('chat');
+      expect(p[8]).toBe('c1');
     });
     it('defaults source/sourceId to null', async () => {
       mockAdapter.execute.mockResolvedValue({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValue(memoryRow());
       await repo.create({ type: 'fact', content: 'T' });
       const p = mockAdapter.execute.mock.calls[0]![1] as unknown[];
-      // source at 6, sourceId at 7
-      expect(p[6]).toBeNull();
+      // source at 7, sourceId at 8
       expect(p[7]).toBeNull();
+      expect(p[8]).toBeNull();
     });
   });
 

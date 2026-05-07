@@ -101,10 +101,10 @@ CREATE TABLE job_history (
 ## Integration Plan
 
 ### Phase 1: Infrastructure (gateway)
-1. Add `jobs` + `job_history` tables to `schema/core.ts`
-2. Add `JobQueueService` (wraps pg-boss) to `services/`
-3. Add `enqueueJob(name, payload, options)` function
-4. Add `enqueueJobAtPriority(queue, priority)` for system jobs
+1. ✅ Add `jobs` + `job_history` tables to `schema/core.ts` + migration 031_job_queue.sql
+2. ✅ Add `JobQueueService` to `services/`
+3. ✅ Add `enqueueJob(name, payload, options)` function
+4. ✅ Add `enqueueJobAtPriority(queue, priority)` for system jobs
 
 ### Phase 2: Workflow System (gateway)
 1. Refactor `WorkflowService.dispatchNode()` to enqueue each node as a job instead of executing synchronously
