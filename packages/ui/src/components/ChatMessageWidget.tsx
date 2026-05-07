@@ -10,8 +10,18 @@ import {
   Table,
   TrendingUp,
 } from './icons';
-
-type WidgetTone = 'default' | 'info' | 'success' | 'warning' | 'danger';
+import { WidgetShell } from './widgets/WidgetShell';
+import {
+  CodeWidget,
+  ImageWidget,
+  FileWidget,
+  VideoWidget,
+  AudioWidget,
+  EmbedWidget,
+  ChartWidget,
+  HtmlWidget as HtmlWidgetComponent,
+} from './widgets';
+import type { WidgetTone } from './widgets/widget-types';
 
 interface ChatMessageWidgetProps {
   name: string;
@@ -205,35 +215,6 @@ function normalizeTone(value: unknown): WidgetTone {
     return value;
   }
   return 'default';
-}
-
-function WidgetShell({
-  children,
-  title,
-  icon,
-  tone = 'default',
-}: {
-  children: React.ReactNode;
-  title?: string;
-  icon?: React.ReactNode;
-  tone?: WidgetTone;
-}) {
-  const classes = toneClasses(tone);
-  return (
-    <section className={`my-3 rounded-lg border ${classes.shell} overflow-hidden`}>
-      {(title || icon) && (
-        <div className="flex items-center gap-2 border-b border-border/70 px-3 py-2 dark:border-dark-border/70">
-          {icon && <span className={classes.icon}>{icon}</span>}
-          {title && (
-            <div className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-              {title}
-            </div>
-          )}
-        </div>
-      )}
-      <div className="p-3">{children}</div>
-    </section>
-  );
 }
 
 function MetricGrid({ data }: { data: unknown }) {
@@ -784,6 +765,31 @@ export function ChatMessageWidget({ name, data }: ChatMessageWidgetProps) {
       return <BarChartWidget data={renderData} />;
     case 'timeline':
       return <TimelineWidget data={renderData} />;
+    // Code & Media widgets
+    case 'code':
+    case 'code_block':
+      return <CodeWidget data={renderData} />;
+    case 'image':
+    case 'images':
+      return <ImageWidget data={renderData} />;
+    case 'video':
+      return <VideoWidget data={renderData} />;
+    case 'audio':
+      return <AudioWidget data={renderData} />;
+    case 'file':
+    case 'files':
+      return <FileWidget data={renderData} />;
+    // Advanced chart/embed widgets
+    case 'chart':
+    case 'pie_chart':
+    case 'line_chart':
+      return <ChartWidget data={renderData} />;
+    case 'embed':
+    case 'iframe':
+      return <EmbedWidget data={renderData} />;
+    case 'html':
+      return <HtmlWidgetComponent data={renderData} />;
+    // Fallback
     default:
       return <JsonWidget name={normalized || 'widget'} data={renderData} />;
   }
