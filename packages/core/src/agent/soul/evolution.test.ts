@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SoulEvolutionEngine } from './evolution.js';
 import type { AgentSoul, SoulFeedback } from './types.js';
 

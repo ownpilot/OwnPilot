@@ -92,7 +92,7 @@ pnpm dev`}
       <p>In dev mode, two URLs are available:</p>
       <ul>
         <li>
-          <code>http://localhost:5173</code> — Vite UI dev server (hot reload, proxies API to
+          <code>http://localhost:8199</code> — Vite UI dev server (hot reload, proxies API to
           gateway)
         </li>
         <li>
@@ -162,7 +162,7 @@ ownpilot config set ollama-base-url http://localhost:11434`}
           <tr>
             <td>UI (dev mode)</td>
             <td>
-              <code>http://localhost:5173</code>
+              <code>http://localhost:8199</code>
             </td>
             <td>Vite dev server with hot reload</td>
           </tr>

@@ -70,8 +70,6 @@ describe('CredentialStore - deriveKey failure paths', () => {
 
   describe('unlock - deriveKey failure', () => {
     it('returns error when deriveKey fails during unlock', async () => {
-      // First, successfully initialize with a working deriveKey
-      const { deriveKey: realDeriveKey } = await import('./derive.js');
       // We need a valid file in fsStore first. Use a simple approach:
       // Create a file manually
       fsStore[TEST_PATH] = JSON.stringify({
@@ -99,7 +97,6 @@ describe('CredentialStore - deriveKey failure paths', () => {
       // Setup: create a valid credentials file
       const { generateSalt, generateIV, toBase64 } = await import('./derive.js');
       const salt = generateSalt(32);
-      const iv = generateIV();
 
       // Create a real CryptoKey for initial setup
       const { webcrypto } = await import('node:crypto');

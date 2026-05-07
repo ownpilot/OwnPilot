@@ -28,8 +28,6 @@ function makeMessage(overrides: Partial<UCPMessage> = {}): UCPMessage {
   };
 }
 
-const passThrough = async (): Promise<UCPMessage> => makeMessage();
-
 // ============================================================================
 // Rate Limiter
 // ============================================================================
@@ -106,15 +104,15 @@ describe('threadTracker', () => {
     const mw = threadTracker(store);
     const msg = makeMessage({ externalId: 'ext-1' });
 
-    let result: UCPMessage = msg;
+    let _result: UCPMessage = msg;
     await mw(msg, async () => {
-      result = msg;
+      _result = msg;
       return msg;
     });
 
     // The middleware modifies msg before calling next
     // Thread ID is assigned via immutable update
-    const processed = await mw(makeMessage({ externalId: 'ext-2' }), async () => makeMessage());
+    const _processed = await mw(makeMessage({ externalId: 'ext-2' }), async () => makeMessage());
     expect(store.getThread('ext-2')).toBeDefined();
   });
 
@@ -126,12 +124,8 @@ describe('threadTracker', () => {
 
     // Reply to parent
     const reply = makeMessage({ externalId: 'ext-reply', replyToId: 'ext-parent' });
-    let captured: UCPMessage | null = null;
 
-    await mw(reply, async () => {
-      captured = reply;
-      return reply;
-    });
+    await mw(reply, async () => reply);
 
     expect(store.getThread('ext-reply')).toBe('thread-123');
   });
@@ -251,9 +245,9 @@ describe('languageDetector middleware', () => {
       content: [{ type: 'text', text: 'The quick brown fox jumps over the lazy dog and the cat' }],
     });
 
-    let captured: UCPMessage = msg;
+    let _captured: UCPMessage = msg;
     await mw(msg, async () => {
-      captured = msg;
+      _captured = msg;
       return msg;
     });
 

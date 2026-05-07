@@ -49,7 +49,7 @@ PORT=8080                    # Gateway HTTP port (default: 8080)
 HOST=0.0.0.0                 # Bind address (default: 0.0.0.0)
 NODE_ENV=production          # development | production
 LOG_LEVEL=info               # error | warn | info | debug
-UI_PORT=5173                 # Vite dev server port (dev mode only)
+UI_PORT=8199                 # Vite dev server port (dev mode only)
 
 # Database
 POSTGRES_HOST=localhost       # PostgreSQL hostname

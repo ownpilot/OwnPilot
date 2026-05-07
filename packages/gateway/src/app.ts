@@ -59,7 +59,7 @@ const DEFAULT_CONFIG: GatewayConfig = {
   // Default to localhost only. In production, set the CORS_ORIGINS env var
   // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
   corsOrigins: (() => {
-    const uiPort = process.env.UI_PORT || '5173';
+    const uiPort = process.env.UI_PORT || '8199';
     return [
       `http://localhost:${uiPort}`,
       `http://127.0.0.1:${uiPort}`,

@@ -372,10 +372,10 @@ cp .env.example .env
 # Start PostgreSQL (if you don't have one already)
 docker compose --profile postgres up -d
 
-# Start development (gateway on :8080 + Vite UI on :5173)
+# Start development (gateway on :8080 + Vite UI on :8199)
 pnpm dev
 
-# Open http://localhost:5173 (Vite proxies API/WS to gateway)
+# Open http://localhost:8199 (Vite proxies API/WS to gateway)
 ```
 
 AI provider API keys are configured via the **Config Center UI** (Settings page) after setup.
@@ -1529,7 +1529,7 @@ Error responses include error codes from a standardized `ERROR_CODES` enum.
 ```bash
 # ─── Server ────────────────────────────────────────
 PORT=8080                       # Gateway port
-UI_PORT=5173                    # UI dev server port
+UI_PORT=8199                    # UI dev server port
 HOST=127.0.0.1
 NODE_ENV=development
 # CORS_ORIGINS=                 # Additional origins (localhost:UI_PORT auto-included)
@@ -1641,15 +1641,15 @@ In development, Vite runs a separate dev server with hot reload:
 
 | Service             | Port    | Description                                             |
 | ------------------- | ------- | ------------------------------------------------------- |
-| **Vite Dev Server** | `5173`  | React UI with HMR (proxies `/api` and `/ws` to gateway) |
+| **Vite Dev Server** | `8199`  | React UI with HMR (proxies `/api` and `/ws` to gateway) |
 | **Gateway**         | `8080`  | REST API + WebSocket                                    |
 | **PostgreSQL**      | `25432` | Database                                                |
 
 ```bash
-pnpm dev     # Starts gateway (8080) + Vite UI (5173)
+pnpm dev     # Starts gateway (8080) + Vite UI (8199)
 ```
 
-Open **http://localhost:5173** for development. Vite automatically proxies API calls (`/api/*`) and WebSocket (`/ws`) to the gateway on port 8080.
+Open **http://localhost:8199** for development. Vite automatically proxies API calls (`/api/*`) and WebSocket (`/ws`) to the gateway on port 8080.
 
 ### Manual Production
 

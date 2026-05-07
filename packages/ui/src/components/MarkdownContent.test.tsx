@@ -156,6 +156,25 @@ After`}
     expect(html).not.toContain('Invalid widget data');
   });
 
+  it('renders widget tags whose JSON data contains literal apostrophes', () => {
+    // Reproduces the Turkish/French apostrophe bug: stray ' inside `data='...'`
+    // (e.g. 09:00'da, Telegram'a, Postimees'ten) used to confuse quote tracking
+    // and prevent finding the closing `/>`, leaking the raw tag to the user.
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={`<widget name="callout" data='{"body":"Onedio Haber Takip Sistemi — Ekonomi & spor haberleri günlük 09:00'da otomatik taranır, dedup yapılır, Telegram'a bülten gönderilir.\\n\\nSüper Lig Takip — Puan tablosu & fikstür güncellemeleri.\\n\\nEstonya Haberleri — ERR & Postimees'ten Türkçe bülten.\\n\\nPomodoro Timer — Odaklanma sessions.","tone":"info"}' />`}
+      />
+    );
+
+    expect(html).toContain('Onedio Haber Takip Sistemi');
+    expect(html).toContain("09:00&#x27;da");
+    expect(html).toContain("Telegram&#x27;a");
+    expect(html).toContain("Postimees&#x27;ten");
+    expect(html).toContain('Pomodoro Timer');
+    expect(html).not.toContain('&lt;widget');
+    expect(html).not.toContain('Invalid widget data');
+  });
+
   it('does not end widget tags on markers inside quoted data strings', () => {
     const html = renderToStaticMarkup(
       <MarkdownContent

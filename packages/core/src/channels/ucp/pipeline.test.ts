@@ -86,7 +86,7 @@ describe('UCPPipeline', () => {
     const pipeline = new UCPPipeline();
 
     pipeline.useInbound('tagger', async (msg, next) => {
-      const modified = { ...msg, metadata: { ...msg.metadata, tagged: true } };
+      const _modified = { ...msg, metadata: { ...msg.metadata, tagged: true } };
       return next();
     });
 
@@ -94,7 +94,7 @@ describe('UCPPipeline', () => {
     // Let's test proper mutation pattern
     const pipeline2 = new UCPPipeline();
     pipeline2.useInbound('uppercase', async (msg, next) => {
-      const upper: UCPMessage = {
+      const _upper: UCPMessage = {
         ...msg,
         content: msg.content.map((c) =>
           c.type === 'text' && c.text ? { ...c, text: c.text.toUpperCase() } : c

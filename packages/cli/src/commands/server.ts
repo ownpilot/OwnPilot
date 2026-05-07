@@ -44,7 +44,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
     port,
     host,
     corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [
-      `http://localhost:${process.env.UI_PORT || '5173'}`,
+      `http://localhost:${process.env.UI_PORT || '8199'}`,
     ],
   };
 

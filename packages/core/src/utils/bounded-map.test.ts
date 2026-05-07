@@ -211,7 +211,7 @@ describe('BoundedMap', () => {
       map.set('b', 2);
 
       // Iterate (should not update LRU counter)
-      // eslint-disable-next-line no-unused-vars
+       
       for (const _entry of map.entries()) { /* exhaust iterator */ }
 
       // Insert 'c' — should evict 'a' (oldest LRU), not 'b'

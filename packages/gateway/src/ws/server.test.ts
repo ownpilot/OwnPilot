@@ -179,7 +179,7 @@ function createMockRequest(
   // `{ origin: '' }` explicitly.
   const merged: Record<string, string> = {
     host: 'localhost',
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:8199',
     ...headers,
   };
   // Allow callers to drop the Origin by passing an empty string.
@@ -413,7 +413,7 @@ describe('WSGateway', () => {
       const handler = getConnectionHandler();
       const socket = createMockSocket();
       const request = createMockRequest('/', {
-        origin: 'http://localhost:5173',
+        origin: 'http://localhost:8199',
       });
 
       await handler(socket, request);
@@ -439,7 +439,7 @@ describe('WSGateway', () => {
 
     it('rejects connection when origin not in allowedOrigins', async () => {
       const gw = new WSGateway({
-        allowedOrigins: ['http://localhost:5173'],
+        allowedOrigins: ['http://localhost:8199'],
       });
       gw.start();
 
@@ -457,7 +457,7 @@ describe('WSGateway', () => {
 
     it('accepts connection when origin matches allowedOrigins', async () => {
       const gw = new WSGateway({
-        allowedOrigins: ['http://localhost:5173', 'http://localhost:3000'],
+        allowedOrigins: ['http://localhost:8199', 'http://localhost:3000'],
       });
       gw.start();
 
@@ -475,7 +475,7 @@ describe('WSGateway', () => {
 
     it('rejects when restrictions configured but no origin header', async () => {
       const gw = new WSGateway({
-        allowedOrigins: ['http://localhost:5173'],
+        allowedOrigins: ['http://localhost:8199'],
       });
       gw.start();
 

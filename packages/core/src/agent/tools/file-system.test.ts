@@ -53,13 +53,9 @@ import {
   writeFileExecutor,
   listDirectoryExecutor,
   searchFilesExecutor,
-  downloadFileTool,
   downloadFileExecutor,
-  fileInfoTool,
   fileInfoExecutor,
-  deleteFileTool,
   deleteFileExecutor,
-  copyFileTool,
   copyFileExecutor,
   FILE_SYSTEM_TOOLS,
 } from './file-system.js';

@@ -219,7 +219,7 @@ composioRoutes.get('/callback', async (c) => {
   }
 
   // Redirect back to UI Connected Apps page
-  const uiPort = process.env.UI_PORT ?? '5173';
+  const uiPort = process.env.UI_PORT ?? '8199';
   const uiHost = process.env.UI_HOST ?? `http://localhost:${uiPort}`;
   const redirectUrl = `${uiHost}/settings/connected-apps${safeAppName ? `?connected=${encodeURIComponent(safeAppName)}&status=${encodeURIComponent(status)}` : `?status=${encodeURIComponent(status)}`}`;
 

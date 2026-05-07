@@ -5,7 +5,7 @@
       "name": "ui-dev",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["packages/ui/dev-start.sh"],
-      "port": 5173,
+      "port": 8199,
       "autoPort": false
     }
   ]

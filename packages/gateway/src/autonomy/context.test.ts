@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { gatherPulseContext, type PulseContext, type GoalSummary } from './context.js';
+import { gatherPulseContext } from './context.js';
 
 // ============================================================================
 // Mocks

@@ -5,12 +5,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   AutonomyEngine,
-  getAutonomyEngine,
-  createPulseServiceAdapter,
   stopAutonomyEngine,
-  DEFAULT_PULSE_DIRECTIVES,
 } from './engine.js';
-import { createAutonomyLogRepo } from '../db/repositories/autonomy-log.js';
 
 // ============================================================================
 // Mocks

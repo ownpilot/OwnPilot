@@ -1010,7 +1010,17 @@ export const MarkdownContent = memo(function MarkdownContent({
 
     let quote: '"' | "'" | null = null;
     let escaped = false;
+    let quoteContentIsJson = false;
     const attrsStart = nameMatch[0].length;
+
+    const isAtTagBoundary = (afterIndex: number): boolean => {
+      let look = afterIndex;
+      while (look < trimmed.length && /\s/.test(trimmed[look] ?? '')) look += 1;
+      if (look >= trimmed.length) return true;
+      if (trimmed[look] === '/' && trimmed[look + 1] === '>') return true;
+      if (trimmed[look] === '>') return true;
+      return false;
+    };
 
     for (let index = attrsStart; index < trimmed.length; index += 1) {
       const char = trimmed[index]!;
@@ -1020,13 +1030,18 @@ export const MarkdownContent = memo(function MarkdownContent({
         } else if (char === '\\') {
           escaped = true;
         } else if (char === quote) {
+          if (quoteContentIsJson && !isAtTagBoundary(index + 1)) continue;
           quote = null;
+          quoteContentIsJson = false;
         }
         continue;
       }
 
       if (char === '"' || char === "'") {
         quote = char;
+        let look = index + 1;
+        while (look < trimmed.length && /\s/.test(trimmed[look] ?? '')) look += 1;
+        quoteContentIsJson = trimmed[look] === '{' || trimmed[look] === '[';
         continue;
       }
 
@@ -1090,6 +1105,16 @@ export const MarkdownContent = memo(function MarkdownContent({
     const closingTag = `</${tagName.toLowerCase()}>`;
     let quote: '"' | "'" | null = null;
     let escaped = false;
+    let quoteContentIsJson = false;
+
+    const isAtTagBoundary = (afterIndex: number): boolean => {
+      let look = afterIndex;
+      while (look < text.length && /\s/.test(text[look] ?? '')) look += 1;
+      if (look >= text.length) return true;
+      if (text[look] === '/' && text[look + 1] === '>') return true;
+      if (text[look] === '>') return true;
+      return false;
+    };
 
     for (let index = startIndex; index < text.length; index += 1) {
       const char = text[index]!;
@@ -1099,13 +1124,22 @@ export const MarkdownContent = memo(function MarkdownContent({
         } else if (char === '\\') {
           escaped = true;
         } else if (char === quote) {
+          // JSON-like values may contain stray apostrophes (e.g. Turkish "09:00'da").
+          // Treat `'` as the closing quote only when followed by a tag boundary.
+          if (quoteContentIsJson && !isAtTagBoundary(index + 1)) {
+            continue;
+          }
           quote = null;
+          quoteContentIsJson = false;
         }
         continue;
       }
 
       if (char === '"' || char === "'") {
         quote = char;
+        let look = index + 1;
+        while (look < text.length && /\s/.test(text[look] ?? '')) look += 1;
+        quoteContentIsJson = text[look] === '{' || text[look] === '[';
         continue;
       }
 

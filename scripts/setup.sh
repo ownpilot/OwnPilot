@@ -160,7 +160,7 @@ setup_env() {
             cat > .env << EOF
 # OwnPilot Environment
 PORT=8080
-UI_PORT=5173
+UI_PORT=8199
 HOST=127.0.0.1
 NODE_ENV=development
 
@@ -269,7 +269,7 @@ start_dev() {
 
     log_success "Development server starting..."
     log_info "Gateway: http://localhost:8080"
-    log_info "UI: http://localhost:5173"
+    log_info "UI: http://localhost:8199"
 }
 
 # Main

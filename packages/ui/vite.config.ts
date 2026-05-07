@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   // Read version from core package.json (single source of truth)
   const corePkg = JSON.parse(readFileSync(resolve(__dirname, '../core/package.json'), 'utf-8'));
 
-  const uiPort = parseInt(env.UI_PORT || '5173', 10);
+  const uiPort = parseInt(env.UI_PORT || '8199', 10);
   const apiPort = env.PORT || '8080';
   const apiTarget = `http://127.0.0.1:${apiPort}`;
   const wsTarget = `ws://127.0.0.1:${apiPort}`;

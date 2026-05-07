@@ -49,7 +49,7 @@ export async function startAll(options: StartOptions): Promise<void> {
     port,
     host: '0.0.0.0',
     corsOrigins: process.env.CORS_ORIGINS?.split(',') ?? [
-      `http://localhost:${process.env.UI_PORT || '5173'}`,
+      `http://localhost:${process.env.UI_PORT || '8199'}`,
     ],
     auth: { type: 'none' },
   };

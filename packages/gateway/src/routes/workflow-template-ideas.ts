@@ -1184,22 +1184,3 @@ export const WORKFLOW_TEMPLATE_IDEAS: Array<{
 ];
 
 /** Get templates by category */
-export function getTemplatesByCategory(): Record<string, typeof WORKFLOW_TEMPLATE_IDEAS> {
-  const result: Record<string, typeof WORKFLOW_TEMPLATE_IDEAS> = {};
-  for (const t of WORKFLOW_TEMPLATE_IDEAS) {
-    if (!result[t.category]) result[t.category] = [];
-    result[t.category]!.push(t);
-  }
-  return result;
-}
-
-/** Get template categories with counts */
-export function getTemplateCategoryCounts(): Array<{ category: string; count: number }> {
-  const counts: Record<string, number> = {};
-  for (const t of WORKFLOW_TEMPLATE_IDEAS) {
-    counts[t.category] = (counts[t.category] ?? 0) + 1;
-  }
-  return Object.entries(counts)
-    .map(([category, count]) => ({ category, count }))
-    .sort((a, b) => b.count - a.count);
-}

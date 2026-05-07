@@ -267,7 +267,7 @@ describe('acp-handlers', () => {
   // Terminal operations
   // ===========================================================================
   describe('terminal operations', () => {
-    let exitResolve: (val: any) => void;
+    let _exitResolve: (val: any) => void;
 
     beforeEach(() => {
       // Reset mockChild handlers
@@ -279,7 +279,7 @@ describe('acp-handlers', () => {
       // Set up event listeners to capture callbacks
       mockChild.on.mockImplementation((event: string, cb: (...args: any[]) => void) => {
         if (event === 'exit') {
-          exitResolve = (val: any) => cb(val.exitCode, val.signal);
+          _exitResolve = (val: any) => cb(val.exitCode, val.signal);
         }
       });
     });

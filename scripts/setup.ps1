@@ -151,7 +151,7 @@ function Initialize-EnvFile {
         $envContent = @"
 # OwnPilot Environment
 PORT=8080
-UI_PORT=5173
+UI_PORT=8199
 HOST=127.0.0.1
 NODE_ENV=development
 
@@ -266,7 +266,7 @@ function Start-Development {
 
     Write-Success "Development server starting..."
     Write-Info "Gateway: http://localhost:8080"
-    Write-Info "UI: http://localhost:5173"
+    Write-Info "UI: http://localhost:8199"
 }
 
 # Main

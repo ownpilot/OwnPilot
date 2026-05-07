@@ -57,7 +57,7 @@ pnpm install`,
         title: 'Start dev server',
         code: `pnpm dev
 # Gateway: http://localhost:8080
-# UI:      http://localhost:5173`,
+# UI:      http://localhost:8199`,
         language: 'bash',
       },
     ],
@@ -95,7 +95,7 @@ cd ownpilot
 
 const envVars = `# Server
 PORT=8080
-UI_PORT=5173
+UI_PORT=8199
 HOST=127.0.0.1
 NODE_ENV=development
 
@@ -200,7 +200,7 @@ export function QuickStart() {
                     url: 'http://localhost:8080',
                     desc: 'REST API + WebSocket',
                   },
-                  { label: 'Web UI (dev)', url: 'http://localhost:5173', desc: 'Vite dev server' },
+                  { label: 'Web UI (dev)', url: 'http://localhost:8199', desc: 'Vite dev server' },
                   { label: 'PostgreSQL', url: 'localhost:25432', desc: 'Database with pgvector' },
                 ].map((svc) => (
                   <div key={svc.label} className="flex items-center justify-between text-sm">

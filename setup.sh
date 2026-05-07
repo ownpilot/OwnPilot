@@ -137,7 +137,7 @@ fi
 section "Server Configuration"
 
 ask "Gateway API port" "8080" PORT
-ask "UI dev server port" "5173" UI_PORT
+ask "UI dev server port" "8199" UI_PORT
 ask "Bind address" "127.0.0.1" HOST
 ask_choice "Environment" "development" NODE_ENV "development" "production"
 ask "Extra CORS origins (comma-separated, empty = auto)" "" CORS_ORIGINS

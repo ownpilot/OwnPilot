@@ -143,7 +143,7 @@ cd ownpilot`}
             <td>
               <code>UI_PORT</code>
             </td>
-            <td>5173</td>
+            <td>8199</td>
             <td>Vite dev server port</td>
           </tr>
           <tr>

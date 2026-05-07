@@ -17,7 +17,7 @@ MODE="dev"
 NO_UI=false
 BUILD=false
 PORT=${PORT:-8080}
-UI_PORT=${UI_PORT:-5173}
+UI_PORT=${UI_PORT:-8199}
 
 # Colors
 RED='\033[0;31m'
@@ -62,7 +62,7 @@ show_help() {
     echo "  --no-ui         Start gateway only, without UI"
     echo "  --build         Force rebuild before starting"
     echo "  --port PORT     Gateway API port (default: 8080)"
-    echo "  --ui-port PORT  UI dev server port (default: 5173)"
+    echo "  --ui-port PORT  UI dev server port (default: 8199)"
     echo "  --help          Show this help message"
     echo ""
     echo "Examples:"

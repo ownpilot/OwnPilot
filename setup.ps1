@@ -168,7 +168,7 @@ if (-not $prereqsOk) {
 Write-Section "Server Configuration"
 
 $port = Ask -Prompt "Gateway API port" -Default "8080"
-$uiPort = Ask -Prompt "UI dev server port" -Default "5173"
+$uiPort = Ask -Prompt "UI dev server port" -Default "8199"
 $host_ = Ask -Prompt "Bind address" -Default "127.0.0.1"
 $nodeEnv = Ask-Choice -Prompt "Environment" -Default "development" -Options @("development", "production")
 $corsOrigins = Ask -Prompt "Extra CORS origins (comma-separated, empty = auto)" -Default ""

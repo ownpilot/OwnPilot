@@ -42,7 +42,6 @@ function parseJsonPayload(value: string): unknown {
 
 function warnFallback(widget: string, reason: string, data: unknown): void {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.warn(`[ChatMessageWidget] ${widget} → JsonWidget fallback (${reason})`, data);
   }
 }

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   mapSessionNotification,
   mapSessionUpdate,
-  type MappedAcpEvent,
 } from './acp-event-mapper.js';
 
 // Freeze time for deterministic timestamps

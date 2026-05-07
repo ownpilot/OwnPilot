@@ -119,7 +119,7 @@ export class BoundedMap<K = string, V = unknown> {
    * Iterate over entries (key-value pairs) without affecting LRU order.
    */
   entries(): Iterable<[K, V]> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+     
     const map = this.map;
     return {
       *[Symbol.iterator](): Generator<[K, V]> {
@@ -141,7 +141,7 @@ export class BoundedMap<K = string, V = unknown> {
    * Iterate over values without affecting LRU order.
    */
   values(): Iterable<V> {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
+     
     const map = this.map;
     return {
       *[Symbol.iterator](): Generator<V> {

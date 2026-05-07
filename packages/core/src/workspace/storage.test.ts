@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IsolatedStorage, StorageSecurityError, initializeStorage } from './storage.js';
 
 // Mock node:fs
@@ -500,7 +500,6 @@ describe('IsolatedStorage', () => {
     });
 
     it('skips files that cannot be processed', async () => {
-      const oldDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
       vi.mocked(fsMock.promises.readdir).mockResolvedValue([
         { name: 'problematic.tmp', isDirectory: () => false } as never,
       ]);

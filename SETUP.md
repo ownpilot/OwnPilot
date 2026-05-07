@@ -130,7 +130,7 @@ Edit `.env` with your settings. The defaults work with Docker Compose PostgreSQL
 ```env
 # Server
 PORT=8080
-UI_PORT=5173
+UI_PORT=8199
 HOST=127.0.0.1
 NODE_ENV=development
 
@@ -223,7 +223,7 @@ pnpm dev
 | `--docker`       | Start with Docker Compose                  |
 | `--no-ui`        | Gateway only, without UI                   |
 | `--port PORT`    | Gateway API port (default: 8080)           |
-| `--ui-port PORT` | UI dev server port (default: 5173)         |
+| `--ui-port PORT` | UI dev server port (default: 8199)         |
 
 ### Manual Start
 
@@ -244,7 +244,7 @@ After starting, these services are available:
 | Service     | URL                   | Description     |
 | ----------- | --------------------- | --------------- |
 | Gateway API | http://localhost:8080 | REST API server |
-| UI          | http://localhost:5173 | Web interface   |
+| UI          | http://localhost:8199 | Web interface   |
 | PostgreSQL  | localhost:25432       | Database        |
 
 ---
@@ -272,7 +272,7 @@ Supported providers:
 | Variable        | Default     | Description        |
 | --------------- | ----------- | ------------------ |
 | `PORT`          | 8080        | Gateway API port   |
-| `UI_PORT`       | 5173        | UI dev server port |
+| `UI_PORT`       | 8199        | UI dev server port |
 | `POSTGRES_HOST` | localhost   | Database host      |
 | `POSTGRES_PORT` | 25432       | Database port      |
 | `NODE_ENV`      | development | Environment        |

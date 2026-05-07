@@ -131,7 +131,7 @@ describe('Start CLI Command', () => {
 
       expect(mockCreateApp).toHaveBeenCalledWith(
         expect.objectContaining({
-          corsOrigins: ['http://localhost:5173'],
+          corsOrigins: ['http://localhost:8199'],
         })
       );
     });

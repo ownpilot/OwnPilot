@@ -19,7 +19,7 @@
     Gateway API port (default: 8080)
 
 .PARAMETER UIPort
-    UI dev server port (default: 5173)
+    UI dev server port (default: 8199)
 
 .EXAMPLE
     .\start.ps1
@@ -48,7 +48,7 @@ param(
 
     [int]$Port = 8200,
 
-    [int]$UIPort = 5173
+    [int]$UIPort = 8199
 )
 
 $ErrorActionPreference = "Stop"

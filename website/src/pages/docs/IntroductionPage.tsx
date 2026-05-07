@@ -146,7 +146,7 @@ export function IntroductionPage() {
       <p>
         In production, a single port (8080) serves everything: the bundled React UI, REST API,
         WebSocket (<code>/ws</code>), and Server-Sent Events. In development mode, Vite runs on port
-        5173 and proxies API/WebSocket requests to the gateway on 8080.
+        8199 and proxies API/WebSocket requests to the gateway on 8080.
       </p>
 
       <h2>What you can do with OwnPilot</h2>

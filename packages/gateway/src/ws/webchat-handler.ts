@@ -52,13 +52,9 @@ export function initWebChatHandler(): void {
       );
     } else {
       // Fallback: broadcast to all (widget will filter by sessionId)
-      const { wsGateway } = await import('./server.js');
-      wsGateway.broadcast(
+      sessionManager.broadcast(
         event as keyof import('./types.js').ServerEvents,
-        {
-          ...(data as Record<string, unknown>),
-          sessionId,
-        } as never
+        { ...(data as Record<string, unknown>), sessionId } as never
       );
     }
   });

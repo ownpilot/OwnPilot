@@ -17,7 +17,6 @@ import {
   sanitizeId,
   maskSecret,
   parseJsonBody,
-  parseJsonBodySafe,
   ERROR_CODES,
 } from './helpers.js';
 
@@ -685,24 +684,6 @@ describe('Route Helpers', () => {
       vi.mocked(c.req.json).mockRejectedValue(new Error('parse error'));
       const result = await parseJsonBody(c);
       expect(result).toBeNull();
-    });
-  });
-
-  describe('parseJsonBodySafe', () => {
-    it('returns success result with parsed data', async () => {
-      const c = createMockContext();
-      vi.mocked(c.req.json).mockResolvedValue({ value: 42 });
-      const result = await parseJsonBodySafe(c);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toEqual({ value: 42 });
-    });
-
-    it('returns failure result when req.json throws', async () => {
-      const c = createMockContext();
-      vi.mocked(c.req.json).mockRejectedValue(new Error('Invalid JSON'));
-      const result = await parseJsonBodySafe(c);
-      expect(result.success).toBe(false);
-      if (!result.success) expect(result.error).toContain('Invalid JSON');
     });
   });
 });

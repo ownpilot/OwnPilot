@@ -205,7 +205,7 @@ describe('UI Session Middleware', () => {
     });
 
     it('allows unsafe cookie-authenticated requests from configured CORS origins', async () => {
-      process.env.CORS_ORIGINS = 'http://localhost:5173';
+      process.env.CORS_ORIGINS = 'http://localhost:8199';
       mockValidateSession.mockReturnValue(true);
       const app = createApp();
 
@@ -214,7 +214,7 @@ describe('UI Session Middleware', () => {
           method: 'POST',
           headers: {
             Cookie: 'ownpilot_ui_session=valid-token',
-            Origin: 'http://localhost:5173',
+            Origin: 'http://localhost:8199',
           },
         });
 

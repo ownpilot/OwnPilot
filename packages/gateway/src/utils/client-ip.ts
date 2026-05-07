@@ -43,7 +43,7 @@ let warnedMisconfig = false;
 function warnIfMisconfigured(): void {
   if (TRUST_PROXY && TRUSTED_PROXY_IPS.length === 0 && !warnedMisconfig) {
     warnedMisconfig = true;
-    // eslint-disable-next-line no-console
+     
     console.warn(
       '[client-ip] TRUSTED_PROXY=true but TRUSTED_PROXY_IPS is empty — ' +
         'X-Forwarded-For will be IGNORED (fail-safe). Set TRUSTED_PROXY_IPS to ' +

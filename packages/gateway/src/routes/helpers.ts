@@ -181,7 +181,7 @@ export function apiError(
   if (REDACT_5XX && status >= 500 && status < 600) {
     const requestId = c.get('requestId') ?? 'unknown';
     // Surface the detail to operators but not the client.
-    // eslint-disable-next-line no-console
+     
     console.warn(
       `[apiError] redacted 5xx detail (requestId=${requestId}): ${errorObj.message}`
     );
@@ -322,12 +322,6 @@ export function validateQueryEnum<T extends string>(
 }
 
 /**
- * Result type for operations that can fail.
- * Use this instead of throwing exceptions for expected failure cases.
- */
-type Result<T, E = Error> = { success: true; data: T } | { success: false; error: E };
-
-/**
  * Validate Content-Type header for JSON requests.
  * Returns true if Content-Type is application/json or application/*+json.
  */
@@ -411,29 +405,5 @@ export async function parseJsonBody<T = unknown>(
         400
       ) && null
     );
-  }
-}
-
-/**
- * Parse JSON with custom error handling - returns Result instead of sending response.
- * Use this when you want to handle the error yourself.
- *
- * @param c - Hono context
- * @returns Result with parsed data or error
- *
- * @example
- * const result = await parseJsonBodySafe(c);
- * if (!result.success) {
- *   console.error(result.error);
- *   return apiError(c, 'Invalid JSON', 400);
- * }
- * const data = result.data;
- */
-export async function parseJsonBodySafe<T = unknown>(c: Context): Promise<Result<T, string>> {
-  try {
-    const data = await c.req.json();
-    return { success: true, data: data as T };
-  } catch {
-    return { success: false, error: 'Invalid JSON in request body' };
   }
 }
