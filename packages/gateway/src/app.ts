@@ -189,26 +189,27 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     })
   );
 
-  // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB)
+  // Body size limit (configurable via BODY_SIZE_LIMIT env var, default 1 MB).
+  // Applies to BOTH /api/* and /webhooks/* — webhook signature checks happen
+  // after body parsing, so an unbounded webhook body is a pre-auth DoS vector.
   const maxBodySize =
     parseInt(process.env.BODY_SIZE_LIMIT ?? String(DEFAULT_BODY_LIMIT_BYTES), 10) ||
     DEFAULT_BODY_LIMIT_BYTES;
-  app.use(
-    '/api/*',
-    bodyLimit({
-      maxSize: maxBodySize,
-      onError: (c) =>
-        c.json(
-          {
-            error: {
-              code: 'PAYLOAD_TOO_LARGE',
-              message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit`,
-            },
+  const bodyLimiter = bodyLimit({
+    maxSize: maxBodySize,
+    onError: (c) =>
+      c.json(
+        {
+          error: {
+            code: 'PAYLOAD_TOO_LARGE',
+            message: `Request body exceeds ${Math.round(maxBodySize / 1024 / 1024)} MB limit`,
           },
-          HTTP_PAYLOAD_TOO_LARGE
-        ),
-    })
-  );
+        },
+        HTTP_PAYLOAD_TOO_LARGE
+      ),
+  });
+  app.use('/api/*', bodyLimiter);
+  app.use('/webhooks/*', bodyLimiter);
 
   // Request ID
   app.use('*', requestId);

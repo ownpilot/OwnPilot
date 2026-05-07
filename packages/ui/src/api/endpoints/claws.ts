@@ -227,7 +227,10 @@ export interface ClawApplyRecommendationsBatchResponse {
 // =============================================================================
 
 export const clawsApi = {
-  list: () => apiClient.get<ClawConfig[]>('/claws'),
+  list: (limit = 50, offset = 0) =>
+    apiClient.get<{ claws: ClawConfig[]; total: number; limit: number; offset: number }>(
+      `/claws?limit=${limit}&offset=${offset}`
+    ),
 
   presets: () => apiClient.get<{ presets: ClawPreset[] }>('/claws/presets'),
 

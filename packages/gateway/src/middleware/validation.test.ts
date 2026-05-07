@@ -13,6 +13,8 @@ import {
   autonomyLevelSchema,
   autonomyBudgetSchema,
   createCustomToolSchema,
+  createClawSchema,
+  clawLimitsSchema,
   updateCustomToolSchema,
   autonomyDecisionSchema,
   autonomyApproveRejectSchema,
@@ -1574,6 +1576,147 @@ describe('updateWorkspaceSchema', () => {
     expect(
       updateWorkspaceSchema.safeParse({
         containerConfig: { memoryMB: 99999 },
+      }).success
+    ).toBe(false);
+  });
+});
+
+// ============================================================================
+// clawLimitsSchema (BIZ-001 regression)
+// ============================================================================
+
+describe('createTriggerSchema BIZ-003 regression', () => {
+  const baseTrigger = {
+    name: 't',
+    type: 'schedule' as const,
+    config: {},
+    action: { type: 'noop' },
+  };
+
+  it('accepts schedule trigger without interval', () => {
+    expect(createTriggerSchema.safeParse(baseTrigger).success).toBe(true);
+  });
+
+  it('accepts schedule trigger with safe interval (>= 1 minute)', () => {
+    expect(
+      createTriggerSchema.safeParse({
+        ...baseTrigger,
+        config: { interval_ms: 60_000 },
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects schedule trigger with sub-minute interval_ms', () => {
+    expect(
+      createTriggerSchema.safeParse({
+        ...baseTrigger,
+        config: { interval_ms: 1000 },
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects schedule trigger with sub-minute camelCase intervalMs', () => {
+    expect(
+      createTriggerSchema.safeParse({
+        ...baseTrigger,
+        config: { intervalMs: 100 },
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects schedule trigger with "* * * * *" cron', () => {
+    expect(
+      createTriggerSchema.safeParse({
+        ...baseTrigger,
+        config: { cron: '* * * * *' },
+      }).success
+    ).toBe(false);
+  });
+
+  it('accepts non-schedule triggers without interval validation', () => {
+    expect(
+      createTriggerSchema.safeParse({
+        ...baseTrigger,
+        type: 'event',
+        config: { interval_ms: 1 },
+      }).success
+    ).toBe(true);
+  });
+});
+
+describe('clawLimitsSchema', () => {
+  it('accepts an empty object (all fields optional)', () => {
+    expect(clawLimitsSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('accepts reasonable values', () => {
+    expect(
+      clawLimitsSchema.safeParse({
+        maxTurnsPerCycle: 50,
+        maxToolCallsPerCycle: 500,
+        maxCyclesPerHour: 120,
+        cycleTimeoutMs: 600_000,
+        totalBudgetUsd: 25,
+      }).success
+    ).toBe(true);
+  });
+
+  it('rejects runaway maxCyclesPerHour (BIZ-001)', () => {
+    expect(clawLimitsSchema.safeParse({ maxCyclesPerHour: 100_000 }).success).toBe(false);
+    expect(clawLimitsSchema.safeParse({ maxCyclesPerHour: 361 }).success).toBe(false);
+  });
+
+  it('rejects runaway cycleTimeoutMs (BIZ-001)', () => {
+    expect(clawLimitsSchema.safeParse({ cycleTimeoutMs: 24 * 60 * 60 * 1000 }).success).toBe(
+      false
+    );
+    expect(clawLimitsSchema.safeParse({ cycleTimeoutMs: 999 }).success).toBe(false);
+  });
+
+  it('rejects runaway totalBudgetUsd (BIZ-001)', () => {
+    expect(clawLimitsSchema.safeParse({ totalBudgetUsd: 1_000_000 }).success).toBe(false);
+    expect(clawLimitsSchema.safeParse({ totalBudgetUsd: -1 }).success).toBe(false);
+  });
+
+  it('rejects unknown extra keys (.strict)', () => {
+    expect(
+      clawLimitsSchema.safeParse({ maxTurnsPerCycle: 10, sneakyExtraField: 'bypass' }).success
+    ).toBe(false);
+  });
+
+  it('rejects non-integer counts', () => {
+    expect(clawLimitsSchema.safeParse({ maxTurnsPerCycle: 1.5 }).success).toBe(false);
+    expect(clawLimitsSchema.safeParse({ maxCyclesPerHour: 60.7 }).success).toBe(false);
+  });
+});
+
+describe('createClawSchema with limits (BIZ-001 regression)', () => {
+  const minimalClaw = { name: 'test', mission: 'do things' };
+
+  it('accepts a claw without a limits object', () => {
+    expect(createClawSchema.safeParse(minimalClaw).success).toBe(true);
+  });
+
+  it('accepts a claw with bounded limits', () => {
+    expect(
+      createClawSchema.safeParse({ ...minimalClaw, limits: { totalBudgetUsd: 10 } }).success
+    ).toBe(true);
+  });
+
+  it('rejects a claw with unbounded limits.maxCyclesPerHour', () => {
+    expect(
+      createClawSchema.safeParse({
+        ...minimalClaw,
+        limits: { maxCyclesPerHour: 10_000 },
+      }).success
+    ).toBe(false);
+  });
+
+  it('rejects a claw with totalBudgetUsd above ceiling', () => {
+    expect(
+      createClawSchema.safeParse({
+        ...minimalClaw,
+        limits: { totalBudgetUsd: 50_000 },
       }).success
     ).toBe(false);
   });

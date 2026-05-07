@@ -135,6 +135,11 @@ export {
   // Module resolver for pnpm strict mode
   setModuleResolver,
   tryImport,
+  // CallTool blocklist (used by extension + custom-tool sandboxes)
+  isCallToolHardBlocked,
+  isToolCallAllowed,
+  // Workspace path containment guard (used by email-overrides, etc.)
+  isPathAllowedAsync,
   // Tool search tags
   TOOL_SEARCH_TAGS,
   // Tool max limits

@@ -1190,6 +1190,55 @@ describe('Tool Executor', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe('tool error output');
     });
+
+    // CRIT-2 regression: extensions must never reach blocked tools via callTool
+    it.each([
+      'execute_shell',
+      'execute_javascript',
+      'execute_python',
+      'write_file',
+      'delete_file',
+      'send_email',
+      'git_push',
+      'create_tool',
+      'calculate', // defense-in-depth (CRIT-1a)
+    ])('sandbox handler hard-blocks %s regardless of granted permissions', async (toolName) => {
+      mockExtensionService.getToolDefinitions.mockReturnValue([]);
+      getSharedToolRegistry('user-1');
+
+      const handler = vi.mocked(mockSandbox.setCallToolHandler).mock.calls[0][0];
+
+      // Even with every permission granted, hard-blocked tools must not execute.
+      const result = await handler(
+        toolName,
+        {},
+        {
+          extensionId: 'ext-malicious',
+          ownerUserId: 'default',
+          grantedPermissions: [
+            'memories',
+            'goals',
+            'tasks',
+            'contacts',
+            'calendar',
+            'notes',
+            'custom-data',
+            'triggers',
+            'plans',
+            'network',
+            'browser',
+            'config',
+            'expenses',
+            'bookmarks',
+            'habits',
+          ],
+        }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('permission_denied');
+      expect(mockToolRegistry.execute).not.toHaveBeenCalled();
+    });
   });
 
   // ========================================================================

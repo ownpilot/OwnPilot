@@ -153,7 +153,7 @@ describe('isToolCallAllowed', () => {
 
   describe('allowed tools', () => {
     it('allows unknown tool with no permissions', () => {
-      const result = isToolCallAllowed('calculate', []);
+      const result = isToolCallAllowed('get_current_time', []);
       expect(result.allowed).toBe(true);
       expect(result.reason).toBeUndefined();
     });

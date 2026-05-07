@@ -24,11 +24,15 @@ import { ClawManagementPanel } from './claws/ClawManagementPanel';
 // =============================================================================
 
 type PageTab = 'home' | 'claws';
-type DetailTab = 'overview' | 'doctor';
+type DetailTab = 'overview' | 'doctor' | 'timeline';
+type BulkOp = 'stop' | 'delete';
 
 export function ClawsPage() {
   const [pageTab, setPageTab] = useState<PageTab>('claws');
   const [claws, setClaws] = useState<ClawConfig[]>([]);
+  const [totalClaws, setTotalClaws] = useState(0);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(24);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClaw, setSelectedClaw] = useState<ClawConfig | null>(null);
   const [selectedDetailTab, setSelectedDetailTab] = useState<DetailTab>('overview');
@@ -40,6 +44,11 @@ export function ClawsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applyingFixIds, setApplyingFixIds] = useState<Set<string>>(new Set());
   const [isApplyingBatchFixes, setIsApplyingBatchFixes] = useState(false);
+  const [bulkOp, setBulkOp] = useState<BulkOp | null>(null);
+  const [bulkResults, setBulkResults] = useState<Array<{ id: string; ok: boolean; name: string }>>([]);
+  const [escalations, setEscalations] = useState<
+    Array<{ clawId: string; name: string; type: string; reason: string; requestedAt: string }>
+  >([]);
 
   const { subscribe } = useGateway();
   const toast = useToast();
@@ -48,17 +57,18 @@ export function ClawsPage() {
   const fetchClaws = useCallback(async () => {
     try {
       const [data, recs] = await Promise.all([
-        clawsApi.list(),
+        clawsApi.list(pageSize, page * pageSize),
         clawsApi.recommendations().catch(() => ({ recommendations: [] })),
       ]);
-      setClaws(data);
+      setClaws(data.claws);
+      setTotalClaws(data.total);
       setRecommendations(recs.recommendations);
     } catch {
       toast.error('Failed to load claws');
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [page, pageSize, toast]);
 
   useEffect(() => {
     fetchClaws();
@@ -73,9 +83,33 @@ export function ClawsPage() {
       subscribe<{ clawId: string }>('claw.update', () => fetchClaws()),
       subscribe<{ clawId: string }>('claw.started', () => fetchClaws()),
       subscribe<{ clawId: string }>('claw.stopped', () => fetchClaws()),
+      subscribe<{ clawId: string; type: string; reason: string; requestedAt: string }>(
+        'claw.escalation',
+        (p) => {
+          const claw = claws.find((c) => c.id === p.clawId);
+          setEscalations((prev) => {
+            if (prev.some((e) => e.clawId === p.clawId)) return prev;
+            return [
+              ...prev,
+              {
+                clawId: p.clawId,
+                name: claw?.name ?? p.clawId,
+                type: p.type,
+                reason: p.reason,
+                requestedAt: p.requestedAt,
+              },
+            ];
+          });
+        }
+      ),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [subscribe, fetchClaws]);
+  }, [subscribe, fetchClaws, claws]);
+
+  // Refetch when page changes
+  useEffect(() => {
+    if (pageTab === 'claws') fetchClaws();
+  }, [page]);
 
   // Actions
   const startClaw = async (id: string) => {
@@ -228,14 +262,19 @@ export function ClawsPage() {
 
   // Bulk actions
   const bulkStop = async () => {
-    for (const id of selectedIds) {
-      try {
-        await clawsApi.stop(id);
-      } catch {
-        /* skip */
-      }
-    }
-    toast.success(`Stopped ${selectedIds.size} claws`);
+    setBulkOp('stop');
+    setBulkResults([]);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map((id) => clawsApi.stop(id)));
+    const named = ids.map((id, i) => ({
+      id,
+      ok: results[i]?.status === 'fulfilled',
+      name: claws.find((c) => c.id === id)?.name ?? id,
+    }));
+    setBulkResults(named);
+    setBulkOp(null);
+    const ok = named.filter((r) => r.ok).length;
+    toast.success(`Stopped ${ok}/${ids.length} claws`);
     setSelectedIds(new Set());
     fetchClaws();
   };
@@ -248,14 +287,19 @@ export function ClawsPage() {
       variant: 'danger',
     });
     if (!ok) return;
-    for (const id of selectedIds) {
-      try {
-        await clawsApi.delete(id);
-      } catch {
-        /* skip */
-      }
-    }
-    toast.success(`Deleted ${selectedIds.size} claws`);
+    setBulkOp('delete');
+    setBulkResults([]);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map((id) => clawsApi.delete(id)));
+    const named = ids.map((id, i) => ({
+      id,
+      ok: results[i]?.status === 'fulfilled',
+      name: claws.find((c) => c.id === id)?.name ?? id,
+    }));
+    setBulkResults(named);
+    setBulkOp(null);
+    const success = named.filter((r) => r.ok).length;
+    toast.success(`Deleted ${success}/${ids.length} claws`);
     setSelectedIds(new Set());
     setSelectedClaw(null);
     fetchClaws();
@@ -382,6 +426,57 @@ export function ClawsPage() {
             />
           ) : (
             <div className="space-y-4">
+              {/* Escalations */}
+              {escalations.length > 0 && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                      Pending Escalations
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-500/20 text-red-600 dark:text-red-300">
+                      {escalations.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {escalations.map((esc) => (
+                      <div
+                        key={esc.clawId}
+                        className="flex items-start justify-between gap-3 p-2 rounded border border-red-500/10 bg-bg-primary dark:bg-dark-bg-primary"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate">
+                            {esc.name}
+                          </p>
+                          <p className="text-[11px] text-text-muted dark:text-dark-text-muted">
+                            {esc.type}: {esc.reason}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => {
+                              approveEscalation(esc.clawId);
+                              setEscalations((prev) => prev.filter((e) => e.clawId !== esc.clawId));
+                            }}
+                            className="px-2 py-1 text-[11px] rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              denyEscalation(esc.clawId);
+                              setEscalations((prev) => prev.filter((e) => e.clawId !== esc.clawId));
+                            }}
+                            className="px-2 py-1 text-[11px] rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                          >
+                            Deny
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Search + Filter Bar */}
               {recommendations.length > 0 && (
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
@@ -489,7 +584,7 @@ export function ClawsPage() {
               </div>
 
               {/* Bulk Actions (when items selected) */}
-              {selectedIds.size > 0 && (
+              {selectedIds.size > 0 && !bulkOp && (
                 <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
                   <span className="text-sm font-medium text-primary">
                     {selectedIds.size} selected
@@ -516,6 +611,42 @@ export function ClawsPage() {
                 </div>
               )}
 
+              {/* Bulk Op Progress/Results */}
+              {bulkOp && (
+                <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                      {bulkOp === 'stop' ? 'Stopping claws...' : 'Deleting claws...'}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      {bulkResults.filter((r) => r.ok).length}/{bulkResults.length} done
+                    </span>
+                  </div>
+                  <div className="w-full bg-border dark:bg-dark-border rounded-full h-1.5">
+                    <div
+                      className="bg-primary rounded-full h-1.5 transition-all"
+                      style={{
+                        width: `${(bulkResults.filter((r) => r.ok).length / Math.max(bulkResults.length, 1)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {bulkResults.map((r) => (
+                      <div key={r.id} className="flex items-center gap-2 text-xs">
+                        {r.ok ? (
+                          <span className="text-green-500">✓</span>
+                        ) : (
+                          <span className="text-red-500">✗</span>
+                        )}
+                        <span className="text-text-secondary dark:text-dark-text-secondary truncate">
+                          {r.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Claw Grid */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {filteredClaws.map((claw) => (
@@ -538,6 +669,29 @@ export function ClawsPage() {
                   />
                 ))}
               </div>
+
+              {/* Pagination */}
+              {totalClaws > pageSize && (
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="px-3 py-1.5 text-sm rounded border border-border dark:border-dark-border disabled:opacity-40 hover:bg-bg-tertiary"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                    Page {page + 1} of {Math.ceil(totalClaws / pageSize)}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={(page + 1) * pageSize >= totalClaws}
+                    className="px-3 py-1.5 text-sm rounded border border-border dark:border-dark-border disabled:opacity-40 hover:bg-bg-tertiary"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
 
               {/* Detail Panel — inline below cards */}
               {selectedClaw && (

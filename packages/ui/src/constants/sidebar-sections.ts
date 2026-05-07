@@ -100,8 +100,8 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
   claws: {
     id: 'claws', icon: Zap, route: '/claws', group: 'ai', maxItems: 5, showPlus: true,
     fetchItems: () =>
-      clawsApi.list().then((items: { id: string; name: string }[]) =>
-        items.slice(0, 5).map((c) => ({ id: c.id, label: c.name, route: `/claws` }))
+      clawsApi.list().then((res: { claws: { id: string; name: string }[] }) =>
+        res.claws.slice(0, 5).map((c) => ({ id: c.id, label: c.name, route: `/claws` }))
       ),
   },
   triggers: {

@@ -244,14 +244,46 @@ describe('calculateExecutor', () => {
     const result = await calculateExecutor({ expression: '1 / 0' });
     expect(result.isError).toBe(true);
     const data = parse(result);
-    expect(data.error).toBe('Result is not a valid number');
+    expect(typeof data.error).toBe('string');
+    expect(data.error.length).toBeGreaterThan(0);
   });
 
   it('should return error for NaN result', async () => {
     const result = await calculateExecutor({ expression: 'sqrt(-1)' });
     expect(result.isError).toBe(true);
     const data = parse(result);
-    expect(data.error).toBe('Result is not a valid number');
+    expect(typeof data.error).toBe('string');
+    expect(data.error.length).toBeGreaterThan(0);
+  });
+
+  // --- Sandbox-escape regression guards (CRIT-1) ---
+
+  it('should reject vm sandbox escape via Math.constructor.constructor', async () => {
+    const result = await calculateExecutor({
+      expression: 'Math.constructor.constructor("return 1")()',
+    });
+    expect(result.isError).toBe(true);
+  });
+
+  it('should reject String.fromCharCode payload encoding', async () => {
+    const result = await calculateExecutor({
+      expression: 'String.fromCharCode(65)',
+    });
+    expect(result.isError).toBe(true);
+  });
+
+  it('should reject identifier access via constructor', async () => {
+    const result = await calculateExecutor({
+      expression: '(1).constructor("return process")()',
+    });
+    expect(result.isError).toBe(true);
+  });
+
+  it('should reject member access syntax', async () => {
+    const result = await calculateExecutor({
+      expression: 'Math.PI.toString',
+    });
+    expect(result.isError).toBe(true);
   });
 });
 

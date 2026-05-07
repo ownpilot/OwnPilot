@@ -3,6 +3,7 @@
  */
 
 import { getLog } from '../../../services/log.js';
+import { randomUUID } from 'node:crypto';
 import type { TunnelProviderInterface, TunnelConfig, TunnelInfo, TunnelProvider } from './types.js';
 
 const log = getLog('Tunnel:Cloudflare');
@@ -12,7 +13,7 @@ export class CloudflareProvider implements TunnelProviderInterface {
   private tunnels = new Map<string, TunnelInfo>();
 
   async start(config: TunnelConfig): Promise<TunnelInfo> {
-    const tunnelId = 'cf_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const tunnelId = 'cf_' + randomUUID().replace(/-/g, '').slice(0, 12);
     const port = config.port;
 
     log.info('Starting Cloudflare tunnel', { tunnelId, port });

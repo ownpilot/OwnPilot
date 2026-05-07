@@ -4,6 +4,7 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { getLog } from '../../../services/log.js';
+import { randomUUID } from 'node:crypto';
 import type { TunnelProviderInterface, TunnelConfig, TunnelInfo, TunnelProvider } from './types.js';
 
 const log = getLog('Tunnel:ngrok');
@@ -13,7 +14,7 @@ export class NgrokProvider implements TunnelProviderInterface {
   private tunnels = new Map<string, { process: ChildProcess; info: TunnelInfo }>();
 
   async start(config: TunnelConfig): Promise<TunnelInfo> {
-    const tunnelId = 'ngrok_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const tunnelId = 'ngrok_' + randomUUID().replace(/-/g, '').slice(0, 12);
     const port = config.port;
     // Auth token available for future implementation
     void config.authToken;

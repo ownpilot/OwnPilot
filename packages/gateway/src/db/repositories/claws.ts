@@ -276,6 +276,23 @@ export class ClawsRepository extends BaseRepository {
     return rows.map(rowToConfig);
   }
 
+  async getAllPaginated(
+    userId: string,
+    limit: number,
+    offset: number
+  ): Promise<{ claws: ClawConfig[]; total: number }> {
+    const countResult = await this.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM claws WHERE user_id = $1`,
+      [userId]
+    );
+    const total = parseInt(countResult[0]?.count ?? '0', 10);
+    const rows = await this.query<ClawRow>(
+      `SELECT * FROM claws WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+    return { claws: rows.map(rowToConfig), total };
+  }
+
   async getAutoStartClaws(): Promise<ClawConfig[]> {
     const rows = await this.query<ClawRow>(`SELECT * FROM claws WHERE auto_start = true`);
     return rows.map(rowToConfig);

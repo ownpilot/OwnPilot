@@ -14,7 +14,7 @@ import type {
   CreateClawInput,
   UpdateClawInput,
 } from '@ownpilot/core';
-import { generateId, DEFAULT_CLAW_LIMITS } from '@ownpilot/core';
+import { generateId, DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from '@ownpilot/core';
 import { getClawManager } from './claw-manager.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
 
@@ -28,11 +28,14 @@ export class ClawServiceImpl implements IClawService {
 
     const repo = getClawsRepository();
 
-    // Resolve parent depth
+    // Resolve parent depth and validate parent claw
     let depth = 0;
     if (input.parentClawId) {
       const parent = await repo.getByIdAnyUser(input.parentClawId);
-      if (parent) depth = parent.depth + 1;
+      if (!parent) throw new Error('Parent claw not found');
+      if (parent.userId !== input.userId) throw new Error('Parent claw belongs to another user');
+      depth = parent.depth + 1;
+      if (depth > MAX_CLAW_DEPTH) throw new Error(`Maximum claw depth (${MAX_CLAW_DEPTH}) exceeded`);
     }
 
     return repo.create({
@@ -68,6 +71,14 @@ export class ClawServiceImpl implements IClawService {
 
   async listClaws(userId: string): Promise<ClawConfig[]> {
     return getClawsRepository().getAll(userId);
+  }
+
+  async listClawsPaginated(
+    userId: string,
+    limit: number,
+    offset: number
+  ): Promise<{ claws: ClawConfig[]; total: number }> {
+    return getClawsRepository().getAllPaginated(userId, limit, offset);
   }
 
   async updateClaw(

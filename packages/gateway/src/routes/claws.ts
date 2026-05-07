@@ -462,11 +462,12 @@ clawRoutes.get('/', async (c) => {
   try {
     const userId = getUserId(c);
     const service = getClawService();
+    const { limit = 50, offset = 0 } = getPaginationParams(c);
 
-    const configs = await service.listClaws(userId);
+    const { claws, total } = await service.listClawsPaginated(userId, limit, offset);
     const sessions = service.listSessions(userId);
 
-    const claws = configs.map((config) => {
+    const enriched = claws.map((config) => {
       const session = sessions.find((s) => s.config.id === config.id);
       return {
         ...config,
@@ -489,7 +490,7 @@ clawRoutes.get('/', async (c) => {
       };
     });
 
-    return apiResponse(c, claws);
+    return apiResponse(c, { claws: enriched, total, limit, offset });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }

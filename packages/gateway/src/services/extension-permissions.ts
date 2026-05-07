@@ -139,18 +139,18 @@ export function getRequiredPermission(toolName: string): SkillPermission | null 
 /**
  * Check if a tool call is allowed by the granted permissions.
  * - If the tool doesn't require a specific permission, it's always allowed.
- * - If the extension has no permissions field (legacy), all tools are allowed.
+ * - Extensions with no granted permissions get only unrestricted tools.
  */
 export function checkPermission(
   toolName: string,
   grantedPermissions: SkillPermission[] | undefined
 ): boolean {
-  // Legacy extensions without permissions → unrestricted
-  if (!grantedPermissions) return true;
-
   const required = getRequiredPermission(toolName);
   // Tool doesn't need a specific permission → allowed
   if (!required) return true;
+
+  // No granted permissions → deny anything that requires a permission.
+  if (!grantedPermissions) return false;
 
   return grantedPermissions.includes(required);
 }

@@ -174,9 +174,19 @@ function createMockRequest(
   headers: Record<string, string>;
   socket: { remoteAddress: string };
 } {
+  // Default to a localhost Origin so the WS Origin guard accepts test traffic.
+  // Tests that need to simulate a missing Origin header should pass
+  // `{ origin: '' }` explicitly.
+  const merged: Record<string, string> = {
+    host: 'localhost',
+    origin: 'http://localhost:5173',
+    ...headers,
+  };
+  // Allow callers to drop the Origin by passing an empty string.
+  if (merged.origin === '') delete merged.origin;
   return {
     url,
-    headers: { host: 'localhost', ...headers },
+    headers: merged,
     socket: { remoteAddress },
   };
 }
@@ -380,7 +390,7 @@ describe('WSGateway', () => {
   // isOriginAllowed (tested through handleConnection)
   // =========================================================================
   describe('isOriginAllowed (via handleConnection)', () => {
-    it('allows any origin when no restrictions configured', async () => {
+    it('rejects non-localhost origin when no restrictions configured (localhost-only fallback)', async () => {
       const gw = new WSGateway({ allowedOrigins: [] });
       gw.start();
 
@@ -392,8 +402,39 @@ describe('WSGateway', () => {
 
       await handler(socket, request);
 
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Origin not allowed');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    it('allows localhost origin when no restrictions configured (default fallback)', async () => {
+      const gw = new WSGateway({ allowedOrigins: [] });
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/', {
+        origin: 'http://localhost:5173',
+      });
+
+      await handler(socket, request);
+
       expect(mockSessionManager.create).toHaveBeenCalled();
       expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('rejects when no origin header even with empty allowlist (CSWSH defense)', async () => {
+      const gw = new WSGateway({ allowedOrigins: [] });
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      // Explicit empty Origin to simulate a non-browser / cross-origin attacker.
+      const request = createMockRequest('/', { origin: '' });
+
+      await handler(socket, request);
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Origin not allowed');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
     });
 
     it('rejects connection when origin not in allowedOrigins', async () => {
@@ -441,7 +482,7 @@ describe('WSGateway', () => {
       const handler = getConnectionHandler();
       const socket = createMockSocket();
       // No origin header
-      const request = createMockRequest('/');
+      const request = createMockRequest('/', { origin: '' });
 
       await handler(socket, request);
 

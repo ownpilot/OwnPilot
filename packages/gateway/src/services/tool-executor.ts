@@ -19,6 +19,7 @@ import {
   createPluginSecurityMiddleware,
   createPluginId,
   qualifyToolName,
+  isCallToolHardBlocked,
 } from '@ownpilot/core';
 import type {
   ToolDefinition,
@@ -425,6 +426,36 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
     }
 
     const { extensionId, ownerUserId, grantedPermissions } = extensionIdentity;
+
+    // Hard block: shell, file mutation, email, git, code-exec, calculate, etc.
+    // Enforced regardless of granted permissions, mirroring custom-tool sandbox.
+    if (isCallToolHardBlocked(toolName)) {
+      logPermissionDenied(extensionId, toolName, 'network');
+      if (hasServiceRegistry()) {
+        try {
+          const audit = getServiceRegistry().tryGet<IAuditService>(Services.Audit);
+          audit?.logAudit({
+            userId: ownerUserId,
+            action: 'extension.callTool',
+            resource: 'extension',
+            resourceId: extensionId,
+            details: {
+              tool: toolName,
+              allowed: false,
+              reason: 'hard_blocked',
+              callerKind: 'extension',
+            },
+          });
+        } catch {
+          /* audit failure should not affect tool execution */
+        }
+      }
+      return {
+        success: false,
+        error: `permission_denied: tool "${toolName}" is blocked from extension callTool — code execution, file mutation, email, and git tools cannot be invoked from sandboxed extension code`,
+      };
+    }
+
     const allowed = checkPermission(toolName, grantedPermissions as SkillPermission[]);
     const requiredPermission = getRequiredPermission(toolName);
 

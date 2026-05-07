@@ -160,15 +160,29 @@ const DEFAULT_CONFIG: Required<WSGatewayConfig> = {
 };
 
 /**
+ * Default WS origin allowlist used when neither WS_ALLOWED_ORIGINS nor
+ * CORS_ORIGINS is configured. Restricts CSWSH to local development origins.
+ * Production deployments MUST set WS_ALLOWED_ORIGINS explicitly.
+ */
+const DEFAULT_LOCALHOST_WS_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+];
+
+/**
  * Validate WebSocket origin against allowed origins.
- * Returns true if origin is allowed or no restrictions are configured.
+ * - Always requires the browser to send an `Origin` header (CSWSH defense).
+ * - Empty configured allowlist falls back to localhost-only, never allow-all.
  */
 function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
-  // No restrictions configured — allow all (self-hosted default)
-  if (allowedOrigins.length === 0) return true;
-  // No origin header — reject when restrictions are configured
+  const effective = allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_LOCALHOST_WS_ORIGINS;
+  // No origin header — reject. Browsers always send Origin on WS upgrades.
   if (!origin) return false;
-  return allowedOrigins.some((allowed) => origin === allowed);
+  return effective.some((allowed) => origin === allowed);
 }
 
 /**

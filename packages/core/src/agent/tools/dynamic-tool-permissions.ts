@@ -36,7 +36,21 @@ const BLOCKED_CALLABLE_TOOLS = new Set([
   'create_tool',
   'delete_custom_tool',
   'toggle_custom_tool',
+  // Defense-in-depth: `calculate` once shipped a vm-based evaluator; keep it on
+  // the hard-block list so a future regression cannot re-introduce a sandbox
+  // escape via the `utils.callTool` path.
+  'calculate',
 ]);
+
+/**
+ * Returns true if a tool is on the unconditional callTool blocklist.
+ * Used by extension and custom-tool sandboxes to guarantee that shell, file
+ * mutation, email, git, and code-execution tools are never reachable via
+ * `utils.callTool(...)`, regardless of granted permissions.
+ */
+export function isCallToolHardBlocked(toolName: string): boolean {
+  return BLOCKED_CALLABLE_TOOLS.has(getBaseName(toolName));
+}
 
 /**
  * Tools that require specific permissions to be called.

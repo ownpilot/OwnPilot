@@ -57,7 +57,7 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
     try {
       setError(null);
       const result = await clawsApi.list();
-      setClaws(result);
+      setClaws(result.claws);
     } catch {
       setError('Failed to load claws');
     } finally {

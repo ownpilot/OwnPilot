@@ -37,6 +37,8 @@ const MAX_CONCURRENT_CLAWS = 50;
 const HISTORY_RETENTION_DAYS = 90;
 const AUDIT_RETENTION_DAYS = 30;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
+const MAX_INBOX_MESSAGES = 100;
+const MAX_INBOX_BYTES = 50_000;
 
 // Continuous mode adaptive delays
 const CONTINUOUS_MIN_DELAY_MS = 500; // Active: fast loop
@@ -311,12 +313,24 @@ export class ClawManager {
     if (!managed) return false;
 
     managed.session.inbox.push(message);
+    this.trimInbox(managed.session);
 
     const repo = getClawsRepository();
     await repo.appendToInbox(clawId, message);
 
     this.emitEvent('claw.progress', { clawId, message: 'New message received' });
     return true;
+  }
+
+  private trimInbox(session: ClawSession): void {
+    let totalBytes = JSON.stringify(session.inbox).length;
+    while (
+      session.inbox.length > 0 &&
+      (totalBytes > MAX_INBOX_BYTES || session.inbox.length > MAX_INBOX_MESSAGES)
+    ) {
+      session.inbox.shift();
+      totalBytes = JSON.stringify(session.inbox).length;
+    }
   }
 
   /**
@@ -758,6 +772,9 @@ export class ClawManager {
   }
 
   private async persistSession(clawId: string, managed: ManagedClaw): Promise<void> {
+    // Trim inbox before persisting to keep DB bounded
+    this.trimInbox(managed.session);
+
     const repo = getClawsRepository();
     await repo.saveSession(clawId, {
       state: managed.session.state,

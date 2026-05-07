@@ -156,12 +156,41 @@ export function apiResponse<T>(c: Context, data: T, status?: ContentfulStatusCod
  * // Structured error with code
  * return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Resource not found' }, 404);
  */
+/**
+ * Whether to redact 5xx error messages in user-facing responses.
+ * On by default in production; opt out with `EXPOSE_INTERNAL_ERRORS=true`
+ * (only do this in dev/staging — raw error messages routinely leak SQL,
+ * paths, internal IDs, and provider URLs).
+ */
+const REDACT_5XX =
+  process.env.NODE_ENV === 'production' && process.env.EXPOSE_INTERNAL_ERRORS !== 'true';
+
 export function apiError(
   c: Context,
   error: string | { code: ErrorCode | string; message: string },
   status: ContentfulStatusCode = 400
 ) {
-  const errorObj = typeof error === 'string' ? { code: ERROR_CODES.ERROR, message: error } : error;
+  let errorObj =
+    typeof error === 'string' ? { code: ERROR_CODES.ERROR, message: error } : error;
+
+  // EXPOSE-001 mitigation: redact raw 5xx error messages in production.
+  // Route-level try/catch blocks routinely return `getErrorMessage(err)` which
+  // leaks pg SQL text, file paths, hostnames, and provider error bodies.
+  // Keep the original detail in the server logs (operators can correlate via
+  // requestId) but never ship it to the client outside dev.
+  if (REDACT_5XX && status >= 500 && status < 600) {
+    const requestId = c.get('requestId') ?? 'unknown';
+    // Surface the detail to operators but not the client.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[apiError] redacted 5xx detail (requestId=${requestId}): ${errorObj.message}`
+    );
+    errorObj = {
+      code: errorObj.code ?? ERROR_CODES.INTERNAL_ERROR,
+      message: 'Internal server error',
+    };
+  }
+
   const response = {
     success: false,
     error: errorObj,

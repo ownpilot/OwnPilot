@@ -9,30 +9,18 @@ import type { RateLimitConfig } from '../types/index.js';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
 import { RATE_LIMIT_MAX_STORE_SIZE } from '../config/defaults.js';
+import { getClientIp as getClientIpShared } from '../utils/client-ip.js';
 
 const log = getLog('RateLimit');
 
 /**
- * Whether to trust proxy headers (X-Forwarded-For, X-Real-IP).
- * Only enable when running behind a reverse proxy (nginx, CloudFlare, etc.).
- * Set TRUSTED_PROXY=true to enable.
- */
-const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
-
-/**
  * Get client IP for rate limiting.
- * Only trusts proxy headers when TRUSTED_PROXY=true.
+ * Trusts proxy headers only when both TRUSTED_PROXY=true AND TRUSTED_PROXY_IPS
+ * is configured (RATE-003). When the proxy peer allowlist is missing, XFF is
+ * ignored and all clients share a single bucket — the safe default.
  */
 function getClientIp(c: Context): string {
-  if (TRUST_PROXY) {
-    return (
-      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
-      c.req.header('X-Real-IP') ??
-      'unknown'
-    );
-  }
-  // Direct connection: ignore spoofable headers
-  return 'direct';
+  return getClientIpShared(c.req);
 }
 
 interface RateLimitEntry {

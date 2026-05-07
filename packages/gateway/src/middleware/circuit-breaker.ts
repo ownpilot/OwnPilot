@@ -13,8 +13,13 @@
 import { createMiddleware } from 'hono/factory';
 import { apiError, ERROR_CODES } from '../routes/helpers.js';
 import { getLog } from '../services/log.js';
+import { randomBytes } from 'node:crypto';
 
 const log = getLog('CircuitBreaker');
+
+function secureRandom(): number {
+  return Number.parseInt(randomBytes(4).toString('hex'), 16) / 0xffffffff;
+}
 
 export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
@@ -95,7 +100,7 @@ function getOrCreateEntry(key: string): CircuitBreakerEntry {
  */
 function shouldAllowHalfOpenRequest(config: CircuitBreakerConfig): boolean {
   const maxRate = config.halfOpenMaxRate ?? 0.1;
-  return Math.random() < maxRate;
+  return secureRandom() < maxRate;
 }
 
 /**

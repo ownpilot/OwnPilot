@@ -120,6 +120,9 @@ async function resolveAggregate(
   const tableName = tableMap[entity];
   if (!tableName) return null;
 
+  // Identifier allowlist — interpolated into SQL, so must be a bare column name.
+  const IDENT_RE = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
   let sql: string;
   const params: unknown[] = [userId];
   let paramIndex = 2;
@@ -129,11 +132,11 @@ async function resolveAggregate(
       sql = `SELECT COUNT(*) as result FROM ${tableName} WHERE user_id = $1`;
       break;
     case 'sum':
-      if (!field) return null;
+      if (!field || !IDENT_RE.test(field)) return null;
       sql = `SELECT COALESCE(SUM(CAST(${field} AS NUMERIC)), 0) as result FROM ${tableName} WHERE user_id = $1`;
       break;
     case 'avg':
-      if (!field) return null;
+      if (!field || !IDENT_RE.test(field)) return null;
       sql = `SELECT COALESCE(AVG(CAST(${field} AS NUMERIC)), 0) as result FROM ${tableName} WHERE user_id = $1`;
       break;
     default:
@@ -144,7 +147,7 @@ async function resolveAggregate(
   if (filter) {
     for (const [key, value] of Object.entries(filter)) {
       // Only allow safe column names
-      if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
+      if (IDENT_RE.test(key)) {
         sql += ` AND ${key} = $${paramIndex++}`;
         params.push(value);
       }

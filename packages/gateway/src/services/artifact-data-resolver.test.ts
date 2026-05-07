@@ -247,6 +247,44 @@ describe('resolveBinding', () => {
   });
 
   // --------------------------------------------------------------------------
+  // SQLi regression guard (CRIT-3): `field` must be a bare identifier
+  // --------------------------------------------------------------------------
+
+  it('rejects aggregate/sum with non-identifier field (SQLi attempt)', async () => {
+    const malicious = [
+      'priority) FROM tasks; DROP TABLE tasks; --',
+      "priority' OR 1=1 --",
+      '* FROM ui_sessions',
+      '1; SELECT pg_sleep(5)',
+      'priority,(SELECT token_hash FROM ui_sessions)',
+    ];
+
+    for (const field of malicious) {
+      const binding = makeBinding({
+        type: 'aggregate',
+        entity: 'tasks',
+        operation: 'sum',
+        field,
+      });
+      const result = await resolveBinding(USER_ID, binding);
+      expect(result).toBeNull();
+    }
+    expect(mockTasksRepo.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects aggregate/avg with non-identifier field (SQLi attempt)', async () => {
+    const binding = makeBinding({
+      type: 'aggregate',
+      entity: 'memories',
+      operation: 'avg',
+      field: "score) FROM memories; --",
+    });
+    const result = await resolveBinding(USER_ID, binding);
+    expect(result).toBeNull();
+    expect(mockTasksRepo.query).not.toHaveBeenCalled();
+  });
+
+  // --------------------------------------------------------------------------
   // aggregate type — unknown operation
   // --------------------------------------------------------------------------
 

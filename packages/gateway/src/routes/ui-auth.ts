@@ -31,17 +31,15 @@ import { MS_PER_MINUTE } from '../config/defaults.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 
-const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
+import { getClientIp as getClientIpShared } from '../utils/client-ip.js';
 
+/**
+ * Resolve the client IP for login throttle bucketing. RATE-003 mitigation:
+ * proxy-trust requires both TRUSTED_PROXY=true and TRUSTED_PROXY_IPS to be
+ * configured; absence of either falls back to a single 'direct' bucket.
+ */
 function getClientIpHttp(c: { req: { header: (name: string) => string | undefined } }): string {
-  if (TRUST_PROXY) {
-    return (
-      c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ??
-      c.req.header('X-Real-IP') ??
-      'unknown'
-    );
-  }
-  return 'direct';
+  return getClientIpShared(c.req);
 }
 
 const loginThrottle = createLoginThrottle({

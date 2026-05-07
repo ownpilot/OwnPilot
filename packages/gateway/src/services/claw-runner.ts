@@ -15,7 +15,7 @@
  * - Supports both cyclic and single-shot modes
  */
 
-import { getErrorMessage } from '@ownpilot/core';
+import { getErrorMessage, type Agent } from '@ownpilot/core';
 import type { ClawConfig, ClawSession, ClawCycleResult, ClawToolCall } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { buildEnhancedSystemPrompt } from '../assistant/orchestrator.js';
@@ -52,6 +52,9 @@ function readClawFile(workspaceId: string | undefined, filename: string): string
 
 export class ClawRunner {
   private config: ClawConfig;
+  private agent: Agent | null = null;
+  private cachedProvider = '';
+  private cachedModel = '';
 
   constructor(config: ClawConfig) {
     this.config = config;
@@ -59,6 +62,10 @@ export class ClawRunner {
 
   updateConfig(config: ClawConfig): void {
     this.config = config;
+    // Clear cached agent so next cycle recreates with new config
+    this.agent = null;
+    this.cachedProvider = '';
+    this.cachedModel = '';
   }
 
   /**
@@ -90,11 +97,18 @@ export class ClawRunner {
         'pulse'
       );
 
-      const agent = await this.createAgent(provider, model);
+      // Reuse cached agent if provider/model unchanged, otherwise create and cache
+      if (!this.agent || this.cachedProvider !== provider || this.cachedModel !== model) {
+        const newAgent = await this.createAgent(provider, model);
+        this.agent = newAgent;
+        this.cachedProvider = provider;
+        this.cachedModel = model;
+      }
+
       const cycleMessage = this.buildCycleMessage(session, cycleNumber);
 
       const pipelineResult = await executeAgentPipeline(provider, model, {
-        agent,
+        agent: this.agent,
         message: cycleMessage,
         timeoutMs: this.config.limits.cycleTimeoutMs,
         timeoutLabel: 'Claw cycle',

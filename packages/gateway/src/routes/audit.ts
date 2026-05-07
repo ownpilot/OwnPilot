@@ -45,7 +45,9 @@ app.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async (c) => {
 
   const result = await logger.query({
     types: types as import('@ownpilot/core').AuditEventType[] | undefined,
-    actorId: c.req.query('actorId') || userId,
+    // Hard-pin actorId to the authenticated user. Accepting `?actorId=` from
+    // the query was an IDOR — any user could read another user's audit log.
+    actorId: userId,
     actorType: validateQueryEnum(c.req.query('actorType'), ['user', 'agent', 'system'] as const),
     resourceId: c.req.query('resourceId'),
     resourceType: c.req.query('resourceType'),

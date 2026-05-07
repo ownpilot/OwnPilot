@@ -15,13 +15,19 @@ import {
   Zap,
   Wrench,
   X,
+  BarChart3,
+  Code2,
 } from '../../components/icons';
 import { authedFetch, getStateBadge, inputClass as ic } from './utils';
 import {
   OverviewTab,
+  StatsTab,
   SettingsTab,
   SkillsTab,
+  MemoryTab,
+  ConfigTab,
   HistoryTab,
+  TimelineTab,
   AuditTab,
   FilesTab,
   OutputTab,
@@ -33,10 +39,14 @@ import {
 
 type DetailTab =
   | 'overview'
+  | 'stats'
   | 'settings'
   | 'skills'
+  | 'memory'
+  | 'config'
   | 'files'
   | 'history'
+  | 'timeline'
   | 'audit'
   | 'doctor'
   | 'output'
@@ -48,11 +58,15 @@ const DETAIL_TABS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: 'overview', label: 'Overview', icon: Activity },
+  { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'doctor', label: 'Doctor', icon: Wrench },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'skills', label: 'Skills', icon: Puzzle },
+  { id: 'memory', label: '.claw', icon: FileText },
+  { id: 'config', label: 'Config', icon: Code2 },
   { id: 'files', label: 'Files', icon: FolderOpen },
   { id: 'history', label: 'History', icon: Clock },
+  { id: 'timeline', label: 'Timeline', icon: Activity },
   { id: 'audit', label: 'Audit', icon: FileText },
   { id: 'output', label: 'Output', icon: Send },
   { id: 'conversation', label: 'Chat', icon: Bot },
@@ -159,7 +173,7 @@ export function ClawManagementPanel({
   // WS output feed
   useEffect(() => {
     const unsub = subscribe<ClawOutputEvent>('claw.output', (p) => {
-      if (p.clawId === claw.id) setOutputFeed((prev) => [p, ...prev].slice(0, 50));
+      if (p.clawId === claw.id) setOutputFeed((prev) => [p, ...prev].slice(0, 200));
     });
     return () => unsub();
   }, [subscribe, claw.id]);
@@ -434,8 +448,23 @@ export function ClawManagementPanel({
           />
         )}
 
+        {tab === 'stats' && <StatsTab claw={claw} />}
+
+        {tab === 'memory' && <MemoryTab claw={claw} />}
+
+        {tab === 'config' && <ConfigTab claw={claw} />}
+
         {tab === 'history' && (
           <HistoryTab
+            history={history}
+            historyTotal={historyTotal}
+            isLoadingHistory={isLoadingHistory}
+            loadHistory={loadHistory}
+          />
+        )}
+
+        {tab === 'timeline' && (
+          <TimelineTab
             history={history}
             historyTotal={historyTotal}
             isLoadingHistory={isLoadingHistory}

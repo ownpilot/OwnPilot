@@ -65,7 +65,10 @@ function getWorkspaceDir(workspaceDir?: string): string {
  * @param filePath Path to check
  * @param workspaceDir Optional workspace directory override from context
  */
-async function isPathAllowedAsync(filePath: string, workspaceDir?: string): Promise<boolean> {
+export async function isPathAllowedAsync(
+  filePath: string,
+  workspaceDir?: string
+): Promise<boolean> {
   try {
     // Resolve relative paths against workspace directory
     const targetPath = path.isAbsolute(filePath)

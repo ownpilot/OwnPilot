@@ -3,6 +3,7 @@
  */
 
 import { getLog } from '../../../services/log.js';
+import { randomUUID } from 'node:crypto';
 import type { TunnelProviderInterface, TunnelConfig, TunnelInfo, TunnelProvider } from './types.js';
 
 const log = getLog('Tunnel:Localtunnel');
@@ -12,7 +13,7 @@ export class LocaltunnelProvider implements TunnelProviderInterface {
   private tunnels = new Map<string, TunnelInfo>();
 
   async start(config: TunnelConfig): Promise<TunnelInfo> {
-    const tunnelId = 'lt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const tunnelId = 'lt_' + randomUUID().replace(/-/g, '').slice(0, 12);
     const port = config.port;
 
     log.info('Starting localtunnel', { tunnelId, port });

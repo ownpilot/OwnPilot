@@ -1129,7 +1129,7 @@ export class WorkflowService implements IWorkflowService {
       }
       return await this.executeWithRetryAndTimeout(
         node,
-        () => executeClawNode(node, nodeOutputs, workflow.variables, userId),
+        () => executeClawNode(node, nodeOutputs, workflow.variables, userId, abortSignal),
         onProgress
       );
     }

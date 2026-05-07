@@ -54,7 +54,11 @@ export default defineConfig(({ mode }) => {
         },
         build: {
             outDir: 'dist',
-            sourcemap: true,
+            // Production builds should not ship source maps — they leak the entire
+            // TypeScript source tree, including auth flows and tool implementations,
+            // through `gateway` `serveStatic('/assets/*')`. Set `VITE_SOURCEMAP=true`
+            // to opt back in for staging/debug builds.
+            sourcemap: env.VITE_SOURCEMAP === 'true' ? true : mode !== 'production',
             rollupOptions: {
                 output: {
                     manualChunks(id) {

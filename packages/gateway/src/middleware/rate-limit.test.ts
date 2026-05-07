@@ -20,6 +20,9 @@ import { Hono } from 'hono';
 // ---------------------------------------------------------------------------
 vi.hoisted(() => {
   process.env.TRUSTED_PROXY = 'true';
+  // RATE-003: proxy-trust now requires an explicit allowlist of upstream
+  // proxy IPs. Tests assume there is one trusted reverse proxy in front.
+  process.env.TRUSTED_PROXY_IPS = '127.0.0.1,10.0.0.1';
 });
 
 // ---------------------------------------------------------------------------
@@ -300,7 +303,7 @@ describe('createRateLimitMiddleware', () => {
       expect(r3.status).toBe(200);
     });
 
-    it('extracts the first IP from X-Forwarded-For (TRUST_PROXY=true)', async () => {
+    it('extracts the LAST IP from X-Forwarded-For (RATE-003: appended by trusted proxy, not client)', async () => {
       const mw = createRateLimitMiddleware({
         windowMs: 60_000,
         maxRequests: 1,
@@ -308,12 +311,34 @@ describe('createRateLimitMiddleware', () => {
       });
       const app = createTestApp(mw);
 
-      // Both requests carry the same first IP → same counter
+      // Both requests carry the same LAST IP (the one our trusted upstream
+      // proxy appended) → same counter. The first IP is client-controlled
+      // and would let attackers rotate it to bypass per-IP limits.
       await app.request('/test', {
-        headers: { 'X-Forwarded-For': '10.0.0.1, 192.168.1.1' },
+        headers: { 'X-Forwarded-For': '8.8.8.8, 192.168.1.1' },
       });
       const r2 = await app.request('/test', {
-        headers: { 'X-Forwarded-For': '10.0.0.1, 172.16.0.1' },
+        headers: { 'X-Forwarded-For': '99.99.99.99, 192.168.1.1' },
+      });
+      expect(r2.status).toBe(429);
+    });
+
+    it('rotating the client-claimed (first) XFF entry no longer bypasses (RATE-003 regression)', async () => {
+      const mw = createRateLimitMiddleware({
+        windowMs: 60_000,
+        maxRequests: 1,
+        burstLimit: 1,
+      });
+      const app = createTestApp(mw);
+
+      // Attacker rotates the leftmost XFF entry but the proxy-appended last
+      // entry stays the same → second request must be rate-limited.
+      const r1 = await app.request('/test', {
+        headers: { 'X-Forwarded-For': '1.1.1.1, 10.0.0.1' },
+      });
+      expect(r1.status).toBe(200);
+      const r2 = await app.request('/test', {
+        headers: { 'X-Forwarded-For': '2.2.2.2, 10.0.0.1' },
       });
       expect(r2.status).toBe(429);
     });

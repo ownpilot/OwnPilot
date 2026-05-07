@@ -72,15 +72,62 @@ export const chatMessageSchema = z.object({
 
 // ─── Trigger Schemas ─────────────────────────────────────────────
 
-export const createTriggerSchema = z.object({
-  name: z.string().min(1).max(200),
-  type: z.enum(['schedule', 'event', 'condition', 'webhook']),
-  description: z.string().max(2000).optional(),
-  enabled: z.boolean().optional(),
-  priority: z.number().int().min(0).max(100).optional(),
-  config: z.record(z.string(), z.unknown()),
-  action: z.record(z.string(), z.unknown()),
-});
+/**
+ * Minimum interval for `schedule`-type triggers in milliseconds (BIZ-003).
+ * Anything tighter is a cost-runaway vector — a 1-second interval that fires
+ * a chat or workflow action burns wallet at provider-rate-limit speed.
+ */
+export const TRIGGER_MIN_INTERVAL_MS = 60_000;
+
+/**
+ * Refine that rejects schedule triggers with sub-minute intervals or
+ * obviously hostile cron expressions ("* * * * *"). The full config object
+ * remains a record because trigger config shape varies by trigger plugin —
+ * only the cost-impacting fields are bounded here.
+ */
+const triggerConfigRefinement = (
+  data: { type: string; config: Record<string, unknown> },
+  ctx: z.RefinementCtx
+) => {
+  if (data.type !== 'schedule') return;
+  const cfg = data.config ?? {};
+  const intervalRaw = (cfg as { interval_ms?: unknown; intervalMs?: unknown }).interval_ms;
+  const intervalCamel = (cfg as { intervalMs?: unknown }).intervalMs;
+  const interval =
+    typeof intervalRaw === 'number'
+      ? intervalRaw
+      : typeof intervalCamel === 'number'
+        ? intervalCamel
+        : null;
+  if (interval !== null && interval < TRIGGER_MIN_INTERVAL_MS) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['config', 'interval_ms'],
+      message: `interval_ms must be >= ${TRIGGER_MIN_INTERVAL_MS} (1 minute) — sub-minute schedules cause cost runaway`,
+    });
+  }
+  const cron = (cfg as { cron?: unknown }).cron;
+  if (typeof cron === 'string' && /^\*\s+\*\s+\*\s+\*\s+\*\s*$/.test(cron.trim())) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['config', 'cron'],
+      message:
+        '"* * * * *" cron fires every minute — set an explicit minute field if that is intended',
+    });
+  }
+};
+
+export const createTriggerSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    type: z.enum(['schedule', 'event', 'condition', 'webhook']),
+    description: z.string().max(2000).optional(),
+    enabled: z.boolean().optional(),
+    priority: z.number().int().min(0).max(100).optional(),
+    config: z.record(z.string(), z.unknown()),
+    action: z.record(z.string(), z.unknown()),
+  })
+  .superRefine(triggerConfigRefinement);
 
 // ─── Plan Schemas ────────────────────────────────────────────────
 
@@ -763,12 +810,31 @@ const clawAutonomyPolicySchema = z.object({
   maxCostUsdBeforePause: z.number().min(0).optional(),
 });
 
+/**
+ * Claw resource limits — strict ceilings to prevent cost runaway (BIZ-001).
+ * Anything outside these bounds is rejected. All fields optional; the runtime
+ * fills in `DEFAULT_CLAW_LIMITS` for missing keys.
+ */
+export const clawLimitsSchema = z
+  .object({
+    maxTurnsPerCycle: z.number().int().min(1).max(500).optional(),
+    maxToolCallsPerCycle: z.number().int().min(1).max(5_000).optional(),
+    // 360/h ≈ once every 10 seconds sustained. Generous but not unbounded.
+    maxCyclesPerHour: z.number().int().min(1).max(360).optional(),
+    // 1 second minimum, 1 hour maximum per cycle.
+    cycleTimeoutMs: z.number().int().min(1_000).max(3_600_000).optional(),
+    // Hard ceiling on total spend. Operators who need higher caps should set
+    // CLAW_MAX_BUDGET_USD env override (not yet implemented — request first).
+    totalBudgetUsd: z.number().min(0).max(10_000).optional(),
+  })
+  .strict();
+
 export const createClawSchema = z.object({
   name: z.string().min(1).max(200),
   mission: z.string().min(1).max(10000),
   mode: z.enum(['continuous', 'interval', 'event', 'single-shot']).optional(),
   allowed_tools: z.array(z.string().max(200)).max(500).optional(),
-  limits: z.record(z.string(), z.unknown()).optional(),
+  limits: clawLimitsSchema.optional(),
   interval_ms: z.number().int().min(1000).optional(),
   event_filters: z.array(z.string().max(500)).max(100).optional(),
   auto_start: z.boolean().optional(),
@@ -792,7 +858,7 @@ export const updateClawSchema = z.object({
   mode: z.enum(['continuous', 'interval', 'event', 'single-shot']).optional(),
   allowed_tools: z.array(z.string().max(200)).max(500).optional(),
   allowedTools: z.array(z.string().max(200)).max(500).optional(),
-  limits: z.record(z.string(), z.unknown()).optional(),
+  limits: clawLimitsSchema.optional(),
   interval_ms: z.number().int().min(1000).nullable().optional(),
   intervalMs: z.number().int().min(1000).nullable().optional(),
   event_filters: z.array(z.string().max(500)).max(100).optional(),

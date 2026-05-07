@@ -466,6 +466,86 @@ describe('Route Helpers', () => {
       const [response] = vi.mocked(c.json).mock.calls[0];
       expect(response.meta.requestId).toBe('unknown');
     });
+
+    // EXPOSE-001 regression: in production, raw 5xx error messages must be
+    // redacted before being sent to the client. The original message is
+    // logged so operators can still trace via requestId.
+    it('redacts raw 5xx detail in production (EXPOSE-001)', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalExpose = process.env.EXPOSE_INTERNAL_ERRORS;
+      process.env.NODE_ENV = 'production';
+      delete process.env.EXPOSE_INTERNAL_ERRORS;
+      try {
+        // Re-import so the module-level REDACT_5XX const recomputes.
+        vi.resetModules();
+        const fresh = await import('./helpers.js');
+        const c = createMockContext();
+        vi.mocked(c.get).mockReturnValue('req-redact-1');
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        fresh.apiError(c, 'syntax error in pg query: SELECT * FROM ui_password_hash', 500);
+
+        const [response, status] = vi.mocked(c.json).mock.calls[0];
+        expect(status).toBe(500);
+        expect(response.error.message).toBe('Internal server error');
+        expect(response.error.message).not.toContain('pg query');
+        expect(response.error.message).not.toContain('ui_password_hash');
+        // Operator-side log retains the detail.
+        expect(warnSpy).toHaveBeenCalled();
+        const logged = warnSpy.mock.calls[0]![0] as string;
+        expect(logged).toContain('req-redact-1');
+        expect(logged).toContain('pg query');
+
+        warnSpy.mockRestore();
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+        if (originalExpose === undefined) delete process.env.EXPOSE_INTERNAL_ERRORS;
+        else process.env.EXPOSE_INTERNAL_ERRORS = originalExpose;
+        vi.resetModules();
+      }
+    });
+
+    it('does NOT redact 4xx error messages even in production', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      try {
+        vi.resetModules();
+        const fresh = await import('./helpers.js');
+        const c = createMockContext();
+        vi.mocked(c.get).mockReturnValue('req-keep-4xx');
+
+        fresh.apiError(c, 'Invalid email format', 400);
+
+        const [response] = vi.mocked(c.json).mock.calls[0];
+        expect(response.error.message).toBe('Invalid email format');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+        vi.resetModules();
+      }
+    });
+
+    it('does NOT redact when EXPOSE_INTERNAL_ERRORS=true (dev/staging escape hatch)', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalExpose = process.env.EXPOSE_INTERNAL_ERRORS;
+      process.env.NODE_ENV = 'production';
+      process.env.EXPOSE_INTERNAL_ERRORS = 'true';
+      try {
+        vi.resetModules();
+        const fresh = await import('./helpers.js');
+        const c = createMockContext();
+        vi.mocked(c.get).mockReturnValue('req-no-redact');
+
+        fresh.apiError(c, 'Detailed pg error message', 500);
+
+        const [response] = vi.mocked(c.json).mock.calls[0];
+        expect(response.error.message).toBe('Detailed pg error message');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+        if (originalExpose === undefined) delete process.env.EXPOSE_INTERNAL_ERRORS;
+        else process.env.EXPOSE_INTERNAL_ERRORS = originalExpose;
+        vi.resetModules();
+      }
+    });
   });
 
   describe('safeKeyCompare', () => {

@@ -1472,7 +1472,8 @@ export async function executeClawNode(
   node: WorkflowNode,
   nodeOutputs: Record<string, NodeResult>,
   variables: Record<string, unknown>,
-  userId: string
+  userId: string,
+  signal?: AbortSignal
 ): Promise<NodeResult> {
   const startTime = Date.now();
   try {
@@ -1550,6 +1551,10 @@ export async function executeClawNode(
     let finalState = session.state;
 
     while (Date.now() < deadline) {
+      if (signal?.aborted) {
+        finalState = 'stopped';
+        break;
+      }
       await new Promise((r) => setTimeout(r, 2000)); // poll every 2s
       const current = service.getSession(config.id, userId);
       if (!current || ['completed', 'stopped', 'failed'].includes(current.state)) {
@@ -1563,10 +1568,22 @@ export async function executeClawNode(
     const { entries } = await service.getHistory(config.id, userId, 1, 0);
     const lastEntry = entries[0];
 
+    // Cleanup: stop and delete the ephemeral claw
+    try {
+      await service.stopClaw(config.id, userId);
+      await service.deleteClaw(config.id, userId);
+    } catch (cleanupErr) {
+      log.warn(`[executeClawNode] Failed to cleanup ephemeral claw ${config.id}: ${getErrorMessage(cleanupErr)}`);
+    }
+
+    // Detect truncation
+    const originalLength = lastEntry?.outputMessage?.length ?? 0;
+    const truncated = originalLength > 2000;
+
     return {
       nodeId: node.id,
       status:
-        finalState === 'completed' ? 'success' : finalState === 'failed' ? 'error' : 'success',
+        finalState === 'completed' ? 'success' : finalState === 'failed' || finalState === 'stopped' ? 'error' : 'success',
       output: {
         clawId: config.id,
         clawName: name,
@@ -1575,6 +1592,8 @@ export async function executeClawNode(
         cyclesCompleted: lastEntry?.cycleNumber ?? 0,
         lastOutput: lastEntry?.outputMessage?.slice(0, 2000) ?? '',
         cost: lastEntry?.costUsd ?? 0,
+        truncated,
+        originalLength,
       },
       resolvedArgs: { name, mission, mode, sandbox },
       durationMs: Date.now() - startTime,

@@ -8,6 +8,7 @@
 // =============================================================================
 
 export { setModuleResolver, tryImport } from './module-resolver.js';
+export { isCallToolHardBlocked, isToolCallAllowed } from './dynamic-tool-permissions.js';
 
 // =============================================================================
 // IMPORTS - Tool sets
@@ -91,6 +92,7 @@ export const TOOL_SETS = {
  * Core tool sets (with built-in executors)
  */
 export { FILE_SYSTEM_TOOLS };
+export { isPathAllowedAsync } from './file-system.js';
 export { CODE_EXECUTION_TOOLS };
 export { WEB_FETCH_TOOLS };
 export { EXPENSE_TRACKER_TOOLS };

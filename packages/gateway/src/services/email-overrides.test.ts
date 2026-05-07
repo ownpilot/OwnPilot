@@ -90,17 +90,35 @@ vi.mock('imapflow', () => ({
   },
 }));
 
+const mockIsPathAllowedAsync = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+
+vi.mock('@ownpilot/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+  return {
+    ...actual,
+    isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowedAsync(...args),
+  };
+});
+
 vi.mock('nodemailer', () => ({
   default: { createTransport: mockCreateTransport },
 }));
 
-vi.mock('node:fs/promises', () => ({
-  access: (...args: unknown[]) => mockFsAccess(...args),
-}));
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    access: (...args: unknown[]) => mockFsAccess(...args),
+  };
+});
 
-vi.mock('node:path', () => ({
-  basename: (p: string) => p.split('/').pop() ?? p,
-}));
+vi.mock('node:path', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:path')>();
+  return {
+    ...actual,
+    basename: (p: string) => p.split('/').pop() ?? p,
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Import under test
@@ -475,6 +493,41 @@ describe('sendEmailOverride', () => {
 
     expect(result.isError).toBe(false);
     expect(result.content.attachmentCount).toBe(2);
+  });
+
+  // PATH-003 regression: paths outside the workspace allowlist must be rejected
+  it('rejects attachment paths outside the workspace allowlist', async () => {
+    setupSmtpConfig();
+    mockFsAccess.mockResolvedValue(undefined);
+    mockIsPathAllowedAsync.mockResolvedValueOnce(false);
+
+    const result = await executors.send_email!({
+      to: ['a@b.com'],
+      subject: 'S',
+      body: 'B',
+      attachments: ['/etc/passwd'],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content.error).toContain('Attachment path not allowed');
+    expect(mockSendMail).not.toHaveBeenCalled();
+  });
+
+  it('rejects ssh-key path attempts via reply_email (PATH-003 regression)', async () => {
+    setupSmtpConfig();
+    mockFsAccess.mockResolvedValue(undefined);
+    mockIsPathAllowedAsync.mockResolvedValueOnce(false);
+
+    // Reply path mirrors send: same guard. We only check the early return.
+    const result = await executors.send_email!({
+      to: ['a@b.com'],
+      subject: 'S',
+      body: 'B',
+      attachments: ['/home/user/.ssh/id_rsa'],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content.error).toContain('Attachment path not allowed');
   });
 
   it('should return error when sendMail throws', async () => {

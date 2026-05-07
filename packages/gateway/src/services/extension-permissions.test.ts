@@ -150,8 +150,12 @@ describe('getRequiredPermission', () => {
 // ============================================================================
 
 describe('checkPermission', () => {
-  it('returns true when permissions is undefined (legacy)', () => {
-    expect(checkPermission('create_task', undefined)).toBe(true);
+  it('returns false when permissions is undefined and tool requires a permission', () => {
+    expect(checkPermission('create_task', undefined)).toBe(false);
+  });
+
+  it('returns true when permissions is undefined and tool needs no permission', () => {
+    expect(checkPermission('send_message', undefined)).toBe(true);
   });
 
   it('returns true when tool requires no permission', () => {

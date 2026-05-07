@@ -6,9 +6,9 @@
  * - Statistical calculations (mean, median, mode, std dev)
  */
 
-import { runInNewContext } from 'node:vm';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import { evaluateMathExpression } from '../../security/safe-math.js';
 
 // =============================================================================
 // CALCULATION
@@ -49,50 +49,20 @@ export const calculateExecutor: ToolExecutor = async (args): Promise<ToolExecuti
     // Handle percentage like "15%"
     expr = expr.replace(/(\d+(?:\.\d+)?)\s*%/g, '($1 / 100)');
 
-    // Handle power notation
-    expr = expr.replace(/\^/g, '**');
+    // Map user-facing aliases to canonical names understood by the safe parser.
+    // `ln` is not in the parser's function table; alias to `log` (natural log).
+    expr = expr.replace(/\bln\s*\(/gi, 'log(');
 
-    // Handle common math functions
-    // Map user-facing function names to Math.* method names
-    // Note: Math.ln doesn't exist in JS — both log and ln map to Math.log (natural log)
-    const mathFunctionMap: Record<string, string> = {
-      sqrt: 'sqrt',
-      sin: 'sin',
-      cos: 'cos',
-      tan: 'tan',
-      log: 'log', // natural logarithm (standard convention)
-      log10: 'log10', // base-10 logarithm (explicit)
-      ln: 'log', // alias for natural log → Math.log
-      abs: 'abs',
-      floor: 'floor',
-      ceil: 'ceil',
-      round: 'round',
-      exp: 'exp',
-    };
+    // Evaluate via the safe recursive-descent parser.
+    // No code execution surface — no eval, no Function constructor, no vm.
+    const result = evaluateMathExpression(expr);
 
-    // Replace function calls with their Math.* equivalents
-    for (const [name, mathMethod] of Object.entries(mathFunctionMap)) {
-      const regex = new RegExp(`${name}\\s*\\(([^)]+)\\)`, 'gi');
-      expr = expr.replace(regex, `Math.${mathMethod}($1)`);
-    }
-
-    // Handle pi and e constants
-    expr = expr.replace(/\bpi\b/gi, 'Math.PI');
-    expr = expr.replace(/\be\b/gi, 'Math.E');
-
-    // Validate expression (only allow safe characters)
-    if (
-      !/^[0-9+\-*/().%\s,Math.PIELOGSQRTSINCOSTABNFLRCEUDXP]+$/i.test(expr.replace(/Math\./g, ''))
-    ) {
+    if (result instanceof Error) {
       return {
-        content: JSON.stringify({ error: 'Invalid characters in expression' }),
+        content: JSON.stringify({ error: result.message }),
         isError: true,
       };
     }
-
-    // Evaluate in an isolated VM context with only Math available.
-    // This prevents access to process, require, global, etc.
-    const result = runInNewContext(expr, { Math }, { timeout: 1000 });
 
     if (typeof result !== 'number' || !isFinite(result)) {
       return {
