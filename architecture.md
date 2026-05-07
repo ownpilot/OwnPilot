@@ -1681,7 +1681,7 @@ import { fc } from 'fast-check';
 
 | # | Issue | Severity | Effort | Priority | Status |
 |---|-------|----------|--------|----------|--------|
-| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Partially done (idempotency keys for tools; orphan reconciliation; job queue ADR pending)** |
+| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Partially done (ADR-001 written; idempotency keys + orphan reconciliation in place; pg-boss queue pending implementation)** |
 | 24.2 | Real sandbox isolation (wasmtime) | CRITICAL | High | P0 | Pending (P0 tests done) |
 | 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() in BaseRepository; cleanup methods exist; schema drift unverified)** |
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
@@ -1798,3 +1798,12 @@ Repository methods added:
 - Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `request_logs` cleanup
 - Multi-step operations use transaction (e.g., channel-messages batch insert)
 
+**P1 — 24.1 Persistent Job Queue ADR:**
+- `docs/ADR/ADR-001-persistent-job-queue.md` — full architecture decision record
+- pg-boss over Postgres chosen (no extra infra; FOR UPDATE SKIP LOCKED)
+- 4-phase plan: infrastructure → workflows → triggers/plans → fleet/subagent
+- At-least-once, exponential backoff, dead-letter queue via job_history partition
+
+**Remaining P0-P1:**
+- wasmtime sandbox (24.2 real isolation) — research phase
+- pg-boss implementation (24.1 Phase 1)
