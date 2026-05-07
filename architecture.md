@@ -1456,14 +1456,15 @@ log.warn('message', { error: err });
 
 **Problem 2 — Schema/Type Drift:** SQL schema files and TypeScript types are maintained manually and separately. No automatic link between them. One gets updated, the other doesn't → drift.
 
-**Problem 3 — Transaction Boundaries:** 40+ repository classes. Multi-step operations — e.g., creating a workflow + 24 nodes + edges + version snapshot — are atomic only if wrapped in a transaction. If each repository calls its own `pool.query()`, partial failure is possible (12 nodes written, 13th fails, half a workflow remains in DB).
+**Problem 3 — Transaction Boundaries:** 40+ repository classes. Multi-step operations — e.g., creating a workflow + 24 nodes + edges + version snapshot — are atomic only if wrapped in a transaction. If each repository calls its own `pool.query()`, partial failure is possible (12 nodes written, 13th fails, half a workflow remains in DB). **Current state:** `BaseRepository.transaction()` delegates to `adapter.transaction()` with 30s timeout. Multi-step operations use it (e.g., channel-messages batch insert).
 
 **Problem 4 — Log Retention:** These tables grow unbounded:
 `request_logs`, `audit_log`, `claw_history`, `claw_audit_log`, `workflow_logs`, `plan_history`, `trigger_history`, `heartbeat_log`, `subagent_history`, `embedding_cache`
 
-No retention policy is defined in the architecture. After 6 months, Postgres hits 100GB.
+**Current state:** Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `claws.cleanupOldHistory(30 days)`, `autonomy_log.cleanup(olderThanDays)`, `orchestra.cleanupOld(retentionDays)`, `subagents.cleanupOld(retentionDays)`, `fleet.cleanupOldSessions(olderThanDays)`. Retention intervals vary by table. Periodic cleanup via `setInterval` in each service. **Gap:** No automated retention policy enforcement at the DB level (no partition-based TTL expiry). After 6 months without maintenance, Postgres can hit 100GB.
 
-**Resolution — Drizzle ORM:**
+**Resolution — Drizzle ORM (future):**
+The long-term resolution for Problems 1-3 is Drizzle ORM, which generates migrations from schema definitions and provides type-safe query builders. The schema `/*.ts` files would become Drizzle schema definitions. This is a larger refactor (P2 priority) — not a quick fix.**
 
 ```typescript
 // gateway/src/db/schema/claws.ts
@@ -1683,7 +1684,7 @@ import { fc } from 'fast-check';
 |---|-------|----------|--------|----------|--------|
 | 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Partially done (ADR-001 written; idempotency keys + orphan reconciliation in place; pg-boss queue pending implementation)** |
 | 24.2 | Real sandbox isolation (wasmtime) | CRITICAL | High | P0 | Pending (P0 tests done) |
-| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() in BaseRepository; cleanup methods exist; schema drift unverified)** |
+| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() exists; cleanup methods exist; retention policy not enforced at DB level; Drizzle migration deferred)** |
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
@@ -1792,11 +1793,11 @@ Repository methods added:
   - Idempotency failures are non-blocking (fire-and-forget with try/catch)
   - Test mock added: `mockIdempotencyRepo` with getRecord/setRecord in tool-executor.test.ts
 
-**P2 — 24.3 Transaction Safety:**
+**P2 — 24.3 Transaction Safety & Retention:**
 - `packages/gateway/src/db/repositories/base.ts` — `BaseRepository.transaction()` delegates to adapter.transaction()
-- `packages/gateway/src/db/adapters/postgres-adapter.ts` — `transaction()` with 30s timeout, automatic rollback on error, re-throws original error after rollback
-- Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `request_logs` cleanup
-- Multi-step operations use transaction (e.g., channel-messages batch insert)
+- `packages/gateway/src/db/adapters/postgres-adapter.ts` — `transaction()` with 30s timeout, automatic rollback on error
+- Cleanup methods across repositories (see retention summary above)
+- **Remaining**: DB-level retention enforcement (partition-based TTL expiry), Drizzle ORM migration
 
 **P1 — 24.1 Persistent Job Queue ADR:**
 - `docs/ADR/ADR-001-persistent-job-queue.md` — full architecture decision record
