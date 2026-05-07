@@ -1686,7 +1686,7 @@ import { fc } from 'fast-check';
 | 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | Pending |
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | Pending |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion)** |
-| 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | Pending |
+| 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
 | 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | Pending |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
 | 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Done (sandbox part)** |
@@ -1745,6 +1745,14 @@ Repository methods added:
 - `ProviderHealthService.runProviderHealthChecks()` probes all configured providers via `/models` endpoint (5s timeout) at boot
 - Logged at WARN level for unavailable providers; does NOT fail boot
 - `ProviderStatusEvent` emitted via EventBus for UI "provider unavailable" indicators
+
+**P2 — 24.6 Prometheus Metrics Endpoint:**
+- `packages/gateway/src/services/metrics-service.ts` — in-process MetricsService with Prometheus text format
+- `GET /metrics` endpoint with counters, histograms, gauges (no external dependencies)
+- Metrics: `ownpilot_http_requests_total{method,path,status}`, `ownpilot_http_request_duration_ms` histogram (11 latency buckets), `ownpilot_active_agents{type}`, `ownpilot_provider_cost_usd_total{provider}`, `ownpilot_chat_requests_total{provider,model,status}`
+- `recordHttpRequest()` wired into auditMiddleware for every API request
+- `startMetricsService()` called at boot; agent metrics refresh every 30s via setInterval
+- For multi-node: aggregate via Prometheus Pushgateway (documented in comments)
 
 **Remaining P0-P1:**
 - Persistent job queue research (24.1) — ADR to be written
