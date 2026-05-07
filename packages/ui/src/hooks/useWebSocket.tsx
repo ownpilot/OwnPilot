@@ -53,7 +53,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
     url = `${wsProtocol}//${wsHost}/ws`,
     reconnect = true,
     reconnectDelay = 3000,
-    maxReconnectAttempts = 5,
   } = options;
 
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -131,17 +130,21 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
 
       wsRef.current.onmessage = handleMessage;
 
-      wsRef.current.onclose = (_event) => {
+      wsRef.current.onclose = () => {
         setStatus('disconnected');
         setSessionId(null);
 
-        // Attempt reconnection
-        if (reconnect && reconnectAttemptsRef.current < maxReconnectAttempts) {
+        // Attempt reconnection with exponential backoff (unlimited retries)
+        if (reconnect) {
+          const attempt = reconnectAttemptsRef.current;
           reconnectAttemptsRef.current++;
+
+          // Exponential backoff: 1s, 2s, 4s, 8s, 16s, cap at 30s
+          const delay = Math.min(reconnectDelay * Math.pow(2, attempt), 30_000);
 
           reconnectTimerRef.current = setTimeout(() => {
             connect();
-          }, reconnectDelay);
+          }, delay);
         }
       };
 
@@ -153,7 +156,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
       setStatus('error');
       console.error('Failed to create WebSocket:', error);
     }
-  }, [url, reconnect, reconnectDelay, maxReconnectAttempts, handleMessage]);
+  }, [url, reconnect, reconnectDelay, handleMessage]);
 
   /**
    * Disconnect from WebSocket
