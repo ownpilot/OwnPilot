@@ -1684,7 +1684,7 @@ import { fc } from 'fast-check';
 | 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | Pending |
 | 24.2 | Real sandbox isolation (wasmtime) | CRITICAL | High | P0 | Pending (P0 tests done) |
 | 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | Pending |
-| 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | Pending |
+| 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
 | 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC verification; v2 strategy pending)** |
@@ -1771,6 +1771,12 @@ Repository methods added:
 
 **WebSocket Session Fix:**
 - `packages/ui/src/hooks/useWebSocket.tsx` — respond to connection:ping with session:pong, unlimited reconnect with exponential backoff (1s→30s cap)
+- `packages/gateway/src/ws/server.ts` — session:pong handler now calls `sessionManager.touch()` to reset WS session TTL (was logging only)
+
+**P2 — 24.4 Token Counting & Embedding Model Versioning:**
+- `packages/core/src/agent/providers/openai-compatible.ts` — `countTokens()` uses char/4 approximation as fallback for OpenAI-compatible endpoints that don't return token usage
+- `packages/gateway/src/db/schema/autonomous.ts` — `memories.embedding_model_id` column added for multi-model embedding support; queries can scope to current model: `WHERE embedding_model_id = $currentModel`; partial index `idx_memories_embedding_model` added
+- `packages/gateway/src/db/schema/autonomous.ts` — migration to add `embedding_model_id` column for existing installs
 
 **Remaining P0-P1:**
 - Persistent job queue research (24.1) — ADR to be written
