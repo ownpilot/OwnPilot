@@ -24,6 +24,25 @@ export const CHAT_WIDGET_TAG_NAMES = [
   'bar',
   'bar_chart',
   'timeline',
+  // Code & Media
+  'code',
+  'code_block',
+  'image',
+  'images',
+  'video',
+  'audio',
+  'file',
+  'files',
+  // Advanced
+  'chart',
+  'pie_chart',
+  'line_chart',
+  'map',
+  'embed',
+  'iframe',
+  'html',
+  'json',
+  'raw',
 ] as const;
 
 const WIDGET_TAG_START_REGEX = new RegExp(`^<(${CHAT_WIDGET_TAG_NAMES.join('|')})\\b`, 'i');
