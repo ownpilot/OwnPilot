@@ -147,6 +147,24 @@
       "releaseDate": "2026-02-17"
     },
     {
+      "id": "au.anthropic.claude-sonnet-4-6",
+      "name": "AU Anthropic Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 3.3,
+      "outputPrice": 16.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
       "id": "anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6",
       "contextWindow": 1000000,
@@ -263,6 +281,24 @@
       ],
       "default": false,
       "releaseDate": "2026-02-06"
+    },
+    {
+      "id": "au.anthropic.claude-opus-4-6-v1",
+      "name": "AU Anthropic Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 16.5,
+      "outputPrice": 82.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
     },
     {
       "id": "eu.anthropic.claude-opus-4-6-v1",

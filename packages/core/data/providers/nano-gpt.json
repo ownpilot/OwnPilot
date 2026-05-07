@@ -12,6 +12,114 @@
   },
   "models": [
     {
+      "id": "qwen3.6-max-preview",
+      "name": "Qwen3.6 Max Preview",
+      "contextWindow": 245800,
+      "maxOutput": 65536,
+      "inputPrice": 1.3,
+      "outputPrice": 7.8,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-20"
+    },
+    {
+      "id": "qwen/Qwen3.6-35B-A3B:thinking",
+      "name": "Qwen3.6 35B A3B Thinking",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.29,
+      "outputPrice": 1.74,
+      "capabilities": [
+        "chat",
+        "vision",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-19"
+    },
+    {
+      "id": "alibaba/qwen3.6-flash",
+      "name": "Qwen3.6 Flash",
+      "contextWindow": 991800,
+      "maxOutput": 65536,
+      "inputPrice": 0.19,
+      "outputPrice": 1.16,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "qwen/Qwen3.6-35B-A3B",
+      "name": "Qwen3.6 35B A3B",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.29,
+      "outputPrice": 1.74,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "moonshotai/kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.53,
+      "outputPrice": 2.73,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "moonshotai/kimi-k2.6:thinking",
+      "name": "Kimi K2.6 Thinking",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.53,
+      "outputPrice": 2.73,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "qwen-3.6-plus",
+      "name": "Qwen 3.6 Plus",
+      "contextWindow": 991800,
+      "maxOutput": 65536,
+      "inputPrice": 0.45,
+      "outputPrice": 2.7,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
       "id": "zai-org/glm-5.1",
       "name": "GLM 5.1",
       "contextWindow": 200000,
@@ -25,7 +133,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-27"
     },
     {

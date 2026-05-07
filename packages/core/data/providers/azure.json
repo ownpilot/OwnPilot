@@ -12,6 +12,42 @@
   },
   "models": [
     {
+      "id": "gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "grok-4-20-non-reasoning",
       "name": "Grok 4.20 (Non-Reasoning)",
       "contextWindow": 262000,
@@ -23,7 +59,7 @@
         "function_calling",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-08"
     },
     {
@@ -81,7 +117,7 @@
     {
       "id": "gpt-5.4-pro",
       "name": "GPT-5.4 Pro",
-      "contextWindow": 400000,
+      "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 30,
       "outputPrice": 180,
@@ -98,7 +134,7 @@
     {
       "id": "gpt-5.4",
       "name": "GPT-5.4",
-      "contextWindow": 400000,
+      "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 2.5,
       "outputPrice": 15,
@@ -148,6 +184,24 @@
       ],
       "default": false,
       "releaseDate": "2026-02-24"
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
     },
     {
       "id": "kimi-k2.5",
@@ -1547,22 +1601,6 @@
       "releaseDate": "2023-11-07"
     },
     {
-      "id": "gpt-4-turbo",
-      "name": "GPT-4 Turbo",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 10,
-      "outputPrice": 30,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-06"
-    },
-    {
       "id": "gpt-4-turbo-vision",
       "name": "GPT-4 Turbo Vision",
       "contextWindow": 128000,
@@ -1587,6 +1625,22 @@
       "outputPrice": 2,
       "capabilities": [
         "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "gpt-4-turbo",
+      "name": "GPT-4 Turbo",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 10,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,

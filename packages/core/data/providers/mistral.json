@@ -12,6 +12,42 @@
   },
   "models": [
     {
+      "id": "mistral-medium-2604",
+      "name": "Mistral Medium 3.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-29"
+    },
+    {
+      "id": "mistral-medium-latest",
+      "name": "Mistral Medium (latest)",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-29"
+    },
+    {
       "id": "mistral-small-latest",
       "name": "Mistral Small (latest)",
       "contextWindow": 256000,
@@ -25,7 +61,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-16"
     },
     {
@@ -162,22 +198,6 @@
       "outputPrice": 0.3,
       "capabilities": [
         "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-07"
-    },
-    {
-      "id": "mistral-medium-latest",
-      "name": "Mistral Medium (latest)",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "vision",
         "function_calling",
         "streaming"
       ],

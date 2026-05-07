@@ -12,10 +12,95 @@
   },
   "models": [
     {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 128000,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo-v2.5",
+      "name": "MiMo V2.5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
       "id": "glm-5.1",
       "name": "GLM-5.1",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
+      "contextWindow": 202752,
+      "maxOutput": 32768,
       "inputPrice": 1.4,
       "outputPrice": 4.4,
       "capabilities": [
@@ -24,7 +109,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-07"
     },
     {
@@ -64,7 +149,7 @@
       "id": "mimo-v2-omni",
       "name": "MiMo V2 Omni",
       "contextWindow": 262144,
-      "maxOutput": 64000,
+      "maxOutput": 128000,
       "inputPrice": 0.4,
       "outputPrice": 2,
       "capabilities": [
@@ -82,7 +167,7 @@
       "id": "mimo-v2-pro",
       "name": "MiMo V2 Pro",
       "contextWindow": 1048576,
-      "maxOutput": 64000,
+      "maxOutput": 128000,
       "inputPrice": 1,
       "outputPrice": 3,
       "capabilities": [
@@ -130,8 +215,8 @@
     {
       "id": "glm-5",
       "name": "GLM-5",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
+      "contextWindow": 202752,
+      "maxOutput": 32768,
       "inputPrice": 1,
       "outputPrice": 3.2,
       "capabilities": [

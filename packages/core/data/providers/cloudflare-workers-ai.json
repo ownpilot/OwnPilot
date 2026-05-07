@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "@cf/moonshotai/kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-20"
+    },
+    {
       "id": "@cf/nvidia/nemotron-3-120b-a12b",
       "name": "Nemotron 3 Super 120B",
       "contextWindow": 256000,
@@ -24,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-03-11"
     },
     {

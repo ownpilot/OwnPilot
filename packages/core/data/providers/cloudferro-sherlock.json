@@ -15,12 +15,13 @@
       "id": "MiniMaxAI/MiniMax-M2.5",
       "name": "MiniMax-M2.5",
       "contextWindow": 196000,
-      "maxOutput": 196000,
+      "maxOutput": 16000,
       "inputPrice": 0.3,
       "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],

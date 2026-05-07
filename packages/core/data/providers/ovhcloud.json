@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.1,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-15"
+    },
+    {
       "id": "qwen3-coder-30b-a3b-instruct",
       "name": "Qwen3-Coder-30B-A3B-Instruct",
       "contextWindow": 262144,
@@ -24,7 +41,7 @@
         "json_mode",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-10-28"
     },
     {

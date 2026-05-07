@@ -13,7 +13,7 @@
   "models": [
     {
       "id": "hy3-preview",
-      "name": "HY3 Preview",
+      "name": "Hy3 preview",
       "contextWindow": 256000,
       "maxOutput": 64000,
       "inputPrice": 0,

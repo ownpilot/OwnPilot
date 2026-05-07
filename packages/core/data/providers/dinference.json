@@ -12,6 +12,39 @@
   },
   "models": [
     {
+      "id": "glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 3.89,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-27"
+    },
+    {
+      "id": "minimax-m2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "glm-5",
       "name": "GLM-5",
       "contextWindow": 200000,
@@ -24,8 +57,8 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2026-02"
+      "default": false,
+      "releaseDate": "2026-02-11"
     },
     {
       "id": "glm-4.7",
@@ -41,7 +74,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-12"
+      "releaseDate": "2025-12-22"
     },
     {
       "id": "gpt-oss-120b",

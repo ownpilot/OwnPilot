@@ -1,0 +1,241 @@
+{
+  "id": "neuralwatt",
+  "name": "Neuralwatt",
+  "type": "openai-compatible",
+  "apiKeyEnv": "NEURALWATT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k2.6-fast",
+      "name": "Kimi K2.6 Fast",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.69,
+      "outputPrice": 3.22,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.69,
+      "outputPrice": 3.22,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "glm-5-fast",
+      "name": "GLM 5 Fast",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 1.1,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "glm-5.1-fast",
+      "name": "GLM 5.1 Fast",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 1.1,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "zai-org/GLM-5.1-FP8",
+      "name": "GLM 5.1 FP8",
+      "contextWindow": 200000,
+      "maxOutput": 200000,
+      "inputPrice": 1.1,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "qwen3.6-35b-fast",
+      "name": "Qwen3.6 35B Fast",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.05,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-01"
+    },
+    {
+      "id": "Qwen/Qwen3.6-35B-A3B",
+      "name": "Qwen3.6 35B A3B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.05,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-01"
+    },
+    {
+      "id": "MiniMaxAI/MiniMax-M2.5",
+      "name": "MiniMax M2.5",
+      "contextWindow": 196608,
+      "maxOutput": 196608,
+      "inputPrice": 0.35,
+      "outputPrice": 1.38,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "qwen3.5-397b-fast",
+      "name": "Qwen3.5 397B Fast",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.69,
+      "outputPrice": 4.14,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "Qwen/Qwen3.5-397B-A17B-FP8",
+      "name": "Qwen3.5 397B A17B FP8",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.69,
+      "outputPrice": 4.14,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "kimi-k2.5-fast",
+      "name": "Kimi K2.5 Fast",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.52,
+      "outputPrice": 2.59,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.52,
+      "outputPrice": 2.59,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "mistralai/Devstral-Small-2-24B-Instruct-2512",
+      "name": "Devstral Small 2 24B Instruct 2512",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.12,
+      "outputPrice": 0.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0.03,
+      "outputPrice": 0.16,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    }
+  ],
+  "baseUrl": "https://api.neuralwatt.com/v1",
+  "docsUrl": "https://portal.neuralwatt.com/docs"
+}

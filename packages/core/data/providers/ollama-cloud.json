@@ -12,10 +12,42 @@
   },
   "models": [
     {
-      "id": "gemma4:31b",
-      "name": "gemma4:31b",
+      "id": "deepseek-v4-flash",
+      "name": "deepseek-v4-flash",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "deepseek-v4-pro",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "kimi-k2.6:cloud",
+      "name": "kimi-k2.6:cloud",
       "contextWindow": 262144,
-      "maxOutput": 8192,
+      "maxOutput": 262144,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -25,7 +57,24 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
+      "releaseDate": "2026-04-20"
+    },
+    {
+      "id": "gemma4:31b",
+      "name": "gemma4:31b",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-04-02"
     },
     {
@@ -47,8 +96,8 @@
     {
       "id": "minimax-m2.7",
       "name": "minimax-m2.7",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
+      "contextWindow": 196608,
+      "maxOutput": 196608,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -80,7 +129,7 @@
       "id": "qwen3.5:397b",
       "name": "qwen3.5:397b",
       "contextWindow": 262144,
-      "maxOutput": 81920,
+      "maxOutput": 65536,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

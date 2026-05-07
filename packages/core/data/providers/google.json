@@ -30,7 +30,7 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "gemma-4-26b-it",
+      "id": "gemma-4-26b-a4b-it",
       "name": "Gemma 4 26B",
       "contextWindow": 256000,
       "maxOutput": 8192,

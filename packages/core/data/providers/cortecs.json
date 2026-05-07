@@ -12,6 +12,72 @@
   },
   "models": [
     {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 0.133,
+      "outputPrice": 0.266,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 1.553,
+      "outputPrice": 3.106,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.81,
+      "outputPrice": 3.54,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "claude-opus4-7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5.6,
+      "outputPrice": 27.99,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
       "id": "glm-5.1",
       "name": "GLM-5.1",
       "contextWindow": 204800,
@@ -25,14 +91,14 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-14"
     },
     {
-      "id": "minimax-M2.7",
-      "name": "MiniMax-M2.7",
+      "id": "minimax-m2.7",
+      "name": "MiniMax-m2.7",
       "contextWindow": 202752,
-      "maxOutput": 131072,
+      "maxOutput": 196072,
       "inputPrice": 0.47,
       "outputPrice": 1.4,
       "capabilities": [
@@ -44,6 +110,38 @@
       ],
       "default": false,
       "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "nemotron-3-super-120b-a12b",
+      "name": "Nemotron 3 Super 120B A12B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.266,
+      "outputPrice": 0.799,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B A10B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.444,
+      "outputPrice": 3.106,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-24"
     },
     {
       "id": "claude-4-6-sonnet",
@@ -61,6 +159,22 @@
       ],
       "default": false,
       "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B A17B",
+      "contextWindow": 250000,
+      "maxOutput": 250000,
+      "inputPrice": 0.6,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-16"
     },
     {
       "id": "minimax-m2.5",
@@ -224,6 +338,38 @@
       "releaseDate": "2025-12-08"
     },
     {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.266,
+      "outputPrice": 0.444,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "mistral-large-2512",
+      "name": "Mistral Large 3 2512",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
       "id": "intellect-3",
       "name": "INTELLECT 3",
       "contextWindow": 128000,
@@ -323,6 +469,22 @@
       "releaseDate": "2025-09-11"
     },
     {
+      "id": "hermes-4-70b",
+      "name": "Hermes 4 70B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.116,
+      "outputPrice": 0.358,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-26"
+    },
+    {
       "id": "glm-4.7-flash",
       "name": "GLM-4.7-Flash",
       "contextWindow": 203000,
@@ -370,6 +532,37 @@
       "releaseDate": "2025-08-01"
     },
     {
+      "id": "qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen3 Coder 30B A3B Instruct",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.053,
+      "outputPrice": 0.222,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-31"
+    },
+    {
+      "id": "codestral-2508",
+      "name": "Codestral 2508",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.9,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-30"
+    },
+    {
       "id": "glm-4.5",
       "name": "GLM 4.5",
       "contextWindow": 131072,
@@ -401,6 +594,22 @@
       "releaseDate": "2025-07-25"
     },
     {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 0.062,
+      "outputPrice": 0.408,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-23"
+    },
+    {
       "id": "kimi-k2-instruct",
       "name": "Kimi K2 Instruct",
       "contextWindow": 131000,
@@ -414,6 +623,22 @@
       ],
       "default": false,
       "releaseDate": "2025-07-11"
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "name": "DeepSeek R1 0528",
+      "contextWindow": 164000,
+      "maxOutput": 164000,
+      "inputPrice": 0.585,
+      "outputPrice": 2.307,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-28"
     },
     {
       "id": "claude-sonnet-4",
@@ -494,6 +719,22 @@
       "releaseDate": "2025-03-20"
     },
     {
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 131000,
+      "maxOutput": 131000,
+      "inputPrice": 0.089,
+      "outputPrice": 0.275,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    },
+    {
       "id": "nova-pro-v1",
       "name": "Nova Pro 1.0",
       "contextWindow": 300000,
@@ -510,6 +751,21 @@
       "releaseDate": "2024-12-03"
     },
     {
+      "id": "qwen-2.5-72b-instruct",
+      "name": "Qwen2.5 72B Instruct",
+      "contextWindow": 33000,
+      "maxOutput": 33000,
+      "inputPrice": 0.062,
+      "outputPrice": 0.231,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-19"
+    },
+    {
       "id": "llama-3.1-405b-instruct",
       "name": "Llama 3.1 405B Instruct",
       "contextWindow": 128000,
@@ -523,6 +779,21 @@
       ],
       "default": false,
       "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "mixtral-8x7B-instruct-v0.1",
+      "name": "Mixtral 8x7B Instruct v0.1",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.438,
+      "outputPrice": 0.68,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-12-11"
     }
   ],
   "baseUrl": "https://api.cortecs.ai/v1",

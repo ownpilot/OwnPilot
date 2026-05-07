@@ -1,0 +1,220 @@
+{
+  "id": "regolo-ai",
+  "name": "Regolo AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "REGOLO_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "mistral-small-4-119b",
+      "name": "Mistral Small 4 119B",
+      "contextWindow": 256000,
+      "maxOutput": 16384,
+      "inputPrice": 0.75,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-15"
+    },
+    {
+      "id": "minimax-m2.5",
+      "name": "MiniMax 2.5",
+      "contextWindow": 190000,
+      "maxOutput": 64000,
+      "inputPrice": 0.8,
+      "outputPrice": 3.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-10"
+    },
+    {
+      "id": "qwen-image",
+      "name": "Qwen-Image",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
+      "id": "qwen3-coder-next",
+      "name": "Qwen3-Coder-Next",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "GPT-OSS-20B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
+      "id": "qwen3-embedding-8b",
+      "name": "Qwen3-Embedding-8B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3-reranker-4b",
+      "name": "Qwen3-Reranker-4B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.12,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3.5-122b",
+      "name": "Qwen3.5-122B",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.9,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5-9B",
+      "contextWindow": 262144,
+      "maxOutput": 8192,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT-OSS-120B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 4.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.6,
+      "outputPrice": 2.7,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-28"
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 120000,
+      "maxOutput": 120000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-07"
+    },
+    {
+      "id": "mistral-small3.2",
+      "name": "Mistral Small 3.2",
+      "contextWindow": 120000,
+      "maxOutput": 120000,
+      "inputPrice": 0.5,
+      "outputPrice": 2.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-31"
+    }
+  ],
+  "baseUrl": "https://api.regolo.ai/v1",
+  "docsUrl": "https://docs.regolo.ai/"
+}

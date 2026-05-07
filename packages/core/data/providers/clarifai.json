@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "moonshotai/chat-completion/models/Kimi-K2_6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-21"
+    },
+    {
       "id": "minimaxai/chat-completion/models/MiniMax-M2_5-high-throughput",
       "name": "MiniMax-M2.5 High Throughput",
       "contextWindow": 204800,
@@ -24,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-12"
     },
     {

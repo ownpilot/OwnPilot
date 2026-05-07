@@ -13,7 +13,7 @@
   "models": [
     {
       "id": "glm-5v-turbo",
-      "name": "glm-5v-turbo",
+      "name": "GLM-5V-Turbo",
       "contextWindow": 200000,
       "maxOutput": 131072,
       "inputPrice": 1.2,

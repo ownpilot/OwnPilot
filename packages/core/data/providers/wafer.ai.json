@@ -1,37 +1,37 @@
 {
-  "id": "zhipuai-coding-plan",
-  "name": "Zhipu AI Coding Plan",
+  "id": "wafer.ai",
+  "name": "Wafer",
   "type": "openai-compatible",
-  "apiKeyEnv": "ZHIPU_API_KEY",
+  "apiKeyEnv": "WAFER_API_KEY",
   "features": {
     "streaming": true,
     "toolUse": true,
     "vision": true,
-    "jsonMode": false,
+    "jsonMode": true,
     "systemMessage": true
   },
   "models": [
     {
-      "id": "glm-5v-turbo",
-      "name": "GLM-5V-Turbo",
-      "contextWindow": 200000,
-      "maxOutput": 131072,
+      "id": "DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-04-01"
+      "releaseDate": "2026-04-24"
     },
     {
-      "id": "glm-5.1",
+      "id": "GLM-5.1",
       "name": "GLM-5.1",
-      "contextWindow": 200000,
+      "contextWindow": 202752,
       "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -43,28 +43,11 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     },
     {
-      "id": "glm-5-turbo",
-      "name": "GLM-5-Turbo",
-      "contextWindow": 200000,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-16"
-    },
-    {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
+      "id": "MiniMax-M2.7",
+      "name": "MiniMax-M2.7",
       "contextWindow": 204800,
       "maxOutput": 131072,
       "inputPrice": 0,
@@ -76,25 +59,27 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-12-22"
+      "releaseDate": "2026-03-18"
     },
     {
-      "id": "glm-4.5-air",
-      "name": "GLM-4.5-Air",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
+      "id": "Qwen3.5-397B-A17B",
+      "name": "Qwen3.5 397B A17B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-07-28"
+      "releaseDate": "2026-02-16"
     }
   ],
-  "baseUrl": "https://open.bigmodel.cn/api/coding/paas/v4",
-  "docsUrl": "https://docs.bigmodel.cn/cn/coding-plan/overview"
+  "baseUrl": "https://pass.wafer.ai/v1",
+  "docsUrl": "https://docs.wafer.ai/wafer-pass"
 }
