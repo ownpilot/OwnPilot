@@ -121,6 +121,7 @@ export interface CreateCodingSessionInput {
   prompt: string;
   cwd?: string;
   model?: string;
+  settings_file?: string;
   mode?: 'auto' | 'interactive';
   timeout_seconds?: number;
   max_turns?: number;

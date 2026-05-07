@@ -235,7 +235,8 @@ export function CodingAgentsPage() {
       mode: 'auto' | 'interactive',
       cwd?: string,
       skillIds?: string[],
-      permissions?: CodingAgentPermissions
+      permissions?: CodingAgentPermissions,
+      settingsFile?: string
     ) => {
       try {
         const session = await codingAgentsApi.createSession({
@@ -245,6 +246,7 @@ export function CodingAgentsPage() {
           cwd: cwd || undefined,
           skill_ids: skillIds?.length ? skillIds : undefined,
           permissions: permissions || undefined,
+          settings_file: settingsFile || undefined,
         });
         setSessions((prev) => {
           if (prev.some((s) => s.id === session.id)) return prev;
@@ -746,7 +748,8 @@ function NewSessionModal({
     mode: 'auto' | 'interactive',
     cwd?: string,
     skillIds?: string[],
-    permissions?: CodingAgentPermissions
+    permissions?: CodingAgentPermissions,
+    settingsFile?: string
   ) => void;
 }) {
   const ptyAvailable = statuses.some((s) => s.ptyAvailable);
@@ -763,6 +766,7 @@ function NewSessionModal({
   const [cwdMode, setCwdMode] = useState<'workspace' | 'custom'>('workspace');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [settingsFile, setSettingsFile] = useState('');
   const [permissions, setPermissions] = useState<CodingAgentPermissions>({
     autonomy: 'semi-auto',
     file_access: 'read-write',
@@ -791,7 +795,8 @@ function NewSessionModal({
         mode,
         cwd.trim() || undefined,
         selectedSkills.length > 0 ? selectedSkills : undefined,
-        permissions
+        permissions,
+        settingsFile.trim() || undefined
       );
     } finally {
       setCreating(false);
@@ -1021,14 +1026,14 @@ function NewSessionModal({
               </div>
             </div>
 
-            {/* Advanced: Skills & Permissions (collapsible) */}
+            {/* Advanced: Settings File, Skills & Permissions (collapsible) */}
             <div className="border-t border-border dark:border-dark-border pt-3">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="w-full flex items-center justify-between text-sm font-medium text-text-secondary dark:text-dark-text-secondary hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
               >
-                <span>Skills & Permissions</span>
+                <span>Advanced Options</span>
                 {showAdvanced ? (
                   <ChevronDown className="w-4 h-4" />
                 ) : (
@@ -1038,6 +1043,24 @@ function NewSessionModal({
 
               {showAdvanced && (
                 <div className="mt-3 space-y-4">
+                  {/* Settings file */}
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1.5">
+                      Settings File
+                    </label>
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2">
+                      Path to a custom Claude Code settings file (e.g. ~/.claude/kimi.json). Uses
+                      default settings if empty.
+                    </p>
+                    <input
+                      type="text"
+                      value={settingsFile}
+                      onChange={(e) => setSettingsFile(e.target.value)}
+                      placeholder="~/.claude/kimi.json"
+                      className="w-full px-3 py-2 rounded-lg border border-border dark:border-dark-border bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-primary dark:text-dark-text-primary text-sm placeholder-text-muted dark:placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono"
+                    />
+                  </div>
+
                   {/* Skills selector (lazy-loaded from extensions) */}
                   <div>
                     <label className="block text-sm font-medium text-text-primary dark:text-dark-text-primary mb-1.5">
