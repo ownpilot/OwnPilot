@@ -1681,9 +1681,9 @@ import { fc } from 'fast-check';
 
 | # | Issue | Severity | Effort | Priority | Status |
 |---|-------|----------|--------|----------|--------|
-| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | Pending |
+| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Partially done (idempotency keys for tools; orphan reconciliation; job queue ADR pending)** |
 | 24.2 | Real sandbox isolation (wasmtime) | CRITICAL | High | P0 | Pending (P0 tests done) |
-| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | Pending |
+| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() in BaseRepository; cleanup methods exist; schema drift unverified)** |
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
@@ -1781,4 +1781,19 @@ Repository methods added:
 **Remaining P0-P1:**
 - Persistent job queue research (24.1) — ADR to be written
 - wasmtime sandbox (24.2 real isolation) — research phase
+
+**P2 — 24.1 & 24.7 Tool Executor Idempotency:**
+- `packages/gateway/src/services/tool-executor.ts` — executeTool() now checks/updates idempotency keys before execution
+  - Key: SHA-256(userId + toolName + JSON.stringify(args))
+  - On cache hit: returns cached ToolExecutionResult without re-execution
+  - On cache miss: executes and stores result with 24h TTL
+  - Deduplicates duplicate calls from retried triggers, plans, workflows, webhooks
+  - Idempotency failures are non-blocking (fire-and-forget with try/catch)
+  - Test mock added: `mockIdempotencyRepo` with getRecord/setRecord in tool-executor.test.ts
+
+**P2 — 24.3 Transaction Safety:**
+- `packages/gateway/src/db/repositories/base.ts` — `BaseRepository.transaction()` delegates to adapter.transaction()
+- `packages/gateway/src/db/adapters/postgres-adapter.ts` — `transaction()` with 30s timeout, automatic rollback on error, re-throws original error after rollback
+- Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `request_logs` cleanup
+- Multi-step operations use transaction (e.g., channel-messages batch insert)
 
