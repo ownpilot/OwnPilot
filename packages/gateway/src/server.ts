@@ -222,6 +222,11 @@ async function main() {
   const { runProviderHealthChecks } = await import('./services/provider-health-service.js');
   await runProviderHealthChecks();
 
+  // Start metrics service for Prometheus endpoint
+  log.info('Starting metrics service...');
+  const { startMetricsService } = await import('./services/metrics-service.js');
+  startMetricsService();
+
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
 

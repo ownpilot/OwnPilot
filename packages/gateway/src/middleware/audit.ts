@@ -8,6 +8,7 @@
 import type { MiddlewareHandler } from 'hono';
 import { hasServiceRegistry, getServiceRegistry, Services } from '@ownpilot/core';
 import type { IAuditService } from '@ownpilot/core';
+import { recordHttpRequest } from '../services/metrics-service.js';
 
 /**
  * Hono middleware that logs each request via AuditService.logAudit().
@@ -32,6 +33,9 @@ export const auditMiddleware: MiddlewareHandler = async (c, next) => {
 
   // Skip logging health checks and static asset requests
   if (path === '/health' || path.startsWith('/api/v1/health')) return;
+
+  // Record metrics
+  recordHttpRequest(method, path, status, durationMs);
 
   audit.logAudit({
     userId: c.get('userId') ?? 'default',

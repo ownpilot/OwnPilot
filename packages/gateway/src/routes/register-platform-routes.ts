@@ -66,4 +66,13 @@ export function registerPlatformRoutes(app: Hono): void {
 
   // File Workspaces (session-based file storage)
   app.route('/api/v1/file-workspaces', fileWorkspaceRoutes);
+
+  // Prometheus metrics endpoint
+  app.get('/metrics', async (c) => {
+    const { renderMetrics } = await import('../services/metrics-service.js');
+    const metrics = renderMetrics();
+    return c.body(metrics, 200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+    });
+  });
 }
