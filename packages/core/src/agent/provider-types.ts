@@ -15,6 +15,22 @@ import type {
 } from './types.js';
 
 /**
+ * Provider health check result
+ */
+export interface ProviderHealthResult {
+  /** Provider identifier */
+  providerId: string;
+  /** Whether the provider is reachable */
+  status: 'ok' | 'unavailable';
+  /** Latency in milliseconds (undefined if unreachable) */
+  latencyMs?: number;
+  /** Error message (undefined if ok) */
+  error?: string;
+  /** Timestamp of the check */
+  checkedAt: Date;
+}
+
+/**
  * Provider interface - all AI providers implement this
  */
 export interface IProvider {
@@ -39,4 +55,10 @@ export interface IProvider {
 
   /** Get available models */
   getModels(): Promise<Result<string[], InternalError>>;
+
+  /**
+   * Health check - verify provider is reachable and responsive.
+   * Called at boot to detect unavailable providers early.
+   */
+  healthCheck(): Promise<Result<ProviderHealthResult, InternalError>>;
 }

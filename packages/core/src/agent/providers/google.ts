@@ -23,6 +23,7 @@ import type {
   ToolCall,
   Message,
 } from '../types.js';
+import type { ProviderHealthResult } from '../provider-types.js';
 import {
   loadProviderConfig,
   resolveProviderConfig,
@@ -220,6 +221,59 @@ export class GoogleProvider {
 
   isReady(): boolean {
     return !!this.config.apiKey;
+  }
+
+  async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
+    const start = Date.now();
+    const timeoutMs = 5000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      if (!this.isReady()) {
+        clearTimeout(timeoutId);
+        return ok({
+          providerId: this.providerId,
+          status: 'unavailable',
+          error: 'API key not configured',
+          checkedAt: new Date(),
+        });
+      }
+
+      // Gemini uses a different endpoint structure
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.config.apiKey}`,
+        {
+          method: 'GET',
+          signal: controller.signal,
+        }
+      );
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return ok({
+          providerId: this.providerId,
+          status: 'ok',
+          latencyMs: Date.now() - start,
+          checkedAt: new Date(),
+        });
+      }
+
+      return ok({
+        providerId: this.providerId,
+        status: 'unavailable',
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        checkedAt: new Date(),
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      return ok({
+        providerId: this.providerId,
+        status: 'unavailable',
+        error: err instanceof Error ? err.message : String(err),
+        checkedAt: new Date(),
+      });
+    }
   }
 
   async complete(

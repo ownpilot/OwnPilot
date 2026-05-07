@@ -48,7 +48,7 @@ export type {
 export { DEFAULT_EXECUTION_PERMISSIONS } from './types.js';
 
 // Provider
-export { type IProvider, BaseProvider, createProvider } from './provider.js';
+export { type IProvider, type ProviderHealthResult, BaseProvider, createProvider } from './provider.js';
 
 // Tools - Core
 export {

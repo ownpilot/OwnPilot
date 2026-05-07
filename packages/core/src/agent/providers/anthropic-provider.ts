@@ -18,6 +18,7 @@ import type {
   AIProvider,
 } from '../types.js';
 import { BaseProvider, DEFAULT_RETRY_CONFIG } from '../base-provider.js';
+import type { ProviderHealthResult } from '../provider-types.js';
 import { withRetry } from '../retry.js';
 import {
   logRequest,
@@ -100,6 +101,65 @@ export class AnthropicProvider extends BaseProvider {
 
   isReady(): boolean {
     return !!this.config.apiKey;
+  }
+
+  async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
+    const start = Date.now();
+    const timeoutMs = 5000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      if (!this.isReady()) {
+        clearTimeout(timeoutId);
+        return ok({
+          providerId: 'anthropic',
+          status: 'unavailable',
+          error: 'API key not configured',
+          checkedAt: new Date(),
+        });
+      }
+
+      const response = await fetch(`${this.config.baseUrl}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.config.apiKey ?? '',
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 1, messages: [] }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return ok({
+          providerId: 'anthropic',
+          status: 'ok',
+          latencyMs: Date.now() - start,
+          checkedAt: new Date(),
+        });
+      }
+
+      // 401 is auth error — still means the endpoint is reachable
+      const isAuthError = response.status === 401;
+      return ok({
+        providerId: 'anthropic',
+        status: isAuthError ? 'ok' : 'unavailable',
+        error: isAuthError ? undefined : `HTTP ${response.status}: ${response.statusText}`,
+        latencyMs: Date.now() - start,
+        checkedAt: new Date(),
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      return ok({
+        providerId: 'anthropic',
+        status: 'unavailable',
+        error: err instanceof Error ? err.message : String(err),
+        checkedAt: new Date(),
+      });
+    }
   }
 
   async complete(

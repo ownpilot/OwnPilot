@@ -19,7 +19,7 @@ import type {
   Message,
   AIProvider,
 } from '../types.js';
-import { type IProvider, createProvider } from '../provider.js';
+import { type IProvider, createProvider, type ProviderHealthResult } from '../provider.js';
 import { logError, logRetry } from '../debug.js';
 
 /**
@@ -426,6 +426,38 @@ export class FallbackProvider implements IProvider {
   getCurrentProvider(): AIProvider {
     const providers = this.getAllProviders();
     return providers[this.currentProviderIndex]?.type ?? this.type;
+  }
+
+  /**
+   * Health check - check all providers, return best result.
+   * Returns 'ok' if at least one provider is reachable.
+   */
+  async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
+    const results: ProviderHealthResult[] = [];
+
+    for (const provider of this.getAllProviders()) {
+      const result = await provider.healthCheck();
+      if (result.ok) {
+        results.push(result.value);
+      }
+    }
+
+    if (results.length === 0) {
+      return err(new InternalError('No providers available for health check'));
+    }
+
+    // Return the best result (prefer ok, then lowest latency)
+    const okResults = results.filter((r) => r.status === 'ok');
+    if (okResults.length > 0) {
+      const sorted = okResults.sort((a, b) => (a.latencyMs ?? Infinity) - (b.latencyMs ?? Infinity));
+      return ok(sorted[0]!);
+    }
+
+    // All unavailable — return the fastest-failing one
+    const unavailableResults = results.sort(
+      (a, b) => (a.latencyMs ?? Infinity) - (b.latencyMs ?? Infinity)
+    );
+    return ok(unavailableResults[0]!);
   }
 
   /**

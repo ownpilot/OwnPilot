@@ -17,7 +17,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import type { IProvider } from '@ownpilot/core';
+import type { IProvider, ProviderHealthResult } from '@ownpilot/core';
 import type {
   AIProvider,
   CompletionRequest,
@@ -160,6 +160,27 @@ export class CliChatProvider implements IProvider {
 
   isReady(): boolean {
     return isBinaryInstalled(this.config.binary);
+  }
+
+  async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
+    const start = Date.now();
+    const installed = isBinaryInstalled(this.config.binary);
+
+    if (installed) {
+      return ok({
+        providerId: this.type,
+        status: 'ok',
+        latencyMs: Date.now() - start,
+        checkedAt: new Date(),
+      });
+    }
+
+    return ok({
+      providerId: this.type,
+      status: 'unavailable',
+      error: `CLI binary '${this.config.binary}' not installed`,
+      checkedAt: new Date(),
+    });
   }
 
   async complete(request: CompletionRequest): Promise<Result<CompletionResponse, InternalError>> {

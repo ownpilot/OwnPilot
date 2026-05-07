@@ -16,6 +16,7 @@ import type {
   AIProvider,
 } from '../types.js';
 import { BaseProvider, DEFAULT_RETRY_CONFIG } from '../base-provider.js';
+import type { ProviderHealthResult } from '../provider-types.js';
 import { withRetry } from '../retry.js';
 import {
   logRequest,
@@ -88,6 +89,59 @@ export class OpenAIProvider extends BaseProvider {
 
   isReady(): boolean {
     return !!this.config.apiKey;
+  }
+
+  async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
+    const start = Date.now();
+    const timeoutMs = 5000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      if (!this.isReady()) {
+        clearTimeout(timeoutId);
+        return ok({
+          providerId: 'openai',
+          status: 'unavailable',
+          error: 'API key not configured',
+          checkedAt: new Date(),
+        });
+      }
+
+      const response = await fetch(`${this.config.baseUrl}/models`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return ok({
+          providerId: 'openai',
+          status: 'ok',
+          latencyMs: Date.now() - start,
+          checkedAt: new Date(),
+        });
+      }
+
+      return ok({
+        providerId: 'openai',
+        status: 'unavailable',
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        checkedAt: new Date(),
+      });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      return ok({
+        providerId: 'openai',
+        status: 'unavailable',
+        error: err instanceof Error ? err.message : String(err),
+        checkedAt: new Date(),
+      });
+    }
   }
 
   async complete(

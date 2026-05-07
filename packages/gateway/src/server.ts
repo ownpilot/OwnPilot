@@ -217,6 +217,11 @@ async function main() {
     log.warn(`Orphan reconciliation found ${totalOrphaned} orphaned sessions`);
   }
 
+  // Run provider health checks at boot to detect unavailable providers early
+  log.info('Running provider health checks...');
+  const { runProviderHealthChecks } = await import('./services/provider-health-service.js');
+  await runProviderHealthChecks();
+
   // Load saved API keys from database into environment
   loadApiKeysToEnvironment();
 

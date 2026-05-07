@@ -16,7 +16,7 @@ import type {
   ToolCall,
   AIProvider,
 } from './types.js';
-import type { IProvider } from './provider-types.js';
+import type { IProvider, ProviderHealthResult } from './provider-types.js';
 import type { RetryConfig } from './retry.js';
 import { logRetry } from './debug.js';
 import { sanitizeToolName, desanitizeToolName } from './tool-namespace.js';
@@ -79,6 +79,12 @@ export abstract class BaseProvider implements IProvider {
   }
 
   abstract getModels(): Promise<Result<string[], InternalError>>;
+
+  /**
+   * Health check - verify provider is reachable and responsive.
+   * Called at boot to detect unavailable providers early.
+   */
+  abstract healthCheck(): Promise<Result<ProviderHealthResult, InternalError>>;
 
   /**
    * Cancel ongoing request
