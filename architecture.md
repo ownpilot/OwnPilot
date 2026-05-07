@@ -1620,23 +1620,23 @@ if (invalid) {
 
 ### 24.9 Test Disiplini — Pyramid ve Adversarial (MEDIUM)
 
-**Current State:** Vitest, `vi.hoisted()` pattern, 1,507 tests — unit layer is solid. Unknown: integration and E2E layer quality.
-
-**Questions:**
-- CI runs against real Postgres or mock `pg`? Mock `pg` misses query bugs.
-- Integration tests: real schema migrate + real queries + real transactions?
-- E2E: Playwright tests for core user flows?
+**Current State:**
+- **Unit layer:** Vitest, `vi.hoisted()` pattern, 9307 core tests + 16696 gateway tests. Unit layer is solid.
+- **Integration layer (partial):** Tests verify SQL patterns (e.g., `FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`). SQL query generation is tested against expected output. `BaseRepository.transaction()` has test coverage. However, most repository tests use mocked adapters, not real Postgres connections.
+- **E2E layer:** Playwright configured (`packages/ui/playwright.config.ts`), 8 spec files in `packages/ui/e2e/`. **Not yet wired into CI.** No GitHub Actions step runs Playwright on every PR. This is the missing piece.
+- **Adversarial testing (done):** `sandbox-escape.test.ts` covers 41 attack vectors. Runs in CI on release.
 
 **Recommended Test Pyramid:**
-
 ```
 Top: E2E (Playwright)
   └── 5-10 core user journeys (Login → Chat → Tool → Approval → Result)
   └── Runtime < 5 min; otherwise team disables tests
+  └── WIRING NEEDED: add Playwright to CI (GitHub Actions step)
 
 Middle: Integration
   └── Route + DB + Service stack against real Postgres (pg15, pg16 in CI matrix)
   └── Transaction boundary tests (partial failure scenarios)
+  └── Partial coverage: SQL pattern tests exist; mocked adapter pattern dominates
 
 Base: Unit (fast, many)
   └── Result<T,E> flows, type guards, parsers, tool argument validation
@@ -1690,7 +1690,7 @@ import { fc } from 'fast-check';
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
 | 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC webhook verification; tool executor layer; API-level IdemKey header middleware; v2 strategy pending)** |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
-| 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Done (sandbox part)** |
+| 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Partially done (sandbox adversarial tests done; unit layer solid; integration mock-vs-real gap exists; Playwright not wired into CI)** |
 | 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
 
 **Implemented in this session (2026-05-07):**
@@ -1804,6 +1804,13 @@ Repository methods added:
 - pg-boss over Postgres chosen (no extra infra; FOR UPDATE SKIP LOCKED)
 - 4-phase plan: infrastructure → workflows → triggers/plans → fleet/subagent
 - At-least-once, exponential backoff, dead-letter queue via job_history partition
+
+**P2 — 24.9 Test Pyramid:**
+- Unit layer: 9307 core tests + 16696 gateway tests; `vi.hoisted()` pattern, `Result<T,E>` flows
+- Adversarial sandbox tests: `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 attack vectors (prototype pollution, constructor escape, scope chain, Symbol, async, SAB, RCE, native modules, etc.)
+- Integration: SQL pattern tests exist (`FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`); most repo tests use mocked adapters
+- E2E: Playwright configured, 8 spec files in `packages/ui/e2e/`; **not wired into CI**
+- **Remaining**: Wire Playwright into CI (GitHub Actions step), add integration tests against real Postgres connections, property-based testing with fast-check
 
 **Remaining P0-P1:**
 - wasmtime sandbox (24.2 real isolation) — research phase
