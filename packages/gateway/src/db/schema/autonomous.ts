@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS memories (
   content TEXT NOT NULL,
   content_hash TEXT,
   embedding vector(1536),
+  embedding_model_id TEXT,
   source TEXT,
   source_id TEXT,
   importance REAL NOT NULL DEFAULT 0.5 CHECK(importance >= 0 AND importance <= 1),
@@ -277,6 +278,17 @@ DO $$ BEGIN
     ALTER TABLE memories ADD COLUMN embedding vector(1536);
   END IF;
 END $$;
+
+-- Memories: add embedding_model_id for multi-model embedding support
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'memories'
+      AND column_name = 'embedding_model_id'
+  ) THEN
+    ALTER TABLE memories ADD COLUMN embedding_model_id TEXT;
+  END IF;
+END $$;
 `;
 
 export const AUTONOMOUS_INDEXES_SQL = `
@@ -287,6 +299,7 @@ CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
 CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_memories_accessed ON memories(accessed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_memories_content_hash ON memories(content_hash) WHERE content_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_memories_embedding_model ON memories(embedding_model_id) WHERE embedding_model_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id);
 CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
 CREATE INDEX IF NOT EXISTS idx_goals_priority ON goals(priority DESC);
