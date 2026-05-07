@@ -528,6 +528,15 @@ chatRoutes.post('/', async (c) => {
       const streamAgentId = body.agentId ?? `chat-${provider}`;
       const streamUserId = getUserId(c);
 
+      // Propagate client disconnect (AbortController) to provider to stop streaming.
+      // agent.cancel() calls provider.cancel() which calls abortController.abort() —
+      // this aborts the in-flight fetch and stops the SSE stream from continuing.
+      const reqSignal = c.req.raw.signal;
+      const onAbort = () => {
+        agent.cancel();
+      };
+      reqSignal.addEventListener('abort', onAbort);
+
       const { callbacks, state } = createStreamCallbacks({
         sseStream: stream,
         agent,
@@ -620,6 +629,7 @@ chatRoutes.post('/', async (c) => {
           });
         }
       } finally {
+        reqSignal.removeEventListener('abort', onAbort);
         // Clean up MCP event subscription
         unsubMcp?.();
         // Always clean up per-request overrides, even on error
