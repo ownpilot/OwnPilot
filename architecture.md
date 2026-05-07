@@ -1690,7 +1690,7 @@ import { fc } from 'fast-check';
 | 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | Pending |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
 | 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Done (sandbox part)** |
-| 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | Pending |
+| 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
 
 **Implemented in this session (2026-05-07):**
 
@@ -1737,6 +1737,14 @@ Repository methods added:
   - `context.ts`: `fetch` + `Response/Request/Headers` now injected when `network: true`
 - **Critical finding:** `codeGeneration: { strings: false }` does NOT block `this.constructor.constructor("return process")()` — VM allows direct Function constructor access. Protection is purely via regex validation (defense-in-depth).
 - CI gate: tests run on every release; any escape that succeeds blocks the release
+
+**P2 — 24.10 Provider Health Checks:**
+- `IProvider.healthCheck()` added to interface + `BaseProvider` as abstract method
+- Implementations: `OpenAICompatibleProvider`, `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `FallbackProvider`, `CliChatProvider`
+- `ProviderHealthResult` exported via `@ownpilot/core` agent barrel
+- `ProviderHealthService.runProviderHealthChecks()` probes all configured providers via `/models` endpoint (5s timeout) at boot
+- Logged at WARN level for unavailable providers; does NOT fail boot
+- `ProviderStatusEvent` emitted via EventBus for UI "provider unavailable" indicators
 
 **Remaining P0-P1:**
 - Persistent job queue research (24.1) — ADR to be written
