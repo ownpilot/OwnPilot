@@ -197,17 +197,17 @@ export async function revokeOwnership(pluginId: string, platform: string): Promi
 export function printPairingBanner(channelName: string, key: string): void {
   const line = '═'.repeat(54);
   const pad = (s: string) => `║  ${s.padEnd(50)}  ║`;
-  console.log(`\n╔${line}╗`);
-  console.log(pad(''));
-  console.log(pad(`  🔑  OwnPilot — Channel Setup`));
-  console.log(pad(`      ${channelName}`));
-  console.log(pad(''));
-  console.log(pad('  No owner is configured for this channel yet.'));
-  console.log(pad('  Send the following command on this channel:'));
-  console.log(pad(''));
-  console.log(pad(`      /connect ${key}`));
-  console.log(pad(''));
-  console.log(pad('  The key rotates after each successful claim.'));
-  console.log(pad(''));
-  console.log(`╚${line}╝\n`);
+  log.info(`\n╔${line}╗`);
+  log.info(pad(''));
+  log.info(pad(`  🔑  OwnPilot — Channel Setup`));
+  log.info(pad(`      ${channelName}`));
+  log.info(pad(''));
+  log.info(pad('  No owner is configured for this channel yet.'));
+  log.info(pad('  Send the following command on this channel:'));
+  log.info(pad(''));
+  log.info(pad(`      /connect ${key}`));
+  log.info(pad(''));
+  log.info(pad('  The key rotates after each successful claim.'));
+  log.info(pad(''));
+  log.info(`╚${line}╝\n`);
 }

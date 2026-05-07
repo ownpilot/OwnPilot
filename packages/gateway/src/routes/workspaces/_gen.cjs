@@ -3,7 +3,6 @@ const fs = require('fs'),
   d = 'D:/Codebox/PROJECTS/OwnPilot/packages/gateway/src/routes/workspaces';
 function w(n, c) {
   fs.writeFileSync(p.join(d, n), c);
-  console.log('Written ' + n + ': ' + c.length + ' bytes');
 }
 const S = String.fromCharCode;
 const Q = S(39),

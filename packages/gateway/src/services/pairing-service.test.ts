@@ -4,6 +4,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Hoisted mocks
 // ---------------------------------------------------------------------------
 
+const mockLog = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+}));
+
+vi.mock('./log.js', () => ({
+  getLog: () => mockLog,
+}));
+
 const mockRepo = vi.hoisted(() => ({
   get: vi.fn<(key: string) => Promise<string | null>>(),
   set: vi.fn<(key: string, value: string) => Promise<void>>().mockResolvedValue(undefined),
@@ -299,13 +310,11 @@ describe('autoClaimOwnership()', () => {
 });
 
 describe('printPairingBanner()', () => {
-  it('prints the channel name and key to stdout without throwing', () => {
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  it('logs the channel name and key without throwing', () => {
     expect(() => printPairingBanner('Telegram Bot', 'ABCD-1234')).not.toThrow();
-    expect(spy).toHaveBeenCalled();
-    const allOutput = spy.mock.calls.map((c) => c[0]).join('\n');
+    expect(mockLog.info).toHaveBeenCalled();
+    const allOutput = mockLog.info.mock.calls.map((c) => c[0]).join('\n');
     expect(allOutput).toContain('ABCD-1234');
     expect(allOutput).toContain('Telegram Bot');
-    spy.mockRestore();
   });
 });
