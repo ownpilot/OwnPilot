@@ -78,6 +78,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
         reconnectAttemptsRef.current = 0;
       }
 
+      // Respond to server pings to keep the session alive
+      if (message.type === 'connection:ping') {
+        const payload = message.payload as { timestamp: string };
+        send('session:pong', { timestamp: payload.timestamp });
+      }
+
       // Notify subscribers
       const handlers = handlersRef.current.get(message.type);
       if (handlers) {
