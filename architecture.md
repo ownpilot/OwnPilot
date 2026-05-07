@@ -1687,7 +1687,7 @@ import { fc } from 'fast-check';
 | 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Partially done (embedding_model_id col added; token counting fallback; WS session pong fix)** |
 | 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
 | 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
-| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC verification; tool executor layer; v2 strategy pending)** |
+| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (idempotency keys table in core schema; HMAC webhook verification; tool executor layer; API-level IdemKey header middleware; v2 strategy pending)** |
 | 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
 | 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Done (sandbox part)** |
 | 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
@@ -1766,8 +1766,9 @@ Repository methods added:
 - `packages/gateway/src/db/repositories/idempotency-keys.ts` — IdempotencyKeysRepository: getRecord, setRecord, deleteKey, purgeExpired, countActive
 - `packages/gateway/src/db/schema/core.ts` — idempotency_keys table added to CORE_TABLES_SQL (fresh installs); idx_idempotency_expires_at index added to CORE_INDEXES_SQL
 - `packages/gateway/src/services/tool-executor.ts` — executeTool() now checks/updates idempotency keys: SHA-256(toolName+args) as key, 24h TTL, cached results returned on duplicate calls
+- `packages/gateway/src/routes/chat.ts` — API-level Idempotency-Key header support for POST /chat: cache hit returns cached response, cache miss stores result; fire-and-forget with non-blocking try/catch
 - Existing webhook signature validation: Slack (HMAC-SHA256 via createHmac), Telegram (path secret via safeKeyCompare), Trigger (HMAC-SHA256), Email (secret via safeKeyCompare)
-- Missing: API-level Idempotency-Key header middleware for chat endpoints (key per-request, not per-tool-call), v2 versioning strategy
+- Missing: v2 versioning strategy
 
 **WebSocket Session Fix:**
 - `packages/ui/src/hooks/useWebSocket.tsx` — respond to connection:ping with session:pong, unlimited reconnect with exponential backoff (1s→30s cap)
