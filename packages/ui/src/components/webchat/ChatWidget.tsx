@@ -3,9 +3,11 @@
  *
  * Renders a collapsible chat bubble in the bottom-right corner.
  * Connects via WebSocket to the gateway's webchat channel.
+ * Includes reconnection logic with exponential backoff.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Component, type ReactNode } from 'react';
+import { ChatMessageWidget } from '../ChatMessageWidget';
 
 // Types
 interface ChatMessage {
@@ -14,6 +16,27 @@ interface ChatMessage {
   sender: 'user' | 'assistant';
   timestamp: Date;
   replyToId?: string;
+  widgets?: Array<{ id: string; name: string; data: unknown }>;
+}
+
+// Error boundary for widget rendering
+class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="text-xs text-red-400 p-2 bg-red-500/10 rounded">
+          Widget error: {(this.state.error as Error | null)?.message || 'Unknown error'}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 // Generate or retrieve a persistent session ID
@@ -27,16 +50,26 @@ function getSessionId(): string {
   return id;
 }
 
+// Reconnection delays in ms (exponential backoff)
+const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000];
+
+type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionId = useRef(getSessionId());
+  const reconnectAttempt = useRef(0);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Status helper
+  const isConnected = status === 'connected';
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -51,44 +84,62 @@ export function ChatWidget() {
     }
   }, [isOpen]);
 
-  // WebSocket connection
+  // Cleanup reconnect timer on unmount
   useEffect(() => {
-    if (!isOpen) return;
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`;
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setIsConnected(true);
+    return () => {
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
     };
+  }, []);
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
+  // WebSocket connection with reconnection
+  useEffect(() => {
+    if (!isOpen) {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      return;
+    }
 
-        if (msg.type === 'webchat:response') {
-          const data = msg.data;
-          // Only accept messages for our session
-          if (data.sessionId && data.sessionId !== sessionId.current) return;
+    const connect = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const wsUrl = `${protocol}//${host}/ws`;
 
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: data.id || crypto.randomUUID(),
-              text: data.text,
-              sender: 'assistant',
-              timestamp: new Date(data.timestamp || Date.now()),
-              replyToId: data.replyToId,
-            },
-          ]);
-          setIsTyping(false);
-        }
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      setStatus(reconnectAttempt.current > 0 ? 'reconnecting' : 'connecting');
 
-        if (msg.type === 'webchat:typing') {
+      ws.onopen = () => {
+        setStatus('connected');
+        reconnectAttempt.current = 0;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+
+          if (msg.type === 'webchat:response') {
+            const data = msg.data;
+            if (data.sessionId && data.sessionId !== sessionId.current) return;
+
+            const widgets = parseWidgets(data.text);
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: data.id || crypto.randomUUID(),
+                text: data.text,
+                sender: 'assistant',
+                timestamp: new Date(data.timestamp || Date.now()),
+                replyToId: data.replyToId,
+                widgets,
+              },
+            ]);
+            setIsTyping(false);
+          }
+
+          if (msg.type === 'webchat:typing') {
           const data = msg.data;
           if (data.sessionId && data.sessionId !== sessionId.current) return;
           setIsTyping(data.typing ?? true);
@@ -99,20 +150,56 @@ export function ChatWidget() {
     };
 
     ws.onclose = () => {
-      setIsConnected(false);
+      setStatus('disconnected');
+      wsRef.current = null;
+
+      if (reconnectAttempt.current < RECONNECT_DELAYS.length) {
+        const delay = RECONNECT_DELAYS[reconnectAttempt.current];
+        reconnectAttempt.current++;
+        setStatus('reconnecting');
+        reconnectTimer.current = setTimeout(connect, delay);
+      }
     };
 
     ws.onerror = () => {
-      setIsConnected(false);
+      // Error triggers onclose, so handle there
     };
+  };
 
-    return () => {
-      ws.close();
+  connect();
+
+  return () => {
+    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+    if (wsRef.current) {
+      wsRef.current.close();
       wsRef.current = null;
-    };
-  }, [isOpen]);
+    }
+  };
+}, [isOpen]);
 
-  const sendMessage = useCallback(() => {
+// Parse widget tags from message text
+const parseWidgets = (text: string): Array<{ id: string; name: string; data: unknown }> | undefined => {
+  const widgetRegex = /<widget\s+name=["']([^"']+)["']\s+data=(["'])(.*?)\2\s*\/>/g;
+  const widgets: Array<{ id: string; name: string; data: unknown }> = [];
+  let match;
+
+  while ((match = widgetRegex.exec(text)) !== null) {
+    const name = match[1];
+    const dataStr = match[3];
+    if (!name || dataStr === undefined) continue;
+
+    try {
+      const data = JSON.parse(dataStr);
+      widgets.push({ id: crypto.randomUUID(), name, data });
+    } catch {
+      // Skip malformed widget
+    }
+  }
+
+  return widgets.length > 0 ? widgets : undefined;
+};
+
+const sendMessage = useCallback(() => {
     const text = input.trim();
     if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
@@ -205,7 +292,15 @@ export function ChatWidget() {
             />
           </svg>
           <span className="font-medium text-sm">OwnPilot Chat</span>
-          <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+          <span className={`w-2 h-2 rounded-full ${
+            status === 'connected' ? 'bg-green-400' :
+            status === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
+            status === 'connecting' ? 'bg-yellow-400' :
+            'bg-red-400'
+          }`} />
+          {status === 'reconnecting' && (
+            <span className="text-xs text-white/70">Reconnecting...</span>
+          )}
         </div>
         <button
           onClick={() => setIsOpen(false)}
@@ -251,13 +346,24 @@ export function ChatWidget() {
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
+              className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
                 msg.sender === 'user'
                   ? 'bg-primary text-white rounded-br-md'
                   : 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary rounded-bl-md'
               }`}
             >
-              {msg.text}
+              {/* Render plain text or widgets */}
+              {msg.widgets ? (
+                <div className="space-y-2">
+                  {msg.widgets.map((widget) => (
+                    <WidgetErrorBoundary key={widget.id}>
+                      <ChatMessageWidget name={widget.name} data={widget.data} />
+                    </WidgetErrorBoundary>
+                  ))}
+                </div>
+              ) : (
+                <span className="whitespace-pre-wrap">{msg.text}</span>
+              )}
               <div
                 className={`text-[10px] mt-1 ${
                   msg.sender === 'user'
