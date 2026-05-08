@@ -107,6 +107,9 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly pluginRegistry: PluginRegistry;
   private unsubscribes: Array<() => void> = [];
   private readonly sessionLocks = new Map<string, Promise<void>>();
+  /** Per-(platform,platformUserId) approval-code attempt counter — wiped on success. */
+  private readonly approvalAttemptCounts = new Map<string, number>();
+  private static readonly MAX_APPROVAL_ATTEMPTS = 3;
 
   constructor(
     pluginRegistry: PluginRegistry,
@@ -654,6 +657,26 @@ export class ChannelServiceImpl implements IChannelService {
             });
           } else if (approvalCode) {
             // (b) Approval code configured — challenge-response verification
+            // AUTH-007: count failed attempts per sender; block after MAX_APPROVAL_ATTEMPTS
+            const attemptKey = `${message.platform}:${message.sender.platformUserId}`;
+            const attempts = this.approvalAttemptCounts.get(attemptKey) ?? 0;
+            if (attempts >= ChannelServiceImpl.MAX_APPROVAL_ATTEMPTS) {
+              // Block the sender after too many wrong guesses
+              await this.usersRepo.block(channelUser.id);
+              const api = this.getChannel(message.channelPluginId);
+              if (api) {
+                await api.sendMessage({
+                  platformChatId: message.platformChatId,
+                  text: 'Too many failed attempts. Please contact the admin.',
+                  replyToId: message.id,
+                });
+              }
+              log.warn('Blocked channel user after max approval attempts', {
+                platform: message.platform,
+                userId: message.sender.platformUserId,
+              });
+              return;
+            }
             const submittedCode = Buffer.from(message.text.trim());
             const expectedCode = Buffer.from(approvalCode);
             const codeMatches =
@@ -668,6 +691,8 @@ export class ChannelServiceImpl implements IChannelService {
                 message.sender.displayName
               );
               channelUser.isVerified = true;
+              // Clear failed-attempt counter on success
+              this.approvalAttemptCounts.delete(attemptKey);
               log.info('Auto-verified user via approval code', {
                 platform: message.platform,
                 userId: message.sender.platformUserId,
@@ -682,7 +707,8 @@ export class ChannelServiceImpl implements IChannelService {
                 });
               }
             } else {
-              // Wrong code → reject
+              // Wrong code → reject and count the failed attempt
+              this.approvalAttemptCounts.set(attemptKey, attempts + 1);
               const api = this.getChannel(message.channelPluginId);
               if (api) {
                 await api.sendMessage({

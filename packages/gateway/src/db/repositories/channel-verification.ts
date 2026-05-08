@@ -59,9 +59,9 @@ function rowToEntity(row: TokenRow): ChannelVerificationTokenEntity {
 // Token Generation
 // ============================================================================
 
-/** Generate a 6-digit numeric PIN. */
+/** Generate an 8-digit numeric PIN (10^8 keyspace). */
 function generatePin(): string {
-  return String(randomInt(100000, 999999));
+  return String(randomInt(10000000, 99999999));
 }
 
 /** Generate a short alphanumeric token. */

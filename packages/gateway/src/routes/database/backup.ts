@@ -16,6 +16,7 @@ import { getDatabaseConfig } from '../../db/adapters/types.js';
 import { getAdapterSync } from '../../db/adapters/index.js';
 import { getLog } from '../../services/log.js';
 import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
+import { attachmentDisposition } from '../../utils/file-safety.js';
 
 const log = getLog('Database');
 
@@ -378,7 +379,7 @@ backupRoutes.get('/backups/:filename/download', (c) => {
 
   const stream = createReadStream(backupPath);
   c.header('Content-Type', contentType);
-  c.header('Content-Disposition', `attachment; filename="${basename(filename)}"`);
+  c.header('Content-Disposition', attachmentDisposition(basename(filename)));
 
   return new Response(stream as unknown as ReadableStream);
 });

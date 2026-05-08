@@ -171,7 +171,7 @@ export class WorkerSandbox {
               config.limits ?? {},
               { __context__: context },
               (level, msg) => {
-                port.postMessage({ type: 'log', level, message: msg });
+                parentPort.postMessage({ type: 'log', level, message: msg });
               }
             );
 

@@ -134,15 +134,32 @@ async function checkExecutionPermission(
     return { allowed: false, error: EXECUTION_DISABLED_ERROR };
   }
 
-  // undefined permissions: only allow in CLI/API context (no userId AND no requestApproval)
+  // undefined permissions: only allow in CLI/API context when explicit env flag is set
   // In web/chat context, treat as blocked to prevent security bypass
   if (permissions === undefined) {
-    if (!context.userId && !context.requestApproval) {
-      // CLI or direct API — no user session, no approval channel → backward compat
-      securityLog(`${category}: ALLOWED (CLI/API backward compat, no userId, no requestApproval)`);
+    if (
+      process.env.OWNPILOT_ALLOW_LOCAL_EXEC === '1' &&
+      !context.userId &&
+      !context.requestApproval
+    ) {
+      // CLI or direct API with explicit opt-in env flag → backward compat
+      securityLog(`${category}: ALLOWED (CLI/API with OWNPILOT_ALLOW_LOCAL_EXEC=1)`);
       return { allowed: true };
     }
-    // Web/chat context but permissions failed to load → block for safety
+    if (!context.userId && !context.requestApproval) {
+      // CLI or direct API without explicit opt-in → block by default
+      securityLog(`${category}: BLOCKED (CLI/API without OWNPILOT_ALLOW_LOCAL_EXEC=1)`);
+      return {
+        allowed: false,
+        error: {
+          content: {
+            error: `${category} is blocked: set OWNPILOT_ALLOW_LOCAL_EXEC=1 to enable local execution for CLI/API.`,
+            solution: 'Enable Execution Security in the dashboard or set the OWNPILOT_ALLOW_LOCAL_EXEC=1 environment variable.',
+          },
+          isError: true,
+        },
+      };
+    }
     securityWarn(
       `${category}: permissions=undefined in user context (userId=${context.userId}) → blocked`
     );
@@ -655,6 +672,32 @@ export const compileCodeTool: ToolDefinition = {
 /** Allowed compilers — prevents arbitrary command injection */
 const ALLOWED_COMPILERS = new Set(['tsc', 'gcc', 'g++', 'rustc', 'go', 'javac']);
 
+/** Block shell metacharacters that could inject additional commands */
+const SHELL_META = /[;&|<>$`!\\]/;
+
+/** Block path separators and other hazardous chars in file paths */
+const PATH_SHELL_META = /[;&|<>$`!\\\/]/;
+
+function sanitizeArgs(args: string): string[] {
+  const tokens = args.trim().split(/\s+/).filter(Boolean);
+  for (const token of tokens) {
+    if (SHELL_META.test(token)) {
+      throw new Error(`Extra argument contains blocked shell character: ${token}`);
+    }
+  }
+  return tokens;
+}
+
+function sanitizeFilePath(filePath: string): string {
+  if (PATH_SHELL_META.test(filePath)) {
+    throw new Error('filePath contains blocked shell character');
+  }
+  if (filePath.includes('..') || filePath.startsWith('/')) {
+    throw new Error('filePath must be a relative filename');
+  }
+  return filePath;
+}
+
 export const compileCodeExecutor: ToolExecutor = async (
   params,
   context
@@ -688,23 +731,26 @@ export const compileCodeExecutor: ToolExecutor = async (
     };
   }
 
-  // Build the compile command
-  let command: string;
-  if (compiler === 'go') {
-    command = `go build ${extraArgs} ${filePath}`.trim();
-  } else {
-    command = `${compiler} ${extraArgs} ${filePath}`.trim();
+  // Build command as array of args (no shell injection)
+  let args: string[];
+  try {
+    const extraTokens = sanitizeArgs(extraArgs);
+    const safeFilePath = sanitizeFilePath(filePath);
+    args = compiler === 'go' ? ['build', ...extraTokens, safeFilePath] : [safeFilePath, ...extraTokens];
+  } catch (err) {
+    return { content: { error: (err as Error).message }, isError: true };
   }
 
-  const permCheck = await checkExecutionPermission('compile_code', command, 'shell', context);
+  const permCheck = await checkExecutionPermission('compile_code', args.join(' '), 'shell', context);
   if (!permCheck.allowed) return permCheck.error!;
 
-  const localResult = await executeShellLocal(command, { timeout });
+  const localResult = await executeShellLocal(`${compiler} ${args.join(' ')}`, { timeout });
+  const commandStr = `${compiler} ${args.join(' ')}`;
   logSandboxExecution({
     tool: 'compile_code',
     language: 'shell',
     sandboxed: false,
-    command,
+    command: commandStr,
     exitCode: localResult.exitCode,
     durationMs: Date.now() - startTime,
     success: localResult.success,

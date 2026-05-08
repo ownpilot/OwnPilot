@@ -103,6 +103,7 @@ uiAuthRoutes.post('/login', async (c) => {
 
   const storedHash = getPasswordHash();
   if (!storedHash) {
+    loginThrottle.recordFailure(clientIp);
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'No password configured' }, 400);
   }
 

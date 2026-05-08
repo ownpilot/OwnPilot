@@ -263,17 +263,25 @@ app.get('/:id/file/*', async (c) => {
         webm: 'video/webm',
         pdf: 'application/pdf',
         txt: 'text/plain',
-        html: 'text/html',
-        css: 'text/css',
-        js: 'text/javascript',
         json: 'application/json',
       };
+      // Block dangerous types from inline serving — they must be downloaded
+      const blockedTypes = ['html', 'css', 'js', 'svg', 'htm', 'xhtml'];
+      if (blockedTypes.includes(ext)) {
+        return new Response('Inline viewing disabled for security', {
+          status: 403,
+          headers: { 'Content-Type': 'text/plain' },
+        });
+      }
       const contentType = mimeTypes[ext] || 'application/octet-stream';
       return new Response(content, {
         headers: {
           'Content-Type': contentType,
           'Content-Length': String(content.length),
           'Cache-Control': 'private, max-age=300',
+          // Re-emit security headers since new Response bypasses middleware
+          'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'none'",
         },
       });
     }
