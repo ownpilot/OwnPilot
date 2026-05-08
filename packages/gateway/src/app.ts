@@ -341,6 +341,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         // Security Scanner (unified vulnerability analysis)
         security: '/api/v1/security',
         subagents: '/api/v1/subagents',
+        // Agent Command Center (unified overview of all agents)
+        agentsOverview: '/api/v1/agent-command/overview',
         // Agent Orchestra (multi-agent collaboration)
         orchestra: '/api/v1/orchestra',
         // Artifacts (AI-generated interactive content)
