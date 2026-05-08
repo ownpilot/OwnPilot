@@ -459,7 +459,10 @@ async function recordTelemetry(
         workflowId: workflowId ?? null,
         agentId: agentId ?? null,
         userId: userId ?? null,
-      }).catch(() => {});
+      }).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn(`[metrics] recordMetric failed: ${msg}`);
+      });
     }
   } catch {
     // Non-blocking telemetry — never surface errors

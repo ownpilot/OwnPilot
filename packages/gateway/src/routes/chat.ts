@@ -534,7 +534,10 @@ chatRoutes.post('/', async (c) => {
                     }),
                     event: 'progress',
                   })
-                  .catch(() => {});
+                  .catch((err: unknown) => {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    log.warn(`[chat] MCP tool event SSE write failed: ${msg}`);
+                  });
               });
             },
           });
@@ -824,7 +827,10 @@ chatRoutes.post('/', async (c) => {
     // Store idempotency result before returning (fire-and-forget)
     if (idempotencyKey) {
       const idempotencyRepo = (await import('../db/repositories/idempotency-keys.js')).getIdempotencyKeysRepository();
-      idempotencyRepo.setRecord(idempotencyKey, responseObj).catch(() => {});
+      idempotencyRepo.setRecord(idempotencyKey, responseObj).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn(`[chat] idempotency record failed: ${msg}`);
+      });
     }
 
     return c.json({

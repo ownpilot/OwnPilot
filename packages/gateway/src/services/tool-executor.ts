@@ -584,7 +584,10 @@ export async function executeTool(
   // Store result for idempotency (fire-and-forget)
   try {
     const idempotencyRepo = getIdempotencyKeysRepository();
-    idempotencyRepo.setRecord(idempotencyKey, result).catch(() => {});
+    idempotencyRepo.setRecord(idempotencyKey, result).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.warn(`[executor] idempotency record failed: ${msg}`);
+    });
   } catch {
     // Idempotency store failures should not affect tool result
   }
