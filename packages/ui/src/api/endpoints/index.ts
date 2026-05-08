@@ -49,7 +49,9 @@ export {
   localProvidersApi,
   fileWorkspacesApi,
   expensesApi,
+  agentsOverviewApi,
 } from './misc';
+export type { AgentOverview } from './misc';
 export { extensionsApi } from './extensions';
 export { evalApi } from './eval';
 export type { EvalRunResult, EvalGradeResult, OptimizeIteration, OptimizeResult } from './eval';

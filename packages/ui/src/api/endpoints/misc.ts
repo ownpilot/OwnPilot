@@ -74,6 +74,70 @@ export const autonomyApi = {
   resetConfig: () => apiClient.post<void>('/autonomy/config/reset'),
 };
 
+// ---- Agent Command Center ----
+
+interface SubagentStats {
+  total: number; active: number; successRate: number; avgCost: number;
+  avgDuration: number; totalCost: number; errorRate: number;
+  byState: Record<string, number>; totalTokens: { input: number; output: number };
+}
+interface SubagentHealth {
+  status: string; score: number; signals: string[]; recommendations: string[];
+}
+interface FleetStats {
+  totalFleets: number; totalSessions: number; totalWorkers: number;
+  successRate: number; avgCost: number; avgDuration: number; totalCost: number;
+  errorRate: number; byState: Record<string, number>;
+  totalTokens: { input: number; output: number };
+  tasksCompleted: number; tasksFailed: number;
+}
+interface FleetHealth {
+  status: string; score: number; signals: string[]; recommendations: string[]; activeFleets: number;
+}
+interface OrchestraStats {
+  total: number; active: number; successRate: number; avgCost: number;
+  avgDuration: number; totalCost: number; errorRate: number; byState: Record<string, number>;
+}
+interface OrchestraHealth {
+  status: string; score: number; signals: string[]; recommendations: string[];
+}
+interface SoulStats {
+  totalCycles: number; totalCost: number; avgDurationMs: number; failureRate: number;
+}
+interface SoulHealth {
+  status: string; score: number; signals: string[]; recommendations: string[];
+  totalCycles: number; totalCost: number; failureRate: number;
+}
+interface CrewStats {
+  totalCrews: number; totalCycles: number; totalCost: number;
+  failureRate: number; byStatus: Record<string, number>;
+}
+interface CrewHealth {
+  status: string; score: number; signals: string[]; recommendations: string[];
+  totalCrews: number; pausedCrews: number;
+}
+interface ClawStats {
+  total: number; running: number; totalCost: number; totalCycles: number;
+  byMode: Record<string, number>; byState: Record<string, number>;
+}
+interface ClawHealth {
+  status: string; score: number; signals: string[]; recommendations: string[];
+  needsAttention: number;
+}
+
+export interface AgentOverview {
+  subagent: { stats: SubagentStats; health: SubagentHealth };
+  fleet: { stats: FleetStats; health: FleetHealth };
+  orchestra: { stats: OrchestraStats; health: OrchestraHealth };
+  soul: { stats: SoulStats; health: SoulHealth };
+  crew: { stats: CrewStats; health: CrewHealth };
+  claw: { stats: ClawStats; health: ClawHealth };
+}
+
+export const agentsOverviewApi = {
+  overview: () => apiClient.get<AgentOverview>('/agent-command/overview'),
+};
+
 // ---- Pulse Engine ----
 
 export const pulseApi = {

@@ -3,8 +3,11 @@
  */
 
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import type { UnifiedAgent } from '../types';
 import { formatCost } from '../helpers';
+import { agentsOverviewApi } from '../../../api';
+import type { AgentOverview } from '../../../api';
 
 interface Props {
   agents: UnifiedAgent[];
@@ -13,12 +16,29 @@ interface Props {
 }
 
 export function GlobalStatusBar({ agents, isRefreshing, isConnected }: Props) {
+  const [overview, setOverview] = useState<AgentOverview | null>(null);
+
+  useEffect(() => {
+    agentsOverviewApi.overview().then(setOverview).catch(() => {});
+  }, []);
+
   const running = agents.filter(
     (a) => a.status === 'running' || a.status === 'starting' || a.status === 'waiting'
   ).length;
   const paused = agents.filter((a) => a.status === 'paused').length;
   const errors = agents.filter((a) => a.status === 'error').length;
   const totalCost = agents.reduce((sum, a) => sum + a.todayCost, 0);
+
+  const runnerCount = overview
+    ? [
+        overview.subagent.stats.total > 0 ? 'subagent' : null,
+        overview.fleet.stats.totalFleets > 0 ? 'fleet' : null,
+        overview.orchestra.stats.total > 0 ? 'orchestra' : null,
+        overview.soul.stats.totalCycles > 0 ? 'soul' : null,
+        overview.crew.stats.totalCrews > 0 ? 'crew' : null,
+        overview.claw.stats.total > 0 ? 'claw' : null,
+      ].filter(Boolean).length
+    : 0;
 
   return (
     <div className="flex items-center gap-4 text-xs text-text-muted dark:text-dark-text-muted">
@@ -42,6 +62,11 @@ export function GlobalStatusBar({ agents, isRefreshing, isConnected }: Props) {
         </span>
       )}
       {totalCost > 0 && <span>{formatCost(totalCost)} today</span>}
+      {overview && runnerCount > 0 && (
+        <span className="text-xs text-text-muted">
+          · {runnerCount} runner{runnerCount !== 1 ? 's' : ''} active
+        </span>
+      )}
       {isRefreshing && <span className="text-primary animate-pulse">Refreshing...</span>}
       {isConnected !== undefined && (
         <span
