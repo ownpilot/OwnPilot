@@ -13,8 +13,8 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Helpers');
 
-// Re-export error codes for convenience
-export { ERROR_CODES, type ErrorCode };
+// Re-export error codes and log for test access
+export { ERROR_CODES, type ErrorCode, log };
 
 /**
  * Timing-safe comparison of two strings (e.g. API keys, admin keys).

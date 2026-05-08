@@ -477,25 +477,27 @@ describe('Route Helpers', () => {
       try {
         // Re-import so the module-level REDACT_5XX const recomputes.
         vi.resetModules();
-        const fresh = await import('./helpers.js');
+        const { apiError: freshApiError, log: freshLog } = await import('./helpers.js');
         const c = createMockContext();
         vi.mocked(c.get).mockReturnValue('req-redact-1');
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-        fresh.apiError(c, 'syntax error in pg query: SELECT * FROM ui_password_hash', 500);
+        // Spy on the already-mocked log.warn (from test-setup.ts global mock),
+        // not console.warn — the mocked getLog() replaces the real one.
+        const warnSpy = freshLog.warn as ReturnType<typeof vi.fn>;
+        warnSpy.mockClear();
+
+        freshApiError(c, 'syntax error in pg query: SELECT * FROM ui_password_hash', 500);
 
         const [response, status] = vi.mocked(c.json).mock.calls[0];
         expect(status).toBe(500);
         expect(response.error.message).toBe('Internal server error');
         expect(response.error.message).not.toContain('pg query');
         expect(response.error.message).not.toContain('ui_password_hash');
-        // Operator-side log retains the detail.
+        // Operator-side log retains the detail (via mocked log.warn, not console.warn).
         expect(warnSpy).toHaveBeenCalled();
         const logged = warnSpy.mock.calls[0]![0] as string;
         expect(logged).toContain('req-redact-1');
         expect(logged).toContain('pg query');
-
-        warnSpy.mockRestore();
       } finally {
         process.env.NODE_ENV = originalEnv;
         if (originalExpose === undefined) delete process.env.EXPOSE_INTERNAL_ERRORS;
