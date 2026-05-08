@@ -14,6 +14,7 @@ import {
 } from './helpers.js';
 import { getOrchestraEngine } from '../services/orchestra-engine.js';
 import { OrchestraRepository } from '../db/repositories/orchestra.js';
+import type { OrchestraExecution } from '@ownpilot/core';
 
 export const orchestraRoutes = new Hono();
 
@@ -54,6 +55,73 @@ orchestraRoutes.get('/history', async (c) => {
     const result = await repo.getHistory(userId, limit, offset);
 
     return apiResponse(c, result);
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(e) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /stats — Aggregate orchestra statistics
+// =============================================================================
+
+orchestraRoutes.get('/stats', async (c) => {
+  try {
+    const userId = c.get('userId') ?? 'default';
+    const repo = new OrchestraRepository();
+    const dbStats = await repo.getStats(userId);
+
+    return apiResponse(c, {
+      total: dbStats.total,
+      active: dbStats.active,
+      successRate: dbStats.successRate,
+      avgDuration: dbStats.avgDuration,
+      totalCost: dbStats.totalCost,
+      errorRate: dbStats.errorRate,
+      byState: dbStats.byState,
+      tasksSucceeded: dbStats.tasksSucceeded,
+      tasksFailed: dbStats.tasksFailed,
+    });
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(e) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /health — Orchestra health indicators
+// =============================================================================
+
+orchestraRoutes.get('/health', async (c) => {
+  try {
+    const engine = getOrchestraEngine();
+
+    const running: OrchestraExecution[] = [];
+    for (const exec of (engine as unknown as { executions: Map<string, OrchestraExecution> }).executions?.values() ?? []) {
+      if (exec.state === 'running') running.push(exec);
+    }
+
+    const signals: string[] = [];
+    const recommendations: string[] = [];
+
+    let score = 80;
+    let status: 'healthy' | 'watch' | 'stuck' | 'failed' = 'healthy';
+
+    if (running.length === 0) {
+      signals.push('no running executions');
+      score = 60;
+      status = 'watch';
+    }
+
+    const stale = running.filter(
+      (ex) => ex.startedAt && Date.now() - ex.startedAt.getTime() > 30 * 60 * 1000 && ex.taskResults.length === 0
+    );
+    if (stale.length > 0) {
+      signals.push(`${stale.length} executions with no progress`);
+      recommendations.push('Check orchestration strategy and agent availability');
+      score = Math.min(score, 35);
+      status = 'stuck';
+    }
+
+    return apiResponse(c, { status, score, signals, recommendations });
   } catch (e) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(e) }, 500);
   }

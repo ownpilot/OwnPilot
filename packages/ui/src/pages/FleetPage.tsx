@@ -26,12 +26,72 @@ import {
   Home,
   Zap,
   Brain,
+  DollarSign,
 } from '../components/icons';
 import { CreateFleetModal } from './fleet/CreateFleetModal';
 import { AddTasksModal } from './fleet/AddTasksModal';
 import { BroadcastModal } from './fleet/BroadcastModal';
 import { FleetDetailPanel } from './fleet/FleetDetailPanel';
 import { FleetCard } from './fleet/FleetCard';
+
+// =============================================================================
+// Stats strip component
+// =============================================================================
+
+function FleetStatsStrip() {
+  const [stats, setStats] = useState<{
+    totalFleets: number; running: number; totalWorkers: number;
+    successRate: number; avgCost: number; totalCost: number;
+    tasksCompleted: number; activeWorkers: number;
+  } | null>(null);
+  const [health, setHealth] = useState<{
+    status: string; score: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fleetApi.stats().then(setStats).catch(() => {});
+    fleetApi.health().then(setHealth).catch(() => {});
+  }, []);
+
+  if (!stats && !health) return null;
+
+  return (
+    <div className="flex items-center gap-4 px-6 py-2 border-b border-border dark:border-dark-border bg-bg-tertiary/50">
+      {stats && (
+        <>
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <Layers className="w-3.5 h-3.5" />
+            <span>{stats.totalFleets} fleets</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <Bot className="w-3.5 h-3.5" />
+            <span>{stats.activeWorkers} active workers</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <Activity className="w-3.5 h-3.5" />
+            <span>{stats.tasksCompleted} tasks done</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <span className="text-success">{Math.round(stats.successRate * 100)}% success</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>${stats.totalCost.toFixed(4)}</span>
+          </div>
+        </>
+      )}
+      {health && (
+        <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+          health.status === 'healthy' ? 'bg-success/20 text-success' :
+          health.status === 'watch' ? 'bg-yellow-500/20 text-yellow-500' :
+          'bg-error/20 text-error'
+        }`}>
+          {health.status} ({health.score})
+        </span>
+      )}
+    </div>
+  );
+}
 
 type TabId = 'home' | 'fleets';
 
@@ -205,6 +265,8 @@ export function FleetPage() {
           New Fleet
         </button>
       </header>
+
+      <FleetStatsStrip />
 
       <div className="flex border-b border-border dark:border-dark-border px-6">
         {(['home', 'fleets'] as TabId[]).map((tab) => (

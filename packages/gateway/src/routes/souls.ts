@@ -15,6 +15,7 @@
 import { Hono } from 'hono';
 import type { AgentSoul } from '@ownpilot/core';
 import { getSoulsRepository } from '../db/repositories/souls.js';
+import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import {
   apiResponse,
   apiError,
@@ -33,6 +34,63 @@ export const soulRoutes = new Hono();
 // Mount sub-routes (order matters: deploy + agent sub-routes BEFORE /:agentId catch-all)
 soulRoutes.route('/', soulDeployRoutes);
 soulRoutes.route('/', soulAgentRoutes);
+
+// ── GET /stats — Aggregate soul/heartbeat statistics ────────────────────────
+
+soulRoutes.get('/stats', async (c) => {
+  try {
+    const rawUserId = c.get('userId') as string | undefined;
+    const userId = rawUserId && rawUserId !== 'default' ? rawUserId : null;
+    const hbRepo = getHeartbeatLogRepository();
+
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
+
+    return apiResponse(c, {
+      totalCycles: stats.totalCycles,
+      totalCost: stats.totalCost,
+      avgDurationMs: stats.avgDurationMs,
+      failureRate: stats.failureRate,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ── GET /health — Soul heartbeat health indicators ──────────────────────────
+
+soulRoutes.get('/health', async (c) => {
+  try {
+    const rawUserId = c.get('userId') as string | undefined;
+    const userId = rawUserId && rawUserId !== 'default' ? rawUserId : null;
+    const hbRepo = getHeartbeatLogRepository();
+
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
+
+    const signals: string[] = [];
+    const recommendations: string[] = [];
+
+    const score = stats.failureRate > 0.5 ? 30 : stats.failureRate > 0.2 ? 55 : 90;
+    const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+      stats.failureRate > 0.5 ? 'failed' : stats.failureRate > 0.2 ? 'watch' : 'healthy';
+
+    if (stats.failureRate > 0.2) {
+      signals.push(`high failure rate: ${(stats.failureRate * 100).toFixed(1)}%`);
+      recommendations.push('Review failed heartbeat tasks and agent configuration');
+    }
+
+    return apiResponse(c, {
+      status,
+      score,
+      signals,
+      recommendations,
+      totalCycles: stats.totalCycles,
+      totalCost: stats.totalCost,
+      failureRate: stats.failureRate,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
 
 /**
  * Validate and protect core traits during soul evolution.

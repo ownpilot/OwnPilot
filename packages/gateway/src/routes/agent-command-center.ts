@@ -21,6 +21,9 @@ import {
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
+import { SubagentsRepository } from '../db/repositories/subagents.js';
+import { getFleetRepository } from '../db/repositories/fleet.js';
+import { OrchestraRepository } from '../db/repositories/orchestra.js';
 import { agentsRepo } from '../db/repositories/agents.js';
 import {
   validateBody,
@@ -292,6 +295,95 @@ agentCommandCenterRoutes.post('/deploy-fleet', async (c) => {
   } catch (err) {
     if (err instanceof Error && err.message.startsWith('Validation failed:'))
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ── GET /overview — Unified view of all agent runners ──────────────────────
+
+agentCommandCenterRoutes.get('/overview', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const hbRepo = getHeartbeatLogRepository();
+    const crewRepo = getCrewsRepository();
+    const subagentRepo = new SubagentsRepository();
+    const fleetRepo = getFleetRepository();
+    const orchestraRepo = new OrchestraRepository();
+    const soulRepo = getSoulsRepository();
+
+    const [
+      subagentStats,
+      subagentHealth,
+      fleetStats,
+      fleetHealth,
+      orchestraStats,
+      orchestraHealth,
+      soulStats,
+      soulHealth,
+      crewStats,
+      crewHealth,
+      souls,
+      crews,
+    ] = await Promise.all([
+      subagentRepo.getStats(userId).catch(() => ({ total: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, active: 0 })),
+      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [] }),
+      fleetRepo.getStats(userId).catch(() => ({ totalFleets: 0, totalSessions: 0, totalWorkers: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, tasksCompleted: 0, tasksFailed: 0 })),
+      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [], activeFleets: 0 }),
+      orchestraRepo.getStats(userId).catch(() => ({ total: 0, active: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, tasksSucceeded: 0, tasksFailed: 0 })),
+      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [] }),
+      hbRepo.getStatsByUser(userId).catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 })),
+      Promise.resolve({ status: 'healthy', score: 90, signals: [], recommendations: [], totalCycles: 0, totalCost: 0, failureRate: 0 }),
+      crewRepo.list(userId, 1000, 0).then((crews) => ({ totalCrews: crews.length, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: crews.reduce((acc, cr) => { acc[cr.status] = (acc[cr.status] ?? 0) + 1; return acc; }, {} as Record<string, number>) })).catch(() => ({ totalCrews: 0, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: {} as Record<string, number> })),
+      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [], totalCrews: 0, pausedCrews: 0 }),
+      soulRepo.list(userId, 1000, 0).catch(() => []),
+      crewRepo.list(userId, 100, 0).catch(() => []),
+    ]);
+
+    const totalCost =
+      (subagentStats.totalCost ?? 0) +
+      (fleetStats.totalCost ?? 0) +
+      (orchestraStats.totalCost ?? 0) +
+      (soulStats.totalCost ?? 0);
+
+    return apiResponse(c, {
+      subagent: {
+        stats: {
+          active: 0,
+          total: subagentStats.total,
+          successRate: subagentStats.successRate,
+          avgCost: subagentStats.avgCost,
+          avgDuration: subagentStats.avgDuration,
+          totalCost: subagentStats.totalCost,
+          errorRate: subagentStats.errorRate,
+          byState: subagentStats.byState,
+          totalTokens: subagentStats.totalTokens,
+        },
+        health: subagentHealth,
+      },
+      fleet: {
+        stats: fleetStats,
+        health: fleetHealth,
+      },
+      orchestra: {
+        stats: orchestraStats,
+        health: orchestraHealth,
+      },
+      soul: {
+        stats: soulStats,
+        health: soulHealth,
+      },
+      crew: {
+        stats: crewStats,
+        health: crewHealth,
+      },
+      totalCost,
+      summary: {
+        totalSouls: souls.length,
+        totalCrews: crews.length,
+        activeSouls: souls.filter((s) => s.heartbeat.enabled).length,
+      },
+    });
+  } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

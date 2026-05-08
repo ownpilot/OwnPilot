@@ -6,6 +6,7 @@
 
 import { Hono } from 'hono';
 import { getSubagentService } from '../services/subagent-service.js';
+import { SubagentsRepository } from '../db/repositories/subagents.js';
 import {
   getUserId,
   apiResponse,
@@ -116,6 +117,60 @@ subagentRoutes.get('/:id', (c) => {
     }
 
     return apiResponse(c, session);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /stats — Aggregate subagent statistics
+// =============================================================================
+
+subagentRoutes.get('/stats', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const repo = new SubagentsRepository();
+
+    const dbStats = await repo.getStats(userId);
+
+    return apiResponse(c, {
+      active: 0,
+      total: dbStats.total,
+      successRate: dbStats.successRate,
+      avgCost: dbStats.avgCost,
+      avgDuration: dbStats.avgDuration,
+      totalCost: dbStats.totalCost,
+      errorRate: dbStats.errorRate,
+      byState: dbStats.byState,
+      totalTokens: dbStats.totalTokens,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /health — Subagent health indicators
+// =============================================================================
+
+subagentRoutes.get('/health', async (c) => {
+  try {
+    const repo = new SubagentsRepository();
+
+    const orphaned = await repo.getOrphanedSessions(30 * 60 * 1000);
+
+    const signals: string[] = [];
+    const recommendations: string[] = [];
+
+    if (orphaned.length > 0) {
+      signals.push(`${orphaned.length} orphaned running sessions`);
+      recommendations.push('Run orphan reconciliation to recover stuck sessions');
+    }
+
+    const score = orphaned.length > 0 ? 30 : 70;
+    const status = orphaned.length > 0 ? 'failed' : 'watch';
+
+    return apiResponse(c, { status, score, signals, recommendations });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }

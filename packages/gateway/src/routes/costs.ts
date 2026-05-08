@@ -39,6 +39,11 @@ const usageTracker = new UsageTracker();
 // Initialize budget manager with tracker
 const budgetManager = new BudgetManager(usageTracker);
 
+async function getUsageRepository(): Promise<import('../db/repositories/usage.js').UsageRepository> {
+  const { getUsageRepository: getRepo } = await import('../db/repositories/usage.js');
+  return getRepo();
+}
+
 /**
  * Helper to get period start date
  */
@@ -226,20 +231,79 @@ costRoutes.get('/breakdown', async (c) => {
 
   const summary = await usageTracker.getSummary(startDate, endDate, userId);
 
+  // Enrich with DB-backed records for durability (graceful — endpoint works even if repo unavailable)
+  type DbSummary = Awaited<ReturnType<import('../db/repositories/usage.js').UsageRepository['getSummary']>>;
+  let dbSummary: DbSummary = { totalRecords: 0, totalInputTokens: 0, totalOutputTokens: 0, totalCost: 0, byProvider: {}, byModel: {}, byDay: {} };
+  try {
+    const dbRepo = await getUsageRepository();
+    dbSummary = await dbRepo.getSummary(startDate, endDate, userId ?? undefined);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[costs] DB summary unavailable, using in-memory only:', msg);
+  }
+
+  // Merge: use in-memory summary totals, supplement with DB breakdown data
+  const mergedByProvider: Record<string, { requests: number; inputTokens: number; outputTokens: number; cost: number; averageLatencyMs: number }> = {};
+  for (const [provider, stats] of Object.entries(summary.byProvider)) {
+    mergedByProvider[provider] = { ...stats };
+  }
+  for (const [provider, stats] of Object.entries(dbSummary.byProvider)) {
+    if (mergedByProvider[provider]) {
+      mergedByProvider[provider].requests += stats.requests;
+      mergedByProvider[provider].inputTokens += stats.inputTokens;
+      mergedByProvider[provider].outputTokens += stats.outputTokens;
+      mergedByProvider[provider].cost += stats.cost;
+    } else {
+      mergedByProvider[provider] = { ...stats, averageLatencyMs: 0 };
+    }
+  }
+
+  const mergedByModel: Record<string, { provider: string; requests: number; inputTokens: number; outputTokens: number; cost: number; averageLatencyMs: number }> = {};
+  for (const [model, stats] of Object.entries(summary.byModel)) {
+    mergedByModel[model] = { ...stats };
+  }
+  for (const [model, stats] of Object.entries(dbSummary.byModel)) {
+    if (mergedByModel[model]) {
+      mergedByModel[model].requests += stats.requests;
+      mergedByModel[model].inputTokens += stats.inputTokens;
+      mergedByModel[model].outputTokens += stats.outputTokens;
+      mergedByModel[model].cost += stats.cost;
+    } else {
+      mergedByModel[model] = { ...stats, averageLatencyMs: 0 };
+    }
+  }
+
+  // Merge daily data
+  const mergedDaily = new Map<string, { date: string; requests: number; cost: number; inputTokens: number; outputTokens: number }>();
+  for (const d of summary.daily) {
+    mergedDaily.set(d.date, { date: d.date, requests: d.requests, cost: d.cost, inputTokens: d.inputTokens, outputTokens: d.outputTokens });
+  }
+  for (const [day, stats] of Object.entries(dbSummary.byDay)) {
+    const existing = mergedDaily.get(day);
+    if (existing) {
+      existing.requests += stats.requests;
+      existing.cost += stats.cost;
+      existing.inputTokens += stats.inputTokens;
+      existing.outputTokens += stats.outputTokens;
+    } else {
+      mergedDaily.set(day, { date: day, ...stats });
+    }
+  }
+
   // Format provider breakdown
-  const byProvider = Object.entries(summary.byProvider).map(([provider, stats]) => ({
+  const byProvider = Object.entries(mergedByProvider).map(([provider, stats]) => ({
     provider,
     requests: stats.requests,
     inputTokens: stats.inputTokens,
     outputTokens: stats.outputTokens,
     cost: stats.cost,
     costFormatted: formatCost(stats.cost),
-    averageLatencyMs: stats.averageLatencyMs,
+    averageLatencyMs: stats.requests > 0 ? stats.averageLatencyMs / stats.requests : 0,
     percentOfTotal: summary.totalCost > 0 ? (stats.cost / summary.totalCost) * 100 : 0,
   }));
 
   // Format model breakdown
-  const byModel = Object.entries(summary.byModel).map(([model, stats]) => ({
+  const byModel = Object.entries(mergedByModel).map(([model, stats]) => ({
     model,
     provider: stats.provider,
     requests: stats.requests,
@@ -247,7 +311,7 @@ costRoutes.get('/breakdown', async (c) => {
     outputTokens: stats.outputTokens,
     cost: stats.cost,
     costFormatted: formatCost(stats.cost),
-    averageLatencyMs: stats.averageLatencyMs,
+    averageLatencyMs: stats.requests > 0 ? stats.averageLatencyMs / stats.requests : 0,
     percentOfTotal: summary.totalCost > 0 ? (stats.cost / summary.totalCost) * 100 : 0,
   }));
 
@@ -262,14 +326,16 @@ costRoutes.get('/breakdown', async (c) => {
     totalCostFormatted: formatCost(summary.totalCost),
     byProvider,
     byModel,
-    daily: summary.daily.map((d) => ({
-      date: d.date,
-      requests: d.requests,
-      cost: d.cost,
-      costFormatted: formatCost(d.cost),
-      inputTokens: d.inputTokens,
-      outputTokens: d.outputTokens,
-    })),
+    daily: Array.from(mergedDaily.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((d) => ({
+        date: d.date,
+        requests: d.requests,
+        cost: d.cost,
+        costFormatted: formatCost(d.cost),
+        inputTokens: d.inputTokens,
+        outputTokens: d.outputTokens,
+      })),
   });
 });
 
@@ -506,6 +572,14 @@ costRoutes.post('/record', async (c) => {
       error: body.error,
       metadata: body.metadata,
     });
+
+    // Persist to DB for durability (fire-and-forget)
+    getUsageRepository()
+      .then((repo) => repo.save(record))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[costs] Failed to persist usage record:', msg);
+      });
 
     // Check budget
     const budgetStatus = await budgetManager.getStatus();

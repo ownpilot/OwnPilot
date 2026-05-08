@@ -361,6 +361,13 @@ export class WSGateway {
       })
     );
 
+    // soul.heartbeat.completed → soul:heartbeat:completed
+    this.legacyUnsubs.push(
+      eventSystem.onAny('soul.heartbeat.completed', (event) => {
+        this.broadcast('soul:heartbeat:completed', event.data as unknown as ServerEvents['soul:heartbeat:completed']);
+      })
+    );
+
     // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {
@@ -1281,10 +1288,18 @@ export function resetAuthRateLimit(): void {
  * Global WebSocket gateway instance.
  * Reads WS_ALLOWED_ORIGINS or falls back to CORS_ORIGINS env var.
  * Empty list = allow all (self-hosted default).
+ * Literal '*' element is stripped with a warning (CORS-005).
  */
 const _wsAllowedOrigins = (process.env.WS_ALLOWED_ORIGINS ?? process.env.CORS_ORIGINS ?? '')
   .split(',')
   .map((s) => s.trim())
-  .filter(Boolean);
+  .filter(Boolean)
+  .filter((origin) => {
+    if (origin === '*') {
+      log.warn('[WARN] WS: CORS_ORIGINS contains "*" — treating as no cross-origin allowlist (WS connections will use localhost defaults)');
+      return false;
+    }
+    return true;
+  });
 
 export const wsGateway = new WSGateway({ allowedOrigins: _wsAllowedOrigins });

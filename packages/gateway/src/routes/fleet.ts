@@ -158,6 +158,108 @@ fleetRoutes.post('/', async (c) => {
 });
 
 // =============================================================================
+// GET /stats — Aggregate fleet statistics
+// =============================================================================
+
+fleetRoutes.get('/stats', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const repo = (await import('../db/repositories/fleet.js')).getFleetRepository();
+
+    const sessions = await repo.listSessions(userId);
+    const dbStats = await repo.getStats(userId);
+
+    const running = sessions.filter((s) => s.state === 'running').length;
+    const activeWorkers = sessions.reduce((sum, s) => sum + s.activeWorkers, 0);
+    void activeWorkers; // used in response below
+
+    return apiResponse(c, {
+      totalFleets: dbStats.totalFleets,
+      running,
+      totalWorkers: activeWorkers,
+      successRate: dbStats.successRate,
+      avgCost: dbStats.avgCost,
+      avgDuration: dbStats.avgDuration,
+      totalCost: dbStats.totalCost,
+      errorRate: dbStats.errorRate,
+      byState: dbStats.byState,
+      totalTokens: dbStats.totalTokens,
+      tasksCompleted: dbStats.tasksCompleted,
+      tasksFailed: dbStats.tasksFailed,
+      activeWorkers,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
+// GET /health — Fleet health indicators
+// =============================================================================
+
+fleetRoutes.get('/health', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const service = getFleetService();
+    const repo = (await import('../db/repositories/fleet.js')).getFleetRepository();
+
+    const configs = await service.listFleets(userId);
+    const sessions = await repo.listSessions(userId);
+
+    const signals: string[] = [];
+    const recommendations: string[] = [];
+
+    const running = sessions.filter((s) => s.state === 'running');
+    const withErrors = running.filter((s) => s.cyclesCompleted > 0 && s.totalCostUsd > 0);
+    const noWorkers = running.filter((s) => s.activeWorkers === 0);
+    const overBudget = configs.filter((cfg) => {
+      if (!cfg.budget?.maxCostUsd) return false;
+      const session = sessions.find((s) => s.fleetId === cfg.id);
+      return session && session.totalCostUsd >= cfg.budget.maxCostUsd;
+    });
+
+    let score = 80;
+    let status: 'healthy' | 'watch' | 'stuck' | 'failed' | 'expensive' = 'healthy';
+
+    if (overBudget.length > 0) {
+      signals.push(`${overBudget.length} fleets at budget cap`);
+      recommendations.push('Raise budgets or stop expensive fleets');
+      score = Math.min(score, 25);
+      status = 'expensive';
+    }
+    if (noWorkers.length > 0) {
+      signals.push(`${noWorkers.length} fleets running without workers`);
+      recommendations.push('Check worker availability and concurrency limits');
+      score = Math.min(score, 40);
+      status = 'stuck';
+    }
+    if (withErrors.length > 0) {
+      signals.push(`${withErrors.length} fleets with errors`);
+      recommendations.push('Inspect fleet cycle errors');
+      score = Math.min(score, 50);
+      status = 'watch';
+    }
+    if (running.length === 0 && sessions.length > 0) {
+      signals.push('all fleets idle');
+      score = 65;
+      status = 'watch';
+    }
+
+    return apiResponse(c, {
+      status,
+      score,
+      signals,
+      recommendations,
+      activeFleets: running.length,
+      totalFleets: sessions.length,
+      tasksInQueue: 0, // task queue count not currently tracked at fleet level
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// =============================================================================
 // 2. SPECIFIC SUB-ROUTES (must come BEFORE /:id)
 // =============================================================================
 

@@ -513,6 +513,17 @@ export interface ServerEvents {
   'event:message': { type: string; source: string; data: unknown; timestamp: string };
   'event:publish:ack': { type: string };
   'event:publish:error': { type: string; error: string };
+  // Soul heartbeat completion event
+  'soul:heartbeat:completed': {
+    agentId: string;
+    soulVersion: number;
+    tasksRun: Array<{ id: string; name: string }>;
+    tasksSkipped: Array<{ id: string; reason?: string }>;
+    tasksFailed: Array<{ id: string; error?: string }>;
+    durationMs: number;
+    tokenUsage: { input: number; output: number };
+    cost: number;
+  };
 }
 
 /**
