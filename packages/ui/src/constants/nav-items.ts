@@ -134,6 +134,7 @@ export const navGroups: NavGroup[] = [
       { to: '/costs', icon: DollarSign, label: 'Costs' },
       { to: '/logs', icon: Activity, label: 'Logs' },
       { to: '/event-monitor', icon: MonitorCheck, label: 'Event Monitor' },
+      { to: '/agent-observability', icon: Activity, label: 'Agent Observability' },
     ],
   },
   {
