@@ -24,6 +24,15 @@ async function gitExec(args: string[], cwd: string): Promise<string> {
 // Maximum output size
 const MAX_OUTPUT_SIZE = 100000;
 
+// Validate a git ref/branch/commit parameter — rejects values starting with "-"
+// which would be interpreted as git flags, causing argument injection.
+function validateGitRef(ref: string, name: string): string {
+  if (ref.startsWith('-')) {
+    throw new Error(`${name} cannot start with '-' (got: ${ref})`);
+  }
+  return ref;
+}
+
 // ============================================================================
 // GIT STATUS TOOL
 // ============================================================================
@@ -198,8 +207,8 @@ export const gitDiffExecutor: ToolExecutor = async (
 
     if (staged) args.push('--cached');
     if (stat) args.push('--stat');
-    if (commit) args.push(commit);
-    if (commitRange) args.push(commitRange);
+    if (commit) args.push(validateGitRef(commit, 'commit'));
+    if (commitRange) args.push(validateGitRef(commitRange, 'commitRange'));
     if (file) {
       args.push('--');
       args.push(file);
@@ -306,7 +315,7 @@ export const gitLogExecutor: ToolExecutor = async (
     if (since) args.push(`--since=${since}`);
     if (until) args.push(`--until=${until}`);
     if (!oneline) args.push('--format=%H|%an|%ae|%at|%s');
-    if (branch) args.push(branch);
+    if (branch) args.push(validateGitRef(branch, 'branch'));
     if (file) {
       args.push('--');
       args.push(file);
@@ -578,7 +587,7 @@ export const gitBranchExecutor: ToolExecutor = async (
         if (!name) {
           return { content: { error: 'Branch name required' }, isError: true };
         }
-        await gitExec(['branch', name], repoPath);
+        await gitExec(['branch', validateGitRef(name, 'name')], repoPath);
         result = { success: true, created: name };
         break;
       }
@@ -587,7 +596,7 @@ export const gitBranchExecutor: ToolExecutor = async (
         if (!name) {
           return { content: { error: 'Branch name required' }, isError: true };
         }
-        await gitExec(['branch', '-d', name], repoPath);
+        await gitExec(['branch', '-d', validateGitRef(name, 'name')], repoPath);
         result = { success: true, deleted: name };
         break;
       }
@@ -596,7 +605,7 @@ export const gitBranchExecutor: ToolExecutor = async (
         if (!name || !newName) {
           return { content: { error: 'Both name and newName required' }, isError: true };
         }
-        await gitExec(['branch', '-m', name, newName], repoPath);
+        await gitExec(['branch', '-m', validateGitRef(name, 'name'), validateGitRef(newName, 'newName')], repoPath);
         result = { success: true, renamed: { from: name, to: newName } };
         break;
       }
@@ -665,9 +674,9 @@ export const gitCheckoutExecutor: ToolExecutor = async (
   try {
     const args = ['checkout'];
     if (createBranch && branch) {
-      args.push('-b', branch);
+      args.push('-b', validateGitRef(branch, 'branch'));
     } else if (branch) {
-      args.push(branch);
+      args.push(validateGitRef(branch, 'branch'));
     } else if (file) {
       args.push('--', file);
     }

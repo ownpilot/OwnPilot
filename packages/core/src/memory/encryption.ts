@@ -12,7 +12,7 @@ const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16;
 const SALT_LENGTH = 32;
-export const PBKDF2_DEFAULT_ITERATIONS = 100000;
+export const PBKDF2_DEFAULT_ITERATIONS = 600000;
 
 // =============================================================================
 // Encryption Utilities
