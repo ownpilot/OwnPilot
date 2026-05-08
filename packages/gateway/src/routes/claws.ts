@@ -537,6 +537,53 @@ clawRoutes.get('/stats', async (c) => {
   }
 });
 
+// GET /health - Claw health indicators
+clawRoutes.get('/health', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const service = getClawService();
+    const configs = await service.listClaws(userId);
+    const sessions = service.listSessions(userId);
+
+    const signals: string[] = [];
+    const recommendations: string[] = [];
+
+    const failedConfigs = configs.filter((cfg) =>
+      ['watch', 'stuck', 'failed'].includes(getHealthForConfig(cfg, sessions).status)
+    );
+    const runningCount = sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state)).length;
+    const totalCycles = sessions.reduce((s, ses) => s + ses.cyclesCompleted, 0);
+
+    if (failedConfigs.length > 0) {
+      signals.push(`${failedConfigs.length} claw(s) need attention`);
+      recommendations.push('Review claws with failed/stuck status');
+    }
+    if (runningCount === 0 && configs.length > 0) {
+      signals.push('No claws currently running');
+      recommendations.push('Start a claw or set one to auto-start');
+    }
+    if (totalCycles === 0 && configs.length > 0) {
+      signals.push('No cycles completed yet');
+    }
+
+    const score = failedConfigs.length === 0 ? (runningCount > 0 ? 90 : 75) : Math.max(30, 70 - failedConfigs.length * 15);
+    const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+      failedConfigs.length > 2 ? 'stuck' : failedConfigs.length > 0 ? 'watch' : 'healthy';
+
+    return apiResponse(c, {
+      status,
+      score,
+      signals,
+      recommendations,
+      activeClaws: runningCount,
+      totalClaws: configs.length,
+      needsAttention: failedConfigs.length,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // POST / - Create a new claw
 clawRoutes.post('/', async (c) => {
   try {
