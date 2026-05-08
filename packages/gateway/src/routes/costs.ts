@@ -39,6 +39,18 @@ const usageTracker = new UsageTracker();
 // Initialize budget manager with tracker
 const budgetManager = new BudgetManager(usageTracker);
 
+// Wire DB persistence — fire-and-forget, errors are logged by the tracker callback
+getUsageRepository()
+  .then((repo) => {
+    usageTracker.setRecordCallback(async (record) => {
+      await repo.save(record);
+    });
+  })
+  .catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[costs] UsageRepository unavailable, DB persistence disabled:', msg);
+  });
+
 async function getUsageRepository(): Promise<import('../db/repositories/usage.js').UsageRepository> {
   const { getUsageRepository: getRepo } = await import('../db/repositories/usage.js');
   return getRepo();
@@ -572,14 +584,6 @@ costRoutes.post('/record', async (c) => {
       error: body.error,
       metadata: body.metadata,
     });
-
-    // Persist to DB for durability (fire-and-forget)
-    getUsageRepository()
-      .then((repo) => repo.save(record))
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('[costs] Failed to persist usage record:', msg);
-      });
 
     // Check budget
     const budgetStatus = await budgetManager.getStatus();

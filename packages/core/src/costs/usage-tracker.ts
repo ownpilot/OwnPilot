@@ -21,6 +21,16 @@ export const MAX_RECORDS = 10_000;
 export class UsageTracker extends EventEmitter {
   private records: UsageRecord[] = [];
   private initialized = false;
+  private _onRecord?: (record: UsageRecord) => Promise<void>;
+
+  /**
+   * Register a callback invoked on every record() call.
+   * Intended for DB persistence (fire-and-forget, errors are logged and swallowed).
+   * Must be set before any records are collected.
+   */
+  setRecordCallback(fn: (record: UsageRecord) => Promise<void>): void {
+    this._onRecord = fn;
+  }
 
   /**
    * Initialize tracker (no-op, kept for backward compatibility)
@@ -53,6 +63,14 @@ export class UsageTracker extends EventEmitter {
 
     // Emit event for real-time tracking
     this.emit('usage', record);
+
+    // DB persistence callback (fire-and-forget — log but don't throw)
+    if (this._onRecord) {
+      this._onRecord(record).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        costLog.warn(`[UsageTracker] DB persist callback failed: ${msg}`);
+      });
+    }
 
     return record;
   }
