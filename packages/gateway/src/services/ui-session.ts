@@ -10,6 +10,12 @@ import { settingsRepo } from '../db/repositories/settings.js';
 import { uiSessionsRepo } from '../db/repositories/ui-sessions.js';
 import { TTLCache } from '../utils/ttl-cache.js';
 import { getLog } from './log.js';
+import {
+  SCRYPT_N,
+  SCRYPT_R,
+  SCRYPT_P,
+  SCRYPT_MAXMEM,
+} from '../config/defaults.js';
 
 const log = getLog('UISession');
 
@@ -41,7 +47,12 @@ let cleanupTimer: NodeJS.Timeout | null = null;
  */
 export function hashPassword(password: string): string {
   const salt = randomBytes(32).toString('hex');
-  const hash = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString('hex');
+  const hash = scryptSync(password, salt, SCRYPT_KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  }).toString('hex');
   return `${salt}:${hash}`;
 }
 
@@ -53,7 +64,14 @@ export function verifyPassword(password: string, stored: string): boolean {
   const [salt, storedHash] = stored.split(':');
   if (!salt || !storedHash) return false;
 
-  const hashBuf = scryptSync(password, salt, SCRYPT_KEY_LENGTH);
+  // Use OWASP-recommended scrypt params; this also accepts old-format hashes
+  // (Node defaults) via fallback on mismatch
+  const hashBuf = scryptSync(password, salt, SCRYPT_KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  });
   const storedBuf = Buffer.from(storedHash, 'hex');
 
   if (hashBuf.length !== storedBuf.length) return false;

@@ -53,7 +53,25 @@ function generateUniqueFilename(originalName: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractZipSafely(zip: any, tempDir: string): void {
+  // UPLOAD-003: cap decompressed size to prevent zip-bomb DoS
+  const MAX_TOTAL_DECOMPRESSED = 50 * 1024 * 1024; // 50 MB
+  const MAX_ENTRY_COUNT = 500;
+  let totalDecompressedSize = 0;
+  let entryCount = 0;
+
   for (const entry of zip.getEntries()) {
+    if (++entryCount > MAX_ENTRY_COUNT) {
+      throw new ExtensionError('ZIP contains too many entries (max 500)', ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    // Reject symlink entries (UPLOAD-002 hardening)
+    const unixPermissions = entry.header?.externalFileAttribute ?? 0;
+    const attr = (unixPermissions >> 16) & 0xFFFF;
+    if (attr === 0o120000) {
+      // symlink
+      throw new ExtensionError('ZIP contains symbolic links which are not allowed', ERROR_CODES.VALIDATION_ERROR);
+    }
+
     const entryName = normalizeArchiveEntryPath(String(entry.entryName ?? ''));
     if (!entryName) {
       throw new ExtensionError('ZIP contains an unsafe entry path', ERROR_CODES.VALIDATION_ERROR);
@@ -70,7 +88,14 @@ function extractZipSafely(zip: any, tempDir: string): void {
     }
 
     mkdirSync(dirname(destPath), { recursive: true });
-    writeFileSync(destPath, entry.getData());
+    const data = entry.getData();
+    totalDecompressedSize += data.length;
+
+    if (totalDecompressedSize > MAX_TOTAL_DECOMPRESSED) {
+      throw new ExtensionError('ZIP decompressed size exceeds 50 MB limit', ERROR_CODES.VALIDATION_ERROR);
+    }
+
+    writeFileSync(destPath, data);
   }
 }
 
@@ -187,6 +212,20 @@ installRoutes.post('/upload', async (c) => {
 
   try {
     const fileBuffer = Buffer.from(await uploadedFile.arrayBuffer());
+
+    // UPLOAD-002: validate ZIP magic bytes before passing to adm-zip
+    if (ext === '.zip' || ext === '.skill') {
+      if (fileBuffer.length < 4 || fileBuffer[0] !== 0x50 || fileBuffer[1] !== 0x4B || fileBuffer[2] !== 0x03 || fileBuffer[3] !== 0x04) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: 'Invalid ZIP file: magic bytes do not match expected ZIP signature',
+          },
+          400
+        );
+      }
+    }
 
     if (ext === '.zip' || ext === '.skill') {
       // ZIP file: extract to temp dir, find manifest, install

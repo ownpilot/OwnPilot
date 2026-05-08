@@ -100,8 +100,16 @@ export const PLAN_MAX_BACKOFF_MS = 30_000;
 export const PLAN_MAX_LOOP_ITERATIONS = 10;
 
 // ============================================================================
-// Rate Limiting
+// Public URL (override via PUBLIC_BASE_URL env var)
 // ============================================================================
+
+/**
+ * Public base URL for this gateway.
+ * Used to construct callback/callback URLs in MCP config, chat, webhooks.
+ * Set via PUBLIC_BASE_URL env var (e.g. https://app.example.com).
+ * Falls back to host header detection if unset (not recommended for production).
+ */
+export const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL ?? '';
 
 /** Default rate-limit window (ms) */
 export const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -416,3 +424,15 @@ export const RISK_HIGH_COST_THRESHOLD = 1000;
 
 /** High-token-usage threshold */
 export const RISK_HIGH_TOKEN_THRESHOLD = 5000;
+
+// ============================================================================
+// Auth / Password Hashing
+// ============================================================================
+
+/** OWASP-scrypt cost params — N=16384 (Node default, fits OpenSSL 3.x memory cap),
+ * r=8, p=4 (total passes = 32, higher than Node defaults p=1 at same work factor).
+ * See: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html */
+export const SCRYPT_N = 16384;
+export const SCRYPT_R = 8;
+export const SCRYPT_P = 4;
+export const SCRYPT_MAXMEM = 33554432; // 32 MB

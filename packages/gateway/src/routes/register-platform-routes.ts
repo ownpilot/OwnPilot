@@ -67,8 +67,8 @@ export function registerPlatformRoutes(app: Hono): void {
   // File Workspaces (session-based file storage)
   app.route('/api/v1/file-workspaces', fileWorkspaceRoutes);
 
-  // Prometheus metrics endpoint
-  app.get('/metrics', async (c) => {
+  // Prometheus metrics endpoint (under /api/v1 so it inherits auth middleware)
+  app.get('/api/v1/metrics', async (c) => {
     const { renderMetrics } = await import('../services/metrics-service.js');
     const metrics = renderMetrics();
     return c.body(metrics, 200, {

@@ -553,6 +553,23 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
       };
     }
 
+    // PT-002: validate source is within workspace (prevents arbitrary file read via ffmpeg concat:)
+    const resolvedSource = path.resolve(source);
+    if (!isWithinDirectory(workDir, resolvedSource)) {
+      return {
+        content: { error: 'Source path must be within the workspace directory' },
+        isError: true,
+      };
+    }
+
+    // Reject source paths starting with dash (would be interpreted as ffmpeg flag)
+    if (path.basename(source).startsWith('-')) {
+      return {
+        content: { error: 'Source filename cannot start with "-"' },
+        isError: true,
+      };
+    }
+
     await fs.mkdir(outDir, { recursive: true });
 
     const baseName = path.basename(source, path.extname(source));

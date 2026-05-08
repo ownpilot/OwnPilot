@@ -35,11 +35,15 @@ import { safeFetch, DEFAULT_MAX_REQUEST_BODY_SIZE } from '../../utils/safe-fetch
 import { resolveTemplates } from './template-resolver.js';
 import type { ToolExecutionResult } from './types.js';
 import vm from 'node:vm';
+import { validateToolCode } from '@ownpilot/core';
 
 const log = getLog('WorkflowService');
 
 /** Maximum array size for per-element VM evaluation (filter/map nodes). */
 const MAX_ARRAY_EVAL_SIZE = 10_000;
+
+/** Maximum expression length for VM evaluation (prevent memory exhaustion). */
+const MAX_EXPRESSION_LENGTH = 10_000;
 
 /**
  * Safe VM expression evaluator — hardens against prototype-chain sandbox escapes.
@@ -50,6 +54,17 @@ const MAX_ARRAY_EVAL_SIZE = 10_000;
  * - Timeout prevents infinite loops
  */
 function safeVmEval(expression: string, context: Record<string, unknown>, timeoutMs: number): unknown {
+  // Enforce expression length limit to prevent memory exhaustion
+  if (expression.length > MAX_EXPRESSION_LENGTH) {
+    throw new Error(`Expression exceeds maximum length of ${MAX_EXPRESSION_LENGTH} characters`);
+  }
+
+  // Defense-in-depth: validate against dangerous pattern blocklist before evaluation
+  const validation = validateToolCode(expression);
+  if (!validation.valid) {
+    throw new Error(`Expression blocked: ${validation.errors.join('; ')}`);
+  }
+
   // Clone context values to sever any prototype-chain leaks from upstream node outputs.
   // structuredClone strips getters and rejects functions, preventing outer-realm code
   // from executing when sandbox globals access the cloned values.
