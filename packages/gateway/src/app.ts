@@ -182,8 +182,6 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
       exposeHeaders: [
         'X-Request-ID',
         'X-Response-Time',
-        'X-RateLimit-Limit',
-        'X-RateLimit-Remaining',
       ],
       maxAge: SECONDS_PER_DAY,
       credentials: true,

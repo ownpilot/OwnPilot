@@ -38,6 +38,7 @@ function configuredOrigins(): Set<string> {
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean)
+      .filter((o) => o !== '*') // CORS-001: strip wildcard element
   );
 }
 
