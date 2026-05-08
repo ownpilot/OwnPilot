@@ -25,6 +25,8 @@ import { SubagentsRepository } from '../db/repositories/subagents.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { OrchestraRepository } from '../db/repositories/orchestra.js';
 import { agentsRepo } from '../db/repositories/agents.js';
+import { getOrchestraEngine } from '../services/orchestra-engine.js';
+import { getFleetService } from '../services/fleet-service.js';
 import { getClawService } from '../services/claw-service.js';
 import {
   validateBody,
@@ -330,15 +332,92 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       clawHealth,
     ] = await Promise.all([
       subagentRepo.getStats(userId).catch(() => ({ total: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, active: 0 })),
-      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[] }),
+      (async () => {
+        const repo = new SubagentsRepository();
+        const orphaned = await repo.getOrphanedSessions(30 * 60 * 1000).catch(() => []);
+        const score = orphaned.length > 0 ? 30 : 70;
+        const status = orphaned.length > 0 ? 'failed' : 'watch';
+        const signals = orphaned.length > 0 ? [`${orphaned.length} orphaned running sessions`] : [];
+        const recommendations = orphaned.length > 0 ? ['Run orphan reconciliation to recover stuck sessions'] : [];
+        return { status, score, signals, recommendations };
+      })(),
       fleetRepo.getStats(userId).catch(() => ({ totalFleets: 0, totalSessions: 0, totalWorkers: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, tasksCompleted: 0, tasksFailed: 0 })),
-      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], activeFleets: 0 }),
+      (async () => {
+        try {
+          const service = getFleetService();
+          const configs = await service.listFleets(userId);
+          const sessions = await fleetRepo.listSessions(userId);
+          const signals: string[] = [];
+          const recommendations: string[] = [];
+          const running = sessions.filter((s) => s.state === 'running');
+          const noWorkers = running.filter((s) => s.activeWorkers === 0);
+          const overBudget = (configs as Array<{ id: string; budget?: { maxCostUsd?: number } }>).filter((cfg) => {
+            if (!cfg.budget?.maxCostUsd) return false;
+            const session = sessions.find((s) => s.fleetId === (cfg as { id: string }).id);
+            return session && session.totalCostUsd >= cfg.budget.maxCostUsd;
+          });
+          let score = 80;
+          let status: 'healthy' | 'watch' | 'stuck' | 'failed' | 'expensive' = 'healthy';
+          if (overBudget.length > 0) { score = Math.min(score, 25); status = 'expensive'; }
+          if (noWorkers.length > 0) { score = Math.min(score, 40); status = 'stuck'; }
+          if (running.length === 0 && sessions.length > 0) { score = 65; status = 'watch'; }
+          return { status, score, signals, recommendations, activeFleets: running.length, totalFleets: sessions.length };
+        } catch { return { status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], activeFleets: 0 }; }
+      })(),
       orchestraRepo.getStats(userId).catch(() => ({ total: 0, active: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, tasksSucceeded: 0, tasksFailed: 0 })),
-      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[] }),
+      (async () => {
+        try {
+          const engine = getOrchestraEngine();
+          const executions: Array<{ startedAt?: Date; taskResults: unknown[] }> = [];
+          const execMap = (engine as unknown as { executions?: Map<string, { startedAt?: Date; taskResults: unknown[]; state?: string }> }).executions;
+          if (execMap) for (const ex of execMap.values()) if (ex.state === 'running') executions.push(ex);
+          const signals: string[] = [];
+          const recommendations: string[] = [];
+          let score = 80;
+          let status: 'healthy' | 'watch' | 'stuck' | 'failed' = 'healthy';
+          if (executions.length === 0) { score = 60; status = 'watch'; signals.push('no running executions'); }
+          const stale = executions.filter((ex) => ex.startedAt && Date.now() - ex.startedAt.getTime() > 30 * 60 * 1000 && ex.taskResults.length === 0);
+          if (stale.length > 0) { signals.push(`${stale.length} executions with no progress`); recommendations.push('Check orchestration strategy and agent availability'); score = Math.min(score, 35); status = 'stuck'; }
+          return { status, score, signals, recommendations };
+        } catch { return { status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[] }; }
+      })(),
       hbRepo.getStatsByUser(userId).catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 })),
-      Promise.resolve({ status: 'healthy' as const, score: 90, signals: [] as string[], recommendations: [] as string[], totalCycles: 0, totalCost: 0, failureRate: 0 }),
+      (async () => {
+        try {
+          const stats = await hbRepo.getStatsByUser(userId).catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 }));
+          const score = stats.failureRate > 0.5 ? 30 : stats.failureRate > 0.2 ? 55 : 90;
+          const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+            stats.failureRate > 0.5 ? 'failed' : stats.failureRate > 0.2 ? 'watch' : 'healthy';
+          const signals: string[] = stats.failureRate > 0.2 ? [`high failure rate: ${(stats.failureRate * 100).toFixed(1)}%`] : [];
+          const recommendations: string[] = stats.failureRate > 0.2 ? ['Review failed heartbeat tasks and agent configuration'] : [];
+          return { status, score, signals, recommendations, totalCycles: stats.totalCycles, totalCost: stats.totalCost, failureRate: stats.failureRate };
+        } catch { return { status: 'healthy' as const, score: 90, signals: [] as string[], recommendations: [] as string[], totalCycles: 0, totalCost: 0, failureRate: 0 }; }
+      })(),
       crewRepo.list(userId, 1000, 0).then((crews) => ({ totalCrews: crews.length, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: crews.reduce((acc, cr) => { acc[cr.status] = (acc[cr.status] ?? 0) + 1; return acc; }, {} as Record<string, number>) })).catch(() => ({ totalCrews: 0, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: {} as Record<string, number> })),
-      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], totalCrews: 0, pausedCrews: 0 }),
+      (async () => {
+        try {
+          const crews = await crewRepo.list(userId, 100, 0);
+          const allMembers = await Promise.all(crews.map((crew) => crewRepo.getMembers(crew.id)));
+          const agentIds = allMembers.flatMap((m) => m.map((mem) => mem.agentId));
+          const latestHBMap = await hbRepo.getLatestByAgentIds(agentIds);
+          let totalErrors = 0;
+          let neverRun = 0;
+          for (const members of allMembers) {
+            for (const m of members) {
+              const lastHB = latestHBMap.get(m.agentId);
+              if (!lastHB) neverRun++;
+              else if (lastHB.tasksFailed.length > 0) totalErrors++;
+            }
+          }
+          const score = totalErrors > 0 ? Math.max(30, 70 - totalErrors * 10) : neverRun > 0 ? 75 : 85;
+          const status: 'healthy' | 'watch' | 'stuck' | 'failed' = totalErrors > 3 ? 'watch' : 'healthy';
+          const signals: string[] = [];
+          const recommendations: string[] = [];
+          if (totalErrors > 0) { signals.push(totalErrors + ' agents with errors'); recommendations.push('Review individual agent heartbeat logs'); }
+          if (neverRun > 0) signals.push(neverRun + ' agents never run');
+          return { status, score, signals, recommendations, totalCrews: crews.length, pausedCrews: crews.filter((c) => c.status === 'paused').length };
+        } catch { return { status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], totalCrews: 0, pausedCrews: 0 }; }
+      })(),
       soulRepo.list(userId, 1000, 0).catch(() => []),
       crewRepo.list(userId, 100, 0).catch(() => []),
       (async () => {
