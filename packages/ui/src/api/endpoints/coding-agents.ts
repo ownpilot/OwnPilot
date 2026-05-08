@@ -409,4 +409,25 @@ export const orchestrationApi = {
   /** Delete a run */
   delete: (id: string) =>
     apiClient.delete<{ deleted: boolean }>(`/coding-agents/orchestrate/${id}`),
+
+  stats: () =>
+    apiClient.get<{
+      total: number;
+      active: number;
+      successRate: number;
+      avgDuration: number;
+      totalCost: number;
+      errorRate: number;
+      byState: Record<string, number>;
+      tasksSucceeded: number;
+      tasksFailed: number;
+    }>('/orchestra/stats'),
+
+  health: () =>
+    apiClient.get<{
+      status: string;
+      score: number;
+      signals: string[];
+      recommendations: string[];
+    }>('/orchestra/health'),
 };

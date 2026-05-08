@@ -18,6 +18,10 @@ const log = getLog('ConfigValidation');
 
 const INSECURE_DEFAULTS = {
   MEMORY_SALT: 'change-this-in-production',
+  // Default Postgres password shipped in docker-compose.yml — warn in production
+  POSTGRES_PASSWORD: 'ownpilot_secret',
+  // Placeholder JWT secret shipped in packages/gateway/.env.example
+  JWT_SECRET: 'your-super-secret-jwt-key-change-in-production',
 } as const;
 
 // Minimum lengths for secrets
@@ -25,7 +29,7 @@ const MIN_SECRET_LENGTH = 32;
 
 // Sensitive env vars that must NOT be the insecure placeholder
 const REQUIRED_NON_DEFAULT: Array<{
-  key: string;
+  key: keyof typeof INSECURE_DEFAULTS;
   envKey: string;
   description: string;
 }> = [
@@ -33,6 +37,11 @@ const REQUIRED_NON_DEFAULT: Array<{
     key: 'MEMORY_SALT',
     envKey: 'MEMORY_SALT',
     description: 'Memory encryption salt — must be unique per deployment',
+  },
+  {
+    key: 'JWT_SECRET',
+    envKey: 'JWT_SECRET',
+    description: 'JWT signing secret — must not be a known placeholder',
   },
 ];
 

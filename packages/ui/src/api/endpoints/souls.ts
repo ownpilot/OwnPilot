@@ -394,6 +394,23 @@ export const soulsApi = {
         avgDurationMs: number;
       };
     }>(`/souls/${agentId}/logs?limit=${limit}&offset=${offset}`),
+  stats: () =>
+    apiClient.get<{
+      totalCycles: number;
+      totalCost: number;
+      avgDurationMs: number;
+      failureRate: number;
+    }>('/souls/stats'),
+  health: () =>
+    apiClient.get<{
+      status: string;
+      score: number;
+      signals: string[];
+      recommendations: string[];
+      totalCycles: number;
+      totalCost: number;
+      failureRate: number;
+    }>('/souls/health'),
 };
 
 // =============================================================================
@@ -496,6 +513,25 @@ export const crewsApi = {
 
   // Crew status with metrics
   getStatus: (id: string) => apiClient.get<CrewStatus>(`/crews/${id}/status`),
+
+  stats: () =>
+    apiClient.get<{
+      totalCrews: number;
+      totalCycles: number;
+      totalCost: number;
+      failureRate: number;
+      byStatus: Record<string, number>;
+    }>('/crews/stats'),
+
+  health: () =>
+    apiClient.get<{
+      status: string;
+      score: number;
+      signals: string[];
+      recommendations: string[];
+      totalCrews: number;
+      pausedCrews: number;
+    }>('/crews/health'),
 };
 
 // =============================================================================
