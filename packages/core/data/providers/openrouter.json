@@ -236,6 +236,22 @@
       "releaseDate": "2026-04-21"
     },
     {
+      "id": "tencent/hy3-preview",
+      "name": "Hy3 preview",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0.066,
+      "outputPrice": 0.26,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-20"
+    },
+    {
       "id": "moonshotai/kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,

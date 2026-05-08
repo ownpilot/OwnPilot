@@ -1556,7 +1556,7 @@ Without tracing, performance problems are black boxes. The question "customers c
 
 **Metrics — Prometheus Endpoint:**
 ```
-/metrics endpoint (Prometheus format):
+/api/v1/metrics endpoint (Prometheus format):
 ownpilot_chat_requests_total{provider, model, status}
 ownpilot_tool_execution_duration_seconds{tool, source}
 ownpilot_claw_sessions_active

@@ -12,6 +12,38 @@
   },
   "models": [
     {
+      "id": "empiriolabs/deepseek-v4-pro-el",
+      "name": "DeepSeek-V4-Pro-EL",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 1.67,
+      "outputPrice": 3.33,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "empiriolabs/deepseek-v4-flash-el",
+      "name": "DeepSeek-V4-Flash-EL",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
       "id": "openai/gpt-image-2",
       "name": "GPT-Image-2",
       "contextWindow": 0,
@@ -23,8 +55,25 @@
         "vision",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "novita/kimi-k2.6",
+      "name": "Kimi-K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.96,
+      "outputPrice": 4.04,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-20"
     },
     {
       "id": "anthropic/claude-opus-4.7",

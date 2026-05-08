@@ -80,7 +80,7 @@ const chatHandler = async (c: Context) => {
 
 `/webhooks/*` routes are NOT versioned — external callers use secret-path authentication and versioning would break external integrations.
 
-`/health` and `/metrics` are also unversioned (shared between v1 and v2).
+`/health` is also unversioned (shared between v1 and v2). `/api/v1/metrics` is auth-protected under the v1 chain.
 
 ## Future Deprecation of v1
 
