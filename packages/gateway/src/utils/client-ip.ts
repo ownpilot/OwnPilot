@@ -22,6 +22,9 @@
  *   - Otherwise fall back to a stable bucket key ('direct').
  */
 
+import { getLog } from '../services/log.js';
+const log = getLog('ClientIP');
+
 const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
 const RAW_TRUSTED_PROXY_IPS = process.env.TRUSTED_PROXY_IPS ?? '';
 const TRUSTED_PROXY_IPS = RAW_TRUSTED_PROXY_IPS
@@ -44,7 +47,7 @@ function warnIfMisconfigured(): void {
   if (TRUST_PROXY && TRUSTED_PROXY_IPS.length === 0 && !warnedMisconfig) {
     warnedMisconfig = true;
      
-    console.warn(
+    log.warn(
       '[client-ip] TRUSTED_PROXY=true but TRUSTED_PROXY_IPS is empty — ' +
         'X-Forwarded-For will be IGNORED (fail-safe). Set TRUSTED_PROXY_IPS to ' +
         'a comma-separated list of your reverse-proxy IPs to enable per-IP ' +

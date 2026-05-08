@@ -9,6 +9,9 @@ import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ApiResponse } from '../types/index.js';
 import { ERROR_CODES, type ErrorCode } from './error-codes.js';
+import { getLog } from '../services/log.js';
+
+const log = getLog('Helpers');
 
 // Re-export error codes for convenience
 export { ERROR_CODES, type ErrorCode };
@@ -182,9 +185,7 @@ export function apiError(
     const requestId = c.get('requestId') ?? 'unknown';
     // Surface the detail to operators but not the client.
      
-    console.warn(
-      `[apiError] redacted 5xx detail (requestId=${requestId}): ${errorObj.message}`
-    );
+    log.warn(`[apiError] redacted 5xx detail (requestId=${requestId}): ${errorObj.message}`);
     errorObj = {
       code: errorObj.code ?? ERROR_CODES.INTERNAL_ERROR,
       message: 'Internal server error',

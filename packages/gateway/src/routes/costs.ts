@@ -5,6 +5,7 @@
  */
 
 import { Hono } from 'hono';
+import { getLog } from '../services/log.js';
 import {
   UsageTracker,
   BudgetManager,
@@ -32,6 +33,7 @@ import {
 } from '../middleware/validation.js';
 
 export const costRoutes = new Hono();
+const log = getLog('Costs');
 
 // Initialize usage tracker
 const usageTracker = new UsageTracker();
@@ -48,7 +50,7 @@ getUsageRepository()
   })
   .catch((err: unknown) => {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn('[costs] UsageRepository unavailable, DB persistence disabled:', msg);
+    log.warn(`[costs] UsageRepository unavailable, DB persistence disabled: ${msg}`);
   });
 
 async function getUsageRepository(): Promise<import('../db/repositories/usage.js').UsageRepository> {
@@ -251,7 +253,7 @@ costRoutes.get('/breakdown', async (c) => {
     dbSummary = await dbRepo.getSummary(startDate, endDate, userId ?? undefined);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn('[costs] DB summary unavailable, using in-memory only:', msg);
+    log.warn(`[costs] DB summary unavailable, using in-memory only: ${msg}`);
   }
 
   // Merge: use in-memory summary totals, supplement with DB breakdown data
