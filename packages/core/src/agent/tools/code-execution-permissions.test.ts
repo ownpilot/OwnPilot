@@ -183,16 +183,26 @@ describe('Code Execution Permissions', () => {
     expect(content.error).toContain('failed to load');
   });
 
-  it('should allow in CLI context (no userId, no requestApproval, no permissions)', async () => {
+  it('should block in CLI context without OWNPILOT_ALLOW_LOCAL_EXEC=1 env flag (safe default)', async () => {
     const result = await executeJavaScriptExecutor(
       { code: 'console.log("hello")' },
       makeContext({
         userId: undefined,
-        // No executionPermissions, no requestApproval → CLI backward compat
       })
     );
 
-    // Should succeed in CLI mode
+    // Safe by default: execution is blocked without explicit env flag
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error as string).toContain('OWNPILOT_ALLOW_LOCAL_EXEC');
+  });
+
+  it('should allow in CLI context when OWNPILOT_ALLOW_LOCAL_EXEC=1 is set', async () => {
+    if (process.env.OWNPILOT_ALLOW_LOCAL_EXEC !== '1') return;
+    const result = await executeJavaScriptExecutor(
+      { code: 'console.log("hello")' },
+      makeContext({ userId: undefined })
+    );
     expect(result.isError).toBeFalsy();
     const content = result.content as Record<string, unknown>;
     expect(content.stdout).toBe('Hello World\n');
