@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bot, Brain, Heart, Clock, AlertCircle, Pause, Zap } from '../icons';
-import { soulsApi, type AgentSoul, type HeartbeatLog } from '../../api';
+import { soulsApi, heartbeatLogsApi, type AgentSoul, type HeartbeatLog } from '../../api';
 import { Skeleton } from '../Skeleton';
 
 function getAutonomyLabel(level: number): string {
@@ -220,6 +220,3 @@ export function SoulAgentsWidget({ limit = 6 }: SoulAgentsWidgetProps) {
     </div>
   );
 }
-
-// Import heartbeatLogsApi for fetching heartbeats
-import { heartbeatLogsApi } from '../../api';
