@@ -21,7 +21,7 @@
  */
 
 import type { ToolDefinition } from '@ownpilot/core';
-import { getErrorMessage, generateId, MAX_CLAW_DEPTH } from '@ownpilot/core';
+import { getErrorMessage, generateId, MAX_CLAW_DEPTH, validateToolCode } from '@ownpilot/core';
 import { getClawContext } from '../services/claw-context.js';
 
 // =============================================================================
@@ -604,6 +604,12 @@ async function executeRunScript(
     return { success: false, error: 'Script is empty or exceeds 100KB limit' };
   }
 
+  // RCE-004: scan script content for dangerous patterns before writing/executing
+  const scriptValidation = validateToolCode(script);
+  if (!scriptValidation.valid) {
+    return { success: false, error: `Script blocked: ${scriptValidation.errors.join('; ')}` };
+  }
+
   const { getSessionWorkspacePath, writeSessionWorkspaceFile } =
     await import('../workspace/file-workspace.js');
   const wsPath = getSessionWorkspacePath(ctx.workspaceId);
@@ -695,6 +701,12 @@ async function executeCreateTool(args: Record<string, unknown>): Promise<{
 
   if (!description?.trim()) {
     return { success: false, error: 'Tool description is required' };
+  }
+
+  // Security: validate code against dangerous pattern blocklist before sandbox execution
+  const validation = validateToolCode(code);
+  if (!validation.valid) {
+    return { success: false, error: `Code blocked: ${validation.errors.join('; ')}` };
   }
 
   // Execute the user code in a Node.js vm sandbox.

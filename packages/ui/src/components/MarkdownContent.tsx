@@ -25,7 +25,10 @@ function isSafeUrl(url: string): boolean {
 
 function resolveImageUrl(url: string, workspaceId?: string | null): string {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('data:')) return url;
+  // Block data: URIs for images — SVG data URIs can contain scripts that execute
+  // when loaded as img-src; browser SVG-in-img sandboxing reduces but doesn't
+  // eliminate the risk (e.g., embedded scripts in SVG accessed via canvas).
+  if (url.startsWith('data:')) return 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='; // 1x1 transparent placeholder
   if (workspaceId) {
     const cleanPath = url.replace(/^[/\\]+/, '');
     return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;

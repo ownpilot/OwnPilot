@@ -70,7 +70,7 @@ export function EmbedWidget({ data, title: titleProp }: Props) {
 }
 
 function EmbedItemRenderer({ item }: { item: EmbedItem }) {
-  const { src, title, width = '100%', height = 400, sandbox = true, allow } = item;
+  const { src, title, width = '100%', height = 400, sandbox = true } = item;
 
   // Basic URL validation - only allow safe protocols
   try {
@@ -90,6 +90,9 @@ function EmbedItemRenderer({ item }: { item: EmbedItem }) {
     );
   }
 
+  // Note: sandbox attribute intentionally does NOT include allow-same-origin.
+  // allow-same-origin + allow-scripts together effectively disable the sandbox,
+  // allowing the framed page full origin access. We allow only scripts and forms.
   return (
     <div className="rounded-md overflow-hidden border border-border dark:border-dark-border">
       {title && (
@@ -102,8 +105,7 @@ function EmbedItemRenderer({ item }: { item: EmbedItem }) {
         title={title || 'Embedded content'}
         width={width}
         height={height}
-        sandbox={sandbox ? 'allow-scripts allow-same-origin allow-forms' : undefined}
-        allow={allow}
+        sandbox={sandbox ? 'allow-scripts allow-forms' : undefined}
         className="border-0 w-full"
         loading="lazy"
       />

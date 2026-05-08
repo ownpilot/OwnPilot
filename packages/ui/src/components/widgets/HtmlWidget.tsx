@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
+import DOMPurify__default from 'dompurify';
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
+
+// Handle both CJS (node test env) and ESM imports
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const DOMPurify = (DOMPurify__default as any).default ?? DOMPurify__default;
 
 interface Props {
   data: unknown;
@@ -19,16 +24,19 @@ function isHtmlData(item: unknown): item is HtmlData {
 }
 
 function sanitizeHtml(html: string): string {
-  // Basic sanitization - remove dangerous tags and attributes
-  // In production, use DOMPurify. For now, do basic cleaning.
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son\w+\s*=/gi, '')
-    .replace(/javascript:/gi, '')
-    .replace(/<iframe/gi, '&lt;iframe')
-    .replace(/<object/gi, '&lt;object')
-    .replace(/<embed/gi, '&lt;embed')
-    .replace(/<form/gi, '&lt;form');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dp = DOMPurify as any;
+  if (!dp || typeof dp.sanitize !== 'function') {
+    // Fallback: strip all tags in non-DOMPurify environments (e.g., test SSR)
+    return html.replace(/<[^>]*>/g, '').slice(0, 10000);
+  }
+  // Use DOMPurify for production-grade XSS sanitization
+  return dp.sanitize(html, {
+    USE_PROFILES: { html: true },
+    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'],
+    ALLOW_DATA_ATTR: false,
+  });
 }
 
 function HtmlIcon({ className = 'h-4 w-4' }: { className?: string }) {

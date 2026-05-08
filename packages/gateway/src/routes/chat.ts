@@ -49,6 +49,7 @@ import {
   normalizeChatWidgets,
 } from '../utils/index.js';
 import { getLog } from '../services/log.js';
+import { PUBLIC_BASE_URL } from '../config/defaults.js';
 
 // Import from split modules
 import {
@@ -279,10 +280,9 @@ chatRoutes.post('/', async (c) => {
 
   // Get agent based on agentId or provider/model from request
   let agent: Awaited<ReturnType<typeof getAgent>>;
-  const requestUrl = new URL(c.req.url);
-  const gatewayProtocol = c.req.header('x-forwarded-proto') ?? requestUrl.protocol.replace(':', '');
-  const gatewayHost = c.req.header('x-forwarded-host') ?? c.req.header('host') ?? requestUrl.host;
-  const gatewayUrl = `${gatewayProtocol}://${gatewayHost}`;
+  // HDR-001: prefer configured PUBLIC_BASE_URL over request headers
+  const gatewayUrl = PUBLIC_BASE_URL
+    || `${c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '')}://${c.req.header('x-forwarded-host') ?? c.req.header('host') ?? new URL(c.req.url).host}`;
 
   if (body.agentId) {
     agent = await getAgent(body.agentId);
