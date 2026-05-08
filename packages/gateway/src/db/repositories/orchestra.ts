@@ -119,6 +119,73 @@ export class OrchestraRepository extends BaseRepository {
     );
     return rows.length;
   }
+
+  /**
+   * Get aggregate statistics across all orchestra executions.
+   */
+  async getStats(userId?: string): Promise<{
+    total: number;
+    active: number;
+    successCount: number;
+    successRate: number;
+    avgCost: number;
+    avgDuration: number;
+    totalCost: number;
+    errorRate: number;
+    byState: Record<string, number>;
+    tasksSucceeded: number;
+    tasksFailed: number;
+  }> {
+    const where = userId ? 'WHERE user_id = $1' : '';
+    const params = userId ? [userId] : [];
+
+    const row = await this.queryOne<{
+      total: string;
+      active: string;
+      success_count: string;
+      avg_duration: string;
+      error_count: string;
+      tasks_succeeded: string;
+      tasks_failed: string;
+    }>(
+      `SELECT
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE state IN ('planning', 'running', 'waiting_user', 'paused')) AS active,
+         COUNT(*) FILTER (WHERE state = 'completed') AS success_count,
+         COALESCE(AVG(total_duration_ms), 0) AS avg_duration,
+         COUNT(*) FILTER (WHERE state = 'failed') AS error_count,
+         0 AS tasks_succeeded,
+         0 AS tasks_failed
+       FROM orchestra_executions ${where}`,
+      params
+    );
+
+    const total = parseInt(row?.total ?? '0', 10);
+    const active = parseInt(row?.active ?? '0', 10);
+    const successCount = parseInt(row?.success_count ?? '0', 10);
+    const errorCount = parseInt(row?.error_count ?? '0', 10);
+
+    const stateRows = await this.query<{ state: string; count: string }>(
+      `SELECT state, COUNT(*)::text AS count FROM orchestra_executions ${where} GROUP BY state`,
+      params
+    );
+    const byState: Record<string, number> = {};
+    for (const r of stateRows) byState[r.state] = parseInt(r.count, 10);
+
+    return {
+      total,
+      active,
+      successCount,
+      successRate: total > 0 ? successCount / total : 0,
+      avgCost: 0,
+      avgDuration: parseFloat(row?.avg_duration ?? '0'),
+      totalCost: 0,
+      errorRate: total > 0 ? errorCount / total : 0,
+      byState,
+      tasksSucceeded: parseInt(row?.tasks_succeeded ?? '0', 10),
+      tasksFailed: parseInt(row?.tasks_failed ?? '0', 10),
+    };
+  }
 }
 
 // Factory function

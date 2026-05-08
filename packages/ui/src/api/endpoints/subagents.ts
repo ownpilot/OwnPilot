@@ -102,4 +102,25 @@ export const subagentsApi = {
     apiClient.get<{ entries: SubagentHistoryEntry[]; total: number }>(
       `/subagents/history?${parentId ? `parentId=${parentId}&` : ''}limit=${limit}&offset=${offset}`
     ),
+
+  stats: () =>
+    apiClient.get<{
+      active: number;
+      total: number;
+      successRate: number;
+      avgCost: number;
+      avgDuration: number;
+      totalCost: number;
+      errorRate: number;
+      byState: Record<string, number>;
+      totalTokens: { input: number; output: number };
+    }>('/subagents/stats'),
+
+  health: () =>
+    apiClient.get<{
+      status: string;
+      score: number;
+      signals: string[];
+      recommendations: string[];
+    }>('/subagents/health'),
 };

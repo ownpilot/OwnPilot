@@ -164,11 +164,11 @@ describe('POST /ext/upload — extension validation', () => {
   });
 
   it('allows .skill extension', async () => {
-    // .skill is treated as ZIP — adm-zip mock returns empty entries (no manifest found)
-    // We expect the route to proceed past validation and fail at "manifest not found" (500),
-    // NOT at extension validation (400).
-    const res = await app.request(makeUploadRequest('my-skill.skill', 'PK...fake-zip'));
-    expect(res.status).not.toBe(400);
+    // .skill is treated as ZIP — use real ZIP magic bytes (PK\x04\x08) so validation passes
+    // adm-zip mock returns empty entries (no manifest found), so expect 500 "no manifest found"
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('my-skill.skill', zipMagic));
+    expect(res.status).not.toBe(400); // ZIP validation passes; fails at manifest lookup (500)
   });
 
   // =========================================================================
@@ -191,13 +191,15 @@ describe('POST /ext/upload — extension validation', () => {
 
   it('does NOT reject .skill file at 2 MB (uses ZIP limit of 5 MB)', async () => {
     // 2 MB is above the 1 MB single-file limit but below the 5 MB ZIP limit
-    const res = await app.request(makeUploadRequest('medium.skill', '', 2 * MB));
-    // Should fail due to ZIP logic, not size validation
-    expect(res.status).not.toBe(400); // size validation passes
+    // Use real ZIP magic bytes so validation passes
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('medium.skill', zipMagic, 2 * MB - zipMagic.length));
+    expect(res.status).not.toBe(400); // size validation passes, ZIP validation passes
   });
 
   it('does NOT reject .zip file at 2 MB (uses ZIP limit)', async () => {
-    const res = await app.request(makeUploadRequest('ext.zip', '', 2 * MB));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('ext.zip', zipMagic, 2 * MB - zipMagic.length));
     expect(res.status).not.toBe(400);
   });
 
@@ -220,7 +222,8 @@ describe('POST /ext/upload — extension validation', () => {
       manifest: {},
     });
 
-    const res = await app.request(makeUploadRequest('my-ext.zip', 'PK...fake'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('my-ext.zip', zipMagic));
     const json = await res.json();
     expect(res.status).toBe(201);
     expect(json.data.package.id).toBe('ext-zip-1');
@@ -233,7 +236,8 @@ describe('POST /ext/upload — extension validation', () => {
       .mockReturnValue(true); // all manifest candidates exist
     mockExtService.install.mockResolvedValue({ id: 'ext-1', manifest: {} });
 
-    const res = await app.request(makeUploadRequest('ext.zip', 'PK'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('ext.zip', zipMagic));
     expect(res.status).toBe(201);
     expect(mockMkdirSync).toHaveBeenCalled();
   });
@@ -257,7 +261,8 @@ describe('POST /ext/upload — extension validation', () => {
 
     mockExtService.install.mockResolvedValue({ id: 'ext-subdir', manifest: {} });
 
-    const res = await app.request(makeUploadRequest('nested.zip', 'PK'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('nested.zip', zipMagic));
     expect(res.status).toBe(201);
     expect(mockReaddirSync).toHaveBeenCalled();
   });
@@ -271,7 +276,8 @@ describe('POST /ext/upload — extension validation', () => {
     });
     mockReaddirSync.mockReturnValue([]);
 
-    const res = await app.request(makeUploadRequest('empty.zip', 'PK'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('empty.zip', zipMagic));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.message).toContain('No extension manifest found');
@@ -286,7 +292,8 @@ describe('POST /ext/upload — extension validation', () => {
       },
     ]);
 
-    const res = await app.request(makeUploadRequest('escape.zip', 'PK'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('escape.zip', zipMagic));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.message).toContain('unsafe entry path');
@@ -300,7 +307,8 @@ describe('POST /ext/upload — extension validation', () => {
       new ExtensionError('Skill already installed', 'ALREADY_EXISTS')
     );
 
-    const res = await app.request(makeUploadRequest('dup.zip', 'PK'));
+    const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
+    const res = await app.request(makeUploadRequest('dup.zip', zipMagic));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.message).toContain('Skill already installed');

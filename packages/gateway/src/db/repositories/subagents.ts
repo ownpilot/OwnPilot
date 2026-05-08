@@ -183,6 +183,73 @@ export class SubagentsRepository extends BaseRepository {
     );
     return rows.length;
   }
+
+  /**
+   * Get aggregate statistics for all subagent executions.
+   */
+  async getStats(userId?: string): Promise<{
+    total: number;
+    successCount: number;
+    successRate: number;
+    avgCost: number;
+    avgDuration: number;
+    totalCost: number;
+    errorRate: number;
+    byState: Record<string, number>;
+    totalTokens: { input: number; output: number };
+  }> {
+    const where = userId ? 'WHERE user_id = $1' : '';
+    const params = userId ? [userId] : [];
+
+    const row = await this.queryOne<{
+      total: string;
+      success_count: string;
+      avg_cost: string;
+      avg_duration: string;
+      total_cost: string;
+      error_count: string;
+      total_input_tokens: string;
+      total_output_tokens: string;
+    }>(
+      `SELECT
+         COUNT(*) AS total,
+         COUNT(*) FILTER (WHERE state = 'completed') AS success_count,
+         COALESCE(AVG(cost), 0) AS avg_cost,
+         COALESCE(AVG(duration_ms), 0) AS avg_duration,
+         COALESCE(SUM(cost), 0) AS total_cost,
+         COUNT(*) FILTER (WHERE state = 'failed') AS error_count,
+         COALESCE(SUM((tokens_used->>'prompt')::int), 0) AS total_input_tokens,
+         COALESCE(SUM((tokens_used->>'completion')::int), 0) AS total_output_tokens
+       FROM subagent_history ${where}`,
+      params
+    );
+
+    const total = parseInt(row?.total ?? '0', 10);
+    const successCount = parseInt(row?.success_count ?? '0', 10);
+    const errorCount = parseInt(row?.error_count ?? '0', 10);
+
+    const byStateRows = await this.query<{ state: string; count: string }>(
+      `SELECT state, COUNT(*)::text AS count FROM subagent_history ${where} GROUP BY state`,
+      params
+    );
+    const byState: Record<string, number> = {};
+    for (const r of byStateRows) byState[r.state] = parseInt(r.count, 10);
+
+    return {
+      total,
+      successCount,
+      successRate: total > 0 ? successCount / total : 0,
+      avgCost: parseFloat(row?.avg_cost ?? '0'),
+      avgDuration: parseFloat(row?.avg_duration ?? '0'),
+      totalCost: parseFloat(row?.total_cost ?? '0'),
+      errorRate: total > 0 ? errorCount / total : 0,
+      byState,
+      totalTokens: {
+        input: parseInt(row?.total_input_tokens ?? '0', 10),
+        output: parseInt(row?.total_output_tokens ?? '0', 10),
+      },
+    };
+  }
 }
 
 // Factory function

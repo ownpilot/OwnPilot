@@ -188,4 +188,31 @@ export const fleetApi = {
     apiClient.get<{ entries: FleetWorkerResult[]; total: number }>(
       `/fleet/${id}/history?limit=${limit}&offset=${offset}`
     ),
+
+  stats: () =>
+    apiClient.get<{
+      totalFleets: number;
+      running: number;
+      totalWorkers: number;
+      successRate: number;
+      avgCost: number;
+      avgDuration: number;
+      totalCost: number;
+      errorRate: number;
+      byState: Record<string, number>;
+      totalTokens: { input: number; output: number };
+      tasksCompleted: number;
+      tasksFailed: number;
+      activeWorkers: number;
+    }>('/fleet/stats'),
+
+  health: () =>
+    apiClient.get<{
+      status: string;
+      score: number;
+      signals: string[];
+      recommendations: string[];
+      activeFleets: number;
+      totalFleets: number;
+    }>('/fleet/health'),
 };

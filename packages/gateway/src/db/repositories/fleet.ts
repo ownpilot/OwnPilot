@@ -671,6 +671,103 @@ export class FleetRepository extends BaseRepository {
 
     return { entries: rows.map(rowToWorkerResult), total };
   }
+
+  /**
+   * Get aggregate statistics across all fleet worker executions.
+   */
+  async getStats(userId?: string): Promise<{
+    totalFleets: number;
+    totalSessions: number;
+    totalWorkers: number;
+    successCount: number;
+    successRate: number;
+    avgCost: number;
+    avgDuration: number;
+    totalCost: number;
+    errorRate: number;
+    byState: Record<string, number>;
+    totalTokens: { input: number; output: number };
+    tasksCompleted: number;
+    tasksFailed: number;
+  }> {
+    let joinClause = '';
+    let whereClause = '';
+    const params: unknown[] = [];
+
+    if (userId) {
+      joinClause = 'JOIN fleets f ON f.id = fs.fleet_id';
+      whereClause = 'WHERE f.user_id = $1';
+      params.push(userId);
+    }
+
+    const row = await this.queryOne<{
+      total_fleets: string;
+      total_sessions: string;
+      total_workers: string;
+      success_count: string;
+      avg_cost: string;
+      avg_duration: string;
+      total_cost: string;
+      error_count: string;
+      total_input_tokens: string;
+      total_output_tokens: string;
+      tasks_completed: string;
+      tasks_failed: string;
+    }>(
+      `SELECT
+         COUNT(DISTINCT fs.fleet_id) AS total_fleets,
+         COUNT(DISTINCT fs.id) AS total_sessions,
+         COUNT(*) AS total_workers,
+         COUNT(*) FILTER (WHERE wh.success = true) AS success_count,
+         COALESCE(AVG(wh.cost_usd), 0) AS avg_cost,
+         COALESCE(AVG(wh.duration_ms), 0) AS avg_duration,
+         COALESCE(SUM(wh.cost_usd), 0) AS total_cost,
+         COUNT(*) FILTER (WHERE wh.success = false) AS error_count,
+         COALESCE(SUM((wh.tokens_used->>'prompt')::int), 0) AS total_input_tokens,
+         COALESCE(SUM((wh.tokens_used->>'completion')::int), 0) AS total_output_tokens,
+         COALESCE(SUM(fs.tasks_completed), 0) AS tasks_completed,
+         COALESCE(SUM(fs.tasks_failed), 0) AS tasks_failed
+       FROM fleet_worker_history wh
+       JOIN fleet_sessions fs ON fs.id = wh.session_id
+       ${joinClause}
+       ${whereClause}`,
+      params
+    );
+
+    const totalWorkers = parseInt(row?.total_workers ?? '0', 10);
+    const successCount = parseInt(row?.success_count ?? '0', 10);
+    const errorCount = parseInt(row?.error_count ?? '0', 10);
+
+    const stateRows = await this.query<{ state: string; count: string }>(
+      `SELECT fs.state, COUNT(*)::text AS count
+       FROM fleet_sessions fs
+       ${joinClause}
+       ${whereClause}
+       GROUP BY fs.state`,
+      params
+    );
+    const byState: Record<string, number> = {};
+    for (const r of stateRows) byState[r.state] = parseInt(r.count, 10);
+
+    return {
+      totalFleets: parseInt(row?.total_fleets ?? '0', 10),
+      totalSessions: parseInt(row?.total_sessions ?? '0', 10),
+      totalWorkers,
+      successCount,
+      successRate: totalWorkers > 0 ? successCount / totalWorkers : 0,
+      avgCost: parseFloat(row?.avg_cost ?? '0'),
+      avgDuration: parseFloat(row?.avg_duration ?? '0'),
+      totalCost: parseFloat(row?.total_cost ?? '0'),
+      errorRate: totalWorkers > 0 ? errorCount / totalWorkers : 0,
+      byState,
+      totalTokens: {
+        input: parseInt(row?.total_input_tokens ?? '0', 10),
+        output: parseInt(row?.total_output_tokens ?? '0', 10),
+      },
+      tasksCompleted: parseInt(row?.tasks_completed ?? '0', 10),
+      tasksFailed: parseInt(row?.tasks_failed ?? '0', 10),
+    };
+  }
 }
 
 // ============================================================================
