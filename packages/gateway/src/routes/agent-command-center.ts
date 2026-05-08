@@ -25,6 +25,7 @@ import { SubagentsRepository } from '../db/repositories/subagents.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { OrchestraRepository } from '../db/repositories/orchestra.js';
 import { agentsRepo } from '../db/repositories/agents.js';
+import { getClawService } from '../services/claw-service.js';
 import {
   validateBody,
   agentCommandSchema,
@@ -310,6 +311,7 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     const fleetRepo = getFleetRepository();
     const orchestraRepo = new OrchestraRepository();
     const soulRepo = getSoulsRepository();
+    const clawService = getClawService();
 
     const [
       subagentStats,
@@ -324,26 +326,84 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       crewHealth,
       souls,
       crews,
+      clawStats,
+      clawHealth,
     ] = await Promise.all([
       subagentRepo.getStats(userId).catch(() => ({ total: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, active: 0 })),
-      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [] }),
+      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[] }),
       fleetRepo.getStats(userId).catch(() => ({ totalFleets: 0, totalSessions: 0, totalWorkers: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, totalTokens: { input: 0, output: 0 }, tasksCompleted: 0, tasksFailed: 0 })),
-      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [], activeFleets: 0 }),
+      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], activeFleets: 0 }),
       orchestraRepo.getStats(userId).catch(() => ({ total: 0, active: 0, successRate: 0, avgCost: 0, avgDuration: 0, totalCost: 0, errorRate: 0, byState: {}, tasksSucceeded: 0, tasksFailed: 0 })),
-      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [] }),
+      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[] }),
       hbRepo.getStatsByUser(userId).catch(() => ({ totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 })),
-      Promise.resolve({ status: 'healthy', score: 90, signals: [], recommendations: [], totalCycles: 0, totalCost: 0, failureRate: 0 }),
+      Promise.resolve({ status: 'healthy' as const, score: 90, signals: [] as string[], recommendations: [] as string[], totalCycles: 0, totalCost: 0, failureRate: 0 }),
       crewRepo.list(userId, 1000, 0).then((crews) => ({ totalCrews: crews.length, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: crews.reduce((acc, cr) => { acc[cr.status] = (acc[cr.status] ?? 0) + 1; return acc; }, {} as Record<string, number>) })).catch(() => ({ totalCrews: 0, totalCycles: 0, totalCost: 0, failureRate: 0, byStatus: {} as Record<string, number> })),
-      Promise.resolve({ status: 'healthy', score: 80, signals: [], recommendations: [], totalCrews: 0, pausedCrews: 0 }),
+      Promise.resolve({ status: 'healthy' as const, score: 80, signals: [] as string[], recommendations: [] as string[], totalCrews: 0, pausedCrews: 0 }),
       soulRepo.list(userId, 1000, 0).catch(() => []),
       crewRepo.list(userId, 100, 0).catch(() => []),
+      (async () => {
+        try {
+          const configs = await clawService.listClaws(userId);
+          const sessions = clawService.listSessions(userId);
+          const totalCost = sessions.reduce((s, ses) => s + ses.totalCostUsd, 0);
+          const totalCycles = sessions.reduce((s, ses) => s + ses.cyclesCompleted, 0);
+          const byMode: Record<string, number> = {};
+          const byState: Record<string, number> = {};
+          for (const cfg of configs) {
+            byMode[cfg.mode] = (byMode[cfg.mode] ?? 0) + 1;
+            const state = sessions.find((s) => s.config.id === cfg.id)?.state ?? 'stopped';
+            byState[state] = (byState[state] ?? 0) + 1;
+          }
+          return {
+            total: configs.length,
+            running: sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state)).length,
+            totalCost: Math.round(totalCost * 10000) / 10000,
+            totalCycles,
+            byMode,
+            byState,
+          };
+        } catch {
+          return { total: 0, running: 0, totalCost: 0, totalCycles: 0, byMode: {}, byState: {} };
+        }
+      })(),
+      (async () => {
+        try {
+          const configs = await clawService.listClaws(userId);
+          const sessions = clawService.listSessions(userId);
+          const signals: string[] = [];
+          const recommendations: string[] = [];
+          const failedConfigs = configs.filter((cfg) => {
+            const session = sessions.find((s) => s.config.id === cfg.id);
+            if (!session) return false;
+            if (session.state === 'failed') return true;
+            if (session.lastCycleError) return true;
+            return false;
+          });
+          const runningCount = sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state)).length;
+          if (failedConfigs.length > 0) {
+            signals.push(`${failedConfigs.length} claw(s) need attention`);
+            recommendations.push('Review claws with failed/stuck status');
+          }
+          if (runningCount === 0 && configs.length > 0) {
+            signals.push('No claws currently running');
+            recommendations.push('Start a claw or set one to auto-start');
+          }
+          const score = failedConfigs.length === 0 ? (runningCount > 0 ? 90 : 75) : Math.max(30, 70 - failedConfigs.length * 15);
+          const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
+            failedConfigs.length > 2 ? 'stuck' : failedConfigs.length > 0 ? 'watch' : 'healthy';
+          return { status, score, signals, recommendations, needsAttention: failedConfigs.length };
+        } catch {
+          return { status: 'healthy' as const, score: 75, signals: [] as string[], recommendations: [] as string[], needsAttention: 0 };
+        }
+      })(),
     ]);
 
     const totalCost =
       (subagentStats.totalCost ?? 0) +
       (fleetStats.totalCost ?? 0) +
       (orchestraStats.totalCost ?? 0) +
-      (soulStats.totalCost ?? 0);
+      (soulStats.totalCost ?? 0) +
+      (clawStats.totalCost ?? 0);
 
     return apiResponse(c, {
       subagent: {
@@ -375,6 +435,17 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       crew: {
         stats: crewStats,
         health: crewHealth,
+      },
+      claw: {
+        stats: {
+          total: clawStats.total,
+          running: clawStats.running,
+          totalCost: clawStats.totalCost,
+          totalCycles: clawStats.totalCycles,
+          byMode: clawStats.byMode,
+          byState: clawStats.byState,
+        },
+        health: clawHealth,
       },
       totalCost,
       summary: {
