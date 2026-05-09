@@ -147,14 +147,13 @@ export function TriggersPage() {
     }
   }, []);
 
+  const didSkipHomeRef = { current: false };
   // New state for enhanced features
   const [activeTab, setActiveTab] = useState<TabId>(() => {
-    // Skip home if preference is set
-    try {
-      if (localStorage.getItem(SKIP_HOME_KEY) === 'true') {
-        return 'triggers';
-      }
-    } catch {}
+    if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
+      didSkipHomeRef.current = true;
+      return 'triggers';
+    }
     return 'home';
   });
   const [stats, setStats] = useState<TriggerStats | null>(null);
