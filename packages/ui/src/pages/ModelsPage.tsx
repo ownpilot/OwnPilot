@@ -4,7 +4,7 @@
  * Display available AI models from configured providers
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
 import {
@@ -87,7 +87,7 @@ export function ModelsPage() {
   };
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__models';
+  const SKIP_HOME_KEY = 'ownpilot:models:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -98,13 +98,15 @@ export function ModelsPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setTab('models');
     }
   }, [skipHome, tabParam]);
