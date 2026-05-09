@@ -99,7 +99,7 @@ export function SystemPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

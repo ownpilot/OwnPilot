@@ -102,7 +102,7 @@ export function EventMonitorPage() {
       // Ignore storage errors
     }
   }, []);
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

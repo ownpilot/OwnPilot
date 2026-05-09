@@ -4,7 +4,7 @@
  * Follows the app's page convention: header → tab bar → PageHomeTab / content.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
@@ -129,7 +129,7 @@ export function FleetPage() {
     tabParam && (['home', 'fleets'] as string[]).includes(tabParam) ? tabParam : 'home';
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

@@ -5,7 +5,7 @@
  * per-section breakdowns, top risks, and recommendations.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -306,7 +306,7 @@ export function SecurityDashboardPage() {
     }
   }, []);
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

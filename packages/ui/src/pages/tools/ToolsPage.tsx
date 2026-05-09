@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wrench, Code, Puzzle, Layers, Home } from '../../components/icons';
 import { toolsApi } from '../../api';
@@ -42,7 +42,7 @@ export function ToolsPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

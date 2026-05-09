@@ -5,7 +5,7 @@
  * HeartbeatLogPage into a single unified hub.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -121,7 +121,7 @@ export function AutonomousHubPage() {
       // Ignore storage errors
     }
   }, []);
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

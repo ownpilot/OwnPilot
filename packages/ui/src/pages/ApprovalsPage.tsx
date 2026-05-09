@@ -3,7 +3,7 @@
  * Allows users to approve or reject pending approvals.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { workflowsApi } from '../api/endpoints/workflows';
@@ -82,7 +82,7 @@ export function ApprovalsPage() {
   const setActiveTab = (t: TabId) => setSearchParams(t === 'home' ? {} : { tab: t });
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !searchParams.get('tab') && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

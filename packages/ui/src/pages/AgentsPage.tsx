@@ -4,7 +4,7 @@
  * Create and manage AI agents with provider/model selection
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -64,7 +64,7 @@ export function AgentsPage() {
     tabParam && (['home', 'agents'] as string[]).includes(tabParam) ? tabParam : 'home';
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

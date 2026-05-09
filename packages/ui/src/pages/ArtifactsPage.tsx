@@ -5,7 +5,7 @@
  * grid layout, and WS-driven refresh.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArtifactCard } from '../components/ArtifactCard';
 import { ArtifactDetailModal } from '../components/ArtifactDetailModal';
@@ -92,7 +92,7 @@ export function ArtifactsPage() {
       : 'home';
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !pageTabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

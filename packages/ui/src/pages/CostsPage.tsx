@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { costsApi } from '../api';
 import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
@@ -60,7 +60,7 @@ export function CostsPage() {
   const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'breakdown' | 'budget'>('home');
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

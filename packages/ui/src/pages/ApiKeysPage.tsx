@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Settings,
@@ -59,7 +59,7 @@ export function ApiKeysPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

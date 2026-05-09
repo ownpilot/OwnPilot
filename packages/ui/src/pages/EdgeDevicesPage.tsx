@@ -5,7 +5,7 @@
  * MQTT status, grid layout, and WS-driven refresh.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { DeviceCard } from '../components/DeviceCard';
 import { RegisterDeviceModal } from '../components/RegisterDeviceModal';
 import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer';
@@ -84,7 +84,7 @@ export function EdgeDevicesPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

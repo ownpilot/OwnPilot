@@ -5,7 +5,7 @@
  * Processes: chat, channels, channel media, pulse, and subagents.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   AlertCircle,
   Check,
@@ -121,7 +121,7 @@ export function ModelRoutingPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

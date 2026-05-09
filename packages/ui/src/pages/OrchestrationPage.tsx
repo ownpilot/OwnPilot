@@ -5,7 +5,7 @@
  * and let OwnPilot chain sessions together — analyzing output and deciding next steps.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -453,7 +453,7 @@ export function OrchestrationPage() {
       // Ignore storage errors
     }
   }, []);
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

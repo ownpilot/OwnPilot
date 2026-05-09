@@ -6,7 +6,7 @@
  * Accessible at /settings/coding-agents.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import {
@@ -59,7 +59,7 @@ export function CodingAgentSettingsPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

@@ -4,7 +4,7 @@
  * Set, change, or remove UI password protection.
  */
 
-import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, Shield, Lock, Key, Users, FileText, Home } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -48,7 +48,7 @@ export function SecurityPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && !tabParam && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;

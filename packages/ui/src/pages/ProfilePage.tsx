@@ -9,7 +9,7 @@
  * - Visual Progress Tracking
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   UserCircle,
   Brain,
@@ -360,13 +360,13 @@ export function ProfilePage() {
       // Ignore storage errors
     }
   }, []);
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
-    if (skipHome && !didSkipHomeRef.current) {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;
       setActiveTab('overview');
     }
-  }, [skipHome]);
+  }, [skipHome, activeTab]);
 
   // Save handlers
   const saveQuickSetup = async () => {

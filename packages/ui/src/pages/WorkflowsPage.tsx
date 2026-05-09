@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { workflowsApi } from '../api';
@@ -85,7 +85,7 @@ export function WorkflowsPage() {
   const [recentLogs, setRecentLogs] = useState<WorkflowLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
       didSkipHomeRef.current = true;

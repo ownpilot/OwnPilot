@@ -147,8 +147,7 @@ export function TriggersPage() {
     }
   }, []);
 
-  const didSkipHomeRef = { current: false };
-  // New state for enhanced features
+  const didSkipHomeRef = useRef(false);
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
       didSkipHomeRef.current = true;

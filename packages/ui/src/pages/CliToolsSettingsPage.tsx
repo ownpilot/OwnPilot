@@ -5,7 +5,7 @@
  * Accessible at /settings/cli-tools.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
@@ -131,7 +131,7 @@ export function CliToolsSettingsPage() {
   }, []);
 
   // Only redirect on first mount — user can still click Home tab manually
-  const didSkipHomeRef = { current: false };
+  const didSkipHomeRef = useRef(false);
   useEffect(() => {
     if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
       didSkipHomeRef.current = true;
