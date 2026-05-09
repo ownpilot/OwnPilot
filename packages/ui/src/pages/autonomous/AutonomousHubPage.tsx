@@ -5,7 +5,7 @@
  * HeartbeatLogPage into a single unified hub.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,

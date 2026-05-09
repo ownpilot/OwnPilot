@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wrench, Code, Puzzle, Layers, Home } from '../../components/icons';
 import { toolsApi } from '../../api';
@@ -41,9 +41,11 @@ export function ToolsPage() {
     }
   }, []);
 
-  // Auto-redirect to tools if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'tools');
       navigate({ search: params.toString() }, { replace: true });

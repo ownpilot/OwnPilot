@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Settings,
@@ -58,9 +58,11 @@ export function ApiKeysPage() {
     }
   }, []);
 
-  // Auto-redirect to keys if skipHome is enabled and on home tab
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && activeTab === 'home') {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('keys');
     }
   }, [skipHome, activeTab]);

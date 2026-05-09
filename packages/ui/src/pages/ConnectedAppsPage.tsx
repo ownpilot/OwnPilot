@@ -355,9 +355,11 @@ export function ConnectedAppsPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-  // Auto-redirect to apps if skipHome is enabled and on home tab
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && activeTab === 'home') {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setTab('apps');
     }
   }, [skipHome, activeTab]);

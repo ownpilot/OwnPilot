@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Puzzle,
   Power,
@@ -127,9 +127,11 @@ export function PluginsPage() {
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  // Auto-redirect to installed if skipHome is enabled
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && activeTab === 'home') {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('installed');
     }
   }, [skipHome, activeTab]);

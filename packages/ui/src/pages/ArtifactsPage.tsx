@@ -91,9 +91,11 @@ export function ArtifactsPage() {
       ? pageTabParam
       : 'home';
 
-  // Auto-redirect to artifacts if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !pageTabParam) {
+    if (skipHome && !pageTabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'artifacts');
       navigate({ search: params.toString() }, { replace: true });

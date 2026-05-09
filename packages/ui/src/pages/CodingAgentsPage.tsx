@@ -7,7 +7,7 @@
  * right panel for live xterm.js terminal.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import { PageHomeTab } from '../components/PageHomeTab';
@@ -142,9 +142,11 @@ export function CodingAgentsPage() {
     }
   }, []);
 
-  // Auto-redirect to agents if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setTab('agents');
     }
   }, [skipHome, tabParam]);

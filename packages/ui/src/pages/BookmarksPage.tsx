@@ -76,9 +76,11 @@ export function BookmarksPage() {
     navigate({ search: params.toString() }, { replace: true });
   };
 
-  // Auto-redirect to bookmarks if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'bookmarks');
       navigate({ search: params.toString() }, { replace: true });

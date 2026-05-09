@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -39,9 +39,11 @@ export function LogsPage() {
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
 
-  // Auto-redirect to requests if skipHome is enabled
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && activeTab === 'home') {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('requests');
     }
   }, [skipHome, activeTab]);

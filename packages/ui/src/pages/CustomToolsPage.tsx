@@ -77,9 +77,11 @@ export function CustomToolsPage() {
     }
   }, []);
 
-  // Auto-redirect to tools if skipHome is enabled
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome) {
+    if (skipHome && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setPageTab('tools');
     }
   }, [skipHome]);

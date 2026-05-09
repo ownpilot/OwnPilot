@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { memoriesApi } from '../api';
@@ -64,9 +64,11 @@ export function MemoriesPage() {
     }
   }, []);
 
-  // Auto-redirect to memories if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !searchParams.get('tab')) {
+    if (skipHome && !searchParams.get('tab') && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setSearchParams({ tab: 'memories' });
     }
   }, [skipHome, searchParams, setSearchParams]);

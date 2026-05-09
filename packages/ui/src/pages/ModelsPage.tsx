@@ -4,7 +4,7 @@
  * Display available AI models from configured providers
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { formatNumber as formatNumberBase } from '../utils/formatters';
 import {

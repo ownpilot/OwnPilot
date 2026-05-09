@@ -2,7 +2,7 @@
  * Subagents Page — Ephemeral single-task agent executions
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
@@ -56,8 +56,11 @@ export function SubagentsPage() {
   const activeTab: TabId =
     tabParam && (['home', 'subagents'] as string[]).includes(tabParam) ? tabParam : 'home';
 
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'subagents');
       navigate({ search: params.toString() }, { replace: true });

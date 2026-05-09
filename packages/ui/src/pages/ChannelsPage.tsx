@@ -5,7 +5,7 @@
  * message stats, users, and provides connect/disconnect/reconnect actions.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { channelsApi } from '../api/endpoints/misc';
 import { useGateway } from '../hooks/useWebSocket';
@@ -66,9 +66,11 @@ export function ChannelsPage() {
   const tabParam = searchParams.get('tab') as TabId;
   const activeTab: TabId = tabParam || 'home';
 
-  // Auto-redirect to channels if skipHome is enabled and no explicit tab param
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'channels');
       navigate({ search: params.toString() }, { replace: true });

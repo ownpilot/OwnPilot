@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { plansApi } from '../api';
 import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
@@ -98,9 +98,11 @@ export function PlansPage() {
     }
   }, []);
 
-  // Auto-redirect to goals if skipHome is enabled
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && activeTab === 'home') {
+    if (skipHome && activeTab === 'home' && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('goals');
     }
   }, [skipHome, activeTab]);

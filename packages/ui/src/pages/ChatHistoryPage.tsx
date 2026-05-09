@@ -130,9 +130,11 @@ export function ChatHistoryPage() {
     }
   }, []);
 
-  // Auto-redirect to history if skipHome is enabled
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome) {
+    if (skipHome && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('history');
     }
   }, [skipHome]);
