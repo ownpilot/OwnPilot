@@ -5,7 +5,7 @@
  * per-section breakdowns, top risks, and recommendations.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -289,7 +289,7 @@ export function SecurityDashboardPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__security_dashboard';
+  const SKIP_HOME_KEY = 'ownpilot:securitydashboard:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -300,7 +300,7 @@ export function SecurityDashboardPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }

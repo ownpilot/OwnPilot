@@ -5,7 +5,7 @@
  * HeartbeatLogPage into a single unified hub.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -105,7 +105,7 @@ export function AutonomousHubPage() {
   );
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__autonomous_hub';
+  const SKIP_HOME_KEY = 'ownpilot:autonomoushub:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -116,13 +116,15 @@ export function AutonomousHubPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       handleTabChange('agents');
     }
   }, [skipHome, tabParam, handleTabChange]);

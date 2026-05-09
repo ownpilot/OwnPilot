@@ -4,7 +4,7 @@
  * Set, change, or remove UI password protection.
  */
 
-import { useState, useEffect, useCallback, type FormEvent, useRef } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, Shield, Lock, Key, Users, FileText, Home } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
