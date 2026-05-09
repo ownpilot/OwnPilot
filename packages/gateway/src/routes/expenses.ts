@@ -223,7 +223,7 @@ expensesRoutes.get('/monthly', async (c) => {
       });
     }
 
-    return apiResponse(c, { year: Number(year), months });
+    return apiResponse(c, { year: Number(year), months, yearTotal: months.reduce((s, m) => s + m.total, 0) });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }

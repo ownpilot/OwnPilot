@@ -440,26 +440,78 @@ calendarRoutes.get('/:id', async (c) => {
 
 calendarRoutes.post('/', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  let body: CreateEventInput;
+  let body: Record<string, unknown>;
   try {
-    body = await c.req.json<CreateEventInput>();
+    body = await c.req.json();
   } catch {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
-  const event = await repo.create(body);
+
+  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = body;
+  const startDateStr = startDate as string;
+  const allDay = Boolean(isAllDay);
+
+  let startISO: string;
+  let endISO: string | undefined;
+
+  if (allDay) {
+    startISO = `${startDateStr}T00:00:00`;
+    endISO = endDate ? `${endDate as string}T23:59:59` : undefined;
+  } else {
+    const sTime = (startTime as string) || '00:00';
+    startISO = `${startDateStr}T${sTime}:00`;
+    if (endDate) {
+      endISO = `${endDate as string}T${(endTime as string) || '23:59'}:00`;
+    } else if (endTime) {
+      endISO = `${startDateStr}T${endTime as string}:00`;
+    }
+  }
+
+  const createInput: CreateEventInput = {
+    ...rest,
+    title: rest.title as string,
+    startTime: startISO,
+    endTime: endISO,
+    allDay,
+    reminderMinutes:
+      reminders && Array.isArray(reminders) && reminders[0]
+        ? Number(reminders[0])
+        : undefined,
+  };
+
+  const event = await repo.create(createInput);
   emitDataChanged('calendar', 'created', event.id);
   return apiResponse(c, event, 201);
 });
 
 calendarRoutes.patch('/:id', async (c) => {
   const repo = new CalendarRepository(getUserId(c));
-  let body: UpdateEventInput;
+  let body: Record<string, unknown>;
   try {
-    body = await c.req.json<UpdateEventInput>();
+    body = await c.req.json();
   } catch {
     return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
   }
-  const event = await repo.update(c.req.param('id'), body);
+
+  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = body;
+  const updateInput: UpdateEventInput = { ...rest };
+
+  if (startDate !== undefined) {
+    const startTimeStr = isAllDay ? '00:00' : ((startTime as string) || '00:00');
+    updateInput.startTime = `${startDate as string}T${startTimeStr}:00`;
+  }
+  if (endDate !== undefined) {
+    const endTimeStr = isAllDay ? '23:59' : ((endTime as string) || '23:59');
+    updateInput.endTime = `${endDate as string}T${endTimeStr}:00`;
+  }
+  if (isAllDay !== undefined) {
+    updateInput.allDay = Boolean(isAllDay);
+  }
+  if (reminders !== undefined && Array.isArray(reminders) && reminders[0]) {
+    updateInput.reminderMinutes = Number(reminders[0]);
+  }
+
+  const event = await repo.update(c.req.param('id'), updateInput);
   if (!event) {
     return notFoundError(c, 'Event', c.req.param('id'));
   }
