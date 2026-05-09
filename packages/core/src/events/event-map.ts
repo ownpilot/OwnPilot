@@ -576,6 +576,39 @@ export interface SoulCrewStatusChangedData {
   status: string;
 }
 
+// --- Crew Task Events ---
+export interface CrewTaskCreatedData {
+  crewId: string;
+  taskId: string;
+  taskName: string;
+  priority: string;
+  delegatedTo: string;
+  createdBy: string;
+}
+
+export interface CrewTaskClaimedData {
+  crewId: string;
+  taskId: string;
+  taskName: string;
+  claimedBy: string;
+}
+
+export interface CrewTaskCompletedData {
+  crewId: string;
+  taskId: string;
+  taskName: string;
+  submittedBy: string;
+  result?: string;
+}
+
+export interface CrewTaskFailedData {
+  crewId: string;
+  taskId: string;
+  taskName: string;
+  submittedBy: string;
+  result?: string;
+}
+
 // ============================================================================
 // Master Event Map
 // ============================================================================
@@ -703,6 +736,12 @@ export interface EventMap {
   'soul.message.sent': SoulMessageSentData;
   'soul.crew.deployed': SoulCrewDeployedData;
   'soul.crew.status_changed': SoulCrewStatusChangedData;
+
+  // --- Crew Task Events ---
+  'crew.task.created': CrewTaskCreatedData;
+  'crew.task.claimed': CrewTaskClaimedData;
+  'crew.task.completed': CrewTaskCompletedData;
+  'crew.task.failed': CrewTaskFailedData;
 }
 
 // ============================================================================

@@ -416,6 +416,19 @@ async function handleDelegateTask(
   const msgRepo = getAgentMessagesRepository();
   await msgRepo.create(message);
 
+  // Emit crew.task.created event for WS forwarding
+  if (crewId) {
+    const { getEventSystem } = await import('@ownpilot/core');
+    getEventSystem().emit('crew.task.created', 'crew-tools', {
+      crewId,
+      taskId: msgId,
+      taskName,
+      priority,
+      delegatedTo: resolvedAgentId,
+      createdBy: agentId,
+    });
+  }
+
   return {
     success: true,
     result: {
@@ -502,6 +515,15 @@ async function handleClaimTask(
     };
   }
 
+  // Emit crew.task.claimed event for WS forwarding
+  const { getEventSystem } = await import('@ownpilot/core');
+  getEventSystem().emit('crew.task.claimed', 'crew-tools', {
+    crewId,
+    taskId: task.id,
+    taskName: task.taskName,
+    claimedBy: agentId,
+  });
+
   return {
     success: true,
     result: {
@@ -540,6 +562,20 @@ async function handleSubmitResult(
   if (!task) {
     return { success: false, error: `Task ${taskId} not found or not claimed by you` };
   }
+
+  // Emit crew.task.completed event for WS forwarding
+  const { getEventSystem } = await import('@ownpilot/core');
+  getEventSystem().emit(
+    status === 'failed' ? 'crew.task.failed' : 'crew.task.completed',
+    'crew-tools',
+    {
+      crewId: task.crewId,
+      taskId: task.id,
+      taskName: task.taskName,
+      submittedBy: agentId,
+      result,
+    }
+  );
 
   // Notify the task creator via inbox
   const msgRepo = getAgentMessagesRepository();

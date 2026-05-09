@@ -543,6 +543,34 @@ export interface ServerEvents {
   'claw:error': { clawId: string; error: string };
   'claw:stopped': { clawId: string; reason: string };
   'claw:update': { clawId: string; state: string };
+
+  // Crew task lifecycle events (from crew-tools)
+  'crew:task:created': {
+    crewId: string;
+    taskId: string;
+    taskName: string;
+    priority: string;
+    delegatedTo: string;
+    createdBy: string;
+  };
+  'crew:task:claimed': {
+    crewId: string;
+    taskId: string;
+    taskName: string;
+    claimedBy: string;
+  };
+  'crew:task:completed': {
+    crewId: string;
+    taskId: string;
+    taskName: string;
+    submittedBy: string;
+  };
+  'crew:task:failed': {
+    crewId: string;
+    taskId: string;
+    taskName: string;
+    submittedBy: string;
+  };
 }
 
 /**

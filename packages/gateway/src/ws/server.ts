@@ -423,6 +423,54 @@ export class WSGateway {
       })
     );
 
+    // crew.task.* → crew:task:* (task lifecycle events from crew-tools)
+    this.legacyUnsubs.push(
+      eventSystem.onAny('crew.task.created', (event) => {
+        const d = event.data as Record<string, unknown>;
+        this.broadcast('crew:task:created', {
+          crewId: d.crewId as string,
+          taskId: d.taskId as string,
+          taskName: d.taskName as string,
+          priority: d.priority as string,
+          delegatedTo: d.delegatedTo as string,
+          createdBy: d.createdBy as string,
+        });
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('crew.task.claimed', (event) => {
+        const d = event.data as Record<string, unknown>;
+        this.broadcast('crew:task:claimed', {
+          crewId: d.crewId as string,
+          taskId: d.taskId as string,
+          taskName: d.taskName as string,
+          claimedBy: d.claimedBy as string,
+        });
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('crew.task.completed', (event) => {
+        const d = event.data as Record<string, unknown>;
+        this.broadcast('crew:task:completed', {
+          crewId: d.crewId as string,
+          taskId: d.taskId as string,
+          taskName: d.taskName as string,
+          submittedBy: d.submittedBy as string,
+        });
+      })
+    );
+    this.legacyUnsubs.push(
+      eventSystem.onAny('crew.task.failed', (event) => {
+        const d = event.data as Record<string, unknown>;
+        this.broadcast('crew:task:failed', {
+          crewId: d.crewId as string,
+          taskId: d.taskId as string,
+          taskName: d.taskName as string,
+          submittedBy: d.submittedBy as string,
+        });
+      })
+    );
+
     // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {
