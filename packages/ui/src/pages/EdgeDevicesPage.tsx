@@ -66,7 +66,7 @@ export function EdgeDevicesPage() {
   const [pageTab, setPageTab] = useState<PageTabId>('home');
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__edge_devices';
+  const SKIP_HOME_KEY = 'ownpilot:edge:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -77,13 +77,17 @@ export function EdgeDevicesPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+
+  // Only redirect on first mount — user can still click Home tab manually
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome) {
+    if (skipHome && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setPageTab('devices');
     }
   }, [skipHome]);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Database,
@@ -165,7 +165,7 @@ export function DataBrowserPage() {
   );
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__data_browser';
+  const SKIP_HOME_KEY = 'ownpilot:databrowser:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -176,13 +176,15 @@ export function DataBrowserPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setTab('browser');
     }
   }, [skipHome, tabParam, setTab]);
