@@ -276,7 +276,7 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // Skip home preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__profile';
+  const SKIP_HOME_KEY = 'ownpilot:profile:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -355,14 +355,15 @@ export function ProfilePage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
-
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome) {
+    if (skipHome && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('overview');
     }
   }, [skipHome]);

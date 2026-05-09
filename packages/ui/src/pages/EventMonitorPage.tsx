@@ -86,7 +86,7 @@ export function EventMonitorPage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__event_monitor';
+  const SKIP_HOME_KEY = 'ownpilot:eventmonitor:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -97,13 +97,15 @@ export function EventMonitorPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome) {
+    if (skipHome && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setActiveTab('monitor');
     }
   }, [skipHome]);

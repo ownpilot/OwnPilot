@@ -972,7 +972,7 @@ export function McpServersPage() {
   );
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__mcp_servers';
+  const SKIP_HOME_KEY = 'ownpilot:mcpservers:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -983,13 +983,15 @@ export function McpServersPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }
   }, []);
+  const didSkipHomeRef = { current: false };
   useEffect(() => {
-    if (skipHome && !tabParam) {
+    if (skipHome && !tabParam && !didSkipHomeRef.current) {
+      didSkipHomeRef.current = true;
       setTab('servers');
     }
   }, [skipHome, tabParam, setTab]);
