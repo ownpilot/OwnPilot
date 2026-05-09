@@ -7,10 +7,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from './ConfirmDialog';
-import { Check, Server, Edit2, Save, X, ExternalLink, Search } from './icons';
+import { Check, Server, Edit2, Save, X, ExternalLink, Search, RefreshCw, AlertTriangle } from './icons';
 import { useToast } from './ToastProvider';
 import { providersApi } from '../api';
 import type { ProviderInfo, UserOverride } from '../types';
+import { EmptyState } from './EmptyState';
 
 // Provider type options - must match ProviderType in configs/types.ts
 const PROVIDER_TYPES = [
@@ -25,6 +26,7 @@ export function ProvidersTab() {
   const toast = useToast();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterConfigured, setFilterConfigured] = useState<'all' | 'configured' | 'unconfigured'>(
     'all'
@@ -52,10 +54,11 @@ export function ProvidersTab() {
   const fetchProviders = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const { providers: list } = await providersApi.list();
       setProviders(list as ProviderInfo[]);
     } catch {
-      toast.error('Failed to load providers');
+      setError('Failed to load providers');
     } finally {
       setIsLoading(false);
     }
@@ -269,9 +272,22 @@ export function ProvidersTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading providers...</p>
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="text-sm text-text-muted dark:text-dark-text-muted">Loading providers...</p>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Failed to load providers"
+        description={error}
+        variant="card"
+        action={{ label: 'Try Again', onClick: fetchProviders, icon: RefreshCw }}
+      />
     );
   }
 
@@ -365,8 +381,14 @@ export function ProvidersTab() {
 
       {/* Edit Modal */}
       {editingProvider && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setEditingProvider(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
