@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wrench, Code, Puzzle, Layers, Home } from '../../components/icons';
 import { toolsApi } from '../../api';

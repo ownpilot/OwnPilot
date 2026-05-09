@@ -6,7 +6,7 @@
  */
 
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Key,
   Telegram,

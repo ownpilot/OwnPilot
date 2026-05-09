@@ -3,7 +3,7 @@
  * Allows users to approve or reject pending approvals.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { workflowsApi } from '../api/endpoints/workflows';

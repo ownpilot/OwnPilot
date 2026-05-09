@@ -4,7 +4,7 @@
  * Create and manage AI agents with provider/model selection
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Plus,
