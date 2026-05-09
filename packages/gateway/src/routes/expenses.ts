@@ -38,6 +38,11 @@ const VALID_CATEGORIES: readonly ExpenseCategory[] = [
   'other',
 ];
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   food: '#FF6B6B',
   transport: '#4ECDC4',
@@ -151,11 +156,41 @@ expensesRoutes.get('/summary', async (c) => {
 
     const summary = await repo.getSummary(startDate, endDate);
 
+    // Compute top categories
+    const topCategories = Object.entries(summary.byCategory)
+      .map(([category, data]) => ({
+        category,
+        amount: data.amount,
+        count: data.count,
+        percentage: summary.totalAmount > 0 ? (data.amount / summary.totalAmount) * 100 : 0,
+        color: CATEGORY_COLORS[category as ExpenseCategory] ?? '#AEB6BF',
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    // Compute daily average
+    let dailyAverage = 0;
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const dayCount = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      dailyAverage = summary.totalAmount / dayCount;
+    }
+
     return apiResponse(c, {
       period,
       startDate,
       endDate,
-      ...summary,
+      summary: {
+        totalExpenses: summary.count,
+        grandTotal: summary.totalAmount,
+        dailyAverage,
+        totalByCurrency: summary.byCurrency,
+        totalByCategory: Object.fromEntries(
+          Object.entries(summary.byCategory).map(([k, v]) => [k, v.amount])
+        ),
+        topCategories,
+        biggestExpenses: [],
+      },
       categories: CATEGORY_COLORS,
     });
   } catch (error) {
@@ -179,9 +214,12 @@ expensesRoutes.get('/monthly', async (c) => {
       const dateTo = `${year}-${String(m).padStart(2, '0')}-${lastDay}`;
       const summary = await repo.getSummary(dateFrom, dateTo);
       months.push({
-        month: m,
+        month: MONTH_NAMES[m - 1],
+        monthNum: String(m),
+        total: summary.totalAmount,
+        count: summary.count,
+        byCategory: summary.byCategory,
         year: Number(year),
-        ...summary,
       });
     }
 

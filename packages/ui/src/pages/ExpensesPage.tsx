@@ -75,7 +75,7 @@ export function ExpensesPage() {
   };
 
   // Skip home screen preference
-  const SKIP_HOME_KEY = 'ownpilot_skip_home__expenses';
+  const SKIP_HOME_KEY = 'ownpilot:expenses:skipHome';
   const [skipHome, setSkipHome] = useState(() => {
     try {
       return localStorage.getItem(SKIP_HOME_KEY) === 'true';
@@ -86,7 +86,7 @@ export function ExpensesPage() {
   const handleSkipHomeChange = useCallback((checked: boolean) => {
     setSkipHome(checked);
     try {
-      localStorage.setItem(SKIP_HOME_KEY, checked ? 'true' : 'false');
+      localStorage.setItem(SKIP_HOME_KEY, String(checked));
     } catch {
       // Ignore storage errors
     }

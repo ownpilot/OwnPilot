@@ -459,7 +459,7 @@ export const expensesApi = {
   summary: (params: Record<string, string>) =>
     apiClient.get<ExpenseSummaryResponse>(`/expenses/summary`, { params }),
   list: (params: Record<string, string>) =>
-    apiClient.get<{ expenses: ExpenseEntry[] }>(`/expenses`, { params }),
+    apiClient.get<{ expenses: ExpenseEntry[]; total: number; categories: Record<string, { color: string }> }>(`/expenses`, { params }),
   create: (expense: {
     date: string;
     amount: number;
@@ -467,6 +467,7 @@ export const expensesApi = {
     category: string;
     description: string;
     notes?: string;
+    paymentMethod?: string;
   }) => apiClient.post<ExpenseEntry>(`/expenses`, expense),
   update: (
     id: string,
