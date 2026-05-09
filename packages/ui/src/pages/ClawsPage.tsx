@@ -74,17 +74,17 @@ export function ClawsPage() {
     fetchClaws();
   }, [fetchClaws]);
 
-  // WS-driven refresh
+  // WS-driven refresh — now using colon-separated WS event names
   useEffect(() => {
     const unsubs = [
       subscribe<{ entity: string }>('data:changed', (p) => {
         if (p.entity === 'claw') fetchClaws();
       }),
-      subscribe<{ clawId: string }>('claw.update', () => fetchClaws()),
-      subscribe<{ clawId: string }>('claw.started', () => fetchClaws()),
-      subscribe<{ clawId: string }>('claw.stopped', () => fetchClaws()),
-      subscribe<{ clawId: string; type: string; reason: string; requestedAt: string }>(
-        'claw.escalation',
+      subscribe<{ clawId: string }>('claw:update', () => fetchClaws()),
+      subscribe<{ clawId: string }>('claw:started', () => fetchClaws()),
+      subscribe<{ clawId: string }>('claw:stopped', () => fetchClaws()),
+      subscribe<{ clawId: string; type: string; reason: string }>(
+        'claw:escalation',
         (p) => {
           const claw = claws.find((c) => c.id === p.clawId);
           setEscalations((prev) => {
@@ -96,7 +96,7 @@ export function ClawsPage() {
                 name: claw?.name ?? p.clawId,
                 type: p.type,
                 reason: p.reason,
-                requestedAt: p.requestedAt,
+                requestedAt: new Date().toISOString(),
               },
             ];
           });

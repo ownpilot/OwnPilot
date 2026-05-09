@@ -368,6 +368,61 @@ export class WSGateway {
       })
     );
 
+    // claw.* → claw:* (11 events from ClawManager)
+    this.legacyUnsubs.push(
+      eventSystem.onPattern('claw.*', (event) => {
+        const d = event.data as Record<string, unknown>;
+        const clawId = (d.clawId as string) ?? '';
+
+        switch (event.type) {
+          case 'claw.started':
+            this.broadcast('claw:started', { clawId, name: d.name as string });
+            break;
+          case 'claw.paused':
+            this.broadcast('claw:paused', { clawId });
+            break;
+          case 'claw.resumed':
+            this.broadcast('claw:resumed', { clawId });
+            break;
+          case 'claw.progress':
+            this.broadcast('claw:progress', { clawId, message: d.message as string });
+            break;
+          case 'claw.escalation':
+            this.broadcast('claw:escalation', {
+              clawId,
+              type: d.type as string,
+              reason: d.reason as string,
+            });
+            break;
+          case 'claw.cycle.skipped':
+            this.broadcast('claw:cycle:skipped', { clawId, reason: d.reason as string });
+            break;
+          case 'claw.cycle.start':
+            this.broadcast('claw:cycle:start', { clawId, cycleNumber: d.cycleNumber as number });
+            break;
+          case 'claw.cycle.complete':
+            this.broadcast('claw:cycle:complete', {
+              clawId,
+              cycleNumber: d.cycleNumber as number,
+              success: d.success as boolean,
+              toolCallsCount: d.toolCallsCount as number,
+              durationMs: d.durationMs as number,
+              cost: d.cost as number,
+            });
+            break;
+          case 'claw.error':
+            this.broadcast('claw:error', { clawId, error: d.error as string });
+            break;
+          case 'claw.stopped':
+            this.broadcast('claw:stopped', { clawId, reason: d.reason as string });
+            break;
+          case 'claw.update':
+            this.broadcast('claw:update', { clawId, state: d.state as string });
+            break;
+        }
+      })
+    );
+
     // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
     this.legacyUnsubs.push(
       eventSystem.onPattern('channel.user.*', (event) => {

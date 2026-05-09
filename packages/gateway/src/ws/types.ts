@@ -524,6 +524,25 @@ export interface ServerEvents {
     tokenUsage: { input: number; output: number };
     cost: number;
   };
+  // Claw lifecycle events (from ClawManager)
+  'claw:started': { clawId: string; name: string };
+  'claw:paused': { clawId: string };
+  'claw:resumed': { clawId: string };
+  'claw:progress': { clawId: string; message: string };
+  'claw:escalation': { clawId: string; type: string; reason: string };
+  'claw:cycle:skipped': { clawId: string; reason: string };
+  'claw:cycle:start': { clawId: string; cycleNumber: number };
+  'claw:cycle:complete': {
+    clawId: string;
+    cycleNumber: number;
+    success: boolean;
+    toolCallsCount: number;
+    durationMs: number;
+    cost: number;
+  };
+  'claw:error': { clawId: string; error: string };
+  'claw:stopped': { clawId: string; reason: string };
+  'claw:update': { clawId: string; state: string };
 }
 
 /**
