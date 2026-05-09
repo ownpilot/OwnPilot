@@ -12,6 +12,7 @@ import type { ToolDefinition } from '@ownpilot/core';
 import { getErrorMessage } from '@ownpilot/core';
 import { HabitsRepository } from '../db/repositories/habits.js';
 import type { ToolExecutionResult } from '../services/tool-executor.js';
+import { wsGateway } from '../ws/server.js';
 
 // ============================================================================
 // Tool Definitions
@@ -201,6 +202,7 @@ export async function executeHabitTool(
           category: args.category as string | undefined,
           reminderTime: args.reminderTime as string | undefined,
         });
+        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'created', id: habit.id });
         return { success: true, result: habit };
       }
 
@@ -227,12 +229,14 @@ export async function executeHabitTool(
         const { habitId, ...updates } = args as { habitId: string; [key: string]: unknown };
         const updated = await repo.update(habitId, updates);
         if (!updated) return { success: false, error: `Habit not found: ${habitId}` };
+        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id: habitId });
         return { success: true, result: updated };
       }
 
       case 'delete_habit': {
         const deleted = await repo.delete(args.habitId as string);
         if (!deleted) return { success: false, error: `Habit not found: ${args.habitId}` };
+        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'deleted', id: args.habitId as string });
         return { success: true, result: { message: 'Habit deleted permanently.' } };
       }
 
@@ -243,6 +247,7 @@ export async function executeHabitTool(
           notes: args.notes as string | undefined,
         });
         if (!logEntry) return { success: false, error: `Habit not found: ${args.habitId}` };
+        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id: args.habitId as string });
         return { success: true, result: { log: logEntry, message: 'Habit logged successfully!' } };
       }
 
