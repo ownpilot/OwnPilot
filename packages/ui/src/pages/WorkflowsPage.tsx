@@ -85,13 +85,12 @@ export function WorkflowsPage() {
   const [recentLogs, setRecentLogs] = useState<WorkflowLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const didSkipHomeRef = { current: false };
   const [activeTab, setActiveTab] = useState<TabId>(() => {
-    // Skip home if preference is set
-    try {
-      if (localStorage.getItem(SKIP_HOME_KEY) === 'true') {
-        return 'workflows';
-      }
-    } catch {}
+    if (!didSkipHomeRef.current && localStorage.getItem(SKIP_HOME_KEY) === 'true') {
+      didSkipHomeRef.current = true;
+      return 'workflows';
+    }
     return 'home';
   });
 
