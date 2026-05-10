@@ -871,10 +871,11 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
       clawFiles.map(async (f) => {
         try {
           const res = await authedFetch(`/api/v1/file-workspaces/${claw.workspaceId}/file/.claw/${f}?raw=true`);
-          const text = res.ok ? await res.text() : '';
-          return { name: f, content: text };
+          if (!res.ok) return { name: f, content: '', status: res.status };
+          const text = await res.text();
+          return { name: f, content: text, status: 200 };
         } catch {
-          return { name: f, content: '' };
+          return { name: f, content: '', status: 0 };
         }
       })
     ).then((results) => {
@@ -896,15 +897,18 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
     try {
       const res = await authedFetch(`/api/v1/file-workspaces/${claw.workspaceId}/file/.claw/${editingFile}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'text/plain' },
-        body: editContent,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent }),
       });
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Save failed: ${res.status} ${errText}`);
+      }
       setMemoryFiles((prev) => ({ ...prev, [editingFile]: editContent }));
       setEditingFile(null);
       toast.success(`${editingFile} saved`);
-    } catch {
-      toast.error('Failed to save');
+    } catch (err) {
+      toast.error(`Failed to save: ${err instanceof Error ? err.message : 'unknown'}`);
     } finally {
       setIsSaving(false);
     }
