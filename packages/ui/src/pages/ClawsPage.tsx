@@ -696,7 +696,7 @@ export function ClawsPage() {
               {/* Detail Panel — inline below cards */}
               {selectedClaw && (
                 <ClawManagementPanel
-                  claw={selectedClaw}
+                  claw={claws.find((c) => c.id === selectedClaw.id) ?? selectedClaw}
                   initialTab={selectedDetailTab}
                   onClose={() => setSelectedClaw(null)}
                   onUpdate={fetchClaws}

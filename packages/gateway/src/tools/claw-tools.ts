@@ -136,6 +136,14 @@ Maximum nesting depth: 3 levels.`,
         enum: ['continuous', 'interval', 'event', 'single-shot'],
         description: 'Execution mode (default: single-shot)',
       },
+      provider: {
+        type: 'string',
+        description: 'AI provider for the subclaw (e.g., "openai", "anthropic"). Inherits from parent if not specified.',
+      },
+      model: {
+        type: 'string',
+        description: 'AI model for the subclaw (e.g., "gpt-4o"). Inherits from parent if not specified.',
+      },
     },
     required: ['name', 'mission'],
   },
@@ -814,24 +822,37 @@ async function executeSpawnSubclaw(
   }
 
   const subclawId = generateId('claw');
+
+  // Inherit from parent if not explicitly overridden
+  const inheritedProvider = (args.provider as string) ?? parentConfig?.provider;
+  const inheritedModel = (args.model as string) ?? parentConfig?.model;
+  const inheritedAllowedTools = parentConfig?.allowedTools?.length ? parentConfig.allowedTools : [];
+  const inheritedAutonomyPolicy = parentConfig?.autonomyPolicy ?? undefined;
+
+  // Auto-start: single-shot awaits, so no need to pre-start; cyclic modes should start immediately
+  const shouldAutoStart = mode !== 'single-shot';
+
   const config = await repo.create({
     id: subclawId,
     userId,
     name,
     mission,
     mode: mode as 'continuous' | 'interval' | 'event' | 'single-shot',
-    allowedTools: [],
+    allowedTools: inheritedAllowedTools,
+    provider: inheritedProvider,
+    model: inheritedModel,
     limits: {
       maxTurnsPerCycle: 15,
       maxToolCallsPerCycle: 50,
       maxCyclesPerHour: 10,
       cycleTimeoutMs: 180_000,
     },
-    autoStart: false,
+    autoStart: shouldAutoStart,
     depth: newDepth,
     sandbox: 'auto',
     parentClawId: ctx.clawId,
     createdBy: 'claw',
+    autonomyPolicy: inheritedAutonomyPolicy,
   });
 
   if (mode === 'single-shot') {
