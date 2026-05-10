@@ -223,9 +223,9 @@ export function ClawManagementPanel({
   useEffect(() => {
     if (tab === 'conversation') {
       setIsLoadingConvo(true);
-      authedFetch(`/api/v1/chat/claw-${claw.id}/messages?limit=50`)
-        .then((r) => (r.ok ? r.json() : { data: [] }))
-        .then((body) => setConversation(body.data ?? []))
+      authedFetch(`/api/v1/chat/history/claw-${claw.id}?limit=50`)
+        .then((r) => (r.ok ? r.json() : { messages: [] }))
+        .then((body) => setConversation(body.messages ?? []))
         .catch(() => setConversation([]))
         .finally(() => setIsLoadingConvo(false));
     }

@@ -88,14 +88,20 @@ export class ClawRunner {
     const startTime = Date.now();
     const cycleNumber = session.cyclesCompleted + 1;
 
-    log.info(`[${this.config.id}] Starting cycle ${cycleNumber}`);
+    const { provider, model } = await resolveProviderAndModel(
+      this.config.provider,
+      this.config.model,
+      'pulse'
+    );
+
+    log.info(`[${this.config.id}] Starting cycle ${cycleNumber}`, {
+      dbProvider: this.config.provider ?? '(none)',
+      dbModel: this.config.model ?? '(none)',
+      resolvedProvider: provider,
+      resolvedModel: model,
+    });
 
     try {
-      const { provider, model } = await resolveProviderAndModel(
-        this.config.provider,
-        this.config.model,
-        'pulse'
-      );
 
       // Reuse cached agent if provider/model unchanged, otherwise create and cache
       if (!this.agent || this.cachedProvider !== provider || this.cachedModel !== model) {

@@ -952,6 +952,22 @@ clawRoutes.put('/:id', async (c) => {
     const body = validateBody(updateClawSchema, await c.req.json());
     const service = getClawService();
 
+    // Validate provider has API key before saving
+    if (body.provider != null && body.provider !== '') {
+      const { getApiKey } = await import('./settings.js');
+      const apiKey = await getApiKey(body.provider);
+      if (!apiKey) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: `Provider "${body.provider}" has no API key configured. Add one in Settings → Providers before saving.`,
+          },
+          400
+        );
+      }
+    }
+
     const updated = await service.updateClaw(id, userId, mapUpdateBody(body));
     if (!updated) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' }, 404);

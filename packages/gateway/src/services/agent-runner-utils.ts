@@ -153,6 +153,14 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   const providerConfig = loadProviderConfig(opts.provider);
   const providerType = NATIVE_PROVIDERS.has(opts.provider) ? opts.provider : 'openai';
 
+  // Fail fast for unrecognized providers — prevents silent fallback to OpenAI
+  if (!providerConfig && !NATIVE_PROVIDERS.has(opts.provider)) {
+    throw new Error(
+      `Provider "${opts.provider}" is not configured. ` +
+      `Add an API key in Settings → Providers, or select a native provider.`
+    );
+  }
+
   // Create and populate tool registry
   const tools = new ToolRegistry();
   await registerAllToolSources(tools, opts.userId, opts.conversationId, opts.name);

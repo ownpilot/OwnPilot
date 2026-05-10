@@ -221,7 +221,7 @@ app.get('/:id/files', async (c) => {
 app.get('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
+  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
   const download = c.req.query('download') === 'true';
   const raw = c.req.query('raw') === 'true';
 
@@ -310,7 +310,7 @@ app.get('/:id/file/*', async (c) => {
 app.put('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
+  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
 
   try {
     const result = getOwnedWorkspace(c, workspaceId, userId);
@@ -351,7 +351,7 @@ app.put('/:id/file/*', async (c) => {
 app.delete('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = c.req.path.replace(`/file-workspaces/${workspaceId}/file/`, '');
+  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
 
   try {
     const result = getOwnedWorkspace(c, workspaceId, userId);

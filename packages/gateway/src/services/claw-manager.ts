@@ -20,6 +20,7 @@ import {
   getOrCreateSessionWorkspace,
   writeSessionWorkspaceFile,
   readSessionWorkspaceFile,
+  updateSessionWorkspaceMeta,
 } from '../workspace/file-workspace.js';
 import { getLog } from './log.js';
 
@@ -173,6 +174,11 @@ export class ClawManager {
       workspaceId = ws.id;
       await repo.update(clawId, userId, { workspaceId });
       config.workspaceId = workspaceId;
+      // Backfill userId/agentId into workspace meta if not already set
+      updateSessionWorkspaceMeta(ws.id, { userId, agentId: clawId });
+    } else {
+      // Workspace already exists — backfill userId if missing
+      updateSessionWorkspaceMeta(workspaceId, { userId, agentId: clawId });
     }
 
     // Scaffold .claw/ directory with initial files if not exists
@@ -846,24 +852,18 @@ export class ClawManager {
    */
   private async ensureConversationRow(
     clawId: string,
-    _userId: string,
+    userId: string,
     clawName: string
   ): Promise<void> {
     const conversationId = `claw-${clawId}`;
     try {
-      const { ConversationsRepository } = await import('../db/repositories/conversations.js');
-      const repo = new ConversationsRepository();
-      const existing = await repo.getById(conversationId).catch((err) => {
-        log.debug('Conversation lookup failed (best-effort)', {
-          conversationId,
-          error: String(err),
-        });
-        return null;
-      });
+      const { ChatRepository } = await import('../db/repositories/chat.js');
+      const chatRepo = new ChatRepository(userId);
+      const existing = await chatRepo.getConversation(conversationId).catch(() => null);
       if (!existing) {
-        await repo.create({
+        await chatRepo.createConversation({
           id: conversationId,
-          agentName: `claw-${clawId}`,
+          agentName: `claw-${clawName}`,
           metadata: { clawId, clawName, type: 'claw' },
         });
       }

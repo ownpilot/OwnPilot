@@ -47,6 +47,21 @@ export const NATIVE_PROVIDERS = new Set([
   'perplexity',
 ]);
 
+/**
+ * Hardcoded baseUrls for known OpenAI-compatible providers.
+ * Used as final fallback when no JSON config or local provider exists.
+ * This ensures providers like groq work even if data/providers/groq.json hasn't been synced.
+ */
+const CANONICAL_PROVIDER_BASEURLS: Record<string, string> = {
+  groq: 'https://api.groq.com/openai/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+  mistral: 'https://api.mistral.ai/v1',
+  together: 'https://api.together.xyz/v1',
+  fireworks: 'https://api.fireworks.ai/inference/v1',
+  perplexity: 'https://api.perplexity.ai',
+  xai: 'https://api.x.ai/v1',
+};
+
 // Runtime agent cache (runtime instances, not serializable)
 export const agentCache = new Map<string, Agent>();
 export const agentConfigCache = new Map<string, AgentConfig>();
@@ -262,6 +277,17 @@ export function loadProviderConfig(
       apiKeyEnv: undefined,
       type: 'openai-compatible',
       headers: Object.keys(headers).length > 0 ? headers : undefined,
+    };
+  }
+
+  // 3. Use canonical baseUrl for known providers (fallback if JSON not synced yet)
+  const canonicalBaseUrl = CANONICAL_PROVIDER_BASEURLS[providerId];
+  if (canonicalBaseUrl) {
+    return {
+      baseUrl: canonicalBaseUrl,
+      apiKeyEnv: undefined,
+      type: 'openai-compatible',
+      headers: undefined,
     };
   }
 

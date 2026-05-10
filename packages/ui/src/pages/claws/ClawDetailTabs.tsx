@@ -871,10 +871,14 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
       clawFiles.map(async (f) => {
         try {
           const res = await authedFetch(`/api/v1/file-workspaces/${claw.workspaceId}/file/.claw/${f}?raw=true`);
-          if (!res.ok) return { name: f, content: '', status: res.status };
-          const text = await res.text();
-          return { name: f, content: text, status: 200 };
-        } catch {
+          const text = res.ok ? await res.text() : '';
+          const status = res.status;
+          if (!res.ok) {
+            console.warn(`[MemoryTab] Failed to load .claw/${f}: ${res.status} ${res.statusText}`);
+          }
+          return { name: f, content: text, status };
+        } catch (err) {
+          console.warn(`[MemoryTab] Exception loading .claw/${f}:`, err);
           return { name: f, content: '', status: 0 };
         }
       })
@@ -959,6 +963,9 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
                   <FileIcon className="w-4 h-4 text-amber-500" />
                   <span className="text-sm font-mono font-medium text-text-primary dark:text-dark-text-primary">.claw/{name}</span>
                   <span className="text-xs text-text-muted">({content.length} chars)</span>
+                  {!content && (
+                    <span className="text-xs text-red-400 ml-1" title="File empty or load failed — check browser console for status">⚠ empty</span>
+                  )}
                   <div className="flex-1" />
                   {!isEditing && (
                     <>

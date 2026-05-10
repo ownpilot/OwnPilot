@@ -559,8 +559,8 @@ function buildFileTree(dirPath: string, rootPath: string, depth = 0): WorkspaceF
 export function readSessionWorkspaceFile(id: string, filePath: string): Buffer | null {
   validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = resolve(workspaceRoot, id, filePath);
-  const allowedPrefix = resolve(workspaceRoot, id) + sep;
+  const fullPath = join(workspaceRoot, id, filePath);
+  const allowedPrefix = join(workspaceRoot, id) + sep;
 
   // Security: ensure path is within workspace (trailing sep prevents prefix collision)
   if (!fullPath.startsWith(allowedPrefix)) {
@@ -584,8 +584,8 @@ export function writeSessionWorkspaceFile(
 ): void {
   validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = resolve(workspaceRoot, id, filePath);
-  const allowedPrefix = resolve(workspaceRoot, id) + sep;
+  const fullPath = join(workspaceRoot, id, filePath);
+  const allowedPrefix = join(workspaceRoot, id) + sep;
 
   // Security: ensure path is within workspace (trailing sep prevents prefix collision)
   if (!fullPath.startsWith(allowedPrefix)) {
@@ -608,8 +608,8 @@ export function writeSessionWorkspaceFile(
 export function deleteSessionWorkspaceFile(id: string, filePath: string): boolean {
   validateWorkspaceId(id);
   const workspaceRoot = getDataPaths().workspace;
-  const fullPath = resolve(workspaceRoot, id, filePath);
-  const allowedPrefix = resolve(workspaceRoot, id) + sep;
+  const fullPath = join(workspaceRoot, id, filePath);
+  const allowedPrefix = join(workspaceRoot, id) + sep;
 
   // Security: ensure path is within workspace (trailing sep prevents prefix collision)
   if (!fullPath.startsWith(allowedPrefix)) {
@@ -827,17 +827,36 @@ function calculateDirSize(dirPath: string): { size: number; fileCount: number } 
 /**
  * Update session workspace metadata timestamp
  */
-function updateSessionWorkspaceMeta(id: string): void {
+export function updateSessionWorkspaceMeta(id: string, extra?: Partial<SessionWorkspaceMeta>): void {
   const workspaceRoot = getDataPaths().workspace;
   const metaPath = join(workspaceRoot, id, '.meta.json');
 
   if (existsSync(metaPath)) {
     try {
-      const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+      const meta = JSON.parse(readFileSync(metaPath, 'utf-8')) as SessionWorkspaceMeta;
       meta.updatedAt = new Date().toISOString();
+      if (extra) {
+        meta.userId ??= extra.userId;
+        meta.agentId ??= extra.agentId;
+      }
       writeFileSync(metaPath, JSON.stringify(meta, null, 2));
     } catch {
       // Ignore meta update errors
+    }
+  } else if (extra) {
+    // Meta doesn't exist but we have extras — create it
+    const now = new Date().toISOString();
+    const meta: SessionWorkspaceMeta = {
+      id,
+      name: `session-${id}`,
+      createdAt: now,
+      updatedAt: now,
+      ...extra,
+    };
+    try {
+      writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+    } catch {
+      // Ignore write errors
     }
   }
 }
