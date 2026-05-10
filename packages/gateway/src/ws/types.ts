@@ -543,6 +543,7 @@ export interface ServerEvents {
   'claw:error': { clawId: string; error: string };
   'claw:stopped': { clawId: string; reason: string };
   'claw:update': { clawId: string; state: string };
+  'claw:output': { clawId: string; message: string; urgency: string; timestamp: string };
 
   // Crew task lifecycle events (from crew-tools)
   'crew:task:created': {

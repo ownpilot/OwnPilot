@@ -423,6 +423,19 @@ export class WSGateway {
       })
     );
 
+    // claw.output → claw:output (live output feed for UI)
+    this.legacyUnsubs.push(
+      eventSystem.onAny('claw.output', (event) => {
+        const d = event.data as Record<string, unknown>;
+        this.broadcast('claw:output', {
+          clawId: d.clawId as string,
+          message: d.message as string,
+          urgency: d.urgency as string,
+          timestamp: d.timestamp as string,
+        });
+      })
+    );
+
     // crew.task.* → crew:task:* (task lifecycle events from crew-tools)
     this.legacyUnsubs.push(
       eventSystem.onAny('crew.task.created', (event) => {
