@@ -535,18 +535,37 @@ export function OrchestrationPage() {
   useEffect(() => {
     if (!gateway) return;
 
-    const events = [
+    const unsubscribers: Array<() => void> = [];
+
+    const toastEvents: Array<{ event: string; toast: (p: unknown) => void }> = [
+      {
+        event: 'orchestration:finished',
+        toast: () => toast.info('Orchestration finished'),
+      },
+      {
+        event: 'orchestration:cancelled',
+        toast: () => toast.warning('Orchestration cancelled'),
+      },
+      {
+        event: 'orchestration:error',
+        toast: (p: unknown) => toast.error(`Orchestration error: ${(p as { error: string }).error}`),
+      },
+    ];
+
+    for (const { event, toast: showToast } of toastEvents) {
+      unsubscribers.push(gateway.subscribe(event, (p) => { showToast(p); fetchData(); }));
+    }
+
+    const refreshEvents = [
       'orchestration:created',
       'orchestration:status',
       'orchestration:step:analyzed',
       'orchestration:waiting',
-      'orchestration:finished',
-      'orchestration:cancelled',
       'orchestration:continued',
-      'orchestration:error',
     ];
-
-    const unsubscribers = events.map((e) => gateway.subscribe(e, () => fetchData()));
+    for (const e of refreshEvents) {
+      unsubscribers.push(gateway.subscribe(e, () => fetchData()));
+    }
 
     // Track active session for live output
     unsubscribers.push(
@@ -572,7 +591,7 @@ export function OrchestrationPage() {
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [gateway, fetchData, selectedRunId]);
+  }, [gateway, fetchData, selectedRunId, toast]);
 
   const handleStart = async (
     goal: string,

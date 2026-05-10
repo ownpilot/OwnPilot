@@ -173,15 +173,56 @@ export function FleetPage() {
   const { subscribe } = useGateway();
   useEffect(() => {
     const unsubs = [
+      subscribe('fleet:started', () => {
+        loadFleets();
+      }),
+      subscribe('fleet:stopped', () => {
+        loadFleets();
+      }),
+      subscribe('fleet:paused', () => {
+        loadFleets();
+      }),
+      subscribe('fleet:resumed', () => {
+        loadFleets();
+      }),
+      subscribe<{ fleetId: string; name: string }>('fleet:started', (p) => {
+        const fleet = fleets.find((f) => f.id === p.fleetId);
+        if (fleet) toast.info(`Fleet "${fleet.name}" started`);
+      }),
+      subscribe<{ fleetId: string }>('fleet:stopped', (p) => {
+        const fleet = fleets.find((f) => f.id === p.fleetId);
+        if (fleet) toast.info(`Fleet "${fleet.name}" stopped`);
+      }),
+      subscribe<{ fleetId: string }>('fleet:paused', (p) => {
+        const fleet = fleets.find((f) => f.id === p.fleetId);
+        if (fleet) toast.info(`Fleet "${fleet.name}" paused`);
+      }),
+      subscribe<{ fleetId: string }>('fleet:resumed', (p) => {
+        const fleet = fleets.find((f) => f.id === p.fleetId);
+        if (fleet) toast.info(`Fleet "${fleet.name}" resumed`);
+      }),
+      subscribe<{ fleetId: string; cycle: number; tasksCompleted: number; tasksFailed: number; cycleCost: number }>(
+        'fleet:cycle:end',
+        (p) => {
+          if (p.tasksFailed > 0) {
+            toast.warning(`Fleet cycle ${p.cycle} finished: ${p.tasksFailed} task${p.tasksFailed > 1 ? 's' : ''} failed`);
+          }
+        }
+      ),
+      subscribe<{ fleetId: string; workerName: string; success: boolean; durationMs: number }>(
+        'fleet:worker:completed',
+        (p) => {
+          if (!p.success) {
+            const fleet = fleets.find((f) => f.id === p.fleetId);
+            toast.error(`Worker "${p.workerName}"${fleet ? ` in "${fleet.name}"` : ''} failed after ${Math.round(p.durationMs / 1000)}s`);
+          }
+        }
+      ),
       subscribe('fleet:cycle:end', loadFleets),
-      subscribe('fleet:started', loadFleets),
-      subscribe('fleet:stopped', loadFleets),
-      subscribe('fleet:paused', loadFleets),
-      subscribe('fleet:resumed', loadFleets),
       subscribe('fleet:worker:completed', loadFleets),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [subscribe, loadFleets]);
+  }, [subscribe, loadFleets, fleets, toast]);
 
   useEffect(() => {
     const hasRunning = fleets.some((f) => f.session?.state === 'running');
