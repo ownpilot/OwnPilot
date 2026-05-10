@@ -131,6 +131,7 @@ export function EventMonitorPage() {
   const eventIdCounter = useRef(0);
 
   // Subscribe to event:message, event:subscribed, event:publish:ack, event:publish:error
+  // Also subscribe to raw legacy WS events (claw:*, fleet:*, orchestra:*, etc.)
   useEffect(() => {
     const unsubs = [
       subscribe<{ type: string; source: string; data: unknown; timestamp: string }>(
@@ -173,6 +174,34 @@ export function EventMonitorPage() {
       subscribe<{ type: string; error: string }>('event:publish:error', (payload) => {
         toast.error(`Publish failed: ${payload.error}`);
       }),
+      // Legacy raw WS events forwarded from EventBus (colon-separated naming)
+      ...(['claw:started','claw:paused','claw:resumed','claw:stopped','claw:error',
+           'claw:cycle:start','claw:cycle:complete','claw:cycle:skipped',
+           'fleet:started','fleet:stopped','fleet:paused','fleet:resumed',
+           'fleet:cycle:start','fleet:cycle:end',
+           'orchestration:created','orchestration:step:started',
+           'orchestration:step:completed','orchestration:finished',
+           'orchestration:cancelled','orchestration:error',
+           'subagent:spawned','subagent:completed',
+           'soul:heartbeat:completed',
+           'crew:task:created','crew:task:claimed','crew:task:completed','crew:task:failed'] as const).map(
+        (event) =>
+          subscribe(event, (payload: unknown) => {
+            if (pausedRef.current) return;
+            const entry: EventEntry = {
+              id: `evt-${++eventIdCounter.current}`,
+              type: event,
+              source: 'ws:legacy',
+              data: payload,
+              timestamp: new Date().toISOString(),
+              receivedAt: Date.now(),
+            };
+            setEvents((prev) => {
+              const next = [...prev, entry];
+              return next.length > MAX_EVENTS ? next.slice(-MAX_EVENTS) : next;
+            });
+          })
+      ),
     ];
 
     return () => unsubs.forEach((u) => u());
