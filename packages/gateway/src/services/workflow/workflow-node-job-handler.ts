@@ -82,7 +82,7 @@ export async function enqueueWorkflowLevel(
           workflowId,
           nodeId: node.id,
           workflowRunId,
-          nodeOutputs, // snapshot of outputs so far
+          nodeOutputs: { ...nodeOutputs }, // snapshot per job to avoid concurrent mutations
           workflowSnapshot: {
             nodes: Array.from(nodeMap.values()),
             edges: workflowEdges as WorkflowEdge[],
@@ -275,7 +275,7 @@ async function enqueueUnblockedDownstream(
         workflowId,
         nodeId: downId,
         workflowRunId,
-        nodeOutputs,
+        nodeOutputs: { ...nodeOutputs }, // snapshot per job to avoid concurrent mutations
         workflowSnapshot: {
           nodes: Array.from(nodeMap.values()),
           edges: workflowEdges,
@@ -343,7 +343,7 @@ export async function resumeWorkflowFromRecovery(
           workflowId,
           nodeId,
           workflowRunId,
-          nodeOutputs,
+          nodeOutputs: { ...nodeOutputs }, // snapshot per job to avoid concurrent mutations
           workflowSnapshot: {
             nodes: workflow.nodes,
             edges: workflow.edges,

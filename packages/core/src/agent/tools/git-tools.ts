@@ -26,11 +26,21 @@ const MAX_OUTPUT_SIZE = 100000;
 
 // Validate a git ref/branch/commit parameter — rejects values starting with "-"
 // which would be interpreted as git flags, causing argument injection.
+// Also ensures the ref is safe for use as a positional argument.
 function validateGitRef(ref: string, name: string): string {
   if (ref.startsWith('-')) {
     throw new Error(`${name} cannot start with '-' (got: ${ref})`);
   }
   return ref;
+}
+
+// Validate a file path argument — rejects paths starting with "-" to prevent
+// them from being interpreted as git flags when passed as positional args.
+function validateGitFile(file: string, name: string): string {
+  if (file.startsWith('-')) {
+    throw new Error(`${name} cannot start with '-' (got: ${file}). Use './${file}' to refer to files starting with dash.`);
+  }
+  return file;
 }
 
 // ============================================================================
@@ -210,8 +220,7 @@ export const gitDiffExecutor: ToolExecutor = async (
     if (commit) args.push(validateGitRef(commit, 'commit'));
     if (commitRange) args.push(validateGitRef(commitRange, 'commitRange'));
     if (file) {
-      args.push('--');
-      args.push(file);
+      args.push('--', validateGitFile(file, 'file'));
     }
 
     const stdout = await gitExec(args, repoPath);
@@ -317,8 +326,7 @@ export const gitLogExecutor: ToolExecutor = async (
     if (!oneline) args.push('--format=%H|%an|%ae|%at|%s');
     if (branch) args.push(validateGitRef(branch, 'branch'));
     if (file) {
-      args.push('--');
-      args.push(file);
+      args.push('--', validateGitFile(file, 'file'));
     }
 
     const stdout = await gitExec(args, repoPath);
@@ -485,7 +493,9 @@ export const gitAddExecutor: ToolExecutor = async (
     if (all) {
       args.push('-A');
     } else {
-      args.push(...(files || ['.']));
+      // Validate all file paths before adding — reject dash-prefixed paths
+      const validFiles = (files || ['.']).map((f) => validateGitFile(f, 'file'));
+      args.push(...validFiles);
     }
 
     await gitExec(args, repoPath);
@@ -678,7 +688,7 @@ export const gitCheckoutExecutor: ToolExecutor = async (
     } else if (branch) {
       args.push(validateGitRef(branch, 'branch'));
     } else if (file) {
-      args.push('--', file);
+      args.push('--', validateGitFile(file, 'file'));
     }
 
     const stdout = await gitExec(args, repoPath);

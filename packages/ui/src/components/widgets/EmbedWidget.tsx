@@ -13,7 +13,6 @@ interface EmbedItem {
   width?: number | string;
   height?: number | string;
   sandbox?: boolean;
-  allow?: string;
 }
 
 function isEmbedItem(item: unknown): item is EmbedItem {
@@ -79,6 +78,16 @@ function EmbedItemRenderer({ item }: { item: EmbedItem }) {
       return (
         <div className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
           Invalid URL protocol: {url.protocol}
+        </div>
+      );
+    }
+    // Reject same-origin src URLs — they could serve malicious content from the
+    // gateway origin that inherits all cookies and auth headers.
+    const windowOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    if (windowOrigin && url.origin === windowOrigin) {
+      return (
+        <div className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
+          Same-origin embeds are not permitted for security reasons
         </div>
       );
     }

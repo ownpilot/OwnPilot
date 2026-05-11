@@ -69,20 +69,40 @@ export class JobsRepository extends BaseRepository {
   /**
    * Claim the next available job using FOR UPDATE SKIP LOCKED.
    * Returns null if no jobs are available to claim.
+   *
+   * Uses a CTE to atomically select-and-update in a single statement,
+   * eliminating the TOCTOU window between SELECT and UPDATE that existed
+   * when these were two separate queries.
    */
   async claimJob(queue = 'default', priority = 0): Promise<JobRecord | null> {
+    // Atomic claim-and-update via CTE: SELECT FOR UPDATE locks the row, then UPDATE
+    // modifies it — all in one round-trip. This prevents two workers from claiming
+    // the same job even under concurrent execution.
     const sql = `
-      SELECT id, name, queue, priority, payload, result, status,
-             run_after, started_at, completed_at, attempts, max_attempts,
-             created_at, updated_at
-      FROM ${JOBS_TABLE}
-      WHERE status = 'available'
-        AND queue = $1
-        AND priority <= $2
-        AND run_after <= NOW()
-      ORDER BY priority DESC, run_after ASC
-      LIMIT 1
-      FOR UPDATE SKIP LOCKED
+      WITH claimed AS (
+        SELECT id, name, queue, priority, payload, result,
+               run_after, started_at, completed_at, attempts, max_attempts,
+               created_at, updated_at
+        FROM ${JOBS_TABLE}
+        WHERE status = 'available'
+          AND queue = $1
+          AND priority <= $2
+          AND run_after <= NOW()
+        ORDER BY priority DESC, run_after ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      UPDATE ${JOBS_TABLE} AS j
+      SET status = 'active',
+          started_at = NOW(),
+          attempts = c.attempts + 1,
+          updated_at = NOW()
+      FROM claimed AS c
+      WHERE j.id = c.id
+      RETURNING
+        j.id, j.name, j.queue, j.priority, j.payload, j.result,
+        j.status, j.run_after, j.started_at, j.completed_at,
+        j.attempts, j.max_attempts, j.created_at, j.updated_at
     `;
     const rows = await this.query<{
       id: string;
@@ -104,12 +124,6 @@ export class JobsRepository extends BaseRepository {
     if (rows.length === 0) return null;
 
     const r = rows[0]!;
-    // Mark as active atomically
-    await this.execute(
-      `UPDATE ${JOBS_TABLE} SET status = 'active', started_at = NOW(), attempts = attempts + 1, updated_at = NOW() WHERE id = $1`,
-      [r.id]
-    );
-
     return {
       id: r.id,
       name: r.name,
@@ -117,11 +131,11 @@ export class JobsRepository extends BaseRepository {
       priority: r.priority,
       payload: r.payload,
       result: r.result,
-      status: 'active',
+      status: r.status,
       runAfter: r.run_after,
       startedAt: r.started_at ?? null,
       completedAt: r.completed_at ?? null,
-      attempts: r.attempts + 1,
+      attempts: r.attempts,
       maxAttempts: r.max_attempts,
       createdAt: r.created_at,
       updatedAt: r.updated_at,

@@ -62,10 +62,27 @@ import type { WorkflowProgressEvent } from './types.js';
 const log = getLog('WorkflowService');
 
 export class WorkflowService implements IWorkflowService {
+  // Mutex lock: stores a resolve function for each in-progress workflow.
+  // If a workflowId is in the map, that workflow is currently running.
+  // The AbortController is stored so we can abort a running workflow.
   private activeExecutions = new Map<string, AbortController>();
 
   private getToolService(): IToolService {
     return getServiceRegistry().get(Services.Tool);
+  }
+
+  /**
+   * Atomically check and set the active execution lock.
+   * Returns an AbortController if lock acquired, null if workflow is already running.
+   * Must call releaseExecutionLock(workflowId) when done.
+   */
+  private tryAcquireExecutionLock(workflowId: string): AbortController | null {
+    if (this.activeExecutions.has(workflowId)) {
+      return null;
+    }
+    const abortController = new AbortController();
+    this.activeExecutions.set(workflowId, abortController);
+    return abortController;
   }
 
   /**
@@ -89,13 +106,11 @@ export class WorkflowService implements IWorkflowService {
       workflow.variables = { ...workflow.variables, __inputs: options.inputs };
     }
 
-    // Check for active execution
-    if (this.activeExecutions.has(workflowId)) {
+    // Atomically acquire execution lock to prevent race conditions
+    const abortController = this.tryAcquireExecutionLock(workflowId);
+    if (!abortController) {
       throw new Error('Workflow is already running');
     }
-
-    const abortController = new AbortController();
-    this.activeExecutions.set(workflowId, abortController);
 
     const wfLog = await repo.createLog(workflowId, workflow.name);
     const startTime = Date.now();
@@ -530,13 +545,11 @@ export class WorkflowService implements IWorkflowService {
       return finalLog ?? pausedLog;
     }
 
-    // Check for active execution
-    if (this.activeExecutions.has(workflowId)) {
+    // Atomically acquire execution lock to prevent race conditions
+    const abortController = this.tryAcquireExecutionLock(workflowId);
+    if (!abortController) {
       throw new Error('Workflow is already running');
     }
-
-    const abortController = new AbortController();
-    this.activeExecutions.set(workflowId, abortController);
     const startTime = Date.now();
 
     // Update log status to running for resume

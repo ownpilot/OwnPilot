@@ -20,10 +20,17 @@ const IS_WINDOWS = process.platform === 'win32';
 /**
  * On Windows, node-pty cannot directly spawn .cmd/.bat files (npm global binaries).
  * We resolve this by using cmd.exe /c as the shell.
+ *
+ * SECURITY: cmd.exe /c parses metacharacters (& | > <) in the command string.
+ * Always use windowsVerbatimArguments: true in spawn options to prevent
+ * re-parsing of arguments, and avoid placing shell metacharacters in the
+ * command itself (the command string goes through cmd.exe regardless).
  */
 function resolveCommand(command: string, args: string[]): { file: string; args: string[] } {
   if (!IS_WINDOWS) return { file: command, args };
-  // Use cmd.exe /c to handle .cmd scripts and PATH resolution
+  // Use cmd.exe /c to handle .cmd scripts and PATH resolution.
+  // Arguments are passed as individual strings (not joined into a single
+  // command string) to minimize additional parsing layers.
   return { file: 'cmd.exe', args: ['/c', command, ...args] };
 }
 
@@ -118,6 +125,7 @@ export async function runWithPty(
         rows,
         cwd,
         env,
+        ...(IS_WINDOWS ? { windowsVerbatimArguments: true } : {}),
       });
     } catch (err) {
       // EBADF on macOS or other spawn errors
@@ -237,6 +245,7 @@ export async function spawnStreamingPty(
       rows,
       cwd,
       env,
+      ...(IS_WINDOWS ? { windowsVerbatimArguments: true } : {}),
     });
   } catch (err) {
     throw new Error(`Failed to spawn PTY process: ${err}`);
@@ -329,6 +338,7 @@ export function spawnStreamingProcess(
       env,
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
+      ...(IS_WINDOWS ? { windowsVerbatimArguments: true } : {}),
     });
   } catch (err) {
     throw new Error(`Failed to spawn process: ${err}`);

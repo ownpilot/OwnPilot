@@ -200,17 +200,19 @@ describe('Operation Routes', () => {
   // POST /db/maintenance
   // ---------------------------------------------------------------------------
   describe('POST /db/maintenance', () => {
-    it('returns 409 when an operation is already running', async () => {
-      testOperationStatus = { isRunning: true, operation: 'backup' };
+    it('returns 409 when another instance holds the advisory lock', async () => {
+      // New code uses pg_try_advisory_lock instead of in-memory operationStatus
+      mockQueryOne.mockResolvedValueOnce({ acquired: false });
 
       const res = await app.request('/db/maintenance', { method: 'POST' });
       expect(res.status).toBe(409);
       const json = await res.json();
       expect(json.error.code).toBe('OPERATION_IN_PROGRESS');
-      expect(json.error.message).toContain('backup');
     });
 
     it('returns 400 for an invalid maintenance type', async () => {
+      mockQueryOne.mockResolvedValueOnce({ acquired: true });
+
       const res = await app.request('/db/maintenance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -243,6 +245,8 @@ describe('Operation Routes', () => {
     });
 
     it('starts vacuum maintenance and returns 202 with correct message', async () => {
+      // Lock acquisition succeeds
+      mockQueryOne.mockResolvedValueOnce({ acquired: true });
       mockExec.mockResolvedValue(undefined);
 
       const res = await app.request('/db/maintenance', {
@@ -260,6 +264,7 @@ describe('Operation Routes', () => {
     });
 
     it('defaults to vacuum type when no type is provided in body', async () => {
+      mockQueryOne.mockResolvedValueOnce({ acquired: true });
       mockExec.mockResolvedValue(undefined);
 
       const res = await app.request('/db/maintenance', { method: 'POST' });
@@ -269,6 +274,7 @@ describe('Operation Routes', () => {
     });
 
     it('starts analyze maintenance and returns 202', async () => {
+      mockQueryOne.mockResolvedValueOnce({ acquired: true });
       mockExec.mockResolvedValue(undefined);
 
       const res = await app.request('/db/maintenance', {
@@ -282,6 +288,7 @@ describe('Operation Routes', () => {
     });
 
     it('starts full maintenance and returns 202', async () => {
+      mockQueryOne.mockResolvedValueOnce({ acquired: true });
       mockExec.mockResolvedValue(undefined);
 
       const res = await app.request('/db/maintenance', {

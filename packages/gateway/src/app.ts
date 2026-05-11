@@ -166,9 +166,10 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     }
   });
 
-  // CORS - Never default to wildcard for security
+  // CORS - Scoped to API routes only. Webhooks use HMAC auth, not CORS.
+  // Never default to wildcard for security.
   app.use(
-    '*',
+    '/api/*',
     cors({
       origin: fullConfig.corsOrigins ?? [],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -179,10 +180,7 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
         'X-Request-ID',
         'X-Session-Token',
       ],
-      exposeHeaders: [
-        'X-Request-ID',
-        'X-Response-Time',
-      ],
+      exposeHeaders: ['X-Request-ID', 'X-Response-Time'],
       maxAge: SECONDS_PER_DAY,
       credentials: true,
     })

@@ -570,6 +570,14 @@ const splitAudioOverride: ToolExecutor = async (params, context): Promise<ToolEx
       };
     }
 
+    // Validate format parameter — must be alphanumeric (ffmpeg codec names don't contain dashes)
+    if (!/^[a-zA-Z0-9]+$/.test(format)) {
+      return {
+        content: { error: 'Invalid format: must be alphanumeric (e.g., mp3, wav, flac)' },
+        isError: true,
+      };
+    }
+
     await fs.mkdir(outDir, { recursive: true });
 
     const baseName = path.basename(source, path.extname(source));

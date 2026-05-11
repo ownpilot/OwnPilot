@@ -1458,10 +1458,10 @@ async function executeStopSubclaw(
   if (!subclawId) return { success: false, error: 'subclaw_id is required' };
 
   try {
-    // Verify it's actually a child of this claw
+    // Verify it's actually a child of this claw and belongs to the same user
     const { getClawsRepository } = await import('../db/repositories/claws.js');
     const repo = getClawsRepository();
-    const subclaw = await repo.getByIdAnyUser(subclawId);
+    const subclaw = await repo.getById(subclawId, userId);
     if (!subclaw || subclaw.parentClawId !== ctx.clawId) {
       return { success: false, error: 'Subclaw not found or not a child of this claw' };
     }

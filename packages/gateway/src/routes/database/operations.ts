@@ -96,16 +96,22 @@ operationRoutes.get('/status', async (c) => {
 
 /**
  * Run database maintenance (VACUUM, ANALYZE)
+ *
+ * Uses PostgreSQL advisory lock for cross-instance mutual exclusion.
+ * Only one maintenance operation can run across all server instances.
  */
 operationRoutes.post('/maintenance', async (c) => {
-  if (operationStatus.isRunning) {
+  let connected = false;
+  let adapter: ReturnType<typeof getAdapterSync>;
+  try {
+    adapter = getAdapterSync();
+    connected = adapter.isConnected();
+    if (!connected) throw new Error('Not connected');
+  } catch {
     return apiError(
       c,
-      {
-        code: ERROR_CODES.OPERATION_IN_PROGRESS,
-        message: `A ${operationStatus.operation} operation is already in progress`,
-      },
-      409
+      { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' },
+      400
     );
   }
 
@@ -124,75 +130,81 @@ operationRoutes.post('/maintenance', async (c) => {
   }
   const maintenanceType = rawType as (typeof ALLOWED_MAINTENANCE_TYPES)[number];
 
-  let connected = false;
-  try {
-    const adapter = getAdapterSync();
-    connected = adapter.isConnected();
+  // Use PostgreSQL advisory lock for cross-instance mutual exclusion.
+  // pg_try_advisory_lock returns true if acquired, false if held by another session.
+  const lockResult = await adapter.queryOne<{ acquired: boolean }>(
+    'SELECT pg_try_advisory_lock(1) as acquired'
+  );
 
-    if (!connected) {
-      throw new Error('Not connected');
-    }
-
-    setOperationStatus({
-      isRunning: true,
-      operation: 'maintenance',
-      lastRun: new Date().toISOString(),
-      output: [],
-    });
-
-    // Run maintenance asynchronously
-    (async () => {
-      try {
-        const adapter = getAdapterSync();
-
-        switch (maintenanceType) {
-          case 'vacuum':
-            operationStatus.output?.push('Running VACUUM...');
-            await adapter.exec('VACUUM');
-            operationStatus.output?.push('VACUUM completed');
-            break;
-
-          case 'analyze':
-            operationStatus.output?.push('Running ANALYZE...');
-            await adapter.exec('ANALYZE');
-            operationStatus.output?.push('ANALYZE completed');
-            break;
-
-          case 'full':
-            operationStatus.output?.push('Running VACUUM FULL (this may take a while)...');
-            await adapter.exec('VACUUM FULL');
-            operationStatus.output?.push('VACUUM FULL completed');
-            operationStatus.output?.push('Running ANALYZE...');
-            await adapter.exec('ANALYZE');
-            operationStatus.output?.push('ANALYZE completed');
-            break;
-        }
-
-        operationStatus.isRunning = false;
-        operationStatus.lastResult = 'success';
-      } catch (err) {
-        operationStatus.isRunning = false;
-        operationStatus.lastResult = 'failure';
-        operationStatus.lastError = getErrorMessage(err, 'Maintenance failed');
-        operationStatus.output?.push(`Error: ${operationStatus.lastError}`);
-      }
-    })();
-
-    return apiResponse(
-      c,
-      {
-        message: `Maintenance started: ${maintenanceType}`,
-        type: maintenanceType,
-      },
-      202
-    );
-  } catch {
+  if (!lockResult?.acquired) {
     return apiError(
       c,
-      { code: ERROR_CODES.POSTGRES_NOT_CONNECTED, message: 'PostgreSQL is not connected.' },
-      400
+      {
+        code: ERROR_CODES.OPERATION_IN_PROGRESS,
+        message: 'A maintenance or backup operation is already in progress on another instance',
+      },
+      409
     );
   }
+
+  setOperationStatus({
+    isRunning: true,
+    operation: 'maintenance',
+    lastRun: new Date().toISOString(),
+    output: [],
+  });
+
+  // Run maintenance asynchronously
+  (async () => {
+    try {
+      switch (maintenanceType) {
+        case 'vacuum':
+          operationStatus.output?.push('Running VACUUM...');
+          await adapter.exec('VACUUM');
+          operationStatus.output?.push('VACUUM completed');
+          break;
+
+        case 'analyze':
+          operationStatus.output?.push('Running ANALYZE...');
+          await adapter.exec('ANALYZE');
+          operationStatus.output?.push('ANALYZE completed');
+          break;
+
+        case 'full':
+          operationStatus.output?.push('Running VACUUM FULL (this may take a while)...');
+          await adapter.exec('VACUUM FULL');
+          operationStatus.output?.push('VACUUM FULL completed');
+          operationStatus.output?.push('Running ANALYZE...');
+          await adapter.exec('ANALYZE');
+          operationStatus.output?.push('ANALYZE completed');
+          break;
+      }
+
+      operationStatus.isRunning = false;
+      operationStatus.lastResult = 'success';
+    } catch (err) {
+      operationStatus.isRunning = false;
+      operationStatus.lastResult = 'failure';
+      operationStatus.lastError = getErrorMessage(err, 'Maintenance failed');
+      operationStatus.output?.push(`Error: ${operationStatus.lastError}`);
+    } finally {
+      // Always release the advisory lock
+      try {
+        await adapter.execute('SELECT pg_advisory_unlock(1)');
+      } catch {
+        // Best-effort release
+      }
+    }
+  })();
+
+  return apiResponse(
+    c,
+    {
+      message: `Maintenance started: ${maintenanceType}`,
+      type: maintenanceType,
+    },
+    202
+  );
 });
 
 /**

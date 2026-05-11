@@ -334,7 +334,15 @@ export function createSandboxUtils() {
       return Number(value.toFixed(decimals));
     },
     randomInt(min: number = 0, max: number = 100): number {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+      // Use crypto.randomBytes for cryptographically secure random integers
+      const range = max - min + 1;
+      const bytesNeeded = Math.ceil(Math.log2(range) / 8);
+      const maxValid = Math.pow(256, bytesNeeded) - (Math.pow(256, bytesNeeded) % range);
+      let randomValue: number;
+      do {
+        randomValue = parseInt(crypto.randomBytes(bytesNeeded).toString('hex'), 16);
+      } while (randomValue >= maxValid);
+      return (randomValue % range) + min;
     },
     sum(numbers: number[]): number {
       assertArraySize(numbers, 'sum');
@@ -414,7 +422,8 @@ export function createSandboxUtils() {
       assertArraySize(arr, 'shuffle');
       const shuffled = [...arr];
       for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        // Use crypto.randomInt for cryptographically secure random index selection
+        const j = crypto.randomInt(0, i + 1);
         const temp = shuffled[i]!;
         shuffled[i] = shuffled[j]!;
         shuffled[j] = temp;
