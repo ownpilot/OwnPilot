@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "google/gemini-3.1-flash-lite",
+      "name": "Gemini 3.1 Flash Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 65000,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-07"
+    },
+    {
       "id": "xai/grok-4.3",
       "name": "Grok 4.3",
       "contextWindow": 1000000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-30"
     },
     {

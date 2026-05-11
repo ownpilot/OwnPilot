@@ -1,0 +1,34 @@
+{
+  "id": "firepass",
+  "name": "Fireworks (Firepass)",
+  "type": "openai-compatible",
+  "apiKeyEnv": "FIREPASS_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
+      "name": "Kimi K2.6 Turbo",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-17"
+    }
+  ],
+  "baseUrl": "https://api.fireworks.ai/inference/v1/",
+  "docsUrl": "https://docs.fireworks.ai/firepass"
+}

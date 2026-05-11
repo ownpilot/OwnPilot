@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "ring-2.6-1t-free",
+      "name": "Ring 2.6 1T Free",
+      "contextWindow": 262000,
+      "maxOutput": 66000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-08"
+    },
+    {
       "id": "gpt-5.5-pro",
       "name": "GPT-5.5 Pro",
       "contextWindow": 1050000,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {

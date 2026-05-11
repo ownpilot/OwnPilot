@@ -678,5 +678,5 @@
     }
   ],
   "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
-  "docsUrl": "https://ai.google.dev/gemini-api/docs/pricing"
+  "docsUrl": "https://ai.google.dev/gemini-api/docs/models"
 }
