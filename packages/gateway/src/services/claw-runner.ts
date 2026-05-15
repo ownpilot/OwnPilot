@@ -70,21 +70,29 @@ export class ClawRunner {
 
   /**
    * Execute a single cycle inside a ClawExecutionContext.
+   *
+   * `abortSignal` lets the manager cancel an in-flight cycle (e.g. on stop or
+   * pause) without waiting for the cycle timeout. The agent pipeline races
+   * the abort against the chat call and rejects immediately on signal.
    */
-  async runCycle(session: ClawSession): Promise<ClawCycleResult> {
+  async runCycle(session: ClawSession, abortSignal?: AbortSignal): Promise<ClawCycleResult> {
     const ctx = {
       clawId: this.config.id,
       userId: this.config.userId,
       workspaceId: this.config.workspaceId,
       depth: this.config.depth,
+      sandbox: this.config.sandbox,
     };
 
-    return runInClawContext(ctx, () => this.executeCycle(session));
+    return runInClawContext(ctx, () => this.executeCycle(session, abortSignal));
   }
 
   // ---------- Private Helpers ----------
 
-  private async executeCycle(session: ClawSession): Promise<ClawCycleResult> {
+  private async executeCycle(
+    session: ClawSession,
+    abortSignal?: AbortSignal
+  ): Promise<ClawCycleResult> {
     const startTime = Date.now();
     const cycleNumber = session.cyclesCompleted + 1;
 
@@ -109,6 +117,18 @@ export class ClawRunner {
         this.agent = newAgent;
         this.cachedProvider = provider;
         this.cachedModel = model;
+      } else {
+        // Reset the agent's conversation between cycles. Each cycle is its own
+        // mini-task: the cycle message already carries forward state via
+        // .claw/MEMORY.md, .claw/TASKS.md, persistentContext, and inbox. Without
+        // this reset, conversation history accumulates unbounded across
+        // potentially thousands of cycles, blowing up token cost and eventually
+        // exceeding context windows.
+        try {
+          this.agent.reset();
+        } catch (err) {
+          log.warn(`[${this.config.id}] agent.reset() failed: ${getErrorMessage(err)}`);
+        }
       }
 
       const cycleMessage = this.buildCycleMessage(session, cycleNumber);
@@ -118,6 +138,9 @@ export class ClawRunner {
         message: cycleMessage,
         timeoutMs: this.config.limits.cycleTimeoutMs,
         timeoutLabel: 'Claw cycle',
+        abortSignal,
+        agentId: this.config.id,
+        userId: this.config.userId,
       });
 
       const toolCalls: ClawToolCall[] = pipelineResult.toolCalls.map((tc) => ({
@@ -396,27 +419,16 @@ export class ClawRunner {
     );
     parts.push('');
 
-    // Read and inject INSTRUCTIONS.md into system prompt
-    const instructions = readClawFile(this.config.workspaceId, 'INSTRUCTIONS.md');
-    if (instructions) {
-      parts.push('## Your Instructions (.claw/INSTRUCTIONS.md)');
-      parts.push(instructions.trim());
-      parts.push('');
-    }
+    // Note: INSTRUCTIONS.md content and workspace file listing are injected
+    // by buildCycleMessage() each cycle rather than here. This keeps the
+    // system prompt static (so the cached Agent stays valid across cycles)
+    // while still letting the claw see updates it made to its own directive
+    // files or workspace contents.
 
-    // Workspace info
     if (this.config.workspaceId) {
       parts.push('## Workspace');
       parts.push(`Workspace ID: ${this.config.workspaceId}`);
-      try {
-        const files = getSessionWorkspaceFiles(this.config.workspaceId);
-        if (files.length > 0) {
-          parts.push('Files:');
-          this.appendFileTree(parts, files, 0);
-        }
-      } catch {
-        // workspace not yet initialized
-      }
+      parts.push('Current files and directives are listed in each cycle message.');
       parts.push('');
     }
 
@@ -479,6 +491,28 @@ export class ClawRunner {
 
     parts.push(`--- Cycle ${cycleNumber} ---`);
     parts.push(`\n## Current Time\n${buildDateTimeContext()}`);
+
+    // .claw/INSTRUCTIONS.md — re-injected every cycle so directive edits
+    // made by the claw itself are honored from the very next cycle.
+    const instructions = readClawFile(this.config.workspaceId, 'INSTRUCTIONS.md');
+    if (instructions && instructions.trim().length > 0) {
+      parts.push(`\n## Your Instructions (.claw/INSTRUCTIONS.md)\n${instructions.trim()}`);
+    }
+
+    // Workspace file tree — refreshed every cycle so newly created files
+    // and outputs are visible to the agent.
+    if (this.config.workspaceId) {
+      try {
+        const files = getSessionWorkspaceFiles(this.config.workspaceId);
+        if (files.length > 0) {
+          const tree: string[] = ['\n## Workspace Files'];
+          this.appendFileTree(tree, files, 0);
+          parts.push(tree.join('\n'));
+        }
+      } catch {
+        // workspace not yet initialized — skip
+      }
+    }
 
     if (Object.keys(session.persistentContext).length > 0) {
       parts.push(

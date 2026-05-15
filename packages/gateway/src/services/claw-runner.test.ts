@@ -70,6 +70,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     Agent: class MockAgent {
       chat = mockChat;
       setDirectToolMode = vi.fn();
+      reset = vi.fn();
     },
     ToolRegistry: class MockToolRegistry {
       setConfigCenter = vi.fn();
@@ -256,6 +257,29 @@ describe('ClawRunner', () => {
       const chatArg = mockChat.mock.calls[0][0] as string;
       expect(chatArg).toContain('$0.0523');
     });
+
+    it('resets the cached agent between cycles to bound conversation history', async () => {
+      // First cycle creates the agent, second should reuse + reset it.
+      const session = makeSession();
+      await runner.runCycle(session);
+      const cachedAgent = (runner as unknown as { agent: { reset?: () => void } }).agent;
+      expect(cachedAgent).toBeDefined();
+      expect(cachedAgent?.reset).toBeDefined();
+
+      await runner.runCycle(session);
+      expect((cachedAgent?.reset as ReturnType<typeof vi.fn>).mock.calls.length).toBe(1);
+
+      await runner.runCycle(session);
+      expect((cachedAgent?.reset as ReturnType<typeof vi.fn>).mock.calls.length).toBe(2);
+    });
+
+    it('does not reset on the very first cycle (fresh agent)', async () => {
+      await runner.runCycle(makeSession());
+      const cachedAgent = (runner as unknown as { agent: { reset: ReturnType<typeof vi.fn> } }).agent;
+      // Reset should not have been called on cycle 1 because the agent was
+      // just created — only between cycles.
+      expect(cachedAgent.reset.mock.calls.length).toBe(0);
+    });
   });
 
   describe('system prompt', () => {
@@ -273,7 +297,10 @@ describe('ClawRunner', () => {
     });
 
     it('includes workspace info when workspaceId is set', async () => {
-      mockGetSessionWorkspaceFiles.mockReturnValueOnce([
+      // Workspace tree now refreshes per cycle (in cycle message), not in the
+      // cached system prompt. The system prompt only mentions the workspace ID
+      // and points at the per-cycle listing.
+      mockGetSessionWorkspaceFiles.mockReturnValue([
         { name: 'script.py', isDirectory: false, size: 120 },
       ]);
 
@@ -283,7 +310,10 @@ describe('ClawRunner', () => {
       const basePromptArg = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
       expect(basePromptArg).toContain('Workspace');
       expect(basePromptArg).toContain('ws-abc');
-      expect(basePromptArg).toContain('script.py');
+
+      const cycleArg = mockChat.mock.calls[0][0] as string;
+      expect(cycleArg).toContain('Workspace Files');
+      expect(cycleArg).toContain('script.py');
     });
 
     it('handles empty workspace gracefully', async () => {

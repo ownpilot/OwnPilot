@@ -12,7 +12,7 @@
  * Actual cycle execution is delegated to ClawRunner.
  */
 
-import { getEventSystem, getErrorMessage } from '@ownpilot/core';
+import { getEventSystem, getErrorMessage, generateId } from '@ownpilot/core';
 import type { ClawSession, ClawCycleResult, ClawEscalation, EventHandler } from '@ownpilot/core';
 import { ClawRunner } from './claw-runner.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
@@ -63,6 +63,18 @@ interface ManagedClaw {
   cycleInProgress: boolean;
   currentCycleNumber: number;
   idleCycles: number;
+  /**
+   * AbortController for the current cycle. Allows pause/stop/escalation to
+   * cancel an in-flight agent call instead of waiting for the cycle timeout.
+   */
+  abortController: AbortController | null;
+  /**
+   * Tracks whether the session has changes that have not been written to the
+   * database yet. The periodic persist timer uses this to skip no-op writes
+   * (e.g. event-mode claws idling between rare events). Mutating call paths
+   * set this true; persistSession clears it on successful write.
+   */
+  dirty: boolean;
 }
 
 // ============================================================================
@@ -71,6 +83,13 @@ interface ManagedClaw {
 
 export class ClawManager {
   private claws = new Map<string, ManagedClaw>();
+  /**
+   * Tracks claw IDs whose startClaw() is in progress. Set synchronously at
+   * the top of startClaw() before any await, so concurrent invocations for
+   * the same id can be rejected immediately instead of racing through
+   * setup and double-spawning runners/timers/workspaces.
+   */
+  private starting = new Set<string>();
   private running = false;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -127,6 +146,13 @@ export class ClawManager {
 
   /**
    * Graceful shutdown.
+   *
+   * Operator-initiated process exit (SIGTERM, deploy, restart) must NOT
+   * mark running claws as 'stopped' — that would lose resume-on-restart
+   * behavior, since getInterruptedSessions only resumes 'running' /
+   * 'waiting' / 'starting'. Instead, abort any in-flight cycle so the
+   * pipeline cancels cleanly, clear timers + event subscriptions, persist
+   * each session in its current state, and let next boot pick them up.
    */
   async stop(): Promise<void> {
     if (!this.running) return;
@@ -137,12 +163,30 @@ export class ClawManager {
       this.cleanupTimer = null;
     }
 
-    const stopPromises: Promise<void>[] = [];
+    const flushPromises: Promise<void>[] = [];
     for (const [clawId, managed] of this.claws) {
-      stopPromises.push(this.stopClawInternal(clawId, managed, 'user'));
+      // Abort in-flight cycle so it stops promptly. The catch path's abort
+      // detection will skip its bogus error counting/scheduleNext.
+      managed.abortController?.abort();
+      // Clear timers + event subscriptions so the process can exit cleanly.
+      this.clearScheduling(managed);
+      if (managed.persistTimer) {
+        clearInterval(managed.persistTimer);
+        managed.persistTimer = null;
+      }
+      // Persist current state (NOT 'stopped') so getInterruptedSessions
+      // resumes this claw on next boot.
+      flushPromises.push(
+        this.persistSession(clawId, managed).catch((err) => {
+          log.warn(
+            `[${clawId}] Failed to flush session on shutdown: ${err instanceof Error ? err.message : String(err)}`
+          );
+        })
+      );
     }
-    await Promise.allSettled(stopPromises);
+    await Promise.allSettled(flushPromises);
     this.claws.clear();
+    this.starting.clear();
 
     log.info('Claw Manager stopped');
   }
@@ -155,14 +199,30 @@ export class ClawManager {
     if (this.claws.has(clawId)) {
       throw new Error(`Claw ${clawId} is already running`);
     }
+    // Reject concurrent startClaw() calls for the same clawId. Without this
+    // guard, two callers can both pass the has() check and proceed through
+    // the awaited setup in parallel, ending with duplicate runners and
+    // orphaned timers since map.set is last-write-wins.
+    if (this.starting.has(clawId)) {
+      throw new Error(`Claw ${clawId} is currently starting`);
+    }
 
-    // Enforce concurrent claw limit
-    if (this.claws.size >= MAX_CONCURRENT_CLAWS) {
+    // Enforce concurrent claw limit (count both running and starting)
+    if (this.claws.size + this.starting.size >= MAX_CONCURRENT_CLAWS) {
       throw new Error(
         `Maximum concurrent claws (${MAX_CONCURRENT_CLAWS}) reached. Stop some claws before starting new ones.`
       );
     }
 
+    this.starting.add(clawId);
+    try {
+      return await this.startClawInternal(clawId, userId);
+    } finally {
+      this.starting.delete(clawId);
+    }
+  }
+
+  private async startClawInternal(clawId: string, userId: string): Promise<ClawSession> {
     const repo = getClawsRepository();
     const config = await repo.getById(clawId, userId);
     if (!config) throw new Error(`Claw ${clawId} not found`);
@@ -236,6 +296,8 @@ export class ClawManager {
       cycleInProgress: false,
       currentCycleNumber: 0,
       idleCycles: 0,
+      abortController: null,
+      dirty: true,
     };
 
     this.claws.set(clawId, managed);
@@ -249,8 +311,10 @@ export class ClawManager {
     // Emit start event
     this.emitEvent('claw.started', { clawId, userId, name: config.name });
 
-    // Start periodic persist timer
+    // Start periodic persist timer — skips no-op writes when no mutations
+    // have happened since the last persist (e.g. idle event-mode claws).
     managed.persistTimer = setInterval(() => {
+      if (!managed.dirty) return;
       this.persistSession(clawId, managed).catch((err) => {
         log.warn(`Failed to persist session: ${getErrorMessage(err)}`);
       });
@@ -279,6 +343,8 @@ export class ClawManager {
     if (managed.session.state !== 'running' && managed.session.state !== 'waiting') return false;
 
     this.clearScheduling(managed);
+    // Cancel any in-flight cycle so pause is immediate.
+    managed.abortController?.abort();
     managed.session.state = 'paused';
     await this.persistSession(clawId, managed);
     this.emitEvent('claw.paused', { clawId });
@@ -320,6 +386,7 @@ export class ClawManager {
 
     managed.session.inbox.push(message);
     this.trimInbox(managed.session);
+    this.markDirty(managed);
 
     const repo = getClawsRepository();
     await repo.appendToInbox(clawId, message);
@@ -329,13 +396,22 @@ export class ClawManager {
   }
 
   private trimInbox(session: ClawSession): void {
-    let totalBytes = JSON.stringify(session.inbox).length;
+    // O(n): compute per-message byte cost once, then drop from the head until
+    // both the byte and count caps are satisfied. Avoids the prior O(n²)
+    // stringify-on-every-shift pattern that scales poorly with chatty inboxes.
+    if (session.inbox.length === 0) return;
+    const sizes = session.inbox.map((m) => Buffer.byteLength(m, 'utf8') + 4); // +4 for JSON quoting/comma
+    let totalBytes = sizes.reduce((s, n) => s + n, 0);
+    let head = 0;
     while (
-      session.inbox.length > 0 &&
-      (totalBytes > MAX_INBOX_BYTES || session.inbox.length > MAX_INBOX_MESSAGES)
+      head < session.inbox.length &&
+      (totalBytes > MAX_INBOX_BYTES || session.inbox.length - head > MAX_INBOX_MESSAGES)
     ) {
-      session.inbox.shift();
-      totalBytes = JSON.stringify(session.inbox).length;
+      totalBytes -= sizes[head] ?? 0;
+      head++;
+    }
+    if (head > 0) {
+      session.inbox.splice(0, head);
     }
   }
 
@@ -349,6 +425,10 @@ export class ClawManager {
     managed.session.pendingEscalation = escalation;
     managed.session.state = 'escalation_pending';
     this.clearScheduling(managed);
+    // The cycle that called claw_request_escalation has already finished its
+    // tool call, but if another cycle is still in flight, cancel it so the
+    // claw doesn't keep working past the escalation gate.
+    managed.abortController?.abort();
 
     const repo = getClawsRepository();
     await repo.saveEscalationHistory(clawId, managed.session.cyclesCompleted, escalation);
@@ -360,6 +440,7 @@ export class ClawManager {
       reason: escalation.reason,
       requestId: escalation.id,
     });
+    this.broadcastUpdate(clawId, managed);
 
     log.info(`Claw ${clawId} requested escalation: ${escalation.type} — ${escalation.reason}`);
   }
@@ -415,6 +496,26 @@ export class ClawManager {
     if (!managed) return;
     if (!managed.session.artifacts.includes(artifactId)) {
       managed.session.artifacts.push(artifactId);
+      this.markDirty(managed);
+    }
+  }
+
+  /**
+   * Persist a session immediately (used by claw_set_context so working memory
+   * survives an unexpected crash between the periodic-persist intervals).
+   * Errors are logged internally so callers can fire-and-forget without
+   * unhandled-rejection warnings.
+   */
+  async flushSession(clawId: string): Promise<void> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return;
+    try {
+      await this.persistSession(clawId, managed);
+    } catch (err) {
+      log.warn(
+        `flushSession failed for ${clawId}:`,
+        err instanceof Error ? err.message : String(err)
+      );
     }
   }
 
@@ -489,6 +590,12 @@ export class ClawManager {
     const cycleNumber = managed.session.cyclesCompleted + 1;
     if (managed.cycleInProgress) {
       this.emitEvent('claw.cycle.skipped', { clawId, cycleNumber, reason: 'concurrent' });
+      // Reschedule so the claw keeps cycling once the in-flight cycle finishes.
+      // Without this, a missed tick from the previous timer would silently end
+      // the cycling loop for non single-shot modes.
+      if (managed.session.config.mode !== 'single-shot') {
+        this.scheduleNext(clawId, managed);
+      }
       return null;
     }
 
@@ -509,6 +616,25 @@ export class ClawManager {
         log.warn(`Claw ${clawId} rate limited (${managed.cyclesThisHour} cycles this hour)`);
         managed.session.state = 'paused';
         await this.persistSession(clawId, managed);
+        this.emitEvent('claw.paused', { clawId, reason: 'rate_limit' });
+        this.broadcastUpdate(clawId, managed);
+        // Schedule auto-resume at the start of the next hour window so the
+        // claw recovers without operator intervention.
+        const nextHourMs = (managed.hourWindow + 1) * 3_600_000 - Date.now();
+        managed.timer = setTimeout(
+          () => {
+            const m = this.claws.get(clawId);
+            if (!m) return;
+            m.session.state = m.session.config.mode === 'event' ? 'waiting' : 'running';
+            m.cyclesThisHour = 0;
+            m.hourWindow = Math.floor(Date.now() / 3_600_000);
+            this.markDirty(m);
+            this.emitEvent('claw.resumed', { clawId, reason: 'rate_limit_window' });
+            this.broadcastUpdate(clawId, m);
+            this.scheduleNext(clawId, m);
+          },
+          Math.max(1000, nextHourMs)
+        );
         return null;
       }
 
@@ -525,8 +651,14 @@ export class ClawManager {
       // runCycle reads session.inbox to build the prompt.
       const inboxSnapshot = [...managed.session.inbox];
 
+      // Fresh AbortController per cycle so pause/stop can cancel mid-cycle.
+      managed.abortController = new AbortController();
+
       // Execute
-      const result = await managed.runner.runCycle(managed.session);
+      const result = await managed.runner.runCycle(
+        managed.session,
+        managed.abortController.signal
+      );
 
       // After successful cycle, remove only the messages that were
       // present at cycle start. Messages that arrived during the
@@ -542,6 +674,7 @@ export class ClawManager {
       managed.session.lastCycleError = result.error ?? null;
       managed.lastCycleToolCalls = result.toolCalls.length;
       managed.cyclesThisHour++;
+      this.markDirty(managed);
 
       if (result.success) {
         managed.consecutiveErrors = 0;
@@ -572,42 +705,137 @@ export class ClawManager {
         return result;
       }
 
-      // Check consecutive errors — set 'failed' state to distinguish from manual pause
-      if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        log.warn(`Claw ${clawId} auto-failed after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`);
-        managed.session.state = 'failed';
-        await this.persistSession(clawId, managed);
-        this.claws.delete(clawId);
-        if (managed.persistTimer) {
-          clearInterval(managed.persistTimer);
-          managed.persistTimer = null;
+      // Programmatically enforce autonomyPolicy.maxCostUsdBeforePause. The
+      // prompt-side instruction tells the LLM to self-pause, but we cannot
+      // rely on it — a runaway claw will keep spending. Auto-request an
+      // escalation so the operator decides whether to grant a budget bump
+      // or stop the claw. Only fires once: subsequent cycles see
+      // pendingEscalation already set and skip via state guard.
+      const policyMaxCost = managed.session.config.autonomyPolicy?.maxCostUsdBeforePause;
+      if (
+        policyMaxCost !== undefined &&
+        managed.session.totalCostUsd >= policyMaxCost &&
+        managed.session.state !== 'escalation_pending' &&
+        !managed.session.pendingEscalation
+      ) {
+        log.warn(
+          `[${clawId}] autonomyPolicy.maxCostUsdBeforePause reached ($${managed.session.totalCostUsd.toFixed(4)} >= $${policyMaxCost}); requesting budget_increase escalation`
+        );
+        try {
+          await this.requestEscalation(clawId, {
+            id: generateId('esc'),
+            type: 'budget_increase',
+            reason: `Total cost $${managed.session.totalCostUsd.toFixed(4)} reached autonomy-policy threshold $${policyMaxCost}`,
+            details: {
+              totalCostUsd: managed.session.totalCostUsd,
+              maxCostUsdBeforePause: policyMaxCost,
+              cyclesCompleted: managed.session.cyclesCompleted,
+              autoTriggered: true,
+            },
+            requestedAt: new Date(),
+          });
+        } catch (err) {
+          log.warn(
+            `[${clawId}] Failed to auto-request escalation: ${err instanceof Error ? err.message : String(err)}`
+          );
         }
-        this.emitEvent('claw.stopped', {
-          clawId,
-          userId: managed.session.config.userId,
-          reason: 'failed',
-          error: `Auto-failed after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Last error: ${result.error ?? 'unknown'}`,
-        });
         return result;
       }
 
-      // Schedule next cycle (non single-shot modes)
+      // Check consecutive errors — set 'failed' state to distinguish from manual pause
+      if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        log.warn(`Claw ${clawId} auto-failed after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`);
+        managed.session.lastCycleError =
+          result.error ?? `Auto-failed after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`;
+        await this.stopClawInternal(clawId, managed, 'failed');
+        return result;
+      }
+
+      // Schedule next cycle (non single-shot modes), but only if the claw
+      // is still in a runnable state. pauseClaw/stopClaw can flip state to
+      // 'paused'/'stopped' while a cycle is in flight; without this guard
+      // we'd resurrect a paused claw the moment its current cycle finishes.
       if (managed.session.config.mode !== 'single-shot') {
         if (managed.session.config.mode === 'event') {
-          managed.session.state = 'waiting'; // back to waiting for next event
+          if (managed.session.state === 'running') {
+            managed.session.state = 'waiting'; // back to waiting for next event
+          }
         }
-        this.scheduleNext(clawId, managed);
+        if (this.isSchedulableState(managed.session.state)) {
+          this.scheduleNext(clawId, managed);
+        }
       }
 
       return result;
     } catch (err) {
+      // Aborted cycles are benign cancellations (pause/stop/escalation), not
+      // real errors. Don't count toward MAX_CONSECUTIVE_ERRORS, don't save a
+      // bogus history row, and don't reschedule. The pause/stop caller has
+      // already set the next state.
+      const aborted =
+        managed.abortController?.signal.aborted === true ||
+        (err instanceof Error && err.name === 'AbortError');
+      if (aborted) {
+        log.info(`[${clawId}] Cycle ${cycleNumber} cancelled (pause/stop/escalation)`);
+        return null;
+      }
+
       const errorMsg = getErrorMessage(err);
       log.error(`Claw ${clawId} cycle execution error: ${errorMsg}`);
+      // Count exception-path failures toward consecutive-error budget so a
+      // persistently broken provider/agent will eventually trigger auto-fail.
+      managed.consecutiveErrors++;
+      managed.session.lastCycleError = errorMsg;
+      managed.session.lastCycleAt = new Date();
+      this.markDirty(managed);
       this.emitEvent('claw.error', { clawId, error: errorMsg, cycleNumber });
+
+      // Persist failure as a history entry so users can investigate from the UI.
+      try {
+        const repo = getClawsRepository();
+        await repo.saveHistory(clawId, cycleNumber, {
+          success: false,
+          toolCalls: [],
+          output: '',
+          outputMessage: '',
+          durationMs: 0,
+          turns: 0,
+          error: errorMsg,
+        });
+      } catch (saveErr) {
+        log.warn(`[${clawId}] Failed to save error history: ${getErrorMessage(saveErr)}`);
+      }
+
+      // Trip MAX_CONSECUTIVE_ERRORS auto-fail from the catch path too.
+      if (managed.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+        log.warn(`Claw ${clawId} auto-failed after ${MAX_CONSECUTIVE_ERRORS} consecutive errors`);
+        await this.stopClawInternal(clawId, managed, 'failed');
+        return null;
+      }
+
+      // For non single-shot modes, keep cycling — backoff scheduling kicks in.
+      // Same state-guard as the happy path: don't resurrect a paused/stopped claw.
+      if (
+        managed.session.config.mode !== 'single-shot' &&
+        this.claws.has(clawId) &&
+        this.isSchedulableState(managed.session.state)
+      ) {
+        this.scheduleNext(clawId, managed);
+      }
       return null;
     } finally {
       managed.cycleInProgress = false;
+      managed.abortController = null;
     }
+  }
+
+  /**
+   * States from which it is safe to schedule the next cycle. Anything else
+   * (paused, stopped, completed, failed, escalation_pending) means an
+   * external actor has decided this claw should stop running.
+   */
+  private isSchedulableState(state: ClawSession['state']): boolean {
+    return state === 'running' || state === 'waiting';
   }
 
   // ============================================================================
@@ -710,12 +938,27 @@ export class ClawManager {
     const filters = managed.session.config.eventFilters ?? [];
     if (filters.length === 0) return;
 
+    const selfSource = `claw:${clawId}`;
+    const selfMarker = clawId;
+
     try {
       const eventSystem = getEventSystem();
       for (const eventType of filters) {
-        const handler: EventHandler = () => {
+        const handler: EventHandler = (event: unknown) => {
+          // Guard against self-trigger loops when an event-mode claw filters on
+          // event types it can emit itself (e.g. claw.*, claw.cycle.complete).
+          const ev = event as
+            | { source?: string; payload?: { _clawId?: string; clawId?: string } }
+            | undefined;
+          if (ev) {
+            if (ev.source === selfSource || ev.source === 'claw-manager') return;
+            const payloadClawId = ev.payload?._clawId ?? ev.payload?.clawId;
+            if (payloadClawId === selfMarker) return;
+          }
+
           if (managed.session.state === 'waiting') {
             managed.session.state = 'running';
+            this.markDirty(managed);
             managed.timer = setTimeout(() => {
               this.executeCycle(clawId).catch((err) => {
                 log.error(`Event-triggered cycle error: ${getErrorMessage(err)}`);
@@ -756,13 +999,24 @@ export class ClawManager {
     reason: string
   ): Promise<void> {
     this.clearScheduling(managed);
+    // Cancel any in-flight cycle so stop is immediate instead of waiting for
+    // the cycle timeout.
+    managed.abortController?.abort();
 
     if (managed.persistTimer) {
       clearInterval(managed.persistTimer);
       managed.persistTimer = null;
     }
 
-    managed.session.state = reason === 'completed' ? 'completed' : 'stopped';
+    // Map stop reasons to terminal session states so the UI and health checks
+    // can distinguish completion, manual stops, and failure conditions.
+    if (reason === 'completed') {
+      managed.session.state = 'completed';
+    } else if (reason === 'failed' || reason === 'budget_exceeded') {
+      managed.session.state = 'failed';
+    } else {
+      managed.session.state = 'stopped';
+    }
     managed.session.stoppedAt = new Date();
 
     await this.persistSession(clawId, managed);
@@ -775,6 +1029,27 @@ export class ClawManager {
     });
 
     log.info(`Claw ${clawId} stopped (${reason})`);
+
+    // Cascade stop to running subclaws so they don't outlive their parent.
+    // Without this, a stopped parent leaves orphaned children consuming
+    // budget/cycles. Recursion is bounded by MAX_CLAW_DEPTH (currently 3).
+    const childIds: string[] = [];
+    for (const [childId, child] of this.claws.entries()) {
+      if (child.session.config.parentClawId === clawId) {
+        childIds.push(childId);
+      }
+    }
+    for (const childId of childIds) {
+      const child = this.claws.get(childId);
+      if (!child) continue;
+      try {
+        await this.stopClawInternal(childId, child, 'parent_stopped');
+      } catch (err) {
+        log.warn(
+          `[${clawId}] Failed to cascade-stop child ${childId}: ${err instanceof Error ? err.message : String(err)}`
+        );
+      }
+    }
   }
 
   private async persistSession(clawId: string, managed: ManagedClaw): Promise<void> {
@@ -797,6 +1072,19 @@ export class ClawManager {
       artifacts: managed.session.artifacts,
       pendingEscalation: managed.session.pendingEscalation,
     });
+
+    // Successful write — clear the dirty flag so the next periodic tick can
+    // skip if no further mutations happen.
+    managed.dirty = false;
+  }
+
+  /**
+   * Mark the in-memory session as having unwritten changes. The periodic
+   * persist timer reads this to decide whether the next tick needs a DB
+   * write. Call this from any code path that mutates managed.session.
+   */
+  private markDirty(managed: ManagedClaw): void {
+    managed.dirty = true;
   }
 
   private emitEvent(type: string, data: Record<string, unknown>): void {

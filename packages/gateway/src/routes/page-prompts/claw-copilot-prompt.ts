@@ -25,7 +25,7 @@ A Claw is a persistent autonomous agent that composes LLM + workspace + soul + c
 - \`max_cycles:N\` — stop after N LLM cycles
 - \`on_report\` — stop when the claw generates a report
 - \`on_error\` — stop on first error
-- \`idle:N\` — stop after N seconds of inactivity
+- \`idle:N\` — stop after N consecutive cycles that made zero tool calls (not seconds)
 - Auto-fail: 5 consecutive errors triggers automatic shutdown
 
 **Directive System (.claw/)**

@@ -4,7 +4,7 @@
  * Follows the app's page convention: header -> tab bar -> PageHomeTab / content.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
@@ -74,6 +74,16 @@ export function ClawsPage() {
     fetchClaws();
   }, [fetchClaws]);
 
+  // Keep a ref to the current claws list so the WS handler can resolve names
+  // without forcing the subscription effect to re-run on every refresh. Without
+  // this, including `claws` in the deps would tear down + re-create all
+  // subscriptions on every fetchClaws() call, leaving a window where events
+  // could be missed.
+  const clawsRef = useRef<ClawConfig[]>([]);
+  useEffect(() => {
+    clawsRef.current = claws;
+  }, [claws]);
+
   // WS-driven refresh — now using colon-separated WS event names
   useEffect(() => {
     const unsubs = [
@@ -86,7 +96,7 @@ export function ClawsPage() {
       subscribe<{ clawId: string; type: string; reason: string }>(
         'claw:escalation',
         (p) => {
-          const claw = claws.find((c) => c.id === p.clawId);
+          const claw = clawsRef.current.find((c) => c.id === p.clawId);
           setEscalations((prev) => {
             if (prev.some((e) => e.clawId === p.clawId)) return prev;
             return [
@@ -104,7 +114,7 @@ export function ClawsPage() {
       ),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [subscribe, fetchClaws, claws]);
+  }, [subscribe, fetchClaws]);
 
   // Refetch when page changes
   useEffect(() => {

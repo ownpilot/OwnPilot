@@ -18,6 +18,56 @@ import { generateId, DEFAULT_CLAW_LIMITS, MAX_CLAW_DEPTH } from '@ownpilot/core'
 import { getClawManager } from './claw-manager.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
 
+/**
+ * Validate user-provided claw limits/intervals before they reach the runtime.
+ * Catches values that would make a claw unrunnable (zero/negative caps),
+ * dangerous (cycle timeouts in the days), or impossible to schedule
+ * (interval-mode without a positive intervalMs).
+ */
+function validateClawLimitsAndMode(input: CreateClawInput | UpdateClawInput): void {
+  const limits = input.limits;
+  if (limits) {
+    const checks: Array<[string, number | undefined, number, number]> = [
+      ['maxTurnsPerCycle', limits.maxTurnsPerCycle, 1, 100],
+      ['maxToolCallsPerCycle', limits.maxToolCallsPerCycle, 1, 1000],
+      ['maxCyclesPerHour', limits.maxCyclesPerHour, 1, 3600],
+      ['cycleTimeoutMs', limits.cycleTimeoutMs, 1000, 3_600_000],
+    ];
+    for (const [field, value, min, max] of checks) {
+      if (value === undefined) continue;
+      if (!Number.isFinite(value) || value < min || value > max) {
+        throw new Error(
+          `Invalid limits.${field}: must be a finite number between ${min} and ${max} (got ${value})`
+        );
+      }
+    }
+    if (
+      limits.totalBudgetUsd !== undefined &&
+      (!Number.isFinite(limits.totalBudgetUsd) || limits.totalBudgetUsd < 0)
+    ) {
+      throw new Error(
+        `Invalid limits.totalBudgetUsd: must be a non-negative finite number (got ${limits.totalBudgetUsd})`
+      );
+    }
+  }
+
+  // intervalMs is only meaningful for interval-mode claws; when set it must
+  // be at least 1s and at most 24h to avoid hot loops or impossible-to-trigger
+  // schedules.
+  const mode = (input as CreateClawInput).mode;
+  const intervalMs = input.intervalMs;
+  if (mode === 'interval' && (intervalMs === undefined || intervalMs <= 0)) {
+    throw new Error('mode "interval" requires a positive intervalMs');
+  }
+  if (intervalMs !== undefined) {
+    if (!Number.isFinite(intervalMs) || intervalMs < 1000 || intervalMs > 86_400_000) {
+      throw new Error(
+        `Invalid intervalMs: must be between 1000 (1s) and 86400000 (24h) (got ${intervalMs})`
+      );
+    }
+  }
+}
+
 export class ClawServiceImpl implements IClawService {
   // ---- CRUD ----
 
@@ -25,6 +75,8 @@ export class ClawServiceImpl implements IClawService {
     if (!input.name?.trim()) throw new Error('Claw name is required');
     if (!input.mission?.trim()) throw new Error('Claw mission is required');
     if (input.mission.length > 10_000) throw new Error('Mission exceeds 10,000 character limit');
+
+    validateClawLimitsAndMode(input);
 
     const repo = getClawsRepository();
 
@@ -86,6 +138,10 @@ export class ClawServiceImpl implements IClawService {
     userId: string,
     updates: UpdateClawInput
   ): Promise<ClawConfig | null> {
+    if (updates.mission !== undefined && updates.mission.length > 10_000) {
+      throw new Error('Mission exceeds 10,000 character limit');
+    }
+    validateClawLimitsAndMode(updates);
     return getClawsRepository().update(clawId, userId, updates);
   }
 
@@ -94,7 +150,31 @@ export class ClawServiceImpl implements IClawService {
     if (manager.isRunning(clawId)) {
       await manager.stopClaw(clawId, userId);
     }
-    return getClawsRepository().delete(clawId, userId);
+
+    // Capture workspaceId BEFORE delete so we can clean disk after the row is
+    // gone. Workspace dirs can hold installed packages, scripts, .claw/
+    // directives, and arbitrary files a runaway claw wrote — leaving them
+    // around after delete is a real disk leak (especially for users who
+    // create+delete claws in CI/automation).
+    const repo = getClawsRepository();
+    const config = await repo.getById(clawId, userId);
+    const workspaceId = config?.workspaceId;
+
+    const deleted = await repo.delete(clawId, userId);
+    if (!deleted) return false;
+
+    if (workspaceId) {
+      try {
+        const { deleteSessionWorkspace } = await import('../workspace/file-workspace.js');
+        deleteSessionWorkspace(workspaceId);
+      } catch {
+        // Best-effort — workspace may already be gone or path invalid.
+        // The DB row is already deleted; orphaned files can be reclaimed by
+        // a separate workspace garbage-collection pass if needed.
+      }
+    }
+
+    return true;
   }
 
   // ---- Lifecycle ----
@@ -118,8 +198,19 @@ export class ClawServiceImpl implements IClawService {
   async executeNow(clawId: string, userId: string): Promise<ClawCycleResult> {
     const claw = await getClawsRepository().getById(clawId, userId);
     if (!claw) throw new Error('Claw not found');
-    const result = await getClawManager().executeNow(clawId);
-    if (!result) throw new Error('Claw not running or cycle in progress');
+    const manager = getClawManager();
+    const session = manager.getSession(clawId);
+    if (!session) {
+      throw new Error('Claw not running — start it first');
+    }
+    if (session.state === 'paused') {
+      throw new Error('Claw is paused — resume it before triggering execute-now');
+    }
+    if (session.state === 'escalation_pending') {
+      throw new Error('Claw is waiting on an escalation — approve or deny it first');
+    }
+    const result = await manager.executeNow(clawId);
+    if (!result) throw new Error('Cycle in progress — wait for the current cycle to finish');
     return result;
   }
 

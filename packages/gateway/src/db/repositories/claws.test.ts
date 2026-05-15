@@ -384,7 +384,7 @@ describe('ClawsRepository', () => {
       await repo.appendToInbox('claw-1', 'New task for you');
 
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
-      expect(sql).toContain('inbox = inbox || $2::jsonb');
+      expect(sql).toContain("inbox = COALESCE(inbox, '[]'::jsonb) || $2::jsonb");
       const params = mockAdapter.execute.mock.calls[0][1] as unknown[];
       expect(params[1]).toBe('["New task for you"]');
     });

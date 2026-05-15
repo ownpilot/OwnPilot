@@ -37,6 +37,9 @@ vi.mock('../db/repositories/claws.js', () => ({
 
 vi.mock('../workspace/file-workspace.js', () => ({
   getOrCreateSessionWorkspace: mockGetOrCreateSessionWorkspace,
+  updateSessionWorkspaceMeta: vi.fn(),
+  readSessionWorkspaceFile: vi.fn().mockReturnValue(null),
+  writeSessionWorkspaceFile: vi.fn(),
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -166,6 +169,31 @@ describe('ClawManager', () => {
       await manager.startClaw('claw-1', 'user-1');
 
       await expect(manager.startClaw('claw-1', 'user-1')).rejects.toThrow('already running');
+    });
+
+    it('rejects concurrent startClaw for the same id (race protection)', async () => {
+      const config = makeConfig();
+      const repo = setupRepo(config);
+
+      // Make repo.getById slow so we can race two startClaw calls before
+      // either populates this.claws.
+      let resolveGet: ((value: typeof config) => void) | null = null;
+      repo.getById.mockImplementation(
+        () =>
+          new Promise<typeof config>((resolve) => {
+            resolveGet = resolve;
+          })
+      );
+
+      const first = manager.startClaw('claw-1', 'user-1');
+      // Second call must reject synchronously without entering setup
+      const second = manager.startClaw('claw-1', 'user-1');
+
+      await expect(second).rejects.toThrow(/currently starting|already running/);
+
+      // Let the first call complete cleanly
+      resolveGet!(config);
+      await first;
     });
 
     it('should throw if claw not found', async () => {
@@ -321,6 +349,66 @@ describe('ClawManager', () => {
       const result = await manager.pauseClaw('claw-99', 'user-1');
       expect(result).toBe(false);
     });
+
+    it('does not reschedule next cycle when pause races with cycle completion', async () => {
+      const repo = setupRepo(makeConfig({ mode: 'continuous' }));
+      // Make runCycle take a controllable amount of time
+      let resolveCycle: ((r: ClawCycleResult) => void) | null = null;
+      mockRunCycle.mockImplementation(
+        () =>
+          new Promise<ClawCycleResult>((resolve) => {
+            resolveCycle = resolve;
+          })
+      );
+
+      await manager.startClaw('claw-1', 'user-1');
+      // Continuous mode schedules first cycle ~500ms out — advance past it
+      await vi.advanceTimersByTimeAsync(600);
+      expect(mockRunCycle).toHaveBeenCalledTimes(1);
+
+      // Pause while the cycle is running
+      await manager.pauseClaw('claw-1', 'user-1');
+      expect(manager.getSession('claw-1')?.state).toBe('paused');
+
+      // Now let the in-flight cycle complete naturally
+      resolveCycle!(makeCycleResult());
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // State must remain 'paused' — the cycle's happy-path scheduleNext
+      // must have been suppressed by the state guard.
+      expect(manager.getSession('claw-1')?.state).toBe('paused');
+
+      // Advance well past any next-cycle delay; runCycle must NOT be called again.
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockRunCycle).toHaveBeenCalledTimes(1);
+
+      // Saved session reflects 'paused', not 'running'
+      const lastSave = repo.saveSession.mock.calls.at(-1);
+      expect(lastSave?.[1]?.state).toBe('paused');
+    });
+
+    it('treats abort errors as benign (no error count, no history write)', async () => {
+      const repo = setupRepo(makeConfig({ mode: 'continuous' }));
+
+      mockRunCycle.mockImplementationOnce(async () => {
+        const err = new Error('aborted');
+        err.name = 'AbortError';
+        throw err;
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // No history saved for the aborted cycle (third arg .error must not include "aborted")
+      const errorHistoryCalls = repo.saveHistory.mock.calls.filter(
+        (c: unknown[]) => (c[2] as ClawCycleResult).error === 'aborted'
+      );
+      expect(errorHistoryCalls).toHaveLength(0);
+    });
   });
 
   describe('resumeClaw', () => {
@@ -353,6 +441,48 @@ describe('ClawManager', () => {
 
       expect(result).toBe(true);
       expect(manager.getSession('claw-1')).toBeNull();
+    });
+
+    it('cascades stop to running subclaws when parent is stopped', async () => {
+      const parent = makeConfig({ id: 'parent-1' });
+      const child = makeConfig({ id: 'child-1', parentClawId: 'parent-1', depth: 1 });
+
+      // Repo returns the right config based on id
+      const repo = {
+        getById: vi.fn().mockImplementation((id: string) => {
+          if (id === 'parent-1') return Promise.resolve(parent);
+          if (id === 'child-1') return Promise.resolve(child);
+          return Promise.resolve(null);
+        }),
+        getByIdAnyUser: vi.fn().mockResolvedValue(parent),
+        getAll: vi.fn().mockResolvedValue([parent, child]),
+        getAutoStartClaws: vi.fn().mockResolvedValue([]),
+        getChildClaws: vi.fn().mockResolvedValue([]),
+        getInterruptedSessions: vi.fn().mockResolvedValue([]),
+        loadSession: vi.fn().mockResolvedValue(null),
+        saveSession: vi.fn().mockResolvedValue(undefined),
+        saveHistory: vi.fn().mockResolvedValue(undefined),
+        saveEscalationHistory: vi.fn().mockResolvedValue(undefined),
+        appendToInbox: vi.fn().mockResolvedValue(undefined),
+        deleteSession: vi.fn().mockResolvedValue(undefined),
+        update: vi.fn().mockResolvedValue(parent),
+        create: vi.fn().mockResolvedValue(parent),
+        delete: vi.fn().mockResolvedValue(true),
+        cleanupOldHistory: vi.fn().mockResolvedValue(0),
+        cleanupOldAuditLog: vi.fn().mockResolvedValue(0),
+      };
+      mockGetClawsRepo.mockReturnValue(repo);
+
+      await manager.startClaw('parent-1', 'user-1');
+      await manager.startClaw('child-1', 'user-1');
+      expect(manager.getSession('parent-1')).not.toBeNull();
+      expect(manager.getSession('child-1')).not.toBeNull();
+
+      const result = await manager.stopClaw('parent-1', 'user-1');
+
+      expect(result).toBe(true);
+      expect(manager.getSession('parent-1')).toBeNull();
+      expect(manager.getSession('child-1')).toBeNull();
     });
   });
 
@@ -635,6 +765,166 @@ describe('ClawManager', () => {
 
       expect(manager.isRunning('claw-1')).toBe(false);
       expect(manager.getSession('claw-1')).toBeNull();
+    });
+
+    it('manager.stop() preserves "running" state in DB so claws resume on restart', async () => {
+      const repo = setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(100);
+      expect(manager.isRunning('claw-1')).toBe(true);
+
+      await manager.stop();
+
+      // Last persisted state must be 'running' (or 'waiting'), NOT 'stopped'
+      // — otherwise getInterruptedSessions can't find it on next boot.
+      const lastSave = repo.saveSession.mock.calls.at(-1);
+      const persistedState = lastSave?.[1]?.state;
+      expect(['running', 'waiting']).toContain(persistedState);
+    });
+  });
+
+  describe('autonomyPolicy.maxCostUsdBeforePause', () => {
+    it('auto-requests budget_increase escalation when cost crosses threshold', async () => {
+      const repo = setupRepo(
+        makeConfig({
+          mode: 'continuous',
+          autonomyPolicy: {
+            allowSelfModify: false,
+            allowSubclaws: true,
+            requireEvidence: true,
+            destructiveActionPolicy: 'ask',
+            maxCostUsdBeforePause: 0.5,
+          },
+        })
+      );
+      // Cycle returns cost above threshold
+      mockRunCycle.mockResolvedValue(makeCycleResult({ costUsd: 0.6 }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const session = manager.getSession('claw-1');
+      expect(session?.state).toBe('escalation_pending');
+      expect(session?.pendingEscalation?.type).toBe('budget_increase');
+      expect(session?.pendingEscalation?.details?.autoTriggered).toBe(true);
+
+      // Escalation history must have been saved
+      expect(repo.saveEscalationHistory).toHaveBeenCalled();
+    });
+
+    it('does not re-escalate on subsequent cycles while already pending', async () => {
+      setupRepo(
+        makeConfig({
+          mode: 'continuous',
+          autonomyPolicy: {
+            allowSelfModify: false,
+            allowSubclaws: true,
+            requireEvidence: true,
+            destructiveActionPolicy: 'ask',
+            maxCostUsdBeforePause: 0.5,
+          },
+        })
+      );
+      mockRunCycle.mockResolvedValue(makeCycleResult({ costUsd: 0.6 }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Cycle is now in escalation_pending — even if more time passes, no further cycles run
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(mockRunCycle).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('pauses the claw and emits a paused event when hourly cap is hit', async () => {
+      // Tight cap so we trip it on the first cycle.
+      const config = makeConfig({
+        mode: 'continuous',
+        limits: {
+          maxTurnsPerCycle: 20,
+          maxToolCallsPerCycle: 100,
+          maxCyclesPerHour: 1,
+          cycleTimeoutMs: 300_000,
+        },
+      });
+      setupRepo(config);
+
+      // Stub the event system so we can assert the paused event was emitted.
+      const emit = vi.fn();
+      mockGetEventSystem.mockReturnValue({
+        emit,
+        on: vi.fn(() => vi.fn()),
+        onAny: vi.fn(() => vi.fn()),
+        onPattern: vi.fn(() => vi.fn()),
+        off: vi.fn(),
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+      // First cycle consumes the budget.
+      await vi.advanceTimersByTimeAsync(600);
+      // Second cycle (idle delay 5s) should be rate-limited.
+      await vi.advanceTimersByTimeAsync(6000);
+
+      const pausedEmits = emit.mock.calls.filter((call) => call[0] === 'claw.paused');
+      expect(pausedEmits.length).toBeGreaterThan(0);
+      const payload = pausedEmits[0]?.[2] as { reason?: string };
+      expect(payload?.reason).toBe('rate_limit');
+      expect(manager.getSession('claw-1')?.state).toBe('paused');
+    });
+  });
+
+  describe('event-mode self-loop guard', () => {
+    it('ignores events sourced from the same claw to avoid infinite loops', async () => {
+      const config = makeConfig({
+        mode: 'event',
+        eventFilters: ['claw.cycle.complete'],
+      });
+      setupRepo(config);
+
+      // Capture the handler registered on onAny.
+      let registeredHandler: ((ev: unknown) => void) | null = null;
+      const onAny = vi.fn((_eventType: string, handler: (ev: unknown) => void) => {
+        registeredHandler = handler;
+        return () => {};
+      });
+      mockGetEventSystem.mockReturnValue({
+        emit: vi.fn(),
+        on: vi.fn(() => vi.fn()),
+        onAny,
+        onPattern: vi.fn(() => vi.fn()),
+        off: vi.fn(),
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+      // Event-mode claws sit in 'waiting' until an event fires.
+      expect(manager.getSession('claw-1')?.state).toBe('waiting');
+      expect(onAny).toHaveBeenCalled();
+      expect(registeredHandler).not.toBeNull();
+
+      // Self-event (source === claw:claw-1) MUST be ignored.
+      registeredHandler!({
+        type: 'claw.cycle.complete',
+        source: 'claw:claw-1',
+        payload: { clawId: 'claw-1' },
+      });
+      await vi.advanceTimersByTimeAsync(50);
+      expect(mockRunCycle).not.toHaveBeenCalled();
+      expect(manager.getSession('claw-1')?.state).toBe('waiting');
+
+      // External event from another source SHOULD trigger a cycle.
+      registeredHandler!({
+        type: 'claw.cycle.complete',
+        source: 'claw:other-claw',
+        payload: { clawId: 'other-claw' },
+      });
+      await vi.advanceTimersByTimeAsync(50);
+      expect(mockRunCycle).toHaveBeenCalledTimes(1);
     });
   });
 });

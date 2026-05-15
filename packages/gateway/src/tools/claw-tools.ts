@@ -544,6 +544,57 @@ export async function executeClawTool(
 // Tool Implementations
 // =============================================================================
 
+/**
+ * Build a minimal, sanitized environment for child processes (script
+ * execution, package install). Spreading process.env directly would leak
+ * every API key, DB URL, and cloud credential the gateway has into a
+ * user-controlled script — a runaway claw could read OPENAI_API_KEY,
+ * AWS_*, DATABASE_URL etc. and exfiltrate via any network-capable tool.
+ *
+ * Only forwards variables strictly needed for interpreters to function:
+ * PATH (find binaries), HOME, USERPROFILE, locale settings, temp dirs.
+ * Caller-supplied overrides win.
+ */
+export function buildSandboxEnv(overrides: Record<string, string>): Record<string, string> {
+  const ALLOW = [
+    'PATH',
+    'HOME',
+    'USERPROFILE',
+    'TEMP',
+    'TMP',
+    'TMPDIR',
+    'LANG',
+    'LC_ALL',
+    'LC_CTYPE',
+    'TZ',
+    'SystemRoot', // Windows: required by node
+    'SystemDrive',
+    'COMSPEC',
+    'PATHEXT',
+  ];
+  const env: Record<string, string> = {};
+  for (const key of ALLOW) {
+    const v = process.env[key];
+    if (typeof v === 'string') env[key] = v;
+  }
+  return { ...env, ...overrides };
+}
+
+/**
+ * Cap large script output so a single tool call doesn't blow the cycle's
+ * conversation context. Returns the original string if under the cap, or a
+ * head + truncation marker + tail slice. Default 32KB total (16KB each end).
+ */
+function truncateScriptOutput(text: string, maxBytes = 32_768): string {
+  if (!text) return text;
+  if (Buffer.byteLength(text, 'utf-8') <= maxBytes) return text;
+  const halfLen = Math.floor(maxBytes / 2);
+  const head = text.slice(0, halfLen);
+  const tail = text.slice(-halfLen);
+  const droppedBytes = Buffer.byteLength(text, 'utf-8') - Buffer.byteLength(head + tail, 'utf-8');
+  return `${head}\n... [truncated ${droppedBytes} bytes] ...\n${tail}`;
+}
+
 async function executeInstallPackage(
   args: Record<string, unknown>,
   _userId: string
@@ -567,8 +618,10 @@ async function executeInstallPackage(
   const wsPath = getSessionWorkspacePath(ctx.workspaceId);
   if (!wsPath) return { success: false, error: 'Workspace not found' };
 
-  // Use execFile (not exec) to prevent shell injection
-  const { execFileSync } = await import('node:child_process');
+  // Async execFile (no shell, no event-loop block).
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
 
   const commands: Record<string, { cmd: string; args: string[] }> = {
     npm: { cmd: 'npm', args: ['install', '--prefix', wsPath, packageName] },
@@ -580,16 +633,18 @@ async function executeInstallPackage(
   if (!entry) return { success: false, error: `Unsupported package manager: ${manager}` };
 
   try {
-    const output = execFileSync(entry.cmd, entry.args, {
+    const { stdout, stderr } = await execFileAsync(entry.cmd, entry.args, {
       timeout: 60_000,
       cwd: wsPath,
       encoding: 'utf-8',
-      env: { ...process.env, HOME: wsPath },
+      env: buildSandboxEnv({ HOME: wsPath }),
+      maxBuffer: 4 * 1024 * 1024,
     });
 
+    const output = (stdout || stderr || '').slice(0, 2000);
     return {
       success: true,
-      result: { package: packageName, manager, output: output.slice(0, 2000) },
+      result: { package: packageName, manager, output },
     };
   } catch (err) {
     return { success: false, error: `Install failed: ${getErrorMessage(err)}` };
@@ -623,9 +678,12 @@ async function executeRunScript(
   const wsPath = getSessionWorkspacePath(ctx.workspaceId);
   if (!wsPath) return { success: false, error: 'Workspace not found' };
 
-  // Write script to workspace for Docker sandbox path mapping; will be cleaned up after execution
+  // Write script to workspace for Docker sandbox path mapping; will be cleaned up after execution.
+  // Add a random suffix so two scripts written in the same millisecond (rare
+  // but possible under concurrent claw cycles) don't collide.
   const ext: Record<string, string> = { python: 'py', javascript: 'js', shell: 'sh' };
-  const scriptName = `script_${Date.now()}.${ext[language] ?? 'js'}`;
+  const rand = Math.random().toString(36).slice(2, 8);
+  const scriptName = `script_${Date.now()}_${rand}.${ext[language] ?? 'js'}`;
   const scriptRelPath = `scripts/${scriptName}`;
   writeSessionWorkspaceFile(ctx.workspaceId, scriptRelPath, Buffer.from(script, 'utf-8'));
 
@@ -640,42 +698,166 @@ async function executeRunScript(
     }
   };
 
-  // Local execution using execFile (no shell injection)
-  const { execFileSync } = await import('node:child_process');
-  const interpreters: Record<string, { cmd: string; args: string[] }> = {
+  // Async execFile so the cycle's event loop is not blocked while a script
+  // runs. Multiple claws can execute concurrently without serializing on the
+  // single-threaded sync call.
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
+
+  // Decide between local and Docker execution. The claw's sandbox preference
+  // (auto | docker | local) flows in via the execution context. For Docker we
+  // probe `docker version` once; if it isn't available we fall back to local
+  // and surface the fallback in the result so the LLM knows what happened.
+  const sandboxPref = ctx.sandbox ?? 'auto';
+  let useDocker = false;
+  let dockerFallbackReason: string | undefined;
+  if (sandboxPref === 'docker' || sandboxPref === 'auto') {
+    try {
+      await execFileAsync('docker', ['version', '--format', '{{.Server.Version}}'], {
+        timeout: 3000,
+        encoding: 'utf-8',
+      });
+      useDocker = sandboxPref === 'docker' || (sandboxPref === 'auto' && language === 'python');
+    } catch {
+      if (sandboxPref === 'docker') {
+        dockerFallbackReason = 'docker daemon not reachable; falling back to local execution';
+      }
+    }
+  }
+
+  const dockerImages: Record<string, string> = {
+    python: 'python:3.11-slim',
+    javascript: 'node:20-alpine',
+    shell: 'alpine:3.19',
+  };
+
+  const localInterpreters: Record<string, { cmd: string; args: string[] }> = {
     python: { cmd: 'python3', args: [scriptFullPath] },
     javascript: { cmd: 'node', args: [scriptFullPath] },
     shell: { cmd: 'sh', args: [scriptFullPath] },
   };
 
-  const interp = interpreters[language] ?? interpreters.javascript!;
-  const cmd = interp.cmd;
-  const cmdArgs = interp.args;
+  const containerCmd: Record<string, string[]> = {
+    python: ['python3', `/workspace/scripts/${scriptName}`],
+    javascript: ['node', `/workspace/scripts/${scriptName}`],
+    shell: ['sh', `/workspace/scripts/${scriptName}`],
+  };
+
+  let cmd: string;
+  let cmdArgs: string[];
+  let sandboxLabel: 'docker' | 'local';
+
+  if (useDocker) {
+    sandboxLabel = 'docker';
+    const image = dockerImages[language] ?? dockerImages.javascript!;
+    const inner = containerCmd[language] ?? containerCmd.javascript!;
+
+    // Normalize the host path for Docker mounts. Docker Desktop on Windows
+    // accepts `D:\path` for some shells but the safer cross-shell form is
+    // `/d/path` (Git Bash / MSYS style) which works under WSL2 + classic
+    // Hyper-V backends. Forward slashes are also required when the gateway
+    // runs inside MSYS bash on Windows (our dev shell).
+    const mountSource =
+      process.platform === 'win32'
+        ? `/${wsPath.charAt(0).toLowerCase()}${wsPath.slice(2).replace(/\\/g, '/')}`
+        : wsPath;
+
+    // --rm: clean up after run; --network none: deny network by default;
+    // --memory / --cpus: prevent runaway resource use; -v: workspace mount.
+    cmd = 'docker';
+    cmdArgs = [
+      'run',
+      '--rm',
+      '--network',
+      'none',
+      '--memory',
+      '512m',
+      '--cpus',
+      '1',
+      '--workdir',
+      '/workspace',
+      '-v',
+      `${mountSource}:/workspace`,
+      image,
+      ...inner,
+    ];
+  } else {
+    sandboxLabel = 'local';
+    const interp = localInterpreters[language] ?? localInterpreters.javascript!;
+    cmd = interp.cmd;
+    cmdArgs = interp.args;
+  }
+
+  // Build environment so packages installed via claw_install_package
+  // actually resolve at runtime. Without these, `import 'lodash'` and
+  // `import requests` in the script would fail with module-not-found even
+  // though the package was installed into the workspace.
+  // - NODE_PATH lets `require`/`import` find npm/pnpm packages from
+  //   workspace/node_modules.
+  // - PYTHONPATH lets python find packages from workspace/pip_packages.
+  // For Docker we instead rely on the mounted /workspace and pass the
+  // env variables via -e so the container resolves identically.
+  // Build env for local execution. Docker passes its own minimal env via -e
+  // flags, so it's safe to leave runtimeEnv empty there. For local runs we
+  // must NOT spread process.env directly — that would hand the gateway's
+  // API keys, DB URLs, and cloud credentials to the user-controlled script.
+  // Use the sanitized allowlist and add only what interpreters need.
+  const sep = process.platform === 'win32' ? ';' : ':';
+  const runtimeEnv: Record<string, string> = useDocker
+    ? {}
+    : buildSandboxEnv({
+        HOME: wsPath,
+        NODE_PATH: `${wsPath}/node_modules`,
+        PYTHONPATH: `${wsPath}/pip_packages${process.env.PYTHONPATH ? `${sep}${process.env.PYTHONPATH}` : ''}`,
+      });
+
+  if (useDocker) {
+    // Insert -e flags right after `run`. cmdArgs starts with 'run' so we
+    // splice into index 1.
+    cmdArgs.splice(
+      1,
+      0,
+      '-e',
+      `NODE_PATH=/workspace/node_modules`,
+      '-e',
+      `PYTHONPATH=/workspace/pip_packages`
+    );
+  }
 
   try {
-    const stdout = execFileSync(cmd, cmdArgs, {
+    const { stdout, stderr } = await execFileAsync(cmd, cmdArgs, {
       timeout: timeoutMs,
       cwd: wsPath,
       encoding: 'utf-8',
       maxBuffer: 1024 * 1024,
+      ...(useDocker ? {} : { env: runtimeEnv }),
     });
 
     cleanup();
 
     return {
       success: true,
-      result: { stdout, stderr: '', exitCode: 0, sandbox: 'local' },
+      result: {
+        stdout: truncateScriptOutput(stdout),
+        stderr: truncateScriptOutput(stderr ?? ''),
+        exitCode: 0,
+        sandbox: sandboxLabel,
+        ...(dockerFallbackReason ? { fallback: dockerFallbackReason } : {}),
+      },
     };
   } catch (err: unknown) {
     cleanup();
-    const execErr = err as { stdout?: string; stderr?: string; status?: number };
+    const execErr = err as { stdout?: string; stderr?: string; code?: number; signal?: string };
     return {
       success: false,
       result: {
-        stdout: execErr.stdout ?? '',
-        stderr: execErr.stderr ?? '',
-        exitCode: execErr.status ?? 1,
-        sandbox: 'local',
+        stdout: truncateScriptOutput(execErr.stdout ?? ''),
+        stderr: truncateScriptOutput(execErr.stderr ?? ''),
+        exitCode: execErr.code ?? 1,
+        signal: execErr.signal,
+        sandbox: sandboxLabel,
+        ...(dockerFallbackReason ? { fallback: dockerFallbackReason } : {}),
       },
       error: getErrorMessage(err),
     };
@@ -771,14 +953,14 @@ __result = typeof __fn === 'function' ? __fn(args) : { error: "No function named
     return {
       success: true,
       result: {
-        registered: true,
+        executed: true,
         name,
         description,
         schema: toolArgs,
         output,
         executedWith: invokeArgs,
         logs: logs.length > 0 ? logs : undefined,
-        note: 'Tool executed successfully. Call claw_create_tool again with different args to reuse.',
+        note: 'Code executed in an ephemeral vm sandbox. Nothing is persisted — call claw_create_tool again with the full code to re-run.',
       },
     };
   } catch (err) {
@@ -823,11 +1005,18 @@ async function executeSpawnSubclaw(
 
   const subclawId = generateId('claw');
 
-  // Inherit from parent if not explicitly overridden
+  // Inherit from parent if not explicitly overridden.
+  // Tool allowlist, skills, sandbox, coding-agent, and mission contract are
+  // carried through so a subclaw operates within the same guardrails as its
+  // parent unless the caller overrides them.
   const inheritedProvider = (args.provider as string) ?? parentConfig?.provider;
   const inheritedModel = (args.model as string) ?? parentConfig?.model;
   const inheritedAllowedTools = parentConfig?.allowedTools?.length ? parentConfig.allowedTools : [];
   const inheritedAutonomyPolicy = parentConfig?.autonomyPolicy ?? undefined;
+  const inheritedSkills = parentConfig?.skills?.length ? parentConfig.skills : undefined;
+  const inheritedSandbox = parentConfig?.sandbox ?? 'auto';
+  const inheritedCodingAgent = parentConfig?.codingAgentProvider;
+  const inheritedMissionContract = parentConfig?.missionContract;
 
   // Auto-start: single-shot awaits, so no need to pre-start; cyclic modes should start immediately
   const shouldAutoStart = mode !== 'single-shot';
@@ -849,10 +1038,13 @@ async function executeSpawnSubclaw(
     },
     autoStart: shouldAutoStart,
     depth: newDepth,
-    sandbox: 'auto',
+    sandbox: inheritedSandbox,
     parentClawId: ctx.clawId,
     createdBy: 'claw',
     autonomyPolicy: inheritedAutonomyPolicy,
+    skills: inheritedSkills,
+    codingAgentProvider: inheritedCodingAgent,
+    missionContract: inheritedMissionContract,
   });
 
   if (mode === 'single-shot') {
@@ -888,6 +1080,9 @@ async function executeSpawnSubclaw(
   };
 }
 
+const ARTIFACT_TYPES = ['html', 'svg', 'markdown', 'chart', 'form', 'react'] as const;
+type ArtifactType = (typeof ARTIFACT_TYPES)[number];
+
 async function executePublishArtifact(
   args: Record<string, unknown>,
   userId: string
@@ -903,8 +1098,23 @@ async function executePublishArtifact(
     return { success: false, error: 'Both title and content are required' };
   }
 
+  // Title cap so artifact lists, DB rows, and UI notifications stay sane.
+  if (title.length > 200) {
+    return { success: false, error: 'title exceeds 200 character limit' };
+  }
+
   if (content.length > 500_000) {
     return { success: false, error: 'Content exceeds 500KB limit' };
+  }
+
+  // Runtime-validate type instead of trusting the LLM; the prior cast meant
+  // any string ("xyz", "image/exe", ...) would land in the DB and likely
+  // break UI rendering when fetched.
+  if (!ARTIFACT_TYPES.includes(type as ArtifactType)) {
+    return {
+      success: false,
+      error: `Invalid type "${type}". Allowed: ${ARTIFACT_TYPES.join(', ')}`,
+    };
   }
 
   const { getArtifactService } = await import('../services/artifact-service.js');
@@ -913,7 +1123,7 @@ async function executePublishArtifact(
   const artifact = await artifactService.createArtifact(userId, {
     title,
     content,
-    type: type as 'html' | 'svg' | 'markdown' | 'chart' | 'form' | 'react',
+    type: type as ArtifactType,
     tags: ['claw', `claw:${ctx.clawId}`],
   });
 
@@ -995,6 +1205,16 @@ async function executeSendOutput(
     return { success: false, error: 'Message is required' };
   }
 
+  // Cap output to 10K chars. Telegram itself caps at ~4096, but UI feed and
+  // conversation row can take more — 10K is generous for human-readable
+  // updates while bounding DB row growth and WebSocket fanout cost.
+  if (message.length > 10_000) {
+    return {
+      success: false,
+      error: `Message exceeds 10,000 character limit (got ${message.length}). Use claw_publish_artifact for larger payloads and reference the artifact id here.`,
+    };
+  }
+
   const deliveries: string[] = [];
 
   // 1. Send via Telegram
@@ -1065,6 +1285,12 @@ async function executeCompleteReport(
     return { success: false, error: 'title, report, and summary are all required' };
   }
 
+  if (title.length > 200) {
+    return { success: false, error: 'title exceeds 200 character limit' };
+  }
+  if (summary.length > 2000) {
+    return { success: false, error: 'summary exceeds 2000 character limit' };
+  }
   if (report.length > 500_000) {
     return { success: false, error: 'Report exceeds 500KB limit' };
   }
@@ -1143,6 +1369,30 @@ async function executeCompleteReport(
   };
 }
 
+/**
+ * Reserved event-type prefixes that claws MUST NOT emit. These are owned by
+ * core systems (lifecycle, data hooks, multi-agent coordination, workflow,
+ * soul). Allowing claws to spoof them would let a misbehaving claw disrupt
+ * other systems by impersonating their internal events.
+ */
+const RESERVED_EVENT_PREFIXES = [
+  'claw.',
+  'claw:',
+  'data:',
+  'crew:',
+  'crew.',
+  'subagent:',
+  'subagent.',
+  'fleet:',
+  'fleet.',
+  'workflow:',
+  'workflow.',
+  'soul.',
+  'soul:',
+  'system.',
+  'system:',
+];
+
 async function executeEmitEvent(
   args: Record<string, unknown>
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
@@ -1154,6 +1404,15 @@ async function executeEmitEvent(
 
   if (!eventType?.trim()) {
     return { success: false, error: 'event_type is required' };
+  }
+
+  const normalized = eventType.trim().toLowerCase();
+  const reserved = RESERVED_EVENT_PREFIXES.find((p) => normalized.startsWith(p));
+  if (reserved) {
+    return {
+      success: false,
+      error: `event_type "${eventType}" uses reserved prefix "${reserved}" — these are owned by core systems and cannot be emitted by claws. Use a custom prefix like "app.", "user.", or "${ctx.clawId}." instead.`,
+    };
   }
 
   try {
@@ -1235,7 +1494,7 @@ async function executeUpdateConfig(
 
 async function executeSendAgentMessage(
   args: Record<string, unknown>,
-  _userId: string
+  userId: string
 ): Promise<{ success: boolean; result?: unknown; error?: string }> {
   const ctx = getClawContext();
   if (!ctx) return { success: false, error: 'Not running inside a Claw context' };
@@ -1249,7 +1508,37 @@ async function executeSendAgentMessage(
     return { success: false, error: 'target_claw_id, subject, and content are required' };
   }
 
+  // Cap subject + content so a runaway claw can't fill another claw's inbox
+  // with megabyte-sized messages (which would then evict legitimate messages
+  // when trimInbox runs on the receiver).
+  if (subject.length > 200) {
+    return { success: false, error: 'subject exceeds 200 character limit' };
+  }
+  if (content.length > 10_000) {
+    return { success: false, error: 'content exceeds 10,000 character limit' };
+  }
+
+  // Prevent claws from messaging themselves (no useful semantic, can cause loops)
+  if (targetClawId === ctx.clawId) {
+    return { success: false, error: 'Cannot send a message to yourself' };
+  }
+
   try {
+    // Verify target claw exists and belongs to the same user — claws must not
+    // be able to deliver messages into another user's inbox.
+    const { getClawsRepository } = await import('../db/repositories/claws.js');
+    const repo = getClawsRepository();
+    const target = await repo.getByIdAnyUser(targetClawId);
+    if (!target) {
+      return { success: false, error: `Target claw ${targetClawId} not found` };
+    }
+    if (target.userId !== userId) {
+      return {
+        success: false,
+        error: `Target claw ${targetClawId} belongs to a different user — cross-user messaging is not permitted`,
+      };
+    }
+
     // Try to deliver to running claw's inbox
     const { getClawManager } = await import('../services/claw-manager.js');
     const manager = getClawManager();
@@ -1258,9 +1547,8 @@ async function executeSendAgentMessage(
     const sent = await manager.sendMessage(targetClawId, formattedMsg);
 
     if (!sent) {
-      // Claw not running — try DB inbox append
-      const { getClawsRepository } = await import('../db/repositories/claws.js');
-      await getClawsRepository().appendToInbox(targetClawId, formattedMsg);
+      // Claw not running — append to DB inbox
+      await repo.appendToInbox(targetClawId, formattedMsg);
     }
 
     return {
@@ -1385,13 +1673,75 @@ async function executeSetContext(
     return { success: false, error: 'updates must be an object of key-value pairs' };
   }
 
+  // Working-memory bounds. Without these, a runaway claw can balloon
+  // persistentContext into megabytes — every cycle's prompt would then
+  // carry the entire blob, and the DB session row would bloat forever.
+  const MAX_CONTEXT_KEYS = 100;
+  const MAX_KEY_LEN = 64;
+  const MAX_VALUE_BYTES = 8 * 1024; // per-value when JSON-encoded
+  const MAX_TOTAL_BYTES = 64 * 1024; // overall persistentContext size
+  const KEY_RE = /^[a-zA-Z0-9_.\-]+$/;
+
   try {
     const { getClawManager } = await import('../services/claw-manager.js');
     const manager = getClawManager();
     const session = manager.getSession(ctx.clawId);
     if (!session) return { success: false, error: 'Claw session not found' };
 
-    // Merge updates — null values delete the key
+    // Validate keys + per-value size before mutating, so partial failure
+    // can't leave the context in an inconsistent state.
+    for (const [key, value] of Object.entries(updates)) {
+      if (key.length === 0 || key.length > MAX_KEY_LEN) {
+        return {
+          success: false,
+          error: `Key "${key.slice(0, 32)}..." invalid: length must be 1..${MAX_KEY_LEN}`,
+        };
+      }
+      if (!KEY_RE.test(key)) {
+        return {
+          success: false,
+          error: `Key "${key}" contains invalid characters (allowed: letters, digits, _, -, .)`,
+        };
+      }
+      if (value !== null) {
+        const encoded = JSON.stringify(value);
+        if (encoded === undefined) {
+          return {
+            success: false,
+            error: `Value for "${key}" is not JSON-serializable`,
+          };
+        }
+        if (Buffer.byteLength(encoded, 'utf-8') > MAX_VALUE_BYTES) {
+          return {
+            success: false,
+            error: `Value for "${key}" exceeds ${MAX_VALUE_BYTES} bytes (use claw_publish_artifact for large payloads)`,
+          };
+        }
+      }
+    }
+
+    // Project the post-merge state and check key count + total size before
+    // committing.
+    const projected: Record<string, unknown> = { ...session.persistentContext };
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null) delete projected[key];
+      else projected[key] = value;
+    }
+    if (Object.keys(projected).length > MAX_CONTEXT_KEYS) {
+      return {
+        success: false,
+        error: `Context would exceed ${MAX_CONTEXT_KEYS} keys (currently ${Object.keys(session.persistentContext).length}). Delete unused keys first.`,
+      };
+    }
+    const projectedSize = Buffer.byteLength(JSON.stringify(projected), 'utf-8');
+    if (projectedSize > MAX_TOTAL_BYTES) {
+      return {
+        success: false,
+        error: `Context would exceed ${MAX_TOTAL_BYTES} bytes (would be ${projectedSize}). Delete unused keys first or use claw_publish_artifact.`,
+      };
+    }
+
+    // Commit — merge updates with null-as-delete semantics.
     for (const [key, value] of Object.entries(updates)) {
       if (value === null) {
         delete session.persistentContext[key];
@@ -1406,6 +1756,12 @@ async function executeSetContext(
     const deletedKeys = Object.entries(updates)
       .filter(([, v]) => v === null)
       .map(([k]) => k);
+
+    // Persist immediately so working-memory mutations survive an unexpected
+    // crash before the periodic 30s persist timer fires.
+    manager.flushSession(ctx.clawId).catch(() => {
+      // Best-effort — failure is logged inside flushSession
+    });
 
     return {
       success: true,

@@ -539,11 +539,14 @@ export class ClawsRepository extends BaseRepository {
   async getInterruptedSessions(): Promise<
     Array<{ clawId: string; config: ClawConfig; state: ClawState }>
   > {
+    // Include 'starting' so claws that crashed mid-startup are resumed too.
+    // 'paused' and 'escalation_pending' are intentionally excluded — they
+    // require explicit operator/user action to resume.
     const rows = await this.query<ClawRow & { session_state: string }>(
       `SELECT c.*, cs.state AS session_state
        FROM claws c
        JOIN claw_sessions cs ON c.id = cs.claw_id
-       WHERE cs.state IN ('running', 'waiting')`,
+       WHERE cs.state IN ('running', 'waiting', 'starting')`,
       []
     );
     return rows.map((row) => ({
@@ -576,20 +579,25 @@ export class ClawsRepository extends BaseRepository {
 
   /**
    * Update session state (used during orphan recovery).
+   * The `reason` is persisted into last_cycle_error so operators can see
+   * *why* a session was marked terminal (e.g. 'orphan_recovery') instead of
+   * looking at a state with no context.
    */
-  async updateSessionStatus(clawId: string, state: string, _reason: string): Promise<void> {
+  async updateSessionStatus(clawId: string, state: string, reason: string): Promise<void> {
     await this.execute(
       `UPDATE claw_sessions
-       SET state = $2, stopped_at = NOW()
+       SET state = $2, stopped_at = NOW(), last_cycle_error = $3
        WHERE claw_id = $1`,
-      [clawId, state]
+      [clawId, state, reason]
     );
   }
 
   async appendToInbox(clawId: string, message: string): Promise<void> {
+    // COALESCE guards against legacy rows where inbox could be NULL; `NULL || jsonb`
+    // returns NULL in Postgres, which would silently drop the message.
     await this.execute(
       `UPDATE claw_sessions
-       SET inbox = inbox || $2::jsonb
+       SET inbox = COALESCE(inbox, '[]'::jsonb) || $2::jsonb
        WHERE claw_id = $1`,
       [clawId, JSON.stringify([message])]
     );
@@ -597,7 +605,25 @@ export class ClawsRepository extends BaseRepository {
 
   // ---------- History ----------
 
+  /**
+   * Truncate persisted history fields so a single rogue cycle (tens of MB
+   * of output, multi-page stack trace) doesn't bloat claw_history rows
+   * indefinitely. Per-tool detail lives in claw_audit_log; history just
+   * needs enough context for the UI cycle list and basic debugging.
+   */
+  private static truncateHistoryField(value: string | null | undefined, maxBytes: number): string | null {
+    if (value === null || value === undefined) return null;
+    if (Buffer.byteLength(value, 'utf-8') <= maxBytes) return value;
+    return value.slice(0, maxBytes - 64) + `\n... [truncated to ${maxBytes} bytes]`;
+  }
+
   async saveHistory(clawId: string, cycleNumber: number, result: ClawCycleResult): Promise<void> {
+    const HISTORY_OUTPUT_MAX = 64 * 1024; // 64KB final assistant message
+    const HISTORY_ERROR_MAX = 4 * 1024; // 4KB error/stack trace
+    const HISTORY_TOOLS_MAX = 64 * 1024; // 64KB tool-call JSON blob
+
+    const toolsJson = JSON.stringify(result.toolCalls);
+
     await this.execute(
       `INSERT INTO claw_history
        (id, claw_id, cycle_number, entry_type, success, tool_calls, output_message, tokens_used, cost_usd, duration_ms, error)
@@ -608,12 +634,12 @@ export class ClawsRepository extends BaseRepository {
         cycleNumber,
         'cycle',
         result.success,
-        JSON.stringify(result.toolCalls),
-        result.outputMessage,
+        ClawsRepository.truncateHistoryField(toolsJson, HISTORY_TOOLS_MAX),
+        ClawsRepository.truncateHistoryField(result.outputMessage, HISTORY_OUTPUT_MAX),
         result.tokensUsed ? JSON.stringify(result.tokensUsed) : null,
         result.costUsd ?? null,
         result.durationMs,
-        result.error ?? null,
+        ClawsRepository.truncateHistoryField(result.error ?? null, HISTORY_ERROR_MAX),
       ]
     );
   }

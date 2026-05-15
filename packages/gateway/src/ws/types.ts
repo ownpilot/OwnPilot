@@ -526,8 +526,10 @@ export interface ServerEvents {
   };
   // Claw lifecycle events (from ClawManager)
   'claw:started': { clawId: string; name: string };
-  'claw:paused': { clawId: string };
-  'claw:resumed': { clawId: string };
+  // `reason` is optional — present when paused by the runtime (e.g. 'rate_limit')
+  // and absent on user-initiated pause via REST.
+  'claw:paused': { clawId: string; reason?: string };
+  'claw:resumed': { clawId: string; reason?: string };
   'claw:progress': { clawId: string; message: string };
   'claw:escalation': { clawId: string; type: string; reason: string };
   'claw:cycle:skipped': { clawId: string; reason: string };

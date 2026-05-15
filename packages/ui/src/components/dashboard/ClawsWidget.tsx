@@ -69,7 +69,11 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
     fetchData();
   }, [fetchData]);
 
-  // Live updates via WebSocket
+  // Live updates via WebSocket — note the WS server emits colon-separated
+  // event names (`claw:update`, not `claw.update`). Earlier revisions used
+  // dot-separated names which silently no-op'd because no broadcaster matches,
+  // so the dashboard widget never got live state and only refreshed on
+  // its own `fetchData()` call.
   useEffect(() => {
     const unsubs = [
       subscribe<{
@@ -79,7 +83,7 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
         totalToolCalls?: number;
         totalCostUsd?: number;
         lastCycleAt?: string;
-      }>('claw.update', (data) => {
+      }>('claw:update', (data) => {
         setClaws((prev) =>
           prev.map((c) => {
             if (c.id !== data.clawId) return c;
@@ -99,8 +103,8 @@ export function ClawsWidget({ limit = 6 }: ClawsWidgetProps) {
           })
         );
       }),
-      subscribe('claw.started', () => fetchData()),
-      subscribe('claw.stopped', () => fetchData()),
+      subscribe('claw:started', () => fetchData()),
+      subscribe('claw:stopped', () => fetchData()),
     ];
     return () => unsubs.forEach((u) => u());
   }, [subscribe, fetchData]);

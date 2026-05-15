@@ -13,7 +13,10 @@ CREATE TABLE IF NOT EXISTS claws (
   user_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   mission TEXT NOT NULL,
-  mode TEXT NOT NULL DEFAULT 'cyclic',
+  -- Valid modes: 'continuous' | 'interval' | 'event' | 'single-shot'.
+  -- Earlier revisions defaulted to 'cyclic' which is not a valid ClawMode;
+  -- migration 023_claw_fixes.sql repairs the default and any legacy rows.
+  mode TEXT NOT NULL DEFAULT 'continuous',
   allowed_tools JSONB DEFAULT '[]',
   limits JSONB NOT NULL DEFAULT '{}',
   interval_ms INTEGER,
@@ -70,16 +73,8 @@ CREATE TABLE IF NOT EXISTS claw_history (
   error TEXT,
   executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-`;
 
-export const CLAW_MIGRATIONS_SQL = `
--- Add event_filters column (for event-driven mode)
-ALTER TABLE claws ADD COLUMN IF NOT EXISTS event_filters JSONB DEFAULT '[]';
-ALTER TABLE claws ADD COLUMN IF NOT EXISTS preset TEXT;
-ALTER TABLE claws ADD COLUMN IF NOT EXISTS mission_contract JSONB DEFAULT '{}';
-ALTER TABLE claws ADD COLUMN IF NOT EXISTS autonomy_policy JSONB DEFAULT '{}';
-
--- Claw audit log (per-tool-call tracking)
+-- Claw audit log (per-tool-call tracking, used by /claws/:id/audit endpoint)
 CREATE TABLE IF NOT EXISTS claw_audit_log (
   id TEXT PRIMARY KEY,
   claw_id TEXT NOT NULL REFERENCES claws(id) ON DELETE CASCADE,
@@ -92,7 +87,34 @@ CREATE TABLE IF NOT EXISTS claw_audit_log (
   category TEXT NOT NULL DEFAULT 'tool',
   executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_claw_audit_claw ON claw_audit_log(claw_id, executed_at DESC);
+`;
+
+export const CLAW_MIGRATIONS_SQL = `
+-- Backfill columns added after the initial schema landed.
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS event_filters JSONB DEFAULT '[]';
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS preset TEXT;
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS mission_contract JSONB DEFAULT '{}';
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS autonomy_policy JSONB DEFAULT '{}';
+
+-- Repair the legacy 'cyclic' mode default (matches migration 023_claw_fixes.sql).
+ALTER TABLE claws ALTER COLUMN mode SET DEFAULT 'continuous';
+UPDATE claws SET mode = 'continuous' WHERE mode = 'cyclic';
+
+-- claw_audit_log lives in CLAW_TABLES_SQL above; this CREATE IF NOT EXISTS is
+-- kept for upgrade paths from versions where the table was first introduced
+-- via the migration block.
+CREATE TABLE IF NOT EXISTS claw_audit_log (
+  id TEXT PRIMARY KEY,
+  claw_id TEXT NOT NULL REFERENCES claws(id) ON DELETE CASCADE,
+  cycle_number INTEGER NOT NULL,
+  tool_name TEXT NOT NULL,
+  tool_args JSONB DEFAULT '{}',
+  tool_result TEXT DEFAULT '',
+  success BOOLEAN NOT NULL DEFAULT TRUE,
+  duration_ms INTEGER NOT NULL DEFAULT 0,
+  category TEXT NOT NULL DEFAULT 'tool',
+  executed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 `;
 
 export const CLAW_INDEXES_SQL = `
@@ -100,5 +122,6 @@ export const CLAW_INDEXES_SQL = `
 CREATE INDEX IF NOT EXISTS idx_claws_user_id ON claws(user_id);
 CREATE INDEX IF NOT EXISTS idx_claws_parent ON claws(parent_claw_id);
 CREATE INDEX IF NOT EXISTS idx_claw_history_claw ON claw_history(claw_id, executed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_claw_audit_claw ON claw_audit_log(claw_id, executed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_claw_sessions_state ON claw_sessions(state);
 `;

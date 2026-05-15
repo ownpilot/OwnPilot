@@ -9,12 +9,19 @@
  */
 
 import { AsyncLocalStorage } from 'node:async_hooks';
+import type { ClawSandboxMode } from '@ownpilot/core';
 
 export interface ClawExecutionContext {
   clawId: string;
   userId: string;
   workspaceId?: string;
   depth: number;
+  /**
+   * Sandbox preference inherited from the claw config. Tools like
+   * `claw_run_script` honor this when deciding between Docker and local
+   * execution. Defaults to `'auto'` if the runner did not supply one.
+   */
+  sandbox?: ClawSandboxMode;
 }
 
 const storage = new AsyncLocalStorage<ClawExecutionContext>();

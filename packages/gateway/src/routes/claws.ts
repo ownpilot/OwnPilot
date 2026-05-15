@@ -882,7 +882,18 @@ clawRoutes.post('/:id/deny-escalation', async (c) => {
     const userId = getUserId(c);
     const { id } = c.req.param();
     const body = await c.req.json().catch(() => ({}));
-    const reason = typeof body.reason === 'string' ? body.reason : undefined;
+    const rawReason = typeof body.reason === 'string' ? body.reason.trim() : undefined;
+    if (rawReason !== undefined && rawReason.length > 500) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'Denial reason must be 500 characters or fewer',
+        },
+        400
+      );
+    }
+    const reason = rawReason && rawReason.length > 0 ? rawReason : undefined;
     const service = getClawService();
 
     const denied = await service.denyEscalation(id, userId, reason);

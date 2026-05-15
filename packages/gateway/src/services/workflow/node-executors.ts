@@ -1561,27 +1561,42 @@ export async function executeClawNode(
       };
     }
 
-    // Wait for single-shot completion with timeout
-    const deadline = Date.now() + timeoutMs;
+    // For single-shot, ClawManager.startClaw awaits the cycle and stops the
+    // claw before returning, so we can read history immediately. For cyclic
+    // modes (continuous/interval/event) we poll until completion or timeout.
     let finalState = session.state;
-
-    while (Date.now() < deadline) {
-      if (signal?.aborted) {
-        finalState = 'stopped';
-        break;
+    if (mode !== 'single-shot') {
+      const deadline = Date.now() + timeoutMs;
+      while (Date.now() < deadline) {
+        if (signal?.aborted) {
+          finalState = 'stopped';
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+        const current = service.getSession(config.id, userId);
+        if (!current) {
+          // Session removed → claw stopped (terminal state). Look at history
+          // to determine completed vs failed.
+          finalState = 'completed';
+          break;
+        }
+        finalState = current.state;
+        if (['completed', 'stopped', 'failed'].includes(current.state)) {
+          break;
+        }
       }
-      await new Promise((r) => setTimeout(r, 2000)); // poll every 2s
-      const current = service.getSession(config.id, userId);
-      if (!current || ['completed', 'stopped', 'failed'].includes(current.state)) {
-        finalState = current?.state ?? 'stopped';
-        break;
-      }
-      finalState = current.state;
     }
 
-    // Get final history
+    // Get final history (single-shot writes one entry; cyclic may have many)
     const { entries } = await service.getHistory(config.id, userId, 1, 0);
     const lastEntry = entries[0];
+
+    // Determine success from the history entry's success flag — that's the
+    // ground truth for whether the cycle achieved its mission. For
+    // single-shot, the session is gone but the history entry remains.
+    const cycleSucceeded = lastEntry?.success ?? false;
+    const reportedState =
+      mode === 'single-shot' ? (cycleSucceeded ? 'completed' : 'failed') : finalState;
 
     // Cleanup: stop and delete the ephemeral claw
     try {
@@ -1595,15 +1610,17 @@ export async function executeClawNode(
     const originalLength = lastEntry?.outputMessage?.length ?? 0;
     const truncated = originalLength > 2000;
 
+    const isError = reportedState === 'failed' || reportedState === 'stopped' || !cycleSucceeded;
+
     return {
       nodeId: node.id,
-      status:
-        finalState === 'completed' ? 'success' : finalState === 'failed' || finalState === 'stopped' ? 'error' : 'success',
+      status: isError ? 'error' : 'success',
       output: {
         clawId: config.id,
         clawName: name,
-        state: finalState,
+        state: reportedState,
         waitedForCompletion: true,
+        success: cycleSucceeded,
         cyclesCompleted: lastEntry?.cycleNumber ?? 0,
         lastOutput: lastEntry?.outputMessage?.slice(0, 2000) ?? '',
         cost: lastEntry?.costUsd ?? 0,
@@ -1614,7 +1631,7 @@ export async function executeClawNode(
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
-      ...(finalState === 'failed' && lastEntry?.error ? { error: lastEntry.error } : {}),
+      ...(isError && lastEntry?.error ? { error: lastEntry.error } : {}),
     };
   } catch (error) {
     return {

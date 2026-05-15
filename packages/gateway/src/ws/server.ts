@@ -379,10 +379,16 @@ export class WSGateway {
             this.broadcast('claw:started', { clawId, name: d.name as string });
             break;
           case 'claw.paused':
-            this.broadcast('claw:paused', { clawId });
+            this.broadcast('claw:paused', {
+              clawId,
+              ...(d.reason !== undefined ? { reason: d.reason as string } : {}),
+            });
             break;
           case 'claw.resumed':
-            this.broadcast('claw:resumed', { clawId });
+            this.broadcast('claw:resumed', {
+              clawId,
+              ...(d.reason !== undefined ? { reason: d.reason as string } : {}),
+            });
             break;
           case 'claw.progress':
             this.broadcast('claw:progress', { clawId, message: d.message as string });
