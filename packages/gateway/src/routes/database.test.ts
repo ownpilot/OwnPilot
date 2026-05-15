@@ -394,6 +394,13 @@ describe('Database Routes', () => {
   // ─── POST /maintenance ──────────────────────────────────────
 
   describe('POST /db/maintenance', () => {
+    beforeEach(() => {
+      // The route uses pg_try_advisory_lock(1) for cross-instance mutex.
+      // Default mock returns null which would 409 — explicitly grant the
+      // lock so the maintenance handler proceeds to schedule the work.
+      mockAdapter.queryOne.mockResolvedValue({ acquired: true });
+    });
+
     it('should start vacuum maintenance and return 202', async () => {
       const res = await app.request('/db/maintenance', {
         method: 'POST',

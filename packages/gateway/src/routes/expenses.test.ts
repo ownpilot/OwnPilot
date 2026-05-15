@@ -75,6 +75,22 @@ beforeEach(() => {
   mockRepo.count.mockResolvedValue(1);
   mockRepo.get.mockResolvedValue(sampleExpense);
   mockRepo.delete.mockResolvedValue(true);
+  // clearAllMocks wipes the original .mockImplementation set at module init,
+  // so restore the summary fixture each test or it returns undefined.
+  mockRepo.getSummary.mockResolvedValue({
+    totalAmount: 150,
+    count: 3,
+    byCategory: { food: { amount: 100, count: 2 }, transport: { amount: 50, count: 1 } },
+    byCurrency: { TRY: 150 },
+  });
+  mockRepo.create.mockImplementation(async (input: Record<string, unknown>) => ({
+    ...sampleExpense,
+    ...input,
+  }));
+  mockRepo.update.mockImplementation(async (_id: string, input: Record<string, unknown>) => ({
+    ...sampleExpense,
+    ...input,
+  }));
 });
 
 describe('Expenses Routes', () => {
@@ -111,9 +127,10 @@ describe('Expenses Routes', () => {
       const res = await app.request('/expenses/summary');
       expect(res.status).toBe(200);
       const json = await res.json();
-      expect(json.data.totalAmount).toBe(150);
-      expect(json.data.count).toBe(3);
-      expect(json.data.byCategory.food.amount).toBe(100);
+      // Route transforms repo's raw summary into nested `summary` object
+      expect(json.data.summary.grandTotal).toBe(150);
+      expect(json.data.summary.totalExpenses).toBe(3);
+      expect(json.data.summary.totalByCategory.food).toBe(100);
     });
 
     it('supports period parameter', async () => {

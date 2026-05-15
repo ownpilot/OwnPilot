@@ -1491,6 +1491,8 @@ export async function executeClawNode(
   signal?: AbortSignal
 ): Promise<NodeResult> {
   const startTime = Date.now();
+  let createdClawId: string | null = null;
+  let getClawServiceRef: (typeof import('../claw-service.js'))['getClawService'] | null = null;
   try {
     const data = node.data as unknown as Record<string, unknown>;
 
@@ -1523,6 +1525,7 @@ export async function executeClawNode(
     }
 
     const { getClawService } = await import('../claw-service.js');
+    getClawServiceRef = getClawService;
     const service = getClawService();
 
     // Create the claw
@@ -1537,6 +1540,14 @@ export async function executeClawNode(
       codingAgentProvider: data.codingAgentProvider as string | undefined,
       skills: data.skills as string[] | undefined,
     });
+
+    // Track the created claw id so the outer catch can clean up if anything
+    // downstream throws — startClaw failure (concurrent-limit hit, workspace
+    // creation error, "currently starting" race), polling errors, or the
+    // history fetch all happen AFTER the row exists. Without this, a failed
+    // workflow run permanently leaks a claw config (and possibly its
+    // workspace) on every error.
+    createdClawId = config.id;
 
     // Start the claw
     const session = await service.startClaw(config.id, userId);
@@ -1655,6 +1666,22 @@ export async function executeClawNode(
       ...(isError && lastEntry?.error ? { error: lastEntry.error } : {}),
     };
   } catch (error) {
+    // Clean up the leaked claw config if createClaw succeeded but a later
+    // step (startClaw, polling, history fetch) threw. Without this, every
+    // failed workflow run leaves an orphan row in the claws table.
+    if (createdClawId && getClawServiceRef) {
+      try {
+        const service = getClawServiceRef();
+        if (service.getSession(createdClawId, userId)) {
+          await service.stopClaw(createdClawId, userId);
+        }
+        await service.deleteClaw(createdClawId, userId);
+      } catch (cleanupErr) {
+        log.warn(
+          `[executeClawNode] Failed to clean up leaked claw ${createdClawId} after error: ${getErrorMessage(cleanupErr)}`
+        );
+      }
+    }
     return {
       nodeId: node.id,
       status: 'error',

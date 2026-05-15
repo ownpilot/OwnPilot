@@ -221,7 +221,15 @@ app.get('/:id/files', async (c) => {
 app.get('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
+  // Extract the file path from the URL by locating the marker
+  // `/${workspaceId}/file/` and taking everything after it. Previous code
+  // hardcoded `/api/v1/file-workspaces/...` as the prefix to strip, but the
+  // routes are also mounted without that prefix in some test/dev setups, so
+  // the strip would silently no-op and `filePath` would equal the full URL
+  // path — failing reads/writes/deletes with bogus paths.
+  const marker = `/${workspaceId}/file/`;
+  const idx = c.req.path.indexOf(marker);
+  const filePath = idx >= 0 ? decodeURIComponent(c.req.path.slice(idx + marker.length)) : '';
   const download = c.req.query('download') === 'true';
   const raw = c.req.query('raw') === 'true';
 
@@ -310,7 +318,15 @@ app.get('/:id/file/*', async (c) => {
 app.put('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
+  // Extract the file path from the URL by locating the marker
+  // `/${workspaceId}/file/` and taking everything after it. Previous code
+  // hardcoded `/api/v1/file-workspaces/...` as the prefix to strip, but the
+  // routes are also mounted without that prefix in some test/dev setups, so
+  // the strip would silently no-op and `filePath` would equal the full URL
+  // path — failing reads/writes/deletes with bogus paths.
+  const marker = `/${workspaceId}/file/`;
+  const idx = c.req.path.indexOf(marker);
+  const filePath = idx >= 0 ? decodeURIComponent(c.req.path.slice(idx + marker.length)) : '';
 
   try {
     const result = getOwnedWorkspace(c, workspaceId, userId);
@@ -351,7 +367,15 @@ app.put('/:id/file/*', async (c) => {
 app.delete('/:id/file/*', async (c) => {
   const userId = getUserId(c);
   const workspaceId = c.req.param('id');
-  const filePath = decodeURIComponent(c.req.path.replace(`/api/v1/file-workspaces/${workspaceId}/file/`, ''));
+  // Extract the file path from the URL by locating the marker
+  // `/${workspaceId}/file/` and taking everything after it. Previous code
+  // hardcoded `/api/v1/file-workspaces/...` as the prefix to strip, but the
+  // routes are also mounted without that prefix in some test/dev setups, so
+  // the strip would silently no-op and `filePath` would equal the full URL
+  // path — failing reads/writes/deletes with bogus paths.
+  const marker = `/${workspaceId}/file/`;
+  const idx = c.req.path.indexOf(marker);
+  const filePath = idx >= 0 ? decodeURIComponent(c.req.path.slice(idx + marker.length)) : '';
 
   try {
     const result = getOwnedWorkspace(c, workspaceId, userId);
