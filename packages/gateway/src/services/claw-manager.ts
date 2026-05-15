@@ -663,14 +663,32 @@ export class ClawManager {
       // After successful cycle, remove only the messages that were
       // present at cycle start. Messages that arrived during the
       // cycle remain for the next cycle.
-      managed.session.inbox = managed.session.inbox.slice(inboxSnapshot.length);
+      //
+      // Bound the slice arg by current length: trimInbox can run during the
+      // cycle (sendMessage push, periodic persist) and may have evicted
+      // head-of-queue messages if the cap was exceeded. Without this guard,
+      // slicing past inbox.length would silently drop legitimately-newer
+      // mid-cycle messages.
+      const consumed = Math.min(inboxSnapshot.length, managed.session.inbox.length);
+      managed.session.inbox = managed.session.inbox.slice(consumed);
 
       // Update session
       managed.session.cyclesCompleted = cycleNumber;
       managed.session.totalToolCalls += result.toolCalls.length;
-      managed.session.totalCostUsd += result.costUsd ?? 0;
+      // Guard against NaN / Infinity / negative cost from a misbehaving
+      // provider or cost-calculation bug. NaN is especially nasty because
+      // it propagates: NaN >= totalBudgetUsd is false, so the budget
+      // guardrail would silently never fire again.
+      const safeCost =
+        typeof result.costUsd === 'number' && Number.isFinite(result.costUsd) && result.costUsd >= 0
+          ? result.costUsd
+          : 0;
+      managed.session.totalCostUsd += safeCost;
       managed.session.lastCycleAt = new Date();
-      managed.session.lastCycleDurationMs = result.durationMs;
+      managed.session.lastCycleDurationMs =
+        typeof result.durationMs === 'number' && Number.isFinite(result.durationMs)
+          ? result.durationMs
+          : 0;
       managed.session.lastCycleError = result.error ?? null;
       managed.lastCycleToolCalls = result.toolCalls.length;
       managed.cyclesThisHour++;

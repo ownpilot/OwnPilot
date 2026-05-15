@@ -29,6 +29,8 @@ vi.mock('../db/repositories/claws.js', () => ({
 
 const mockIsRunning = vi.fn();
 const mockStopClaw = vi.fn();
+const mockPauseClaw = vi.fn();
+const mockResumeClaw = vi.fn();
 const mockDelete = vi.fn();
 const mockDeleteSessionWorkspace = vi.fn();
 
@@ -41,6 +43,8 @@ vi.mock('./claw-manager.js', () => ({
     denyEscalation: mockDenyEscalation,
     isRunning: mockIsRunning,
     stopClaw: mockStopClaw,
+    pauseClaw: mockPauseClaw,
+    resumeClaw: mockResumeClaw,
   }),
 }));
 
@@ -178,6 +182,37 @@ describe('ClawService authorization', () => {
       mockGetById.mockResolvedValue(null);
       expect(await service.denyEscalation('claw-1', 'wrong-user', 'nope')).toBe(false);
       expect(mockDenyEscalation).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('pauseClaw ownership', () => {
+    it('returns false and skips manager when claw does not belong to user', async () => {
+      mockGetById.mockResolvedValue(null);
+      expect(await service.pauseClaw('claw-1', 'wrong-user')).toBe(false);
+      expect(mockPauseClaw).not.toHaveBeenCalled();
+    });
+
+    it('proceeds when claw belongs to user', async () => {
+      mockGetById.mockResolvedValue({ id: 'claw-1', userId: 'user-1' });
+      mockPauseClaw.mockResolvedValue(true);
+      expect(await service.pauseClaw('claw-1', 'user-1')).toBe(true);
+      expect(mockPauseClaw).toHaveBeenCalledWith('claw-1', 'user-1');
+    });
+  });
+
+  describe('resumeClaw ownership', () => {
+    it('returns false and skips manager when claw does not belong to user', async () => {
+      mockGetById.mockResolvedValue(null);
+      expect(await service.resumeClaw('claw-1', 'wrong-user')).toBe(false);
+      expect(mockResumeClaw).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('stopClaw ownership', () => {
+    it('returns false and skips manager when claw does not belong to user', async () => {
+      mockGetById.mockResolvedValue(null);
+      expect(await service.stopClaw('claw-1', 'wrong-user')).toBe(false);
+      expect(mockStopClaw).not.toHaveBeenCalled();
     });
   });
 

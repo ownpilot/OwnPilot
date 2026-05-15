@@ -783,6 +783,48 @@ describe('ClawManager', () => {
     });
   });
 
+  describe('cost guardrails', () => {
+    it('treats NaN cost as 0 so totalCostUsd does not poison the budget check', async () => {
+      setupRepo(
+        makeConfig({
+          mode: 'continuous',
+          limits: {
+            maxTurnsPerCycle: 20,
+            maxToolCallsPerCycle: 100,
+            maxCyclesPerHour: 30,
+            cycleTimeoutMs: 300000,
+            totalBudgetUsd: 1.0,
+          },
+        })
+      );
+      mockRunCycle.mockResolvedValueOnce(
+        makeCycleResult({ costUsd: NaN as unknown as number })
+      );
+      // Subsequent cycles return real cost so we can detect budget enforcement
+      mockRunCycle.mockResolvedValue(makeCycleResult({ costUsd: 1.5 }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+
+      // After NaN cycle, totalCostUsd must remain a finite number (0)
+      const session = manager.getSession('claw-1');
+      expect(session?.totalCostUsd).toBe(0);
+      expect(Number.isFinite(session?.totalCostUsd ?? NaN)).toBe(true);
+    });
+
+    it('treats negative cost as 0', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValueOnce(makeCycleResult({ costUsd: -5 }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+
+      expect(manager.getSession('claw-1')?.totalCostUsd).toBe(0);
+    });
+  });
+
   describe('autonomyPolicy.maxCostUsdBeforePause', () => {
     it('auto-requests budget_increase escalation when cost crosses threshold', async () => {
       const repo = setupRepo(

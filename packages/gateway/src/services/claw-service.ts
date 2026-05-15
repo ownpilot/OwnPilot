@@ -184,14 +184,24 @@ export class ClawServiceImpl implements IClawService {
   }
 
   async pauseClaw(clawId: string, userId: string): Promise<boolean> {
+    // Pre-check ownership — the manager's pauseClaw signature accepts userId
+    // but doesn't enforce it (manager lookups are by clawId only). Without
+    // this check, user A could pause user B's claws via this service entry
+    // point, which is reachable from the REST API and management tools.
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return false;
     return getClawManager().pauseClaw(clawId, userId);
   }
 
   async resumeClaw(clawId: string, userId: string): Promise<boolean> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return false;
     return getClawManager().resumeClaw(clawId, userId);
   }
 
   async stopClaw(clawId: string, userId: string): Promise<boolean> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) return false;
     return getClawManager().stopClaw(clawId, userId);
   }
 
