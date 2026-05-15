@@ -1117,6 +1117,24 @@ async function executePublishArtifact(
     };
   }
 
+  // Per-claw lifetime artifact cap. Tracked via session.artifacts so a
+  // runaway claw can't publish a million 500KB artifacts and quietly fill
+  // the artifact table. 1000 is generous for any legitimate claw — daily
+  // reports for years still fit. Beyond that, almost certainly a bug.
+  const MAX_ARTIFACTS_PER_CLAW = 1000;
+  try {
+    const { getClawManager } = await import('../services/claw-manager.js');
+    const session = getClawManager().getSession(ctx.clawId);
+    if (session && session.artifacts.length >= MAX_ARTIFACTS_PER_CLAW) {
+      return {
+        success: false,
+        error: `Claw has reached the ${MAX_ARTIFACTS_PER_CLAW} artifact limit. Delete old artifacts via the UI or reduce publish frequency.`,
+      };
+    }
+  } catch {
+    // Manager may not be available in tests — allow through
+  }
+
   const { getArtifactService } = await import('../services/artifact-service.js');
   const artifactService = getArtifactService();
 

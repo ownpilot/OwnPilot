@@ -1572,7 +1572,28 @@ export async function executeClawNode(
           finalState = 'stopped';
           break;
         }
-        await new Promise((r) => setTimeout(r, 2000));
+        // Abortable sleep: a plain setTimeout would force the loop to wait
+        // a full 2s before noticing a cancellation, even when the user has
+        // already aborted the workflow. Race the timer against the signal so
+        // cancellation lands within microseconds.
+        await new Promise<void>((resolve) => {
+          const t = setTimeout(resolve, 2000);
+          if (signal) {
+            const onAbort = () => {
+              clearTimeout(t);
+              resolve();
+            };
+            if (signal.aborted) {
+              onAbort();
+            } else {
+              signal.addEventListener('abort', onAbort, { once: true });
+            }
+          }
+        });
+        if (signal?.aborted) {
+          finalState = 'stopped';
+          break;
+        }
         const current = service.getSession(config.id, userId);
         if (!current) {
           // Session removed → claw stopped (terminal state). Look at history

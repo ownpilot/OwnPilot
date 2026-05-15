@@ -130,6 +130,13 @@ vi.mock('../workspace/file-workspace.js', () => ({
   getSessionWorkspaceFiles: mockGetSessionWorkspaceFiles,
 }));
 
+const mockSoulsGetById = vi.fn();
+vi.mock('../db/repositories/souls.js', () => ({
+  getSoulsRepository: () => ({
+    getById: mockSoulsGetById,
+  }),
+}));
+
 vi.mock('./log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
@@ -360,6 +367,53 @@ describe('ClawRunner', () => {
 
       const basePromptArg = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
       expect(basePromptArg).toContain('max_cycles:50');
+    });
+
+    it('prepends soul identity when soulId is configured', async () => {
+      mockSoulsGetById.mockResolvedValue({
+        id: 'soul-1',
+        identity: {
+          name: 'Scout',
+          emoji: '🔍',
+          role: 'Trend Researcher',
+          personality: 'Curious and methodical',
+          voice: { tone: 'analytical' },
+          boundaries: ['Never fabricate sources'],
+          backstory: 'Born from a thousand RSS feeds',
+        },
+      });
+
+      runner = new ClawRunner(makeConfig({ soulId: 'soul-1' }));
+      await runner.runCycle(makeSession());
+
+      const promptWithSoul = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
+      expect(promptWithSoul).toContain('Your Identity');
+      expect(promptWithSoul).toContain('Scout');
+      expect(promptWithSoul).toContain('Trend Researcher');
+      expect(promptWithSoul).toContain('Curious and methodical');
+      expect(promptWithSoul).toContain('Never fabricate sources');
+      expect(promptWithSoul).toContain('Born from a thousand RSS feeds');
+    });
+
+    it('falls back gracefully when soul is not found', async () => {
+      mockSoulsGetById.mockResolvedValue(null);
+      runner = new ClawRunner(makeConfig({ soulId: 'soul-missing' }));
+      await runner.runCycle(makeSession());
+
+      const promptWithSoul = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
+      expect(promptWithSoul).not.toContain('Your Identity');
+      // The base prompt should still be there
+      expect(promptWithSoul).toContain('Claw Tools');
+    });
+
+    it('falls back gracefully when soul lookup throws', async () => {
+      mockSoulsGetById.mockRejectedValue(new Error('db down'));
+      runner = new ClawRunner(makeConfig({ soulId: 'soul-1' }));
+      await runner.runCycle(makeSession());
+
+      const promptWithSoul = mockBuildEnhancedSystemPrompt.mock.calls[0][0] as string;
+      expect(promptWithSoul).not.toContain('Your Identity');
+      expect(promptWithSoul).toContain('Claw Tools');
     });
   });
 

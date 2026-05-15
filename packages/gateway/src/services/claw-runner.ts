@@ -200,9 +200,17 @@ export class ClawRunner {
     const conversationId = `claw-${this.config.id}`;
 
     const basePrompt = this.buildSystemPrompt();
-    let systemPrompt = basePrompt;
+
+    // Soul-aware: prepend identity section when this claw is bound to an
+    // AgentSoul (config.soulId). Previously documented as "Soul-aware" but
+    // the field was accepted, stored, and ignored — claws ran with generic
+    // identity even when the operator configured a persona.
+    const soulSection = await this.buildSoulSection();
+    const promptWithSoul = soulSection ? `${soulSection}\n${basePrompt}` : basePrompt;
+
+    let systemPrompt = promptWithSoul;
     try {
-      const enhanced = await buildEnhancedSystemPrompt(basePrompt, {
+      const enhanced = await buildEnhancedSystemPrompt(promptWithSoul, {
         userId,
         maxMemories: 10,
         maxGoals: 5,
@@ -231,6 +239,43 @@ export class ClawRunner {
       maxToolCalls: this.config.limits.maxToolCallsPerCycle,
       toolFilter,
     });
+  }
+
+  /**
+   * Fetch the configured soul (if any) and render an identity section to
+   * prepend to the system prompt. Falls back to empty string on error so a
+   * temporary DB hiccup doesn't block the cycle.
+   */
+  private async buildSoulSection(): Promise<string> {
+    if (!this.config.soulId) return '';
+    try {
+      const { getSoulsRepository } = await import('../db/repositories/souls.js');
+      const soul = await getSoulsRepository().getById(this.config.soulId);
+      if (!soul) return '';
+
+      const id = soul.identity;
+      const lines: string[] = [];
+      lines.push('## Your Identity');
+      lines.push(`You are ${id.emoji} ${id.name} — ${id.role}.`);
+      if (id.personality) lines.push(`Personality: ${id.personality}`);
+      if (id.voice?.tone) lines.push(`Voice: ${id.voice.tone}`);
+      if (id.boundaries?.length) {
+        lines.push('Hard boundaries you must always respect:');
+        for (const b of id.boundaries) lines.push(`- ${b}`);
+      }
+      if (id.backstory) lines.push(`Backstory: ${id.backstory}`);
+      lines.push('');
+      lines.push(
+        'Stay in character — your identity, voice, and boundaries override default tone choices but never override mission constraints or autonomy policy.'
+      );
+      lines.push('');
+      return lines.join('\n');
+    } catch (err) {
+      log.warn(
+        `[${this.config.id}] Failed to load soul ${this.config.soulId}: ${getErrorMessage(err)}`
+      );
+      return '';
+    }
   }
 
   private buildSystemPrompt(): string {

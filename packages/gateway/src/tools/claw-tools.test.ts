@@ -494,6 +494,26 @@ describe('Claw Tools', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('Invalid type');
     });
+
+    it('rejects publishing when claw has reached the artifact lifetime cap', async () => {
+      setClawContext();
+      // Mock manager to return a session with 1000 artifacts already
+      const fullSession = {
+        artifacts: Array.from({ length: 1000 }, (_, i) => `art-${i}`),
+      };
+      mockGetClawManager.mockReturnValue({
+        getSession: vi.fn().mockReturnValue(fullSession),
+      });
+
+      const result = await executeClawTool(
+        'claw_publish_artifact',
+        { title: 't', content: 'c', type: 'markdown' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('artifact limit');
+    });
   });
 
   describe('claw_request_escalation', () => {
