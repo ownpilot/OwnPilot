@@ -482,6 +482,29 @@ describe('FleetManager', () => {
       expect(session?.totalCostUsd).toBe(0.05);
     });
 
+    it('runCycle treats NaN / Infinity / negative costs as zero', async () => {
+      const task1 = makeTask({ id: 'task-1' });
+      const task2 = makeTask({ id: 'task-2' });
+      const task3 = makeTask({ id: 'task-3' });
+      mockGetReadyTasks.mockResolvedValueOnce([task1, task2, task3]);
+      mockWorkerExecute.mockResolvedValueOnce(
+        makeWorkerResult({ success: true, costUsd: Number.NaN })
+      );
+      mockWorkerExecute.mockResolvedValueOnce(
+        makeWorkerResult({ success: true, costUsd: Number.POSITIVE_INFINITY })
+      );
+      mockWorkerExecute.mockResolvedValueOnce(makeWorkerResult({ success: true, costUsd: -5 }));
+
+      const config = makeConfig({ scheduleType: 'interval', scheduleConfig: { intervalMs: 1000 } });
+      await manager.startFleet(config);
+      await vi.advanceTimersByTimeAsync(1100);
+
+      const session = manager.getSession('fleet-1');
+      // All three poisonous values should be coerced to 0, keeping totalCostUsd finite.
+      expect(session?.totalCostUsd).toBe(0);
+      expect(Number.isFinite(session?.totalCostUsd ?? Number.NaN)).toBe(true);
+    });
+
     it('runCycle handles no suitable worker for a task', async () => {
       const task = makeTask({ assignedWorker: 'nonexistent-worker' });
       mockGetReadyTasks.mockResolvedValueOnce([task]);

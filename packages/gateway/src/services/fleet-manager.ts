@@ -630,7 +630,16 @@ export class FleetManager {
       for (const r of results) {
         if (r.status === 'fulfilled' && r.value) {
           const result = r.value;
-          cycleCost += result.costUsd ?? 0;
+          // Guard against NaN / Infinity / negative cost. NaN is poisonous —
+          // it propagates through totalCostUsd and silently disables the
+          // budget guardrail (NaN >= maxCost is always false).
+          const safeCost =
+            typeof result.costUsd === 'number' &&
+            Number.isFinite(result.costUsd) &&
+            result.costUsd >= 0
+              ? result.costUsd
+              : 0;
+          cycleCost += safeCost;
           if (result.success) {
             tasksCompleted++;
           } else {
