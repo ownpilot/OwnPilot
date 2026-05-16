@@ -109,6 +109,12 @@ export async function withTimeout<T>(
     }, ms);
   });
 
+  // If the timeout wins, `promise` keeps running and may reject later.
+  // Attach a no-op handler so that rejection stays bounded here instead of
+  // surfacing as an unhandledRejection in long-running services.
+  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+  promise.catch(() => {});
+
   try {
     const result = await Promise.race([promise, timeoutPromise]);
     clearTimeout(timeoutId!);
