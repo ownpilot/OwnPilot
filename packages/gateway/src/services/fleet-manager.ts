@@ -153,6 +153,9 @@ export class FleetManager {
         log.warn(`Session persist failed for ${config.id}: ${getErrorMessage(err)}`)
       );
     }, SESSION_PERSIST_INTERVAL_MS);
+    // unref so a per-fleet persist timer never blocks process exit. Explicit
+    // stopFleet still clearInterval()s.
+    managed.persistTimer.unref?.();
 
     // Schedule first cycle
     this.scheduleNextCycle(config.id);

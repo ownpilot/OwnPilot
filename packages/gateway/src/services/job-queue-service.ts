@@ -118,6 +118,9 @@ export class JobQueueService {
 
     if (!this.pollInterval) {
       this.pollInterval = setInterval(() => this.pollAll(), 1000);
+      // unref so the 1Hz poll never blocks process exit. stopWorker() still
+      // clearIntervals on the last-worker-stop path.
+      this.pollInterval.unref?.();
     }
 
     // Trigger first poll immediately
@@ -142,8 +145,8 @@ export class JobQueueService {
   private async pollAll(): Promise<void> {
     await Promise.allSettled(
       Array.from(this.workers.values())
-        .filter(w => !w.stopped)
-        .map(w => this.pollWorker(w))
+        .filter((w) => !w.stopped)
+        .map((w) => this.pollWorker(w))
     );
   }
 

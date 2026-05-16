@@ -75,6 +75,8 @@ export class EmbeddingQueue {
         log.error('Queue processing error', String(err));
       });
     }, EMBEDDING_QUEUE_INTERVAL_MS);
+    // unref so the embedding worker never blocks process exit on its own.
+    this.timer.unref?.();
 
     // Subscribe to memory events for automatic embedding generation
     const eventSystem = getEventSystem();

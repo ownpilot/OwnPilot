@@ -141,6 +141,9 @@ export class ClawManager {
     // Run initial cleanup, then schedule daily
     runRetentionCleanup();
     this.cleanupTimer = setInterval(() => runRetentionCleanup(), CLEANUP_INTERVAL_MS);
+    // Don't hold the process open just for this cleanup — Node should be free
+    // to exit when nothing else is keeping the event loop alive (e.g. tests).
+    this.cleanupTimer.unref?.();
 
     log.info(`Claw Manager started (${this.claws.size} claws running)`);
   }
@@ -320,6 +323,9 @@ export class ClawManager {
         log.warn(`Failed to persist session: ${getErrorMessage(err)}`);
       });
     }, SESSION_PERSIST_INTERVAL_MS);
+    // unref so a stuck persistTimer never blocks process exit — explicit stop
+    // paths (stopClaw, shutdown) still clearInterval for correctness.
+    managed.persistTimer.unref?.();
 
     // Ensure conversation row exists so Chat tab works
     ensureConversationRow(clawId, config.userId, config.name).catch((err) => {
