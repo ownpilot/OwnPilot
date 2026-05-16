@@ -319,9 +319,15 @@ Be concise and focused. Report your findings clearly.`.trim();
           reject(new Error(`Task timed out after ${timeoutMs}ms`));
         }, timeoutMs);
       });
-      // Suppress potential unhandled-rejection when responsePromise wins the race.
+      // Race-loser suppression. timeoutPromise only rejects when the timer
+      // fires; if responsePromise wins, finally clearTimeout()s it before
+      // it can reject — so timeoutPromise needs no catch. But if the timer
+      // wins, responsePromise is still in-flight and may later reject
+      // (e.g. provider returns an error after the deadline). Attach a no-op
+      // catch so that late rejection stays bounded here and doesn't bubble
+      // up as an unhandledRejection.
       // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-      timeoutPromise.catch(() => {});
+      responsePromise.catch(() => {});
 
       let response;
       try {

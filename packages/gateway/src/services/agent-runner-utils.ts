@@ -432,10 +432,14 @@ export async function executeAgentPipeline(
   // Race: agent execution vs timeout vs optional cancellation
   const timeout = createTimeoutPromise(opts.timeoutMs, opts.timeoutLabel ?? 'Agent');
   const cancellation = opts.abortSignal ? createCancellationPromise(opts.abortSignal) : null;
-  const promises: Promise<unknown>[] = [
-    opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd }),
-    timeout.promise,
-  ];
+  const agentPromise = opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd });
+  // If timeout or cancellation wins the race, agentPromise keeps running and
+  // may eventually reject (provider error, late timeout). Without a handler,
+  // Node would emit unhandledRejection. timeout.promise / cancellation.promise
+  // already suppress this internally.
+  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+  agentPromise.catch(() => {});
+  const promises: Promise<unknown>[] = [agentPromise, timeout.promise];
   if (cancellation) {
     promises.push(cancellation.promise);
   }
