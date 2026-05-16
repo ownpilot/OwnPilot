@@ -157,6 +157,9 @@ export class TelegramApprovalHandler {
           )
           .catch((e) => log.debug('Telegram callback error', { error: String(e) }));
       }, APPROVAL_TIMEOUT_MS);
+      // unref so an unanswered approval timer doesn't block process exit —
+      // clearAll() / on-resolve clearTimeout still runs.
+      entry.timer.unref?.();
 
       this.pending.set(id, entry);
     });

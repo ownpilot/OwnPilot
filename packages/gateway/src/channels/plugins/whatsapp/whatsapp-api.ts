@@ -1061,6 +1061,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
         this.emitConnectionEvent('error');
       });
     }, delay);
+    // unref so a pending reconnect timer doesn't hold the process open
+    // during graceful shutdown — clearReconnectTimer() still runs.
+    this.reconnectTimer.unref?.();
   }
 
   private clearReconnectTimer(): void {

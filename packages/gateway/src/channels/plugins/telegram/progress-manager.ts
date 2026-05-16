@@ -76,6 +76,8 @@ export class TelegramProgressManager {
             this.pendingText = null;
           }
         }, MIN_EDIT_INTERVAL_MS - elapsed);
+        // unref so a pending throttle flush doesn't hold the process open.
+        this.pendingTimer.unref?.();
       }
     }
   }

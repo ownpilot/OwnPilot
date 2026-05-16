@@ -38,9 +38,9 @@ const log = getLog('Telegram');
 /** Reconnection configuration */
 const RECONNECT_CONFIG = {
   maxAttempts: 10,
-  initialDelayMs: 15000,   // Start with 15 seconds for 409 conflicts
-  baseDelayMs: 5000,       // Then 5 seconds base for other retries
-  maxDelayMs: 120000,      // Cap at 2 minutes
+  initialDelayMs: 15000, // Start with 15 seconds for 409 conflicts
+  baseDelayMs: 5000, // Then 5 seconds base for other retries
+  maxDelayMs: 120000, // Cap at 2 minutes
   backoffMultiplier: 2,
 };
 
@@ -478,11 +478,16 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     const jitter = Math.floor(Math.random() * 2000);
     const finalDelay = delay + jitter;
 
-    log.info(`[Telegram] Scheduling reconnect attempt ${this.reconnectAttempts}/${RECONNECT_CONFIG.maxAttempts} in ${finalDelay}ms`);
+    log.info(
+      `[Telegram] Scheduling reconnect attempt ${this.reconnectAttempts}/${RECONNECT_CONFIG.maxAttempts} in ${finalDelay}ms`
+    );
 
     this.reconnectTimer = setTimeout(() => {
       void this.performReconnect();
     }, finalDelay);
+    // unref so a pending reconnect timer doesn't hold the process open
+    // during graceful shutdown — disconnect() still clearTimeout()s.
+    this.reconnectTimer.unref?.();
   }
 
   /**
@@ -497,7 +502,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
 
       // Wait longer after 409 conflicts to ensure Telegram API released the session
       const waitTime = this.lastErrorWasConflict ? 5000 : 2000;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
 
       // Attempt to reconnect
       await this.connect();
