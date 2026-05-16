@@ -84,7 +84,16 @@ describe('Config Services Routes', () => {
   let app: Hono;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockConfigServicesRepo.list.mockReturnValue([]);
+    mockConfigServicesRepo.getByName.mockReturnValue(undefined);
+    mockConfigServicesRepo.getEntries.mockReturnValue([]);
+    mockConfigServicesRepo.getStats.mockResolvedValue({
+      totalServices: 5,
+      totalEntries: 12,
+      byCategory: {},
+    });
+    mockConfigServicesRepo.isAvailable.mockReturnValue(false);
     app = createApp();
   });
 
@@ -109,6 +118,17 @@ describe('Config Services Routes', () => {
       expect(entry.data.app_password).not.toBe('supersecretpassword123');
       expect(entry.hasSecrets).toBe(true);
       expect(entry.secretFields).toContain('app_password');
+    });
+
+    it('does not mark service configured when only inactive entries have data', async () => {
+      mockConfigServicesRepo.list.mockReturnValue([sampleService]);
+      mockConfigServicesRepo.getEntries.mockReturnValue([{ ...sampleEntry, isActive: false }]);
+
+      const res = await app.request('/config-services');
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.services[0].isConfigured).toBe(false);
     });
 
     it('filters by category', async () => {
@@ -384,6 +404,40 @@ describe('Config Services Routes', () => {
       expect(res.status).toBe(201);
     });
 
+    it('returns 400 when creating a second entry for a single-entry service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({ ...sampleService, multiEntry: false });
+      mockConfigServicesRepo.getEntries.mockReturnValue([sampleEntry]);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: 'Backup',
+          data: { email: 'backup@gmail.com', app_password: 'secret123' },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when creating an inactive default entry', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: 'Personal',
+          isActive: false,
+          data: { email: 'user@gmail.com', app_password: 'secret123' },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+    });
+
     it('returns 404 when service not found', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(null);
 
@@ -450,6 +504,36 @@ describe('Config Services Routes', () => {
       );
     });
 
+    it('returns 400 when deactivating a default entry', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([sampleEntry]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: false }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.updateEntry).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when making an inactive entry default through update', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { ...sampleEntry, isDefault: false, isActive: false },
+      ]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isDefault: true }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.updateEntry).not.toHaveBeenCalled();
+    });
+
     it('returns 404 when entry exists globally but not under the requested service', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
       mockConfigServicesRepo.getEntries.mockReturnValue([]);
@@ -477,6 +561,18 @@ describe('Config Services Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('returns 400 when setting an inactive entry as default', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([{ ...sampleEntry, isActive: false }]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1/default', {
+        method: 'PUT',
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.setDefaultEntry).not.toHaveBeenCalled();
+    });
   });
 
   // ========================================================================
@@ -496,6 +592,21 @@ describe('Config Services Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deleted).toBe(true);
+    });
+
+    it('returns 400 when deleting the default entry while another active entry exists', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({ ...sampleService, multiEntry: true });
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        sampleEntry,
+        { ...sampleEntry, id: 'entry-2', label: 'Work', isDefault: false, isActive: true },
+      ]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'DELETE',
+      });
+
+      expect(res.status).toBe(400);
+      expect(mockConfigServicesRepo.deleteEntry).not.toHaveBeenCalled();
     });
 
     it('returns 404 when service not found', async () => {
@@ -532,6 +643,7 @@ describe('Config Services Routes', () => {
       mockConfigServicesRepo.getEntries
         .mockReturnValueOnce([sampleEntry]) // verify entry exists
         .mockReturnValueOnce([{ ...sampleEntry, isDefault: true }]); // after setDefault
+      mockConfigServicesRepo.setDefaultEntry.mockResolvedValue(true);
 
       const res = await app.request('/config-services/gmail/entries/entry-1/default', {
         method: 'PUT',
@@ -560,6 +672,18 @@ describe('Config Services Routes', () => {
       });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 400 when repository refuses to set default', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([sampleEntry]);
+      mockConfigServicesRepo.setDefaultEntry.mockResolvedValue(false);
+
+      const res = await app.request('/config-services/gmail/entries/entry-1/default', {
+        method: 'PUT',
+      });
+
+      expect(res.status).toBe(400);
     });
   });
 

@@ -397,7 +397,7 @@ export class ConfigServicesRepository extends BaseRepository {
   getDefaultEntry(serviceName: string): ConfigEntry | null {
     const entries = cache.entries.get(serviceName);
     if (!entries) return null;
-    return entries.find((e) => e.isDefault) ?? null;
+    return entries.find((e) => e.isDefault && e.isActive) ?? null;
   }
 
   /**
@@ -406,7 +406,7 @@ export class ConfigServicesRepository extends BaseRepository {
   getEntryByLabel(serviceName: string, label: string): ConfigEntry | null {
     const entries = cache.entries.get(serviceName);
     if (!entries) return null;
-    return entries.find((e) => e.label === label) ?? null;
+    return entries.find((e) => e.label === label && e.isActive) ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -473,6 +473,15 @@ export class ConfigServicesRepository extends BaseRepository {
     if (!entryRow) return null;
 
     const serviceName = entryRow.service_name;
+    const entryIsActive = parseBool(entryRow.is_active);
+    const entryIsDefault = parseBool(entryRow.is_default);
+
+    if (input.isDefault === true && (input.isActive === false || !entryIsActive)) {
+      return null;
+    }
+    if (input.isActive === false && (input.isDefault === true || entryIsDefault)) {
+      return null;
+    }
 
     // If setting as default, unset other defaults first
     if (input.isDefault === true) {
@@ -547,7 +556,13 @@ export class ConfigServicesRepository extends BaseRepository {
    * Set the default entry for a service.
    * Unsets all other defaults, then marks the given entry.
    */
-  async setDefaultEntry(serviceName: string, entryId: string): Promise<void> {
+  async setDefaultEntry(serviceName: string, entryId: string): Promise<boolean> {
+    const entryRow = await this.queryOne<ConfigEntryRow>(
+      'SELECT * FROM config_entries WHERE id = $1 AND service_name = $2',
+      [entryId, serviceName]
+    );
+    if (!entryRow || !parseBool(entryRow.is_active)) return false;
+
     // Atomic: unset all defaults then set the new one in a single statement
     await this.execute(
       `WITH unset AS (
@@ -555,11 +570,12 @@ export class ConfigServicesRepository extends BaseRepository {
         WHERE service_name = $1 AND is_default = TRUE
       )
       UPDATE config_entries SET is_default = TRUE, updated_at = $2
-      WHERE id = $3`,
+      WHERE id = $3 AND service_name = $1`,
       [serviceName, new Date().toISOString(), entryId]
     );
 
     await this.refreshServiceCache(serviceName);
+    return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -654,7 +670,7 @@ export class ConfigServicesRepository extends BaseRepository {
    */
   getFieldValue(serviceName: string, fieldName: string, entryLabel?: string): unknown {
     const svc = cache.services.get(serviceName);
-    if (!svc) return undefined;
+    if (!svc || !svc.isActive) return undefined;
 
     // Pick the entry
     const entry = entryLabel
@@ -695,8 +711,9 @@ export class ConfigServicesRepository extends BaseRepository {
     const entries = cache.entries.get(serviceName);
     if (!entries || entries.length === 0) return false;
 
-    // Check if any entry has at least one non-empty data field
+    // Check if any active entry has at least one non-empty data field
     for (const entry of entries) {
+      if (!entry.isActive) continue;
       for (const key of Object.keys(entry.data)) {
         const val = entry.data[key];
         if (val !== null && val !== undefined && val !== '') return true;
@@ -732,6 +749,7 @@ export class ConfigServicesRepository extends BaseRepository {
         const entries = cache.entries.get(s.name);
         if (!entries || entries.length === 0) return false;
         return entries.some((e) => {
+          if (!e.isActive) return false;
           const data = e.data;
           return Object.keys(data).some((k) => {
             const v = data[k];

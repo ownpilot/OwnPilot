@@ -151,6 +151,18 @@ describe('Plugins Routes', () => {
       expect(json.data[0].toolCount).toBe(2);
     });
 
+    it('does not mark required services configured from inactive entries', async () => {
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { id: 'entry-1', isActive: false, data: { api_key: 'secret' } },
+      ]);
+
+      const res = await app.request('/plugins');
+      const json = await res.json();
+
+      expect(json.data[0].requiredServices[0].isConfigured).toBe(false);
+      expect(json.data[0].hasUnconfiguredServices).toBe(true);
+    });
+
     it('filters by status', async () => {
       const res = await app.request('/plugins?status=disabled');
       const json = await res.json();
@@ -441,7 +453,9 @@ describe('Plugins Routes', () => {
     });
 
     it('shows configured when entries exist', async () => {
-      mockConfigServicesRepo.getEntries.mockReturnValue([{ id: 'entry-1' }]);
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { id: 'entry-1', isActive: true, data: { api_key: 'secret' } },
+      ]);
       mockConfigServicesRepo.getByName.mockReturnValue({ name: 'gmail' });
 
       const res = await app.request('/plugins/plugin-test/required-services');
@@ -449,6 +463,19 @@ describe('Plugins Routes', () => {
 
       expect(json.data.services[0].isConfigured).toBe(true);
       expect(json.data.allConfigured).toBe(true);
+    });
+
+    it('does not show configured when only inactive entries exist', async () => {
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { id: 'entry-1', isActive: false, data: { api_key: 'secret' } },
+      ]);
+      mockConfigServicesRepo.getByName.mockReturnValue({ name: 'gmail' });
+
+      const res = await app.request('/plugins/plugin-test/required-services');
+      const json = await res.json();
+
+      expect(json.data.services[0].isConfigured).toBe(false);
+      expect(json.data.allConfigured).toBe(false);
     });
 
     it('returns 404 for unknown plugin', async () => {

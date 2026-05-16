@@ -57,7 +57,11 @@ interface SetEntryResult {
 
 describe('Config Tools', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockConfigServicesRepo.list.mockReturnValue([]);
+    mockConfigServicesRepo.getEntries.mockReturnValue([]);
+    mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+    mockConfigServicesRepo.getEntryByLabel.mockReturnValue(null);
   });
 
   // ========================================================================
@@ -146,6 +150,22 @@ describe('Config Tools', () => {
 
       const { services } = result.result as ServiceListResult;
       expect(services[0].configured).toBe(false);
+    });
+
+    it('does not count inactive entries as configured', async () => {
+      mockConfigServicesRepo.list.mockReturnValue([
+        { name: 'svc', displayName: 'Svc', category: 'test', multiEntry: false, requiredBy: [] },
+      ]);
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        { isActive: false, data: { api_key: 'abc123' } },
+      ]);
+
+      const result = await executeConfigTool('config_list_services', {});
+
+      const { services, configured, unconfigured } = result.result as ServiceListResult;
+      expect(services[0].configured).toBe(false);
+      expect(configured).toBe(0);
+      expect(unconfigured).toBe(1);
     });
 
     it('formats requiredBy correctly', async () => {
@@ -240,6 +260,28 @@ describe('Config Tools', () => {
 
       const entry = (result.result as ServiceDetailResult).entries[0];
       expect(entry.data.api_key).toBe('');
+    });
+
+    it('does not mark a service configured when only inactive entries have data', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'svc',
+        displayName: 'Svc',
+        category: 'test',
+        configSchema: [{ name: 'api_key', label: 'API Key', type: 'secret', required: true }],
+      });
+      mockConfigServicesRepo.getEntries.mockReturnValue([
+        {
+          id: 'e1',
+          label: 'Default',
+          isDefault: true,
+          isActive: false,
+          data: { api_key: 'secret-key' },
+        },
+      ]);
+
+      const result = await executeConfigTool('config_get_service', { service: 'svc' });
+
+      expect((result.result as ServiceDetailResult).configured).toBe(false);
     });
   });
 
@@ -353,13 +395,12 @@ describe('Config Tools', () => {
       );
     });
 
-    it('notes missing required fields in result when required field is absent (line 215)', async () => {
+    it('returns error when required field is absent on create', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue({
         name: 'deepl',
         configSchema: [{ name: 'api_key', label: 'API Key', type: 'secret', required: true }],
       });
       mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
-      mockConfigServicesRepo.createEntry.mockResolvedValue({ id: 'new-e', label: 'Default' });
 
       // Omit the required 'api_key' field
       const result = await executeConfigTool('config_set_entry', {
@@ -367,9 +408,37 @@ describe('Config Tools', () => {
         data: { some_other_field: 'value' },
       });
 
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Missing required fields: api_key (API Key)');
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+    });
+
+    it('allows partial updates when existing data satisfies required fields', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'deepl',
+        configSchema: [
+          { name: 'api_key', label: 'API Key', type: 'secret', required: true },
+          { name: 'base_url', label: 'Base URL', type: 'text', required: false },
+        ],
+      });
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue({
+        id: 'e1',
+        label: 'Default',
+        data: { api_key: 'real-key', base_url: 'https://old.example' },
+      });
+
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'deepl',
+        data: { base_url: 'https://new.example' },
+      });
+
       expect(result.success).toBe(true);
-      const res = result.result as Record<string, unknown>;
-      expect(res.missingRequiredFields).toEqual(['api_key (API Key)']);
+      expect(mockConfigServicesRepo.updateEntry).toHaveBeenCalledWith(
+        'e1',
+        expect.objectContaining({
+          data: { api_key: 'real-key', base_url: 'https://new.example' },
+        })
+      );
     });
 
     it('returns error for invalid data param', async () => {

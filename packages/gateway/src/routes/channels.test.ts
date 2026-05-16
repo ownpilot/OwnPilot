@@ -97,6 +97,7 @@ vi.mock('../db/repositories/channel-messages.js', () => ({
 }));
 
 const mockConfigServicesRepo = {
+  getByName: vi.fn(),
   getDefaultEntry: vi.fn(),
   updateEntry: vi.fn(),
   createEntry: vi.fn(),
@@ -165,6 +166,10 @@ describe('Channels Routes', () => {
       return undefined;
     });
     mockService.send.mockResolvedValue('msg-sent-001');
+    mockConfigServicesRepo.getByName.mockReturnValue({
+      name: 'telegram_bot',
+      configSchema: [{ name: 'bot_token', label: 'Bot Token', type: 'secret', required: true }],
+    });
     app = createApp();
   });
 
@@ -581,6 +586,34 @@ describe('Channels Routes', () => {
           action: 'updated',
         })
       );
+    });
+
+    it('returns 400 when required config fields are missing', async () => {
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { webhook_url: 'https://example.com/hook' } }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Missing required fields: Bot Token');
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+    });
+
+    it('returns 404 when the required config service is not registered', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(null);
+
+      const res = await app.request('/channels/channel.telegram/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: { bot_token: '123:ABC' } }),
+      });
+
+      expect(res.status).toBe(404);
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
     });
 
     it('returns 404 for unknown pluginId', async () => {

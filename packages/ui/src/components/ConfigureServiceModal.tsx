@@ -88,8 +88,11 @@ export function ConfigureServiceModal({
   const activeEntry = isCreating
     ? null
     : (service.entries.find((e) => e.id === activeEntryId) ?? null);
-  const canDelete = !isCreating && service.entries.length > 1;
   const isDefault = activeEntry?.isDefault ?? false;
+  const hasActiveSibling = service.entries.some(
+    (entry) => entry.id !== activeEntry?.id && entry.isActive !== false
+  );
+  const canDelete = !isCreating && service.entries.length > 1 && !(isDefault && hasActiveSibling);
   const isAudioService = service.name === 'audio_service';
   const [diagnostics, setDiagnostics] = useState<VoiceDiagnostics | null>(null);
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
@@ -307,15 +310,26 @@ export function ConfigureServiceModal({
                 Entry Active
               </p>
               <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                When disabled, this entry will not be used by tools.
+                {isDefault
+                  ? 'Default entries must stay active.'
+                  : 'When disabled, this entry will not be used by tools.'}
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={entryIsActive}
-              onClick={() => onActiveChange(!entryIsActive)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+              aria-disabled={isSaving || isDefault}
+              disabled={isSaving || isDefault}
+              title={
+                isDefault
+                  ? 'Set another active entry as default before disabling this one'
+                  : undefined
+              }
+              onClick={() => {
+                if (!isDefault) onActiveChange(!entryIsActive);
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 disabled:cursor-not-allowed ${
                 entryIsActive
                   ? 'bg-success'
                   : 'bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border'
@@ -335,8 +349,13 @@ export function ConfigureServiceModal({
               {!isDefault && (
                 <button
                   onClick={onSetDefault}
-                  disabled={isSaving}
+                  disabled={isSaving || !entryIsActive}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20 rounded-lg hover:bg-yellow-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    entryIsActive
+                      ? 'Set as default'
+                      : 'Activate this entry before making it default'
+                  }
                 >
                   <Star className="w-3.5 h-3.5" />
                   Set as Default

@@ -28,6 +28,10 @@ import { pagination } from '../middleware/pagination.js';
 import { refreshChannelApi } from '../plugins/init.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
+import {
+  normalizeAndValidateEntryData,
+  validateRequiredFields,
+} from '../services/config-entry-validation.js';
 
 // Import sub-routes
 import { channelInboxRoutes } from './channels-inbox.js';
@@ -314,17 +318,62 @@ channelRoutes.post('/:id/setup', async (c) => {
     }
 
     const serviceName = requiredServices[0]!.name;
+    const serviceDef = configServicesRepo.getByName(serviceName);
+    if (!serviceDef) {
+      return notFoundError(c, 'Config service', serviceName);
+    }
+
+    const schema = serviceDef.configSchema ?? [];
+    const normalized = normalizeAndValidateEntryData(
+      body.config as Record<string, unknown>,
+      schema
+    );
+    if (normalized.errors.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Invalid fields: ${normalized.errors.join(', ')}`,
+        },
+        400
+      );
+    }
 
     // 2. Create or update Config Center entry
     const existingEntry = configServicesRepo.getDefaultEntry(serviceName);
     if (existingEntry) {
+      const mergedData = { ...existingEntry.data, ...normalized.data };
+      const missing = validateRequiredFields(mergedData, schema);
+      if (missing.length > 0) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: `Missing required fields: ${missing.join(', ')}`,
+          },
+          400
+        );
+      }
+
       await configServicesRepo.updateEntry(existingEntry.id, {
-        data: { ...existingEntry.data, ...body.config },
+        data: mergedData,
       });
     } else {
+      const missing = validateRequiredFields(normalized.data, schema);
+      if (missing.length > 0) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: `Missing required fields: ${missing.join(', ')}`,
+          },
+          400
+        );
+      }
+
       await configServicesRepo.createEntry(serviceName, {
         label: 'Default',
-        data: body.config,
+        data: normalized.data,
       });
     }
 

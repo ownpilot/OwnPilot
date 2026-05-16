@@ -29,6 +29,14 @@ const LABEL_CLASSES =
 
 const DESCRIPTION_CLASSES = 'text-xs text-text-muted dark:text-dark-text-muted mt-1';
 
+function getFieldValue(field: ConfigFieldDefinition, values: Record<string, unknown>): string {
+  const value = values[field.name] ?? field.defaultValue ?? '';
+  if (field.type === 'json' && typeof value === 'object' && value !== null) {
+    return JSON.stringify(value, null, 2);
+  }
+  return String(value);
+}
+
 export function DynamicConfigForm({
   schema,
   values,
@@ -114,7 +122,7 @@ export function DynamicConfigForm({
                 <>
                   <textarea
                     id={`field-${field.name}`}
-                    value={String(values[field.name] ?? field.defaultValue ?? '')}
+                    value={getFieldValue(field, values)}
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     onBlur={(e) => validateJson(field.name, e.target.value)}
                     disabled={disabled}

@@ -9,6 +9,7 @@
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { maskSecret, getErrorMessage } from '../routes/helpers.js';
+import { hasConfiguredData } from './config-entry-validation.js';
 
 // =============================================================================
 // Tool Definitions
@@ -81,6 +82,17 @@ const setConfigEntryTool: ToolDefinition = {
 // Tool Executors
 // =============================================================================
 
+function getMissingRequiredFields(
+  schema: Array<{ name: string; label?: string; required?: boolean }>,
+  data: Record<string, unknown>
+): string[] {
+  return schema
+    .filter(
+      (field) => field.required && (data[field.name] === undefined || data[field.name] === '')
+    )
+    .map((field) => `${field.name} (${field.label ?? field.name})`);
+}
+
 async function executeListConfigServices(
   params: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
@@ -89,12 +101,9 @@ async function executeListConfigServices(
 
   const result = services.map((svc) => {
     const entries = configServicesRepo.getEntries(svc.name);
-    const configured =
-      entries.length > 0 &&
-      entries.some((e) => {
-        const vals = Object.values(e.data);
-        return vals.some((v) => v !== null && v !== undefined && v !== '');
-      });
+    const configured = entries.some(
+      (entry) => entry.isActive !== false && hasConfiguredData(entry.data)
+    );
 
     return {
       name: svc.name,
@@ -176,7 +185,9 @@ async function executeGetConfigService(
       },
       schema,
       entries: maskedEntries,
-      configured: maskedEntries.length > 0,
+      configured: maskedEntries.some(
+        (entry) => entry.isActive !== false && hasConfiguredData(entry.data)
+      ),
     },
   };
 }
@@ -207,14 +218,7 @@ async function executeSetConfigEntry(
     };
   }
 
-  // Validate required fields
   const schema = svc.configSchema ?? [];
-  const missing: string[] = [];
-  for (const field of schema) {
-    if (field.required && (data[field.name] === undefined || data[field.name] === '')) {
-      missing.push(`${field.name} (${field.label})`);
-    }
-  }
 
   // Check if there's already a default entry to update
   const existingEntry = label
@@ -235,6 +239,14 @@ async function executeSetConfigEntry(
         }
       }
       const mergedData = { ...existingEntry.data, ...cleanData };
+      const missing = getMissingRequiredFields(schema, mergedData);
+      if (missing.length > 0) {
+        return {
+          content: { error: `Missing required fields: ${missing.join(', ')}` },
+          isError: true,
+        };
+      }
+
       await configServicesRepo.updateEntry(existingEntry.id, {
         data: mergedData,
         ...(label ? { label } : {}),
@@ -248,10 +260,17 @@ async function executeSetConfigEntry(
           entryId: existingEntry.id,
           label: label ?? existingEntry.label,
           updatedFields: Object.keys(data),
-          ...(missing.length > 0 ? { missingOptionalFields: missing } : {}),
         },
       };
     } else {
+      const missing = getMissingRequiredFields(schema, data);
+      if (missing.length > 0) {
+        return {
+          content: { error: `Missing required fields: ${missing.join(', ')}` },
+          isError: true,
+        };
+      }
+
       // Create new entry
       const entry = await configServicesRepo.createEntry(serviceName, {
         data,
@@ -267,7 +286,6 @@ async function executeSetConfigEntry(
           entryId: entry.id,
           label: entry.label,
           setFields: Object.keys(data),
-          ...(missing.length > 0 ? { missingRequiredFields: missing } : {}),
         },
       };
     }

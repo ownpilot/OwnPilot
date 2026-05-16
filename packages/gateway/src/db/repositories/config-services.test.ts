@@ -584,6 +584,15 @@ describe('ConfigServicesRepository', () => {
 
       expect(repo.getDefaultEntry('openai')).toBeNull();
     });
+
+    it('should return null when default entry is inactive', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow({ is_default: true, is_active: false })]);
+      await repo.initialize();
+
+      expect(repo.getDefaultEntry('openai')).toBeNull();
+    });
   });
 
   describe('getEntryByLabel', () => {
@@ -608,6 +617,15 @@ describe('ConfigServicesRepository', () => {
       await repo.initialize();
 
       expect(repo.getEntryByLabel('openai', 'nonexistent')).toBeNull();
+    });
+
+    it('should return null when matching label entry is inactive', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow({ label: 'Production', is_active: false })]);
+      await repo.initialize();
+
+      expect(repo.getEntryByLabel('openai', 'Production')).toBeNull();
     });
 
     it('should return null when service has no entries', async () => {
@@ -833,7 +851,7 @@ describe('ConfigServicesRepository', () => {
         .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
-      mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow());
+      mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow({ is_default: false }));
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow());
       mockAdapter.query.mockResolvedValueOnce([makeEntryRow({ is_active: false })]);
@@ -844,6 +862,36 @@ describe('ConfigServicesRepository', () => {
       expect(sql).toContain('is_active = $');
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
       expect(params).toContain(false);
+    });
+
+    it('should reject making an inactive entry default', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeEntryRow({ id: 'entry-2', is_default: false, is_active: false })
+      );
+
+      const result = await repo.updateEntry('entry-2', { isDefault: true });
+
+      expect(result).toBeNull();
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should reject deactivating a default entry', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(makeEntryRow({ is_default: true }));
+
+      const result = await repo.updateEntry('entry-1', { isActive: false });
+
+      expect(result).toBeNull();
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
     });
   });
 
@@ -900,18 +948,53 @@ describe('ConfigServicesRepository', () => {
         .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeEntryRow({ id: 'entry-2', is_default: false, is_active: true })
+      );
       // Single atomic CTE statement
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
       // refreshServiceCache
       mockAdapter.queryOne.mockResolvedValueOnce(makeServiceRow());
       mockAdapter.query.mockResolvedValueOnce([makeEntryRow({ id: 'entry-2', is_default: true })]);
 
-      await repo.setDefaultEntry('openai', 'entry-2');
+      const result = await repo.setDefaultEntry('openai', 'entry-2');
 
+      expect(result).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledTimes(1);
       const sql = mockAdapter.execute.mock.calls[0]![0] as string;
       expect(sql).toContain('is_default = FALSE');
       expect(sql).toContain('is_default = TRUE');
+      expect(sql).toContain('service_name = $1');
+    });
+
+    it('should return false and preserve existing defaults when target entry is inactive', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeEntryRow({ id: 'entry-2', is_default: false, is_active: false })
+      );
+
+      const result = await repo.setDefaultEntry('openai', 'entry-2');
+
+      expect(result).toBe(false);
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should return false and preserve existing defaults when target entry belongs to another service', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      const result = await repo.setDefaultEntry('openai', 'other-entry');
+
+      expect(result).toBe(false);
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
     });
   });
 
@@ -1156,6 +1239,50 @@ describe('ConfigServicesRepository', () => {
       expect(repo.getFieldValue('openai', 'api_key', 'Prod')).toBe('prod-key');
     });
 
+    it('should return undefined when service is inactive', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow({ is_active: false })])
+        .mockResolvedValueOnce([
+          makeEntryRow({ data: JSON.stringify({ api_key: 'inactive-service-key' }) }),
+        ]);
+      await repo.initialize();
+
+      expect(repo.getFieldValue('openai', 'api_key')).toBeUndefined();
+    });
+
+    it('should ignore inactive default entry values and fall back to schema defaults', async () => {
+      const schemaWithDefault = [
+        { name: 'api_key', label: 'API Key', type: 'secret', defaultValue: 'fallback-key' },
+      ];
+      mockAdapter.query
+        .mockResolvedValueOnce([
+          makeServiceRow({ config_schema: JSON.stringify(schemaWithDefault) }),
+        ])
+        .mockResolvedValueOnce([
+          makeEntryRow({
+            data: JSON.stringify({ api_key: 'inactive-key' }),
+            is_active: false,
+          }),
+        ]);
+      await repo.initialize();
+
+      expect(repo.getFieldValue('openai', 'api_key')).toBe('fallback-key');
+    });
+
+    it('should ignore inactive labeled entry values', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([
+        makeEntryRow({
+          id: 'e1',
+          label: 'Prod',
+          data: JSON.stringify({ api_key: 'inactive-prod-key' }),
+          is_active: false,
+        }),
+      ]);
+      await repo.initialize();
+
+      expect(repo.getFieldValue('openai', 'api_key', 'Prod')).toBeUndefined();
+    });
+
     it('should fall back to env var', async () => {
       const originalEnv = process.env['OPENAI_API_KEY'];
       process.env['OPENAI_API_KEY'] = 'env-val';
@@ -1303,6 +1430,18 @@ describe('ConfigServicesRepository', () => {
 
       expect(repo.isAvailable('openai')).toBe(true);
     });
+
+    it('should return false when only inactive entries have data', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([
+        makeEntryRow({
+          data: JSON.stringify({ api_key: 'sk-inactive' }),
+          is_active: false,
+        }),
+      ]);
+      await repo.initialize();
+
+      expect(repo.isAvailable('openai')).toBe(false);
+    });
   });
 
   // =========================================================================
@@ -1334,6 +1473,23 @@ describe('ConfigServicesRepository', () => {
       expect(stats.configured).toBe(1);
       expect(stats.categories).toContain('ai');
       expect(stats.categories).toContain('search');
+    });
+
+    it('should not count inactive entries as configured', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow({ name: 'openai', is_active: true })])
+        .mockResolvedValueOnce([
+          makeEntryRow({
+            service_name: 'openai',
+            data: JSON.stringify({ api_key: 'sk-inactive' }),
+            is_active: false,
+          }),
+        ]);
+      await repo.initialize();
+
+      const stats = await repo.getStats();
+
+      expect(stats.configured).toBe(0);
     });
 
     it('should track neededByTools and neededButUnconfigured', async () => {

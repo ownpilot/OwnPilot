@@ -27,6 +27,7 @@ import { pluginsRepo } from '../db/repositories/plugins.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
 import { wsGateway } from '../ws/server.js';
+import { hasConfiguredData } from '../services/config-entry-validation.js';
 
 const log = getLog('Plugins');
 
@@ -34,6 +35,15 @@ export const pluginsRoutes = new Hono();
 
 function getPluginService(): IPluginService {
   return getServiceRegistry().get(Services.Plugin);
+}
+
+function hasConfiguredEntry(
+  entries: Array<{ isActive?: boolean; data?: Record<string, unknown> }>
+): boolean {
+  return entries.some((entry) => {
+    if (entry.isActive === false || !entry.data) return false;
+    return hasConfiguredData(entry.data);
+  });
 }
 
 /**
@@ -100,10 +110,10 @@ function toPluginInfo(plugin: Plugin): PluginInfo {
     requiredServices: (plugin.manifest.requiredServices ?? []).map((svc) => ({
       name: svc.name,
       displayName: svc.displayName ?? svc.name,
-      isConfigured: configServicesRepo.getEntries(svc.name).length > 0,
+      isConfigured: hasConfiguredEntry(configServicesRepo.getEntries(svc.name)),
     })),
     hasUnconfiguredServices: (plugin.manifest.requiredServices ?? []).some(
-      (svc) => configServicesRepo.getEntries(svc.name).length === 0
+      (svc) => !hasConfiguredEntry(configServicesRepo.getEntries(svc.name))
     ),
   };
 }
@@ -439,7 +449,7 @@ pluginsRoutes.get('/:id/required-services', async (c) => {
       docsUrl: svc.docsUrl,
       multiEntry: svc.multiEntry ?? false,
       isRegistered: serviceDef !== null,
-      isConfigured: entries.length > 0,
+      isConfigured: hasConfiguredEntry(entries),
       entryCount: entries.length,
     };
   });

@@ -26,6 +26,10 @@ import {
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import {
+  normalizeAndValidateEntryData,
+  validateRequiredFields,
+} from '../services/config-entry-validation.js';
+import {
   validateBody,
   createConfigServiceSchema,
   updateConfigServiceSchema,
@@ -38,99 +42,6 @@ export const configServicesRoutes = new Hono();
 // =============================================================================
 // HELPERS
 // =============================================================================
-
-/**
- * Validate entry data against service schema's required fields.
- * Returns array of missing required field names (empty = valid).
- */
-function validateRequiredFields(
-  data: Record<string, unknown>,
-  schema: ConfigFieldDefinition[]
-): string[] {
-  const missing: string[] = [];
-  for (const field of schema) {
-    if (!field.required) continue;
-    const val = data[field.name];
-    if (val === undefined || val === null || val === '') {
-      missing.push(field.label || field.name);
-    }
-  }
-  return missing;
-}
-
-function isEmptyConfigValue(value: unknown): boolean {
-  return value === undefined || value === null || value === '';
-}
-
-function normalizeAndValidateEntryData(
-  data: Record<string, unknown>,
-  schema: ConfigFieldDefinition[]
-): { data: Record<string, unknown>; errors: string[] } {
-  const normalized = { ...data };
-  const errors: string[] = [];
-
-  for (const field of schema) {
-    const value = normalized[field.name];
-    if (isEmptyConfigValue(value)) continue;
-
-    const label = field.label || field.name;
-    switch (field.type) {
-      case 'string':
-      case 'secret':
-        if (typeof value !== 'string') {
-          errors.push(`${label} must be a string`);
-        }
-        break;
-      case 'url':
-        if (typeof value !== 'string') {
-          errors.push(`${label} must be a URL string`);
-          break;
-        }
-        try {
-          new URL(value);
-        } catch {
-          errors.push(`${label} must be a valid URL`);
-        }
-        break;
-      case 'number': {
-        const numberValue = typeof value === 'string' ? Number(value) : value;
-        if (typeof numberValue !== 'number' || !Number.isFinite(numberValue)) {
-          errors.push(`${label} must be a number`);
-        } else {
-          normalized[field.name] = numberValue;
-        }
-        break;
-      }
-      case 'boolean':
-        if (typeof value !== 'boolean') {
-          errors.push(`${label} must be true or false`);
-        }
-        break;
-      case 'select': {
-        if (typeof value !== 'string') {
-          errors.push(`${label} must be one of the configured options`);
-          break;
-        }
-        const allowed = field.options?.map((option) => option.value);
-        if (allowed && allowed.length > 0 && !allowed.includes(value)) {
-          errors.push(`${label} must be one of: ${allowed.join(', ')}`);
-        }
-        break;
-      }
-      case 'json':
-        if (typeof value === 'string') {
-          try {
-            normalized[field.name] = JSON.parse(value);
-          } catch {
-            errors.push(`${label} must be valid JSON`);
-          }
-        }
-        break;
-    }
-  }
-
-  return { data: normalized, errors };
-}
 
 /**
  * Detect if a value looks like it was masked by maskSecret().
@@ -172,6 +83,7 @@ function sanitizeEntry(entry: ConfigEntry, schema: ConfigFieldDefinition[]) {
 function sanitizeService(service: ConfigServiceDefinition) {
   const entries = configServicesRepo.getEntries(service.name);
   const isConfigured = entries.some((e) => {
+    if (e.isActive === false) return false;
     const data = e.data;
     return Object.keys(data).some((k) => {
       const v = data[k];
@@ -367,6 +279,30 @@ configServicesRoutes.post('/:name/entries', async (c) => {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
   }
 
+  const existingEntries = configServicesRepo.getEntries(name);
+  if (!service.multiEntry && existingEntries.length > 0) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'This service supports only one config entry',
+      },
+      400
+    );
+  }
+
+  const willBeDefault = body.isDefault === true || existingEntries.length === 0;
+  if (willBeDefault && body.isActive === false) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Default config entries must stay active',
+      },
+      400
+    );
+  }
+
   // Validate required fields
   if (service.configSchema.length > 0) {
     const normalized = normalizeAndValidateEntryData(body.data ?? {}, service.configSchema);
@@ -424,6 +360,19 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
   const existingEntry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
   if (!existingEntry) {
     return notFoundError(c, 'Config entry', entryId);
+  }
+  if (
+    (body.isDefault === true && (body.isActive === false || existingEntry.isActive === false)) ||
+    (body.isActive === false && (body.isDefault === true || existingEntry.isDefault))
+  ) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Default config entries must stay active',
+      },
+      400
+    );
   }
 
   // Protect against masked secret values being written back to DB.
@@ -492,9 +441,22 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
     return notFoundError(c, 'Config service', name);
   }
 
-  const entry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
+  const entries = configServicesRepo.getEntries(name);
+  const entry = entries.find((e) => e.id === entryId);
   if (!entry) {
     return notFoundError(c, 'Config entry', entryId);
+  }
+
+  const hasActiveSibling = entries.some((e) => e.id !== entryId && e.isActive !== false);
+  if (entry.isDefault && hasActiveSibling) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Set another active entry as default before deleting this one',
+      },
+      400
+    );
   }
 
   const deleted = await configServicesRepo.deleteEntry(entryId);
@@ -525,8 +487,28 @@ configServicesRoutes.put('/:name/entries/:entryId/default', async (c) => {
   if (!entry) {
     return notFoundError(c, 'Config entry', entryId);
   }
+  if (entry.isActive === false) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Inactive config entries cannot be set as default',
+      },
+      400
+    );
+  }
 
-  await configServicesRepo.setDefaultEntry(name, entryId);
+  const didSetDefault = await configServicesRepo.setDefaultEntry(name, entryId);
+  if (!didSetDefault) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'Config entry could not be set as default',
+      },
+      400
+    );
+  }
 
   wsGateway.broadcast('data:changed', { entity: 'config_service', action: 'updated', id: name });
 
