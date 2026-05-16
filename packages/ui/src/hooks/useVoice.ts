@@ -7,11 +7,14 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { voiceApi } from '../api/endpoints/voice';
+import { useVoiceAvailability } from './useVoiceAvailability';
 
 export interface UseVoiceReturn {
   isRecording: boolean;
   isTranscribing: boolean;
   isSupported: boolean;
+  isBrowserSupported: boolean;
+  isServiceAvailable: boolean | null;
   error: string | null;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<string | null>;
@@ -27,10 +30,14 @@ export function useVoice(): UseVoiceReturn {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const isSupported =
+  const isBrowserSupported =
     typeof navigator !== 'undefined' &&
     typeof navigator.mediaDevices !== 'undefined' &&
     typeof MediaRecorder !== 'undefined';
+
+  const voiceServiceAvailable = useVoiceAvailability('stt');
+  const isServiceAvailable = isBrowserSupported ? voiceServiceAvailable : false;
+  const isSupported = isBrowserSupported && isServiceAvailable === true;
 
   const cleanup = useCallback(() => {
     if (streamRef.current) {
@@ -42,8 +49,12 @@ export function useVoice(): UseVoiceReturn {
   }, []);
 
   const startRecording = useCallback(async () => {
-    if (!isSupported) {
+    if (!isBrowserSupported) {
       setError('Voice recording is not supported in this browser');
+      return;
+    }
+    if (!isServiceAvailable) {
+      setError('Voice transcription is not configured');
       return;
     }
 
@@ -79,7 +90,7 @@ export function useVoice(): UseVoiceReturn {
         setError(message);
       }
     }
-  }, [isSupported, cleanup]);
+  }, [isBrowserSupported, isServiceAvailable, cleanup]);
 
   const stopRecording = useCallback(async (): Promise<string | null> => {
     const recorder = mediaRecorderRef.current;
@@ -133,6 +144,8 @@ export function useVoice(): UseVoiceReturn {
     isRecording,
     isTranscribing,
     isSupported,
+    isBrowserSupported,
+    isServiceAvailable,
     error,
     startRecording,
     stopRecording,

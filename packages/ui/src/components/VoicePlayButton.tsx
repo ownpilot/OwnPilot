@@ -5,9 +5,10 @@
  * Shows volume icon (idle) → spinner (loading) → stop icon (playing).
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Volume2, StopCircle } from './icons';
 import { voiceApi } from '../api/endpoints/voice';
+import { useVoiceAvailability } from '../hooks/useVoiceAvailability';
 
 interface VoicePlayButtonProps {
   text: string;
@@ -15,6 +16,7 @@ interface VoicePlayButtonProps {
 
 export function VoicePlayButton({ text }: VoicePlayButtonProps) {
   const [state, setState] = useState<'idle' | 'loading' | 'playing'>('idle');
+  const isAvailable = useVoiceAvailability('tts');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
 
@@ -30,6 +32,8 @@ export function VoicePlayButton({ text }: VoicePlayButtonProps) {
   }, []);
 
   const handleClick = async () => {
+    if (!isAvailable) return;
+
     if (state === 'playing') {
       cleanup();
       setState('idle');
@@ -64,6 +68,12 @@ export function VoicePlayButton({ text }: VoicePlayButtonProps) {
       setState('idle');
     }
   };
+
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+
+  if (isAvailable !== true) return null;
 
   return (
     <button
