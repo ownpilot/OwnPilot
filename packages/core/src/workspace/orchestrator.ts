@@ -288,11 +288,25 @@ export class UserContainerOrchestrator {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
+      let sigkillHandle: ReturnType<typeof setTimeout> | null = null;
       const timeoutHandle = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
-        setTimeout(() => child.kill('SIGKILL'), 1000);
+        // SIGKILL fallback if SIGTERM is ignored. Tracked so child.on('close')
+        // can clear it — otherwise this timer keeps the event loop alive for
+        // up to 1s after the container has already exited.
+        sigkillHandle = setTimeout(() => {
+          sigkillHandle = null;
+          child.kill('SIGKILL');
+        }, 1000);
       }, timeoutMs);
+      const clearTimers = () => {
+        clearTimeout(timeoutHandle);
+        if (sigkillHandle !== null) {
+          clearTimeout(sigkillHandle);
+          sigkillHandle = null;
+        }
+      };
 
       child.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString();
@@ -311,7 +325,7 @@ export class UserContainerOrchestrator {
       });
 
       child.on('close', (exitCode: number | null) => {
-        clearTimeout(timeoutHandle);
+        clearTimers();
         const executionTimeMs = Date.now() - startTime;
 
         if (timedOut) {
@@ -336,7 +350,7 @@ export class UserContainerOrchestrator {
       });
 
       child.on('error', (err: Error) => {
-        clearTimeout(timeoutHandle);
+        clearTimers();
         resolve({
           executionId,
           status: 'failed',
