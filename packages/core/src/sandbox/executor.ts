@@ -148,6 +148,14 @@ export class SandboxExecutor {
         }, this.limits.maxExecutionTime);
       });
 
+      // Race-loser rejection suppression: if the timeout wins, executePromise
+      // is still in-flight and may later reject (sandbox code threw after
+      // timeout). Promise.race already consumed our subscription, so that
+      // late rejection would become an unhandled rejection that the Node
+      // runtime escalates. Attach a no-op handler so it stays bounded here.
+      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+      executePromise.catch(() => {});
+
       try {
         const value = await Promise.race([executePromise, timeoutPromise]);
         clearTimeout(timeoutId);
