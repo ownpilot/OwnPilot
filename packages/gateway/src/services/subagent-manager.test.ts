@@ -339,6 +339,26 @@ describe('SubagentManager', () => {
       // Session should still exist (still running)
       expect(manager.getSession(spawned.id)).not.toBeNull();
     });
+
+    it('preserves spawnCounts after cleanup so lifetime cap cannot be bypassed', async () => {
+      // budget.maxTotalSpawns = 5 in this test setup. Spawn 5, let them
+      // complete, run cleanup, then verify a 6th spawn still fails.
+      for (let i = 0; i < 5; i++) {
+        await manager.spawn(makeSpawnInput({ name: `T${i}` }));
+      }
+
+      // Wait for runners to complete
+      await vi.advanceTimersByTimeAsync(50);
+
+      // Advance past TTL and clean up
+      vi.advanceTimersByTime(31 * 60 * 1000);
+      manager.cleanup(30 * 60 * 1000);
+
+      // 6th spawn must still fail — cap is lifetime, not active-window.
+      await expect(manager.spawn(makeSpawnInput({ name: 'T6' }))).rejects.toThrow(
+        /Total subagent spawn limit reached/
+      );
+    });
   });
 
   // -------------------------------------------------------------------------

@@ -237,19 +237,13 @@ export class SubagentManager {
         parentSubs?.delete(id);
         if (parentSubs?.size === 0) {
           this.parentIndex.delete(managed.session.parentId);
-          // Do NOT delete spawnCounts — it's a lifetime total, not an active counter
+          // spawnCounts is the LIFETIME total for this parent — used to
+          // enforce maxTotalSpawns (default 20 per conversation). If we
+          // deleted it here, a conversation could spawn 20 → wait for
+          // cleanup → spawn 20 more, defeating the cap. Keep it.
         }
       }
       this.sessions.delete(id);
-    }
-
-    // Clean up spawnCounts for conversations with no active sessions
-    for (const [convId] of this.spawnCounts) {
-      const activeSessions = this.parentIndex.get(convId);
-      if (!activeSessions || activeSessions.size === 0) {
-        this.spawnCounts.delete(convId);
-        this.parentIndex.delete(convId);
-      }
     }
 
     if (toRemove.length > 0) {
