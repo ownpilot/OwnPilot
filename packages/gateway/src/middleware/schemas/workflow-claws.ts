@@ -182,6 +182,8 @@ export const updateCustomToolSchema = z.object({
 // required fields (e.g. conditionNode: label+expression) match first and
 // strip extra keys (e.g. switch node's `cases`), silently losing data.
 const workflowNodeDataSchema = z.record(z.string(), z.unknown());
+const WORKFLOW_NODE_LIMIT = 500;
+const WORKFLOW_EDGE_LIMIT = 500;
 
 const workflowNodeSchema = z.object({
   id: z.string().min(1).max(100),
@@ -209,8 +211,8 @@ const inputParameterSchema = z.object({
 export const createWorkflowSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
-  nodes: z.array(workflowNodeSchema).max(100).default([]),
-  edges: z.array(workflowEdgeSchema).max(500).default([]),
+  nodes: z.array(workflowNodeSchema).max(WORKFLOW_NODE_LIMIT).default([]),
+  edges: z.array(workflowEdgeSchema).max(WORKFLOW_EDGE_LIMIT).default([]),
   status: z.enum(['active', 'inactive']).optional(),
   variables: z.record(z.string(), z.unknown()).optional(),
   inputSchema: z.array(inputParameterSchema).max(20).optional(),
@@ -219,8 +221,8 @@ export const createWorkflowSchema = z.object({
 export const updateWorkflowSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional(),
-  nodes: z.array(workflowNodeSchema).max(100).optional(),
-  edges: z.array(workflowEdgeSchema).max(500).optional(),
+  nodes: z.array(workflowNodeSchema).max(WORKFLOW_NODE_LIMIT).optional(),
+  edges: z.array(workflowEdgeSchema).max(WORKFLOW_EDGE_LIMIT).optional(),
   status: z.enum(['active', 'inactive']).optional(),
   variables: z.record(z.string(), z.unknown()).optional(),
   inputSchema: z.array(inputParameterSchema).max(20).optional(),

@@ -1407,6 +1407,40 @@ describe('Workflow Routes', () => {
   });
 
   // ========================================================================
+  // Workflow schema limits
+  // ========================================================================
+
+  describe('workflow schema limits', () => {
+    beforeEach(async () => {
+      const actual = await vi.importActual<typeof import('../middleware/validation.js')>(
+        '../middleware/validation.js'
+      );
+      vi.mocked(mockValidateBody).mockImplementation((_schema, body) =>
+        actual.validateBody(actual.createWorkflowSchema, body)
+      );
+    });
+
+    it('accepts workflows above the old 100-node schema cap', async () => {
+      mockRepo.create.mockResolvedValue(sampleWorkflow);
+
+      const nodes = Array.from({ length: 101 }, (_, i) => ({
+        id: `note_${i}`,
+        type: 'stickyNoteNode',
+        position: { x: i, y: 0 },
+        data: { label: `Note ${i}` },
+      }));
+
+      const res = await app.request('/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Large Workflow', nodes, edges: [] }),
+      });
+
+      expect(res.status).toBe(201);
+    });
+  });
+
+  // ========================================================================
   // PATCH /workflows/:id — createVersion side-effect
   // ========================================================================
 
