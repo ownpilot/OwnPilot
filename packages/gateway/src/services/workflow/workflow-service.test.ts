@@ -195,7 +195,13 @@ let service: WorkflowService;
 
 beforeEach(() => {
   vi.clearAllMocks();
-  service = new WorkflowService();
+  // Run in inline mode so node execution flows through dispatchNode and the
+  // mocked executor functions (no JobQueueService worker running in tests).
+  service = new WorkflowService({
+    inlineExecution: true,
+    jobifiedPollIntervalMs: 1,
+    jobifiedMaxWaitMs: 50,
+  });
 
   // Default mock implementations
   mockRepo.createLog.mockResolvedValue(makeLog());

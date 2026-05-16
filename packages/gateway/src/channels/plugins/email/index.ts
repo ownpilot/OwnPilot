@@ -132,6 +132,48 @@ export function buildEmailChannelPlugin() {
       };
       return new EmailChannelAPI(resolvedConfig, 'channel.email');
     })
+    .tool(
+      {
+        name: 'channel_email_send',
+        description: 'Send an email via the connected SMTP account',
+        parameters: {
+          type: 'object',
+          properties: {
+            to: {
+              type: 'string',
+              description: 'Recipient email address',
+            },
+            subject: {
+              type: 'string',
+              description: 'Email subject line',
+            },
+            text: {
+              type: 'string',
+              description: 'Email body (plain text; HTML version is auto-generated)',
+            },
+          },
+          required: ['to', 'subject', 'text'],
+        },
+      },
+      async (params) => {
+        const { getChannelService } = await import('@ownpilot/core');
+        const service = getChannelService();
+        const api = service.getChannel('channel.email');
+        if (!api || api.getStatus() !== 'connected') {
+          return {
+            content: 'Email channel is not connected. Configure SMTP credentials first.',
+          };
+        }
+        const msgId = await api.sendMessage({
+          platformChatId: String(params.to),
+          text: String(params.text),
+          options: { subject: String(params.subject) },
+        });
+        return {
+          content: `Email sent to ${params.to} (message ID: ${msgId})`,
+        };
+      }
+    )
     .build();
 }
 

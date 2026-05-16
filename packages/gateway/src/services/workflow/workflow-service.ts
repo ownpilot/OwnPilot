@@ -61,11 +61,44 @@ import type { WorkflowProgressEvent } from './types.js';
 
 const log = getLog('WorkflowService');
 
+export interface WorkflowServiceOptions {
+  /** Poll interval for the jobified-level wait loop (ms). */
+  jobifiedPollIntervalMs?: number;
+  /**
+   * Max time to wait for all nodes in a jobified level to complete before
+   * failing the workflow (ms). Prevents an infinite hang if the job worker
+   * is unavailable.
+   */
+  jobifiedMaxWaitMs?: number;
+  /**
+   * If true, every node executes inline via dispatchNode — the persistent job
+   * queue is bypassed entirely. Intended for tests and deployments without a
+   * running job worker. Production defaults to false so workflows get crash
+   * recovery via the job queue. Controlled via WORKFLOW_INLINE_EXECUTION env.
+   */
+  inlineExecution?: boolean;
+}
+
 export class WorkflowService implements IWorkflowService {
   // Mutex lock: stores a resolve function for each in-progress workflow.
   // If a workflowId is in the map, that workflow is currently running.
   // The AbortController is stored so we can abort a running workflow.
   private activeExecutions = new Map<string, AbortController>();
+
+  private readonly jobifiedPollIntervalMs: number;
+  private readonly jobifiedMaxWaitMs: number;
+  private readonly inlineExecution: boolean;
+
+  constructor(options: WorkflowServiceOptions = {}) {
+    this.jobifiedPollIntervalMs =
+      options.jobifiedPollIntervalMs ??
+      parseInt(process.env.WORKFLOW_JOBIFIED_POLL_INTERVAL_MS ?? '500', 10);
+    this.jobifiedMaxWaitMs =
+      options.jobifiedMaxWaitMs ??
+      parseInt(process.env.WORKFLOW_JOBIFIED_MAX_WAIT_MS ?? String(10 * 60 * 1000), 10);
+    this.inlineExecution =
+      options.inlineExecution ?? process.env.WORKFLOW_INLINE_EXECUTION === 'true';
+  }
 
   private getToolService(): IToolService {
     return getServiceRegistry().get(Services.Tool);
@@ -172,13 +205,15 @@ export class WorkflowService implements IWorkflowService {
           throw new Error('Workflow execution cancelled');
         }
 
-        // Separate jobified nodes from sync-only nodes
+        // Separate jobified nodes from sync-only nodes. When inlineExecution
+        // is on, everything runs sync (skips the job queue entirely).
         const syncNodeIds: string[] = [];
         const jobifiedNodeIds: string[] = [];
         for (const nodeId of level) {
           const node = nodeMap.get(nodeId);
           if (!node) throw new Error(`Node ${nodeId} not found`);
           if (
+            this.inlineExecution ||
             nodeOutputs[nodeId]?.status === 'skipped' ||
             forEachBodyNodeSet.has(nodeId) ||
             SYNC_ONLY_TYPES.has(node.type)
@@ -263,7 +298,7 @@ export class WorkflowService implements IWorkflowService {
         // Execute jobified nodes via the persistent job queue
         const jobifiedResults: Record<string, NodeResult> = {};
         if (jobifiedNodeIds.length > 0 && !dryRun) {
-          const levelNodeMap = new Map(level.map(id => [id, nodeMap.get(id)!]));
+          const levelNodeMap = new Map(level.map((id) => [id, nodeMap.get(id)!]));
           await this.jobifiedExecuteLevel(
             jobifiedNodeIds,
             levelNodeMap,
@@ -1437,16 +1472,37 @@ export class WorkflowService implements IWorkflowService {
       {}
     );
 
-    // Poll until all level nodes appear in nodeResults (or abort)
-    const pollIntervalMs = 500;
+    // Poll until all level nodes appear in nodeResults (or abort, or timeout).
+    // The timeout is the safety valve: if the worker dies or sleep() is mocked
+    // to a no-op (as in unit tests without a job worker), the previous
+    // `while (true)` loop spun forever and ran the process out of heap.
+    const pollIntervalMs = this.jobifiedPollIntervalMs;
+    const maxWaitMs = this.jobifiedMaxWaitMs;
+    const start = Date.now();
     while (true) {
       if (abortSignal.aborted) {
         throw new Error('Workflow execution cancelled');
       }
       const log = await repo.getLog(logId);
       const results = log?.nodeResults ?? {};
-      const allDone = levelNodeIds.every(id => results[id]?.output !== undefined || results[id]?.status === 'error' || results[id]?.status === 'skipped');
+      const allDone = levelNodeIds.every(
+        (id) =>
+          results[id]?.output !== undefined ||
+          results[id]?.status === 'error' ||
+          results[id]?.status === 'skipped'
+      );
       if (allDone) break;
+      if (Date.now() - start >= maxWaitMs) {
+        const pending = levelNodeIds.filter(
+          (id) =>
+            results[id]?.output === undefined &&
+            results[id]?.status !== 'error' &&
+            results[id]?.status !== 'skipped'
+        );
+        throw new Error(
+          `Jobified workflow level timed out after ${maxWaitMs}ms waiting for ${pending.length} node(s): ${pending.join(', ')}`
+        );
+      }
       await sleep(pollIntervalMs);
     }
   }

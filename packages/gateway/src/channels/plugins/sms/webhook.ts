@@ -43,10 +43,7 @@ function validateTwilioSignature(
   const expected = createHmac('sha1', authToken).update(data).digest('base64');
   const expectedBuf = Buffer.from(expected);
   const signatureBuf = Buffer.from(signature);
-  return (
-    expectedBuf.length === signatureBuf.length &&
-    timingSafeEqual(expectedBuf, signatureBuf)
-  );
+  return expectedBuf.length === signatureBuf.length && timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 /**
@@ -81,21 +78,27 @@ export function createSmsWebhookRoute(): Hono {
         }
       }
 
-      // Validate Twilio signature (if auth token is available)
+      // Fail-closed signature validation. If the channel was configured with an
+      // auth token, the request MUST carry a valid X-Twilio-Signature. Missing
+      // header or bad signature → 403. Missing auth token → 503 (misconfigured).
       const { authToken } = api.getAuthInfo();
       const twilioSignature = c.req.header('X-Twilio-Signature');
 
-      if (authToken && twilioSignature) {
-        // Reconstruct the full webhook URL for validation
-        const protocol = c.req.header('X-Forwarded-Proto') ?? 'https';
-        const host = c.req.header('X-Forwarded-Host') ?? c.req.header('Host') ?? '';
-        const path = c.req.path;
-        const webhookUrl = `${protocol}://${host}${path}`;
+      if (!authToken) {
+        log.warn('SMS webhook received but Twilio authToken not configured — rejecting');
+        return c.text('Service Unavailable', 503);
+      }
+      if (!twilioSignature) {
+        log.warn('Missing X-Twilio-Signature header');
+        return c.text('Forbidden', 403);
+      }
+      const protocol = c.req.header('X-Forwarded-Proto') ?? 'https';
+      const host = c.req.header('X-Forwarded-Host') ?? c.req.header('Host') ?? '';
+      const webhookUrl = `${protocol}://${host}${c.req.path}`;
 
-        if (!validateTwilioSignature(authToken, twilioSignature, webhookUrl, params)) {
-          log.warn('Invalid Twilio signature', { url: webhookUrl });
-          return c.text('Forbidden', 403);
-        }
+      if (!validateTwilioSignature(authToken, twilioSignature, webhookUrl, params)) {
+        log.warn('Invalid Twilio signature', { url: webhookUrl });
+        return c.text('Forbidden', 403);
       }
 
       // Extract message data from Twilio webhook payload

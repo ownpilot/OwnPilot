@@ -1105,6 +1105,49 @@ describe('ChannelServiceImpl', () => {
       });
     });
 
+    describe('inbound rate limiting', () => {
+      it('drops messages from a sender that exceeds the flood threshold', async () => {
+        mockGetOwnerUserId.mockResolvedValue('user-456');
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
+
+        const limit = parseInt(process.env.CHANNEL_INBOUND_RATE_LIMIT_MAX ?? '20', 10);
+
+        // Burst exactly at the limit — all should be accepted (user lookup runs).
+        for (let i = 0; i < limit; i++) {
+          await service.processIncomingMessage(createIncomingMessage({ id: `msg-${i}` }));
+        }
+        expect(mockUsersRepo.findOrCreate).toHaveBeenCalledTimes(limit);
+
+        // One more from the same sender within the window — should be dropped
+        // BEFORE findOrCreate / messagesRepo.create are called.
+        mockUsersRepo.findOrCreate.mockClear();
+        mockMessagesRepo.create.mockClear();
+        await service.processIncomingMessage(createIncomingMessage({ id: 'msg-overflow' }));
+        expect(mockUsersRepo.findOrCreate).not.toHaveBeenCalled();
+        expect(mockMessagesRepo.create).not.toHaveBeenCalled();
+      });
+
+      it('does not penalize a different sender on the same channel', async () => {
+        mockGetOwnerUserId.mockResolvedValue('user-456');
+        mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
+        const limit = parseInt(process.env.CHANNEL_INBOUND_RATE_LIMIT_MAX ?? '20', 10);
+
+        for (let i = 0; i < limit; i++) {
+          await service.processIncomingMessage(createIncomingMessage({ id: `msg-${i}` }));
+        }
+        mockUsersRepo.findOrCreate.mockClear();
+
+        // Different sender — must pass through to findOrCreate.
+        await service.processIncomingMessage(
+          createIncomingMessage({
+            id: 'other-sender',
+            sender: { platformUserId: 'user-other' },
+          })
+        );
+        expect(mockUsersRepo.findOrCreate).toHaveBeenCalledTimes(1);
+      });
+    });
+
     describe('/connect command', () => {
       it('should handle /connect TOKEN command', async () => {
         const connectMsg = createIncomingMessage({ text: '/connect abc123' });

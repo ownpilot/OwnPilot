@@ -177,10 +177,19 @@ export async function processViaBus(
     const parts = channelNormalizer.normalizeOutgoing(stripped);
     let responseText = parts.join('\n\n');
 
-    // Context saturation warning — append if input tokens exceed 80% of context window
+    // Context saturation warning — append if input tokens exceed 80% of the
+    // active model's actual context window. Uses pricingByExactKey directly
+    // (NOT getModelPricing) because the latter falls back to "any model from
+    // the same provider" which can return a 1M-window catalog entry for a
+    // 128K-window request, hiding the warning when the user is actually
+    // near the limit. Unknown models stay on a conservative 128K default.
     const inputTokens = result.response.metadata?.tokens?.input ?? 0;
     if (inputTokens > 0) {
-      const contextWindow = 128000;
+      const { pricingByExactKey } = await import('@ownpilot/core');
+      const providerName = resolved.provider ?? 'openai';
+      const modelName = resolved.model ?? 'gpt-4o';
+      const pricing = pricingByExactKey.get(`${providerName}:${modelName}`);
+      const contextWindow = pricing?.contextWindow ?? 128_000;
       const fillPercent = Math.round((inputTokens / contextWindow) * 100);
       if (fillPercent >= 80) {
         responseText += `\n\n⚠️ Context is ${fillPercent}% full. Send /clear to start a fresh conversation.`;

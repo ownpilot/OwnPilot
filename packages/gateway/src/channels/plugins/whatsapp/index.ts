@@ -53,5 +53,43 @@ export function buildWhatsAppChannelPlugin() {
       };
       return new WhatsAppChannelAPI(resolvedConfig, 'channel.whatsapp');
     })
+    .tool(
+      {
+        name: 'channel_whatsapp_send',
+        description: 'Send a WhatsApp message to a contact or group via the connected account',
+        parameters: {
+          type: 'object',
+          properties: {
+            jid: {
+              type: 'string',
+              description:
+                'Recipient JID. Personal chat: phone with country code suffixed by @s.whatsapp.net (e.g. 905551234567@s.whatsapp.net). Group: groupId@g.us.',
+            },
+            text: {
+              type: 'string',
+              description: 'Message text to send',
+            },
+          },
+          required: ['jid', 'text'],
+        },
+      },
+      async (params) => {
+        const { getChannelService } = await import('@ownpilot/core');
+        const service = getChannelService();
+        const api = service.getChannel('channel.whatsapp');
+        if (!api || api.getStatus() !== 'connected') {
+          return {
+            content: 'WhatsApp is not connected. Please scan the QR code first.',
+          };
+        }
+        const msgId = await api.sendMessage({
+          platformChatId: String(params.jid),
+          text: String(params.text),
+        });
+        return {
+          content: `Message sent to ${params.jid} (message ID: ${msgId})`,
+        };
+      }
+    )
     .build();
 }

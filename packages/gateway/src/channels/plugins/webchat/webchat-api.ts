@@ -18,15 +18,42 @@ import { getLog } from '../../../services/log.js';
 
 const log = getLog('WebChat');
 
-/** Active webchat sessions mapped by sessionId */
-const activeSessions = new Map<
-  string,
-  {
-    sessionId: string;
-    displayName: string;
-    connectedAt: Date;
+/**
+ * Active webchat sessions, keyed by widget-issued sessionId.
+ *
+ * Browser tabs close without sending a disconnect, so we cannot rely on an
+ * explicit removeSession call. Entries expire after IDLE_TIMEOUT_MS since
+ * lastSeenAt; a lazy sweep runs on every registerSession call so the map
+ * never grows unboundedly even without a separate timer.
+ */
+const IDLE_TIMEOUT_MS = 24 * 60 * 60 * 1000; // 24h
+const MAX_SESSIONS = 1000;
+
+interface WebChatSession {
+  sessionId: string;
+  displayName: string;
+  connectedAt: Date;
+  lastSeenAt: number;
+}
+
+const activeSessions = new Map<string, WebChatSession>();
+
+function sweepStaleSessions(now: number): void {
+  for (const [id, session] of activeSessions) {
+    if (now - session.lastSeenAt > IDLE_TIMEOUT_MS) {
+      activeSessions.delete(id);
+    }
   }
->();
+  // Hard cap as a backstop against a flood of fresh sessions: drop oldest.
+  if (activeSessions.size > MAX_SESSIONS) {
+    const excess = activeSessions.size - MAX_SESSIONS;
+    const iter = activeSessions.keys();
+    for (let i = 0; i < excess; i++) {
+      const key = iter.next().value;
+      if (key !== undefined) activeSessions.delete(key);
+    }
+  }
+}
 
 export class WebChatChannelAPI implements ChannelPluginAPI {
   private status: ChannelConnectionStatus = 'disconnected';
@@ -89,13 +116,23 @@ export class WebChatChannelAPI implements ChannelPluginAPI {
   }
 
   /**
-   * Register a new webchat session.
+   * Register a new webchat session (or refresh lastSeenAt for an existing one).
+   * Also sweeps stale entries so the in-memory map cannot grow unbounded.
    */
   registerSession(sessionId: string, displayName: string): void {
+    const now = Date.now();
+    sweepStaleSessions(now);
+    const existing = activeSessions.get(sessionId);
+    if (existing) {
+      existing.lastSeenAt = now;
+      existing.displayName = displayName;
+      return;
+    }
     activeSessions.set(sessionId, {
       sessionId,
       displayName,
-      connectedAt: new Date(),
+      connectedAt: new Date(now),
+      lastSeenAt: now,
     });
     log.info('WebChat session registered', { sessionId, displayName });
   }
@@ -109,9 +146,21 @@ export class WebChatChannelAPI implements ChannelPluginAPI {
   }
 
   /**
-   * Get all active sessions.
+   * Get all active sessions (after pruning stale ones).
    */
   getActiveSessions(): Map<string, { sessionId: string; displayName: string; connectedAt: Date }> {
-    return new Map(activeSessions);
+    sweepStaleSessions(Date.now());
+    const snapshot = new Map<
+      string,
+      { sessionId: string; displayName: string; connectedAt: Date }
+    >();
+    for (const [id, s] of activeSessions) {
+      snapshot.set(id, {
+        sessionId: s.sessionId,
+        displayName: s.displayName,
+        connectedAt: s.connectedAt,
+      });
+    }
+    return snapshot;
   }
 }

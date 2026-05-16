@@ -82,10 +82,13 @@ webhookRoutes.post('/email/inbound', async (c) => {
     // Validate shared secret — fail-closed if secret is configured but not provided (AUTH-001)
     const expectedSecret = process.env.EMAIL_WEBHOOK_SECRET;
     if (expectedSecret) {
-      const providedSecret =
-        c.req.query('secret') ?? c.req.header('X-Webhook-Secret') ?? '';
+      const providedSecret = c.req.query('secret') ?? c.req.header('X-Webhook-Secret') ?? '';
       if (!safeKeyCompare(providedSecret, expectedSecret)) {
-        return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid webhook secret' }, 401);
+        return apiError(
+          c,
+          { code: ERROR_CODES.UNAUTHORIZED, message: 'Invalid webhook secret' },
+          401
+        );
       }
     } else {
       // No secret configured — reject the request to prevent unauthenticated access (AUTH-001)
@@ -161,7 +164,11 @@ webhookRoutes.post('/slack/events', async (c) => {
     // Only respond if a Slack handler is configured — prevents unauthorized URL registration.
     if (body.type === 'url_verification') {
       if (!handler) {
-        return apiError(c, { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Slack not configured' }, 503);
+        return apiError(
+          c,
+          { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Slack not configured' },
+          503
+        );
       }
       return c.json({ challenge: body.challenge });
     }
@@ -174,28 +181,35 @@ webhookRoutes.post('/slack/events', async (c) => {
       );
     }
 
-    // Signature validation — if handler has signingSecret, require valid signature (AUTH-002)
+    // Signature validation is mandatory whenever a handler is registered (AUTH-002).
+    // SlackChannelAPI.connect() refuses to register without a signing_secret, so an
+    // empty value here is a defensive 503 rather than a silent bypass.
+    if (!handler.signingSecret) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Slack signing secret not configured' },
+        503
+      );
+    }
     const timestamp = c.req.header('x-slack-request-timestamp');
     const signature = c.req.header('x-slack-signature');
-    if (handler.signingSecret) {
-      if (!timestamp || !signature) {
-        return apiError(
-          c,
-          { code: ERROR_CODES.ACCESS_DENIED, message: 'Missing Slack signature headers' },
-          403
-        );
-      }
-      const rawBody = JSON.stringify(body);
-      const sigBaseString = `v0:${timestamp}:${rawBody}`;
-      const expected =
-        'v0=' + createHmac('sha256', handler.signingSecret).update(sigBaseString).digest('hex');
-      if (!safeKeyCompare(signature, expected)) {
-        return apiError(
-          c,
-          { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid Slack signature' },
-          403
-        );
-      }
+    if (!timestamp || !signature) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: 'Missing Slack signature headers' },
+        403
+      );
+    }
+    const rawBody = JSON.stringify(body);
+    const sigBaseString = `v0:${timestamp}:${rawBody}`;
+    const expected =
+      'v0=' + createHmac('sha256', handler.signingSecret).update(sigBaseString).digest('hex');
+    if (!safeKeyCompare(signature, expected)) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid Slack signature' },
+        403
+      );
     }
 
     // Process event

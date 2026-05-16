@@ -85,6 +85,43 @@ export function buildSmsChannelPlugin() {
       };
       return new SmsChannelAPI(resolvedConfig, 'channel.sms');
     })
+    .tool(
+      {
+        name: 'channel_sms_send',
+        description: 'Send an SMS message via the connected Twilio account',
+        parameters: {
+          type: 'object',
+          properties: {
+            to: {
+              type: 'string' as const,
+              description: 'Destination phone number in E.164 format (e.g. +15551234567)',
+            },
+            text: {
+              type: 'string' as const,
+              description: 'Message text (160 chars per segment; Twilio splits long messages)',
+            },
+          },
+          required: ['to', 'text'],
+        },
+      },
+      async (params) => {
+        const { getChannelService } = await import('@ownpilot/core');
+        const service = getChannelService();
+        const api = service.getChannel('channel.sms');
+        if (!api || api.getStatus() !== 'connected') {
+          return {
+            content: 'SMS channel is not connected. Configure Twilio credentials first.',
+          };
+        }
+        const msgId = await api.sendMessage({
+          platformChatId: String(params.to),
+          text: String(params.text),
+        });
+        return {
+          content: `SMS sent to ${params.to} (message SID: ${msgId})`,
+        };
+      }
+    )
     .build();
 }
 

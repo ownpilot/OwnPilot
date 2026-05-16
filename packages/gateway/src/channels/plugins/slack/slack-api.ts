@@ -140,7 +140,13 @@ export class SlackChannelAPI implements ChannelPluginAPI {
       if (this.config.app_token) {
         await this.connectSocketMode();
       } else {
-        // Events API mode — register webhook handler
+        // Events API mode requires signing_secret — refuse to start otherwise so
+        // the webhook route never sees an unsigned-but-trusted handler.
+        if (!this.config.signing_secret) {
+          throw new Error(
+            'Slack signing_secret is required for Events API mode (configure app_token to use Socket Mode instead)'
+          );
+        }
         registerSlackWebhookHandler(this.config.signing_secret, (event) =>
           this.handleSlackEvent(event)
         );

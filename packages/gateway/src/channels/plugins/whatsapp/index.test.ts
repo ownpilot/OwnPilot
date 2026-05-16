@@ -14,10 +14,12 @@ const {
   capturedMeta,
   capturedPlatform,
   capturedChannelApiFactory,
+  capturedTools,
 } = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
   const capturedChannelApiFactory: Array<(...args: any[]) => any> = [];
+  const capturedTools: Array<{ definition: any; executor: (...args: any[]) => any }> = [];
   const MockWhatsAppChannelAPI = vi.fn().mockImplementation(function (
     config: any,
     pluginId: string
@@ -31,6 +33,7 @@ const {
     capturedMeta,
     capturedPlatform,
     capturedChannelApiFactory,
+    capturedTools,
   };
 });
 
@@ -50,6 +53,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         }),
         channelApi: vi.fn((f: (...args: any[]) => any) => {
           capturedChannelApiFactory.push(f);
+          return b;
+        }),
+        tool: vi.fn((def: any, exec: (...args: any[]) => any) => {
+          capturedTools.push({ definition: def, executor: exec });
           return b;
         }),
         build: vi.fn(() => ({ id: capturedMeta[0]?.id })),

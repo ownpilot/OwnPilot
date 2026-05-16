@@ -111,6 +111,70 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly approvalAttemptCounts = new Map<string, number>();
   private static readonly MAX_APPROVAL_ATTEMPTS = 3;
 
+  /**
+   * Inbound flood guard. Tracks (channelPluginId, platformUserId) -> sliding
+   * window of recent message timestamps. Over-limit messages are dropped
+   * BEFORE user lookup / AI routing, so a flood cannot exhaust DB or LLM.
+   */
+  private readonly inboundWindows = new Map<string, number[]>();
+  private readonly recentlyWarnedFlooders = new Set<string>();
+  private static readonly INBOUND_RATE_LIMIT_MAX = parseInt(
+    process.env.CHANNEL_INBOUND_RATE_LIMIT_MAX ?? '20',
+    10
+  );
+  private static readonly INBOUND_RATE_LIMIT_WINDOW_MS = parseInt(
+    process.env.CHANNEL_INBOUND_RATE_LIMIT_WINDOW_MS ?? '60000',
+    10
+  );
+  private static readonly INBOUND_RATE_LIMIT_MAX_TRACKED = 10_000;
+
+  /**
+   * Returns true if the message should be dropped due to sender flood.
+   * Records the timestamp on the allowed path so consecutive messages count
+   * toward the window.
+   */
+  private isFlooding(channelPluginId: string, platformUserId: string): boolean {
+    if (!platformUserId) return false;
+    const key = `${channelPluginId}::${platformUserId}`;
+    const now = Date.now();
+    const windowMs = ChannelServiceImpl.INBOUND_RATE_LIMIT_WINDOW_MS;
+    const limit = ChannelServiceImpl.INBOUND_RATE_LIMIT_MAX;
+
+    let stamps = this.inboundWindows.get(key);
+    if (!stamps) {
+      stamps = [];
+      this.inboundWindows.set(key, stamps);
+      if (this.inboundWindows.size > ChannelServiceImpl.INBOUND_RATE_LIMIT_MAX_TRACKED) {
+        const oldest = this.inboundWindows.keys().next().value;
+        if (oldest !== undefined && oldest !== key) this.inboundWindows.delete(oldest);
+      }
+    }
+
+    const cutoff = now - windowMs;
+    const filtered: number[] = [];
+    for (const t of stamps) if (t >= cutoff) filtered.push(t);
+    stamps = filtered;
+    this.inboundWindows.set(key, stamps);
+
+    if (stamps.length >= limit) {
+      if (!this.recentlyWarnedFlooders.has(key)) {
+        log.warn('Inbound message dropped: sender exceeded rate limit', {
+          channelPluginId,
+          platformUserId,
+          limit,
+          windowMs,
+        });
+        this.recentlyWarnedFlooders.add(key);
+        const timer = setTimeout(() => this.recentlyWarnedFlooders.delete(key), windowMs);
+        timer.unref?.();
+      }
+      return true;
+    }
+
+    stamps.push(now);
+    return false;
+  }
+
   constructor(
     pluginRegistry: PluginRegistry,
     options?: {
@@ -459,6 +523,12 @@ export class ChannelServiceImpl implements IChannelService {
    */
   async processIncomingMessage(message: ChannelIncomingMessage): Promise<void> {
     try {
+      // 0. Drop floods before any DB/LLM work. A single sender cannot exhaust
+      //    resources by spamming — see isFlooding() for the sliding window.
+      if (this.isFlooding(message.channelPluginId, message.sender.platformUserId)) {
+        return;
+      }
+
       // 1. Find or create channel user
       const channelUser = await this.usersRepo.findOrCreate({
         platform: message.platform,
@@ -661,8 +731,13 @@ export class ChannelServiceImpl implements IChannelService {
             const attemptKey = `${message.platform}:${message.sender.platformUserId}`;
             const attempts = this.approvalAttemptCounts.get(attemptKey) ?? 0;
             if (attempts >= ChannelServiceImpl.MAX_APPROVAL_ATTEMPTS) {
-              // Block the sender after too many wrong guesses
+              // Block the sender after too many wrong guesses. Drop the counter
+              // entry too — block() is final state (the isBlocked check at the
+              // top of processIncomingMessage catches future attempts), so the
+              // counter for this attacker is dead weight that would otherwise
+              // grow the map unboundedly.
               await this.usersRepo.block(channelUser.id);
+              this.approvalAttemptCounts.delete(attemptKey);
               const api = this.getChannel(message.channelPluginId);
               if (api) {
                 await api.sendMessage({
