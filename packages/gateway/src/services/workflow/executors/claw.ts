@@ -112,11 +112,23 @@ export async function executeClawNode(
         // a full 2s before noticing a cancellation, even when the user has
         // already aborted the workflow. Race the timer against the signal so
         // cancellation lands within microseconds.
+        //
+        // We must remove the abort listener when the timer wins — otherwise,
+        // because this loop polls every 2s for up to `timeoutMs` (often an
+        // hour), the same AbortSignal would collect hundreds of listeners.
         await new Promise<void>((resolve) => {
-          const t = setTimeout(resolve, 2000);
+          let onAbort: (() => void) | null = null;
+          const t = setTimeout(() => {
+            if (onAbort && signal) {
+              signal.removeEventListener('abort', onAbort);
+              onAbort = null;
+            }
+            resolve();
+          }, 2000);
           if (signal) {
-            const onAbort = () => {
+            onAbort = () => {
               clearTimeout(t);
+              onAbort = null;
               resolve();
             };
             if (signal.aborted) {

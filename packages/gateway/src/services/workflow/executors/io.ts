@@ -210,21 +210,28 @@ export async function executeDelayNode(
     log.info('Delay applied', { nodeId: node.id, delayMs: actualDelay, unit: resolvedUnit });
 
     await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, actualDelay);
+      let abortListener: (() => void) | null = null;
+      const timer = setTimeout(() => {
+        // Detach the abort listener so it doesn't leak when the same
+        // AbortSignal is shared across many delay nodes in a workflow.
+        if (abortListener && abortSignal) {
+          abortSignal.removeEventListener('abort', abortListener);
+          abortListener = null;
+        }
+        resolve();
+      }, actualDelay);
       if (abortSignal) {
         if (abortSignal.aborted) {
           clearTimeout(timer);
           reject(new Error('Workflow execution cancelled'));
           return;
         }
-        abortSignal.addEventListener(
-          'abort',
-          () => {
-            clearTimeout(timer);
-            reject(new Error('Workflow execution cancelled'));
-          },
-          { once: true }
-        );
+        abortListener = () => {
+          clearTimeout(timer);
+          abortListener = null;
+          reject(new Error('Workflow execution cancelled'));
+        };
+        abortSignal.addEventListener('abort', abortListener, { once: true });
       }
     });
 
