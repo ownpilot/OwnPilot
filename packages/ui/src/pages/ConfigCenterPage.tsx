@@ -806,9 +806,16 @@ function ServiceCard({ service, onConfigure }: ServiceCardProps) {
   const isNeededButMissing = service.requiredBy?.length > 0 && !service.isConfigured;
 
   const entryCountLabel = (() => {
-    if (service.entryCount === 0) return 'Not configured';
-    if (service.entryCount === 1) return '1 account configured';
-    return `${service.entryCount} accounts configured`;
+    const configuredCount = service.configuredEntryCount ?? (service.isConfigured ? 1 : 0);
+    if (configuredCount > 0) {
+      if (configuredCount === 1) return '1 account configured';
+      return `${configuredCount} accounts configured`;
+    }
+    if (service.entryCount > 0) {
+      if (service.entryCount === 1) return '1 inactive or incomplete account';
+      return `${service.entryCount} inactive or incomplete accounts`;
+    }
+    return 'Not configured';
   })();
 
   // Partial: has entries but some schema-required fields may be missing;

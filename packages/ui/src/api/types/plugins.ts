@@ -167,6 +167,8 @@ export interface ConfigServiceView {
   isActive: boolean;
   isConfigured: boolean;
   entryCount: number;
+  activeEntryCount?: number;
+  configuredEntryCount?: number;
   entries: ConfigEntryView[];
 }
 

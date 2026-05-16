@@ -129,6 +129,9 @@ describe('Config Services Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.services[0].isConfigured).toBe(false);
+      expect(json.data.services[0].activeEntryCount).toBe(0);
+      expect(json.data.services[0].configuredEntryCount).toBe(0);
+      expect(json.data.services[0].entryCount).toBe(1);
     });
 
     it('filters by category', async () => {
@@ -246,12 +249,119 @@ describe('Config Services Routes', () => {
           displayName: 'Gmail',
           category: 'email',
           configSchema: [],
+          multiEntry: true,
+          isActive: true,
         }),
       });
 
       expect(res.status).toBe(201);
       const json = await res.json();
       expect(json.data.name).toBe('gmail');
+      expect(mockConfigServicesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ multiEntry: true, isActive: true })
+      );
+    });
+
+    it('accepts legacy text config fields when creating a service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(null);
+      mockConfigServicesRepo.create.mockResolvedValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const res = await app.request('/config-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'legacy_text',
+          displayName: 'Legacy Text',
+          category: 'test',
+          configSchema: [{ name: 'note', label: 'Note', type: 'text' }],
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockConfigServicesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          configSchema: [{ name: 'note', label: 'Note', type: 'text' }],
+        })
+      );
+    });
+
+    it('accepts object defaultValue for JSON config fields when creating a service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(null);
+      mockConfigServicesRepo.create.mockResolvedValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const configSchema = [
+        {
+          name: 'metadata',
+          label: 'Metadata',
+          type: 'json',
+          defaultValue: { region: 'tr', retries: 2 },
+        },
+      ];
+
+      const res = await app.request('/config-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'json_defaults',
+          displayName: 'JSON Defaults',
+          category: 'test',
+          configSchema,
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockConfigServicesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ configSchema })
+      );
+    });
+
+    it('normalizes string requiredBy values when creating a service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(null);
+      mockConfigServicesRepo.create.mockResolvedValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const res = await app.request('/config-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'gmail',
+          displayName: 'Gmail',
+          category: 'email',
+          requiredBy: ['send_email'],
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockConfigServicesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requiredBy: [{ type: 'tool', name: 'send_email', id: 'send_email' }],
+        })
+      );
+    });
+
+    it('preserves structured requiredBy values when creating a service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(null);
+      mockConfigServicesRepo.create.mockResolvedValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const requiredBy = [{ type: 'plugin', name: 'Mail Plugin', id: 'mail_plugin' }];
+      const res = await app.request('/config-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'gmail',
+          displayName: 'Gmail',
+          category: 'email',
+          requiredBy,
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockConfigServicesRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ requiredBy })
+      );
     });
 
     it('returns 400 for missing required fields', async () => {
@@ -310,10 +420,35 @@ describe('Config Services Routes', () => {
       const res = await app.request('/config-services/gmail', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: 'Updated Gmail' }),
+        body: JSON.stringify({ displayName: 'Updated Gmail', multiEntry: true, isActive: false }),
       });
 
       expect(res.status).toBe(200);
+      expect(mockConfigServicesRepo.update).toHaveBeenCalledWith(
+        'gmail',
+        expect.objectContaining({ displayName: 'Updated Gmail', multiEntry: true, isActive: false })
+      );
+    });
+
+    it('accepts legacy text config fields when updating a service', async () => {
+      mockConfigServicesRepo.update.mockResolvedValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const res = await app.request('/config-services/gmail', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          configSchema: [{ name: 'note', label: 'Note', type: 'text' }],
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockConfigServicesRepo.update).toHaveBeenCalledWith(
+        'gmail',
+        expect.objectContaining({
+          configSchema: [{ name: 'note', label: 'Note', type: 'text' }],
+        })
+      );
     });
 
     it('returns 404 when not found', async () => {

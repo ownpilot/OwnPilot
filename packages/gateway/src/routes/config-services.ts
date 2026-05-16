@@ -14,7 +14,12 @@ import type {
   CreateConfigEntryInput,
   UpdateConfigEntryInput,
 } from '../db/repositories/config-services.js';
-import type { ConfigServiceDefinition, ConfigEntry, ConfigFieldDefinition } from '@ownpilot/core';
+import type {
+  ConfigServiceDefinition,
+  ConfigEntry,
+  ConfigFieldDefinition,
+  ConfigServiceRequiredBy,
+} from '@ownpilot/core';
 import {
   apiResponse,
   apiError,
@@ -42,6 +47,14 @@ export const configServicesRoutes = new Hono();
 // =============================================================================
 // HELPERS
 // =============================================================================
+
+function normalizeRequiredBy(
+  requiredBy: Array<string | ConfigServiceRequiredBy> | undefined
+): ConfigServiceRequiredBy[] | undefined {
+  return requiredBy?.map((dep) =>
+    typeof dep === 'string' ? { type: 'tool', name: dep, id: dep } : dep
+  );
+}
 
 /**
  * Detect if a value looks like it was masked by maskSecret().
@@ -82,7 +95,7 @@ function sanitizeEntry(entry: ConfigEntry, schema: ConfigFieldDefinition[]) {
  */
 function sanitizeService(service: ConfigServiceDefinition) {
   const entries = configServicesRepo.getEntries(service.name);
-  const isConfigured = entries.some((e) => {
+  const configuredEntries = entries.filter((e) => {
     if (e.isActive === false) return false;
     const data = e.data;
     return Object.keys(data).some((k) => {
@@ -94,7 +107,9 @@ function sanitizeService(service: ConfigServiceDefinition) {
   return {
     ...service,
     entryCount: entries.length,
-    isConfigured,
+    activeEntryCount: entries.filter((e) => e.isActive !== false).length,
+    configuredEntryCount: configuredEntries.length,
+    isConfigured: configuredEntries.length > 0,
     entries: entries.map((e) => sanitizeEntry(e, service.configSchema)),
   };
 }
@@ -168,25 +183,31 @@ configServicesRoutes.get('/:name', async (c) => {
  */
 configServicesRoutes.post('/', async (c) => {
   try {
-    const body = validateBody(
-      createConfigServiceSchema,
-      await c.req.json()
-    ) as CreateConfigServiceInput;
+    const body = validateBody(createConfigServiceSchema, await c.req.json()) as Omit<
+      CreateConfigServiceInput,
+      'requiredBy'
+    > & {
+      requiredBy?: Array<string | ConfigServiceRequiredBy>;
+    };
+    const normalizedBody: CreateConfigServiceInput = {
+      ...body,
+      requiredBy: normalizeRequiredBy(body.requiredBy),
+    };
 
     // Check for duplicate
-    const existing = configServicesRepo.getByName(body.name);
+    const existing = configServicesRepo.getByName(normalizedBody.name);
     if (existing) {
       return apiError(
         c,
         {
           code: ERROR_CODES.ALREADY_EXISTS,
-          message: `Config service '${sanitizeId(body.name)}' already exists`,
+          message: `Config service '${sanitizeId(normalizedBody.name)}' already exists`,
         },
         409
       );
     }
 
-    const service = await configServicesRepo.create(body);
+    const service = await configServicesRepo.create(normalizedBody);
 
     wsGateway.broadcast('data:changed', {
       entity: 'config_service',

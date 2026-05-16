@@ -1720,7 +1720,35 @@ Centralized, schema-driven configuration management. Services define configurati
 | `PUT`    | `/config-services/:name/entries/:id` | Update entry               |
 | `DELETE` | `/config-services/:name/entries/:id` | Delete entry               |
 
-**Security:** Fields with `type: "secret"` in the schema are automatically masked in responses (e.g., `sk-a...b1c2`).
+### Service Schema
+
+`configSchema` fields support `text` (legacy alias for `string`), `string`, `secret`, `url`, `number`, `boolean`, `select`, and `json`. `defaultValue` may be any JSON value, including objects and arrays for `json` fields.
+
+`POST /config-services` accepts:
+
+```json
+{
+  "name": "telegram_bot",
+  "displayName": "Telegram Bot",
+  "category": "channels",
+  "multiEntry": false,
+  "isActive": true,
+  "requiredBy": [{ "type": "plugin", "name": "Telegram", "id": "channel.telegram" }],
+  "configSchema": [
+    { "name": "bot_token", "label": "Bot Token", "type": "secret", "required": true },
+    { "name": "metadata", "label": "Metadata", "type": "json", "defaultValue": {} }
+  ]
+}
+```
+
+String `requiredBy` values are accepted for backward compatibility and normalized to tool dependencies.
+
+### Entry Rules
+
+- Fields with `type: "secret"` are automatically masked in responses.
+- Single-entry services reject a second entry.
+- Default entries must stay active and cannot be deleted while another active entry exists.
+- Inactive or empty entries are not counted as configured. Responses include `entryCount`, `activeEntryCount`, and `configuredEntryCount`.
 
 ---
 

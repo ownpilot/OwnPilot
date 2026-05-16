@@ -1086,7 +1086,7 @@ interface DynamicConfigFormProps {
 interface ConfigFieldDefinition {
   name: string;
   label: string;
-  type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
+  type: 'text' | 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
   required?: boolean;
   defaultValue?: unknown;
   envVar?: string; // Shows env var name as helper text
@@ -1101,6 +1101,7 @@ interface ConfigFieldDefinition {
 
 | Type      | Renders As                | Special Behavior                                       |
 | --------- | ------------------------- | ------------------------------------------------------ |
+| `text`    | `<input type="text">`     | Legacy alias for `string`                              |
 | `string`  | `<input type="text">`     | Standard text input                                    |
 | `secret`  | `<input type="password">` | Toggle show/hide button (Eye/EyeOff icons)             |
 | `url`     | `<input type="url">`      | URL validation                                         |

@@ -105,10 +105,10 @@ export const createConfigServiceSchema = z.object({
       z.object({
         name: z.string().min(1).max(100),
         label: z.string().max(200).optional(),
-        type: z.enum(['string', 'secret', 'url', 'number', 'boolean', 'select', 'json']),
+        type: z.enum(['text', 'string', 'secret', 'url', 'number', 'boolean', 'select', 'json']),
         description: z.string().max(1000).optional(),
         required: z.boolean().optional(),
-        defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+        defaultValue: z.unknown().optional(),
         envVar: z.string().max(200).optional(),
         placeholder: z.string().max(500).optional(),
         options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
@@ -117,17 +117,30 @@ export const createConfigServiceSchema = z.object({
     )
     .max(50)
     .optional(),
-  requiredBy: z.array(z.string().max(200)).optional(),
+  requiredBy: z
+    .array(
+      z.union([
+        z.string().max(200),
+        z.object({
+          type: z.enum(['tool', 'plugin']),
+          name: z.string().min(1).max(200),
+          id: z.string().min(1).max(200),
+        }),
+      ])
+    )
+    .optional(),
   docsUrl: z.string().max(2000).optional(),
+  multiEntry: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 });
 
 const configFieldDefinitionSchema = z.object({
   name: z.string().min(1).max(100),
   label: z.string().min(1).max(200),
-  type: z.enum(['string', 'secret', 'url', 'number', 'boolean', 'select', 'json']),
+  type: z.enum(['text', 'string', 'secret', 'url', 'number', 'boolean', 'select', 'json']),
   description: z.string().max(1000).optional(),
   required: z.boolean().optional(),
-  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
+  defaultValue: z.unknown().optional(),
   envVar: z.string().max(200).optional(),
   placeholder: z.string().max(500).optional(),
   options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
@@ -141,6 +154,7 @@ export const updateConfigServiceSchema = z.object({
   docsUrl: z.string().max(2000).optional(),
   configSchema: z.array(configFieldDefinitionSchema).max(50).optional(),
   multiEntry: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const createConfigEntrySchema = z.object({

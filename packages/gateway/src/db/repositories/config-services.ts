@@ -51,6 +51,10 @@ interface ConfigEntryRow {
   updated_at: string;
 }
 
+type ConfigSchemaField = Omit<ConfigFieldDefinition, 'type'> & {
+  type: ConfigFieldDefinition['type'] | 'text';
+};
+
 // =============================================================================
 // INPUT TYPES
 // =============================================================================
@@ -61,9 +65,10 @@ export interface CreateConfigServiceInput {
   category: string;
   description?: string;
   docsUrl?: string;
-  configSchema?: ConfigFieldDefinition[];
+  configSchema?: ConfigSchemaField[];
   multiEntry?: boolean;
   isActive?: boolean;
+  requiredBy?: ConfigServiceRequiredBy[];
 }
 
 export interface UpdateConfigServiceInput {
@@ -71,7 +76,7 @@ export interface UpdateConfigServiceInput {
   category?: string;
   description?: string;
   docsUrl?: string;
-  configSchema?: ConfigFieldDefinition[];
+  configSchema?: ConfigSchemaField[];
   multiEntry?: boolean;
   isActive?: boolean;
 }
@@ -247,7 +252,7 @@ export class ConfigServicesRepository extends BaseRepository {
         input.docsUrl ?? null,
         JSON.stringify(input.configSchema ?? []),
         input.multiEntry === true,
-        '[]',
+        JSON.stringify(input.requiredBy ?? []),
         input.isActive !== false,
         now,
         now,
@@ -428,7 +433,10 @@ export class ConfigServicesRepository extends BaseRepository {
     const isDefault = input.isDefault === true || isFirstEntry;
     const service = cache.services.get(serviceName);
 
-    if (service && !service.multiEntry && !isFirstEntry) {
+    if (!service) {
+      throw new Error(`Config service not found: ${serviceName}`);
+    }
+    if (!service.multiEntry && !isFirstEntry) {
       throw new Error('This service supports only one config entry');
     }
     if (isDefault && input.isActive === false) {

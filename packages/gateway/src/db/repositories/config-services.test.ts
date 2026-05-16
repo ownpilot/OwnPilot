@@ -279,6 +279,29 @@ describe('ConfigServicesRepository', () => {
       expect(params[6]).toBe(JSON.stringify(schema));
     });
 
+    it('should persist requiredBy when creating a service', async () => {
+      mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      await repo.initialize();
+
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeServiceRow({
+          required_by: JSON.stringify([{ type: 'tool', name: 'Send Email', id: 'send_email' }]),
+        })
+      );
+      mockAdapter.query.mockResolvedValueOnce([]);
+
+      await repo.create({
+        name: 'test',
+        displayName: 'Test',
+        category: 'misc',
+        requiredBy: [{ type: 'tool', name: 'Send Email', id: 'send_email' }],
+      });
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params[8]).toBe('[{"type":"tool","name":"Send Email","id":"send_email"}]');
+    });
+
     it('should default configSchema to empty array', async () => {
       mockAdapter.query.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
       await repo.initialize();
@@ -729,6 +752,16 @@ describe('ConfigServicesRepository', () => {
       await expect(
         repo.createEntry('openai', { label: 'Backup', data: { api_key: 'new-key' } })
       ).rejects.toThrow('This service supports only one config entry');
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should reject entries for unknown services', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
+      await repo.initialize();
+
+      await expect(
+        repo.createEntry('missing_service', { data: { api_key: 'new-key' } })
+      ).rejects.toThrow('Config service not found: missing_service');
       expect(mockAdapter.execute).not.toHaveBeenCalled();
     });
 
