@@ -163,7 +163,7 @@ export class FleetManager {
     return session;
   }
 
-    async pauseFleet(fleetId: string): Promise<boolean> {
+  async pauseFleet(fleetId: string): Promise<boolean> {
     const managed = this.fleets.get(fleetId);
     if (!managed) return false;
 
@@ -214,15 +214,28 @@ export class FleetManager {
     // Unsubscribe from events
     this.clearEventSubscriptions(managed);
 
-    // Drain in-flight cycle before persisting
+    // Drain in-flight cycle before persisting. Hold the timer handle so we
+    // can clear it when the cycle promise wins the race — leaving it active
+    // would keep the event loop pinned for up to 30s after stopFleet returns.
     if (managed.currentCyclePromise) {
+      let drainTimer: ReturnType<typeof setTimeout> | null = null;
       try {
         await Promise.race([
           managed.currentCyclePromise,
-          new Promise((resolve) => setTimeout(resolve, 30_000)),
+          new Promise<void>((resolve) => {
+            drainTimer = setTimeout(() => {
+              drainTimer = null;
+              resolve();
+            }, 30_000);
+          }),
         ]);
       } catch (err) {
         log.warn(`[${fleetId}] Cycle drain error during stop: ${getErrorMessage(err)}`);
+      } finally {
+        if (drainTimer !== null) {
+          clearTimeout(drainTimer);
+          drainTimer = null;
+        }
       }
     }
 

@@ -917,11 +917,23 @@ workflowRoutes.post('/:id/run', async (c) => {
     { inputs }
   );
 
-  // Race: logId arrives quickly (typical) vs 5 s timeout (workflow crashed before started)
+  // Race: logId arrives quickly (typical) vs 5 s timeout (workflow crashed
+  // before started). Clear the timeout when logIdPromise wins so the timer
+  // does not stay armed under a hot-request scenario.
+  let logIdTimer: ReturnType<typeof setTimeout> | null = null;
   const logId = await Promise.race([
     logIdPromise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
+    new Promise<null>((resolve) => {
+      logIdTimer = setTimeout(() => {
+        logIdTimer = null;
+        resolve(null);
+      }, 5000);
+    }),
   ]);
+  if (logIdTimer !== null) {
+    clearTimeout(logIdTimer);
+    logIdTimer = null;
+  }
 
   // Don't await the full execution — it runs in the background.
   // Execution errors are persisted to the workflow log row by the runner.
