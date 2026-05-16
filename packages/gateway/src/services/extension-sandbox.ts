@@ -100,6 +100,10 @@ function workerMain() {
     _grantedPermissions = grantedPermissions ?? [];
     const startTime = Date.now();
 
+    // Hoisted so the outer finally can detach the per-call response handler
+    // even if an error fires after registration.
+    let responseHandler: ((msg: CallToolResponse) => void) | null = null;
+
     try {
       // Build restricted globals for the VM context
       const consoleMethods = {
@@ -137,7 +141,7 @@ function workerMain() {
       };
 
       // Handle callTool responses from main thread
-      const responseHandler = (msg: CallToolResponse) => {
+      responseHandler = (msg: CallToolResponse) => {
         if (msg.type === 'callToolResult' && msg.requestId) {
           const pending = pendingCalls.get(msg.requestId);
           if (pending) {
@@ -212,13 +216,19 @@ function workerMain() {
 
       const value = await resultPromise;
       const executionTime = Date.now() - startTime;
-
-      port.removeListener('message', responseHandler);
       port.postMessage({ type: 'result', success: true, value, executionTime });
     } catch (error) {
       const executionTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : String(error);
       port.postMessage({ type: 'result', success: false, error: errorMessage, executionTime });
+    } finally {
+      // Always detach the per-call responseHandler. A worker is long-lived
+      // and handles many executions; leaving handlers attached on the error
+      // path would accumulate listeners on `port` and grow memory over time.
+      if (responseHandler) {
+        port.removeListener('message', responseHandler);
+        responseHandler = null;
+      }
     }
   });
 
