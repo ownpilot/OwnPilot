@@ -46,7 +46,6 @@ const {
   EMAIL_TOOL_NAMES,
 } = await import('./email-tools.js');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ctx = {} as any;
 
 // ============================================================================

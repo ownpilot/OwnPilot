@@ -5,6 +5,7 @@
  */
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { getBrowserService } from '../services/browser-service.js';
 import { BrowserWorkflowsRepository } from '../db/repositories/browser-workflows.js';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
@@ -15,6 +16,19 @@ import {
   browserActionSchema,
   createBrowserWorkflowSchema,
 } from '../middleware/validation.js';
+
+const screenshotSchema = z.object({
+  fullPage: z.boolean().optional(),
+  selector: z.string().max(500).optional(),
+});
+
+const updateBrowserWorkflowSchema = z.object({
+  name: z.string().min(1).max(300).optional(),
+  description: z.string().max(2000).optional(),
+  steps: z.array(z.unknown()).max(1000).optional(),
+  parameters: z.array(z.unknown()).max(100).optional(),
+  triggerId: z.string().max(200).nullable().optional(),
+});
 
 export const browserRoutes = new Hono();
 
@@ -159,14 +173,17 @@ browserRoutes.post('/action', async (c) => {
 browserRoutes.post('/screenshot', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json().catch(() => ({}));
+    const raw = await c.req.json().catch(() => ({}));
+    const body = validateBody(screenshotSchema, raw);
     const service = getBrowserService();
     const result = await service.screenshot(userId, {
-      fullPage: body.fullPage as boolean | undefined,
-      selector: body.selector as string | undefined,
+      fullPage: body.fullPage,
+      selector: body.selector,
     });
     return apiResponse(c, result);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -241,15 +258,21 @@ browserRoutes.patch('/workflows/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const body = validateBody(updateBrowserWorkflowSchema, await c.req.json());
     const repo = getWorkflowRepo();
-    const workflow = await repo.update(id, userId, body);
+    const workflow = await repo.update(
+      id,
+      userId,
+      body as Parameters<BrowserWorkflowsRepository['update']>[2]
+    );
 
     if (!workflow) {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Workflow ${id} not found` }, 404);
     }
     return apiResponse(c, workflow);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

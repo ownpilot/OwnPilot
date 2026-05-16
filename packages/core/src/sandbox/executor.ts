@@ -7,7 +7,8 @@ import { createContext, Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
-import { PluginError, TimeoutError, ValidationError } from '../types/errors.js';
+import type { PluginError } from '../types/errors.js';
+import { TimeoutError, ValidationError } from '../types/errors.js';
 import type { PluginId } from '../types/branded.js';
 import type {
   SandboxConfig,

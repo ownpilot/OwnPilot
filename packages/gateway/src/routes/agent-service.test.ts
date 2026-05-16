@@ -87,7 +87,7 @@ const mockGetConfiguredProviderIds = vi.fn(async () => new Set<string>());
 const mockGetEnabledToolGroupIds = vi.fn(() => [] as string[]);
 
 vi.mock('./settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) =>
+  resolveDefaultProviderAndModel: (...args: unknown[]) =>
     mockResolveProviderAndModel(...(args as [string, string])),
   getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),
@@ -981,7 +981,7 @@ describe('getAgent', () => {
     expect(result).toBeUndefined();
   });
 
-  it('returns undefined when resolveProviderAndModel returns null provider', async () => {
+  it('returns undefined when resolveDefaultProviderAndModel returns null provider', async () => {
     const record = makeAgentRecord({ id: 'agent-no-provider' });
     mockLruGet.mockReturnValueOnce(undefined);
     mockAgentsRepo.getById.mockResolvedValue(record);
@@ -1436,7 +1436,7 @@ describe('getOrCreateAgentInstance', () => {
     expect(mockProviderSvc.resolve).toHaveBeenCalled();
   });
 
-  it('falls back to resolveProviderAndModel when no ServiceRegistry', async () => {
+  it('falls back to resolveDefaultProviderAndModel when no ServiceRegistry', async () => {
     const { agent } = makeMockAgent();
     const record = makeAgentRecord();
     mockLruGet.mockReturnValueOnce(undefined);

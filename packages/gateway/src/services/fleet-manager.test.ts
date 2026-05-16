@@ -647,7 +647,7 @@ describe('FleetManager', () => {
       await vi.advanceTimersByTimeAsync(150);
 
       // 3rd cycle should be rate-limited — getReadyTasks not called again
-      const callCountBefore = mockGetReadyTasks.mock.calls.length;
+      const _callCountBefore = mockGetReadyTasks.mock.calls.length;
       await vi.advanceTimersByTimeAsync(150);
       // Rate limited: scheduleNextCycle fires but runCycleInner returns early
       // It still calls getReadyTasks but the overall cycle is skipped at rate limit check
@@ -980,7 +980,11 @@ describe('FleetManager', () => {
       await vi.advanceTimersByTimeAsync(1100);
 
       expectEvent('fleet.worker.started', { fleetId: 'fleet-1', taskId: 'task-1' });
-      expectEvent('fleet.worker.completed', { fleetId: 'fleet-1', taskId: 'task-1', success: true });
+      expectEvent('fleet.worker.completed', {
+        fleetId: 'fleet-1',
+        taskId: 'task-1',
+        success: true,
+      });
     });
   });
 

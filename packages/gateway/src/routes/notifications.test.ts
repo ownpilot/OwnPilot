@@ -164,12 +164,12 @@ describe('PUT /notifications/preferences/:userId', () => {
     const res = await app.request('/notifications/preferences/user-1', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channelPriority: ['telegram', 'web'], minPriority: 'medium' }),
+      body: JSON.stringify({ channelPriority: ['telegram', 'web'], minPriority: 'normal' }),
     });
 
     expect(res.status).toBe(200);
     expect(mockRouter.setPreferences).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1', minPriority: 'medium' })
+      expect.objectContaining({ userId: 'user-1', minPriority: 'normal' })
     );
   });
 });

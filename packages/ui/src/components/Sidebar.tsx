@@ -14,15 +14,31 @@ import type { SourceFilter } from '../hooks/useSidebarRecents';
 import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { NAV_ITEM_MAP } from '../constants/nav-items';
 import { SIDEBAR_WIDTH_VALUES, DEFAULT_SIDEBAR_SECTIONS } from '../types/layout-config';
-import { SIDEBAR_DATA_SECTIONS, getSectionGroup, isNavItemSection } from '../constants/sidebar-sections';
+import {
+  SIDEBAR_DATA_SECTIONS,
+  getSectionGroup,
+  isNavItemSection,
+} from '../constants/sidebar-sections';
 import { SidebarFooter } from './sidebar/SidebarFooter';
 import { SidebarDataSection } from './sidebar/SidebarDataSection';
 import { useToast } from './ToastProvider';
 import { useDialog } from './ConfirmDialog';
-import { X, ChevronRight, Search, Calendar, Edit2, Trash2, Globe, MessageSquare, Telegram, WhatsApp } from './icons';
+import {
+  X,
+  ChevronRight,
+  Search,
+  Calendar,
+  Edit2,
+  Trash2,
+  Globe,
+  MessageSquare,
+  Telegram,
+  WhatsApp,
+} from './icons';
 import type { NavItem } from '../constants/nav-items';
 import type { Conversation } from '../api/types';
 import { chatApi } from '../api/endpoints/chat';
+import { ignoreError } from '../utils/ignore-error';
 
 /** Data sections get a divider before them (if not first visible section) */
 const DATA_GROUPS = new Set(['data', 'ai', 'tools', 'personal', 'system']);
@@ -41,7 +57,17 @@ export interface SidebarProps {
 
 // NAV_ITEM_MAP imported from '../constants/nav-items' (shared with HeaderItemsBar)
 
-function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { item: NavItem; badge?: number; onCloseCustomize?: () => void; isCustomizeOpen?: boolean }) {
+function PinnedNavLink({
+  item,
+  badge,
+  onCloseCustomize,
+  isCustomizeOpen,
+}: {
+  item: NavItem;
+  badge?: number;
+  onCloseCustomize?: () => void;
+  isCustomizeOpen?: boolean;
+}) {
   const Icon = item.icon;
   const location = useLocation();
   const { clearMessages, provider, model, sessionId, messages } = useChatStore();
@@ -56,15 +82,14 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
       clearMessages();
       navigate('/', { replace: true });
       // Reset backend context (best-effort)
-      chatApi.resetContext(provider, model).catch(() => {});
+      ignoreError(chatApi.resetContext(provider, model), 'sidebar:resetContext');
     }
   };
 
   // Chat link: de-highlight when a conversation is active
   // Active = has sessionId, has URL param, OR has messages (user sent a message, waiting for AI)
-  const hasActiveConversation = item.to === '/' && (
-    sessionId || searchParams.get('conversationId') || messages.length > 0
-  );
+  const hasActiveConversation =
+    item.to === '/' && (sessionId || searchParams.get('conversationId') || messages.length > 0);
 
   return (
     <NavLink
@@ -90,7 +115,17 @@ function PinnedNavLink({ item, badge, onCloseCustomize, isCustomizeOpen }: { ite
   );
 }
 
-export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeToggle, isCustomizeOpen, onCloseCustomize, wsStatus, badgeCounts }: SidebarProps) {
+export function Sidebar({
+  isMobile,
+  isOpen,
+  onClose,
+  onSearchOpen,
+  onCustomizeToggle,
+  isCustomizeOpen,
+  onCloseCustomize,
+  wsStatus,
+  badgeCounts,
+}: SidebarProps) {
   const recents = useSidebarRecents();
   const { config: layoutConfig } = useLayoutConfig();
   const navigate = useNavigate();
@@ -107,10 +142,10 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
     const map = stickyOptimisticMapRef.current;
 
     // Add/update entry for the ACTIVE session's current messages
-    const firstUserMsg = chatMessages.find(m => m.role === 'user');
+    const firstUserMsg = chatMessages.find((m) => m.role === 'user');
     if (firstUserMsg) {
       const convId = chatStoreSessionId || '__optimistic__';
-      if (!recents.conversations.some(c => c.id === convId)) {
+      if (!recents.conversations.some((c) => c.id === convId)) {
         map.set(convId, {
           id: convId,
           title: firstUserMsg.content.slice(0, 80),
@@ -125,7 +160,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
     // Add entries from session tabs (snapshots of switched-away sessions)
     for (const tab of sessionTabs) {
-      if (!recents.conversations.some(c => c.id === tab.id) && !map.has(tab.id)) {
+      if (!recents.conversations.some((c) => c.id === tab.id) && !map.has(tab.id)) {
         map.set(tab.id, {
           id: tab.id,
           title: tab.title,
@@ -138,7 +173,7 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
     // Prune entries that DB now has
     for (const [id] of map) {
-      if (recents.conversations.some(c => c.id === id)) {
+      if (recents.conversations.some((c) => c.id === id)) {
         map.delete(id);
       }
     }
@@ -151,10 +186,9 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
 
   // Config-driven section order: sections in array are shown, sorted by order
   const sidebarSections = layoutConfig.sidebar.sections;
-  const visibleSections = useMemo(() =>
-    [...(sidebarSections ?? DEFAULT_SIDEBAR_SECTIONS)]
-      .sort((a, b) => a.order - b.order),
-    [sidebarSections],
+  const visibleSections = useMemo(
+    () => [...(sidebarSections ?? DEFAULT_SIDEBAR_SECTIONS)].sort((a, b) => a.order - b.order),
+    [sidebarSections]
   );
 
   // Desktop sidebar width from config (mobile stays fixed w-64)
@@ -227,10 +261,15 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
         {visibleSections.map((section, sectionIdx) => {
           // Show divider when entering a data group (not if first section)
           const currentGroup = getSectionGroup(section.id);
-          const prevGroup = sectionIdx > 0 ? getSectionGroup(visibleSections[sectionIdx - 1]!.id) : currentGroup;
-          const divider = sectionIdx > 0 && currentGroup !== prevGroup && DATA_GROUPS.has(currentGroup) ? (
-            <div key={`div-${section.id}`} className="border-t border-border dark:border-dark-border my-2" />
-          ) : null;
+          const prevGroup =
+            sectionIdx > 0 ? getSectionGroup(visibleSections[sectionIdx - 1]!.id) : currentGroup;
+          const divider =
+            sectionIdx > 0 && currentGroup !== prevGroup && DATA_GROUPS.has(currentGroup) ? (
+              <div
+                key={`div-${section.id}`}
+                className="border-t border-border dark:border-dark-border my-2"
+              />
+            ) : null;
 
           // Registry-driven data sections (workspaces, workflows, and all future data sections)
           const dataDef = SIDEBAR_DATA_SECTIONS[section.id];
@@ -242,7 +281,9 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   def={dataDef}
                   config={section}
                   collapsed={!!collapsed[section.id]}
-                  onToggleCollapse={() => setCollapsed((prev) => ({ ...prev, [section.id]: !prev[section.id] }))}
+                  onToggleCollapse={() =>
+                    setCollapsed((prev) => ({ ...prev, [section.id]: !prev[section.id] }))
+                  }
                   onCloseCustomize={onCloseCustomize}
                 />
               </div>
@@ -328,7 +369,10 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   <div key="recents">
                     {divider}
                     <button
-                      onClick={() => { onCloseCustomize(); navigate('/history'); }}
+                      onClick={() => {
+                        onCloseCustomize();
+                        navigate('/history');
+                      }}
                       data-testid="sidebar-recents"
                       className="w-full flex items-center gap-2 px-3 py-2.5 md:py-1.5 rounded-md transition-all text-base text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary hover:translate-x-0.5 text-left"
                     >
@@ -344,133 +388,208 @@ export function Sidebar({ isMobile, isOpen, onClose, onSearchOpen, onCustomizeTo
                   <div data-testid="sidebar-recents">
                     <div className="flex items-center px-3 py-1 gap-1.5">
                       <button
-                        onClick={() => setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))}
+                        onClick={() =>
+                          setCollapsed((prev) => ({ ...prev, recents: !prev.recents }))
+                        }
                         className="p-0.5 rounded text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                         aria-label={collapsed.recents ? 'Expand recents' : 'Collapse recents'}
                       >
-                        <ChevronRight className={`w-[17px] h-[17px] shrink-0 transition-transform duration-150 ${!collapsed.recents ? 'rotate-90' : ''}`} />
+                        <ChevronRight
+                          className={`w-[17px] h-[17px] shrink-0 transition-transform duration-150 ${!collapsed.recents ? 'rotate-90' : ''}`}
+                        />
                       </button>
                       <button
-                        onClick={() => { onCloseCustomize(); navigate('/history'); }}
+                        onClick={() => {
+                          onCloseCustomize();
+                          navigate('/history');
+                        }}
                         className="flex-1 text-left text-[15px] font-semibold text-text-muted dark:text-dark-text-muted uppercase tracking-wider hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
                       >
                         Recent
                       </button>
                     </div>
-                    {!collapsed.recents && <><div className="px-2 pb-1">
-                      <input
-                        type="text"
-                        value={recents.search}
-                        onChange={(e) => recents.setSearch(e.target.value)}
-                        placeholder="Search\u2026"
-                        data-testid="sidebar-recents-search"
-                        className="w-full px-2 py-1 text-xs rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    {recents.availablePlatforms.size > 0 && (
-                      <div className="flex items-center gap-0.5 px-2 py-1 overflow-x-auto">
-                        {(['all', 'web', ...(recents.availablePlatforms.has('whatsapp') ? ['whatsapp'] : []), ...(recents.availablePlatforms.has('telegram') ? ['telegram'] : [])] as SourceFilter[]).map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => recents.setSourceFilter(tab)}
-                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap transition-colors ${
-                              recents.sourceFilter === tab
-                                ? 'bg-primary text-white'
-                                : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
-                            }`}
-                          >
-                            {tab === 'all' && 'All'}
-                            {tab === 'web' && <><Globe className="w-2.5 h-2.5" /> Web</>}
-                            {tab === 'whatsapp' && <><WhatsApp className="w-2.5 h-2.5" /> WA</>}
-                            {tab === 'telegram' && <><Telegram className="w-2.5 h-2.5" /> TG</>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {recents.isLoading && recents.conversations.length === 0 ? (
-                      <div className="space-y-1 px-2 py-1">
-                        {[...Array(4)].map((_, i) => (
-                          <div key={i} className="h-6 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary animate-pulse" />
-                        ))}
-                      </div>
-                    ) : recents.conversations.length === 0 ? (
-                      <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">
-                        {recents.search ? 'No results' : 'No conversations yet'}
-                      </div>
-                    ) : (
+                    {!collapsed.recents && (
                       <>
-                      {/* Optimistic entries: one per active session, shows immediately
-                          when user sends a message. Each persists in sidebar until
-                          the DB row arrives via WS chat:history:updated. */}
-                      {optimisticEntries.map((entry) => {
-                        const isActive = activeConversationId === entry.id;
-                        return (
-                          <div key={entry.id}>
-                            <div
-                              onClick={() => handleRecentClick(entry.id)}
-                              className={`group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors ${
-                                isActive ? 'bg-primary/10 text-primary' : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary'
-                              }`}
-                            >
-                              <MessageSquare className="w-3 h-3 shrink-0 opacity-50" />
-                              <span className="truncate text-xs flex-1">{entry.title}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {recents.groups.map((group) => (
-                        <div key={group.label}>
-                          <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted dark:text-dark-text-muted">{group.label}</p>
-                          {group.items.map((conv) => {
-                            const isActiveConv = activeConversationId === conv.id;
-                            const isEditing = recents.editingId === conv.id;
-                            const title = getConvTitle(conv);
-                            const isChannel = conv.source === 'channel';
-                            const isTelegram = conv.channelPlatform === 'telegram';
-                            return (
-                              <div
-                                key={conv.id}
-                                data-testid={`recent-item-${conv.id}`}
-                                onClick={isEditing ? undefined : () => handleRecentClick(conv.id)}
-                                className={`group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors ${
-                                  isActiveConv ? 'bg-primary/10 text-primary' : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary'
+                        <div className="px-2 pb-1">
+                          <input
+                            type="text"
+                            value={recents.search}
+                            onChange={(e) => recents.setSearch(e.target.value)}
+                            placeholder="Search\u2026"
+                            data-testid="sidebar-recents-search"
+                            className="w-full px-2 py-1 text-xs rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        {recents.availablePlatforms.size > 0 && (
+                          <div className="flex items-center gap-0.5 px-2 py-1 overflow-x-auto">
+                            {(
+                              [
+                                'all',
+                                'web',
+                                ...(recents.availablePlatforms.has('whatsapp') ? ['whatsapp'] : []),
+                                ...(recents.availablePlatforms.has('telegram') ? ['telegram'] : []),
+                              ] as SourceFilter[]
+                            ).map((tab) => (
+                              <button
+                                key={tab}
+                                onClick={() => recents.setSourceFilter(tab)}
+                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap transition-colors ${
+                                  recents.sourceFilter === tab
+                                    ? 'bg-primary text-white'
+                                    : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
                                 }`}
                               >
-                                {isChannel && isTelegram ? <Telegram className="w-3 h-3 shrink-0 opacity-60" /> : isChannel && conv.channelPlatform === 'whatsapp' ? <WhatsApp className="w-3 h-3 shrink-0 opacity-60" /> : isChannel ? <MessageSquare className="w-3 h-3 shrink-0 opacity-60" /> : <Globe className="w-3 h-3 shrink-0 opacity-30" />}
-                                {isEditing ? (
-                                  <input
-                                    ref={editInputRef}
-                                    value={recents.editTitle}
-                                    onChange={(e) => recents.setEditTitle(e.target.value)}
-                                    onBlur={() => handleCommitEdit(conv.id)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') handleCommitEdit(conv.id); if (e.key === 'Escape') recents.cancelEdit(); }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="flex-1 min-w-0 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-primary rounded px-1 py-0.5 outline-none"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <span className="flex-1 min-w-0 text-xs truncate leading-snug" title={title}>{title}</span>
+                                {tab === 'all' && 'All'}
+                                {tab === 'web' && (
+                                  <>
+                                    <Globe className="w-2.5 h-2.5" /> Web
+                                  </>
                                 )}
-                                {!isEditing && (
-                                  <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
-                                    <button onClick={(e) => handleStartEdit(conv, e)} title="Rename" className="p-0.5 rounded transition-colors hover:text-text-primary dark:hover:text-dark-text-primary"><Edit2 className="w-2.5 h-2.5" /></button>
-                                    <button onClick={(e) => handleDeleteConv(conv.id, e)} title="Delete" className="p-0.5 rounded hover:text-error transition-colors"><Trash2 className="w-2.5 h-2.5" /></button>
+                                {tab === 'whatsapp' && (
+                                  <>
+                                    <WhatsApp className="w-2.5 h-2.5" /> WA
+                                  </>
+                                )}
+                                {tab === 'telegram' && (
+                                  <>
+                                    <Telegram className="w-2.5 h-2.5" /> TG
+                                  </>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {recents.isLoading && recents.conversations.length === 0 ? (
+                          <div className="space-y-1 px-2 py-1">
+                            {[...Array(4)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="h-6 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary animate-pulse"
+                              />
+                            ))}
+                          </div>
+                        ) : recents.conversations.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">
+                            {recents.search ? 'No results' : 'No conversations yet'}
+                          </div>
+                        ) : (
+                          <>
+                            {/* Optimistic entries: one per active session, shows immediately
+                          when user sends a message. Each persists in sidebar until
+                          the DB row arrives via WS chat:history:updated. */}
+                            {optimisticEntries.map((entry) => {
+                              const isActive = activeConversationId === entry.id;
+                              return (
+                                <div key={entry.id}>
+                                  <div
+                                    onClick={() => handleRecentClick(entry.id)}
+                                    className={`group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors ${
+                                      isActive
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary'
+                                    }`}
+                                  >
+                                    <MessageSquare className="w-3 h-3 shrink-0 opacity-50" />
+                                    <span className="truncate text-xs flex-1">{entry.title}</span>
                                   </div>
-                                )}
+                                </div>
+                              );
+                            })}
+                            {recents.groups.map((group) => (
+                              <div key={group.label}>
+                                <p className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted dark:text-dark-text-muted">
+                                  {group.label}
+                                </p>
+                                {group.items.map((conv) => {
+                                  const isActiveConv = activeConversationId === conv.id;
+                                  const isEditing = recents.editingId === conv.id;
+                                  const title = getConvTitle(conv);
+                                  const isChannel = conv.source === 'channel';
+                                  const isTelegram = conv.channelPlatform === 'telegram';
+                                  return (
+                                    <div
+                                      key={conv.id}
+                                      data-testid={`recent-item-${conv.id}`}
+                                      onClick={
+                                        isEditing ? undefined : () => handleRecentClick(conv.id)
+                                      }
+                                      className={`group relative flex items-center gap-1.5 px-2 py-1.5 mx-1 my-0.5 rounded-md cursor-pointer transition-colors ${
+                                        isActiveConv
+                                          ? 'bg-primary/10 text-primary'
+                                          : 'hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary'
+                                      }`}
+                                    >
+                                      {isChannel && isTelegram ? (
+                                        <Telegram className="w-3 h-3 shrink-0 opacity-60" />
+                                      ) : isChannel && conv.channelPlatform === 'whatsapp' ? (
+                                        <WhatsApp className="w-3 h-3 shrink-0 opacity-60" />
+                                      ) : isChannel ? (
+                                        <MessageSquare className="w-3 h-3 shrink-0 opacity-60" />
+                                      ) : (
+                                        <Globe className="w-3 h-3 shrink-0 opacity-30" />
+                                      )}
+                                      {isEditing ? (
+                                        <input
+                                          ref={editInputRef}
+                                          value={recents.editTitle}
+                                          onChange={(e) => recents.setEditTitle(e.target.value)}
+                                          onBlur={() => handleCommitEdit(conv.id)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleCommitEdit(conv.id);
+                                            if (e.key === 'Escape') recents.cancelEdit();
+                                          }}
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="flex-1 min-w-0 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-primary rounded px-1 py-0.5 outline-none"
+                                          autoFocus
+                                        />
+                                      ) : (
+                                        <span
+                                          className="flex-1 min-w-0 text-xs truncate leading-snug"
+                                          title={title}
+                                        >
+                                          {title}
+                                        </span>
+                                      )}
+                                      {!isEditing && (
+                                        <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
+                                          <button
+                                            onClick={(e) => handleStartEdit(conv, e)}
+                                            title="Rename"
+                                            className="p-0.5 rounded transition-colors hover:text-text-primary dark:hover:text-dark-text-primary"
+                                          >
+                                            <Edit2 className="w-2.5 h-2.5" />
+                                          </button>
+                                          <button
+                                            onClick={(e) => handleDeleteConv(conv.id, e)}
+                                            title="Delete"
+                                            className="p-0.5 rounded hover:text-error transition-colors"
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5" />
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                        </div>
-                      ))}
+                            ))}
+                          </>
+                        )}
+                        {recents.total > recents.conversations.length && (
+                          <p className="px-3 py-1 text-[10px] text-text-muted dark:text-dark-text-muted text-center">
+                            +{recents.total - recents.conversations.length} older
+                          </p>
+                        )}
+                        <NavLink
+                          to="/history"
+                          end
+                          onClick={onCloseCustomize}
+                          className="flex items-center px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors"
+                        >
+                          All conversations &rarr;
+                        </NavLink>
                       </>
                     )}
-                    {recents.total > recents.conversations.length && (
-                      <p className="px-3 py-1 text-[10px] text-text-muted dark:text-dark-text-muted text-center">+{recents.total - recents.conversations.length} older</p>
-                    )}
-                    <NavLink to="/history" end onClick={onCloseCustomize} className="flex items-center px-3 py-1 text-xs text-text-muted dark:text-dark-text-muted hover:text-text-secondary dark:hover:text-dark-text-secondary transition-colors">
-                      All conversations &rarr;
-                    </NavLink>
-                    </>}
                   </div>
                 </div>
               );

@@ -77,3 +77,44 @@ jobs:
 
       - name: Format Check
         run: pnpm format:check
+
+  migration-smoke-test:
+    name: Migration smoke test (pgvector/pg16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: ownpilot
+          POSTGRES_PASSWORD: ownpilot_ci_password
+          POSTGRES_DB: ownpilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ownpilot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migration smoke test
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_USER: ownpilot
+          POSTGRES_PASSWORD: ownpilot_ci_password
+          POSTGRES_DB: ownpilot
+        run: pnpm --filter @ownpilot/gateway exec tsx scripts/migration-smoke-test.ts

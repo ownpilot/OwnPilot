@@ -112,6 +112,11 @@ export function buildCrypto(allowed: boolean) {
     sha512: (data: string) => {
       return createHash('sha512').update(data).digest('hex');
     },
+    /**
+     * @deprecated MD5 is cryptographically broken — only retained for legacy
+     * interop (e.g. ETags, gravatar). Use sha256/sha512 for integrity and
+     * security. This export may be removed in a future release.
+     */
     md5: (data: string) => {
       return createHash('md5').update(data).digest('hex');
     },
@@ -263,7 +268,14 @@ export function buildSandboxContext(
     ...(perms.crypto ? { crypto: buildCrypto(true) } : {}),
 
     // Network utilities (if allowed)
-    ...(perms.network ? { fetch: globalThis.fetch, Response: globalThis.Response, Request: globalThis.Request, Headers: globalThis.Headers } : {}),
+    ...(perms.network
+      ? {
+          fetch: globalThis.fetch,
+          Response: globalThis.Response,
+          Request: globalThis.Request,
+          Headers: globalThis.Headers,
+        }
+      : {}),
 
     // Custom globals
     ...customGlobals,

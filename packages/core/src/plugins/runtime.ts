@@ -18,13 +18,13 @@ import { getErrorMessage } from '../services/error-utils.js';
 import { createPluginId } from '../types/branded.js';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
+import type { IsolationEnforcer } from './isolation.js';
 import {
   type PluginCapability,
   type IsolationConfig,
   type IsolatedPluginContext,
   type AccessViolation,
   PluginIsolationManager,
-  IsolationEnforcer,
   DEFAULT_ISOLATION_LIMITS,
   STORAGE_QUOTAS,
 } from './isolation.js';

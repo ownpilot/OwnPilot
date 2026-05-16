@@ -8,6 +8,7 @@ import {
   type PomodoroSession,
   type PomodoroStats,
 } from '../api/endpoints/personal-data';
+import { ignoreError, silentCatch } from '../utils/ignore-error';
 
 // ============================================================================
 // Constants
@@ -90,7 +91,7 @@ export function PomodoroPage() {
 
         // Auto-complete if timer already expired
         if (remaining === 0) {
-          pomodoroApi.completeSession(sessionRes.session.id).catch(() => {});
+          ignoreError(pomodoroApi.completeSession(sessionRes.session.id), 'pomodoro.autoComplete');
         }
       }
     } catch {
@@ -122,14 +123,17 @@ export function PomodoroPage() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           // Timer complete — clear interval immediately to prevent duplicate calls
-          if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           pomodoroApi
             .completeSession(activeSession.id)
             .then(() => {
               toast.success('Session completed!');
               fetchState();
             })
-            .catch(() => {});
+            .catch(silentCatch('pomodoro.complete'));
           return 0;
         }
         return prev - 1;

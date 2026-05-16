@@ -5,11 +5,11 @@
  */
 
 import { Hono, type Context } from 'hono';
+import type { AutonomyLevel } from '../autonomy/index.js';
 import {
   getApprovalManager,
   getAutonomyEngine,
   assessRisk,
-  AutonomyLevel,
   AUTONOMY_LEVEL_NAMES,
   AUTONOMY_LEVEL_DESCRIPTIONS,
   type ActionCategory,

@@ -21,6 +21,7 @@ vi.mock('../db/repositories/triggers.js', () => ({
 }));
 vi.mock('../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
+  getAdapter: vi.fn(() => Promise.resolve(mockAdapter)),
 }));
 vi.mock('../db/repositories/index.js', () => ({
   settingsRepo: { get: vi.fn(() => null) },

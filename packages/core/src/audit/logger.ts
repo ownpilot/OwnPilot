@@ -12,7 +12,8 @@ import { dirname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { type Result, ok, err } from '../types/result.js';
 import { createAuditEventId } from '../types/branded.js';
-import { InternalError, ValidationError } from '../types/errors.js';
+import type { ValidationError } from '../types/errors.js';
+import { InternalError } from '../types/errors.js';
 import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
 

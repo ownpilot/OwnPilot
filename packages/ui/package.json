@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:analyze": "cross-env ANALYZE=true tsc -b && cross-env ANALYZE=true vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -41,8 +42,10 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
+    "cross-env": "^10.1.0",
     "happy-dom": "^20.8.9",
     "rimraf": "^6.1.3",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.2",

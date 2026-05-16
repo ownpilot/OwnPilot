@@ -12,7 +12,7 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { resolveProviderAndModel } from '../routes/settings.js';
+import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { getProviderApiKey, loadProviderConfig } from '../routes/agent-cache.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -93,7 +93,7 @@ export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   }
 
   // Fall back to default AI provider (if OpenAI-compatible)
-  const { provider } = await resolveProviderAndModel('default', 'default');
+  const { provider } = await resolveDefaultProviderAndModel('default', 'default');
   if (!provider) return null;
 
   const key = await getProviderApiKey(provider);
@@ -291,17 +291,25 @@ const speechToTextOverride: ToolExecutor = async (
     let filename: string;
 
     if (source.startsWith('http://') || source.startsWith('https://')) {
-      // SSRF validation before fetching (SSRF-003)
-      const { isBlockedUrl, isPrivateUrlAsync } = await import('../utils/ssrf.js');
+      // SSRF validation before fetching (SSRF-003).
+      // The sync `isBlockedUrl` rejects obvious cases up-front; `safeFetch`
+      // then re-checks `isPrivateUrlAsync` on every redirect hop and times
+      // out at 30s, so a 302 to a private host can't bypass the check.
+      const { isBlockedUrl } = await import('../utils/ssrf.js');
       if (isBlockedUrl(source)) {
         return { content: { error: 'Invalid or blocked audio URL' }, isError: true };
       }
-      if (await isPrivateUrlAsync(source)) {
-        return { content: { error: 'Private or loopback URLs are not allowed' }, isError: true };
-      }
 
-      // Download URL
-      const resp = await fetch(source);
+      const { safeFetch, SafeFetchError } = await import('../utils/safe-fetch.js');
+      let resp: Response;
+      try {
+        resp = await safeFetch(source);
+      } catch (err) {
+        if (err instanceof SafeFetchError && err.code === 'SSRF_BLOCKED') {
+          return { content: { error: 'Private or loopback URLs are not allowed' }, isError: true };
+        }
+        throw err;
+      }
       if (!resp.ok) throw new Error(`Failed to download: ${resp.status}`);
       audioBuffer = Buffer.from(await resp.arrayBuffer());
       filename = path.basename(new URL(source).pathname) || 'audio.mp3';

@@ -674,12 +674,12 @@ describe('Settings Routes', () => {
   });
 
   // ========================================================================
-  // resolveProviderAndModel
+  // resolveDefaultProviderAndModel
   // ========================================================================
 
-  describe('resolveProviderAndModel', () => {
+  describe('resolveDefaultProviderAndModel', () => {
     it('resolves "default" provider and model', async () => {
-      const { resolveProviderAndModel } = await import('./settings.js');
+      const { resolveDefaultProviderAndModel } = await import('./settings.js');
       // getDefaultProvider:
       mockSettingsRepo.get.mockResolvedValueOnce('openai');
       mockLocalProvidersRepo.getProvider.mockResolvedValueOnce(null);
@@ -687,16 +687,16 @@ describe('Settings Routes', () => {
       // getDefaultModel:
       mockSettingsRepo.get.mockResolvedValueOnce('gpt-4o');
 
-      const result = await resolveProviderAndModel('default', 'default');
+      const result = await resolveDefaultProviderAndModel('default', 'default');
 
       expect(result.provider).toBe('openai');
       expect(result.model).toBe('gpt-4o');
     });
 
     it('passes through non-default values', async () => {
-      const { resolveProviderAndModel } = await import('./settings.js');
+      const { resolveDefaultProviderAndModel } = await import('./settings.js');
 
-      const result = await resolveProviderAndModel('anthropic', 'claude-3');
+      const result = await resolveDefaultProviderAndModel('anthropic', 'claude-3');
 
       expect(result.provider).toBe('anthropic');
       expect(result.model).toBe('claude-3');

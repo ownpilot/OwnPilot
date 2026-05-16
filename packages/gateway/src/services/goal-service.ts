@@ -15,8 +15,8 @@ import {
   type ResourceUpdatedData,
   type ResourceDeletedData,
 } from '@ownpilot/core';
+import type { GoalsRepository } from '../db/repositories/goals.js';
 import {
-  GoalsRepository,
   createGoalsRepository,
   type Goal,
   type GoalStep,

@@ -34,6 +34,7 @@ const { mockAdapter, mockWriteFile, mockOperationStatus } = vi.hoisted(() => {
 // ---------------------------------------------------------------------------
 vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: () => mockAdapter,
+  getAdapter: () => Promise.resolve(mockAdapter),
 }));
 
 vi.mock('fs/promises', () => ({

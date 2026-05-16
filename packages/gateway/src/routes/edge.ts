@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import type { EdgeDeviceType, EdgeDeviceStatus } from '@ownpilot/core';
+import type { EdgeDeviceType, EdgeDeviceStatus, UpdateDeviceInput } from '@ownpilot/core';
 import { getEdgeService } from '../services/edge-service.js';
 import { getEdgeMqttClient } from '../services/edge-mqtt-client.js';
 import { createCircuitBreakerMiddleware } from '../middleware/circuit-breaker.js';
@@ -24,6 +24,7 @@ import {
 import {
   validateBody,
   createEdgeDeviceSchema,
+  updateEdgeDeviceSchema,
   edgeDeviceCommandSchema,
 } from '../middleware/validation.js';
 
@@ -136,15 +137,15 @@ edgeRoutes.patch('/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
-    const body = await c.req.json();
+    const body = validateBody(updateEdgeDeviceSchema, await c.req.json());
 
     const service = getEdgeService();
     const device = await service.updateDevice(userId, id, {
       name: body.name,
-      type: body.type,
-      protocol: body.protocol,
-      sensors: body.sensors,
-      actuators: body.actuators,
+      type: body.type as EdgeDeviceType | undefined,
+      protocol: body.protocol as UpdateDeviceInput['protocol'],
+      sensors: body.sensors as UpdateDeviceInput['sensors'],
+      actuators: body.actuators as UpdateDeviceInput['actuators'],
       firmwareVersion: body.firmwareVersion ?? body.firmware_version,
       metadata: body.metadata,
     });
@@ -152,6 +153,8 @@ edgeRoutes.patch('/:id', async (c) => {
     if (!device) return notFoundError(c, 'Device', id);
     return apiResponse(c, device);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

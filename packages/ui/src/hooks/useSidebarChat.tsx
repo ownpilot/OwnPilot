@@ -19,6 +19,7 @@ import {
 import { parseSSELine } from '../utils/sse-parser';
 import { usePageCopilotContext } from './usePageCopilotContext';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
+import { ignoreError } from '../utils/ignore-error';
 
 export interface SidebarMessage {
   id: string;
@@ -307,7 +308,7 @@ export function SidebarChatProvider({ children }: { children: ReactNode }) {
             }
           }
         } finally {
-          reader.cancel().catch(() => {});
+          ignoreError(reader.cancel(), 'sidebar:reader.cancel');
         }
 
         if (controller.signal.aborted) return;

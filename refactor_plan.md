@@ -1,5 +1,9 @@
 # OwnPilot Refactor Plan
 
+> **SUPERSEDED (2026-05-16) by [`refactor.md`](./refactor.md).** This is the
+> April 2026 plan, retained for historical reference. The current roadmap with
+> tracked progress lives in `refactor.md`.
+
 **Generated:** 2026-04-19
 **Scope:** Action items from the codebase review. Each entry is a self-contained task sized for a single focused PR.
 **Target:** Prioritized punch list — work top-down, but items within the same severity tier can be parallelized across sessions.
@@ -42,12 +46,12 @@
 
 ## Legend
 
-| Field | Meaning |
-|---|---|
-| **Severity** | `critical` (security/data loss) / `high` (security-adjacent or subtle correctness) / `medium` (scaling/maintainability) / `low` (nits w/ measurable upside) |
-| **Effort** | `S` ≤ 1 hr · `M` 1–4 hr · `L` 4–8 hr · `XL` multi-session |
-| **Risk** | Rollback complexity if a fix misbehaves in prod |
-| **Depends on** | Other plan items that must land first |
+| Field          | Meaning                                                                                                                                                     |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | `critical` (security/data loss) / `high` (security-adjacent or subtle correctness) / `medium` (scaling/maintainability) / `low` (nits w/ measurable upside) |
+| **Effort**     | `S` ≤ 1 hr · `M` 1–4 hr · `L` 4–8 hr · `XL` multi-session                                                                                                   |
+| **Risk**       | Rollback complexity if a fix misbehaves in prod                                                                                                             |
+| **Depends on** | Other plan items that must land first                                                                                                                       |
 
 Each entry uses the same structure: **Problem**, **Goal**, **Implementation**, **Test Plan**, **Risks / Rollback**, **Effort**, **Dependencies**.
 
@@ -94,17 +98,24 @@ Everything listed is intended as a **single PR per item** unless explicitly grou
 
 **Goal**
 Every `utils.callTool()` invocation from inside an extension sandbox must:
+
 - Run under the extension owner's `userId`
 - Pass through `checkPermission(toolName, grantedPermissions)` and be rejected before executing if the permission isn't granted
 - Be audit-logged (extension id, tool, user, result) in the existing audit pipeline
 
 **Implementation**
+
 1. In `extension-sandbox.ts`, propagate `grantedPermissions: string[]` and `ownerUserId: string` through the `workerData` payload when spawning the sandbox worker.
 2. In the worker, persist these into a module-level const on startup; expose a read-only accessor.
 3. In `tool-executor.ts` `setupSandboxCallToolHandler` (around line 405), accept the extension identity from the bridge message envelope, look up (or pass through) `grantedPermissions`, and call:
    ```ts
    if (!checkPermission(toolName, grantedPermissions)) {
-     return { ok: false, error: 'permission_denied', toolName, required: requiredPermissionFor(toolName) };
+     return {
+       ok: false,
+       error: 'permission_denied',
+       toolName,
+       required: requiredPermissionFor(toolName),
+     };
    }
    ```
    Call `checkPermission` from `extension-permissions.ts` rather than re-inventing.
@@ -112,12 +123,14 @@ Every `utils.callTool()` invocation from inside an extension sandbox must:
 5. Emit `audit.extension.callTool` event with `{ extensionId, toolName, userId, allowed, reason }` regardless of allow/deny outcome. Reuse the existing audit bus — don't invent a new channel.
 
 **Test Plan**
+
 - Unit test `checkPermission` with each permission category (happy + unknown tool + empty grants).
 - Integration test in `extension-service.test.ts`: install an extension with only the `network` permission, then have its code try to call a `filesystem.*` tool — assert the call returns `permission_denied` and an audit event fires.
 - Regression: all existing extension tests still pass with `grantedPermissions: ['*']` for back-compat during migration.
 - Snapshot test on the audit log shape — downstream consumers may depend on it.
 
 **Risks / Rollback**
+
 - Users with legitimate extensions that already implicitly relied on the bypass will see failures. Mitigation: ship behind `EXT_STRICT_PERMISSIONS` feature flag, default-off for one release, flip to default-on after telemetry confirms no legit break. Explicit rollback is flipping the flag.
 - Tool names in permission declarations may not exactly match runtime-registered names (prefix/namespace skew). Audit `BLOCKED_CALLABLE_TOOLS` and existing permission → tool mapping before flipping the default.
 
@@ -140,13 +153,18 @@ Every `utils.callTool()` invocation from inside an extension sandbox must:
 Per-IP login attempt cap (e.g., 5 attempts per 5 minutes), with exponential backoff on repeated failure and optional lockout that surfaces in the audit log.
 
 **Implementation**
+
 1. Extract the `authAttempts` pattern from `ws/server.ts` into a shared helper, e.g. `packages/gateway/src/utils/login-throttle.ts`:
    ```ts
-   export function createLoginThrottle(opts: { maxAttempts: number; windowMs: number; lockoutMs: number }): {
+   export function createLoginThrottle(opts: {
+     maxAttempts: number;
+     windowMs: number;
+     lockoutMs: number;
+   }): {
      check(ip: string): { allowed: true } | { allowed: false; retryAfterMs: number };
      recordFailure(ip: string): void;
      recordSuccess(ip: string): void;
-   }
+   };
    ```
 2. In `ui-auth.ts`, create a module-level throttle instance with `{ maxAttempts: 5, windowMs: 5 * MS_PER_MINUTE, lockoutMs: 15 * MS_PER_MINUTE }` pulled from `defaults.ts` constants.
 3. In the `POST /auth/login` handler, before scrypt verify, call `throttle.check(clientIp)`. On deny, return 429 with `Retry-After` header set from `retryAfterMs / 1000`.
@@ -157,11 +175,13 @@ Per-IP login attempt cap (e.g., 5 attempts per 5 minutes), with exponential back
 **Client IP resolution:** honor `X-Forwarded-For` only if behind a configured trusted proxy (`TRUST_PROXY` env, existing pattern in `gateway/src/server.ts`). Otherwise use `c.req.header('cf-connecting-ip')` fallback chain → raw socket.
 
 **Test Plan**
+
 - Unit tests for `createLoginThrottle` — clean window, failure accumulation, lockout, success-reset, clock advancement with fake timers.
 - Integration test in `ui-auth.test.ts`: 6 failed attempts from same IP → 6th returns 429. Different IPs each get their own quota.
 - E2E test: verify Retry-After header is honored by the UI (prompt "try again in X seconds").
 
 **Risks / Rollback**
+
 - Shared IP scenarios (corporate NAT, mobile carrier NAT) could lock out legitimate users. Mitigation: lockout window is short (15m); also consider a cookie-based soft identifier to disambiguate users behind the same IP. Explicit rollback is setting `maxAttempts` very high.
 - The in-memory throttle doesn't survive restarts. That's acceptable for rate limiting (attacker restarts too). Not a replacement for ban-list DB.
 
@@ -183,16 +203,19 @@ The Signal registration ID — a 31-bit protocol identifier — is generated via
 All protocol-identity values use a CSPRNG.
 
 **Implementation**
+
 1. At top of file: `import { randomInt } from 'node:crypto'`.
 2. Replace the body of `getRegistrationId()` with: `return randomInt(1, 0x7fffffff + 1)`. (Upper is exclusive in `randomInt`.)
 3. Audit the same file and sibling files under `channels/hub/crypto/*` for other `Math.random()` calls — replace any that touch keys, nonces, identifiers. Leave UX-only randomness (animation jitter, etc.) alone.
 
 **Test Plan**
+
 - No behavioral test — IDs are opaque. Add a repetition test that generates 10k IDs and asserts uniqueness distribution (hash set + Chi-square under 1% tail).
 - Snapshot test the output shape (positive 31-bit integer).
 - Verify no existing tests rely on a specific deterministic value (grep the test tree for the old constant).
 
 **Risks / Rollback**
+
 - None meaningful — output shape unchanged.
 
 **Effort:** S
@@ -209,6 +232,7 @@ All protocol-identity values use a CSPRNG.
 
 **Problem**
 The `sessions` `Map<string, UISession>` lives in process memory. Consequences:
+
 - Every gateway restart logs out all users, including MCP tokens that are advertised as 30-day TTL.
 - Horizontal scaling (clustering, multiple gateway instances behind a load balancer) is impossible without sticky sessions + session sharing; forced to pick one.
 - Compromised DB backups could still leak raw tokens if a future maintainer naively adds persistence without hashing.
@@ -217,6 +241,7 @@ The `sessions` `Map<string, UISession>` lives in process memory. Consequences:
 Sessions persisted in Postgres, indexed by token hash (not plaintext), with a lazy expiry sweep. Restart-safe. Compatible with multi-instance deployments (future-proofing, not a current requirement).
 
 **Implementation**
+
 1. New migration `NNN_ui_sessions.sql` (pick next number):
    ```sql
    CREATE TABLE IF NOT EXISTS ui_sessions (
@@ -242,6 +267,7 @@ Sessions persisted in Postgres, indexed by token hash (not plaintext), with a la
 6. Migration of existing in-memory sessions on startup is not needed — graceful forced re-login is acceptable (one-time; announce in release notes).
 
 **Test Plan**
+
 - Unit tests for the repository — standard repo-test pattern (`mockAdapter.query.mockResolvedValueOnce`, assert SQL + params).
 - Integration tests in `ui-session.test.ts`:
   - Create → validate → invalidate → re-validate returns null
@@ -251,6 +277,7 @@ Sessions persisted in Postgres, indexed by token hash (not plaintext), with a la
 - Load test (bench, optional): 1000 validations with cache warm should stay under current latency.
 
 **Risks / Rollback**
+
 - DB outage → all logins fail. Mitigation: the read cache smooths brief outages; fatal failure mode is acceptable (we're a DB-backed app).
 - Token hash migration means all existing users log out on deploy. Announce and schedule.
 - Rollback: revert migration + service; cache is ephemeral.
@@ -275,6 +302,7 @@ Sessions persisted in Postgres, indexed by token hash (not plaintext), with a la
 Redirects are followed manually up to a bounded count, with an SSRF re-check at each hop.
 
 **Implementation**
+
 1. Set `redirect: 'manual'` on the `fetchOptions` passed into `fetch`.
 2. Wrap the call in a redirect loop:
    ```ts
@@ -283,7 +311,11 @@ Redirects are followed manually up to a bounded count, with an SSRF re-check at 
    let response: Response;
    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
      if (await isSsrfTarget(currentUrl)) throw new Error('blocked: ssrf target');
-     response = await fetch(currentUrl, { ...fetchOptions, redirect: 'manual', signal: abortSignal });
+     response = await fetch(currentUrl, {
+       ...fetchOptions,
+       redirect: 'manual',
+       signal: abortSignal,
+     });
      if (response.status < 300 || response.status >= 400) break;
      const location = response.headers.get('location');
      if (!location) break;
@@ -295,6 +327,7 @@ Redirects are followed manually up to a bounded count, with an SSRF re-check at 
 4. Use `isPrivateUrlAsync` (DNS-resolving variant) not the sync hostname check on every hop — the cache keeps it cheap.
 
 **Test Plan**
+
 - Unit tests for `safeFetch` with a mock server that:
   - Returns 200 immediately (pass-through)
   - Redirects public → public (allowed, up to limit)
@@ -304,6 +337,7 @@ Redirects are followed manually up to a bounded count, with an SSRF re-check at 
 - Snapshot test: HTTP node output shape unchanged on the happy path.
 
 **Risks / Rollback**
+
 - Users depending on >5 redirects will break. Configurable cap, default 5. Raise via node config if a legit use emerges.
 
 **Effort:** M
@@ -324,16 +358,19 @@ Redirects are followed manually up to a bounded count, with an SSRF re-check at 
 Browser navigation and every sub-request it triggers pass both the sync hostname check AND the DNS-resolving check.
 
 **Implementation**
+
 1. Make `validateUrl()` async; await `isPrivateUrlAsync(url)` after the sync check.
 2. Propagate async up: `navigate()`, `screenshot()`, and any other entry points that feed URLs to Puppeteer.
 3. Enable Puppeteer request interception for every browser session: `await page.setRequestInterception(true)`; in the handler, run `validateUrl` on every sub-request's URL. Block (`request.abort('blockedbyclient')`) if denied.
 4. Optional hardening: set `ignoreHTTPSErrors: false` (should already be the default), disable `accessibility.legacy` preferences that could enable file://.
 
 **Test Plan**
+
 - Unit test: URL with public hostname but private resolved IP is rejected.
 - Playwright/Puppeteer integration test (if feasible in CI): page that issues an XHR to 127.0.0.1 — intercept fires, request aborted, page state reflects failure.
 
 **Risks / Rollback**
+
 - Request interception adds overhead (~5-15% on busy pages). Acceptable for the security gain.
 - Legitimate workflows screenshot-ing local dev servers fail. Document the behavior; add an `allowPrivateHosts: boolean` flag on the browser service config, default false, overridable by admin.
 
@@ -355,6 +392,7 @@ Browser navigation and every sub-request it triggers pass both the sync hostname
 Values crossing into the sandbox cannot run outer-realm code on access.
 
 **Implementation** (pick one; prefer option A for faster ship)
+
 - **Option A (structured clone, ship this first):**
   1. Before calling `createContext`, deep-clone each value: `safeCtx[k] = structuredClone(v)`. `structuredClone` rejects functions and strips getters (throws on non-cloneable — we catch and reject with a clear error).
   2. Accept the performance cost (clone on every node execution). Benchmark: for typical payloads (<100KB), clone overhead is <1ms.
@@ -365,11 +403,13 @@ Values crossing into the sandbox cannot run outer-realm code on access.
 Ship Option A in this PR; file a follow-up for Option B if perf allows and security posture justifies.
 
 **Test Plan**
+
 - Attack regression test: construct a node output object with a getter that throws if accessed in the wrong realm; verify the sandbox rejects or the clone sterilizes it.
 - Normal operation: existing transformer-node tests pass.
 - Benchmark: median execution time of a transformer node before/after — fail if > 20% regression on typical payload.
 
 **Risks / Rollback**
+
 - `structuredClone` fails on non-serializable values (functions, symbols with strings). Wrap in try/catch, return a clear error. Document: "Transformer inputs must be JSON-serializable."
 - Rollback: revert the clone wrapper.
 
@@ -392,6 +432,7 @@ Ship Option A in this PR; file a follow-up for Option B if perf allows and secur
 Session validity is tied to the current auth state. Any state transition that changes the hash invalidates every session.
 
 **Implementation**
+
 1. Add `hashCreatedAt: number` to the settings row that stores the password hash (timestamp of last change).
 2. Store `createdAt` on the session alongside token/expires.
 3. In `validateSession(token)`, after fetching the session, load the current `hashCreatedAt` and reject the session if `session.createdAt < hashCreatedAt`.
@@ -399,11 +440,13 @@ Session validity is tied to the current auth state. Any state transition that ch
 5. Add explicit invalidation on any admin-initiated auth reset endpoint (factory reset, migration runner that touches settings).
 
 **Test Plan**
+
 - Integration test: create session → rotate password → old token rejected.
 - Unit test: `validateSession` with a session older than `hashCreatedAt` returns null.
 - Regression: existing tests still pass.
 
 **Risks / Rollback**
+
 - Adds one row lookup per validate unless cached; measure. Cache in TTLCache with 30s TTL on `hashCreatedAt` read.
 
 **Effort:** S
@@ -424,17 +467,20 @@ The `cycleInProgress` boolean guard lives inside `executeCycle` but the check ha
 Either `cycle.start` fires only for runs that will actually execute, or `cycle.aborted`/`cycle.skipped` always pairs with `cycle.start`.
 
 **Implementation** (pick one; prefer option A)
+
 - **Option A:** Move the `cycleInProgress` check above the emit. Before emitting `cycle.start`, check the flag. If in progress, emit `cycle.skipped` with reason `concurrent` and return null.
 - **Option B:** Replace the boolean with a proper mutex — queue pending calls on a promise, or use `async-mutex`. More invasive but eliminates the race entirely.
 
 Ship A; consider B in a follow-up if we see further concurrency issues.
 
 **Test Plan**
+
 - Targeted test `claw-manager.test.ts`: kick two `executeCycle` calls in parallel with fake timers. Assert exactly one `cycle.start` emitted for the executing call, one `cycle.skipped` for the loser.
 - Regression: existing claw tests pass.
 - Long-run integration: run a claw for 100 cycles in event mode with concurrent triggers — no `start` without matching `complete` or `skipped`.
 
 **Risks / Rollback**
+
 - Listeners that assume `cycle.start` always implies execution will change behavior. Audit consumers (WS handlers, audit log, metrics) and update to handle `cycle.skipped`.
 
 **Effort:** M
@@ -455,6 +501,7 @@ Ship A; consider B in a follow-up if we see further concurrency issues.
 Stop/pause is a true drain point — when it returns, no further writes happen.
 
 **Implementation**
+
 1. Track the current cycle promise on the managed fleet: `managed.currentCyclePromise: Promise<void> | null`. Set at the start of `runCycle`, clear in its finally.
 2. In `pauseFleet`/`stopFleet`:
    - Flip state to `stopping` (not `stopped`) immediately to prevent new cycles.
@@ -464,10 +511,12 @@ Stop/pause is a true drain point — when it returns, no further writes happen.
 3. On worker completion, check `managed.state` — if `stopping`/`stopped`, skip shared-context merge and log.
 
 **Test Plan**
+
 - Integration test in `fleet-manager.test.ts`: start a fleet with a long-running task (simulated via controlled Promise), call `stopFleet` mid-cycle, assert `stopFleet` resolves after the task finishes and `sharedContext` reflects the final state.
 - Regression: existing 68 tests still pass.
 
 **Risks / Rollback**
+
 - `stopFleet` becomes slower (now waits for drain). Acceptable — correct. Bound the wait at 30s.
 
 **Effort:** M
@@ -488,15 +537,18 @@ Stop/pause is a true drain point — when it returns, no further writes happen.
 Outbound body size is capped and reported as a user-visible error, not a silent stall.
 
 **Implementation**
+
 1. After template resolution, compute `Buffer.byteLength(resolvedBody, 'utf8')`.
 2. Reject if it exceeds `data.maxRequestBodySize ?? DEFAULT_MAX_REQUEST_BODY (e.g., 10 * 1024 * 1024)`, with a clear error: `"Request body size (X bytes) exceeds maximum (Y bytes). Consider streaming or chunking."`
 3. Surface the error through the normal node failure path so the workflow's error-handler node can catch it.
 
 **Test Plan**
+
 - Unit test: template resolves to 11MB body → node fails with the right error. 9MB body passes.
 - Happy-path regression tests unchanged.
 
 **Risks / Rollback**
+
 - Workflows that currently rely on large bodies fail. Expose the cap as a node config; document.
 
 **Effort:** S
@@ -520,6 +572,7 @@ Both pages mix layout, data fetching, WebSocket subscription, forms, editors, de
 Each page reduces to a thin shell routing between sub-components, each under ~400 LoC, independently testable.
 
 **Implementation (ClawsPage example)**
+
 1. Create `packages/ui/src/pages/claws/` directory.
 2. Extract sub-components:
    - `ClawList.tsx` — left panel list + search/filter
@@ -546,17 +599,20 @@ Each page reduces to a thin shell routing between sub-components, each under ~40
 5. FleetPage mirror-image split into `packages/ui/src/pages/fleet/*`.
 
 **Test Plan**
+
 - Move existing tests alongside each new component.
 - Add unit tests for the new hooks (`useClaws`, `useClawAuditLog`) — mock `fetch` via `msw` or existing test harness.
 - Visual regression: take a full-page screenshot before and after — should be pixel-identical.
 
 **Risks / Rollback**
+
 - Mechanical refactor with no behavior change. Risk is in missed state dependencies; mitigation is small, reviewable commits per extraction.
 
 **Effort:** L per page (so ClawsPage + FleetPage = two PRs)
 **Dependencies:** none
 
 **Progress (ClawsPage)** — done, 2972 → 444 LoC (85% reduction)
+
 - `packages/ui/src/pages/claws/utils.ts` — `authedFetch`, `getStateBadge`, `formatDuration`, `formatCost`, `timeAgo`, `inputClass`, `labelClass` (66 LoC)
 - `packages/ui/src/pages/claws/CreateClawModal.tsx` — modal + CLAW_TEMPLATES (452 LoC)
 - `packages/ui/src/pages/claws/ClawCard.tsx` — card component (192 LoC)
@@ -567,6 +623,7 @@ Each page reduces to a thin shell routing between sub-components, each under ~40
 - Typecheck clean; all 176 UI tests pass
 
 **Progress (FleetPage)** — done, 2368 → 447 LoC (81% reduction)
+
 - `packages/ui/src/pages/fleet/utils.ts` — `getStateBadge`, `getWorkerTypeIcon/Label/Color`, `getScheduleLabel`, `getTaskStatusColor`, `formatCost` (102 LoC)
 - `packages/ui/src/pages/fleet/BroadcastModal.tsx` — broadcast-to-workers modal (75 LoC)
 - `packages/ui/src/pages/fleet/AddTasksModal.tsx` — multi-task entry modal (161 LoC)
@@ -591,12 +648,14 @@ Deterministic next-available suffix with negligible retry overhead.
 
 **Implementation**
 Pick the cleaner of:
+
 - **Option A:** Query `SELECT MAX(suffix) FROM souls WHERE base_name = $1` (or regex-extract from name) and use `max + 1`.
 - **Option B:** `randomBytes(3).toString('hex')` (6 hex chars, 16M space, collisions practically zero even at thousands of souls).
 
 Option B is one line; ship it.
 
 **Test Plan**
+
 - Deploy 100 souls with the same base name, assert all succeed on first attempt.
 - Assert suffix format (6 hex chars).
 
@@ -617,11 +676,13 @@ Option B is one line; ship it.
 Confirm one or the other; act accordingly.
 
 **Implementation**
+
 1. `rtk grep -rn escapeHtml packages/gateway/src/` to confirm no callers (grep gave us files_with_matches; run content-mode).
 2. Scan `ws/server.ts` for any response path that renders user-supplied strings into HTML — if none (WS sends JSON, not HTML), delete `escapeHtml`.
 3. If any HTML-rendering path exists, wire `escapeHtml` in and add a test.
 
 **Test Plan**
+
 - If deleted: typecheck + existing tests pass (no callers).
 - If wired: targeted unit test with `<script>alert(1)</script>` input.
 
@@ -642,10 +703,12 @@ Cleanup fires with 5% probability on each pulse. Low pulse traffic → days with
 Deterministic schedule matching the rest of the codebase.
 
 **Implementation**
+
 1. Use the existing daily-timer pattern from `ClawManager.runCleanup` — `setInterval(cleanup, 24 * MS_PER_HOUR).unref()`.
 2. Optional: keep a one-time cleanup on engine boot so operators can force a sweep via restart.
 
 **Test Plan**
+
 - Unit test with fake timers: advance 24h → cleanup called once.
 - Remove any random-mocked test paths that relied on the probabilistic behavior.
 
@@ -668,6 +731,7 @@ The query `WHERE (from = $1 AND to = $2) OR (from = $2 AND to = $1)` with existi
 A single index the planner can use for both directions of a conversation pair.
 
 **Implementation**
+
 1. New migration:
    ```sql
    CREATE INDEX IF NOT EXISTS idx_agent_messages_pair
@@ -682,10 +746,12 @@ A single index the planner can use for both directions of a conversation pair.
 3. Alternative (if we'd rather not depend on function-on-column indexes): rewrite as `UNION ALL` of two single-side queries, each backed by existing indexes.
 
 **Test Plan**
+
 - Explain plan before and after on a DB with 1M rows — should switch from seq scan / bitmap to index scan.
 - Repo-layer unit tests: same input/output contract.
 
 **Risks / Rollback**
+
 - Function-on-column index is immutable and must match query shape exactly. If the query and index drift, planner silently falls back to seq scan. Prefer the `UNION ALL` approach if concerned.
 
 **Effort:** M
@@ -705,6 +771,7 @@ A single index the planner can use for both directions of a conversation pair.
 No message is lost regardless of arrival timing.
 
 **Implementation**
+
 1. Merge restored/current arrays: on restore (throw path), do `managed.session.inbox = [...managed.session.inbox, ...snapshotNotYetCleared]`.
 2. Or, simpler: delay the clear until after `cycle.complete`:
    ```ts
@@ -718,9 +785,11 @@ No message is lost regardless of arrival timing.
    ```
 
 **Test Plan**
+
 - Targeted test: kick `executeCycle`, send a message during the await, assert it's processed in the next cycle (or included in this one, depending on the chosen semantic).
 
 **Risks / Rollback**
+
 - Double-processing if the semantic is misunderstood. Write the test FIRST to pin the expected behavior.
 
 **Effort:** S
@@ -740,11 +809,13 @@ Top-level `setInterval` for `authAttempts` cleanup runs on module import. `.unre
 Auth cleanup lives in the `WSGateway` instance lifecycle like `heartbeatTimer` and `cleanupTimer` already do.
 
 **Implementation**
+
 1. Move `setInterval` inside `WSGateway.start()` and store on `this._authCleanupTimer`.
 2. Add `clearInterval(this._authCleanupTimer)` in `stop()`.
 3. Remove the module-level declaration.
 
 **Test Plan**
+
 - Existing tests should pass and stop warning about stray timers.
 - Add an integration test: start gateway, stop it, assert no active timers (`process._getActiveHandles().length === 0` or equivalent).
 
@@ -765,11 +836,13 @@ Auth cleanup lives in the `WSGateway` instance lifecycle like `heartbeatTimer` a
 `??` is the correct semantic; errors are explicit about the timeout that fired.
 
 **Implementation**
+
 1. Replace `||` with `??` at both sites.
 2. If `timeoutMs` should reject 0/negative, add to the zod schema: `timeoutMs: z.number().int().min(1).max(300000).optional()`.
 3. Surface the timeout in the error: `"Transformer timed out after ${vmTimeout}ms"`.
 
 **Test Plan**
+
 - Unit test: `timeoutMs: undefined` → defaults used; `timeoutMs: 1000` → 1s used; `timeoutMs: 0` → rejected by schema with a clear validation error.
 
 **Effort:** S
@@ -791,6 +864,7 @@ Auth cleanup lives in the `WSGateway` instance lifecycle like `heartbeatTimer` a
 Operators can see transient DB failures at default log level.
 
 **Implementation**
+
 1. Bump to `log.warn` for failed `create` (second catch).
 2. Keep `log.debug` on the benign "not found" path in `getById` (not a failure).
 
@@ -811,10 +885,12 @@ Four sequential `readSessionWorkspaceFile`/`writeSessionWorkspaceFile` calls dur
 Scaffolding runs in parallel; startClaw completes ~4× faster for its I/O portion.
 
 **Implementation**
+
 1. Add a `createIfMissing: boolean` option to `writeSessionWorkspaceFile`.
 2. Replace the four sequential calls with `await Promise.all([...])` of four idempotent creates.
 
 **Test Plan**
+
 - Existing claw-manager tests pass.
 - Benchmark: measure startClaw before/after; expect ~75% reduction in scaffold time.
 
@@ -835,6 +911,7 @@ Function exists with no callers. See C1 — it's the intended gate but never wir
 Either wire it (C1) or delete it.
 
 **Implementation**
+
 1. Land C1 first — this wires `checkPermission`.
 2. After C1 ships, verify no alternative "half-implemented" permission check still exists. If one does, remove it.
 
@@ -847,7 +924,7 @@ Either wire it (C1) or delete it.
 
 These are genuinely impressive pieces of the codebase; don't touch them in the cleanup cycle.
 
-- **SSRF shared utility** (`packages/gateway/src/utils/ssrf.ts`) — sync + async check with DNS-resolution caching. The H1/H2 fixes are about *using* it everywhere, not replacing it.
+- **SSRF shared utility** (`packages/gateway/src/utils/ssrf.ts`) — sync + async check with DNS-resolution caching. The H1/H2 fixes are about _using_ it everywhere, not replacing it.
 - **Fleet cascade & isolation design** — `failDependentTasks`, `structuredClone(sharedContext)` per worker snapshot. Thoughtful concurrency work most projects this size don't pull off.
 - **Claw adaptive scheduling** — `CONTINUOUS_MIN/MAX/IDLE_DELAY_MS` pivoting on last-cycle outcome. Many autonomous runners hammer LLMs with no backoff; this one doesn't.
 - **Performance migration `027`** — `idx_fleet_tasks_status_priority`, `idx_chat_history_chat_id_created`, partial index on `workflow_executions WHERE status IN ('running','paused')`. Indexes clearly chosen after reading real query plans.
@@ -865,27 +942,27 @@ These are genuinely impressive pieces of the codebase; don't touch them in the c
 
 ### Status Tracker
 
-| ID  | Title                                                             | Status    |
-|-----|-------------------------------------------------------------------|-----------|
-| C1  | Extension sandbox permission bypass                               | done      |
-| C2  | No rate-limit on UI login                                         | done      |
-| C3  | Signal registration ID uses Math.random()                         | done      |
-| C4  | UI sessions are in-memory only                                    | done      |
-| H1  | Workflow HTTP node follows redirects blindly                      | done      |
-| H2  | BrowserService skips DNS-rebinding check                          | done      |
-| H3  | safeVmEval sandbox prototype-chain leak                           | done      |
-| H4  | invalidateAllSessions not fired on all password-state transitions | done      |
-| H5  | Claw executeCycle emits cycle.start before concurrency guard      | done      |
-| H6  | Fleet pause/stop doesn't await in-flight cycle                    | done      |
-| H7  | Workflow HTTP node missing request-body size cap                  | done      |
-| M1  | God files: ClawsPage / FleetPage                                  | done                                            |
-| M2  | Math.random suffix for name-collision retry                       | done      |
-| M3  | Unused escapeHtml in WS server                                    | done      |
-| M4  | Probabilistic pulse-log cleanup                                   | done      |
-| M5  | agent_messages.findConversation OR-query                          | done      |
-| M6  | Claw inbox race                                                   | done      |
-| M7  | WS _authCleanupTimer runs on module import                        | done      |
-| M8  | Transformer/HTTP \|\| N timeout fallback                          | done      |
-| L1  | ClawManager conversation-lookup logged at debug                   | done      |
-| L2  | scaffoldClawDir does 4 sync disk I/Os on startClaw                | done      |
-| L3  | checkPermission is a dead export                                  | done      |
+| ID  | Title                                                             | Status |
+| --- | ----------------------------------------------------------------- | ------ |
+| C1  | Extension sandbox permission bypass                               | done   |
+| C2  | No rate-limit on UI login                                         | done   |
+| C3  | Signal registration ID uses Math.random()                         | done   |
+| C4  | UI sessions are in-memory only                                    | done   |
+| H1  | Workflow HTTP node follows redirects blindly                      | done   |
+| H2  | BrowserService skips DNS-rebinding check                          | done   |
+| H3  | safeVmEval sandbox prototype-chain leak                           | done   |
+| H4  | invalidateAllSessions not fired on all password-state transitions | done   |
+| H5  | Claw executeCycle emits cycle.start before concurrency guard      | done   |
+| H6  | Fleet pause/stop doesn't await in-flight cycle                    | done   |
+| H7  | Workflow HTTP node missing request-body size cap                  | done   |
+| M1  | God files: ClawsPage / FleetPage                                  | done   |
+| M2  | Math.random suffix for name-collision retry                       | done   |
+| M3  | Unused escapeHtml in WS server                                    | done   |
+| M4  | Probabilistic pulse-log cleanup                                   | done   |
+| M5  | agent_messages.findConversation OR-query                          | done   |
+| M6  | Claw inbox race                                                   | done   |
+| M7  | WS \_authCleanupTimer runs on module import                       | done   |
+| M8  | Transformer/HTTP \|\| N timeout fallback                          | done   |
+| L1  | ClawManager conversation-lookup logged at debug                   | done   |
+| L2  | scaffoldClawDir does 4 sync disk I/Os on startClaw                | done   |
+| L3  | checkPermission is a dead export                                  | done   |

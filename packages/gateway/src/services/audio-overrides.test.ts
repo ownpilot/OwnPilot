@@ -64,7 +64,7 @@ vi.mock('../routes/helpers.js', () => ({
 }));
 
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
+  resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
 vi.mock('../routes/agent-cache.js', () => ({
@@ -115,7 +115,9 @@ vi.mock('../utils/file-safety.js', () => ({
     const targetResolved = targetPath.split(sep).filter(Boolean).join(sep);
     const rel = targetResolved.startsWith(baseResolved + sep)
       ? targetResolved.slice(baseResolved.length + 1)
-      : targetResolved === baseResolved ? '' : targetResolved;
+      : targetResolved === baseResolved
+        ? ''
+        : targetResolved;
     return rel === '' || (!rel.startsWith('..') && !rel.startsWith(sep));
   },
 }));
@@ -148,7 +150,6 @@ import { registerAudioOverrides } from './audio-overrides.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Executor = (params: Record<string, any>, context?: any) => Promise<any>;
 
 /**

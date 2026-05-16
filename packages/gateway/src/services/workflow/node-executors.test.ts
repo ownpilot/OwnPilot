@@ -38,7 +38,9 @@ vi.mock('../../utils/ssrf.js', () => ({
     try {
       const parsed = new URL(url);
       return ['localhost', '127.0.0.1', '10.0.0.1', '192.168.1.1'].includes(parsed.hostname);
-    } catch { return true; }
+    } catch {
+      return true;
+    }
   }),
   isPrivateUrlAsync: vi.fn(async () => false),
 }));
@@ -47,7 +49,12 @@ vi.mock('../../utils/ssrf.js', () => ({
 class MockSafeFetchError extends Error {
   constructor(
     message: string,
-    public readonly code: 'SSRF_BLOCKED' | 'TOO_MANY_REDIRECTS' | 'BODY_TOO_LARGE' | 'TIMEOUT' | 'UNKNOWN'
+    public readonly code:
+      | 'SSRF_BLOCKED'
+      | 'TOO_MANY_REDIRECTS'
+      | 'BODY_TOO_LARGE'
+      | 'TIMEOUT'
+      | 'UNKNOWN'
   ) {
     super(message);
     this.name = 'SafeFetchError';
@@ -58,7 +65,13 @@ vi.mock('../../utils/safe-fetch.js', () => ({
   safeFetch: vi.fn(async (url: string, options?: RequestInit) => {
     // Simulate SSRF blocking: throw for known private targets
     const privateTargets = ['192.168.1.1', 'localhost'];
-    const parsedUrl = (() => { try { return new URL(url); } catch { return null; } })();
+    const parsedUrl = (() => {
+      try {
+        return new URL(url);
+      } catch {
+        return null;
+      }
+    })();
     if (parsedUrl && privateTargets.some((t) => parsedUrl.hostname.includes(t))) {
       throw new MockSafeFetchError(
         `Request to private/internal address not allowed: ${url}`,
@@ -68,10 +81,10 @@ vi.mock('../../utils/safe-fetch.js', () => ({
 
     // Delegate to the current global fetch (which is mockFetch at test runtime)
     // Use the global directly so vi.stubGlobal('fetch', mockFetch) in beforeEach takes effect
-    const response = await (globalThis as Record<string, unknown>).fetch(url, {
+    const response = (await (globalThis as Record<string, unknown>).fetch(url, {
       ...options,
       redirect: 'manual',
-    }) as Response;
+    })) as Response;
 
     return response;
   }),
@@ -101,7 +114,7 @@ vi.mock('../../routes/agent-cache.js', () => ({
 }));
 
 vi.mock('../../routes/settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async (provider: string, model: string) => ({
+  resolveDefaultProviderAndModel: vi.fn(async (provider: string, model: string) => ({
     provider: provider === 'default' ? 'openai' : provider,
     model: model === 'default' ? 'gpt-4o-mini' : model,
   })),
@@ -888,8 +901,8 @@ describe('executeLlmNode', () => {
   });
 
   it('returns error when no provider is configured (resolve returns null)', async () => {
-    const { resolveProviderAndModel } = await import('../../routes/settings.js');
-    vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({
+    const { resolveDefaultProviderAndModel } = await import('../../routes/settings.js');
+    vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({
       provider: null as unknown as string,
       model: null,
     });

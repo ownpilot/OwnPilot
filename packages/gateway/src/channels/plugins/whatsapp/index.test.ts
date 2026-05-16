@@ -17,7 +17,7 @@ const {
 } = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
-  const capturedChannelApiFactory: Function[] = [];
+  const capturedChannelApiFactory: Array<(...args: any[]) => any> = [];
   const MockWhatsAppChannelAPI = vi.fn().mockImplementation(function (
     config: any,
     pluginId: string
@@ -48,7 +48,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
           capturedPlatform.push(p);
           return b;
         }),
-        channelApi: vi.fn((f: Function) => {
+        channelApi: vi.fn((f: (...args: any[]) => any) => {
           capturedChannelApiFactory.push(f);
           return b;
         }),

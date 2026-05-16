@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { channelsApi } from '../api/endpoints/misc';
+import { silentCatch } from '../utils/ignore-error';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
 import {
@@ -520,9 +521,7 @@ export function PairingBanner() {
     channelsApi
       .getPairing()
       .then((data) => setChannels(data.channels))
-      .catch(() => {
-        /* silently ignore */
-      });
+      .catch(silentCatch('channels.getPairing'));
   }, []);
 
   useEffect(() => {
@@ -577,7 +576,8 @@ export function PairingBanner() {
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-warning" />
               <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                {unclaimedChannels.length} channel{unclaimedChannels.length !== 1 ? 's' : ''} need setup
+                {unclaimedChannels.length} channel{unclaimedChannels.length !== 1 ? 's' : ''} need
+                setup
               </span>
             </div>
             <span className="text-xs text-text-muted dark:text-dark-text-muted">

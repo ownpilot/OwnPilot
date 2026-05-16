@@ -24,7 +24,7 @@ import {
   getErrorMessage,
   parseJsonBody,
 } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
+import { resolveDefaultProviderAndModel, getApiKey } from '../settings.js';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 import { getLog } from '../../services/log.js';
 
@@ -53,7 +53,7 @@ const getExtService = () => getServiceRegistry().get(Services.Extension) as Exte
 // ---------------------------------------------------------------------------
 
 async function buildProvider(providerOverride?: string, modelOverride?: string) {
-  const resolved = await resolveProviderAndModel(
+  const resolved = await resolveDefaultProviderAndModel(
     providerOverride ?? 'default',
     modelOverride ?? 'default'
   );

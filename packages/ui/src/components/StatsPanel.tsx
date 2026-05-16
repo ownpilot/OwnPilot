@@ -50,6 +50,7 @@ import { QuickAddGrid } from './QuickAddModal';
 import { useSidebarChat } from '../hooks/useSidebarChat';
 import { usePageCopilotContext } from '../hooks/usePageCopilotContext';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
+import { silentCatch } from '../utils/ignore-error';
 
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -178,7 +179,7 @@ function CompactProviderSelector() {
         setProviders(configured);
         setModels((modData.models as ModelInfo[]) ?? []);
       })
-      .catch(() => {});
+      .catch(silentCatch('statsPanel.providers'));
   }, []);
 
   // Close dropdown on outside click

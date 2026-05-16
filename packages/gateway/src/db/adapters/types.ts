@@ -129,6 +129,13 @@ export interface DatabaseConfig {
  * In production (NODE_ENV=production), DATABASE_URL or explicit PostgreSQL env vars are required.
  * In development, defaults are used for local Docker Compose setup.
  */
+/**
+ * The default password baked into .env.example / docker-compose.yml.
+ * Detecting this value in production indicates the operator copied the
+ * sample env without changing the password — refuse to boot.
+ */
+export const DEFAULT_POSTGRES_PASSWORD = 'ownpilot_secret';
+
 export function getDatabaseConfig(): DatabaseConfig {
   const isProduction = process.env.NODE_ENV === 'production';
   const hasExplicitConfig = !!(
@@ -145,10 +152,21 @@ export function getDatabaseConfig(): DatabaseConfig {
     );
   }
 
+  const effectivePassword = process.env.POSTGRES_PASSWORD || DEFAULT_POSTGRES_PASSWORD;
+
+  // Fail hard if production is using the documented default password —
+  // .env.example ships with it, so a careless deploy would otherwise succeed.
+  if (isProduction && effectivePassword === DEFAULT_POSTGRES_PASSWORD) {
+    throw new Error(
+      '[Database] Refusing to start: POSTGRES_PASSWORD is set to the documented ' +
+        'default value ("ownpilot_secret"). Change it before running with NODE_ENV=production.'
+    );
+  }
+
   // Build PostgreSQL URL if not provided directly
   const postgresUrl =
     process.env.DATABASE_URL ||
-    `postgresql://${process.env.POSTGRES_USER || 'ownpilot'}:${process.env.POSTGRES_PASSWORD || 'ownpilot_secret'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '25432'}/${process.env.POSTGRES_DB || 'ownpilot'}`;
+    `postgresql://${process.env.POSTGRES_USER || 'ownpilot'}:${effectivePassword}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '25432'}/${process.env.POSTGRES_DB || 'ownpilot'}`;
 
   return {
     type: 'postgres',
@@ -156,7 +174,7 @@ export function getDatabaseConfig(): DatabaseConfig {
     postgresHost: process.env.POSTGRES_HOST || 'localhost',
     postgresPort: process.env.POSTGRES_PORT ? parseInt(process.env.POSTGRES_PORT, 10) : 25432,
     postgresUser: process.env.POSTGRES_USER || 'ownpilot',
-    postgresPassword: process.env.POSTGRES_PASSWORD || 'ownpilot_secret',
+    postgresPassword: effectivePassword,
     postgresDatabase: process.env.POSTGRES_DB || 'ownpilot',
     postgresPoolSize: process.env.POSTGRES_POOL_SIZE
       ? parseInt(process.env.POSTGRES_POOL_SIZE, 10)

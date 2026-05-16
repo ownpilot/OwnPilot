@@ -89,7 +89,6 @@ describe('CredentialStore - additional coverage', () => {
   describe('save - guard when derivedKey is null', () => {
     it('returns error when derivedKey is null', async () => {
       const store = await initAndUnlock();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (store as any).derivedKey = null;
       const result = await store.setCredentials({ openaiApiKey: 'sk-test' });
       expect(result.ok).toBe(false);

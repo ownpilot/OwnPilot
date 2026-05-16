@@ -4,7 +4,7 @@
  * All repositories should extend this class for PostgreSQL support
  */
 
-import { getAdapter, getAdapterSync } from '../adapters/index.js';
+import { getAdapter } from '../adapters/index.js';
 import type { DatabaseAdapter, Row } from '../adapters/types.js';
 import type { StandardQuery, PaginatedResult } from './interfaces.js';
 import { buildPaginatedResult } from './interfaces.js';
@@ -25,16 +25,6 @@ export abstract class BaseRepository {
   protected async getAdapter(): Promise<DatabaseAdapter> {
     if (!this.adapter || !this.adapter.isConnected()) {
       this.adapter = await getAdapter();
-    }
-    return this.adapter;
-  }
-
-  /**
-   * Get the database adapter (sync - must be initialized first)
-   */
-  protected getAdapterSync(): DatabaseAdapter {
-    if (!this.adapter || !this.adapter.isConnected()) {
-      this.adapter = getAdapterSync();
     }
     return this.adapter;
   }

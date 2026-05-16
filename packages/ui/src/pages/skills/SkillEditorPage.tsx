@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { useToast } from '../../components/ToastProvider';
 import { extensionsApi, type FileEntry, type FileTreeResult } from '../../api/endpoints/extensions';
+import { silentCatch } from '../../utils/ignore-error';
 import { MarkdownContent } from '../../components/MarkdownContent';
 import {
   ArrowLeft,
@@ -178,7 +179,7 @@ export function SkillEditorPage() {
     extensionsApi
       .getById(id)
       .then((pkg) => setExtensionName(pkg.name))
-      .catch(() => {});
+      .catch(silentCatch('skillEditor.getById'));
   }, [id]);
 
   useEffect(() => {

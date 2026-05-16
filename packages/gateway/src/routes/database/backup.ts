@@ -11,14 +11,35 @@ import { spawn } from 'child_process';
 import { existsSync, unlinkSync, readdirSync, statSync } from 'fs';
 import { createReadStream } from 'node:fs';
 import { join, basename } from 'path';
+import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from '../helpers.js';
 import { getDatabaseConfig } from '../../db/adapters/types.js';
-import { getAdapterSync } from '../../db/adapters/index.js';
+import { getAdapter } from '../../db/adapters/index.js';
 import { getLog } from '../../services/log.js';
 import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
 import { attachmentDisposition } from '../../utils/file-safety.js';
+import { validateBody } from '../../middleware/validation.js';
 
 const log = getLog('Database');
+
+const backupCreateSchema = z.object({
+  format: z.enum(['sql', 'custom']).optional(),
+});
+
+const backupRestoreSchema = z.object({
+  filename: z.string().min(1).max(500),
+});
+
+function parseAdminBody<T>(
+  raw: unknown,
+  schema: z.ZodType<T>
+): { ok: true; data: T } | { ok: false; message: string } {
+  try {
+    return { ok: true, data: validateBody(schema, raw) };
+  } catch (e) {
+    return { ok: false, message: getErrorMessage(e) };
+  }
+}
 
 export const backupRoutes = new Hono();
 
@@ -97,7 +118,7 @@ backupRoutes.post('/backup', async (c) => {
   // Check PostgreSQL is connected
   let connected = false;
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
     connected = adapter.isConnected();
   } catch {
     // Adapter not initialized
@@ -112,8 +133,13 @@ backupRoutes.post('/backup', async (c) => {
     );
   }
 
-  const body: { format?: 'sql' | 'custom' } = await c.req.json().catch(() => ({}));
-  const format = body.format || 'sql';
+  const rawBackup = await c.req.json().catch(() => ({}));
+  const parsedBackup = parseAdminBody(rawBackup, backupCreateSchema);
+  if (!parsedBackup.ok) {
+    operationStatus.isRunning = false;
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: parsedBackup.message }, 400);
+  }
+  const format = parsedBackup.data.format || 'sql';
   const ext = format === 'custom' ? 'dump' : 'sql';
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filename = `backup-${timestamp}.${ext}`;
@@ -216,16 +242,13 @@ backupRoutes.post('/restore', async (c) => {
     output: [],
   });
 
-  const body: { filename: string } = await c.req.json().catch(() => ({ filename: '' }));
-
-  if (!body.filename) {
+  const rawRestore = await c.req.json().catch(() => ({}));
+  const parsedRestore = parseAdminBody(rawRestore, backupRestoreSchema);
+  if (!parsedRestore.ok) {
     operationStatus.isRunning = false;
-    return apiError(
-      c,
-      { code: ERROR_CODES.MISSING_FILENAME, message: 'Backup filename is required' },
-      400
-    );
+    return apiError(c, { code: ERROR_CODES.MISSING_FILENAME, message: parsedRestore.message }, 400);
   }
+  const body = parsedRestore.data;
 
   const config = getDatabaseConfig();
   const backupPath = join(getBackupDir(), basename(body.filename)); // Sanitize path

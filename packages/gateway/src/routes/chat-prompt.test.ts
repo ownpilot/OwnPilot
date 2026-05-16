@@ -45,7 +45,6 @@ function makePerms(overrides: Record<string, unknown> = {}) {
     compile_code: 'blocked',
     package_manager: 'blocked',
     ...overrides,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
@@ -57,7 +56,6 @@ function makeTool(overrides: Record<string, unknown> = {}) {
     category: 'Custom',
     parameters: {},
     ...overrides,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 

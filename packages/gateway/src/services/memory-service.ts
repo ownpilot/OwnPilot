@@ -17,8 +17,8 @@ import {
   type ResourceUpdatedData,
   type ResourceDeletedData,
 } from '@ownpilot/core';
+import type { MemoriesRepository } from '../db/repositories/memories.js';
 import {
-  MemoriesRepository,
   createMemoriesRepository,
   type Memory,
   type MemoryType,

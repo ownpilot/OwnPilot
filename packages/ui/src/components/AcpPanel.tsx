@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAcpSession } from '../hooks/useAcpSession';
 import { codingAgentsApi } from '../api';
+import { ignoreError } from '../utils/ignore-error';
 import type { CodingAgentSession } from '../api/endpoints/coding-agents';
 import type { AcpPermissionRequest } from '../hooks/useAcpSession';
 import {
@@ -369,7 +370,7 @@ export function AcpPanel({ sessionId, session, onTerminate }: AcpPanelProps) {
           </button>
           <button
             onClick={() => {
-              codingAgentsApi.cancelAcpSession(sessionId).catch(() => {});
+              ignoreError(codingAgentsApi.cancelAcpSession(sessionId), 'cancelAcpSession');
             }}
             className="px-2 py-1 text-xs font-mono text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded"
             title="Cancel current turn"

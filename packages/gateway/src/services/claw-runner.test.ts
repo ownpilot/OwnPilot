@@ -19,25 +19,27 @@ const {
   mockRegisterMcpTools,
   mockGetSessionWorkspaceFiles,
 } = vi.hoisted(() => {
-  const mockChat = vi.fn().mockImplementation((_msg: string, opts?: { onToolEnd?: Function }) => {
-    if (opts?.onToolEnd) {
-      opts.onToolEnd(
-        { name: 'search_web', arguments: '{"query":"test"}' },
-        { content: 'found', isError: false, durationMs: 100 }
-      );
-    }
-    return Promise.resolve({
-      ok: true,
-      value: {
-        id: 'resp-1',
-        content: 'Cycle complete',
-        finishReason: 'stop',
-        usage: { promptTokens: 300, completionTokens: 80, totalTokens: 380 },
-        model: 'gpt-4o-mini',
-        createdAt: new Date(),
-      },
+  const mockChat = vi
+    .fn()
+    .mockImplementation((_msg: string, opts?: { onToolEnd?: (...args: unknown[]) => unknown }) => {
+      if (opts?.onToolEnd) {
+        opts.onToolEnd(
+          { name: 'search_web', arguments: '{"query":"test"}' },
+          { content: 'found', isError: false, durationMs: 100 }
+        );
+      }
+      return Promise.resolve({
+        ok: true,
+        value: {
+          id: 'resp-1',
+          content: 'Cycle complete',
+          finishReason: 'stop',
+          usage: { promptTokens: 300, completionTokens: 80, totalTokens: 380 },
+          model: 'gpt-4o-mini',
+          createdAt: new Date(),
+        },
+      });
     });
-  });
 
   const mockGetEventSystem = vi.fn(() => ({
     emit: vi.fn(),
@@ -282,7 +284,8 @@ describe('ClawRunner', () => {
 
     it('does not reset on the very first cycle (fresh agent)', async () => {
       await runner.runCycle(makeSession());
-      const cachedAgent = (runner as unknown as { agent: { reset: ReturnType<typeof vi.fn> } }).agent;
+      const cachedAgent = (runner as unknown as { agent: { reset: ReturnType<typeof vi.fn> } })
+        .agent;
       // Reset should not have been called on cycle 1 because the agent was
       // just created — only between cycles.
       expect(cachedAgent.reset.mock.calls.length).toBe(0);

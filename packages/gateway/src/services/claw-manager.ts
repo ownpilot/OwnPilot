@@ -18,11 +18,14 @@ import { ClawRunner } from './claw-runner.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
 import {
   getOrCreateSessionWorkspace,
-  writeSessionWorkspaceFile,
-  readSessionWorkspaceFile,
   updateSessionWorkspaceMeta,
 } from '../workspace/file-workspace.js';
 import { getLog } from './log.js';
+import {
+  scaffoldClawDir,
+  runRetentionCleanup,
+  ensureConversationRow,
+} from './claw/manager-helpers.js';
 
 const log = getLog('ClawManager');
 
@@ -35,8 +38,6 @@ const SESSION_PERSIST_INTERVAL_MS = 30_000;
 const DEFAULT_INTERVAL_MS = 300_000; // 5 min
 const MISSION_COMPLETE_SENTINEL = 'MISSION_COMPLETE';
 const MAX_CONCURRENT_CLAWS = 50;
-const HISTORY_RETENTION_DAYS = 90;
-const AUDIT_RETENTION_DAYS = 30;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // once per day
 const MAX_INBOX_MESSAGES = 100;
 const MAX_INBOX_BYTES = 50_000;
@@ -138,8 +139,8 @@ export class ClawManager {
     }
 
     // Run initial cleanup, then schedule daily
-    this.runCleanup();
-    this.cleanupTimer = setInterval(() => this.runCleanup(), CLEANUP_INTERVAL_MS);
+    runRetentionCleanup();
+    this.cleanupTimer = setInterval(() => runRetentionCleanup(), CLEANUP_INTERVAL_MS);
 
     log.info(`Claw Manager started (${this.claws.size} claws running)`);
   }
@@ -242,7 +243,7 @@ export class ClawManager {
     }
 
     // Scaffold .claw/ directory with initial files if not exists
-    await this.scaffoldClawDir(workspaceId, config);
+    await scaffoldClawDir(workspaceId, config);
 
     // Load or create session
     const savedSession = await repo.loadSession(clawId);
@@ -321,7 +322,7 @@ export class ClawManager {
     }, SESSION_PERSIST_INTERVAL_MS);
 
     // Ensure conversation row exists so Chat tab works
-    this.ensureConversationRow(clawId, config.userId, config.name).catch((err) => {
+    ensureConversationRow(clawId, config.userId, config.name).catch((err) => {
       log.warn(`[${clawId}] Failed to create conversation row: ${getErrorMessage(err)}`);
     });
 
@@ -655,10 +656,7 @@ export class ClawManager {
       managed.abortController = new AbortController();
 
       // Execute
-      const result = await managed.runner.runCycle(
-        managed.session,
-        managed.abortController.signal
-      );
+      const result = await managed.runner.runCycle(managed.session, managed.abortController.signal);
 
       // After successful cycle, remove only the messages that were
       // present at cycle start. Messages that arrived during the
@@ -1127,157 +1125,6 @@ export class ClawManager {
       } as never);
     } catch {
       // Event system may not be initialized
-    }
-  }
-
-  private runCleanup(): void {
-    const repo = getClawsRepository();
-
-    repo
-      .cleanupOldHistory(HISTORY_RETENTION_DAYS)
-      .then((deleted) => {
-        if (deleted > 0) log.info(`Cleaned up ${deleted} old claw history entries`);
-      })
-      .catch((err) => {
-        log.warn(`History cleanup failed: ${getErrorMessage(err)}`);
-      });
-
-    repo
-      .cleanupOldAuditLog(AUDIT_RETENTION_DAYS)
-      .then((deleted) => {
-        if (deleted > 0) log.info(`Cleaned up ${deleted} old claw audit log entries`);
-      })
-      .catch((err) => {
-        log.warn(`Audit log cleanup failed: ${getErrorMessage(err)}`);
-      });
-  }
-
-  /**
-   * Ensure a conversation row exists for the claw's chat history.
-   * The Chat tab fetches /api/v1/chat/claw-{id}/messages — this needs a row in conversations.
-   */
-  private async ensureConversationRow(
-    clawId: string,
-    userId: string,
-    clawName: string
-  ): Promise<void> {
-    const conversationId = `claw-${clawId}`;
-    try {
-      const { ChatRepository } = await import('../db/repositories/chat.js');
-      const chatRepo = new ChatRepository(userId);
-      const existing = await chatRepo.getConversation(conversationId).catch(() => null);
-      if (!existing) {
-        await chatRepo.createConversation({
-          id: conversationId,
-          agentName: `claw-${clawName}`,
-          metadata: { clawId, clawName, type: 'claw' },
-        });
-      }
-    } catch (err) {
-      log.warn('Failed to persist claw conversation', { clawId, error: String(err) });
-    }
-  }
-
-  /**
-   * Scaffold .claw/ directory with initial instruction files.
-   * Only creates files that don't already exist (idempotent).
-   */
-  private async scaffoldClawDir(
-    workspaceId: string,
-    config: { name: string; mission: string; mode: string }
-  ): Promise<void> {
-    try {
-      await Promise.all([
-        (async () => {
-          if (!readSessionWorkspaceFile(workspaceId, '.claw/INSTRUCTIONS.md')) {
-            writeSessionWorkspaceFile(
-              workspaceId,
-              '.claw/INSTRUCTIONS.md',
-              Buffer.from(
-                `# ${config.name} — Instructions
-
-## Mission
-${config.mission}
-
-## Directives
-- Follow these instructions every cycle
-- Update TASKS.md as you make progress
-- Save important findings to MEMORY.md
-- Send progress to the user via claw_send_output
-- When done, use claw_complete_report to deliver results
-
-## Notes
-Add custom directives here. This file persists across cycles.
-`,
-                'utf-8'
-              )
-            );
-          }
-        })(),
-        (async () => {
-          if (!readSessionWorkspaceFile(workspaceId, '.claw/TASKS.md')) {
-            writeSessionWorkspaceFile(
-              workspaceId,
-              '.claw/TASKS.md',
-              Buffer.from(
-                `# Tasks
-
-## TODO
-- [ ] Start working on the mission
-- [ ] Research and gather information
-- [ ] Process and analyze findings
-- [ ] Send results to user
-- [ ] Write final report
-
-## IN PROGRESS
-
-## DONE
-`,
-                'utf-8'
-              )
-            );
-          }
-        })(),
-        (async () => {
-          if (!readSessionWorkspaceFile(workspaceId, '.claw/MEMORY.md')) {
-            writeSessionWorkspaceFile(
-              workspaceId,
-              '.claw/MEMORY.md',
-              Buffer.from(
-                `# Memory
-
-Persistent notes across cycles. Write findings, decisions, and context here.
-The claw reads this every cycle to maintain continuity.
-
-## Findings
-
-## Decisions
-
-## Context
-`,
-                'utf-8'
-              )
-            );
-          }
-        })(),
-        (async () => {
-          if (!readSessionWorkspaceFile(workspaceId, '.claw/LOG.md')) {
-            writeSessionWorkspaceFile(
-              workspaceId,
-              '.claw/LOG.md',
-              Buffer.from(
-                `# Execution Log
-
-Append cycle summaries here for a running log of what happened.
-`,
-                'utf-8'
-              )
-            );
-          }
-        })(),
-      ]);
-    } catch (err) {
-      log.warn(`Failed to scaffold .claw/ dir: ${getErrorMessage(err)}`);
     }
   }
 }

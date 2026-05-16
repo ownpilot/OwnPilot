@@ -751,20 +751,27 @@ return { dates, count: dates.length, start: startDate.toISOString(), end: endDat
         data: { type: 'string', description: 'Data to hash' },
         algorithms: {
           type: 'array',
-          description: 'Hash algorithms (default: all)',
+          description:
+            'Hash algorithms (default: sha256, sha512). md5/sha1 only on explicit request — both are cryptographically broken and unsafe for integrity verification.',
           items: { type: 'string' },
         },
       },
       required: ['data'],
     },
-    code: `// Hash & Checksum - compute multiple hashes
+    code: `// Hash & Checksum - compute multiple hashes.
+// Default to modern algorithms only; md5/sha1 stay opt-in for legacy interop
+// since both have known collision attacks and must not be used for integrity.
 const { data, algorithms } = args;
-const algos = algorithms || ['md5', 'sha1', 'sha256', 'sha512'];
+const algos = algorithms || ['sha256', 'sha512'];
 const hashes = {};
+const warnings = [];
 
 for (const algo of algos) {
   try {
     hashes[algo] = utils.hash(data, algo);
+    if (algo === 'md5' || algo === 'sha1') {
+      warnings.push(algo + ' is cryptographically broken — do not use for integrity or security');
+    }
   } catch (e) {
     hashes[algo] = 'error: ' + String(e);
   }
@@ -774,6 +781,7 @@ return {
   hashes,
   dataLength: data.length,
   algorithms: Object.keys(hashes),
+  ...(warnings.length ? { warnings } : {}),
 };`,
   },
   {

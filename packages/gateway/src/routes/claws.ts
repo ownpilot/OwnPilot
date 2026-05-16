@@ -29,7 +29,14 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
-import { validateBody, createClawSchema, updateClawSchema } from '../middleware/validation.js';
+import {
+  validateBody,
+  createClawSchema,
+  updateClawSchema,
+  clawMessageSchema,
+  clawDenyEscalationSchema,
+  clawApplyRecommendationsSchema,
+} from '../middleware/validation.js';
 
 export const clawRoutes = new Hono();
 
@@ -395,10 +402,14 @@ clawRoutes.get('/recommendations', async (c) => {
 clawRoutes.post('/recommendations/apply', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json().catch(() => ({}));
-    const requestedIds = Array.isArray(body.ids)
-      ? new Set(body.ids.filter((id: unknown): id is string => typeof id === 'string'))
-      : null;
+    let raw: unknown = {};
+    try {
+      raw = await c.req.json();
+    } catch {
+      raw = {};
+    }
+    const body = validateBody(clawApplyRecommendationsSchema, raw);
+    const requestedIds = body.ids ? new Set(body.ids) : null;
     const service = getClawService();
     const configs = await service.listClaws(userId);
     const sessions = service.listSessions(userId);
@@ -453,6 +464,8 @@ clawRoutes.post('/recommendations/apply', async (c) => {
       updated: results.filter((result) => result.applied.length > 0).length,
     });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -551,7 +564,9 @@ clawRoutes.get('/health', async (c) => {
     const failedConfigs = configs.filter((cfg) =>
       ['watch', 'stuck', 'failed'].includes(getHealthForConfig(cfg, sessions).status)
     );
-    const runningCount = sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state)).length;
+    const runningCount = sessions.filter((s) =>
+      ['running', 'starting', 'waiting'].includes(s.state)
+    ).length;
     const totalCycles = sessions.reduce((s, ses) => s + ses.cyclesCompleted, 0);
 
     if (failedConfigs.length > 0) {
@@ -566,7 +581,12 @@ clawRoutes.get('/health', async (c) => {
       signals.push('No cycles completed yet');
     }
 
-    const score = failedConfigs.length === 0 ? (runningCount > 0 ? 90 : 75) : Math.max(30, 70 - failedConfigs.length * 15);
+    const score =
+      failedConfigs.length === 0
+        ? runningCount > 0
+          ? 90
+          : 75
+        : Math.max(30, 70 - failedConfigs.length * 15);
     const status: 'healthy' | 'watch' | 'stuck' | 'failed' =
       failedConfigs.length > 2 ? 'stuck' : failedConfigs.length > 0 ? 'watch' : 'healthy';
 
@@ -790,20 +810,14 @@ clawRoutes.post('/:id/message', async (c) => {
   try {
     const userId = getUserId(c);
     const { id } = c.req.param();
-    const body = await c.req.json();
-
-    if (!body.message || typeof body.message !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
-        400
-      );
-    }
+    const body = validateBody(clawMessageSchema, await c.req.json());
 
     const service = getClawService();
     await service.sendMessage(id, userId, body.message);
     return apiResponse(c, { sent: true });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -835,11 +849,7 @@ clawRoutes.get('/:id/audit', async (c) => {
     const service = getClawService();
     const config = await service.getClaw(id, userId);
     if (!config) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' },
-        404
-      );
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' }, 404);
     }
 
     const { getClawsRepository } = await import('../db/repositories/claws.js');
@@ -881,19 +891,15 @@ clawRoutes.post('/:id/deny-escalation', async (c) => {
   try {
     const userId = getUserId(c);
     const { id } = c.req.param();
-    const body = await c.req.json().catch(() => ({}));
-    const rawReason = typeof body.reason === 'string' ? body.reason.trim() : undefined;
-    if (rawReason !== undefined && rawReason.length > 500) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Denial reason must be 500 characters or fewer',
-        },
-        400
-      );
+    let raw: unknown = {};
+    try {
+      raw = await c.req.json();
+    } catch {
+      raw = {};
     }
-    const reason = rawReason && rawReason.length > 0 ? rawReason : undefined;
+    const body = validateBody(clawDenyEscalationSchema, raw);
+    const trimmed = body.reason?.trim();
+    const reason = trimmed && trimmed.length > 0 ? trimmed : undefined;
     const service = getClawService();
 
     const denied = await service.denyEscalation(id, userId, reason);
@@ -909,6 +915,8 @@ clawRoutes.post('/:id/deny-escalation', async (c) => {
     }
     return apiResponse(c, { denied: true });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

@@ -10,7 +10,6 @@ import { setModuleResolver, tryImport } from './module-resolver.js';
  * The public API only accepts a function, so we cast null to bypass the type.
  */
 function resetResolver(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setModuleResolver(null as any);
 }
 

@@ -170,7 +170,10 @@ vi.mock('../services/model-routing.js', () => ({
 vi.mock('./settings.js', () => ({
   hasApiKey: vi.fn(() => true),
   getApiKey: vi.fn(() => 'test-key'),
-  resolveProviderAndModel: vi.fn(async (p: string, m: string) => ({ provider: p, model: m })),
+  resolveDefaultProviderAndModel: vi.fn(async (p: string, m: string) => ({
+    provider: p,
+    model: m,
+  })),
   getDefaultProvider: vi.fn(() => 'openai'),
   getDefaultModel: vi.fn(() => 'gpt-4'),
 }));
@@ -390,27 +393,12 @@ import {
   getOrCreateChatAgent,
   isDemoMode,
   getDefaultModel,
-  getSessionInfo,
   resetChatAgentContext,
   clearAllChatAgentCaches,
 } from './agents.js';
-import { tryGetMessageBus, buildToolCatalog, buildExecutionSystemPrompt } from './chat-prompt.js';
-import { promptInitializedConversations, lastExecPermHash } from './chat-state.js';
-import {
-  createStreamCallbacks,
-  processStreamingViaBus,
-  wireStreamApproval,
-  recordStreamUsage,
-} from './chat-streaming.js';
-import { extractSuggestions, extractMemoriesFromResponse } from '../utils/index.js';
-import { modelConfigsRepo } from '../db/repositories/model-configs.js';
+import { tryGetMessageBus } from './chat-prompt.js';
+import { promptInitializedConversations } from './chat-state.js';
 import { resolveForProcess } from '../services/model-routing.js';
-import { debugLog } from '@ownpilot/core';
-import { buildEnhancedSystemPrompt } from '../assistant/index.js';
-import { getTraceSummary } from '../tracing/index.js';
-import { getOrCreateSessionWorkspace } from '../workspace/file-workspace.js';
-import { usageTracker } from './costs.js';
-import { logChatEvent } from '../audit/index.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -1280,8 +1268,8 @@ describe('Chat Routes', () => {
       // First loadConversation returns false (not in memory),
       // DB fallback also fails, then createWithId + second loadConversation succeeds
       mockAgent.loadConversation
-        .mockReturnValueOnce(false)   // first attempt (not in memory)
-        .mockReturnValueOnce(true);   // after createWithId
+        .mockReturnValueOnce(false) // first attempt (not in memory)
+        .mockReturnValueOnce(true); // after createWithId
 
       const res = await app.request('/chat', {
         method: 'POST',

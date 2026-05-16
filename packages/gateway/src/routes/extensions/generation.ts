@@ -14,7 +14,7 @@ import { validateManifest, type ExtensionManifest } from '../../services/extensi
 import { serializeExtensionMarkdown } from '../../services/extension-markdown.js';
 import { parseAgentSkillsMd } from '../../services/agentskills-parser.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
+import { resolveDefaultProviderAndModel, getApiKey } from '../settings.js';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 
 export const generationRoutes = new Hono();
@@ -430,7 +430,7 @@ generationRoutes.post('/generate', async (c) => {
   }
 
   // 1. Resolve default provider/model
-  const { provider, model } = await resolveProviderAndModel('default', 'default');
+  const { provider, model } = await resolveDefaultProviderAndModel('default', 'default');
   if (!provider || !model) {
     return apiError(
       c,
@@ -561,7 +561,7 @@ generationRoutes.post('/generate-skill', async (c) => {
   }
 
   // 1. Resolve default provider/model
-  const { provider, model } = await resolveProviderAndModel('default', 'default');
+  const { provider, model } = await resolveDefaultProviderAndModel('default', 'default');
   if (!provider || !model) {
     return apiError(
       c,
@@ -683,9 +683,7 @@ function stripCodeBlocks(content: string): string {
 
   // Pattern 1: entire response wrapped in a single code block (most common)
   // Matches ```lang\n...\n``` with optional whitespace/text before and after
-  const fullWrap = text.match(
-    /^(?:.*?\n)?```(?:markdown|md|yaml|skill)?\s*\n([\s\S]*?)\n```\s*$/
-  );
+  const fullWrap = text.match(/^(?:.*?\n)?```(?:markdown|md|yaml|skill)?\s*\n([\s\S]*?)\n```\s*$/);
   if (fullWrap) {
     text = fullWrap[1]!.trim();
   }

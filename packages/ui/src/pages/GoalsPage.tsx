@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
 import { goalsApi } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import type { Goal, GoalStep } from '../api';
 import {
   Target,
@@ -384,9 +385,7 @@ function GoalItem({ goal, isExpanded, onToggle, onEdit, onDelete, onStatusChange
         .then((data) => {
           if (!cancelled) setSteps(data.steps);
         })
-        .catch(() => {
-          /* API client handles error */
-        })
+        .catch(silentCatch('goals.steps'))
         .finally(() => {
           if (!cancelled) setLoadingSteps(false);
         });

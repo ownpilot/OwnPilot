@@ -42,7 +42,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 vi.mock('../settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({
+  resolveDefaultProviderAndModel: vi.fn(async () => ({
     provider: 'anthropic',
     model: 'claude-3-5-haiku',
   })),
@@ -76,7 +76,7 @@ const { auditRoutes } = await import('./audit.js');
 
 // Grab the mocked modules so tests can override per-call
 const { getServiceRegistry, createProvider } = await import('@ownpilot/core');
-const { resolveProviderAndModel, getApiKey } = await import('../settings.js');
+const { resolveDefaultProviderAndModel, getApiKey } = await import('../settings.js');
 const { localProvidersRepo } = await import('../../db/repositories/index.js');
 const { parseLlmAuditResponse } = await import('../../services/skill-security-audit.js');
 
@@ -146,7 +146,7 @@ describe('Extension Audit Routes', () => {
       ok: true,
       value: { content: '{"verdict":"safe","trustScore":9}' },
     });
-    vi.mocked(resolveProviderAndModel).mockResolvedValue({
+    vi.mocked(resolveDefaultProviderAndModel).mockResolvedValue({
       provider: 'anthropic',
       model: 'claude-3-5-haiku',
     });
@@ -206,7 +206,7 @@ describe('Extension Audit Routes', () => {
     });
 
     it('skips LLM analysis and returns error when no provider model is configured', async () => {
-      vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({
+      vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({
         provider: 'anthropic',
         model: null as unknown as string,
       });
@@ -220,7 +220,7 @@ describe('Extension Audit Routes', () => {
     });
 
     it('skips LLM analysis and returns error when no provider is configured', async () => {
-      vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({
+      vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({
         provider: null as unknown as string,
         model: 'claude-3-5-haiku',
       });
@@ -374,7 +374,7 @@ describe('Extension Audit Routes', () => {
     });
 
     it('skips LLM analysis and returns error when no provider is configured', async () => {
-      vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({
+      vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({
         provider: null as unknown as string,
         model: null as unknown as string,
       });

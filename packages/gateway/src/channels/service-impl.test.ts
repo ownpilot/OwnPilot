@@ -145,7 +145,7 @@ vi.mock('../services/model-routing.js', () => ({
 }));
 
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' }),
+  resolveDefaultProviderAndModel: vi.fn().mockResolvedValue({ provider: 'openai', model: 'gpt-4' }),
 }));
 
 vi.mock('../db/repositories/conversations.js', () => ({

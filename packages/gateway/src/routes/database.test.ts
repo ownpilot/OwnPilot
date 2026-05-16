@@ -22,6 +22,7 @@ const mockAdapter = {
 
 vi.mock('../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
+  getAdapter: vi.fn(() => Promise.resolve(mockAdapter)),
 }));
 
 vi.mock('../db/adapters/types.js', () => ({

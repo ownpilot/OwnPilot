@@ -18,32 +18,38 @@ import {
   ContactsRepository,
   HabitsRepository,
   ExpensesRepository,
-  type CreateTaskInput,
-  type UpdateTaskInput,
   type TaskQuery,
-  type CreateBookmarkInput,
-  type UpdateBookmarkInput,
   type BookmarkQuery,
-  type CreateNoteInput,
-  type UpdateNoteInput,
   type NoteQuery,
   type CreateEventInput,
   type UpdateEventInput,
   type EventQuery,
-  type CreateContactInput,
-  type UpdateContactInput,
   type ContactQuery,
 } from '../db/repositories/index.js';
 import {
   apiResponse,
   apiError,
   ERROR_CODES,
+  getErrorMessage,
   getUserId,
   getIntParam,
   getOptionalIntParam,
   validateQueryEnum,
   notFoundError,
 } from './helpers.js';
+import {
+  validateBody,
+  createTaskSchema,
+  updateTaskSchema,
+  createBookmarkSchema,
+  updateBookmarkSchema,
+  createNoteSchema,
+  updateNoteSchema,
+  createContactSchema,
+  updateContactSchema,
+  createCalendarEventSchema,
+  updateCalendarEventSchema,
+} from '../middleware/validation.js';
 import { MAX_DAYS_LOOKBACK, MAX_PAGINATION_OFFSET } from '../config/defaults.js';
 import { wsGateway } from '../ws/server.js';
 import type { ServerEvents } from '../ws/types.js';
@@ -53,6 +59,34 @@ type DataAction = ServerEvents['data:changed']['action'];
 
 function emitDataChanged(entity: DataEntity, action: DataAction, id?: string): void {
   wsGateway.broadcast('data:changed', { entity, action, id });
+}
+
+/**
+ * Parse + validate a JSON body, returning either the typed value or a
+ * Hono error response. Centralises the "raw JSON parse fails → 400" +
+ * "schema mismatch → 400" handling that each mutating handler needs.
+ */
+async function parseBody<T>(
+  c: import('hono').Context,
+  schema: import('zod').z.ZodType<T>
+): Promise<{ ok: true; data: T } | { ok: false; res: Response }> {
+  let raw: unknown;
+  try {
+    raw = await c.req.json();
+  } catch {
+    return {
+      ok: false,
+      res: apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400),
+    };
+  }
+  try {
+    return { ok: true, data: validateBody(schema, raw) };
+  } catch (e) {
+    return {
+      ok: false,
+      res: apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400),
+    };
+  }
 }
 
 export const personalDataRoutes = new Hono();
@@ -124,27 +158,19 @@ tasksRoutes.get('/:id', async (c) => {
 });
 
 tasksRoutes.post('/', async (c) => {
+  const parsed = await parseBody(c, createTaskSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new TasksRepository(getUserId(c));
-  let body: CreateTaskInput;
-  try {
-    body = await c.req.json<CreateTaskInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const task = await repo.create(body);
+  const task = await repo.create(parsed.data);
   emitDataChanged('task', 'created', task.id);
   return apiResponse(c, task, 201);
 });
 
 tasksRoutes.patch('/:id', async (c) => {
+  const parsed = await parseBody(c, updateTaskSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new TasksRepository(getUserId(c));
-  let body: UpdateTaskInput;
-  try {
-    body = await c.req.json<UpdateTaskInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const task = await repo.update(c.req.param('id'), body);
+  const task = await repo.update(c.req.param('id'), parsed.data);
   if (!task) {
     return notFoundError(c, 'Task', c.req.param('id'));
   }
@@ -222,27 +248,19 @@ bookmarksRoutes.get('/:id', async (c) => {
 });
 
 bookmarksRoutes.post('/', async (c) => {
+  const parsed = await parseBody(c, createBookmarkSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new BookmarksRepository(getUserId(c));
-  let body: CreateBookmarkInput;
-  try {
-    body = await c.req.json<CreateBookmarkInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const bookmark = await repo.create(body);
+  const bookmark = await repo.create(parsed.data);
   emitDataChanged('bookmark', 'created', bookmark.id);
   return apiResponse(c, bookmark, 201);
 });
 
 bookmarksRoutes.patch('/:id', async (c) => {
+  const parsed = await parseBody(c, updateBookmarkSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new BookmarksRepository(getUserId(c));
-  let body: UpdateBookmarkInput;
-  try {
-    body = await c.req.json<UpdateBookmarkInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const bookmark = await repo.update(c.req.param('id'), body);
+  const bookmark = await repo.update(c.req.param('id'), parsed.data);
   if (!bookmark) {
     return notFoundError(c, 'Bookmark', c.req.param('id'));
   }
@@ -320,27 +338,19 @@ notesRoutes.get('/:id', async (c) => {
 });
 
 notesRoutes.post('/', async (c) => {
+  const parsed = await parseBody(c, createNoteSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new NotesRepository(getUserId(c));
-  let body: CreateNoteInput;
-  try {
-    body = await c.req.json<CreateNoteInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const note = await repo.create(body);
+  const note = await repo.create(parsed.data);
   emitDataChanged('note', 'created', note.id);
   return apiResponse(c, note, 201);
 });
 
 notesRoutes.patch('/:id', async (c) => {
+  const parsed = await parseBody(c, updateNoteSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new NotesRepository(getUserId(c));
-  let body: UpdateNoteInput;
-  try {
-    body = await c.req.json<UpdateNoteInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const note = await repo.update(c.req.param('id'), body);
+  const note = await repo.update(c.req.param('id'), parsed.data);
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
   }
@@ -439,31 +449,24 @@ calendarRoutes.get('/:id', async (c) => {
 });
 
 calendarRoutes.post('/', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
-  let body: Record<string, unknown>;
-  try {
-    body = await c.req.json();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-
-  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = body;
-  const startDateStr = startDate as string;
+  const parsed = await parseBody(c, createCalendarEventSchema);
+  if (!parsed.ok) return parsed.res;
+  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = parsed.data;
   const allDay = Boolean(isAllDay);
 
   let startISO: string;
   let endISO: string | undefined;
 
   if (allDay) {
-    startISO = `${startDateStr}T00:00:00`;
-    endISO = endDate ? `${endDate as string}T23:59:59` : undefined;
+    startISO = `${startDate}T00:00:00`;
+    endISO = endDate ? `${endDate}T23:59:59` : undefined;
   } else {
-    const sTime = (startTime as string) || '00:00';
-    startISO = `${startDateStr}T${sTime}:00`;
+    const sTime = startTime || '00:00';
+    startISO = `${startDate}T${sTime}:00`;
     if (endDate) {
-      endISO = `${endDate as string}T${(endTime as string) || '23:59'}:00`;
+      endISO = `${endDate}T${endTime || '23:59'}:00`;
     } else if (endTime) {
-      endISO = `${startDateStr}T${endTime as string}:00`;
+      endISO = `${startDate}T${endTime}:00`;
     }
   }
 
@@ -473,44 +476,37 @@ calendarRoutes.post('/', async (c) => {
     startTime: startISO,
     endTime: endISO,
     allDay,
-    reminderMinutes:
-      reminders && Array.isArray(reminders) && reminders[0]
-        ? Number(reminders[0])
-        : undefined,
+    reminderMinutes: reminders && reminders.length > 0 ? Number(reminders[0]) : undefined,
   };
 
+  const repo = new CalendarRepository(getUserId(c));
   const event = await repo.create(createInput);
   emitDataChanged('calendar', 'created', event.id);
   return apiResponse(c, event, 201);
 });
 
 calendarRoutes.patch('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
-  let body: Record<string, unknown>;
-  try {
-    body = await c.req.json();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-
-  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = body;
+  const parsed = await parseBody(c, updateCalendarEventSchema);
+  if (!parsed.ok) return parsed.res;
+  const { startDate, endDate, startTime, endTime, isAllDay, reminders, ...rest } = parsed.data;
   const updateInput: UpdateEventInput = { ...rest };
 
   if (startDate !== undefined) {
-    const startTimeStr = isAllDay ? '00:00' : ((startTime as string) || '00:00');
-    updateInput.startTime = `${startDate as string}T${startTimeStr}:00`;
+    const startTimeStr = isAllDay ? '00:00' : startTime || '00:00';
+    updateInput.startTime = `${startDate}T${startTimeStr}:00`;
   }
   if (endDate !== undefined) {
-    const endTimeStr = isAllDay ? '23:59' : ((endTime as string) || '23:59');
-    updateInput.endTime = `${endDate as string}T${endTimeStr}:00`;
+    const endTimeStr = isAllDay ? '23:59' : endTime || '23:59';
+    updateInput.endTime = `${endDate}T${endTimeStr}:00`;
   }
   if (isAllDay !== undefined) {
     updateInput.allDay = Boolean(isAllDay);
   }
-  if (reminders !== undefined && Array.isArray(reminders) && reminders[0]) {
+  if (reminders !== undefined && reminders.length > 0) {
     updateInput.reminderMinutes = Number(reminders[0]);
   }
 
+  const repo = new CalendarRepository(getUserId(c));
   const event = await repo.update(c.req.param('id'), updateInput);
   if (!event) {
     return notFoundError(c, 'Event', c.req.param('id'));
@@ -593,27 +589,19 @@ contactsRoutes.get('/:id', async (c) => {
 });
 
 contactsRoutes.post('/', async (c) => {
+  const parsed = await parseBody(c, createContactSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new ContactsRepository(getUserId(c));
-  let body: CreateContactInput;
-  try {
-    body = await c.req.json<CreateContactInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const contact = await repo.create(body);
+  const contact = await repo.create(parsed.data);
   emitDataChanged('contact', 'created', contact.id);
   return apiResponse(c, contact, 201);
 });
 
 contactsRoutes.patch('/:id', async (c) => {
+  const parsed = await parseBody(c, updateContactSchema);
+  if (!parsed.ok) return parsed.res;
   const repo = new ContactsRepository(getUserId(c));
-  let body: UpdateContactInput;
-  try {
-    body = await c.req.json<UpdateContactInput>();
-  } catch {
-    return apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400);
-  }
-  const contact = await repo.update(c.req.param('id'), body);
+  const contact = await repo.update(c.req.param('id'), parsed.data);
   if (!contact) {
     return notFoundError(c, 'Contact', c.req.param('id'));
   }

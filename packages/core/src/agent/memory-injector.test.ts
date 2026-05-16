@@ -396,7 +396,6 @@ describe('MemoryInjector', () => {
       vi.mocked(getPersonalMemoryStore).mockResolvedValueOnce({
         ...mockMemoryStore,
         getProfile: vi.fn().mockRejectedValueOnce(new Error('corrupt')),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base prompt', {
@@ -780,7 +779,6 @@ describe('MemoryInjector', () => {
           meta: { completeness: 10, lastUpdated: '2024-06-01' },
         }),
         search: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base', {
@@ -814,7 +812,6 @@ describe('MemoryInjector', () => {
           meta: { completeness: 0, lastUpdated: '2024-06-01' },
         }),
         search: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base', {
@@ -839,7 +836,6 @@ describe('MemoryInjector', () => {
           meta: { completeness: 0, lastUpdated: '2024-06-01' },
         }),
         search: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base', {
@@ -866,7 +862,6 @@ describe('MemoryInjector', () => {
           meta: { completeness: 0, lastUpdated: '2024-06-01' },
         }),
         search: vi.fn(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
 
       const result = await injector.injectMemory('base', {

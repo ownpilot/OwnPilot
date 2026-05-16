@@ -6,6 +6,7 @@
  */
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { streamSSE } from 'hono/streaming';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import {
@@ -33,6 +34,10 @@ import { validateBody } from '../middleware/validation.js';
 import { createWorkflowSchema, updateWorkflowSchema } from '../middleware/validation.js';
 import { workflowCopilotRoute } from './workflow-copilot.js';
 import { pagination } from '../middleware/pagination.js';
+
+const executeWorkflowBodySchema = z.object({
+  inputs: z.record(z.string(), z.unknown()).optional(),
+});
 
 // ============================================================================
 // Semantic Validation (beyond Zod shape checks)
@@ -567,13 +572,11 @@ workflowRoutes.post('/:id/execute', async (c) => {
 
   // Accept optional input parameters in the body
   let inputs: Record<string, unknown> | undefined;
+  const raw = await c.req.json().catch(() => ({}));
   try {
-    const body = await c.req.json().catch(() => ({}));
-    if (body && typeof body === 'object' && 'inputs' in body) {
-      inputs = body.inputs as Record<string, unknown>;
-    }
-  } catch {
-    /* no body is fine */
+    inputs = validateBody(executeWorkflowBodySchema, raw).inputs;
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
   }
 
   const repo = createWorkflowsRepository(userId);
@@ -783,15 +786,17 @@ workflowRoutes.post('/approvals/:id/approve', async (c) => {
       .catch((err: unknown) => {
         // Log but don't fail the approval response — workflow resume is best-effort
         const wfRepo = createWorkflowsRepository(userId);
+        // The original error (`err`) was already captured in the parent
+        // .catch; if updateLog itself fails, we can't do anything useful
+        // because the approval response has already been computed.
+        // eslint-disable-next-line no-restricted-syntax
         wfRepo
           .updateLog(approval.workflowLogId, {
             status: 'failed',
             error: `Resume after approval failed: ${getErrorMessage(err)}`,
             completedAt: new Date().toISOString(),
           })
-          .catch(() => {
-            /* ignore log update failure */
-          });
+          .catch(() => {});
       });
   }
 
@@ -857,13 +862,11 @@ workflowRoutes.post('/:id/run', async (c) => {
   const id = sanitizeId(c.req.param('id'));
 
   let inputs: Record<string, unknown> | undefined;
+  const rawTriggerBody = await c.req.json().catch(() => ({}));
   try {
-    const body = await c.req.json().catch(() => ({}));
-    if (body && typeof body === 'object' && 'inputs' in body) {
-      inputs = body.inputs as Record<string, unknown>;
-    }
-  } catch {
-    /* no body is fine */
+    inputs = validateBody(executeWorkflowBodySchema, rawTriggerBody).inputs;
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
   }
 
   const repo = createWorkflowsRepository(userId);
@@ -920,10 +923,10 @@ workflowRoutes.post('/:id/run', async (c) => {
     new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
   ]);
 
-  // Don't await the full execution — it runs in the background
-  executionPromise.catch(() => {
-    /* execution errors are logged in the workflow log */
-  });
+  // Don't await the full execution — it runs in the background.
+  // Execution errors are persisted to the workflow log row by the runner.
+  // eslint-disable-next-line no-restricted-syntax
+  executionPromise.catch(() => {});
 
   if (!logId) {
     return apiError(

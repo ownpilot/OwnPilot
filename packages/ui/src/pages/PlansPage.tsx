@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { plansApi } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
 import {
   ListChecks,
@@ -507,9 +508,7 @@ function PlanItem({
         .then((data) => {
           if (!cancelled) setSteps(data.steps);
         })
-        .catch(() => {
-          /* API client handles error */
-        })
+        .catch(silentCatch('plans.steps:initial'))
         .finally(() => {
           if (!cancelled) setLoadingSteps(false);
         });
@@ -529,9 +528,7 @@ function PlanItem({
           .then((data) => {
             if (!cancelled) setSteps(data.steps);
           })
-          .catch(() => {
-            /* API client handles error */
-          });
+          .catch(silentCatch('plans.steps:poll'));
       }, 2000);
       return () => {
         cancelled = true;

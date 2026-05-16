@@ -10,7 +10,8 @@
 
 import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
-import { InternalError, ValidationError, TimeoutError } from '../../types/errors.js';
+import type { TimeoutError } from '../../types/errors.js';
+import { InternalError, ValidationError } from '../../types/errors.js';
 import type { CompletionRequest, CompletionResponse, StreamChunk } from '../types.js';
 import {
   getConfiguredProviders,

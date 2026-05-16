@@ -8,6 +8,7 @@ import type { UnifiedAgent } from '../types';
 import { formatCost } from '../helpers';
 import { agentsOverviewApi } from '../../../api';
 import type { AgentOverview } from '../../../api';
+import { silentCatch } from '../../../utils/ignore-error';
 
 interface Props {
   agents: UnifiedAgent[];
@@ -19,7 +20,7 @@ export function GlobalStatusBar({ agents, isRefreshing, isConnected }: Props) {
   const [overview, setOverview] = useState<AgentOverview | null>(null);
 
   useEffect(() => {
-    agentsOverviewApi.overview().then(setOverview).catch(() => {});
+    agentsOverviewApi.overview().then(setOverview).catch(silentCatch('agentsOverview'));
   }, []);
 
   const running = agents.filter(

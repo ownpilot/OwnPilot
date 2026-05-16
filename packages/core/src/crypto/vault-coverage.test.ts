@@ -76,7 +76,6 @@ async function setupMocks() {
 }
 
 function forceUnlock(v: SecureVault): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const vx = v as any;
   vx.isUnlocked = true;
   vx.derivedKey = 'mock-derived-key';
@@ -142,7 +141,6 @@ describe('SecureVault - additional coverage', () => {
     });
 
     it('returns error when vaultData is null', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vx = vault as any;
       vx.isUnlocked = true;
       vx.derivedKey = 'mock-key';
@@ -229,7 +227,6 @@ describe('SecureVault - additional coverage', () => {
   describe('saveVault - null vaultData guard', () => {
     it('returns error when saveVault is called with null vaultData', async () => {
       // Access private method directly to test the guard
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const vx = vault as any;
       vx.isUnlocked = true;
       vx.derivedKey = 'mock-key';

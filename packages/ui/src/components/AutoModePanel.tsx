@@ -9,6 +9,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { codingAgentsApi } from '../api';
+import { ignoreError } from '../utils/ignore-error';
 import {
   Folder,
   Copy,
@@ -530,7 +531,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
           </button>
           <button
             onClick={() => {
-              codingAgentsApi.sendInput(sessionId, 'y\r').catch(() => {});
+              ignoreError(codingAgentsApi.sendInput(sessionId, 'y\r'), 'sendInput:y');
             }}
             className="px-2 py-1 text-xs font-mono text-emerald-400 hover:text-emerald-300 hover:bg-zinc-700 rounded"
             title="Yes + Enter"
@@ -539,7 +540,7 @@ export function AutoModePanel({ sessionId, session, onTerminate }: AutoModePanel
           </button>
           <button
             onClick={() => {
-              codingAgentsApi.sendInput(sessionId, '\x03').catch(() => {});
+              ignoreError(codingAgentsApi.sendInput(sessionId, '\x03'), 'sendInput:ctrl-c');
             }}
             className="px-2 py-1 text-xs font-mono text-red-400 hover:text-red-300 hover:bg-zinc-700 rounded"
             title="Ctrl+C"

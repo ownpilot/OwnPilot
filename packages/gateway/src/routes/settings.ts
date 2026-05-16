@@ -313,8 +313,11 @@ export async function setDefaultModel(model: string): Promise<void> {
  * waterfall. For process-aware routing (chat, pulse, subagent, channel), use
  * `resolveProviderAndModel()` from `agent-runner-utils.ts` or
  * `resolveForProcess()` from `model-routing.ts` instead.
+ *
+ * Renamed from `resolveProviderAndModel` to disambiguate from the
+ * waterfall variant (refactor.md §4.5).
  */
-export async function resolveProviderAndModel(
+export async function resolveDefaultProviderAndModel(
   provider: string,
   model: string
 ): Promise<{ provider: string | null; model: string | null }> {

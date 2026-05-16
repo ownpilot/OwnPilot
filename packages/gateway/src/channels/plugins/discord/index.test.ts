@@ -18,8 +18,8 @@ const {
 } = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
-  const capturedChannelApiFactory: Function[] = [];
-  const capturedTools: Array<{ definition: any; executor: Function }> = [];
+  const capturedChannelApiFactory: (...args: any[]) => any[] = [];
+  const capturedTools: Array<{ definition: any; executor: (...args: any[]) => any }> = [];
 
   const mockBuilder = {
     meta: vi.fn((m: any) => {
@@ -30,11 +30,11 @@ const {
       capturedPlatform.push(p);
       return mockBuilder;
     }),
-    channelApi: vi.fn((f: Function) => {
+    channelApi: vi.fn((f: (...args: any[]) => any) => {
       capturedChannelApiFactory.push(f);
       return mockBuilder;
     }),
-    tool: vi.fn((def: any, exec: Function) => {
+    tool: vi.fn((def: any, exec: (...args: any[]) => any) => {
       capturedTools.push({ definition: def, executor: exec });
       return mockBuilder;
     }),
@@ -81,11 +81,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
           capturedPlatform.push(p);
           return captureBuilder;
         }),
-        channelApi: vi.fn((f: Function) => {
+        channelApi: vi.fn((f: (...args: any[]) => any) => {
           capturedChannelApiFactory.push(f);
           return captureBuilder;
         }),
-        tool: vi.fn((def: any, exec: Function) => {
+        tool: vi.fn((def: any, exec: (...args: any[]) => any) => {
           capturedTools.push({ definition: def, executor: exec });
           return captureBuilder;
         }),

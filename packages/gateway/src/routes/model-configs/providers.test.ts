@@ -494,7 +494,7 @@ describe('Provider Routes', () => {
 
       vi.stubGlobal(
         'fetch',
-        vi.fn(async (url: string) => ({
+        vi.fn(async (_url: string) => ({
           ok: true,
           text: async () => JSON.stringify({ data: [{ id: 'my-model', object: 'model' }] }),
         }))

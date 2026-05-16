@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { triggersApi, workflowsApi, apiClient } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import type { Trigger, TriggerConfig, TriggerAction, Workflow } from '../api';
 import { useModalClose } from '../hooks';
 
@@ -102,7 +103,7 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
       workflowsApi
         .list({ limit: '100' })
         .then((res) => setWorkflows(res.workflows))
-        .catch(() => {});
+        .catch(silentCatch('triggerModal.workflows'));
     }
   }, [actionType]);
 

@@ -786,8 +786,8 @@ export class PlanExecutor extends EventEmitter {
       try {
         // Dynamic import to avoid circular dependencies
         const { getOrCreateChatAgent } = await import('../routes/agents.js');
-        const { resolveProviderAndModel } = await import('../routes/settings.js');
-        const resolved = await resolveProviderAndModel('default', 'default');
+        const { resolveDefaultProviderAndModel } = await import('../routes/settings.js');
+        const resolved = await resolveDefaultProviderAndModel('default', 'default');
         const agent = await getOrCreateChatAgent(
           resolved.provider ?? 'openai',
           resolved.model ?? 'gpt-4o-mini'

@@ -5,7 +5,7 @@
 
 // EventEmitter removed - using unified EventSystem instead
 import type { ToolDefinition, ToolExecutor } from './tools.js';
-import { ToolRegistry } from './tools.js';
+import type { ToolRegistry } from './tools.js';
 import type { Message, ToolCall } from './types.js';
 import { injectMemoryIntoPrompt, type MemoryInjectionOptions } from './memory-injector.js';
 import { getEventSystem } from '../events/index.js';

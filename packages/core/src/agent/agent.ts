@@ -4,7 +4,8 @@
 
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
-import { InternalError, ValidationError, TimeoutError } from '../types/errors.js';
+import type { TimeoutError } from '../types/errors.js';
+import { InternalError, ValidationError } from '../types/errors.js';
 import type {
   AgentConfig,
   AgentState,
@@ -20,7 +21,8 @@ import type {
 } from './types.js';
 import { type IProvider, createProvider } from './provider.js';
 import { ToolRegistry, registerCoreTools } from './tools.js';
-import { ConversationMemory, createMemory } from './memory.js';
+import type { ConversationMemory } from './memory.js';
+import { createMemory } from './memory.js';
 import { getErrorMessage } from '../services/error-utils.js';
 
 /**
@@ -315,7 +317,10 @@ export class Agent {
 
       // Store bridge conversation ID for session resume across bridge restarts
       if (response.responseMetadata?.bridgeConversationId) {
-        this.state = { ...this.state, bridgeConversationId: response.responseMetadata.bridgeConversationId };
+        this.state = {
+          ...this.state,
+          bridgeConversationId: response.responseMetadata.bridgeConversationId,
+        };
       }
 
       // Add assistant message (include thinking blocks in metadata for tool use roundtrips)

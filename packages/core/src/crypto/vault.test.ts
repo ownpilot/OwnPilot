@@ -106,7 +106,6 @@ async function setupMocks() {
 
 /** Force vault into unlocked state (bypasses unlock() dependency chain) */
 function forceUnlock(v: SecureVault): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const vx = v as any;
   vx.isUnlocked = true;
   vx.derivedKey = 'mock-derived-key';

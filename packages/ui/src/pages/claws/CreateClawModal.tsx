@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../components/ToastProvider';
 import { clawsApi } from '../../api/endpoints/claws';
+import { silentCatch } from '../../utils/ignore-error';
 import type { ClawPreset } from '../../api/endpoints/claws';
 import { X, ChevronDown, ChevronRight } from '../../components/icons';
 
@@ -168,7 +169,7 @@ export function CreateClawModal({
           setCreateProviders(data.configuredProviders);
         })
       )
-      .catch(() => {});
+      .catch(silentCatch('createClaw.models'));
   }, []);
 
   useEffect(() => {
@@ -178,7 +179,7 @@ export function CreateClawModal({
         if (data.presets.length === 0) return;
         setClawTemplates(data.presets.map(presetToTemplate));
       })
-      .catch(() => {});
+      .catch(silentCatch('createClaw.presets'));
   }, []);
 
   useEffect(() => {

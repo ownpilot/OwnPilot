@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { workflowsApi } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import type { WorkflowLog, NodeResult } from '../api';
 import { JsonTreeView, ExecutionTimeline } from '../components/workflows';
 import {
@@ -136,9 +137,7 @@ export function WorkflowLogViewerPage() {
           }))
         )
       )
-      .catch(() => {
-        /* workflow may have been deleted */
-      });
+      .catch(silentCatch('workflowLog.get'));
   }, [log?.workflowId]);
 
   // Build node list for ExecutionTimeline, using workflow labels when available

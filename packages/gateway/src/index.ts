@@ -65,7 +65,7 @@ export {
   setDefaultProvider,
   setDefaultModel,
   loadApiKeysToEnvironment,
-  resolveProviderAndModel,
+  resolveDefaultProviderAndModel,
   isDemoModeFromSettings,
 } from './routes/settings.js';
 

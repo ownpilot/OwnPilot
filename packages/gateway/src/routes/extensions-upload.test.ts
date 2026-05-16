@@ -87,7 +87,7 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 vi.mock('./settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
+  resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
   getApiKey: vi.fn(async () => 'test-key'),
 }));
 

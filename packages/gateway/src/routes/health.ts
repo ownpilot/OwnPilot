@@ -11,7 +11,7 @@ import {
   getExecutionMode,
 } from '@ownpilot/core';
 import type { HealthCheck } from '../types/index.js';
-import { getAdapterSync } from '../db/adapters/index.js';
+import { getAdapter } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 
@@ -28,7 +28,7 @@ async function checkDatabaseReadiness(): Promise<{
 }> {
   let adapter;
   try {
-    adapter = getAdapterSync();
+    adapter = await getAdapter();
   } catch {
     return {
       status: 'fail',
@@ -93,7 +93,7 @@ healthRoutes.get('/', async (c) => {
   };
 
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
     databaseStatus.connected = adapter.isConnected();
   } catch {
     // Adapter not initialized yet

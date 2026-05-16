@@ -20,7 +20,41 @@ import {
   getErrorMessage,
   getPaginationParams,
 } from './helpers.js';
+import {
+  validateBody,
+  createFleetSchema,
+  updateFleetSchema,
+  addFleetTasksSchema,
+  broadcastToFleetSchema,
+} from '../middleware/validation.js';
 import { wsGateway } from '../ws/server.js';
+
+/**
+ * Parse + validate a JSON body, returning either the typed value or a
+ * Hono error response.
+ */
+async function parseBody<T>(
+  c: import('hono').Context,
+  schema: import('zod').z.ZodType<T>
+): Promise<{ ok: true; data: T } | { ok: false; res: Response }> {
+  let raw: unknown;
+  try {
+    raw = await c.req.json();
+  } catch {
+    return {
+      ok: false,
+      res: apiError(c, { code: ERROR_CODES.INVALID_REQUEST, message: 'Invalid JSON body' }, 400),
+    };
+  }
+  try {
+    return { ok: true, data: validateBody(schema, raw) };
+  } catch (e) {
+    return {
+      ok: false,
+      res: apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400),
+    };
+  }
+}
 
 export const fleetRoutes = new Hono();
 
@@ -64,90 +98,46 @@ fleetRoutes.get('/', async (c) => {
 
 // POST / - Create a new fleet
 fleetRoutes.post('/', async (c) => {
+  const parsed = await parseBody(c, createFleetSchema);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-
-    const {
-      name,
-      mission,
-      description,
-      workers,
-      schedule_type,
-      schedule_config,
-      budget,
-      concurrency_limit,
-      auto_start,
-      provider,
-      model,
-      shared_context,
-    } = body as Record<string, unknown>;
-
-    if (!name || typeof name !== 'string') {
-      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'name is required' }, 400);
-    }
-    if (!mission || typeof mission !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'mission is required' },
-        400
-      );
-    }
-    if (!Array.isArray(workers) || workers.length === 0) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'workers array is required' },
-        400
-      );
-    }
-
-    const validSchedules = ['continuous', 'interval', 'cron', 'event', 'on-demand'];
-    if (schedule_type && !validSchedules.includes(schedule_type as string)) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: `schedule_type must be one of: ${validSchedules.join(', ')}`,
-        },
-        400
-      );
-    }
-
     const service = getFleetService();
 
     // Map snake_case worker fields from API to camelCase for internal types
-    const mappedWorkers = (workers as Array<Record<string, unknown>>).map((w) => ({
-      name: w.name as string,
-      type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw',
-      description: w.description as string | undefined,
-      provider: w.provider as string | undefined,
-      model: w.model as string | undefined,
-      systemPrompt: (w.system_prompt ?? w.systemPrompt) as string | undefined,
-      allowedTools: (w.allowed_tools ?? w.allowedTools) as string[] | undefined,
-      skills: w.skills as string[] | undefined,
-      cliProvider: (w.cli_provider ?? w.cliProvider) as string | undefined,
-      cwd: w.cwd as string | undefined,
-      mcpServer: (w.mcp_server ?? w.mcpServer) as string | undefined,
-      mcpTools: (w.mcp_tools ?? w.mcpTools) as string[] | undefined,
-      maxTurns: (w.max_turns ?? w.maxTurns) as number | undefined,
-      maxTokens: (w.max_tokens ?? w.maxTokens) as number | undefined,
-      timeoutMs: (w.timeout_ms ?? w.timeoutMs) as number | undefined,
+    const mappedWorkers = body.workers.map((w) => ({
+      name: w.name,
+      type: w.type,
+      description: w.description,
+      provider: w.provider,
+      model: w.model,
+      systemPrompt: w.system_prompt ?? w.systemPrompt,
+      allowedTools: w.allowed_tools ?? w.allowedTools,
+      skills: w.skills,
+      cliProvider: w.cli_provider ?? w.cliProvider,
+      cwd: w.cwd,
+      mcpServer: w.mcp_server ?? w.mcpServer,
+      mcpTools: w.mcp_tools ?? w.mcpTools,
+      maxTurns: w.max_turns ?? w.maxTurns,
+      maxTokens: w.max_tokens ?? w.maxTokens,
+      timeoutMs: w.timeout_ms ?? w.timeoutMs,
     }));
 
     const config = await service.createFleet({
       userId,
-      name,
-      mission,
-      description: description as string | undefined,
+      name: body.name,
+      mission: body.mission,
+      description: body.description,
       workers: mappedWorkers,
-      scheduleType: schedule_type as FleetScheduleType | undefined,
-      scheduleConfig: schedule_config as Record<string, unknown> | undefined,
-      budget: budget as Record<string, unknown> | undefined,
-      concurrencyLimit: concurrency_limit as number | undefined,
-      autoStart: (auto_start as boolean) ?? false,
-      provider: provider as string | undefined,
-      model: model as string | undefined,
-      sharedContext: shared_context as Record<string, unknown> | undefined,
+      scheduleType: body.schedule_type as FleetScheduleType | undefined,
+      scheduleConfig: body.schedule_config,
+      budget: body.budget,
+      concurrencyLimit: body.concurrency_limit,
+      autoStart: body.auto_start ?? false,
+      provider: body.provider,
+      model: body.model,
+      sharedContext: body.shared_context,
     });
 
     wsGateway.broadcast('data:changed', { entity: 'fleet', action: 'created', id: config.id });
@@ -285,10 +275,12 @@ fleetRoutes.get('/:id/tasks', async (c) => {
 
 // POST /:id/tasks - Add tasks
 fleetRoutes.post('/:id/tasks', async (c) => {
+  const parsed = await parseBody(c, addFleetTasksSchema);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
   try {
     const userId = getUserId(c);
     const fleetId = c.req.param('id');
-    const body = await c.req.json();
 
     const service = getFleetService();
 
@@ -297,20 +289,20 @@ fleetRoutes.post('/:id/tasks', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Fleet not found' }, 404);
     }
 
-    // Support both single task and array
-    const tasks = Array.isArray(body) ? body : body.tasks ? body.tasks : [body];
+    // Normalise the union (single | array | { tasks: [...] }) into an array
+    const tasks = Array.isArray(body) ? body : 'tasks' in body ? body.tasks : [body];
 
     const created = await service.addTasks(
       fleetId,
       userId,
-      tasks.map((t: Record<string, unknown>) => ({
-        title: t.title as string,
-        description: (t.description as string) ?? '',
-        assignedWorker: t.assigned_worker as string | undefined,
-        priority: t.priority as 'low' | 'normal' | 'high' | 'critical' | undefined,
-        input: t.input as Record<string, unknown> | undefined,
-        dependsOn: t.depends_on as string[] | undefined,
-        maxRetries: t.max_retries as number | undefined,
+      tasks.map((t) => ({
+        title: t.title,
+        description: t.description ?? '',
+        assignedWorker: t.assigned_worker,
+        priority: t.priority,
+        input: t.input,
+        dependsOn: t.depends_on,
+        maxRetries: t.max_retries,
       }))
     );
 
@@ -453,20 +445,12 @@ fleetRoutes.post('/:id/stop', async (c) => {
 
 // POST /:id/broadcast - Broadcast message
 fleetRoutes.post('/:id/broadcast', async (c) => {
+  const parsed = await parseBody(c, broadcastToFleetSchema);
+  if (!parsed.ok) return parsed.res;
+  const { message } = parsed.data;
   try {
     const userId = getUserId(c);
     const fleetId = c.req.param('id');
-    const body = await c.req.json();
-
-    const { message } = body as { message?: string };
-    if (!message || typeof message !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'message is required' },
-        400
-      );
-    }
-
     const service = getFleetService();
 
     const config = await service.getFleet(fleetId, userId);
@@ -525,45 +509,45 @@ fleetRoutes.get('/:id', async (c) => {
 
 // PUT /:id - Update fleet
 fleetRoutes.put('/:id', async (c) => {
+  const parsed = await parseBody(c, updateFleetSchema);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.data;
   try {
     const userId = getUserId(c);
     const fleetId = c.req.param('id');
-    const body = (await c.req.json()) as Record<string, unknown>;
-
     const service = getFleetService();
 
+    const mappedWorkers = body.workers?.map((w) => ({
+      name: w.name,
+      type: w.type,
+      description: w.description,
+      provider: w.provider,
+      model: w.model,
+      systemPrompt: w.system_prompt ?? w.systemPrompt,
+      allowedTools: w.allowed_tools ?? w.allowedTools,
+      skills: w.skills,
+      cliProvider: w.cli_provider ?? w.cliProvider,
+      cwd: w.cwd,
+      mcpServer: w.mcp_server ?? w.mcpServer,
+      mcpTools: w.mcp_tools ?? w.mcpTools,
+      maxTurns: w.max_turns ?? w.maxTurns,
+      maxTokens: w.max_tokens ?? w.maxTokens,
+      timeoutMs: w.timeout_ms ?? w.timeoutMs,
+    }));
+
     const updated = await service.updateFleet(fleetId, userId, {
-      name: typeof body.name === 'string' ? body.name : undefined,
-      description: typeof body.description === 'string' ? body.description : undefined,
-      mission: typeof body.mission === 'string' ? body.mission : undefined,
+      name: body.name,
+      description: body.description,
+      mission: body.mission,
       scheduleType: body.schedule_type as FleetScheduleType | undefined,
-      scheduleConfig: body.schedule_config as Record<string, unknown> | undefined,
-      workers: Array.isArray(body.workers)
-        ? (body.workers as Array<Record<string, unknown>>).map((w) => ({
-            name: w.name as string,
-            type: w.type as 'ai-chat' | 'coding-cli' | 'api-call' | 'mcp-bridge' | 'claw',
-            description: w.description as string | undefined,
-            provider: w.provider as string | undefined,
-            model: w.model as string | undefined,
-            systemPrompt: (w.system_prompt ?? w.systemPrompt) as string | undefined,
-            allowedTools: (w.allowed_tools ?? w.allowedTools) as string[] | undefined,
-            skills: w.skills as string[] | undefined,
-            cliProvider: (w.cli_provider ?? w.cliProvider) as string | undefined,
-            cwd: w.cwd as string | undefined,
-            mcpServer: (w.mcp_server ?? w.mcpServer) as string | undefined,
-            mcpTools: (w.mcp_tools ?? w.mcpTools) as string[] | undefined,
-            maxTurns: (w.max_turns ?? w.maxTurns) as number | undefined,
-            maxTokens: (w.max_tokens ?? w.maxTokens) as number | undefined,
-            timeoutMs: (w.timeout_ms ?? w.timeoutMs) as number | undefined,
-          }))
-        : undefined,
-      budget: body.budget as Record<string, unknown> | undefined,
-      concurrencyLimit:
-        typeof body.concurrency_limit === 'number' ? body.concurrency_limit : undefined,
-      autoStart: typeof body.auto_start === 'boolean' ? body.auto_start : undefined,
-      provider: typeof body.provider === 'string' ? body.provider : undefined,
-      model: typeof body.model === 'string' ? body.model : undefined,
-      sharedContext: body.shared_context as Record<string, unknown> | undefined,
+      scheduleConfig: body.schedule_config,
+      workers: mappedWorkers,
+      budget: body.budget,
+      concurrencyLimit: body.concurrency_limit,
+      autoStart: body.auto_start,
+      provider: body.provider,
+      model: body.model,
+      sharedContext: body.shared_context,
     });
 
     if (!updated) {

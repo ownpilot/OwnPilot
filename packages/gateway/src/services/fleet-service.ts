@@ -16,7 +16,8 @@ import type {
   UpdateFleetInput,
   CreateFleetTaskInput,
 } from '@ownpilot/core';
-import { FleetManager, getFleetManager } from './fleet-manager.js';
+import type { FleetManager } from './fleet-manager.js';
+import { getFleetManager } from './fleet-manager.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
 import { getLog } from './log.js';
 

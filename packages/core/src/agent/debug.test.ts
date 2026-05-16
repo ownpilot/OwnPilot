@@ -238,7 +238,7 @@ describe('logRequest', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     // Disable console logging for most tests
     process.env.DEBUG_AI_REQUESTS = '';
     process.env.DEBUG_AGENT = '';
@@ -270,12 +270,12 @@ describe('logRequest', () => {
   it('should log to console when DEBUG_AI_REQUESTS=true', () => {
     process.env.DEBUG_AI_REQUESTS = 'true';
     logRequest(makeRequestInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should not log to console when no debug env is set', () => {
     logRequest(makeRequestInfo());
-    expect(console.log).not.toHaveBeenCalled();
+    expect(console.debug).not.toHaveBeenCalled();
   });
 });
 
@@ -283,7 +283,7 @@ describe('logResponse', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.DEBUG_AI_REQUESTS = '';
     process.env.DEBUG_AGENT = '';
     process.env.DEBUG_LLM = '';
@@ -305,7 +305,7 @@ describe('logResponse', () => {
   it('should log to console when DEBUG_AGENT=true', () => {
     process.env.DEBUG_AGENT = 'true';
     logResponse(makeResponseInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should handle error responses', () => {
@@ -319,7 +319,7 @@ describe('logToolCall', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.DEBUG_LLM = '';
     process.env.NODE_ENV = 'test';
   });
@@ -349,7 +349,7 @@ describe('logToolCall', () => {
   it('should log to console when DEBUG_LLM=true', () => {
     process.env.DEBUG_LLM = 'true';
     logToolCall(makeToolCallInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 });
 
@@ -357,7 +357,7 @@ describe('logToolResult', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.NODE_ENV = 'test';
   });
 
@@ -386,7 +386,7 @@ describe('logRetry', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.NODE_ENV = 'test';
   });
 
@@ -426,7 +426,7 @@ describe('logRetry', () => {
   it('should log to console in development', () => {
     process.env.NODE_ENV = 'development';
     logRetry(1, 3, new Error('oops'), 100);
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 });
 
@@ -434,7 +434,7 @@ describe('logError', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.NODE_ENV = 'test';
   });
 
@@ -483,7 +483,7 @@ describe('logSandboxExecution', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.NODE_ENV = 'test';
   });
 
@@ -516,7 +516,7 @@ describe('logSandboxExecution', () => {
   it('should log to console when DEBUG_AI_REQUESTS=true', () => {
     process.env.DEBUG_AI_REQUESTS = 'true';
     logSandboxExecution(makeSandboxInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 });
 
@@ -718,7 +718,7 @@ describe('getDebugInfo', () => {
     debugLog.clear();
     debugLog.setEnabled(true);
     debugLog.setMaxEntries(100);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.NODE_ENV = 'test';
   });
 
@@ -790,7 +790,7 @@ describe('environment-gated console logging', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     // Reset all debug flags
     process.env.DEBUG_AI_REQUESTS = '';
     process.env.DEBUG_AGENT = '';
@@ -806,25 +806,25 @@ describe('environment-gated console logging', () => {
   it('should log when DEBUG_AI_REQUESTS=true', () => {
     process.env.DEBUG_AI_REQUESTS = 'true';
     logRequest(makeRequestInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should log when DEBUG_AGENT=true', () => {
     process.env.DEBUG_AGENT = 'true';
     logResponse(makeResponseInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should log when DEBUG_LLM=true', () => {
     process.env.DEBUG_LLM = 'true';
     logToolCall(makeToolCallInfo());
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should log when NODE_ENV=development', () => {
     process.env.NODE_ENV = 'development';
     logError('test', new Error('test'));
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 
   it('should NOT log when no debug flag is set and NODE_ENV is not development', () => {
@@ -839,14 +839,14 @@ describe('environment-gated console logging', () => {
     logRetry(1, 3, 'err', 100);
     logError('test', new Error('test'));
     logSandboxExecution(makeSandboxInfo());
-    expect(console.log).not.toHaveBeenCalled();
+    expect(console.debug).not.toHaveBeenCalled();
   });
 
   it('should NOT log when env values are falsy strings', () => {
     process.env.DEBUG_AI_REQUESTS = 'false';
     process.env.NODE_ENV = 'production';
     logRequest(makeRequestInfo());
-    expect(console.log).not.toHaveBeenCalled();
+    expect(console.debug).not.toHaveBeenCalled();
   });
 });
 
@@ -857,7 +857,7 @@ describe('console output branches', () => {
   beforeEach(() => {
     debugLog.clear();
     debugLog.setEnabled(true);
-    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
     process.env.DEBUG_AI_REQUESTS = 'true';
     process.env.DEBUG_AGENT = '';
     process.env.DEBUG_LLM = '';
@@ -872,7 +872,7 @@ describe('console output branches', () => {
     logRequest(
       makeRequestInfo({ tools: ['read_file', 'write_file'], maxTokens: 4096, temperature: 0.7 })
     );
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('Tools');
     expect(calls).toContain('read_file');
   });
@@ -880,7 +880,7 @@ describe('console output branches', () => {
   it('logRequest truncates tools list when more than 10', () => {
     const tools = Array.from({ length: 15 }, (_, i) => 'tool_' + i);
     logRequest(makeRequestInfo({ tools }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('...');
   });
 
@@ -898,7 +898,7 @@ describe('console output branches', () => {
         },
       })
     );
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('PAYLOAD BREAKDOWN');
     expect(calls).toContain('System Prompt');
   });
@@ -912,7 +912,7 @@ describe('console output branches', () => {
         ],
       })
     );
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('SYSTEM');
     expect(calls).toContain('USER');
   });
@@ -928,7 +928,7 @@ describe('console output branches', () => {
         usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
       })
     );
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('Tool Calls');
     expect(calls).toContain('read_file');
     expect(calls).toContain('Tokens');
@@ -936,33 +936,33 @@ describe('console output branches', () => {
 
   it('logResponse logs error response details', () => {
     logResponse(makeResponseInfo({ status: 'error', error: 'rate limited' }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('ERROR');
     expect(calls).toContain('rate limited');
   });
 
   it('logResponse logs without usage or content', () => {
     logResponse(makeResponseInfo({ status: 'success', finishReason: 'stop' }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('stop');
   });
 
   it('logToolCall logs rejected call with reason', () => {
     logToolCall(makeToolCallInfo({ approved: false, rejectionReason: 'unsafe operation' }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('REJECTED');
     expect(calls).toContain('unsafe operation');
   });
 
   it('logToolResult logs error info', () => {
     logToolResult(makeToolResultInfo({ success: false, error: 'file not found' }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('file not found');
   });
 
   it('logRetry logs retry details to console', () => {
     logRetry(2, 5, new Error('timeout'), 2000);
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('RETRY');
     expect(calls).toContain('timeout');
   });
@@ -970,7 +970,7 @@ describe('console output branches', () => {
   it('logError logs with context and stack', () => {
     const err = new Error('bad request');
     logError('openai', err, 'during completion');
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('Context');
     expect(calls).toContain('during completion');
     expect(calls).toContain('Stack');
@@ -978,13 +978,13 @@ describe('console output branches', () => {
 
   it('logError logs non-Error without stack', () => {
     logError('test', 'string error');
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('string error');
   });
 
   it('logError logs without context', () => {
     logError('test', new Error('oops'));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('oops');
   });
 
@@ -1002,7 +1002,7 @@ describe('console output branches', () => {
         timedOut: true,
       })
     );
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('INSECURE');
     expect(calls).toContain('TIMED OUT');
     expect(calls).toContain('syntax error');
@@ -1013,7 +1013,7 @@ describe('console output branches', () => {
 
   it('logSandboxExecution logs shell language', () => {
     logSandboxExecution(makeSandboxInfo({ language: 'shell', sandboxed: true }));
-    const calls = (console.log as any).mock.calls.flat().join(' ');
+    const calls = (console.debug as any).mock.calls.flat().join(' ');
     expect(calls).toContain('SANDBOX');
     expect(calls).toContain('SHELL');
   });
@@ -1025,6 +1025,6 @@ describe('console output branches', () => {
         toolCalls: [{ id: '', name: '', arguments: '{}' }],
       })
     );
-    expect(console.log).toHaveBeenCalled();
+    expect(console.debug).toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { providersApi, settingsApi } from '../../api';
+import { silentCatch } from '../../utils/ignore-error';
 import type { ProviderInfo, ProviderConfig } from '../../types';
 import { Check, ExternalLink, AlertTriangle } from '../../components/icons';
 
@@ -56,7 +57,7 @@ export function AIProviderWizard({ onComplete, onCancel }: Props) {
         });
         setProviders(sorted);
       })
-      .catch(() => {});
+      .catch(silentCatch('aiProvider.list'));
   }, []);
 
   const selected = useMemo(

@@ -82,6 +82,10 @@ vi.mock('../db/adapters/index.js', () => ({
   getAdapterSync: () => ({
     transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
   }),
+  getAdapter: () =>
+    Promise.resolve({
+      transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
+    }),
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => ({

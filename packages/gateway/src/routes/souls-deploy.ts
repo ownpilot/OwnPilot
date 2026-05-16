@@ -9,7 +9,7 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { agentsRepo } from '../db/repositories/agents.js';
 import { createTriggersRepository } from '../db/repositories/triggers.js';
-import { getAdapterSync } from '../db/adapters/index.js';
+import { getAdapter } from '../db/adapters/index.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { getLog } from '../services/log.js';
 
@@ -105,7 +105,7 @@ soulDeployRoutes.post('/deploy', async (c) => {
     let soul;
     let attempts = 0;
     let lastError: unknown = null;
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     while (!soul && attempts < 5) {
       try {

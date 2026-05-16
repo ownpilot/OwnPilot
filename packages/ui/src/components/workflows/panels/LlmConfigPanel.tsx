@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { X, Trash2, Brain } from '../../icons';
 import { providersApi } from '../../../api';
+import { silentCatch } from '../../../utils/ignore-error';
 import type { LlmNodeData } from '../LlmNode';
 import type { NodeExecutionStatus } from '../../../api/types';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
@@ -102,9 +103,7 @@ export function LlmConfigPanel({
           .filter((p) => p.id);
         setProviders(items);
       })
-      .catch(() => {
-        /* non-critical */
-      });
+      .catch(silentCatch('llmConfig.providers'));
     return () => {
       cancelled = true;
     };

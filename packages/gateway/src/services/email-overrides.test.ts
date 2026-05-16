@@ -130,7 +130,6 @@ import { registerEmailOverrides } from './email-overrides.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Executor = (params: Record<string, any>, context?: any) => Promise<any>;
 
 /**

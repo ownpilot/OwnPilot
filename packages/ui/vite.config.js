@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, createLogger } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 export default defineConfig(({ mode }) => {
@@ -22,9 +23,27 @@ export default defineConfig(({ mode }) => {
             return;
         originalError(msg, options);
     };
+    // Bundle visualizer: emits `dist/bundle-stats.html` (treemap) when
+    // `ANALYZE=true` is set. Use locally to spot vendor-chunk bloat; CI can
+    // upload the artifact for size-diff review.
+    const enableVisualizer = env.ANALYZE === 'true';
     return {
         customLogger: logger,
-        plugins: [react(), tailwindcss()],
+        plugins: [
+            react(),
+            tailwindcss(),
+            ...(enableVisualizer
+                ? [
+                    visualizer({
+                        filename: 'dist/bundle-stats.html',
+                        template: 'treemap',
+                        gzipSize: true,
+                        brotliSize: true,
+                        open: false,
+                    }),
+                ]
+                : []),
+        ],
         define: {
             __APP_VERSION__: JSON.stringify(corePkg.version),
         },

@@ -8,7 +8,7 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
-import { resolveProviderAndModel } from '../routes/settings.js';
+import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from './log.js';
@@ -206,10 +206,8 @@ const analyzeImageOverride: ToolExecutor = async (
     }
 
     // --- Resolve provider ---
-    const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
-      'default',
-      'default'
-    );
+    const { provider: resolvedProvider, model: resolvedModel } =
+      await resolveDefaultProviderAndModel('default', 'default');
     if (!resolvedProvider) {
       return {
         content: {

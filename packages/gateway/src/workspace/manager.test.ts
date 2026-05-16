@@ -71,7 +71,7 @@ const mockResolveProviderAndModel = vi.fn(() => ({
 }));
 
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: mockResolveProviderAndModel,
+  resolveDefaultProviderAndModel: mockResolveProviderAndModel,
 }));
 
 vi.mock('../routes/helpers.js', () => ({
@@ -1335,7 +1335,7 @@ describe('WorkspaceManager', () => {
       expect(assistant?.content).toBe('Hello human!');
     });
 
-    it('calls resolveProviderAndModel with the agent config values', async () => {
+    it('calls resolveDefaultProviderAndModel with the agent config values', async () => {
       const ws = manager.create({
         name: 'WS',
         settings: { autoReply: false },
@@ -1350,7 +1350,7 @@ describe('WorkspaceManager', () => {
       expect(mockResolveProviderAndModel).toHaveBeenCalledWith('anthropic', 'claude-opus-4');
     });
 
-    it('calls resolveProviderAndModel with "default" when agent config is absent', async () => {
+    it('calls resolveDefaultProviderAndModel with "default" when agent config is absent', async () => {
       const ws = manager.create({ name: 'WS', settings: { autoReply: false }, agent: undefined });
       const add = bindMethod<(m: WorkspaceMessage) => void>(ws, 'addMessage');
       const gen = bindMethod<(channelId: string) => Promise<void>>(ws, 'generateResponse');
@@ -1556,7 +1556,7 @@ describe('WorkspaceManager', () => {
       await expect(gen('test-channel')).rejects.toThrow('Timeout');
     });
 
-    it('sets state to error when resolveProviderAndModel throws', async () => {
+    it('sets state to error when resolveDefaultProviderAndModel throws', async () => {
       mockResolveProviderAndModel.mockRejectedValue(new Error('Config error'));
 
       const ws = manager.create({ name: 'WS', settings: { autoReply: false } });

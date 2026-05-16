@@ -22,9 +22,16 @@ import {
   sanitizeId,
   notFoundError,
   maskSecret,
+  getErrorMessage,
 } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
-import { validateBody, createConfigServiceSchema } from '../middleware/validation.js';
+import {
+  validateBody,
+  createConfigServiceSchema,
+  updateConfigServiceSchema,
+  createConfigEntrySchema,
+  updateConfigEntrySchema,
+} from '../middleware/validation.js';
 
 export const configServicesRoutes = new Hono();
 
@@ -214,7 +221,12 @@ configServicesRoutes.post('/', async (c) => {
  */
 configServicesRoutes.put('/:name', async (c) => {
   const name = c.req.param('name');
-  const body = await c.req.json<UpdateConfigServiceInput>();
+  let body: UpdateConfigServiceInput;
+  try {
+    body = validateBody(updateConfigServiceSchema, await c.req.json());
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
+  }
 
   const updated = await configServicesRepo.update(name, body);
   if (!updated) {
@@ -274,7 +286,12 @@ configServicesRoutes.post('/:name/entries', async (c) => {
     return notFoundError(c, 'Config service', name);
   }
 
-  const body = await c.req.json<CreateConfigEntryInput>();
+  let body: CreateConfigEntryInput;
+  try {
+    body = validateBody(createConfigEntrySchema, await c.req.json());
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
+  }
 
   // Validate required fields
   if (body.data && service.configSchema.length > 0) {
@@ -310,7 +327,12 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
     return notFoundError(c, 'Config service', name);
   }
 
-  const body = await c.req.json<UpdateConfigEntryInput>();
+  let body: UpdateConfigEntryInput;
+  try {
+    body = validateBody(updateConfigEntrySchema, await c.req.json());
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
+  }
 
   // Protect against masked secret values being written back to DB.
   // If a secret field's value looks like a masked string, preserve the original.

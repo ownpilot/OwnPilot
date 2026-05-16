@@ -11,11 +11,18 @@ import { Hono } from 'hono';
 import { existsSync } from 'fs';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
+import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
 import { getDatabaseConfig } from '../../db/adapters/types.js';
-import { getAdapterSync } from '../../db/adapters/index.js';
+import { getAdapter } from '../../db/adapters/index.js';
+import type { DatabaseAdapter } from '../../db/adapters/types.js';
 import { getDatabasePath } from '../../paths/index.js';
 import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
+import { validateBody } from '../../middleware/validation.js';
+
+const maintenanceSchema = z.object({
+  type: z.enum(['vacuum', 'analyze', 'full']).optional(),
+});
 
 export const operationRoutes = new Hono();
 
@@ -29,7 +36,7 @@ operationRoutes.get('/status', async (c) => {
   let stats: Record<string, unknown> | null = null;
 
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
     connected = adapter.isConnected();
 
     // Get basic database stats
@@ -102,9 +109,9 @@ operationRoutes.get('/status', async (c) => {
  */
 operationRoutes.post('/maintenance', async (c) => {
   let connected = false;
-  let adapter: ReturnType<typeof getAdapterSync>;
+  let adapter: DatabaseAdapter;
   try {
-    adapter = getAdapterSync();
+    adapter = await getAdapter();
     connected = adapter.isConnected();
     if (!connected) throw new Error('Not connected');
   } catch {
@@ -115,20 +122,14 @@ operationRoutes.post('/maintenance', async (c) => {
     );
   }
 
-  const body: { type?: 'vacuum' | 'analyze' | 'full' } = await c.req.json().catch(() => ({}));
-  const ALLOWED_MAINTENANCE_TYPES = ['vacuum', 'analyze', 'full'] as const;
-  const rawType = body.type || 'vacuum';
-  if (!ALLOWED_MAINTENANCE_TYPES.includes(rawType as (typeof ALLOWED_MAINTENANCE_TYPES)[number])) {
-    return apiError(
-      c,
-      {
-        code: ERROR_CODES.INVALID_INPUT,
-        message: `Invalid maintenance type: "${rawType}". Allowed: ${ALLOWED_MAINTENANCE_TYPES.join(', ')}`,
-      },
-      400
-    );
+  const raw = await c.req.json().catch(() => ({}));
+  let body: z.infer<typeof maintenanceSchema>;
+  try {
+    body = validateBody(maintenanceSchema, raw);
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: getErrorMessage(e) }, 400);
   }
-  const maintenanceType = rawType as (typeof ALLOWED_MAINTENANCE_TYPES)[number];
+  const maintenanceType = body.type || 'vacuum';
 
   // Use PostgreSQL advisory lock for cross-instance mutual exclusion.
   // pg_try_advisory_lock returns true if acquired, false if held by another session.
@@ -212,7 +213,7 @@ operationRoutes.post('/maintenance', async (c) => {
  */
 operationRoutes.get('/stats', async (c) => {
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     if (!adapter.isConnected()) {
       throw new Error('Not connected');

@@ -7,7 +7,7 @@
 
 import type { IProviderService, ProviderInfo, ModelInfo, ResolvedProvider } from '@ownpilot/core';
 import {
-  resolveProviderAndModel,
+  resolveDefaultProviderAndModel,
   getDefaultProvider,
   getDefaultModel,
   setDefaultProvider,
@@ -21,7 +21,10 @@ import { loadProviderConfig } from '@ownpilot/core';
 
 export class ProviderService implements IProviderService {
   async resolve(options?: { provider?: string; model?: string }): Promise<ResolvedProvider> {
-    return resolveProviderAndModel(options?.provider ?? 'default', options?.model ?? 'default');
+    return resolveDefaultProviderAndModel(
+      options?.provider ?? 'default',
+      options?.model ?? 'default'
+    );
   }
 
   async getDefaultProvider(): Promise<string | null> {

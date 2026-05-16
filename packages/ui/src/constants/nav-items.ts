@@ -3,7 +3,7 @@
  * Imported by Sidebar (Phase 2) and CustomizePage (Phase 3).
  * Source of truth for all nav items — do NOT duplicate in Layout.tsx.
  */
-import React from 'react';
+import type React from 'react';
 import {
   MessageSquare,
   History,
@@ -192,6 +192,4 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 ];
 
 /** Lookup map: route path → NavItem (shared by Sidebar, HeaderItemsBar, etc.) */
-export const NAV_ITEM_MAP = new Map<string, NavItem>(
-  ALL_NAV_ITEMS.map((item) => [item.to, item])
-);
+export const NAV_ITEM_MAP = new Map<string, NavItem>(ALL_NAV_ITEMS.map((item) => [item.to, item]));

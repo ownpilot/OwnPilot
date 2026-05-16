@@ -7,6 +7,13 @@
 import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { getNotificationRouter, createNotification } from '../services/notification-router.js';
+import {
+  validateBody,
+  sendNotificationSchema,
+  sendChannelNotificationSchema,
+  broadcastNotificationSchema,
+  notificationPreferencesSchema,
+} from '../middleware/validation.js';
 import type { NotificationPriority } from '@ownpilot/core';
 
 const app = new Hono();
@@ -18,22 +25,7 @@ const app = new Hono();
  */
 app.post('/send', async (c) => {
   try {
-    const body = (await c.req.json()) as {
-      userId?: string;
-      title: string;
-      body: string;
-      priority?: NotificationPriority;
-      source?: string;
-      metadata?: Record<string, unknown>;
-    };
-
-    if (!body.title || !body.body) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'title and body are required' },
-        400
-      );
-    }
+    const body = validateBody(sendNotificationSchema, await c.req.json());
 
     const notification = createNotification(body.title, body.body, {
       priority: body.priority,
@@ -47,7 +39,16 @@ app.post('/send', async (c) => {
 
     return apiResponse(c, { notification: { id: notification.id }, result });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+    const msg = getErrorMessage(error);
+    const isValidation = msg.startsWith('Validation failed');
+    return apiError(
+      c,
+      {
+        code: isValidation ? ERROR_CODES.VALIDATION_ERROR : ERROR_CODES.INTERNAL_ERROR,
+        message: msg,
+      },
+      isValidation ? 400 : 500
+    );
   }
 });
 
@@ -58,25 +59,7 @@ app.post('/send', async (c) => {
  */
 app.post('/channel', async (c) => {
   try {
-    const body = (await c.req.json()) as {
-      channelId: string;
-      chatId: string;
-      title: string;
-      body: string;
-      priority?: NotificationPriority;
-      source?: string;
-    };
-
-    if (!body.channelId || !body.chatId || !body.title || !body.body) {
-      return apiError(
-        c,
-        {
-          code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'channelId, chatId, title, and body are required',
-        },
-        400
-      );
-    }
+    const body = validateBody(sendChannelNotificationSchema, await c.req.json());
 
     const notification = createNotification(body.title, body.body, {
       priority: body.priority,
@@ -88,7 +71,16 @@ app.post('/channel', async (c) => {
 
     return apiResponse(c, { notification: { id: notification.id }, messageId });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+    const msg = getErrorMessage(error);
+    const isValidation = msg.startsWith('Validation failed');
+    return apiError(
+      c,
+      {
+        code: isValidation ? ERROR_CODES.VALIDATION_ERROR : ERROR_CODES.INTERNAL_ERROR,
+        message: msg,
+      },
+      isValidation ? 400 : 500
+    );
   }
 });
 
@@ -99,20 +91,7 @@ app.post('/channel', async (c) => {
  */
 app.post('/broadcast', async (c) => {
   try {
-    const body = (await c.req.json()) as {
-      title: string;
-      body: string;
-      priority?: NotificationPriority;
-      source?: string;
-    };
-
-    if (!body.title || !body.body) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'title and body are required' },
-        400
-      );
-    }
+    const body = validateBody(broadcastNotificationSchema, await c.req.json());
 
     const notification = createNotification(body.title, body.body, {
       priority: body.priority,
@@ -124,7 +103,16 @@ app.post('/broadcast', async (c) => {
 
     return apiResponse(c, { notification: { id: notification.id }, result });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+    const msg = getErrorMessage(error);
+    const isValidation = msg.startsWith('Validation failed');
+    return apiError(
+      c,
+      {
+        code: isValidation ? ERROR_CODES.VALIDATION_ERROR : ERROR_CODES.INTERNAL_ERROR,
+        message: msg,
+      },
+      isValidation ? 400 : 500
+    );
   }
 });
 
@@ -153,13 +141,7 @@ app.get('/preferences/:userId', async (c) => {
 app.put('/preferences/:userId', async (c) => {
   try {
     const userId = c.req.param('userId');
-    const body = (await c.req.json()) as {
-      channelPriority?: string[];
-      quietHoursStart?: string;
-      quietHoursEnd?: string;
-      quietHoursMinPriority?: NotificationPriority;
-      minPriority?: NotificationPriority;
-    };
+    const body = validateBody(notificationPreferencesSchema, await c.req.json());
 
     const router = getNotificationRouter();
 
@@ -181,7 +163,16 @@ app.put('/preferences/:userId', async (c) => {
 
     return apiResponse(c, { preferences: prefs });
   } catch (error) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
+    const msg = getErrorMessage(error);
+    const isValidation = msg.startsWith('Validation failed');
+    return apiError(
+      c,
+      {
+        code: isValidation ? ERROR_CODES.VALIDATION_ERROR : ERROR_CODES.INTERNAL_ERROR,
+        message: msg,
+      },
+      isValidation ? 400 : 500
+    );
   }
 });
 

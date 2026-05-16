@@ -6,8 +6,8 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import type { WeatherDataService } from '../../services/weather-service.js';
 import {
-  WeatherDataService,
   createWeatherDataService,
   type WeatherProvider,
   type WeatherForecastDay,

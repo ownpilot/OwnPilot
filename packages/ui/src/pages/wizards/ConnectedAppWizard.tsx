@@ -7,6 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { composioApi } from '../../api';
+import { silentCatch } from '../../utils/ignore-error';
 import type { ComposioApp } from '../../api/endpoints/composio';
 import { Check, AlertTriangle, Link, Search } from '../../components/icons';
 
@@ -63,7 +64,7 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
       composioApi
         .apps()
         .then((res) => setApps(res.apps))
-        .catch(() => {});
+        .catch(silentCatch('composio.apps'));
     }
   }, [step, apps.length]);
 

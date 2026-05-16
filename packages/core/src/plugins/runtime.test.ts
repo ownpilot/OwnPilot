@@ -917,7 +917,6 @@ describe('SecurePluginRuntime', () => {
       const manifest = makeManifest();
       await loadAndStartPlugin(runtime, manifest);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockWorkerInstance.postMessage.mockImplementation((msg: any) => {
         if (msg.type === 'call') {
           // Simulate worker returning a result through the 'message' handler
@@ -940,7 +939,6 @@ describe('SecurePluginRuntime', () => {
       const manifest = makeManifest();
       await loadAndStartPlugin(runtime, manifest);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockWorkerInstance.postMessage.mockImplementation((msg: any) => {
         if (msg.type === 'call') {
           mockWorkerInstance._emit('message', {
@@ -1305,7 +1303,6 @@ describe('SecurePluginRuntime', () => {
     it('should resolve pending call on result message', async () => {
       await loadAndStartPlugin(runtime, makeManifest());
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockWorkerInstance.postMessage.mockImplementation((msg: any) => {
         if (msg.type === 'call') {
           mockWorkerInstance._emit('message', {

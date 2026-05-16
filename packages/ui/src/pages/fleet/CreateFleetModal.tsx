@@ -7,6 +7,7 @@ import type {
   FleetWorkerType,
 } from '../../api/endpoints/fleet';
 import { fileWorkspacesApi } from '../../api/endpoints/misc';
+import { silentCatch } from '../../utils/ignore-error';
 import type { FileWorkspaceInfo } from '../../api/types/workspace';
 import {
   Plus,
@@ -244,7 +245,7 @@ export function CreateFleetModal({
     fileWorkspacesApi
       .list()
       .then((data) => setWorkspaces(data.workspaces ?? []))
-      .catch(() => {});
+      .catch(silentCatch('createFleet.workspaces'));
   }, []);
 
   const applyTemplate = (template: FleetTemplate) => {

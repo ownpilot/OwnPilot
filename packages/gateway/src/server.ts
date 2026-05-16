@@ -38,6 +38,7 @@ import { createApp } from './app.js';
 import type { GatewayConfig } from './types/index.js';
 import { wsGateway } from './ws/index.js';
 import { initializeAdapter } from './db/adapters/index.js';
+import { getDatabaseConfig, DEFAULT_POSTGRES_PASSWORD } from './db/adapters/types.js';
 import { loadApiKeysToEnvironment } from './routes/settings.js';
 import { initializeFileWorkspace } from './workspace/index.js';
 import { settingsRepo, initializeSettingsRepo } from './db/repositories/settings.js';
@@ -194,6 +195,23 @@ async function main() {
 
   // Initialize PostgreSQL database adapter (REQUIRED)
   log.info('Initializing PostgreSQL database...');
+  // Soft warning in non-production when the operator hasn't changed the
+  // documented default password (production path throws in getDatabaseConfig).
+  try {
+    const cfg = getDatabaseConfig();
+    if (
+      cfg.postgresPassword === DEFAULT_POSTGRES_PASSWORD &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      log.warn(
+        'POSTGRES_PASSWORD is set to the documented default ("ownpilot_secret"). ' +
+          'Change it before deploying with NODE_ENV=production.'
+      );
+    }
+  } catch (cfgErr) {
+    log.error('Invalid database configuration', { error: String(cfgErr) });
+    process.exit(1);
+  }
   try {
     const dbAdapter = await initializeAdapter();
     log.info(`PostgreSQL connected: ${dbAdapter.isConnected()}`);
@@ -405,7 +423,8 @@ async function main() {
   log.info('Starting Workflow Node Job Worker...');
   let stopWorkflowWorker: (() => void) | null = null;
   try {
-    const { registerWorkflowNodeWorker, resumeWorkflowFromRecovery } = await import('./services/workflow/workflow-node-job-handler.js');
+    const { registerWorkflowNodeWorker, resumeWorkflowFromRecovery } =
+      await import('./services/workflow/workflow-node-job-handler.js');
     stopWorkflowWorker = registerWorkflowNodeWorker();
 
     // Recover orphaned workflows at boot (gap 24.1 Phase 2 crash recovery)
@@ -431,7 +450,8 @@ async function main() {
 
   // 18.2. Retention Cleanup Worker (gap 24.3 — nightly cleanup via JobQueueService)
   try {
-    const { registerRetentionCleanupWorker, scheduleRetentionCleanup } = await import('./services/retention-service.js');
+    const { registerRetentionCleanupWorker, scheduleRetentionCleanup } =
+      await import('./services/retention-service.js');
     registerRetentionCleanupWorker();
     scheduleRetentionCleanup();
     log.info('Retention Cleanup Worker started.');

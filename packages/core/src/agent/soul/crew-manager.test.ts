@@ -171,7 +171,6 @@ function makeManager(
     overrides.agentRepo ?? makeAgentRepo(),
     overrides.triggerRepo ?? makeTriggerRepo(),
     makeBus(),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     makeBudgetTracker() as any,
     makeLogRepo(),
     makeMessageRepo()
@@ -393,7 +392,6 @@ describe('CrewManager.getCrewStatus()', () => {
       makeAgentRepo(),
       makeTriggerRepo(),
       makeBus(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       makeBudgetTracker() as any,
       makeLogRepo(null), // no last entry
       makeMessageRepo()
@@ -422,7 +420,6 @@ describe('CrewManager.getCrewStatus()', () => {
       makeAgentRepo(),
       makeTriggerRepo(),
       makeBus(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       makeBudgetTracker() as any,
       makeLogRepo(logEntry),
       makeMessageRepo()
@@ -451,7 +448,6 @@ describe('CrewManager.getCrewStatus()', () => {
       makeAgentRepo(),
       makeTriggerRepo(),
       makeBus(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       makeBudgetTracker() as any,
       makeLogRepo(logEntry),
       makeMessageRepo()
@@ -470,7 +466,6 @@ describe('CrewManager.getCrewStatus()', () => {
       makeAgentRepo(),
       makeTriggerRepo(),
       makeBus(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       makeBudgetTracker() as any,
       makeLogRepo(),
       messageRepo
@@ -480,7 +475,6 @@ describe('CrewManager.getCrewStatus()', () => {
   });
 
   it('aggregates totalCostToday across all members', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const budget = makeBudgetTracker() as any;
     budget.getDailySpend.mockResolvedValue(2.5);
     const manager = new CrewManager(

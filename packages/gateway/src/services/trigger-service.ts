@@ -15,8 +15,8 @@ import {
   type ResourceUpdatedData,
   type ResourceDeletedData,
 } from '@ownpilot/core';
+import type { TriggersRepository } from '../db/repositories/triggers.js';
 import {
-  TriggersRepository,
   createTriggersRepository,
   type Trigger,
   type TriggerHistory,

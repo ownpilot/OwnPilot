@@ -10,6 +10,7 @@ import type { Node, Edge } from '@xyflow/react';
 import { workflowsApi } from '../../api';
 import { formatToolName } from '../../utils/formatters';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../../utils/chat-content';
+import { ignoreError } from '../../utils/ignore-error';
 import { MarkdownContent } from '../MarkdownContent';
 import { Sparkles, Send, StopCircle, X, Play, AlertCircle, RefreshCw } from '../icons';
 
@@ -417,7 +418,7 @@ export function WorkflowCopilotPanel({
           setStreamingContent('');
         }
       } finally {
-        reader.cancel().catch(() => {});
+        ignoreError(reader.cancel(), 'workflowCopilot:reader.cancel');
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {

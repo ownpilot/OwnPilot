@@ -43,6 +43,12 @@ const REQUIRED_NON_DEFAULT: Array<{
     envKey: 'JWT_SECRET',
     description: 'JWT signing secret — must not be a known placeholder',
   },
+  {
+    key: 'POSTGRES_PASSWORD',
+    envKey: 'POSTGRES_PASSWORD',
+    description:
+      'Postgres password — the shipped docker-compose default must be changed before production',
+  },
 ];
 
 // Env vars required when a specific AUTH_TYPE is set
@@ -141,9 +147,7 @@ export function validateBootConfig(): ValidationResult {
 
   // 3. Check required database config (at least one must be present)
   const hasDbUrl = Boolean(process.env.DATABASE_URL);
-  const hasIndividualDbConfig = REQUIRED_DB_CONFIG.every(
-    (key) => Boolean(process.env[key])
-  );
+  const hasIndividualDbConfig = REQUIRED_DB_CONFIG.every((key) => Boolean(process.env[key]));
 
   if (!hasDbUrl && !hasIndividualDbConfig) {
     const missingIndividual = REQUIRED_DB_CONFIG.filter((key) => !process.env[key]);

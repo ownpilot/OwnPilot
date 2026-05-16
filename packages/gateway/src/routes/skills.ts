@@ -6,6 +6,7 @@
  */
 
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 import { getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
 import { getNpmInstaller } from '../services/skill-npm-installer.js';
@@ -16,6 +17,15 @@ import {
 } from '../services/extension-permissions.js';
 import type { SkillPermission } from '../services/extension-types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
+import { validateBody } from '../middleware/validation.js';
+
+const installNpmSchema = z.object({
+  packageName: z.string().min(1).max(500),
+});
+
+const grantPermissionsSchema = z.object({
+  grantedPermissions: z.array(z.string().max(200)),
+});
 
 export const skillsRoutes = new Hono();
 
@@ -58,16 +68,8 @@ skillsRoutes.get('/featured', async (c) => {
 skillsRoutes.post('/install-npm', async (c) => {
   try {
     const userId = getUserId(c);
-    const body = await c.req.json();
-    const packageName = body.packageName as string;
-
-    if (!packageName) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'packageName is required' },
-        400
-      );
-    }
+    const body = validateBody(installNpmSchema, await c.req.json());
+    const { packageName } = body;
 
     const installer = getNpmInstaller();
     const service = getServiceRegistry().get(Services.Extension) as {
@@ -86,6 +88,8 @@ skillsRoutes.post('/install-npm', async (c) => {
 
     return apiResponse(c, result, 201);
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
@@ -182,16 +186,8 @@ skillsRoutes.post('/permissions/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = c.req.param('id');
-    const body = await c.req.json();
+    const body = validateBody(grantPermissionsSchema, await c.req.json());
     const grantedPermissions = body.grantedPermissions as SkillPermission[];
-
-    if (!Array.isArray(grantedPermissions)) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: 'grantedPermissions must be an array' },
-        400
-      );
-    }
 
     const ext = extensionsRepo.getById(id);
     if (!ext || ext.userId !== userId) {
@@ -207,6 +203,8 @@ skillsRoutes.post('/permissions/:id', async (c) => {
 
     return apiResponse(c, { grantedPermissions });
   } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });

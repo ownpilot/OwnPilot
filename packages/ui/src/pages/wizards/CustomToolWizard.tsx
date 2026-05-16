@@ -7,6 +7,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { customToolsApi } from '../../api';
+import { silentCatch } from '../../utils/ignore-error';
 import { AlertTriangle, Code, Sparkles } from '../../components/icons';
 import { aiGenerate } from './ai-helper';
 
@@ -160,7 +161,7 @@ Return ONLY the JavaScript code, no explanations, no markdown fences.`;
         });
       }
       // Clean up test tool — we'll create the final one at step 4
-      await customToolsApi.delete(tool.id).catch(() => {});
+      await customToolsApi.delete(tool.id).catch(silentCatch('customTool.test.cleanup'));
     } catch (err) {
       setTestResult({
         ok: false,

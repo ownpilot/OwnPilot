@@ -7,6 +7,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { agentsApi, providersApi, toolsApi } from '../../api';
+import { silentCatch } from '../../utils/ignore-error';
 import type { ProviderInfo, ProviderConfig, Tool } from '../../types';
 import { AlertTriangle, Bot, Sparkles } from '../../components/icons';
 import { aiGenerate } from './ai-helper';
@@ -84,11 +85,11 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
     providersApi
       .list()
       .then((d) => setProviders(d.providers))
-      .catch(() => {});
+      .catch(silentCatch('agentCreator.providers'));
     toolsApi
       .list()
       .then((d) => setTools(d))
-      .catch(() => {});
+      .catch(silentCatch('agentCreator.tools'));
   }, []);
 
   // Load models when provider changes
@@ -102,7 +103,7 @@ export function AgentCreatorWizard({ onComplete, onCancel }: Props) {
         setModels(d.models);
         if (d.models.length > 0) setSelectedModel(d.models[0]!.id);
       })
-      .catch(() => {});
+      .catch(silentCatch('agentCreator.models'));
   }, [selectedProvider]);
 
   const canGoNext = useMemo(() => {

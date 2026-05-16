@@ -11,7 +11,8 @@ import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { webcrypto } from 'node:crypto';
 import { type Result, ok, err, fromPromise } from '../types/result.js';
-import { CryptoError, NotFoundError, ValidationError, InternalError } from '../types/errors.js';
+import type { InternalError } from '../types/errors.js';
+import { CryptoError, NotFoundError, ValidationError } from '../types/errors.js';
 import { type JsonValue } from '../types/utility.js';
 import {
   deriveKey,

@@ -9,12 +9,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { mockPool, mockClient, errorHandlers, mockLog } = vi.hoisted(() => {
   const mockClient = { query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() };
-  const errorHandlers: Map<string, Function[]> = new Map();
+  type Handler = (...args: unknown[]) => unknown;
+  const errorHandlers: Map<string, Handler[]> = new Map();
   const mockPool = {
     connect: vi.fn().mockResolvedValue(mockClient),
     query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
     end: vi.fn().mockResolvedValue(undefined),
-    on: vi.fn((event: string, handler: Function) => {
+    on: vi.fn((event: string, handler: Handler) => {
       if (!errorHandlers.has(event)) errorHandlers.set(event, []);
       errorHandlers.get(event)!.push(handler);
       return mockPool;

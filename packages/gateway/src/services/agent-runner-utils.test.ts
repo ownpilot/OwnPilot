@@ -424,6 +424,13 @@ describe('agent-runner-utils', () => {
     it('uses openai provider type for non-native providers', async () => {
       const { Agent } = await import('@ownpilot/core');
 
+      // Configured non-native provider — has a providerConfig entry (so the
+      // fail-fast guard passes) but is not in NATIVE_PROVIDERS, so it must
+      // fall through to the 'openai' wire protocol.
+      mockLoadProviderConfig.mockReturnValueOnce({
+        baseUrl: 'https://api.groq.com/openai/v1',
+      });
+
       await createConfiguredAgent({
         name: 'Test',
         provider: 'groq',

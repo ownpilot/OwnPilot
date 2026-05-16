@@ -69,8 +69,12 @@ export async function getAdapter(): Promise<DatabaseAdapter> {
 }
 
 /**
- * Get the global adapter synchronously (must be initialized first)
- * For backwards compatibility with existing synchronous code
+ * Get the global adapter synchronously (must be initialized first).
+ *
+ * Only used by code paths that are guaranteed to run AFTER `initializeAdapter()`
+ * (currently `soul-heartbeat-service.ts` runner construction). Request handlers
+ * and repositories must use the async `getAdapter()` to avoid initialization
+ * races.
  */
 export function getAdapterSync(): DatabaseAdapter {
   if (!adapter) {

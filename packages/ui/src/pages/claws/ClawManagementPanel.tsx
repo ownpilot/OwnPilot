@@ -3,6 +3,7 @@ import { useGateway } from '../../hooks/useWebSocket';
 import { useToast } from '../../components/ToastProvider';
 import { clawsApi } from '../../api/endpoints/claws';
 import type { ClawConfig, ClawDoctorResponse, ClawHistoryEntry } from '../../api/endpoints/claws';
+import { silentCatch } from '../../utils/ignore-error';
 import {
   Activity,
   Settings,
@@ -284,7 +285,7 @@ export function ClawManagementPanel({
             setConfiguredProviders(data.configuredProviders);
           })
         )
-        .catch(() => {});
+        .catch(silentCatch('clawMgmt.models'));
     }
   }, [tab]);
 
@@ -301,7 +302,7 @@ export function ClawManagementPanel({
               )
             )
         )
-        .catch(() => {});
+        .catch(silentCatch('clawMgmt.extensions'));
     }
   }, [tab]);
 

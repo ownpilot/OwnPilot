@@ -214,7 +214,15 @@ soulRoutes.put('/:agentId', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Soul not found' }, 404);
     }
 
-    const body = await c.req.json<Partial<AgentSoul>>();
+    const rawBody = await c.req.json();
+    if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'Body must be an object' },
+        400
+      );
+    }
+    const body = rawBody as Partial<AgentSoul>;
 
     // AGENT-HIGH-005: Validate evolution changes protect core traits
     const validation = validateEvolutionChanges(existing, body);

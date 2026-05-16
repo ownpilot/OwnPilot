@@ -31,7 +31,7 @@ vi.mock('../services/log.js', () => ({
 }));
 
 vi.mock('./settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
+  resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
 vi.mock('./agent-cache.js', () => ({
@@ -154,8 +154,8 @@ describe('Workflow Copilot Route', () => {
 
   describe('Provider resolution', () => {
     it('returns 400 when no provider is configured', async () => {
-      const { resolveProviderAndModel } = await import('./settings.js');
-      vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
+      const { resolveDefaultProviderAndModel } = await import('./settings.js');
+      vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
 
       const res = await app.request('/copilot', {
         method: 'POST',

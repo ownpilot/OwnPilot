@@ -38,7 +38,6 @@ import {
 } from './expense-tracker.js';
 import type { ExpenseEntry, ExpenseDatabase } from './expense-tracker.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dummyContext: any = {
   callId: 'test-call',
   conversationId: 'test-conv',

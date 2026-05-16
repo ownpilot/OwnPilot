@@ -2,7 +2,8 @@
  * Telegram bot integration using Grammy
  */
 
-import { Bot, Context, webhookCallback } from 'grammy';
+import type { Context } from 'grammy';
+import { Bot, webhookCallback } from 'grammy';
 import { getLog } from '@ownpilot/core';
 import type { TelegramConfig, IncomingMessage, OutgoingMessage } from './types.js';
 

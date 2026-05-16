@@ -9,13 +9,21 @@ import { Hono } from 'hono';
 import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
-import { getAdapterSync } from '../../db/adapters/index.js';
+import { getAdapter } from '../../db/adapters/index.js';
 import { getDatabasePath } from '../../paths/index.js';
 import { getLog } from '../../services/log.js';
 import { operationStatus, setOperationStatus } from './shared.js';
+import { validateBody } from '../../middleware/validation.js';
 
 const log = getLog('Database');
+
+const migrateSchema = z.object({
+  dryRun: z.boolean().optional(),
+  truncate: z.boolean().optional(),
+  skipSchema: z.boolean().optional(),
+});
 
 export const schemaRoutes = new Hono();
 
@@ -36,7 +44,7 @@ schemaRoutes.post('/migrate-schema', async (c) => {
   }
 
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     if (!adapter.isConnected()) {
       throw new Error('Not connected');
@@ -96,16 +104,18 @@ schemaRoutes.post('/migrate', async (c) => {
     );
   }
 
-  const body: {
-    dryRun?: boolean;
-    truncate?: boolean;
-    skipSchema?: boolean;
-  } = await c.req.json().catch(() => ({}));
+  const raw = await c.req.json().catch(() => ({}));
+  let body: z.infer<typeof migrateSchema>;
+  try {
+    body = validateBody(migrateSchema, raw);
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
+  }
 
   // Check PostgreSQL is connected
   let connected = false;
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
     connected = adapter.isConnected();
   } catch {
     // Adapter not initialized

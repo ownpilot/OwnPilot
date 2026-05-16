@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { X, Trash2, Code, Play } from '../../icons';
 import { toolsApi } from '../../../api';
+import { silentCatch } from '../../../utils/ignore-error';
 import type { ToolParams } from '../../../pages/tools/types';
 import type { ToolNodeData } from '../ToolNode';
 import type { NodeExecutionStatus } from '../../../api/types';
@@ -84,9 +85,7 @@ export function ToolConfigPanel({
         }
         setToolSchema(schemaCache.get(data.toolName));
       })
-      .catch(() => {
-        // Non-critical — falls back to JSON editor
-      });
+      .catch(silentCatch('toolConfig.toolsList'));
     return () => {
       cancelled = true;
     };

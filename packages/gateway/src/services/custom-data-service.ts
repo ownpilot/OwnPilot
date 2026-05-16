@@ -15,8 +15,8 @@ import {
   type ResourceUpdatedData,
   type ResourceDeletedData,
 } from '@ownpilot/core';
+import type { CustomDataRepository } from '../db/repositories/custom-data.js';
 import {
-  CustomDataRepository,
   createCustomDataRepository,
   type CustomTableSchema,
   type CustomDataRecord,

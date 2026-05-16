@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async (provider: string, model: string) => ({
+  resolveDefaultProviderAndModel: vi.fn(async (provider: string, model: string) => ({
     provider: provider === 'default' ? 'openai' : provider,
     model: model === 'default' ? 'gpt-4o-mini' : model,
   })),
@@ -26,7 +26,7 @@ vi.mock('../routes/settings.js', () => ({
 
 import { ProviderService, createProviderService } from './provider-service-impl.js';
 import {
-  resolveProviderAndModel,
+  resolveDefaultProviderAndModel,
   getDefaultProvider,
   setDefaultProvider,
   setDefaultModel,
@@ -42,10 +42,10 @@ describe('ProviderService', () => {
   });
 
   describe('resolve', () => {
-    it('delegates to resolveProviderAndModel', async () => {
+    it('delegates to resolveDefaultProviderAndModel', async () => {
       const svc = new ProviderService();
       const result = await svc.resolve({ provider: 'anthropic', model: 'claude-3' });
-      expect(resolveProviderAndModel).toHaveBeenCalledWith('anthropic', 'claude-3');
+      expect(resolveDefaultProviderAndModel).toHaveBeenCalledWith('anthropic', 'claude-3');
       expect(result.provider).toBe('anthropic');
       expect(result.model).toBe('claude-3');
     });
@@ -53,13 +53,13 @@ describe('ProviderService', () => {
     it('uses defaults when options omitted', async () => {
       const svc = new ProviderService();
       await svc.resolve();
-      expect(resolveProviderAndModel).toHaveBeenCalledWith('default', 'default');
+      expect(resolveDefaultProviderAndModel).toHaveBeenCalledWith('default', 'default');
     });
 
     it('uses defaults for unspecified fields', async () => {
       const svc = new ProviderService();
       await svc.resolve({ provider: 'groq' });
-      expect(resolveProviderAndModel).toHaveBeenCalledWith('groq', 'default');
+      expect(resolveDefaultProviderAndModel).toHaveBeenCalledWith('groq', 'default');
     });
   });
 

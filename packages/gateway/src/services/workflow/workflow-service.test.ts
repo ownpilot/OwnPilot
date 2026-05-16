@@ -139,7 +139,6 @@ vi.mock('./template-resolver.js', () => ({
 // ---------------------------------------------------------------------------
 
 import { WorkflowService, getWorkflowService } from './workflow-service.js';
-import { resolveTemplates } from './template-resolver.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

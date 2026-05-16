@@ -21,6 +21,7 @@ import { parseSSELine } from '../utils/sse-parser';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import { dispatchSessionChanged } from '../utils/session-events';
 import { stripChatInternalTags } from '../utils/chat-content';
+import { ignoreError } from '../utils/ignore-error';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -256,7 +257,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
     // Reject any pending execution approval so the backend doesn't hang
     if (pendingApproval) {
-      executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+      ignoreError(
+        executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false),
+        'resolveApproval:reset'
+      );
       setPendingApproval(null);
     }
   }, [pendingApproval]);
@@ -271,14 +275,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setExtractedMemories((prev) => {
       const mem = prev[index];
       if (mem) {
-        memoriesApi
-          .create({
+        ignoreError(
+          memoriesApi.create({
             type: mem.type,
             content: mem.content,
             source: 'conversation',
             importance: mem.importance ?? 0.7,
-          })
-          .catch(() => {});
+          }),
+          'memoriesApi.create'
+        );
       }
       return prev.filter((_, i) => i !== index);
     });
@@ -293,9 +298,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const approval = pendingApproval;
       if (!approval) return;
       setPendingApproval(null);
-      executionPermissionsApi.resolveApproval(approval.approvalId, approved).catch(() => {
-        // If the resolve call fails, the backend will timeout and auto-reject
-      });
+      // If the resolve call fails, the backend will timeout and auto-reject.
+      ignoreError(
+        executionPermissionsApi.resolveApproval(approval.approvalId, approved),
+        'resolveApproval:respond'
+      );
     },
     [pendingApproval]
   );
@@ -334,14 +341,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       // Auto-accept any remaining memories from previous response
       for (const mem of extractedMemoriesRef.current) {
-        memoriesApi
-          .create({
+        ignoreError(
+          memoriesApi.create({
             type: mem.type,
             content: mem.content,
             source: 'conversation',
             importance: mem.importance ?? 0.7,
-          })
-          .catch(() => {});
+          }),
+          'memoriesApi.create'
+        );
       }
 
       // Pre-set sessionId BEFORE adding user message so sidebar sees both
@@ -578,7 +586,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             }
           } finally {
             // Always release the reader — prevents dangling HTTP connections
-            reader.cancel().catch(() => {});
+            ignoreError(reader.cancel(), 'reader.cancel');
           }
 
           if (controller.signal.aborted) return;
@@ -724,7 +732,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     abortControllerRef.current = null;
     // Reject pending approval so backend doesn't hang waiting for user response
     if (pendingApproval) {
-      executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+      ignoreError(
+        executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false),
+        'resolveApproval:cancel'
+      );
     }
     setMessages([]);
     setIsLoading(false);
@@ -747,7 +758,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       streamGenRef.current++;
       abortControllerRef.current = null;
       if (pendingApproval) {
-        executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false).catch(() => {});
+        ignoreError(
+          executionPermissionsApi.resolveApproval(pendingApproval.approvalId, false),
+          'resolveApproval:abort'
+        );
       }
       setMessages(msgs);
       setIsLoading(false);
@@ -838,9 +852,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
     // Reject pending approval before switching
     if (stateRefsForCapture.current.pendingApproval) {
-      executionPermissionsApi
-        .resolveApproval(stateRefsForCapture.current.pendingApproval.approvalId, false)
-        .catch(() => {});
+      ignoreError(
+        executionPermissionsApi.resolveApproval(
+          stateRefsForCapture.current.pendingApproval.approvalId,
+          false
+        ),
+        'resolveApproval:cleanup'
+      );
     }
     const newId = crypto.randomUUID();
     setActiveSessionId(newId);

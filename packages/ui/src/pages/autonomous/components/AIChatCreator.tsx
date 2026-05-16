@@ -18,6 +18,7 @@ import type { ExtensionInfo } from '../../../api/types';
 import { useToast } from '../../../components/ToastProvider';
 import { AgentPreviewCard, type ProposedAgentConfig } from './AgentPreviewCard';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../../../utils/chat-content';
+import { ignoreError, silentCatch } from '../../../utils/ignore-error';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -270,7 +271,11 @@ async function ensureDesignerAgent(
   const existing = agents.find((a) => a.name === DESIGNER_AGENT_NAME);
   if (existing) {
     // Keep the system prompt in sync if instruction changed between deploys
-    await agentsApi.update(existing.id, { systemPrompt: systemInstruction }).catch(() => {});
+    // Awaited so the in-sync update completes (or fails silently) before
+    // callers use existing.id — semantics preserved from the original code.
+    await agentsApi
+      .update(existing.id, { systemPrompt: systemInstruction })
+      .catch(silentCatch('designer.update'));
     return existing.id;
   }
   const created = await agentsApi.create({
@@ -332,7 +337,7 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
       setSystemInstruction(instruction);
       ensureDesignerAgent(defaults.provider, defaults.model, instruction)
         .then(setDesignerAgentId)
-        .catch(() => {});
+        .catch(silentCatch('ensureDesignerAgent'));
     });
   }, []);
 
@@ -462,7 +467,7 @@ export function AIChatCreator({ onCreated, onClose }: Props) {
             setStreamingContent('');
           }
         } finally {
-          reader.cancel().catch(() => {});
+          ignoreError(reader.cancel(), 'AIChatCreator:reader.cancel');
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {

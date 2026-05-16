@@ -33,7 +33,7 @@ import {
   getErrorMessage,
   parseJsonBody,
 } from '../helpers.js';
-import { resolveProviderAndModel, getApiKey } from '../settings.js';
+import { resolveDefaultProviderAndModel, getApiKey } from '../settings.js';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 import { getLog } from '../../services/log.js';
 
@@ -140,7 +140,7 @@ async function runLlmAudit(
 ): Promise<{ result: SkillLlmAuditResult | null; error: string | null }> {
   try {
     // 1. Resolve provider/model
-    const resolved = await resolveProviderAndModel(
+    const resolved = await resolveDefaultProviderAndModel(
       providerOverride ?? 'default',
       modelOverride ?? 'default'
     );

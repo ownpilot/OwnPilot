@@ -38,7 +38,7 @@ const mockResolveProviderAndModel = vi.fn(async () => ({ provider: 'openai', mod
 const mockGetApiKey = vi.fn(async () => 'test-api-key');
 
 vi.mock('../settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) =>
+  resolveDefaultProviderAndModel: (...args: unknown[]) =>
     mockResolveProviderAndModel(...(args as [string, string])),
   getApiKey: (...args: unknown[]) => mockGetApiKey(...(args as [string])),
 }));

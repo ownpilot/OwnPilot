@@ -82,7 +82,7 @@ const mockResolveProviderAndModel = vi.fn(async () => ({ provider: 'openai', mod
 const mockGetApiKey = vi.fn(async () => 'test-api-key');
 
 vi.mock('../settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) =>
+  resolveDefaultProviderAndModel: (...args: unknown[]) =>
     mockResolveProviderAndModel(...(args as [string, string])),
   getApiKey: (...args: unknown[]) => mockGetApiKey(...(args as [string])),
 }));
@@ -554,7 +554,10 @@ describe('Extensions Generation Routes', () => {
       mockComplete.mockResolvedValue({
         ok: true,
         // Missing opening --- (auto-fix should add it)
-        value: { content: 'name: Auto Fixed Skill\ndescription: Test\n\n# Auto Fixed Skill\n\nInstructions.' },
+        value: {
+          content:
+            'name: Auto Fixed Skill\ndescription: Test\n\n# Auto Fixed Skill\n\nInstructions.',
+        },
       });
 
       const res = await app.request('/ext/generate-skill', {

@@ -17,7 +17,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { errorHandler } from '../../middleware/error-handler.js';
-import { join, resolve, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 
 // ---------------------------------------------------------------------------
 // FS mocks
@@ -314,7 +314,7 @@ describe('Extension File Routes', () => {
       const res = await putRequest('test.md', { content: 123 });
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('"content" string is required');
+      expect(json.error.message).toMatch(/content/i);
     });
 
     it('returns 400 when content field is missing', async () => {
@@ -466,7 +466,6 @@ describe('Extension File Routes', () => {
       // URL-encoded forward slash at start
       const res = await app.request('/ext/ext-1/files/%2Fetc%2Fpasswd');
       // Hono may interpret this differently, but isPathSafe should catch it
-      const json = await res.json();
       // Should either be 400 or the path should be sanitized
       expect([200, 400, 404]).toContain(res.status);
     });

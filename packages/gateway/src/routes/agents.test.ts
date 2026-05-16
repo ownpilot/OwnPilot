@@ -110,7 +110,7 @@ vi.mock('../db/repositories/index.js', () => ({
 vi.mock('./settings.js', () => ({
   hasApiKey: vi.fn(() => true),
   getApiKey: vi.fn(() => 'test-api-key'),
-  resolveProviderAndModel: vi.fn(async (p: string, m: string) => ({
+  resolveDefaultProviderAndModel: vi.fn(async (p: string, m: string) => ({
     provider: p === 'default' ? 'openai' : p,
     model: m === 'default' ? 'gpt-4' : m,
   })),

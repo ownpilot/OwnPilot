@@ -28,7 +28,7 @@ import {
 import type { SessionInfo } from '../types/index.js';
 import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
 import {
-  resolveProviderAndModel,
+  resolveDefaultProviderAndModel,
   getDefaultProvider,
   getDefaultModel,
   getConfiguredProviderIds,
@@ -125,7 +125,7 @@ async function createAgentFromRecord(record: AgentRecord): Promise<Agent> {
 
   const { provider: resolvedProvider, model: resolvedModel } = providerSvc
     ? await providerSvc.resolve({ provider: record.provider, model: record.model })
-    : await resolveProviderAndModel(record.provider, record.model);
+    : await resolveDefaultProviderAndModel(record.provider, record.model);
 
   // Validate resolved values
   if (!resolvedProvider) {

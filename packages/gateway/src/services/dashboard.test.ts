@@ -19,13 +19,7 @@ import {
   type AIBriefing,
   type HabitProgressItem,
 } from './dashboard.js';
-import {
-  type Plan,
-  type CalendarEvent,
-  type Goal,
-  type Task,
-  type Note,
-} from '../db/repositories/index.js';
+import { type Plan, type CalendarEvent, type Goal, type Task } from '../db/repositories/index.js';
 
 // ---------------------------------------------------------------------------
 // Mocks for aggregateDailyData / generateAIBriefing
@@ -378,7 +372,6 @@ describe('Dashboard Service', () => {
 
   describe('generateFallbackBriefing', () => {
     it('generates summary from data counts', () => {
-      const service = new DashboardService('user-1');
       const data = makeBriefingData();
 
       // Access private method via prototype trick
@@ -442,7 +435,7 @@ describe('Dashboard Service', () => {
   // ========================================================================
 
   describe('parseAIResponse', () => {
-    const service = new DashboardService('user-1');
+    const _service = new DashboardService('user-1');
 
     it('parses JSON from markdown code fence', () => {
       const content =
@@ -1514,7 +1507,7 @@ describe('Dashboard Service', () => {
   // ========================================================================
 
   describe('buildBriefingPrompt', () => {
-    const service = new DashboardService('user-1');
+    const _service = new DashboardService('user-1');
 
     it('includes task overdue and due today info', () => {
       const data = makeBriefingData({
@@ -1647,7 +1640,7 @@ describe('Dashboard Service', () => {
   // ========================================================================
 
   describe('parseAIResponse additional edge cases', () => {
-    const service = new DashboardService('user-1');
+    const _service = new DashboardService('user-1');
 
     it('parses JSON from bare code fence (no json tag)', () => {
       const content = '```\n{"summary":"Bare fence","priorities":[]}\n```';

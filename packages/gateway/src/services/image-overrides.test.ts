@@ -47,7 +47,7 @@ vi.mock('../db/repositories/config-services.js', () => ({
 }));
 
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
+  resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
 vi.mock('../routes/agent-cache.js', () => ({
@@ -123,7 +123,6 @@ import { registerImageOverrides } from './image-overrides.js';
 // Types & helpers
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Executor = (params: Record<string, any>, context?: any) => Promise<any>;
 
 /**

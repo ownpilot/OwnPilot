@@ -11,7 +11,8 @@ import type {
   PIISeverity,
   PIICategory,
 } from './types.js';
-import { PIIDetector, createDetector } from './detector.js';
+import type { PIIDetector } from './detector.js';
+import { createDetector } from './detector.js';
 
 /**
  * Severity order for comparison

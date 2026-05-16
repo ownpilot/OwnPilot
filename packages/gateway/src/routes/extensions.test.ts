@@ -113,7 +113,7 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 vi.mock('./settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
+  resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
   getApiKey: vi.fn(async () => 'test-key'),
 }));
 
@@ -478,8 +478,8 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 when no provider configured', async () => {
-      const { resolveProviderAndModel } = await import('./settings.js');
-      vi.mocked(resolveProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
+      const { resolveDefaultProviderAndModel } = await import('./settings.js');
+      vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
 
       const res = await app.request('/extensions/generate', {
         method: 'POST',

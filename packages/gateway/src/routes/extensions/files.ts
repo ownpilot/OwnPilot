@@ -18,10 +18,23 @@ import {
 } from 'node:fs';
 import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension-service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError } from '../helpers.js';
+import {
+  getUserId,
+  apiResponse,
+  apiError,
+  ERROR_CODES,
+  notFoundError,
+  getErrorMessage,
+} from '../helpers.js';
 import { isWithinDirectory } from '../../utils/file-safety.js';
+import { validateBody } from '../../middleware/validation.js';
+
+const writeFileSchema = z.object({
+  content: z.string().max(5_000_000),
+});
 
 export const fileRoutes = new Hono();
 
@@ -240,17 +253,11 @@ fileRoutes.put('/:id/files/:path{.+}', async (c) => {
 
   let content: string;
   try {
-    const body = await c.req.json();
+    const raw = await c.req.json();
+    const body = validateBody(writeFileSchema, raw);
     content = body.content;
-    if (typeof content !== 'string') {
-      return apiError(
-        c,
-        { code: ERROR_CODES.VALIDATION_ERROR, message: '"content" string is required' },
-        400
-      );
-    }
-  } catch {
-    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
+  } catch (e) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
   }
 
   try {

@@ -340,7 +340,7 @@ describe('gatherPulseContext', () => {
 
   describe('gatherTasks', () => {
     it('should gather overdue and due today tasks', async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const _today = new Date().toISOString().split('T')[0];
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       mockTasksRepo.list

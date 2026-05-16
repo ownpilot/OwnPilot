@@ -193,7 +193,9 @@ describe('POST /ext/upload — extension validation', () => {
     // 2 MB is above the 1 MB single-file limit but below the 5 MB ZIP limit
     // Use real ZIP magic bytes so validation passes
     const zipMagic = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00]);
-    const res = await app.request(makeUploadRequest('medium.skill', zipMagic, 2 * MB - zipMagic.length));
+    const res = await app.request(
+      makeUploadRequest('medium.skill', zipMagic, 2 * MB - zipMagic.length)
+    );
     expect(res.status).not.toBe(400); // size validation passes, ZIP validation passes
   });
 
@@ -246,7 +248,7 @@ describe('POST /ext/upload — extension validation', () => {
     // All existsSync calls return false (no manifest in root or subdirs initially)
     // Then for the subdirectory scan: existsSync for 'subdir/SKILL.md' returns true
     let callCount = 0;
-    mockExistsSync.mockImplementation((...args: unknown[]) => {
+    mockExistsSync.mockImplementation((..._args: unknown[]) => {
       callCount++;
       // extensionsDir: true (first call)
       if (callCount === 1) return true;

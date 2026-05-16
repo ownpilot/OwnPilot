@@ -21,7 +21,7 @@ import {
 import { getCodingAgentService } from './coding-agent-service.js';
 import { orchestrationRunsRepo } from '../db/repositories/orchestration-runs.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
-import { resolveProviderAndModel } from '../routes/settings.js';
+import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../routes/agent-cache.js';
 import { getLog } from './log.js';
 import { wsGateway } from '../ws/server.js';
@@ -76,7 +76,7 @@ async function analyzeOutput(
   previousSteps: OrchestrationStep[]
 ): Promise<OrchestrationAnalysis> {
   try {
-    const { provider, model } = await resolveProviderAndModel('default', 'default');
+    const { provider, model } = await resolveDefaultProviderAndModel('default', 'default');
     if (!provider || !model) {
       throw new Error('No AI provider configured. Set a default provider in Settings.');
     }

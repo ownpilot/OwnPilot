@@ -17,7 +17,7 @@ import makeWASocket, {
   type WAMessage,
   proto,
 } from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
+import type { Boom } from '@hapi/boom';
 import pino from 'pino';
 import {
   type ChannelPluginAPI,
@@ -78,7 +78,10 @@ class SimpleTTLCache<V> {
     }
   }
   destroy(): void {
-    if (this.pruneTimer) { clearInterval(this.pruneTimer); this.pruneTimer = null; }
+    if (this.pruneTimer) {
+      clearInterval(this.pruneTimer);
+      this.pruneTimer = null;
+    }
     this.data.clear();
   }
 }
@@ -921,10 +924,10 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.emitConnectionEvent('connected');
 
       // Anti-ban: immediately go offline — only appear online when typing/sending
-      // (Evolution API + WAHA both do this)
-      this.sock?.sendPresenceUpdate('unavailable').catch(() => {
-        // Non-fatal
-      });
+      // (Evolution API + WAHA both do this). Presence-update failure is non-fatal
+      // and Baileys will retry on the next presence cycle.
+      // eslint-disable-next-line no-restricted-syntax
+      this.sock?.sendPresenceUpdate('unavailable').catch(() => {});
 
       const info = this.getBotInfo();
       const sockPhone = this.sock?.user?.id?.split(':')[0] ?? '';

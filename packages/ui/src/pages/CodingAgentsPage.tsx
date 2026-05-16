@@ -35,6 +35,7 @@ import { XTerminal } from '../components/XTerminal';
 import { AutoModePanel } from '../components/AutoModePanel';
 import { AcpPanel } from '../components/AcpPanel';
 import { codingAgentsApi, fileWorkspacesApi } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import type {
   CodingAgentStatus,
   CodingAgentSession,
@@ -783,7 +784,7 @@ function NewSessionModal({
     fileWorkspacesApi
       .list()
       .then((data) => setWorkspaces(data.workspaces ?? []))
-      .catch(() => {});
+      .catch(silentCatch('fileWorkspaces.list'));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1252,7 +1253,7 @@ function SkillsSelectorInline({
             .map((ext) => ({ id: ext.id, name: ext.name, description: ext.description }))
         );
       })
-      .catch(() => {})
+      .catch(silentCatch('codingAgents.extensions'))
       .finally(() => setLoading(false));
   }, []);
 

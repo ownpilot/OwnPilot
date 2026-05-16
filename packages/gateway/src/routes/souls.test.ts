@@ -22,6 +22,10 @@ vi.mock('../db/adapters/index.js', () => ({
   getAdapterSync: () => ({
     transaction: mockTransaction,
   }),
+  getAdapter: () =>
+    Promise.resolve({
+      transaction: mockTransaction,
+    }),
 }));
 
 vi.mock('../db/repositories/souls.js', () => ({

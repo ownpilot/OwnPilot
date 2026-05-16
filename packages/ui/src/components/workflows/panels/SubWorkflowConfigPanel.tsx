@@ -11,6 +11,7 @@ import { OutputAliasField, RetryTimeoutFields } from '../NodeConfigPanel';
 import { OutputTreeBrowser } from '../OutputTreeBrowser';
 import { TemplateValidator } from '../TemplateValidator';
 import { workflowsApi } from '../../../api/endpoints/workflows';
+import { silentCatch } from '../../../utils/ignore-error';
 
 interface WorkflowOption {
   id: string;
@@ -52,7 +53,7 @@ export function SubWorkflowConfigPanel({
             .map((w) => ({ id: w.id, name: w.name }))
         );
       })
-      .catch(() => {});
+      .catch(silentCatch('subWorkflow.list'));
   }, [node.id]);
 
   const save = useCallback(

@@ -30,7 +30,6 @@ import {
   quoteIdentifier,
   getBackupDir,
   operationStatus,
-  setOperationStatus,
 } from './shared.js';
 
 // ---------------------------------------------------------------------------

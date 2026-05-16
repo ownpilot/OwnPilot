@@ -10,7 +10,7 @@ import { Hono } from 'hono';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
-import { getAdapterSync } from '../../db/adapters/index.js';
+import { getAdapter } from '../../db/adapters/index.js';
 import {
   EXPORT_TABLES,
   validateTableName,
@@ -28,7 +28,7 @@ export const transferRoutes = new Hono();
  */
 transferRoutes.get('/export', async (c) => {
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     if (!adapter.isConnected()) {
       throw new Error('Not connected');
@@ -130,7 +130,7 @@ transferRoutes.post('/import', async (c) => {
   }
 
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     if (!adapter.isConnected()) {
       throw new Error('Not connected');
@@ -326,7 +326,7 @@ transferRoutes.post('/import', async (c) => {
  */
 transferRoutes.post('/export/save', async (c) => {
   try {
-    const adapter = getAdapterSync();
+    const adapter = await getAdapter();
 
     if (!adapter.isConnected()) {
       throw new Error('Not connected');

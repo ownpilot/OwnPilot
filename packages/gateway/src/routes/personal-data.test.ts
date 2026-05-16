@@ -714,7 +714,11 @@ describe('Personal Data Routes', () => {
       const res = await app.request('/pd/calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Event', startTime: '2026-02-01T10:00:00Z' }),
+        body: JSON.stringify({
+          title: 'New Event',
+          startDate: '2026-02-01',
+          startTime: '10:00',
+        }),
       });
 
       expect(res.status).toBe(201);

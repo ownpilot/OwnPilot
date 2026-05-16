@@ -6,7 +6,7 @@
  * wireStreamApproval, and extractToolDisplay.
  */
 
-import { streamSSE } from 'hono/streaming';
+import type { streamSSE } from 'hono/streaming';
 import type { StreamChunkResponse, SessionInfo } from '../types/index.js';
 import type {
   AIProvider,

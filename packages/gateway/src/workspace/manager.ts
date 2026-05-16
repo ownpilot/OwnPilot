@@ -166,10 +166,10 @@ class WorkspaceInstance implements Workspace {
 
       // Use the real agent system (dynamic import to avoid circular deps)
       const { getOrCreateChatAgent } = await import('../routes/agents.js');
-      const { resolveProviderAndModel } = await import('../routes/settings.js');
+      const { resolveDefaultProviderAndModel } = await import('../routes/settings.js');
 
       const agentConfig = this.config.agent;
-      const resolved = await resolveProviderAndModel(
+      const resolved = await resolveDefaultProviderAndModel(
         agentConfig?.provider ?? 'default',
         agentConfig?.model ?? 'default'
       );

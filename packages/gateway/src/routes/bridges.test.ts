@@ -294,7 +294,7 @@ describe('Bridge Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.success).toBe(false);
-      expect(json.error.message).toContain('Invalid direction');
+      expect(json.error.message).toMatch(/direction/i);
     });
 
     it('returns 400 for an invalid regex filterPattern', async () => {

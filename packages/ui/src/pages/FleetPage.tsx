@@ -11,6 +11,7 @@ import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { fleetApi } from '../api/endpoints/fleet';
+import { silentCatch } from '../utils/ignore-error';
 import type { FleetConfig } from '../api/endpoints/fleet';
 import {
   Plus,
@@ -40,17 +41,23 @@ import { FleetCard } from './fleet/FleetCard';
 
 function FleetStatsStrip() {
   const [stats, setStats] = useState<{
-    totalFleets: number; running: number; totalWorkers: number;
-    successRate: number; avgCost: number; totalCost: number;
-    tasksCompleted: number; activeWorkers: number;
+    totalFleets: number;
+    running: number;
+    totalWorkers: number;
+    successRate: number;
+    avgCost: number;
+    totalCost: number;
+    tasksCompleted: number;
+    activeWorkers: number;
   } | null>(null);
   const [health, setHealth] = useState<{
-    status: string; score: number;
+    status: string;
+    score: number;
   } | null>(null);
 
   useEffect(() => {
-    fleetApi.stats().then(setStats).catch(() => {});
-    fleetApi.health().then(setHealth).catch(() => {});
+    fleetApi.stats().then(setStats).catch(silentCatch('fleet.stats'));
+    fleetApi.health().then(setHealth).catch(silentCatch('fleet.health'));
   }, []);
 
   if (!stats && !health) return null;
@@ -81,11 +88,15 @@ function FleetStatsStrip() {
         </>
       )}
       {health && (
-        <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
-          health.status === 'healthy' ? 'bg-success/20 text-success' :
-          health.status === 'watch' ? 'bg-yellow-500/20 text-yellow-500' :
-          'bg-error/20 text-error'
-        }`}>
+        <span
+          className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
+            health.status === 'healthy'
+              ? 'bg-success/20 text-success'
+              : health.status === 'watch'
+                ? 'bg-yellow-500/20 text-yellow-500'
+                : 'bg-error/20 text-error'
+          }`}
+        >
           {health.status} ({health.score})
         </span>
       )}
@@ -201,20 +212,27 @@ export function FleetPage() {
         const fleet = fleets.find((f) => f.id === p.fleetId);
         if (fleet) toast.info(`Fleet "${fleet.name}" resumed`);
       }),
-      subscribe<{ fleetId: string; cycle: number; tasksCompleted: number; tasksFailed: number; cycleCost: number }>(
-        'fleet:cycle:end',
-        (p) => {
-          if (p.tasksFailed > 0) {
-            toast.warning(`Fleet cycle ${p.cycle} finished: ${p.tasksFailed} task${p.tasksFailed > 1 ? 's' : ''} failed`);
-          }
+      subscribe<{
+        fleetId: string;
+        cycle: number;
+        tasksCompleted: number;
+        tasksFailed: number;
+        cycleCost: number;
+      }>('fleet:cycle:end', (p) => {
+        if (p.tasksFailed > 0) {
+          toast.warning(
+            `Fleet cycle ${p.cycle} finished: ${p.tasksFailed} task${p.tasksFailed > 1 ? 's' : ''} failed`
+          );
         }
-      ),
+      }),
       subscribe<{ fleetId: string; workerName: string; success: boolean; durationMs: number }>(
         'fleet:worker:completed',
         (p) => {
           if (!p.success) {
             const fleet = fleets.find((f) => f.id === p.fleetId);
-            toast.error(`Worker "${p.workerName}"${fleet ? ` in "${fleet.name}"` : ''} failed after ${Math.round(p.durationMs / 1000)}s`);
+            toast.error(
+              `Worker "${p.workerName}"${fleet ? ` in "${fleet.name}"` : ''} failed after ${Math.round(p.durationMs / 1000)}s`
+            );
           }
         }
       ),

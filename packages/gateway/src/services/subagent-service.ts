@@ -11,7 +11,8 @@ import type {
   SubagentSession,
   SubagentHistoryEntry,
 } from '@ownpilot/core';
-import { SubagentManager, getSubagentManager } from './subagent-manager.js';
+import type { SubagentManager } from './subagent-manager.js';
+import { getSubagentManager } from './subagent-manager.js';
 import { SubagentsRepository } from '../db/repositories/subagents.js';
 
 // ============================================================================

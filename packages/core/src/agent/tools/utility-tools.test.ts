@@ -2068,7 +2068,6 @@ describe('runRegexExecutor', () => {
       operation: 'match',
     });
     const data = parseContent(result.content);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const match = data.result as any;
     expect(match.match).toBe('hello world');
     expect(match.groups).toEqual(['hello', 'world']);
@@ -2082,7 +2081,6 @@ describe('runRegexExecutor', () => {
       flags: 'g',
     });
     const data = parseContent(result.content);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matches = data.result as any[];
     expect(matches).toHaveLength(3);
   });
@@ -2131,7 +2129,6 @@ describe('runRegexExecutor', () => {
   it('auto-adds g flag for match_all', async () => {
     const result = await runRegexExecutor({ text: 'aa', pattern: 'a', operation: 'match_all' });
     const data = parseContent(result.content);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((data.result as any[]).length).toBe(2);
   });
 
@@ -2191,7 +2188,6 @@ describe('getSystemInfoExecutor', () => {
     const result = await getSystemInfoExecutor({});
     const data = parseContent(result.content);
     expect(data.platform).toBeDefined();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const platform = data.platform as any;
     expect(platform.os).toBe(process.platform);
     expect(platform.arch).toBe(process.arch);

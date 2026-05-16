@@ -31,7 +31,7 @@ import { runWithPty, spawnStreamingPty } from './coding-agent-pty.js';
 // ---------------------------------------------------------------------------
 
 function makeMockProc(
-  overrides: Partial<{
+  _overrides: Partial<{
     onDataFn: (data: string) => void;
     onExitFn: (e: { exitCode: number; signal?: number }) => void;
     throwOnSpawn: boolean;

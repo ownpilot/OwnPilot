@@ -19,6 +19,7 @@ import { STORAGE_KEYS } from '../constants/storage-keys';
 import { chatApi } from '../api';
 import { formatNumber } from '../utils/formatters';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
+import { ignoreError } from '../utils/ignore-error';
 import type { Message } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -282,7 +283,7 @@ export function MiniChat() {
   // New chat — clear frontend + reset backend context
   const handleNewChat = useCallback(() => {
     clearMessages();
-    chatApi.resetContext(provider, model).catch(() => {});
+    ignoreError(chatApi.resetContext(provider, model), 'minichat:resetContext');
   }, [clearMessages, provider, model]);
 
   // Maximize / restore toggle

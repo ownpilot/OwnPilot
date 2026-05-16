@@ -97,6 +97,11 @@ export async function registerAllToolSources(
 
 /**
  * Resolve AI provider and model from explicit config or system model routing.
+ *
+ * This is the *process-aware* waterfall (chat / pulse / subagent). It throws
+ * on missing config. For the simple "what is the global default?" query (used
+ * by Settings UI surface, pre-flight checks, channel fallback), see
+ * `resolveDefaultProviderAndModel` in `routes/settings.ts`.
  */
 export async function resolveProviderAndModel(
   explicitProvider: string | undefined,
@@ -157,7 +162,7 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   if (!providerConfig && !NATIVE_PROVIDERS.has(opts.provider)) {
     throw new Error(
       `Provider "${opts.provider}" is not configured. ` +
-      `Add an API key in Settings → Providers, or select a native provider.`
+        `Add an API key in Settings → Providers, or select a native provider.`
     );
   }
 
@@ -396,14 +401,33 @@ export async function executeAgentPipeline(
   const durationMs = Date.now() - startTime;
   if (!chatResult.ok) {
     // Record error metric
-    await recordTelemetry(opts.agent, provider, model, durationMs, true, opts.workflowId, opts.agentId, opts.userId);
+    await recordTelemetry(
+      opts.agent,
+      provider,
+      model,
+      durationMs,
+      true,
+      opts.workflowId,
+      opts.agentId,
+      opts.userId
+    );
     throw new Error(chatResult.error?.message ?? 'Agent execution failed');
   }
 
   const response = chatResult.value!;
 
   // Record success metric
-  await recordTelemetry(opts.agent, provider, model, durationMs, false, opts.workflowId, opts.agentId, opts.userId, response.usage);
+  await recordTelemetry(
+    opts.agent,
+    provider,
+    model,
+    durationMs,
+    false,
+    opts.workflowId,
+    opts.agentId,
+    opts.userId,
+    response.usage
+  );
 
   return {
     content: response.content ?? '',
@@ -452,25 +476,33 @@ async function recordTelemetry(
       agentId: agentId ?? null,
       userId: userId ?? null,
     };
-    // Write to DB (default behavior for all providers)
-    getProviderMetricsRepository().record(metricInput).catch(() => {});
+    // Write to DB (default behavior for all providers). Fire-and-forget — billing
+    // drift is preferable to blocking agent responses, but we log so it doesn't
+    // disappear silently.
+    getProviderMetricsRepository()
+      .record(metricInput)
+      .catch((err) => {
+        log.warn('Failed to record provider metrics', { provider, model, error: err });
+      });
     // Also call provider hook (for providers that want custom handling)
     if (prov && typeof prov.recordMetric === 'function') {
-      prov.recordMetric({
-        modelId: model,
-        latencyMs,
-        error: isError,
-        errorType: isError ? 'agent_execution_failed' : null,
-        promptTokens: usage?.promptTokens ?? null,
-        completionTokens: usage?.completionTokens ?? null,
-        costUsd: costUsd > 0 ? costUsd : null,
-        workflowId: workflowId ?? null,
-        agentId: agentId ?? null,
-        userId: userId ?? null,
-      }).catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        log.warn(`[metrics] recordMetric failed: ${msg}`);
-      });
+      prov
+        .recordMetric({
+          modelId: model,
+          latencyMs,
+          error: isError,
+          errorType: isError ? 'agent_execution_failed' : null,
+          promptTokens: usage?.promptTokens ?? null,
+          completionTokens: usage?.completionTokens ?? null,
+          costUsd: costUsd > 0 ? costUsd : null,
+          workflowId: workflowId ?? null,
+          agentId: agentId ?? null,
+          userId: userId ?? null,
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          log.warn(`[metrics] recordMetric failed: ${msg}`);
+        });
     }
   } catch {
     // Non-blocking telemetry — never surface errors

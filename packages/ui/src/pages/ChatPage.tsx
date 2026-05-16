@@ -40,6 +40,7 @@ import {
   MessageSquare,
 } from '../components/icons';
 import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
+import { ignoreError } from '../utils/ignore-error';
 import type { ModelInfo, AgentDetail } from '../types';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
@@ -187,7 +188,11 @@ export function ChatPage() {
       }
       setProviderNames(namesMap);
       // Persist for useChatStore bridge detection (provider ID → name lookup)
-      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
+      try {
+        localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap));
+      } catch {
+        /* ignore */
+      }
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
     } catch {
@@ -213,7 +218,11 @@ export function ChatPage() {
       }
       setProviderNames(namesMap);
       // Persist for useChatStore bridge detection (provider ID → name lookup)
-      try { localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap)); } catch { /* ignore */ }
+      try {
+        localStorage.setItem('ownpilot-provider-names', JSON.stringify(namesMap));
+      } catch {
+        /* ignore */
+      }
 
       setModels(modelsData.models);
       setConfiguredProviders(modelsData.configuredProviders);
@@ -369,7 +378,7 @@ export function ChatPage() {
     // Without this, the first message in a new chat may use stale agent config
     // because the UI shows the correct provider/model but the backend agent
     // hasn't been re-initialized with it.
-    chatApi.resetContext(provider, model).catch(() => {});
+    ignoreError(chatApi.resetContext(provider, model), 'chatpage:resetContext');
     // Auto-focus chat input so user can start typing immediately
     chatInputRef.current?.focus();
   };
@@ -765,8 +774,16 @@ export function ChatPage() {
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); closeSession(tab.id); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); closeSession(tab.id); } }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeSession(tab.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation();
+                      closeSession(tab.id);
+                    }
+                  }}
                   className="opacity-0 group-hover:opacity-100 ml-0.5 hover:text-red-500 transition-opacity"
                 >
                   ×

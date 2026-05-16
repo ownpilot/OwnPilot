@@ -1645,7 +1645,6 @@ describe('AgentOrchestrator', () => {
 
       const thinkingSteps = steps.filter((s) => s.type === 'thinking');
       expect(thinkingSteps.length).toBeGreaterThanOrEqual(1);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((thinkingSteps[0].content as any).iteration).toBe(1);
     });
 
@@ -1710,7 +1709,6 @@ describe('AgentOrchestrator', () => {
       const toolResultSteps = steps.filter((s) => s.type === 'tool_result');
       expect(toolCallSteps).toHaveLength(1);
       expect(toolResultSteps).toHaveLength(1);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((toolCallSteps[0].content as any).name).toBe('my_tool');
     });
 
@@ -1764,7 +1762,6 @@ describe('AgentOrchestrator', () => {
       }
 
       const responseSteps = steps.filter((s) => s.type === 'response');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((responseSteps[1].content as any).accumulated).toBe('Hello World');
     });
 

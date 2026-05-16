@@ -7,6 +7,7 @@ import { workflowsApi } from '../api/endpoints/workflows';
 import { chatApi } from '../api/endpoints/chat';
 import type { Workflow } from '../api/endpoints/workflows';
 import type { Conversation } from '../api/types/channels';
+import { silentCatch } from '../utils/ignore-error';
 
 interface Props {
   onClose: () => void;
@@ -22,17 +23,22 @@ export function GlobalSearchOverlay({ onClose }: Props) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResults>({ pages: [], workflows: [], conversations: [] });
+  const [results, setResults] = useState<SearchResults>({
+    pages: [],
+    workflows: [],
+    conversations: [],
+  });
   const [cachedWorkflows, setCachedWorkflows] = useState<Workflow[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch workflows once on mount
   useEffect(() => {
-    workflowsApi.list({ limit: '100' }).then((res) => {
-      setCachedWorkflows(res.workflows ?? []);
-    }).catch(() => {
-      // silently ignore — workflows just won't appear in search
-    });
+    workflowsApi
+      .list({ limit: '100' })
+      .then((res) => {
+        setCachedWorkflows(res.workflows ?? []);
+      })
+      .catch(silentCatch('globalSearch.workflows'));
   }, []);
 
   // Focus input on mount
@@ -41,37 +47,44 @@ export function GlobalSearchOverlay({ onClose }: Props) {
   }, []);
 
   // Search logic
-  const performSearch = useCallback((q: string) => {
-    const lower = q.trim().toLowerCase();
-    if (!lower) {
-      setResults({ pages: [], workflows: [], conversations: [] });
-      return;
-    }
+  const performSearch = useCallback(
+    (q: string) => {
+      const lower = q.trim().toLowerCase();
+      if (!lower) {
+        setResults({ pages: [], workflows: [], conversations: [] });
+        return;
+      }
 
-    // Pages: filter by label + description
-    const pages = ALL_NAV_ITEMS.filter((item) => {
-      const desc = NAV_DESCRIPTIONS[item.to] ?? '';
-      return item.label.toLowerCase().includes(lower) || desc.toLowerCase().includes(lower);
-    }).slice(0, 8);
+      // Pages: filter by label + description
+      const pages = ALL_NAV_ITEMS.filter((item) => {
+        const desc = NAV_DESCRIPTIONS[item.to] ?? '';
+        return item.label.toLowerCase().includes(lower) || desc.toLowerCase().includes(lower);
+      }).slice(0, 8);
 
-    // Workflows: filter cached
-    const workflows = cachedWorkflows.filter((w) =>
-      w.name.toLowerCase().includes(lower) ||
-      (w.description ?? '').toLowerCase().includes(lower)
-    ).slice(0, 5);
+      // Workflows: filter cached
+      const workflows = cachedWorkflows
+        .filter(
+          (w) =>
+            w.name.toLowerCase().includes(lower) ||
+            (w.description ?? '').toLowerCase().includes(lower)
+        )
+        .slice(0, 5);
 
-    setResults((prev) => ({ ...prev, pages, workflows }));
+      setResults((prev) => ({ ...prev, pages, workflows }));
 
-    // Conversations: debounced API call
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      chatApi.listHistory({ search: q.trim(), limit: 5 }).then((res) => {
-        setResults((prev) => ({ ...prev, conversations: res.conversations ?? [] }));
-      }).catch(() => {
-        // silently ignore
-      });
-    }, 300);
-  }, [cachedWorkflows]);
+      // Conversations: debounced API call
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        chatApi
+          .listHistory({ search: q.trim(), limit: 5 })
+          .then((res) => {
+            setResults((prev) => ({ ...prev, conversations: res.conversations ?? [] }));
+          })
+          .catch(silentCatch('globalSearch.history'));
+      }, 300);
+    },
+    [cachedWorkflows]
+  );
 
   useEffect(() => {
     performSearch(query);
@@ -94,7 +107,8 @@ export function GlobalSearchOverlay({ onClose }: Props) {
   };
 
   const trimmed = query.trim();
-  const hasResults = results.pages.length > 0 || results.workflows.length > 0 || results.conversations.length > 0;
+  const hasResults =
+    results.pages.length > 0 || results.workflows.length > 0 || results.conversations.length > 0;
 
   return (
     <div

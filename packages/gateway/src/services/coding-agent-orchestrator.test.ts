@@ -6,7 +6,7 @@
  *         getOrchestration, listOrchestrations, and the internal loop logic.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -63,9 +63,9 @@ vi.mock('./log.js', () => ({
   }),
 }));
 
-// Mock the AI analysis (resolveProviderAndModel + createProvider)
+// Mock the AI analysis (resolveDefaultProviderAndModel + createProvider)
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
+  resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
 vi.mock('../routes/agent-cache.js', () => ({

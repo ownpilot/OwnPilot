@@ -18,8 +18,8 @@ const {
 } = vi.hoisted(() => {
   const capturedMeta: any[] = [];
   const capturedPlatform: string[] = [];
-  const capturedChannelApiFactory: Function[] = [];
-  const capturedTools: Array<{ definition: any; executor: Function }> = [];
+  const capturedChannelApiFactory: Array<(...args: any[]) => any> = [];
+  const capturedTools: Array<{ definition: any; executor: (...args: any[]) => any }> = [];
   const MockSlackChannelAPI = vi.fn().mockImplementation(function (config: any, pluginId: string) {
     return { config, pluginId };
   });
@@ -48,11 +48,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
           capturedPlatform.push(p);
           return b;
         }),
-        channelApi: vi.fn((f: Function) => {
+        channelApi: vi.fn((f: (...args: any[]) => any) => {
           capturedChannelApiFactory.push(f);
           return b;
         }),
-        tool: vi.fn((def: any, exec: Function) => {
+        tool: vi.fn((def: any, exec: (...args: any[]) => any) => {
           capturedTools.push({ definition: def, executor: exec });
           return b;
         }),

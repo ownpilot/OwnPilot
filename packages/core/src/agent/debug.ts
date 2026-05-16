@@ -6,6 +6,14 @@
 
 import type { Message, ToolCall, ToolDefinition, TokenUsage } from './types.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { getLog } from '../services/get-log.js';
+
+/**
+ * Scoped logger for the formatted box-rendered LLM trace output. Routed
+ * through ILogService so it respects log levels, works in non-TTY contexts,
+ * and is captured by any structured-log collector (pino → OTel later).
+ */
+const log = getLog('AgentDebug');
 
 /**
  * Debug log entry
@@ -212,43 +220,43 @@ export function logRequest(info: RequestDebugInfo): void {
   });
 
   if (shouldLogToConsole()) {
-    console.log('\n' + '═'.repeat(80));
-    console.log(`📤 LLM REQUEST - ${new Date().toISOString()}`);
-    console.log('═'.repeat(80));
-    console.log(`Provider: ${info.provider}`);
-    console.log(`Model: ${info.model}`);
-    console.log(`Endpoint: ${info.endpoint}`);
-    console.log(
+    log.debug('\n' + '═'.repeat(80));
+    log.debug(`📤 LLM REQUEST - ${new Date().toISOString()}`);
+    log.debug('═'.repeat(80));
+    log.debug(`Provider: ${info.provider}`);
+    log.debug(`Model: ${info.model}`);
+    log.debug(`Endpoint: ${info.endpoint}`);
+    log.debug(
       `MaxTokens: ${info.maxTokens ?? 'default'} | Temperature: ${info.temperature ?? 'default'} | Stream: ${info.stream}`
     );
-    console.log('─'.repeat(40));
-    console.log(`Messages (${info.messages.length}):`);
+    log.debug('─'.repeat(40));
+    log.debug(`Messages (${info.messages.length}):`);
     for (let i = 0; i < info.messages.length; i++) {
       const msg = info.messages[i];
       if (!msg) continue;
-      console.log(
+      log.debug(
         `  [${i}] ${msg.role.toUpperCase().padEnd(10)} │ ${truncate(msg.content, 150)} (${msg.contentLength} chars)`
       );
     }
     if (info.tools?.length) {
-      console.log('─'.repeat(40));
-      console.log(
+      log.debug('─'.repeat(40));
+      log.debug(
         `Tools (${info.tools.length}): ${info.tools.slice(0, 10).join(', ')}${info.tools.length > 10 ? '...' : ''}`
       );
     }
     if (info.payload) {
-      console.log('─'.repeat(40));
-      console.log(`📊 PAYLOAD BREAKDOWN:`);
-      console.log(
+      log.debug('─'.repeat(40));
+      log.debug(`📊 PAYLOAD BREAKDOWN:`);
+      log.debug(
         `  Total: ${info.payload.totalChars.toLocaleString()} chars (~${info.payload.estimatedTokens.toLocaleString()} tokens)`
       );
-      console.log(`  System Prompt: ${info.payload.systemPromptChars.toLocaleString()} chars`);
-      console.log(`  Messages: ${info.payload.messagesChars.toLocaleString()} chars`);
-      console.log(
+      log.debug(`  System Prompt: ${info.payload.systemPromptChars.toLocaleString()} chars`);
+      log.debug(`  Messages: ${info.payload.messagesChars.toLocaleString()} chars`);
+      log.debug(
         `  Tools: ${info.payload.toolsChars.toLocaleString()} chars (${info.payload.toolCount} tools, avg ${info.payload.perToolAvgChars} chars/tool)`
       );
     }
-    console.log('═'.repeat(80));
+    log.debug('═'.repeat(80));
   }
 }
 
@@ -267,40 +275,40 @@ export function logResponse(info: ResponseDebugInfo): void {
   if (shouldLogToConsole()) {
     const statusColor = info.status === 'success' ? '🟢' : '🔴';
 
-    console.log('\n' + '═'.repeat(80));
-    console.log(
+    log.debug('\n' + '═'.repeat(80));
+    log.debug(
       `📥 LLM RESPONSE - ${statusColor} ${info.status.toUpperCase()} - ${info.durationMs}ms`
     );
-    console.log('═'.repeat(80));
-    console.log(`Provider: ${info.provider} | Model: ${info.model}`);
-    console.log(`Finish Reason: ${info.finishReason ?? 'N/A'}`);
+    log.debug('═'.repeat(80));
+    log.debug(`Provider: ${info.provider} | Model: ${info.model}`);
+    log.debug(`Finish Reason: ${info.finishReason ?? 'N/A'}`);
 
     if (info.usage) {
-      console.log(
+      log.debug(
         `Tokens: ${info.usage.promptTokens} in → ${info.usage.completionTokens} out → ${info.usage.totalTokens} total`
       );
     }
 
     if (info.status === 'success') {
-      console.log('─'.repeat(40));
+      log.debug('─'.repeat(40));
       if (info.content) {
-        console.log(`Content (${info.contentLength ?? 0} chars):`);
-        console.log(`  ${truncate(info.content, 500)}`);
+        log.debug(`Content (${info.contentLength ?? 0} chars):`);
+        log.debug(`  ${truncate(info.content, 500)}`);
       }
       if (info.toolCalls?.length) {
-        console.log('─'.repeat(40));
-        console.log(`🔧 Tool Calls (${info.toolCalls.length}):`);
+        log.debug('─'.repeat(40));
+        log.debug(`🔧 Tool Calls (${info.toolCalls.length}):`);
         for (const tc of info.toolCalls) {
           const idSuffix = tc.id ? tc.id.slice(-8) : 'unknown';
-          console.log(`  [${idSuffix}] ${tc.name ?? 'unknown'}`);
-          console.log(`    Args: ${truncate(tc.arguments ?? '{}', 200)}`);
+          log.debug(`  [${idSuffix}] ${tc.name ?? 'unknown'}`);
+          log.debug(`    Args: ${truncate(tc.arguments ?? '{}', 200)}`);
         }
       }
     } else {
-      console.log('─'.repeat(40));
-      console.log(`❌ ERROR: ${info.error}`);
+      log.debug('─'.repeat(40));
+      log.debug(`❌ ERROR: ${info.error}`);
     }
-    console.log('═'.repeat(80));
+    log.debug('═'.repeat(80));
   }
 }
 
@@ -315,11 +323,11 @@ export function logToolCall(info: ToolCallDebugInfo): void {
 
   if (shouldLogToConsole()) {
     const statusIcon = info.approved ? '✓' : '✗';
-    console.log(`\n🔧 TOOL CALL ${statusIcon} ${info.name}`);
-    console.log(`  ID: ${info.id}`);
-    console.log(`  Args: ${JSON.stringify(info.arguments)}`);
+    log.debug(`\n🔧 TOOL CALL ${statusIcon} ${info.name}`);
+    log.debug(`  ID: ${info.id}`);
+    log.debug(`  Args: ${JSON.stringify(info.arguments)}`);
     if (!info.approved) {
-      console.log(`  ❌ REJECTED: ${info.rejectionReason}`);
+      log.debug(`  ❌ REJECTED: ${info.rejectionReason}`);
     }
   }
 }
@@ -336,11 +344,11 @@ export function logToolResult(info: ToolResultDebugInfo): void {
 
   if (shouldLogToConsole()) {
     const statusColor = info.success ? '🟢' : '🔴';
-    console.log(`\n⚡ TOOL RESULT ${statusColor} ${info.name} (${info.durationMs}ms)`);
-    console.log(`  ID: ${info.toolCallId}`);
-    console.log(`  Result (${info.resultLength} chars): ${truncate(info.result, 300)}`);
+    log.debug(`\n⚡ TOOL RESULT ${statusColor} ${info.name} (${info.durationMs}ms)`);
+    log.debug(`  ID: ${info.toolCallId}`);
+    log.debug(`  Result (${info.resultLength} chars): ${truncate(info.result, 300)}`);
     if (info.error) {
-      console.log(`  ❌ Error: ${info.error}`);
+      log.debug(`  ❌ Error: ${info.error}`);
     }
   }
 }
@@ -365,8 +373,8 @@ export function logRetry(
   });
 
   if (shouldLogToConsole()) {
-    console.log(`\n🔄 RETRY ${attempt}/${maxRetries} (waiting ${delayMs}ms)`);
-    console.log(`  Error: ${getErrorMessage(error)}`);
+    log.debug(`\n🔄 RETRY ${attempt}/${maxRetries} (waiting ${delayMs}ms)`);
+    log.debug(`  Error: ${getErrorMessage(error)}`);
   }
 }
 
@@ -385,17 +393,17 @@ export function logError(provider: string, error: unknown, context?: string): vo
   });
 
   if (shouldLogToConsole()) {
-    console.log('\n' + '!'.repeat(80));
-    console.log(`❌ ERROR - ${provider}`);
-    console.log('!'.repeat(80));
+    log.debug('\n' + '!'.repeat(80));
+    log.debug(`❌ ERROR - ${provider}`);
+    log.debug('!'.repeat(80));
     if (context) {
-      console.log(`Context: ${context}`);
+      log.debug(`Context: ${context}`);
     }
-    console.log(`Error: ${getErrorMessage(error)}`);
+    log.debug(`Error: ${getErrorMessage(error)}`);
     if (error instanceof Error && error.stack) {
-      console.log(`Stack: ${error.stack.split('\n').slice(1, 4).join('\n')}`);
+      log.debug(`Stack: ${error.stack.split('\n').slice(1, 4).join('\n')}`);
     }
-    console.log('!'.repeat(80));
+    log.debug('!'.repeat(80));
   }
 }
 
@@ -509,31 +517,31 @@ export function logSandboxExecution(info: SandboxExecutionDebugInfo): void {
     const langEmoji =
       info.language === 'python' ? '🐍' : info.language === 'javascript' ? '📜' : '💻';
 
-    console.log('\n' + '═'.repeat(80));
-    console.log(`${sandboxIcon} SANDBOX EXECUTION - ${langEmoji} ${info.language.toUpperCase()}`);
-    console.log('═'.repeat(80));
-    console.log(`Tool: ${info.tool}`);
-    console.log(`Sandboxed: ${info.sandboxed ? '✅ YES (Docker)' : '❌ NO (INSECURE)'}`);
+    log.debug('\n' + '═'.repeat(80));
+    log.debug(`${sandboxIcon} SANDBOX EXECUTION - ${langEmoji} ${info.language.toUpperCase()}`);
+    log.debug('═'.repeat(80));
+    log.debug(`Tool: ${info.tool}`);
+    log.debug(`Sandboxed: ${info.sandboxed ? '✅ YES (Docker)' : '❌ NO (INSECURE)'}`);
     if (info.dockerImage) {
-      console.log(`Docker Image: ${info.dockerImage}`);
+      log.debug(`Docker Image: ${info.dockerImage}`);
     }
     if (info.command) {
-      console.log(`Command: ${truncate(info.command, 100)}`);
+      log.debug(`Command: ${truncate(info.command, 100)}`);
     }
     if (info.codePreview) {
-      console.log(`Code: ${truncate(info.codePreview, 200)}`);
+      log.debug(`Code: ${truncate(info.codePreview, 200)}`);
     }
-    console.log('─'.repeat(40));
-    console.log(`Status: ${statusIcon} ${info.success ? 'SUCCESS' : 'FAILED'}`);
-    console.log(`Exit Code: ${info.exitCode ?? 'N/A'}`);
-    console.log(`Duration: ${info.durationMs}ms`);
+    log.debug('─'.repeat(40));
+    log.debug(`Status: ${statusIcon} ${info.success ? 'SUCCESS' : 'FAILED'}`);
+    log.debug(`Exit Code: ${info.exitCode ?? 'N/A'}`);
+    log.debug(`Duration: ${info.durationMs}ms`);
     if (info.timedOut) {
-      console.log(`⏱️ TIMED OUT`);
+      log.debug(`⏱️ TIMED OUT`);
     }
     if (info.error) {
-      console.log(`Error: ${info.error}`);
+      log.debug(`Error: ${info.error}`);
     }
-    console.log('═'.repeat(80));
+    log.debug('═'.repeat(80));
   }
 }
 

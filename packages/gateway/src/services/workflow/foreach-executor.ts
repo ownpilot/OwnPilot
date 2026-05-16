@@ -2,8 +2,8 @@
  * ForEach executor — Iterates over an array, executing a body subgraph per item.
  */
 
+import type { createWorkflowsRepository } from '../../db/repositories/workflows.js';
 import {
-  createWorkflowsRepository,
   type WorkflowNode,
   type WorkflowEdge,
   type ForEachNodeData,

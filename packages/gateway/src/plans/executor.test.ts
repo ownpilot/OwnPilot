@@ -69,7 +69,7 @@ vi.mock('../routes/agents.js', () => ({
   getOrCreateChatAgent: vi.fn(),
 }));
 vi.mock('../routes/settings.js', () => ({
-  resolveProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o-mini' })),
+  resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o-mini' })),
 }));
 
 import { PlanExecutor } from './executor.js';
@@ -1430,7 +1430,7 @@ describe('PlanExecutor', () => {
 
       // Create a fresh executor with real timers
       const realExecutor = new PlanExecutor({ userId: 'user-1' });
-      const result = await realExecutor.execute('plan-1');
+      await realExecutor.execute('plan-1');
 
       expect(mockAgent.chat).toHaveBeenCalled();
       const chatArg = mockAgent.chat.mock.calls[0][0] as string;
@@ -1606,7 +1606,7 @@ describe('PlanExecutor', () => {
 
     it('returns new instance when config is provided', async () => {
       const { getPlanExecutor } = await import('./executor.js');
-      const exec1 = getPlanExecutor({ userId: 'user-a' });
+      getPlanExecutor({ userId: 'user-a' });
       const exec2 = getPlanExecutor({ userId: 'user-b' });
       // When config is provided, a new instance is created
       expect(exec2).toBeInstanceOf(PlanExecutor);

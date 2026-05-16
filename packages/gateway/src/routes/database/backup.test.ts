@@ -38,6 +38,7 @@ const mockIsConnected = vi.fn();
 const mockGetAdapterSync = vi.fn();
 vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: () => mockGetAdapterSync(),
+  getAdapter: () => Promise.resolve(mockGetAdapterSync()),
 }));
 
 const mockGetBackupDir = vi.fn();

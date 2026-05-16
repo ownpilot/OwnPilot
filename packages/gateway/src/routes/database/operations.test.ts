@@ -18,6 +18,7 @@ const mockGetAdapterSync = vi.fn();
 
 vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: () => mockGetAdapterSync(),
+  getAdapter: () => Promise.resolve(mockGetAdapterSync()),
 }));
 
 const mockGetDatabaseConfig = vi.fn();
@@ -211,7 +212,10 @@ describe('Operation Routes', () => {
     });
 
     it('returns 400 for an invalid maintenance type', async () => {
-      mockQueryOne.mockResolvedValueOnce({ acquired: true });
+      // Note: type validation runs before the advisory-lock query, so we
+      // intentionally do NOT queue a mockResolvedValueOnce here — doing so
+      // would leak into the next test (vi.clearAllMocks does not drain the
+      // once-queue, only call history).
 
       const res = await app.request('/db/maintenance', {
         method: 'POST',
@@ -221,7 +225,7 @@ describe('Operation Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.code).toBe('INVALID_INPUT');
-      expect(json.error.message).toContain('reindex');
+      expect(json.error.message).toMatch(/type/i);
     });
 
     it('returns 400 when adapter is not connected', async () => {

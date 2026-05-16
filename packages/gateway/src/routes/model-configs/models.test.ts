@@ -321,7 +321,7 @@ describe('Model Routes', () => {
       const res = await app.request('/models/capabilities/list');
 
       expect(res.status).toBe(200);
-      const json = await res.json();
+      await res.json();
       // getMergedModels should NOT be called for capabilities route
       expect(mockGetMergedModels).not.toHaveBeenCalled();
     });

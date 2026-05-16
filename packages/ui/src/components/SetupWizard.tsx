@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { settingsApi } from '../api';
+import { silentCatch } from '../utils/ignore-error';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 
 interface SetupStep {
@@ -75,9 +76,7 @@ export function SetupWizard({ onComplete }: { onComplete: () => void }) {
           setStep(2);
         }
       })
-      .catch(() => {
-        // Can't check, show wizard from start
-      });
+      .catch(silentCatch('setupWizard.getProviders'));
   }, []);
 
   const handleSaveApiKey = async () => {

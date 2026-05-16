@@ -10,7 +10,7 @@ import { streamSSE } from 'hono/streaming';
 import { apiError, getErrorMessage, parseJsonBody } from './helpers.js';
 import { ERROR_CODES } from './error-codes.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
-import { resolveProviderAndModel } from './settings.js';
+import { resolveDefaultProviderAndModel } from './settings.js';
 import { validateBody, workflowCopilotSchema } from '../middleware/validation.js';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
 import { buildCopilotSystemPrompt } from './workflow-copilot-prompt.js';
@@ -50,7 +50,7 @@ workflowCopilotRoute.post('/', async (c) => {
   }
 
   // Resolve provider and model (fall back to user defaults)
-  const { provider: resolvedProvider, model: resolvedModel } = await resolveProviderAndModel(
+  const { provider: resolvedProvider, model: resolvedModel } = await resolveDefaultProviderAndModel(
     body.provider ?? 'default',
     body.model ?? 'default'
   );

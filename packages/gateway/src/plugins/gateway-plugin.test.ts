@@ -95,7 +95,7 @@ describe('buildGatewayPlugin', () => {
   it('collects tools from all 6 providers', () => {
     const plugin = buildGatewayPlugin() as any;
     // PluginBuilder stores tools in a Map keyed by name; check via manifest.tools or toolsMap
-    const toolNames = plugin.manifest.tools
+    const _toolNames = plugin.manifest.tools
       ? plugin.manifest.tools.map((t: any) => t.definition?.name ?? t.name)
       : [...(plugin.implementation?.tools?.keys?.() ?? [])];
     // Check at least 6 tools are registered (one per provider)

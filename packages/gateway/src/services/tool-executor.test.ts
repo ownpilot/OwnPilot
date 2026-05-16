@@ -202,11 +202,6 @@ import {
   createFleetToolProvider,
 } from './tool-providers/index.js';
 import { checkToolPermission } from './tool-permission-service.js';
-import {
-  getCustomToolDynamicRegistry,
-  setSharedRegistryForCustomTools,
-} from './custom-tool-registry.js';
-import { createCustomToolsRepo } from '../db/repositories/custom-tools.js';
 import { getServiceRegistry, hasServiceRegistry } from '@ownpilot/core';
 import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';
@@ -844,7 +839,7 @@ describe('Tool Executor', () => {
         ctx: unknown
       ) => Promise<unknown>;
 
-      const result = await executor({ foo: 'bar' }, { userId: 'u', conversationId: 'c' });
+      await executor({ foo: 'bar' }, { userId: 'u', conversationId: 'c' });
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith(
         'exec_tool',
         { foo: 'bar' },

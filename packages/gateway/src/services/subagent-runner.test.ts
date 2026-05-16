@@ -22,7 +22,7 @@ const {
   mockRegisterPluginTools,
   mockRegisterExtensionTools,
   mockRegisterMcpTools,
-  mockSetConfigCenter,
+  mockSetConfigCenter: _mockSetConfigCenter,
   mockChatFn,
   mockSetDirectToolMode,
   mockGetEventSystem,
@@ -345,7 +345,12 @@ describe('SubagentRunner', () => {
   });
 
   it('uses non-native provider type as "openai"', async () => {
-    // When provider is not in NATIVE_PROVIDERS, providerType = 'openai'
+    // When provider is not in NATIVE_PROVIDERS, providerType = 'openai'.
+    // The fail-fast guard requires loadProviderConfig() to return a config
+    // for unrecognized providers — mock that.
+    mockLoadProviderConfig.mockReturnValueOnce({
+      baseUrl: 'https://api.custom-llm.example.com/v1',
+    });
     const runner = new SubagentRunner(makeInput({ provider: 'custom-llm', model: 'model-v1' }));
     await runner.run();
 
