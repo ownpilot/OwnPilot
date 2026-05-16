@@ -2,7 +2,7 @@
  * Crew Shared Memory Repository — CRUD for crew_shared_memory
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 
 // ── DB Row Type ─────────────────────────────────────
 
@@ -42,7 +42,7 @@ function rowToEntry(row: MemoryRow): CrewMemoryEntry {
     category: row.category,
     title: row.title,
     content: row.content,
-    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata ?? {}),
+    metadata: parseJsonField<Record<string, unknown>>(row.metadata, {}),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };

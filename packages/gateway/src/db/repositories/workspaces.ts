@@ -4,7 +4,7 @@
  * Manages user workspaces with PostgreSQL
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { randomUUID, createHash } from 'node:crypto';
 import type { ContainerConfig } from '@ownpilot/core';
@@ -102,10 +102,7 @@ function rowToWorkspace(row: WorkspaceRow): UserWorkspace {
     description: row.description || undefined,
     status: row.status as WorkspaceStatus,
     storagePath: row.storage_path,
-    containerConfig:
-      typeof row.container_config === 'string'
-        ? JSON.parse(row.container_config)
-        : row.container_config,
+    containerConfig: parseJsonField<ContainerConfig>(row.container_config, {} as ContainerConfig),
     containerId: row.container_id || undefined,
     containerStatus: row.container_status as ContainerStatus,
     createdAt: new Date(row.created_at),
