@@ -33,6 +33,21 @@ export interface VoiceListResult {
   voices: Array<{ id: string; name: string }>;
 }
 
+export interface VoiceDiagnosticCheck {
+  name: string;
+  ok: boolean;
+  message: string;
+  optional?: boolean;
+}
+
+export interface VoiceDiagnostics {
+  configured: boolean;
+  provider: string | null;
+  stt: { supported: boolean; ok: boolean; message: string };
+  tts: { supported: boolean; ok: boolean; message: string };
+  checks: VoiceDiagnosticCheck[];
+}
+
 // =============================================================================
 // API
 // =============================================================================
@@ -46,6 +61,9 @@ export const voiceApi = {
 
   /** List voices supported by the configured TTS provider */
   getVoices: () => apiClient.get<VoiceListResult>('/voice/voices'),
+
+  /** Diagnose configured voice provider readiness */
+  getDiagnostics: () => apiClient.get<VoiceDiagnostics>('/voice/diagnostics'),
 
   /** Transcribe audio blob to text (multipart upload) */
   async transcribe(blob: Blob, language?: string): Promise<TranscribeResult> {

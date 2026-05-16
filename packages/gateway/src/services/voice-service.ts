@@ -15,7 +15,9 @@ import {
   callOpenAITTS,
   callElevenLabsTTS,
   callLocalPiperTTS,
+  diagnoseAudioSetup,
   type WhisperResult,
+  type AudioDiagnostics,
 } from './audio-overrides.js';
 import { getLog } from './log.js';
 
@@ -183,6 +185,13 @@ export class VoiceService {
       ttsAvailable: ttsSupported,
       voices: config.providerType === 'openai' ? OPENAI_VOICES : [],
     };
+  }
+
+  /**
+   * Diagnose configured audio provider readiness without sending user audio/text.
+   */
+  async getDiagnostics(): Promise<AudioDiagnostics> {
+    return diagnoseAudioSetup();
   }
 }
 

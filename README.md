@@ -993,6 +993,7 @@ Speech-to-text and text-to-speech integration for voice-powered AI interactions.
 - **VoicePlayButton** - Inline playback button on AI responses
 - **Channel Support** - Telegram voice messages auto-transcribed; optional Telegram voice replies
 - **Local Mode** - Configure `audio_service.provider_type = local` for free local Whisper/Piper audio. See [Local Audio Setup](docs/LOCAL_AUDIO.md).
+- **Diagnostics** - Check `/api/v1/voice/diagnostics` to verify local Whisper, Piper, model file, and ffmpeg readiness.
 
 ---
 

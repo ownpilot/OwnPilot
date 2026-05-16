@@ -52,3 +52,21 @@ voice_reply_mode = voice_messages
 ```
 
 Use `always` only if every assistant response should be synthesized.
+
+## Diagnostics
+
+After saving Config Center settings, check readiness:
+
+```text
+GET /api/v1/voice/diagnostics
+```
+
+For local mode this verifies:
+
+- `base_url` responds for the local Whisper server.
+- `local_tts_model` points to an existing Piper `.onnx` file.
+- `local_tts_command` can be executed.
+- `ffmpeg` is available for Telegram native voice replies.
+
+`ffmpeg` is optional. If it is missing, Telegram TTS replies still work as audio
+file attachments instead of native voice notes.

@@ -144,7 +144,7 @@ vi.mock('node:util', () => ({
 // Import under test
 // ---------------------------------------------------------------------------
 
-import { registerAudioOverrides } from './audio-overrides.js';
+import { diagnoseAudioSetup, registerAudioOverrides } from './audio-overrides.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -523,6 +523,73 @@ describe('resolveAudioConfig', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content.error).toContain('Local Piper TTS currently supports wav');
+  });
+});
+
+// ============================================================================
+// Diagnostics
+// ============================================================================
+
+describe('diagnoseAudioSetup', () => {
+  it('returns not configured diagnostics when audio config is missing', async () => {
+    setupNoConfig();
+
+    const diagnostics = await diagnoseAudioSetup();
+
+    expect(diagnostics.configured).toBe(false);
+    expect(diagnostics.provider).toBeNull();
+    expect(diagnostics.stt.ok).toBe(false);
+    expect(diagnostics.tts.ok).toBe(false);
+  });
+
+  it('checks local Whisper, Piper, model, and optional ffmpeg readiness', async () => {
+    setupLocalAudioConfig();
+    mockFetch.mockResolvedValueOnce(makeFetchResponse({ status: 404 }));
+    mockFsAccess.mockResolvedValue(undefined);
+    mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => callback(null, {}));
+
+    const diagnostics = await diagnoseAudioSetup();
+
+    expect(diagnostics.configured).toBe(true);
+    expect(diagnostics.provider).toBe('local');
+    expect(diagnostics.stt.ok).toBe(true);
+    expect(diagnostics.tts.ok).toBe(true);
+    expect(diagnostics.checks.map((check) => check.name)).toEqual([
+      'local_whisper_server',
+      'piper_model',
+      'piper_command',
+      'ffmpeg',
+    ]);
+  });
+
+  it('marks local TTS as needing attention when Piper model is missing', async () => {
+    setupLocalAudioConfig();
+    mockFetch.mockResolvedValueOnce(makeFetchResponse());
+    mockFsAccess.mockRejectedValueOnce(new Error('missing model'));
+    mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => callback(null, {}));
+
+    const diagnostics = await diagnoseAudioSetup();
+
+    expect(diagnostics.tts.ok).toBe(false);
+    expect(diagnostics.checks.find((check) => check.name === 'piper_model')).toEqual(
+      expect.objectContaining({ ok: false })
+    );
+  });
+
+  it('keeps local TTS ready when only ffmpeg is missing because it is optional', async () => {
+    setupLocalAudioConfig();
+    mockFetch.mockResolvedValueOnce(makeFetchResponse());
+    mockFsAccess.mockResolvedValue(undefined);
+    mockExecFile.mockImplementation((cmd, _args, _opts, callback) => {
+      callback(cmd === 'ffmpeg' ? new Error('ffmpeg missing') : null, {});
+    });
+
+    const diagnostics = await diagnoseAudioSetup();
+
+    expect(diagnostics.tts.ok).toBe(true);
+    expect(diagnostics.checks.find((check) => check.name === 'ffmpeg')).toEqual(
+      expect.objectContaining({ ok: false, optional: true })
+    );
   });
 });
 

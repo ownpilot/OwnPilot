@@ -16,6 +16,7 @@ import { errorHandler } from '../middleware/error-handler.js';
 
 const mockService = {
   getConfig: vi.fn(),
+  getDiagnostics: vi.fn(),
   isAvailable: vi.fn(),
   transcribe: vi.fn(),
   synthesize: vi.fn(),
@@ -152,6 +153,35 @@ describe('GET /voice/config', () => {
       provider: 'openai',
       voices: [{ id: 'shimmer', name: 'Shimmer' }],
     });
+  });
+
+  it('returns diagnostics from /diagnostics', async () => {
+    mockService.getDiagnostics.mockResolvedValueOnce({
+      configured: true,
+      provider: 'local',
+      stt: { supported: true, ok: true, message: 'Local Whisper server is reachable' },
+      tts: { supported: true, ok: true, message: 'Local Piper TTS looks ready' },
+      checks: [{ name: 'ffmpeg', ok: true, optional: true, message: 'ffmpeg is available' }],
+    });
+
+    const res = await app.request('/voice/diagnostics');
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.data.provider).toBe('local');
+    expect(json.data.checks[0].name).toBe('ffmpeg');
+  });
+
+  it('returns 500 when diagnostics throws', async () => {
+    mockService.getDiagnostics.mockRejectedValueOnce(new Error('diagnostics failed'));
+
+    const res = await app.request('/voice/diagnostics');
+
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+    expect(json.error.message).toContain('diagnostics failed');
   });
 });
 

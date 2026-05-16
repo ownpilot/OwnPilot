@@ -14,12 +14,14 @@ const {
   mockCallOpenAITTS,
   mockCallElevenLabsTTS,
   mockCallLocalPiperTTS,
+  mockDiagnoseAudioSetup,
 } = vi.hoisted(() => ({
   mockResolveAudioConfig: vi.fn(),
   mockCallWhisperTranscribe: vi.fn(),
   mockCallOpenAITTS: vi.fn(),
   mockCallElevenLabsTTS: vi.fn(),
   mockCallLocalPiperTTS: vi.fn(),
+  mockDiagnoseAudioSetup: vi.fn(),
 }));
 
 vi.mock('./audio-overrides.js', () => ({
@@ -28,6 +30,7 @@ vi.mock('./audio-overrides.js', () => ({
   callOpenAITTS: mockCallOpenAITTS,
   callElevenLabsTTS: mockCallElevenLabsTTS,
   callLocalPiperTTS: mockCallLocalPiperTTS,
+  diagnoseAudioSetup: mockDiagnoseAudioSetup,
 }));
 
 vi.mock('./log.js', () => ({
@@ -356,6 +359,24 @@ describe('VoiceService', () => {
       expect(config.sttSupported).toBe(true);
       expect(config.ttsSupported).toBe(true);
       expect(config.voices).toEqual([]);
+    });
+  });
+
+  // ---- getDiagnostics ----
+
+  describe('getDiagnostics', () => {
+    it('returns audio diagnostics from audio overrides', async () => {
+      const diagnostics = {
+        configured: true,
+        provider: 'local',
+        stt: { supported: true, ok: true, message: 'ready' },
+        tts: { supported: true, ok: true, message: 'ready' },
+        checks: [],
+      };
+      mockDiagnoseAudioSetup.mockResolvedValueOnce(diagnostics);
+
+      await expect(service.getDiagnostics()).resolves.toBe(diagnostics);
+      expect(mockDiagnoseAudioSetup).toHaveBeenCalledOnce();
     });
   });
 });

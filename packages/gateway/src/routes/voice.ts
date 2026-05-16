@@ -54,6 +54,16 @@ voiceRoutes.get('/voices', async (c) => {
   }
 });
 
+voiceRoutes.get('/diagnostics', async (c) => {
+  try {
+    const service = getVoiceService();
+    const diagnostics = await service.getDiagnostics();
+    return apiResponse(c, diagnostics);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // =============================================================================
 // POST /transcribe
 // =============================================================================

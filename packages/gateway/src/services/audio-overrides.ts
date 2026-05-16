@@ -98,6 +98,21 @@ export interface AudioApiConfig {
   localTtsModel?: string;
 }
 
+export interface AudioDiagnosticCheck {
+  name: string;
+  ok: boolean;
+  message: string;
+  optional?: boolean;
+}
+
+export interface AudioDiagnostics {
+  configured: boolean;
+  provider: string | null;
+  stt: { supported: boolean; ok: boolean; message: string };
+  tts: { supported: boolean; ok: boolean; message: string };
+  checks: AudioDiagnosticCheck[];
+}
+
 export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   // Check dedicated audio service first
   const providerType =
@@ -134,6 +149,139 @@ export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   const baseUrl = config?.baseUrl || 'https://api.openai.com';
 
   return { apiKey: key, baseUrl, providerType: 'openai' };
+}
+
+export async function diagnoseAudioSetup(): Promise<AudioDiagnostics> {
+  const config = await resolveAudioConfig();
+  if (!config) {
+    return {
+      configured: false,
+      provider: null,
+      stt: { supported: false, ok: false, message: AUDIO_NOT_CONFIGURED },
+      tts: { supported: false, ok: false, message: AUDIO_NOT_CONFIGURED },
+      checks: [],
+    };
+  }
+
+  if (config.providerType !== 'local') {
+    const sttSupported = config.providerType !== 'elevenlabs';
+    return {
+      configured: true,
+      provider: config.providerType,
+      stt: {
+        supported: sttSupported,
+        ok: sttSupported,
+        message: sttSupported ? 'Configured' : 'ElevenLabs is configured for TTS only',
+      },
+      tts: { supported: true, ok: true, message: 'Configured' },
+      checks: [
+        {
+          name: 'api_key',
+          ok: Boolean(config.apiKey),
+          message: config.apiKey ? 'API key is configured' : 'API key is missing',
+        },
+      ],
+    };
+  }
+
+  const checks: AudioDiagnosticCheck[] = [];
+
+  const whisperReachable = await checkHttpReachable(config.baseUrl);
+  checks.push({
+    name: 'local_whisper_server',
+    ok: whisperReachable.ok,
+    message: whisperReachable.message,
+  });
+
+  const modelConfigured = Boolean(config.localTtsModel);
+  const modelExists = modelConfigured ? await fileExists(config.localTtsModel!) : false;
+  checks.push({
+    name: 'piper_model',
+    ok: modelExists,
+    message: !modelConfigured
+      ? 'audio_service.local_tts_model is not configured'
+      : modelExists
+        ? 'Piper model file exists'
+        : `Piper model file not found: ${config.localTtsModel}`,
+  });
+
+  const piper = await commandRuns(config.localTtsCommand || 'piper', ['--help']);
+  checks.push({
+    name: 'piper_command',
+    ok: piper.ok,
+    message: piper.message,
+  });
+
+  const ffmpeg = await commandRuns('ffmpeg', ['-version']);
+  checks.push({
+    name: 'ffmpeg',
+    ok: ffmpeg.ok,
+    optional: true,
+    message: ffmpeg.ok
+      ? 'ffmpeg is available for Telegram voice conversion'
+      : 'ffmpeg is unavailable; Telegram voice replies will fall back to audio files',
+  });
+
+  const ttsRequired = checks.filter(
+    (check) => !check.optional && check.name !== 'local_whisper_server'
+  );
+  return {
+    configured: true,
+    provider: config.providerType,
+    stt: {
+      supported: true,
+      ok: whisperReachable.ok,
+      message: whisperReachable.ok ? 'Local Whisper server is reachable' : whisperReachable.message,
+    },
+    tts: {
+      supported: true,
+      ok: ttsRequired.every((check) => check.ok),
+      message: ttsRequired.every((check) => check.ok)
+        ? 'Local Piper TTS looks ready'
+        : 'Local Piper TTS needs attention',
+    },
+    checks,
+  };
+}
+
+async function checkHttpReachable(baseUrl: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const response = await fetch(baseUrl, {
+      method: 'GET',
+      signal: AbortSignal.timeout(1500),
+    });
+    return {
+      ok: response.status < 500,
+      message: `Server responded with HTTP ${response.status}`,
+    };
+  } catch (error) {
+    return { ok: false, message: `Server is not reachable: ${getErrorMessage(error)}` };
+  }
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    const fs = await import('node:fs/promises');
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function commandRuns(
+  command: string,
+  args: string[]
+): Promise<{ ok: boolean; message: string }> {
+  try {
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const execFileAsync = promisify(execFile);
+    await execFileAsync(command, args, { timeout: 3000 });
+    return { ok: true, message: `${command} is available` };
+  } catch (error) {
+    return { ok: false, message: `${command} is unavailable: ${getErrorMessage(error)}` };
+  }
 }
 
 function getDefaultAudioBaseUrl(providerType: string): string {

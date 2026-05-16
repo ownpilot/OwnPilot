@@ -2225,12 +2225,13 @@ and local `whisper.cpp` + Piper through `audio_service.provider_type = local`.
 
 ### Endpoints
 
-| Method | Path          | Description                        |
-| ------ | ------------- | ---------------------------------- |
-| `POST` | `/transcribe` | Transcribe audio to text (Whisper) |
-| `POST` | `/synthesize` | Convert text to speech (TTS)       |
-| `GET`  | `/voices`     | List available TTS voices          |
-| `GET`  | `/status`     | Voice service configuration status |
+| Method | Path           | Description                          |
+| ------ | -------------- | ------------------------------------ |
+| `POST` | `/transcribe`  | Transcribe audio to text (Whisper)   |
+| `POST` | `/synthesize`  | Convert text to speech (TTS)         |
+| `GET`  | `/voices`      | List available TTS voices            |
+| `GET`  | `/status`      | Voice service configuration status   |
+| `GET`  | `/diagnostics` | Check provider/local audio readiness |
 
 ---
 

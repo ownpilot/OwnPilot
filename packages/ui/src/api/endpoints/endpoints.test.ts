@@ -645,6 +645,12 @@ describe('simple passthrough endpoints', () => {
     expect(mockGet).toHaveBeenCalledWith('/voice/voices');
   });
 
+  it('voiceApi.getDiagnostics', async () => {
+    mockGet.mockResolvedValueOnce({});
+    await voiceApi.getDiagnostics();
+    expect(mockGet).toHaveBeenCalledWith('/voice/diagnostics');
+  });
+
   it('settingsApi.saveApiKey', async () => {
     mockPost.mockResolvedValueOnce(undefined);
     await settingsApi.saveApiKey('openai', 'sk-xxx');
