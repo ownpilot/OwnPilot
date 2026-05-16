@@ -240,11 +240,36 @@ export function resolveToolFilter(
 
 /**
  * Create a promise that rejects after the given timeout.
+ *
+ * The returned `cancel` function MUST be called once the race completes so
+ * the underlying setTimeout does not keep the event loop alive or fire a
+ * stray rejection on a detached promise. Caller is responsible for cleanup.
  */
-export function createTimeoutPromise(ms: number, label = 'Operation'): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
-  );
+export function createTimeoutPromise(
+  ms: number,
+  label = 'Operation'
+): { promise: Promise<never>; cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const promise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      timer = null;
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+  });
+  // Attach a no-op catch handler so that a late rejection (after the race has
+  // already settled via another promise) does not surface as an unhandled
+  // rejection in long-running services.
+  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+  promise.catch(() => {});
+  return {
+    promise,
+    cancel: () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    },
+  };
 }
 
 /**
@@ -343,15 +368,37 @@ export interface AgentPipelineResult {
 
 /**
  * Create a promise that rejects when the given AbortSignal fires.
+ *
+ * The returned `cancel` function detaches the abort listener — call it once
+ * the race completes so we do not leak a listener on a long-lived signal.
  */
-export function createCancellationPromise(signal: AbortSignal): Promise<never> {
-  return new Promise((_, reject) => {
+export function createCancellationPromise(signal: AbortSignal): {
+  promise: Promise<never>;
+  cancel: () => void;
+} {
+  let listener: (() => void) | null = null;
+  const promise = new Promise<never>((_, reject) => {
     if (signal.aborted) {
       reject(new Error('Cancelled'));
       return;
     }
-    signal.addEventListener('abort', () => reject(new Error('Cancelled')), { once: true });
+    listener = () => {
+      listener = null;
+      reject(new Error('Cancelled'));
+    };
+    signal.addEventListener('abort', listener, { once: true });
   });
+  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+  promise.catch(() => {});
+  return {
+    promise,
+    cancel: () => {
+      if (listener !== null) {
+        signal.removeEventListener('abort', listener);
+        listener = null;
+      }
+    },
+  };
 }
 
 /**
@@ -383,19 +430,29 @@ export async function executeAgentPipeline(
   };
 
   // Race: agent execution vs timeout vs optional cancellation
+  const timeout = createTimeoutPromise(opts.timeoutMs, opts.timeoutLabel ?? 'Agent');
+  const cancellation = opts.abortSignal ? createCancellationPromise(opts.abortSignal) : null;
   const promises: Promise<unknown>[] = [
     opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd }),
-    createTimeoutPromise(opts.timeoutMs, opts.timeoutLabel ?? 'Agent'),
+    timeout.promise,
   ];
-  if (opts.abortSignal) {
-    promises.push(createCancellationPromise(opts.abortSignal));
+  if (cancellation) {
+    promises.push(cancellation.promise);
   }
 
-  const chatResult = (await Promise.race(promises)) as {
+  let chatResult: {
     ok: boolean;
     value?: { content?: string; usage?: { promptTokens?: number; completionTokens?: number } };
     error?: { message?: string };
   };
+  try {
+    chatResult = (await Promise.race(promises)) as typeof chatResult;
+  } finally {
+    // Always clear the timeout and abort listener so we do not leak timers
+    // or event listeners when the agent wins the race.
+    timeout.cancel();
+    cancellation?.cancel();
+  }
 
   // Unwrap Result type
   const durationMs = Date.now() - startTime;

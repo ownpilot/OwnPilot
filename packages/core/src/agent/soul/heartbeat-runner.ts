@@ -312,11 +312,26 @@ Be concise and focused. Report your findings clearly.`.trim();
         },
       });
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`Task timed out after ${timeoutMs}ms`)), timeoutMs)
-      );
+      let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          timeoutHandle = null;
+          reject(new Error(`Task timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      });
+      // Suppress potential unhandled-rejection when responsePromise wins the race.
+      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+      timeoutPromise.catch(() => {});
 
-      const response = await Promise.race([responsePromise, timeoutPromise]);
+      let response;
+      try {
+        response = await Promise.race([responsePromise, timeoutPromise]);
+      } finally {
+        if (timeoutHandle !== null) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+      }
 
       return {
         taskId: task.id,

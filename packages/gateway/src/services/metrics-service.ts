@@ -58,7 +58,12 @@ const chatRequests = new Map<string, Counter>();
 /**
  * Record an HTTP request completion.
  */
-export function recordHttpRequest(method: string, path: string, status: number, latencyMs: number): void {
+export function recordHttpRequest(
+  method: string,
+  path: string,
+  status: number,
+  latencyMs: number
+): void {
   // Skip health/internal paths
   if (path.startsWith('/health') || path.startsWith('/metrics')) return;
 
@@ -136,14 +141,24 @@ function refreshAgentMetrics(): void {
 // Prometheus Export
 // ============================================================================
 
-function formatCounter(name: string, help: string, value: number, labels: Record<string, string>): string {
+function formatCounter(
+  name: string,
+  help: string,
+  value: number,
+  labels: Record<string, string>
+): string {
   const labelStr = Object.entries(labels)
     .map(([k, v]) => `${k}="${v}"`)
     .join(',');
   return `# HELP ${name} ${help}\n# TYPE ${name} counter\n${name}{${labelStr}} ${value}\n`;
 }
 
-function formatGauge(name: string, help: string, value: number, labels: Record<string, string>): string {
+function formatGauge(
+  name: string,
+  help: string,
+  value: number,
+  labels: Record<string, string>
+): string {
   const labelStr = Object.entries(labels)
     .map(([k, v]) => `${k}="${v}"`)
     .join(',');
@@ -183,7 +198,14 @@ export function renderMetrics(): string {
 
   // HTTP request counts
   for (const [, counter] of httpRequests) {
-    lines.push(formatCounter('ownpilot_http_requests_total', 'Total HTTP requests', counter.value, counter.labels));
+    lines.push(
+      formatCounter(
+        'ownpilot_http_requests_total',
+        'Total HTTP requests',
+        counter.value,
+        counter.labels
+      )
+    );
   }
 
   // HTTP latency histogram
@@ -204,12 +226,23 @@ export function renderMetrics(): string {
 
   // Provider costs
   for (const [provider, cost] of providerCosts) {
-    lines.push(formatCounter('ownpilot_provider_cost_usd_total', 'Total provider cost in USD', cost, { provider }));
+    lines.push(
+      formatCounter('ownpilot_provider_cost_usd_total', 'Total provider cost in USD', cost, {
+        provider,
+      })
+    );
   }
 
   // Chat requests
   for (const [, counter] of chatRequests) {
-    lines.push(formatCounter('ownpilot_chat_requests_total', 'Total chat requests', counter.value, counter.labels));
+    lines.push(
+      formatCounter(
+        'ownpilot_chat_requests_total',
+        'Total chat requests',
+        counter.value,
+        counter.labels
+      )
+    );
   }
 
   return lines.join('\n');
@@ -219,14 +252,29 @@ export function renderMetrics(): string {
 // Service Entry Point
 // ============================================================================
 
+let agentRefreshTimer: NodeJS.Timeout | null = null;
+
 /**
  * Start the metrics service — registers agent refresh interval.
  */
 export function startMetricsService(): void {
   log.info('[metrics] Service started');
 
-  // Refresh agent counts every 30 seconds
-  setInterval(() => {
+  if (agentRefreshTimer) return;
+  // Refresh agent counts every 30 seconds — unref so this timer does not
+  // keep the process alive during shutdown / tests.
+  agentRefreshTimer = setInterval(() => {
     refreshAgentMetrics();
   }, 30_000);
+  agentRefreshTimer.unref();
+}
+
+/**
+ * Stop the metrics service — clears the refresh interval.
+ */
+export function stopMetricsService(): void {
+  if (agentRefreshTimer) {
+    clearInterval(agentRefreshTimer);
+    agentRefreshTimer = null;
+  }
 }

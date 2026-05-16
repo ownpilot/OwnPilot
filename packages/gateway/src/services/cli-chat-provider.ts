@@ -40,6 +40,12 @@ import {
   buildGeminiArgs,
   inlineSystemPrompt,
 } from './cli-chat-parsers.js';
+// Static import — was a dynamic `await import('./cli-tool-bridge.js')` inside
+// streamWithToolBridge, which under heavy test concurrency could take long
+// enough that the test worker hung (the only documented full-suite flake).
+// No circular dependency between the two modules, so static is safe and
+// faster (loads once at module init instead of first call).
+import { runToolBridgeLoop } from './cli-tool-bridge.js';
 
 const log = getLog('CliChatProvider');
 
@@ -564,7 +570,6 @@ export class CliChatProvider implements IProvider {
 
     void (async () => {
       try {
-        const { runToolBridgeLoop } = await import('./cli-tool-bridge.js');
         const bridgeResult = await runToolBridgeLoop(
           request.messages,
           async (msgs) => {

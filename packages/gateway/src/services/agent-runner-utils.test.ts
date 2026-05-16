@@ -211,7 +211,7 @@ describe('agent-runner-utils', () => {
   describe('createTimeoutPromise()', () => {
     it('rejects after timeout', async () => {
       vi.useFakeTimers();
-      const promise = createTimeoutPromise(1000, 'Test op');
+      const { promise } = createTimeoutPromise(1000, 'Test op');
       vi.advanceTimersByTime(1000);
       await expect(promise).rejects.toThrow('Test op timed out after 1000ms');
       vi.useRealTimers();
@@ -219,9 +219,22 @@ describe('agent-runner-utils', () => {
 
     it('uses default label', async () => {
       vi.useFakeTimers();
-      const promise = createTimeoutPromise(500);
+      const { promise } = createTimeoutPromise(500);
       vi.advanceTimersByTime(500);
       await expect(promise).rejects.toThrow('Operation timed out after 500ms');
+      vi.useRealTimers();
+    });
+
+    it('cancel() prevents the timeout from firing', async () => {
+      vi.useFakeTimers();
+      const { promise, cancel } = createTimeoutPromise(1000, 'Test');
+      cancel();
+      vi.advanceTimersByTime(2000);
+      // The promise should remain pending forever after cancel — race a
+      // tick-based sentinel to confirm it does not reject.
+      const sentinel = Promise.resolve('not-rejected');
+      const winner = await Promise.race([promise.catch(() => 'rejected'), sentinel]);
+      expect(winner).toBe('not-rejected');
       vi.useRealTimers();
     });
   });
