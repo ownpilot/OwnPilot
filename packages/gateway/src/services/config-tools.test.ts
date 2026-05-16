@@ -315,6 +315,63 @@ describe('Config Tools', () => {
       });
     });
 
+    it('normalizes typed fields before creating an entry', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'svc',
+        configSchema: [
+          { name: 'endpoint', label: 'Endpoint', type: 'url' },
+          { name: 'timeout', label: 'Timeout', type: 'number' },
+          { name: 'metadata', label: 'Metadata', type: 'json' },
+        ],
+      });
+      mockConfigServicesRepo.createEntry.mockResolvedValue({
+        id: 'new-entry',
+        label: 'Default',
+      });
+
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'svc',
+        data: {
+          endpoint: 'https://example.com',
+          timeout: '30',
+          metadata: '{"region":"tr"}',
+        },
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockConfigServicesRepo.createEntry).toHaveBeenCalledWith('svc', {
+        data: {
+          endpoint: 'https://example.com',
+          timeout: 30,
+          metadata: { region: 'tr' },
+        },
+        label: 'Default',
+        isDefault: true,
+      });
+    });
+
+    it('returns error for invalid typed fields', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'svc',
+        configSchema: [
+          { name: 'endpoint', label: 'Endpoint', type: 'url' },
+          { name: 'timeout', label: 'Timeout', type: 'number' },
+        ],
+      });
+
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'svc',
+        data: { endpoint: 'not-a-url', timeout: 'slow' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid fields');
+      expect(result.error).toContain('Endpoint');
+      expect(result.error).toContain('Timeout');
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+      expect(mockConfigServicesRepo.updateEntry).not.toHaveBeenCalled();
+    });
+
     it('updates existing default entry', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue({
         name: 'deepl',

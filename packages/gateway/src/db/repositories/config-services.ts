@@ -426,6 +426,14 @@ export class ConfigServicesRepository extends BaseRepository {
     const existingEntries = cache.entries.get(serviceName);
     const isFirstEntry = !existingEntries || existingEntries.length === 0;
     const isDefault = input.isDefault === true || isFirstEntry;
+    const service = cache.services.get(serviceName);
+
+    if (service && !service.multiEntry && !isFirstEntry) {
+      throw new Error('This service supports only one config entry');
+    }
+    if (isDefault && input.isActive === false) {
+      throw new Error('Default config entries must stay active');
+    }
 
     // If marking this as default, unset existing defaults
     if (isDefault && !isFirstEntry) {
@@ -543,6 +551,12 @@ export class ConfigServicesRepository extends BaseRepository {
     if (!entryRow) return false;
 
     const serviceName = entryRow.service_name;
+    const entries = cache.entries.get(serviceName) ?? [];
+    const hasActiveSibling = entries.some((entry) => entry.id !== id && entry.isActive);
+    if (parseBool(entryRow.is_default) && hasActiveSibling) {
+      return false;
+    }
+
     const result = await this.execute('DELETE FROM config_entries WHERE id = $1', [id]);
 
     if (result.changes > 0) {

@@ -9,7 +9,7 @@
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { maskSecret, getErrorMessage } from '../routes/helpers.js';
-import { hasConfiguredData } from './config-entry-validation.js';
+import { hasConfiguredData, normalizeAndValidateEntryData } from './config-entry-validation.js';
 
 // =============================================================================
 // Tool Definitions
@@ -219,6 +219,13 @@ async function executeSetConfigEntry(
   }
 
   const schema = svc.configSchema ?? [];
+  const normalized = normalizeAndValidateEntryData(data, schema);
+  if (normalized.errors.length > 0) {
+    return {
+      content: { error: `Invalid fields: ${normalized.errors.join(', ')}` },
+      isError: true,
+    };
+  }
 
   // Check if there's already a default entry to update
   const existingEntry = label
@@ -230,7 +237,7 @@ async function executeSetConfigEntry(
       // Merge new data with existing data (don't wipe fields not provided)
       // Protect against masked secret values being merged in
       const secretFieldNames = schema.filter((f) => f.type === 'secret').map((f) => f.name);
-      const cleanData = { ...data };
+      const cleanData = { ...normalized.data };
       for (const field of secretFieldNames) {
         const val = cleanData[field];
         if (typeof val === 'string' && (val === '****' || /^.{4}\.\.\..{4}$/.test(val))) {
@@ -259,11 +266,11 @@ async function executeSetConfigEntry(
           service: serviceName,
           entryId: existingEntry.id,
           label: label ?? existingEntry.label,
-          updatedFields: Object.keys(data),
+          updatedFields: Object.keys(normalized.data),
         },
       };
     } else {
-      const missing = getMissingRequiredFields(schema, data);
+      const missing = getMissingRequiredFields(schema, normalized.data);
       if (missing.length > 0) {
         return {
           content: { error: `Missing required fields: ${missing.join(', ')}` },
@@ -273,7 +280,7 @@ async function executeSetConfigEntry(
 
       // Create new entry
       const entry = await configServicesRepo.createEntry(serviceName, {
-        data,
+        data: normalized.data,
         label: label ?? 'Default',
         isDefault: true,
       });
@@ -285,7 +292,7 @@ async function executeSetConfigEntry(
           service: serviceName,
           entryId: entry.id,
           label: entry.label,
-          setFields: Object.keys(data),
+          setFields: Object.keys(normalized.data),
         },
       };
     }

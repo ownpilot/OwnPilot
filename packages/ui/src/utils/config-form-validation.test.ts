@@ -46,6 +46,7 @@ describe('normalizeConfigFormData', () => {
 
   it('reports invalid URL, number, boolean, select, and JSON fields', () => {
     const service = makeService([
+      { name: 'name', label: 'Name', type: 'text' },
       { name: 'endpoint', label: 'Endpoint', type: 'url' },
       { name: 'timeout', label: 'Timeout', type: 'number' },
       { name: 'enabled', label: 'Enabled', type: 'boolean' },
@@ -60,6 +61,7 @@ describe('normalizeConfigFormData', () => {
 
     const result = normalizeConfigFormData(
       {
+        name: 123,
         endpoint: 'nope',
         timeout: 'slow',
         enabled: 'yes',
@@ -70,6 +72,7 @@ describe('normalizeConfigFormData', () => {
     );
 
     expect(result.errors).toEqual([
+      'Name must be a string',
       'Endpoint must be a valid URL',
       'Timeout must be a number',
       'Enabled must be true or false',

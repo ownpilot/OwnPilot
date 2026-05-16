@@ -15,6 +15,7 @@
 
 /** Supported field types for config schemas */
 export type ConfigFieldType =
+  | 'text' // legacy alias for string/plain text
   | 'string' // plain text
   | 'secret' // masked in UI and API responses
   | 'url' // validated URL

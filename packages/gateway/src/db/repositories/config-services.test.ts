@@ -689,7 +689,7 @@ describe('ConfigServicesRepository', () => {
     it('should unset existing defaults when creating a new default entry', async () => {
       // Init with existing entry
       mockAdapter.query
-        .mockResolvedValueOnce([makeServiceRow()])
+        .mockResolvedValueOnce([makeServiceRow({ multi_entry: true })])
         .mockResolvedValueOnce([makeEntryRow()]);
       await repo.initialize();
 
@@ -718,6 +718,28 @@ describe('ConfigServicesRepository', () => {
       // First execute call is the unset
       const unsetSql = mockAdapter.execute.mock.calls[0]![0] as string;
       expect(unsetSql).toContain('is_default = FALSE');
+    });
+
+    it('should reject a second entry for single-entry services', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow({ multi_entry: false })])
+        .mockResolvedValueOnce([makeEntryRow()]);
+      await repo.initialize();
+
+      await expect(
+        repo.createEntry('openai', { label: 'Backup', data: { api_key: 'new-key' } })
+      ).rejects.toThrow('This service supports only one config entry');
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
+    });
+
+    it('should reject inactive default entries on create', async () => {
+      mockAdapter.query.mockResolvedValueOnce([makeServiceRow()]).mockResolvedValueOnce([]);
+      await repo.initialize();
+
+      await expect(repo.createEntry('openai', { isActive: false })).rejects.toThrow(
+        'Default config entries must stay active'
+      );
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
     });
 
     it('should default label to "Default" when not provided', async () => {
@@ -938,6 +960,25 @@ describe('ConfigServicesRepository', () => {
       const result = await repo.deleteEntry('entry-1');
 
       expect(result).toBe(false);
+    });
+
+    it('should return false when deleting a default entry while another active entry exists', async () => {
+      mockAdapter.query
+        .mockResolvedValueOnce([makeServiceRow({ multi_entry: true })])
+        .mockResolvedValueOnce([
+          makeEntryRow({ id: 'entry-1', is_default: true, is_active: true }),
+          makeEntryRow({ id: 'entry-2', is_default: false, is_active: true }),
+        ]);
+      await repo.initialize();
+
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeEntryRow({ id: 'entry-1', is_default: true, is_active: true })
+      );
+
+      const result = await repo.deleteEntry('entry-1');
+
+      expect(result).toBe(false);
+      expect(mockAdapter.execute).not.toHaveBeenCalled();
     });
   });
 

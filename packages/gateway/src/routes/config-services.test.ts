@@ -783,6 +783,7 @@ describe('Config Services Routes', () => {
     const typedService = {
       ...sampleService,
       configSchema: [
+        { name: 'name', type: 'text', label: 'Name' },
         { name: 'endpoint', type: 'url', label: 'Endpoint' },
         { name: 'timeout', type: 'number', label: 'Timeout' },
         { name: 'enabled', type: 'boolean', label: 'Enabled' },
@@ -807,6 +808,7 @@ describe('Config Services Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: {
+            name: 123,
             endpoint: 'not-a-url',
             timeout: 'slow',
             enabled: 'yes',
@@ -818,6 +820,7 @@ describe('Config Services Routes', () => {
 
       expect(res.status).toBe(400);
       const json = await res.json();
+      expect(json.error.message).toContain('Name');
       expect(json.error.message).toContain('Endpoint');
       expect(json.error.message).toContain('Timeout');
       expect(json.error.message).toContain('Enabled');
@@ -834,6 +837,7 @@ describe('Config Services Routes', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: {
+            name: 'Local endpoint',
             endpoint: 'http://localhost:3000',
             timeout: '30',
             enabled: true,
@@ -848,6 +852,7 @@ describe('Config Services Routes', () => {
         'gmail',
         expect.objectContaining({
           data: expect.objectContaining({
+            name: 'Local endpoint',
             timeout: 30,
             metadata: { region: 'tr' },
           }),

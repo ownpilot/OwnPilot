@@ -25,6 +25,7 @@ export function normalizeConfigFormData(
     if (isEmptyConfigValue(value)) continue;
 
     switch (field.type) {
+      case 'text':
       case 'string':
       case 'secret':
         if (typeof value !== 'string') errors.push(`${label} must be a string`);

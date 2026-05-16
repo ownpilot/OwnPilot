@@ -1,5 +1,9 @@
 import type { ConfigFieldDefinition } from '@ownpilot/core';
 
+type LegacyConfigFieldDefinition = Omit<ConfigFieldDefinition, 'type'> & {
+  type: ConfigFieldDefinition['type'] | 'text';
+};
+
 export function isEmptyConfigValue(value: unknown): boolean {
   return value === undefined || value === null || value === '';
 }
@@ -14,7 +18,7 @@ export function hasConfiguredData(data: Record<string, unknown>): boolean {
  */
 export function validateRequiredFields(
   data: Record<string, unknown>,
-  schema: ConfigFieldDefinition[]
+  schema: LegacyConfigFieldDefinition[]
 ): string[] {
   const missing: string[] = [];
   for (const field of schema) {
@@ -28,7 +32,7 @@ export function validateRequiredFields(
 
 export function normalizeAndValidateEntryData(
   data: Record<string, unknown>,
-  schema: ConfigFieldDefinition[]
+  schema: LegacyConfigFieldDefinition[]
 ): { data: Record<string, unknown>; errors: string[] } {
   const normalized = { ...data };
   const errors: string[] = [];
@@ -39,6 +43,7 @@ export function normalizeAndValidateEntryData(
 
     const label = field.label || field.name;
     switch (field.type) {
+      case 'text':
       case 'string':
       case 'secret':
         if (typeof value !== 'string') {

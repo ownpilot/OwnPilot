@@ -4,7 +4,7 @@ import { Eye, EyeOff } from './icons';
 interface ConfigFieldDefinition {
   name: string;
   label: string;
-  type: 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
+  type: 'text' | 'string' | 'secret' | 'url' | 'number' | 'boolean' | 'select' | 'json';
   required?: boolean;
   defaultValue?: unknown;
   envVar?: string;
