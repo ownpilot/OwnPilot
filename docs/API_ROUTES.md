@@ -2220,7 +2220,8 @@ Versioned document management. Supports markdown, code, JSON, HTML, CSV, SVG, an
 **Mount:** `/api/v1/voice`
 **Source:** `packages/gateway/src/routes/voice.ts`
 
-Speech-to-text (Whisper) and text-to-speech (OpenAI TTS) pipeline.
+Speech-to-text and text-to-speech pipeline. Supports OpenAI/ElevenLabs providers
+and local `whisper.cpp` + Piper through `audio_service.provider_type = local`.
 
 ### Endpoints
 

@@ -178,6 +178,65 @@ export const KNOWN_CONFIG_SERVICES: CreateConfigServiceInput[] = [
   // Media (TTS / STT)
   // ---------------------------------------------------------------------------
   {
+    name: 'audio_service',
+    displayName: 'Audio Service',
+    category: 'ai',
+    description:
+      'Speech-to-text and text-to-speech provider. Supports OpenAI, ElevenLabs, or local Whisper/Piper.',
+    docsUrl: 'https://github.com/ggerganov/whisper.cpp',
+    configSchema: [
+      {
+        name: 'provider_type',
+        label: 'Provider',
+        type: 'select',
+        required: false,
+        defaultValue: 'openai',
+        options: [
+          { value: 'openai', label: 'OpenAI' },
+          { value: 'elevenlabs', label: 'ElevenLabs' },
+          { value: 'local', label: 'Local Whisper/Piper' },
+        ],
+        order: 0,
+      },
+      {
+        name: 'api_key',
+        label: 'API Key',
+        type: 'secret',
+        required: false,
+        description: 'Required for OpenAI or ElevenLabs. Leave empty for local provider.',
+        order: 1,
+      },
+      {
+        name: 'base_url',
+        label: 'Base URL',
+        type: 'url',
+        required: false,
+        placeholder: 'https://api.openai.com or http://127.0.0.1:2022',
+        description: 'For local provider, point to a whisper.cpp OpenAI-compatible server.',
+        order: 2,
+      },
+      {
+        name: 'local_tts_command',
+        label: 'Local TTS Command',
+        type: 'string',
+        required: false,
+        defaultValue: 'piper',
+        placeholder: 'piper',
+        description: 'Piper executable path or command name.',
+        order: 3,
+      },
+      {
+        name: 'local_tts_model',
+        label: 'Local TTS Model',
+        type: 'string',
+        required: false,
+        placeholder: 'D:\\models\\piper\\tr_TR-voice.onnx',
+        description: 'Path to a Piper .onnx voice model.',
+        order: 4,
+      },
+    ],
+  },
+  {
     name: 'elevenlabs',
     displayName: 'ElevenLabs',
     category: 'media',

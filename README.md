@@ -2,7 +2,7 @@
 
 > Privacy-first personal AI assistant platform with Claw autonomous agents, soul agents, multi-agent orchestration, AI agent creator, tool orchestration, multi-provider support, MCP integration, voice pipeline, browser automation, IoT edge device control, and Telegram + WhatsApp connectivity.
 >
->**Self-hosted. Your data stays yours.**
+> **Self-hosted. Your data stays yours.**
 
 <p align="center">
   <img src="ownpilot_.jpeg" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
@@ -512,7 +512,7 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | **AI Configuration**   | `models.ts`, `providers.ts`, `model-configs.ts`, `local-providers.ts`, `model-routing.ts`                                                                                         |
 | **Personal Data**      | `personal-data.ts`, `personal-data-tools.ts`, `memories.ts`, `goals.ts`, `expenses.ts`, `custom-data.ts`                                                                          |
 | **Productivity**       | `productivity.ts` (Pomodoro, Habits, Captures)                                                                                                                                    |
-| **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`, `souls.ts`                                              |
+| **Automation**         | `triggers.ts`, `heartbeats.ts`, `plans.ts`, `autonomy.ts`, `workflows.ts`, `workflow-copilot.ts`, `souls.ts`                                                                      |
 | **Tools & Extensions** | `tools.ts`, `custom-tools.ts`, `plugins.ts`, `extensions.ts`, `skills.ts`, `mcp.ts`, `composio.ts`                                                                                |
 | **Coding & CLI**       | `coding-agents.ts`, `cli-tools.ts`, `cli-providers.ts`                                                                                                                            |
 | **Orchestration**      | `orchestra.ts`, `artifacts.ts`, `browser.ts`, `voice.ts`, `bridges.ts`                                                                                                            |
@@ -987,11 +987,12 @@ Versioned document management for AI-created content — markdown, code, JSON, H
 
 Speech-to-text and text-to-speech integration for voice-powered AI interactions.
 
-- **STT (Whisper)** — Transcribe audio files or microphone input via OpenAI Whisper API
-- **TTS (OpenAI)** — Generate speech from AI responses with 6 voice options (alloy, echo, fable, onyx, nova, shimmer)
-- **VoiceButton** — Microphone recording UI in the ChatInput component
-- **VoicePlayButton** — Inline playback button on AI responses
-- **Channel Support** — WhatsApp voice messages auto-transcribed via channel normalizer
+- **STT (Whisper)** - Transcribe audio files or microphone input via OpenAI Whisper API or local whisper.cpp
+- **TTS (OpenAI/Piper)** - Generate speech from AI responses via OpenAI TTS, ElevenLabs, or local Piper
+- **VoiceButton** - Microphone recording UI in the ChatInput component
+- **VoicePlayButton** - Inline playback button on AI responses
+- **Channel Support** - Telegram voice messages auto-transcribed; optional Telegram voice replies
+- **Local Mode** - Configure `audio_service.provider_type = local` for free local Whisper/Piper audio. See [Local Audio Setup](docs/LOCAL_AUDIO.md).
 
 ---
 

@@ -1,6 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
 import { telegramNormalizer, decodeHtmlEntities } from './telegram.js';
+
+const { mockGetConfig, mockTranscribe } = vi.hoisted(() => ({
+  mockGetConfig: vi.fn(async () => ({
+    available: false,
+    sttSupported: false,
+    sttAvailable: false,
+  })),
+  mockTranscribe: vi.fn(async () => ({ text: '' })),
+}));
+
+vi.mock('../../services/voice-service.js', () => ({
+  getVoiceService: () => ({
+    getConfig: mockGetConfig,
+    transcribe: mockTranscribe,
+  }),
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetConfig.mockResolvedValue({
+    available: false,
+    sttSupported: false,
+    sttAvailable: false,
+  });
+  mockTranscribe.mockResolvedValue({ text: '' });
+});
 
 // ============================================================================
 // Helpers
@@ -57,34 +83,36 @@ describe('decodeHtmlEntities', () => {
 // ============================================================================
 
 describe('telegramNormalizer.normalizeIncoming', () => {
-  it('returns text as-is for plain messages', () => {
-    const result = telegramNormalizer.normalizeIncoming(makeMsg({ text: 'Hello' }));
+  it('returns text as-is for plain messages', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(makeMsg({ text: 'Hello' }));
     expect(result.text).toBe('Hello');
   });
 
-  it('decodes HTML entities in incoming text', () => {
-    const result = telegramNormalizer.normalizeIncoming(makeMsg({ text: 'a &amp; b' }));
+  it('decodes HTML entities in incoming text', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(makeMsg({ text: 'a &amp; b' }));
     expect(result.text).toBe('a & b');
   });
 
-  it('strips /command prefix with arguments', () => {
-    const result = telegramNormalizer.normalizeIncoming(makeMsg({ text: '/help me please' }));
+  it('strips /command prefix with arguments', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(makeMsg({ text: '/help me please' }));
     expect(result.text).toBe('me please');
   });
 
-  it('preserves /connect command (not stripped)', () => {
-    const result = telegramNormalizer.normalizeIncoming(makeMsg({ text: '/connect TOKEN123' }));
+  it('preserves /connect command (not stripped)', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(
+      makeMsg({ text: '/connect TOKEN123' })
+    );
     expect(result.text).toBe('/connect TOKEN123');
   });
 
-  it('handles /command with no arguments', () => {
-    const result = telegramNormalizer.normalizeIncoming(makeMsg({ text: '/start' }));
+  it('handles /command with no arguments', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(makeMsg({ text: '/start' }));
     // No space found, keeps original text
     expect(result.text).toBe('/start');
   });
 
-  it('returns [Attachment] for empty text with attachments', () => {
-    const result = telegramNormalizer.normalizeIncoming(
+  it('returns [Attachment] for empty text with attachments', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(
       makeMsg({
         text: '',
         attachments: [
@@ -102,9 +130,9 @@ describe('telegramNormalizer.normalizeIncoming', () => {
     expect(result.attachments).toHaveLength(1);
   });
 
-  it('converts attachments to base64 data URIs', () => {
+  it('converts attachments to base64 data URIs', async () => {
     const data = Buffer.from('hello');
-    const result = telegramNormalizer.normalizeIncoming(
+    const result = await telegramNormalizer.normalizeIncoming(
       makeMsg({
         attachments: [
           {
@@ -121,8 +149,8 @@ describe('telegramNormalizer.normalizeIncoming', () => {
     expect(result.attachments![0].data).toMatch(/^data:text\/plain;base64,/);
   });
 
-  it('filters out attachments without data', () => {
-    const result = telegramNormalizer.normalizeIncoming(
+  it('filters out attachments without data', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(
       makeMsg({
         attachments: [{ type: 'image', mimeType: 'image/png', filename: 'test.png', size: 0 }],
       })
@@ -130,8 +158,8 @@ describe('telegramNormalizer.normalizeIncoming', () => {
     expect(result.attachments).toBeUndefined();
   });
 
-  it('handles message with both text and attachments', () => {
-    const result = telegramNormalizer.normalizeIncoming(
+  it('handles message with both text and attachments', async () => {
+    const result = await telegramNormalizer.normalizeIncoming(
       makeMsg({
         text: 'Look at this',
         attachments: [
@@ -147,6 +175,59 @@ describe('telegramNormalizer.normalizeIncoming', () => {
     );
     expect(result.text).toBe('Look at this');
     expect(result.attachments).toHaveLength(1);
+  });
+
+  it('prepends Telegram voice transcription for audio-only messages', async () => {
+    mockGetConfig.mockResolvedValue({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
+    mockTranscribe.mockResolvedValue({ text: 'Lambalari acar misin?' });
+
+    const result = await telegramNormalizer.normalizeIncoming(
+      makeMsg({
+        text: '',
+        attachments: [
+          {
+            type: 'audio',
+            mimeType: 'audio/opus',
+            data: Buffer.from('voice-data'),
+            filename: 'voice_abc.ogg',
+            size: 10,
+          },
+        ],
+      })
+    );
+
+    expect(result.text).toBe('[Voice message]: Lambalari acar misin?');
+    expect(mockTranscribe).toHaveBeenCalledWith(expect.any(Buffer), 'voice.ogg');
+  });
+
+  it('combines Telegram voice transcription with caption text', async () => {
+    mockGetConfig.mockResolvedValue({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
+    mockTranscribe.mockResolvedValue({ text: 'Bugunku notlari ozetle' });
+
+    const result = await telegramNormalizer.normalizeIncoming(
+      makeMsg({
+        text: 'Ek olarak takvime bak',
+        attachments: [
+          {
+            type: 'audio',
+            mimeType: 'audio/ogg',
+            data: Buffer.from('voice-data'),
+            filename: 'voice_abc.ogg',
+            size: 10,
+          },
+        ],
+      })
+    );
+
+    expect(result.text).toBe('[Voice message]: Bugunku notlari ozetle\n\nEk olarak takvime bak');
   });
 });
 

@@ -3,21 +3,29 @@ import type { ChannelIncomingMessage } from '@ownpilot/core';
 import { baseNormalizer, stripInternalTags, transcribeAudioAttachment } from './base.js';
 
 // Hoisted mocks so they can be overridden per test
-const { mockIsAvailable, mockTranscribe } = vi.hoisted(() => ({
-  mockIsAvailable: vi.fn(async () => false),
+const { mockGetConfig, mockTranscribe } = vi.hoisted(() => ({
+  mockGetConfig: vi.fn(async () => ({
+    available: false,
+    sttSupported: false,
+    sttAvailable: false,
+  })),
   mockTranscribe: vi.fn(async () => ({ text: '' })),
 }));
 
 vi.mock('../../services/voice-service.js', () => ({
   getVoiceService: () => ({
-    isAvailable: mockIsAvailable,
+    getConfig: mockGetConfig,
     transcribe: mockTranscribe,
   }),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockIsAvailable.mockResolvedValue(false);
+  mockGetConfig.mockResolvedValue({
+    available: false,
+    sttSupported: false,
+    sttAvailable: false,
+  });
   mockTranscribe.mockResolvedValue({ text: '' });
 });
 
@@ -200,13 +208,21 @@ describe('baseNormalizer.normalizeOutgoing', () => {
 
 describe('transcribeAudioAttachment', () => {
   it('returns null when voice service is not available', async () => {
-    mockIsAvailable.mockResolvedValueOnce(false);
+    mockGetConfig.mockResolvedValueOnce({
+      available: false,
+      sttSupported: false,
+      sttAvailable: false,
+    });
     const result = await transcribeAudioAttachment(new Uint8Array([1, 2, 3]), 'audio/ogg');
     expect(result).toBeNull();
   });
 
   it('returns transcription text when voice service is available', async () => {
-    mockIsAvailable.mockResolvedValueOnce(true);
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValueOnce({ text: 'hello world' });
 
     const result = await transcribeAudioAttachment(new Uint8Array([1, 2, 3]), 'audio/ogg');
@@ -215,15 +231,35 @@ describe('transcribeAudioAttachment', () => {
   });
 
   it('uses correct extension for different mime types', async () => {
-    mockIsAvailable.mockResolvedValueOnce(true);
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValueOnce({ text: 'test' });
 
     await transcribeAudioAttachment(new Uint8Array([1]), 'audio/mpeg');
     expect(mockTranscribe).toHaveBeenCalledWith(expect.any(Buffer), 'voice.mp3');
   });
 
+  it('maps Telegram opus voice messages to ogg extension', async () => {
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
+    mockTranscribe.mockResolvedValueOnce({ text: 'test' });
+
+    await transcribeAudioAttachment(new Uint8Array([1]), 'audio/opus');
+    expect(mockTranscribe).toHaveBeenCalledWith(expect.any(Buffer), 'voice.ogg');
+  });
+
   it('falls back to ogg extension for unknown mime type', async () => {
-    mockIsAvailable.mockResolvedValueOnce(true);
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValueOnce({ text: 'test' });
 
     await transcribeAudioAttachment(new Uint8Array([1]), 'audio/unknown-format');
@@ -231,7 +267,11 @@ describe('transcribeAudioAttachment', () => {
   });
 
   it('returns null when transcription returns empty text', async () => {
-    mockIsAvailable.mockResolvedValueOnce(true);
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValueOnce({ text: '  ' });
 
     const result = await transcribeAudioAttachment(new Uint8Array([1]), 'audio/ogg');
@@ -239,7 +279,11 @@ describe('transcribeAudioAttachment', () => {
   });
 
   it('returns null on transcription error', async () => {
-    mockIsAvailable.mockResolvedValueOnce(true);
+    mockGetConfig.mockResolvedValueOnce({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockRejectedValueOnce(new Error('transcription failed'));
 
     const result = await transcribeAudioAttachment(new Uint8Array([1]), 'audio/ogg');
@@ -253,7 +297,11 @@ describe('transcribeAudioAttachment', () => {
 
 describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
   it('prepends transcription as [Voice message] prefix', async () => {
-    mockIsAvailable.mockResolvedValue(true);
+    mockGetConfig.mockResolvedValue({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValue({ text: 'Hello from audio' });
 
     const result = await baseNormalizer.normalizeIncoming(
@@ -267,7 +315,11 @@ describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
   });
 
   it('combines transcription with existing text using double newline', async () => {
-    mockIsAvailable.mockResolvedValue(true);
+    mockGetConfig.mockResolvedValue({
+      available: true,
+      sttSupported: true,
+      sttAvailable: true,
+    });
     mockTranscribe.mockResolvedValue({ text: 'Audio text' });
 
     const result = await baseNormalizer.normalizeIncoming(
@@ -283,7 +335,11 @@ describe('baseNormalizer.normalizeIncoming — audio transcription', () => {
   });
 
   it('skips audio transcription when voice service unavailable', async () => {
-    mockIsAvailable.mockResolvedValue(false);
+    mockGetConfig.mockResolvedValue({
+      available: false,
+      sttSupported: false,
+      sttAvailable: false,
+    });
 
     const result = await baseNormalizer.normalizeIncoming(
       makeMsg({

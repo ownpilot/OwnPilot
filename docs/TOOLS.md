@@ -964,10 +964,12 @@ Image analysis (Vision API) and generation (DALL-E).
 ### 14. Audio
 
 **Source:** `packages/core/src/agent/tools/audio-tools.ts`
-**Executor:** Built-in (requires Whisper/TTS API keys)
+**Executor:** Built-in (supports OpenAI/ElevenLabs keys or local Whisper/Piper)
 **Default Enabled:** No
 
-Text-to-speech, speech-to-text (Whisper), and audio processing.
+Text-to-speech, speech-to-text (Whisper), and audio processing. For free local
+audio, configure `audio_service.provider_type = local` with a whisper.cpp server
+and Piper voice model.
 
 | Tool              | Description                        | Required Params       |
 | ----------------- | ---------------------------------- | --------------------- |

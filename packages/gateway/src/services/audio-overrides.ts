@@ -40,28 +40,44 @@ async function ensureAudioService(): Promise<void> {
       displayName: 'Audio Service',
       category: 'ai',
       description:
-        'Audio service for text-to-speech and speech-to-text (OpenAI, ElevenLabs). Falls back to default AI provider if not configured.',
+        'Audio service for text-to-speech and speech-to-text (OpenAI, ElevenLabs, or local Whisper/Piper). Falls back to default AI provider if not configured.',
       configSchema: [
         {
           name: 'provider_type',
           label: 'Provider',
           type: 'string' as const,
           required: false,
-          description: 'openai (default) or elevenlabs',
+          description: 'openai (default), elevenlabs, or local',
         },
         {
           name: 'api_key',
           label: 'API Key',
           type: 'secret' as const,
           required: false,
-          description: 'Leave empty to use default AI provider key',
+          description:
+            'Leave empty to use default AI provider key. Not required for local provider.',
         },
         {
           name: 'base_url',
           label: 'Base URL',
           type: 'string' as const,
           required: false,
-          description: 'Custom API endpoint',
+          description:
+            'Custom API endpoint. For local provider, use whisper.cpp server URL (default http://127.0.0.1:2022).',
+        },
+        {
+          name: 'local_tts_command',
+          label: 'Local TTS Command',
+          type: 'string' as const,
+          required: false,
+          description: 'Piper executable path or command name (default: piper)',
+        },
+        {
+          name: 'local_tts_model',
+          label: 'Local TTS Model',
+          type: 'string' as const,
+          required: false,
+          description: 'Path to a Piper .onnx voice model',
         },
       ],
     });
@@ -75,21 +91,36 @@ async function ensureAudioService(): Promise<void> {
 // ============================================================================
 
 export interface AudioApiConfig {
-  apiKey: string;
+  apiKey?: string;
   baseUrl: string;
   providerType: string;
+  localTtsCommand?: string;
+  localTtsModel?: string;
 }
 
 export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
   // Check dedicated audio service first
-  const audioKey = configServicesRepo.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
-  if (audioKey) {
-    const providerType =
-      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'provider_type') as string) || 'openai';
+  const providerType =
+    (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'provider_type') as string | undefined) ||
+    undefined;
+  if (providerType === 'local') {
     const baseUrl =
       (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
       getDefaultAudioBaseUrl(providerType);
-    return { apiKey: audioKey, baseUrl, providerType };
+    const localTtsCommand =
+      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'local_tts_command') as string) || 'piper';
+    const localTtsModel =
+      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'local_tts_model') as string) || undefined;
+    return { baseUrl, providerType, localTtsCommand, localTtsModel };
+  }
+
+  const audioKey = configServicesRepo.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
+  if (audioKey) {
+    const resolvedProviderType = providerType || 'openai';
+    const baseUrl =
+      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
+      getDefaultAudioBaseUrl(resolvedProviderType);
+    return { apiKey: audioKey, baseUrl, providerType: resolvedProviderType };
   }
 
   // Fall back to default AI provider (if OpenAI-compatible)
@@ -109,6 +140,8 @@ function getDefaultAudioBaseUrl(providerType: string): string {
   switch (providerType) {
     case 'elevenlabs':
       return 'https://api.elevenlabs.io';
+    case 'local':
+      return 'http://127.0.0.1:2022';
     default:
       return 'https://api.openai.com';
   }
@@ -129,7 +162,8 @@ const textToSpeechOverride: ToolExecutor = async (
   const voice = (params.voice as string) || 'alloy';
   const model = (params.model as string) || 'tts-1';
   const speed = Math.min(Math.max((params.speed as number) || 1.0, 0.25), 4.0);
-  const format = (params.format as string) || 'mp3';
+  const requestedFormat = params.format as string | undefined;
+  let format = requestedFormat || 'mp3';
   const outputPath = params.outputPath as string | undefined;
 
   if (!text?.trim()) {
@@ -155,11 +189,25 @@ const textToSpeechOverride: ToolExecutor = async (
   if (!config) {
     return { content: { error: AUDIO_NOT_CONFIGURED }, isError: true };
   }
+  if (!requestedFormat && config.providerType === 'local') {
+    format = 'wav';
+  }
 
   try {
     let audioBuffer: Buffer;
 
-    if (config.providerType === 'elevenlabs') {
+    if (config.providerType === 'local') {
+      if (format !== 'wav') {
+        return {
+          content: {
+            error: 'Local Piper TTS currently supports wav output only',
+            supportedFormats: ['wav'],
+          },
+          isError: true,
+        };
+      }
+      audioBuffer = await callLocalPiperTTS(config, text, voice, speed);
+    } else if (config.providerType === 'elevenlabs') {
       audioBuffer = await callElevenLabsTTS(config.apiKey, config.baseUrl, text, voice);
     } else {
       audioBuffer = await callOpenAITTS(
@@ -204,7 +252,12 @@ const textToSpeechOverride: ToolExecutor = async (
         format,
         size: stats.size,
         voice,
-        model: config.providerType === 'elevenlabs' ? 'elevenlabs' : model,
+        model:
+          config.providerType === 'local'
+            ? 'piper'
+            : config.providerType === 'elevenlabs'
+              ? 'elevenlabs'
+              : model,
         textLength: text.length,
       },
       isError: false,
@@ -218,7 +271,7 @@ const textToSpeechOverride: ToolExecutor = async (
 };
 
 export async function callOpenAITTS(
-  apiKey: string,
+  apiKey: string | undefined,
   baseUrl: string,
   text: string,
   voice: string,
@@ -229,7 +282,10 @@ export async function callOpenAITTS(
   const url = `${baseUrl}/v1/audio/speech`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    headers: {
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ model, input: text, voice, speed, response_format: format }),
   });
   if (!response.ok) {
@@ -240,11 +296,12 @@ export async function callOpenAITTS(
 }
 
 export async function callElevenLabsTTS(
-  apiKey: string,
+  apiKey: string | undefined,
   baseUrl: string,
   text: string,
   voiceId: string
 ): Promise<Buffer> {
+  if (!apiKey) throw new Error('ElevenLabs API key not configured');
   // ElevenLabs uses voice IDs, default to a well-known voice
   const id = voiceId === 'alloy' ? '21m00Tcm4TlvDq8ikWAM' : voiceId;
   const url = `${baseUrl}/v1/text-to-speech/${id}`;
@@ -258,6 +315,48 @@ export async function callElevenLabsTTS(
     throw new Error(`ElevenLabs TTS API ${response.status}: ${errText.slice(0, 500)}`);
   }
   return Buffer.from(await response.arrayBuffer());
+}
+
+export async function callLocalPiperTTS(
+  config: AudioApiConfig,
+  text: string,
+  _voice: string,
+  _speed: number
+): Promise<Buffer> {
+  if (!config.localTtsModel) {
+    throw new Error('Local TTS model not configured. Set audio_service.local_tts_model.');
+  }
+
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { spawn } = await import('node:child_process');
+
+  const outputPath = path.join(os.tmpdir(), `ownpilot_piper_${Date.now()}_${Math.random()}.wav`);
+  const command = config.localTtsCommand || 'piper';
+  const args = ['--model', config.localTtsModel, '--output_file', outputPath];
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ['pipe', 'ignore', 'pipe'] });
+    let stderr = '';
+
+    child.stderr?.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`Piper exited with code ${code}: ${stderr.slice(0, 500)}`));
+    });
+
+    child.stdin.end(text);
+  });
+
+  try {
+    return await fs.readFile(outputPath);
+  } finally {
+    await fs.unlink(outputPath).catch(() => undefined);
+  }
 }
 
 // ============================================================================
@@ -385,7 +484,7 @@ export interface WhisperResult {
 }
 
 export async function callWhisperTranscribe(
-  apiKey: string,
+  apiKey: string | undefined,
   baseUrl: string,
   audioBuffer: Buffer,
   filename: string,
@@ -405,7 +504,7 @@ export async function callWhisperTranscribe(
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
     body: formData,
   });
 
@@ -490,7 +589,7 @@ const translateAudioOverride: ToolExecutor = async (
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${config.apiKey}` },
+      headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {},
       body: formData,
     });
 

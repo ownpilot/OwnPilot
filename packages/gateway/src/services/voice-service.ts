@@ -14,6 +14,7 @@ import {
   callWhisperTranscribe,
   callOpenAITTS,
   callElevenLabsTTS,
+  callLocalPiperTTS,
   type WhisperResult,
 } from './audio-overrides.js';
 import { getLog } from './log.js';
@@ -54,6 +55,8 @@ export interface VoiceConfigInfo {
   provider: string | null;
   sttSupported: boolean;
   ttsSupported: boolean;
+  sttAvailable: boolean;
+  ttsAvailable: boolean;
   voices: Array<{ id: string; name: string }>;
 }
 
@@ -125,11 +128,13 @@ export class VoiceService {
     const voice = opts?.voice || 'alloy';
     const model = opts?.model || 'tts-1';
     const speed = Math.min(Math.max(opts?.speed || 1.0, 0.25), 4.0);
-    const format = opts?.format || 'mp3';
+    const format = config.providerType === 'local' ? 'wav' : opts?.format || 'mp3';
 
     let audio: Buffer;
 
-    if (config.providerType === 'elevenlabs') {
+    if (config.providerType === 'local') {
+      audio = await callLocalPiperTTS(config, text, voice, speed);
+    } else if (config.providerType === 'elevenlabs') {
       audio = await callElevenLabsTTS(config.apiKey, config.baseUrl, text, voice);
     } else {
       audio = await callOpenAITTS(config.apiKey, config.baseUrl, text, voice, model, speed, format);
@@ -160,16 +165,23 @@ export class VoiceService {
         provider: null,
         sttSupported: false,
         ttsSupported: false,
+        sttAvailable: false,
+        ttsAvailable: false,
         voices: [],
       };
     }
 
+    const sttSupported = config.providerType !== 'elevenlabs';
+    const ttsSupported = true;
+
     return {
       available: true,
       provider: config.providerType,
-      sttSupported: config.providerType !== 'elevenlabs', // ElevenLabs is TTS-only
-      ttsSupported: true,
-      voices: config.providerType === 'elevenlabs' ? [] : OPENAI_VOICES,
+      sttSupported,
+      ttsSupported,
+      sttAvailable: sttSupported,
+      ttsAvailable: ttsSupported,
+      voices: config.providerType === 'openai' ? OPENAI_VOICES : [],
     };
   }
 }

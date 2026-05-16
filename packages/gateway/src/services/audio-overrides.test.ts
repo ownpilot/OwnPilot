@@ -183,6 +183,21 @@ function setupDedicatedAudioConfig(overrides: Record<string, string | undefined>
   });
 }
 
+function setupLocalAudioConfig(overrides: Record<string, string | undefined> = {}): void {
+  mockGetFieldValue.mockImplementation((service: string, field: string) => {
+    if (service === 'audio_service') {
+      const defaults: Record<string, string> = {
+        provider_type: 'local',
+        base_url: 'http://127.0.0.1:2022',
+        local_tts_command: 'piper',
+        local_tts_model: 'voices/tr_TR.onnx',
+      };
+      return overrides[field] !== undefined ? overrides[field] : defaults[field];
+    }
+    return undefined;
+  });
+}
+
 function setupDefaultProviderFallback(
   opts: {
     provider?: string | null;
@@ -474,6 +489,40 @@ describe('resolveAudioConfig', () => {
 
     await executors.text_to_speech!({ text: 'Hello' }, defaultContext);
     expect(mockFetch.mock.calls[0]![0]).toContain('https://api.openai.com');
+  });
+
+  it('should use local whisper config without requiring an API key', async () => {
+    setupLocalAudioConfig();
+    mockFsStat.mockResolvedValue({ size: 1024 });
+    mockFsReadFile.mockResolvedValue(Buffer.from('audio'));
+    mockFetch.mockResolvedValue(
+      makeFetchResponse({
+        body: { text: 'Merhaba dunya', language: 'tr', duration: 1.2 },
+      })
+    );
+
+    const result = await executors.speech_to_text!(
+      { source: '/workspace/audio/test.ogg' },
+      defaultContext
+    );
+
+    expect(result.isError).toBe(false);
+    expect(result.content.text).toBe('Merhaba dunya');
+    const [url, opts] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('http://127.0.0.1:2022/v1/audio/transcriptions');
+    expect(opts.headers).toEqual({});
+  });
+
+  it('should return a clear error when local Piper is asked for non-wav output', async () => {
+    setupLocalAudioConfig();
+
+    const result = await executors.text_to_speech!(
+      { text: 'Merhaba', format: 'mp3' },
+      defaultContext
+    );
+
+    expect(result.isError).toBe(true);
+    expect(result.content.error).toContain('Local Piper TTS currently supports wav');
   });
 });
 

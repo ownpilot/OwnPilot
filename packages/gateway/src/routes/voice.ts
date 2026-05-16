@@ -30,6 +30,30 @@ voiceRoutes.get('/config', async (c) => {
   }
 });
 
+voiceRoutes.get('/status', async (c) => {
+  try {
+    const service = getVoiceService();
+    const config = await service.getConfig();
+    return apiResponse(c, config);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+voiceRoutes.get('/voices', async (c) => {
+  try {
+    const service = getVoiceService();
+    const config = await service.getConfig();
+    return apiResponse(c, {
+      available: config.available,
+      provider: config.provider,
+      voices: config.voices,
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
 // =============================================================================
 // POST /transcribe
 // =============================================================================

@@ -13,11 +13,13 @@ const {
   mockCallWhisperTranscribe,
   mockCallOpenAITTS,
   mockCallElevenLabsTTS,
+  mockCallLocalPiperTTS,
 } = vi.hoisted(() => ({
   mockResolveAudioConfig: vi.fn(),
   mockCallWhisperTranscribe: vi.fn(),
   mockCallOpenAITTS: vi.fn(),
   mockCallElevenLabsTTS: vi.fn(),
+  mockCallLocalPiperTTS: vi.fn(),
 }));
 
 vi.mock('./audio-overrides.js', () => ({
@@ -25,6 +27,7 @@ vi.mock('./audio-overrides.js', () => ({
   callWhisperTranscribe: mockCallWhisperTranscribe,
   callOpenAITTS: mockCallOpenAITTS,
   callElevenLabsTTS: mockCallElevenLabsTTS,
+  callLocalPiperTTS: mockCallLocalPiperTTS,
 }));
 
 vi.mock('./log.js', () => ({
@@ -47,6 +50,13 @@ const elevenLabsConfig = {
   apiKey: 'el-key',
   baseUrl: 'https://api.elevenlabs.io',
   providerType: 'elevenlabs',
+};
+
+const localConfig = {
+  baseUrl: 'http://127.0.0.1:2022',
+  providerType: 'local',
+  localTtsCommand: 'piper',
+  localTtsModel: 'voices/tr_TR.onnx',
 };
 
 const whisperResult = {
@@ -124,6 +134,21 @@ describe('VoiceService', () => {
         expect.objectContaining({ language: 'fr', prompt: 'French speech' })
       );
     });
+
+    it('transcribes local audio without requiring an API key', async () => {
+      mockResolveAudioConfig.mockResolvedValueOnce(localConfig);
+      mockCallWhisperTranscribe.mockResolvedValueOnce(whisperResult);
+
+      await service.transcribe(Buffer.from('audio'), 'voice.ogg');
+
+      expect(mockCallWhisperTranscribe).toHaveBeenCalledWith(
+        undefined,
+        'http://127.0.0.1:2022',
+        expect.any(Buffer),
+        'voice.ogg',
+        expect.any(Object)
+      );
+    });
   });
 
   // ---- synthesize ----
@@ -170,6 +195,21 @@ describe('VoiceService', () => {
         'alloy' // default voice
       );
       expect(mockCallOpenAITTS).not.toHaveBeenCalled();
+    });
+
+    it('synthesizes using local Piper when providerType is local', async () => {
+      mockResolveAudioConfig.mockResolvedValueOnce(localConfig);
+      const audioBuffer = Buffer.from('wav-data');
+      mockCallLocalPiperTTS.mockResolvedValueOnce(audioBuffer);
+
+      const result = await service.synthesize('Merhaba', { format: 'opus' });
+
+      expect(result.audio).toBe(audioBuffer);
+      expect(result.format).toBe('wav');
+      expect(result.contentType).toBe('audio/wav');
+      expect(mockCallLocalPiperTTS).toHaveBeenCalledWith(localConfig, 'Merhaba', 'alloy', 1);
+      expect(mockCallOpenAITTS).not.toHaveBeenCalled();
+      expect(mockCallElevenLabsTTS).not.toHaveBeenCalled();
     });
 
     it('uses provided voice, model, speed, and format options', async () => {
@@ -276,6 +316,8 @@ describe('VoiceService', () => {
         provider: null,
         sttSupported: false,
         ttsSupported: false,
+        sttAvailable: false,
+        ttsAvailable: false,
         voices: [],
       });
     });
@@ -287,6 +329,8 @@ describe('VoiceService', () => {
       expect(config.provider).toBe('openai');
       expect(config.sttSupported).toBe(true);
       expect(config.ttsSupported).toBe(true);
+      expect(config.sttAvailable).toBe(true);
+      expect(config.ttsAvailable).toBe(true);
       expect(config.voices.length).toBeGreaterThan(0);
       expect(config.voices[0]).toHaveProperty('id');
       expect(config.voices[0]).toHaveProperty('name');
@@ -298,6 +342,18 @@ describe('VoiceService', () => {
       expect(config.available).toBe(true);
       expect(config.provider).toBe('elevenlabs');
       expect(config.sttSupported).toBe(false); // ElevenLabs is TTS-only
+      expect(config.ttsSupported).toBe(true);
+      expect(config.sttAvailable).toBe(false);
+      expect(config.ttsAvailable).toBe(true);
+      expect(config.voices).toEqual([]);
+    });
+
+    it('returns local config with STT and TTS support but no cloud voices', async () => {
+      mockResolveAudioConfig.mockResolvedValueOnce(localConfig);
+      const config = await service.getConfig();
+      expect(config.available).toBe(true);
+      expect(config.provider).toBe('local');
+      expect(config.sttSupported).toBe(true);
       expect(config.ttsSupported).toBe(true);
       expect(config.voices).toEqual([]);
     });

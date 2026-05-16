@@ -7,7 +7,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { Bot } from 'grammy';
+import { Bot, InputFile } from 'grammy';
 import type { Message } from 'grammy/types';
 import { TelegramApprovalHandler } from './approval-handler.js';
 import { TelegramProgressManager } from './progress-manager.js';
@@ -51,6 +51,36 @@ function isParseEntityError(err: unknown): boolean {
   return msg.includes("can't parse entities") || msg.includes("can't find end of the entity");
 }
 
+function replaceExtension(filename: string, extension: string): string {
+  const withoutExt = filename.replace(/\.[^.\\/]+$/, '');
+  return `${withoutExt}.${extension}`;
+}
+
+async function convertAudioToOggOpus(audio: Buffer): Promise<Buffer> {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const execFileAsync = promisify(execFile);
+  const base = path.join(os.tmpdir(), `ownpilot_tg_voice_${Date.now()}_${Math.random()}`);
+  const inputPath = `${base}.wav`;
+  const outputPath = `${base}.ogg`;
+
+  await fs.writeFile(inputPath, audio);
+  try {
+    await execFileAsync(
+      'ffmpeg',
+      ['-y', '-i', inputPath, '-vn', '-acodec', 'libopus', '-b:a', '48k', '-vbr', 'on', outputPath],
+      { timeout: 30000 }
+    );
+    return await fs.readFile(outputPath);
+  } finally {
+    await fs.unlink(inputPath).catch(() => undefined);
+    await fs.unlink(outputPath).catch(() => undefined);
+  }
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -60,6 +90,9 @@ export interface TelegramChannelConfig {
   allowed_users?: string;
   allowed_chats?: string;
   parse_mode?: 'Markdown' | 'MarkdownV2' | 'HTML';
+  voice_reply_mode?: 'never' | 'voice_messages' | 'always';
+  voice_reply_voice?: string;
+  voice_reply_speed?: number;
   /** Public HTTPS base URL for webhook mode. Empty/undefined = polling mode. */
   webhook_url?: string;
   /** Secret token for webhook URL path. Auto-generated if webhook_url is set but this is empty. */
@@ -550,6 +583,8 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     }
 
     const chatId = message.platformChatId;
+    const attachments = message.attachments ?? [];
+    const voiceOptions = (message.options?.telegram as { asVoice?: boolean } | undefined) ?? {};
 
     // Convert Markdown → Telegram HTML when parse_mode is HTML
     let textToSend = message.text;
@@ -557,7 +592,17 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       textToSend = markdownToTelegramHtml(message.text);
     }
 
-    const parts = splitMessage(textToSend, PLATFORM_MESSAGE_LIMITS.telegram!);
+    if (voiceOptions.asVoice && message.text.trim()) {
+      const voiceAttachment = await this.synthesizeReplyAttachment(message.text);
+      if (voiceAttachment) {
+        attachments.push(voiceAttachment);
+        textToSend = '';
+      }
+    }
+
+    const parts = textToSend.trim()
+      ? splitMessage(textToSend, PLATFORM_MESSAGE_LIMITS.telegram!)
+      : [];
     let lastMessageId = '';
 
     for (let i = 0; i < parts.length; i++) {
@@ -608,7 +653,128 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       }
     }
 
+    for (let i = 0; i < attachments.length; i++) {
+      const attachment = attachments[i]!;
+      const options: Record<string, unknown> = {};
+
+      if (i === 0 && !lastMessageId && message.replyToId) {
+        const msgId = message.replyToId.includes(':')
+          ? message.replyToId.split(':').pop()
+          : message.replyToId;
+        if (msgId && !Number.isNaN(Number(msgId))) {
+          options.reply_parameters = { message_id: Number(msgId) };
+        }
+      }
+
+      const sent = await this.sendAttachment(chatId, attachment, options, voiceOptions.asVoice);
+      if (!sent) continue;
+
+      lastMessageId = String(sent.message_id);
+      if (this.messageChatMap.size >= MAX_MESSAGE_CHAT_MAP_SIZE) {
+        const oldest = this.messageChatMap.keys().next().value;
+        if (oldest) this.messageChatMap.delete(oldest);
+      }
+      this.messageChatMap.set(lastMessageId, chatId);
+    }
+
     return lastMessageId;
+  }
+
+  private async sendAttachment(
+    chatId: string,
+    attachment: ChannelAttachment,
+    options: Record<string, unknown>,
+    forceVoice = false
+  ): Promise<{ message_id: number } | null> {
+    if (!this.bot) return null;
+
+    const preparedAttachment =
+      forceVoice && attachment.type === 'audio'
+        ? await this.prepareTelegramVoiceAttachment(attachment)
+        : attachment;
+    const input = this.toInputFile(preparedAttachment);
+    if (!input) return null;
+
+    if (preparedAttachment.type === 'audio') {
+      const mimeType = preparedAttachment.mimeType.toLowerCase();
+      if (mimeType === 'audio/ogg' || mimeType === 'audio/opus') {
+        return this.bot.api.sendVoice(chatId, input, options);
+      }
+      return this.bot.api.sendAudio(chatId, input, options);
+    }
+
+    if (preparedAttachment.type === 'image') {
+      return this.bot.api.sendPhoto(chatId, input, options);
+    }
+
+    return this.bot.api.sendDocument(chatId, input, options);
+  }
+
+  private toInputFile(attachment: ChannelAttachment): InputFile | string | null {
+    if (attachment.data) {
+      return new InputFile(Buffer.from(attachment.data), attachment.filename ?? 'attachment');
+    }
+    if (attachment.path) {
+      return new InputFile(attachment.path, attachment.filename);
+    }
+    return attachment.url ?? null;
+  }
+
+  private async prepareTelegramVoiceAttachment(
+    attachment: ChannelAttachment
+  ): Promise<ChannelAttachment> {
+    const mimeType = attachment.mimeType.toLowerCase();
+    if (mimeType === 'audio/ogg' || mimeType === 'audio/opus') return attachment;
+    if (!attachment.data) return attachment;
+
+    try {
+      const converted = await convertAudioToOggOpus(Buffer.from(attachment.data));
+      return {
+        ...attachment,
+        data: converted,
+        mimeType: 'audio/ogg',
+        filename: replaceExtension(attachment.filename ?? `voice_${Date.now()}`, 'ogg'),
+        size: converted.length,
+      };
+    } catch (error) {
+      log.warn('[Telegram] Failed to convert audio to OGG/Opus voice format', {
+        error: getErrorMessage(error),
+      });
+      return attachment;
+    }
+  }
+
+  async shouldReplyWithVoice(message: ChannelIncomingMessage): Promise<boolean> {
+    const mode = this.config.voice_reply_mode ?? 'never';
+    if (mode === 'never') return false;
+    if (mode === 'always') return true;
+    return Boolean(message.attachments?.some((attachment) => attachment.type === 'audio'));
+  }
+
+  private async synthesizeReplyAttachment(text: string): Promise<ChannelAttachment | null> {
+    try {
+      const { getVoiceService } = await import('../../../services/voice-service.js');
+      const service = getVoiceService();
+      const config = await service.getConfig();
+      if (!config.available || !(config.ttsSupported || config.ttsAvailable)) return null;
+
+      const result = await service.synthesize(text, {
+        voice: this.config.voice_reply_voice || undefined,
+        speed: this.config.voice_reply_speed,
+        format: 'opus',
+      });
+
+      return {
+        type: 'audio',
+        mimeType: result.contentType,
+        filename: `ownpilot_voice_${Date.now()}.${result.format}`,
+        size: result.audio.length,
+        data: result.audio,
+      };
+    } catch (error) {
+      log.warn('[Telegram] Failed to synthesize voice reply', { error: getErrorMessage(error) });
+      return null;
+    }
   }
 
   getStatus(): ChannelConnectionStatus {

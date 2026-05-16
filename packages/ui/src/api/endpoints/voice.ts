@@ -13,16 +13,24 @@ import { apiClient } from '../client';
 
 export interface VoiceConfig {
   available: boolean;
+  provider: string | null;
+  sttSupported: boolean;
+  ttsSupported: boolean;
   sttAvailable: boolean;
   ttsAvailable: boolean;
-  provider: string | null;
-  voices: string[];
+  voices: Array<{ id: string; name: string }>;
 }
 
 export interface TranscribeResult {
   text: string;
   language?: string;
   duration?: number;
+}
+
+export interface VoiceListResult {
+  available: boolean;
+  provider: string | null;
+  voices: Array<{ id: string; name: string }>;
 }
 
 // =============================================================================
@@ -32,6 +40,12 @@ export interface TranscribeResult {
 export const voiceApi = {
   /** Check voice service availability and configuration */
   getConfig: () => apiClient.get<VoiceConfig>('/voice/config'),
+
+  /** Alias for voice service availability and configuration */
+  getStatus: () => apiClient.get<VoiceConfig>('/voice/status'),
+
+  /** List voices supported by the configured TTS provider */
+  getVoices: () => apiClient.get<VoiceListResult>('/voice/voices'),
 
   /** Transcribe audio blob to text (multipart upload) */
   async transcribe(blob: Blob, language?: string): Promise<TranscribeResult> {

@@ -45,6 +45,7 @@ describe('KNOWN_CONFIG_SERVICES', () => {
 
   it('contains media services', () => {
     const names = KNOWN_CONFIG_SERVICES.map((s) => s.name);
+    expect(names).toContain('audio_service');
     expect(names).toContain('elevenlabs');
   });
 
@@ -88,6 +89,19 @@ describe('KNOWN_CONFIG_SERVICES', () => {
     const modelField = svc!.configSchema.find((f) => f.name === 'model_id');
     expect(modelField?.type).toBe('select');
     expect(modelField?.options).toBeDefined();
+  });
+
+  it('audio_service supports local Whisper/Piper configuration', () => {
+    const svc = KNOWN_CONFIG_SERVICES.find((s) => s.name === 'audio_service');
+    expect(svc).toBeDefined();
+    const providerField = svc!.configSchema.find((f) => f.name === 'provider_type');
+    const fieldNames = svc!.configSchema.map((f) => f.name);
+    expect(providerField?.type).toBe('select');
+    expect(providerField?.options).toEqual(
+      expect.arrayContaining([expect.objectContaining({ value: 'local' })])
+    );
+    expect(fieldNames).toContain('local_tts_command');
+    expect(fieldNames).toContain('local_tts_model');
   });
 });
 

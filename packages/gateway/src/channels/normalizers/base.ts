@@ -37,9 +37,13 @@ export function stripInternalTags(text: string): string {
 /** MIME type → file extension mapping for audio */
 const AUDIO_MIME_EXT: Record<string, string> = {
   'audio/ogg': 'ogg',
+  'audio/oga': 'ogg',
+  'audio/opus': 'ogg',
   'audio/mpeg': 'mp3',
   'audio/mp4': 'm4a',
   'audio/wav': 'wav',
+  'audio/wave': 'wav',
+  'audio/x-wav': 'wav',
   'audio/webm': 'webm',
   'audio/flac': 'flac',
   'audio/x-m4a': 'm4a',
@@ -56,7 +60,8 @@ export async function transcribeAudioAttachment(
   try {
     const { getVoiceService } = await import('../../services/voice-service.js');
     const service = getVoiceService();
-    if (!(await service.isAvailable())) return null;
+    const config = await service.getConfig();
+    if (!config.available || !(config.sttSupported || config.sttAvailable)) return null;
 
     const ext = AUDIO_MIME_EXT[mimeType] || 'ogg';
     const result = await service.transcribe(Buffer.from(data), `voice.${ext}`);

@@ -106,7 +106,7 @@ export type {
 } from './subagents';
 export { artifactsApi } from './artifacts';
 export { voiceApi } from './voice';
-export type { VoiceConfig, TranscribeResult } from './voice';
+export type { VoiceConfig, TranscribeResult, VoiceListResult } from './voice';
 export { browserApi } from './browser';
 export type {
   BrowserConfig,

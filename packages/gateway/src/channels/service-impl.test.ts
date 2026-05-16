@@ -1633,6 +1633,32 @@ describe('ChannelServiceImpl', () => {
         );
       });
 
+      it('should request a voice reply when the channel API opts in', async () => {
+        (
+          channelPlugin.api as typeof channelPlugin.api & {
+            shouldReplyWithVoice: ReturnType<typeof vi.fn>;
+          }
+        ).shouldReplyWithVoice = vi.fn().mockResolvedValue(true);
+
+        await service.processIncomingMessage({
+          ...message,
+          attachments: [
+            {
+              type: 'audio',
+              mimeType: 'audio/ogg',
+              data: Buffer.from('voice'),
+            },
+          ],
+        } as typeof message);
+
+        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            text: 'AI bus response',
+            options: { telegram: { asVoice: true } },
+          })
+        );
+      });
+
       it('should send "(No response generated)" for empty response', async () => {
         mockBus.process.mockResolvedValue({ response: { content: '' } });
 

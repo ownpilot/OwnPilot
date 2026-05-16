@@ -83,6 +83,35 @@ export function buildTelegramChannelPlugin() {
               placeholder: 'auto-generated',
               order: 5,
             },
+            {
+              name: 'voice_reply_mode',
+              label: 'Voice Reply Mode',
+              type: 'select',
+              defaultValue: 'never',
+              description: 'When to reply with synthesized Telegram voice messages.',
+              options: [
+                { value: 'never', label: 'Never' },
+                { value: 'voice_messages', label: 'Only when user sends voice' },
+                { value: 'always', label: 'Always' },
+              ],
+              order: 6,
+            },
+            {
+              name: 'voice_reply_voice',
+              label: 'Voice Reply Voice',
+              type: 'string',
+              description: 'Optional TTS voice ID for Telegram voice replies.',
+              placeholder: 'nova',
+              order: 7,
+            },
+            {
+              name: 'voice_reply_speed',
+              label: 'Voice Reply Speed',
+              type: 'number',
+              description: 'Optional TTS speed from 0.25 to 4.0.',
+              placeholder: '1',
+              order: 8,
+            },
           ],
         },
       ],
@@ -104,6 +133,18 @@ export function buildTelegramChannelPlugin() {
           (config.webhook_secret as string) ??
           (configServicesRepo.getFieldValue('telegram_bot', 'webhook_secret') as string) ??
           '',
+        voice_reply_mode:
+          (config.voice_reply_mode as string) ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_mode') as string) ??
+          'never',
+        voice_reply_voice:
+          (config.voice_reply_voice as string) ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_voice') as string) ??
+          '',
+        voice_reply_speed:
+          (config.voice_reply_speed as number) ??
+          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_speed') as number) ??
+          undefined,
       };
       return new TelegramChannelAPI(resolvedConfig, 'channel.telegram');
     })
@@ -141,6 +182,86 @@ export function buildTelegramChannelPlugin() {
         });
         return {
           content: `Message sent to chat ${params.chat_id} (message ID: ${msgId})`,
+        };
+      }
+    )
+    .tool(
+      {
+        name: 'channel_telegram_send_voice',
+        description: 'Convert text to speech and send it as a Telegram voice message',
+        parameters: {
+          type: 'object',
+          properties: {
+            chat_id: {
+              type: 'string',
+              description: 'Telegram chat ID to send the voice message to',
+            },
+            text: {
+              type: 'string',
+              description: 'Text to synthesize and send as voice',
+            },
+            voice: {
+              type: 'string',
+              description:
+                'Optional TTS voice ID (for OpenAI: alloy, echo, fable, onyx, nova, shimmer)',
+            },
+            speed: {
+              type: 'number',
+              description: 'Optional speech speed from 0.25 to 4.0',
+            },
+          },
+          required: ['chat_id', 'text'],
+        },
+      },
+      async (params) => {
+        const { getChannelService } = await import('@ownpilot/core');
+        const { getVoiceService } = await import('../../../services/voice-service.js');
+
+        const service = getChannelService();
+        const api = service.getChannel('channel.telegram');
+        if (!api || api.getStatus() !== 'connected') {
+          return {
+            content: 'Telegram bot is not connected. Please connect it first.',
+          };
+        }
+
+        const text = String(params.text ?? '').trim();
+        if (!text) {
+          return { content: 'Text is required to synthesize a Telegram voice message.' };
+        }
+
+        const voiceService = getVoiceService();
+        const config = await voiceService.getConfig();
+        if (!config.available || !(config.ttsSupported || config.ttsAvailable)) {
+          return {
+            content:
+              'Voice service is not configured. Configure an AI provider or Audio Service first.',
+          };
+        }
+
+        const result = await voiceService.synthesize(text, {
+          voice: typeof params.voice === 'string' ? params.voice : undefined,
+          speed: typeof params.speed === 'number' ? params.speed : undefined,
+          format: 'opus',
+        });
+
+        const msgId = await api.sendMessage({
+          platformChatId: String(params.chat_id),
+          text: '',
+          options: { telegram: { asVoice: true } },
+          attachments: [
+            {
+              type: 'audio',
+              mimeType: result.contentType,
+              filename: `ownpilot_voice_${Date.now()}.opus`,
+              size: result.audio.length,
+              data: result.audio,
+            },
+          ],
+        });
+
+        return {
+          content: `Voice message sent to chat ${params.chat_id} (message ID: ${msgId})`,
         };
       }
     )

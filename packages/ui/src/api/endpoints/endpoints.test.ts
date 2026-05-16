@@ -49,6 +49,7 @@ import { mcpApi } from './mcp.js';
 import { triggersApi } from './personal-data.js';
 import { tasksApi } from './tasks.js';
 import { costsApi } from './summary.js';
+import { voiceApi } from './voice.js';
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -624,6 +625,24 @@ describe('simple passthrough endpoints', () => {
     mockGet.mockResolvedValueOnce({});
     await modelsApi.list();
     expect(mockGet).toHaveBeenCalledWith('/models');
+  });
+
+  it('voiceApi.getConfig', async () => {
+    mockGet.mockResolvedValueOnce({});
+    await voiceApi.getConfig();
+    expect(mockGet).toHaveBeenCalledWith('/voice/config');
+  });
+
+  it('voiceApi.getStatus', async () => {
+    mockGet.mockResolvedValueOnce({});
+    await voiceApi.getStatus();
+    expect(mockGet).toHaveBeenCalledWith('/voice/status');
+  });
+
+  it('voiceApi.getVoices', async () => {
+    mockGet.mockResolvedValueOnce({});
+    await voiceApi.getVoices();
+    expect(mockGet).toHaveBeenCalledWith('/voice/voices');
   });
 
   it('settingsApi.saveApiKey', async () => {

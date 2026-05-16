@@ -2,13 +2,13 @@
  * Telegram Channel Normalizer
  *
  * Handles Telegram-specific message formatting:
- * - Incoming: HTML entity decoding, /command stripping
+ * - Incoming: HTML entity decoding, /command stripping, voice transcription
  * - Outgoing: Internal tag stripping, entity decoding, message splitting at 4096 chars
  */
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
-import { stripInternalTags } from './base.js';
+import { stripInternalTags, transcribeAudioAttachment } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
 import { normalizeChatWidgets } from '../../utils/chat-widgets.js';
 
@@ -41,7 +41,7 @@ export function decodeHtmlEntities(text: string): string {
 export const telegramNormalizer: ChannelNormalizer = {
   platform: 'telegram',
 
-  normalizeIncoming(msg: ChannelIncomingMessage): NormalizedIncoming {
+  async normalizeIncoming(msg: ChannelIncomingMessage): Promise<NormalizedIncoming> {
     let text = msg.text || '';
 
     // Decode HTML entities from Telegram
@@ -66,6 +66,20 @@ export const telegramNormalizer: ChannelNormalizer = {
         filename: a.filename,
         size: a.size,
       }));
+
+    const transcriptions: string[] = [];
+    const audioAttachments = msg.attachments?.filter((a) => a.type === 'audio' && a.data);
+    if (audioAttachments?.length) {
+      for (const att of audioAttachments) {
+        const transcribed = await transcribeAudioAttachment(att.data!, att.mimeType);
+        if (transcribed) transcriptions.push(transcribed);
+      }
+    }
+
+    if (transcriptions.length > 0) {
+      const prefix = transcriptions.map((t) => `[Voice message]: ${t}`).join('\n');
+      text = text ? `${prefix}\n\n${text}` : prefix;
+    }
 
     return {
       text: text || (attachments?.length ? '[Attachment]' : ''),

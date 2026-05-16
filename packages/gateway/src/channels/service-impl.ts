@@ -984,14 +984,19 @@ export class ChannelServiceImpl implements IChannelService {
           getMessageId(): number | null;
         } | null;
         trackMessage?(platformMessageId: string, chatId: string): void;
+        shouldReplyWithVoice?(message: ChannelIncomingMessage): Promise<boolean> | boolean;
       };
       const progressApi = api as ProgressCapableAPI;
       const progress =
         typeof progressApi.createProgressManager === 'function'
           ? progressApi.createProgressManager(message.platformChatId)
           : null;
+      const replyWithVoice =
+        typeof progressApi.shouldReplyWithVoice === 'function'
+          ? await progressApi.shouldReplyWithVoice(message)
+          : false;
 
-      if (progress) {
+      if (progress && !replyWithVoice) {
         // Send "Thinking..." progress message instead of typing indicator
         await progress.start();
       } else if (api.sendTyping) {
@@ -1028,7 +1033,7 @@ export class ChannelServiceImpl implements IChannelService {
       }
 
       let sentMessageId: string;
-      if (progress) {
+      if (progress && !replyWithVoice) {
         // Replace progress message with final response
         sentMessageId = await progress.finish(responseText);
         // Track message ID for edit/delete support
@@ -1036,10 +1041,16 @@ export class ChannelServiceImpl implements IChannelService {
           progressApi.trackMessage(sentMessageId, message.platformChatId);
         }
       } else {
+        if (progress && replyWithVoice) {
+          await progress.cancel().catch((err) => {
+            log.debug('Progress cancellation failed before voice reply', { error: err });
+          });
+        }
         sentMessageId = await api.sendMessage({
           platformChatId: message.platformChatId,
           text: responseText,
           replyToId: message.id,
+          options: replyWithVoice ? { telegram: { asVoice: true } } : undefined,
         });
       }
 

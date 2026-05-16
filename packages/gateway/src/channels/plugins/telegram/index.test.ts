@@ -20,29 +20,45 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Hoisted mocks — referenced inside vi.mock() factory functions
 // ============================================================================
 
-const { mockGetFieldValue, MockTelegramChannelAPI, mockGetChannelService, mockChannelApi } =
-  vi.hoisted(() => {
-    const mockChannelApi = {
-      getStatus: vi.fn(() => 'connected' as const),
-      sendMessage: vi.fn().mockResolvedValue('msg-123'),
-    };
+const {
+  mockGetFieldValue,
+  MockTelegramChannelAPI,
+  mockGetChannelService,
+  mockChannelApi,
+  mockVoiceGetConfig,
+  mockVoiceSynthesize,
+} = vi.hoisted(() => {
+  const mockChannelApi = {
+    getStatus: vi.fn(() => 'connected' as const),
+    sendMessage: vi.fn().mockResolvedValue('msg-123'),
+  };
 
-    return {
-      mockGetFieldValue: vi.fn(() => null),
-      MockTelegramChannelAPI: vi.fn(function (
-        this: { config: Record<string, unknown>; pluginId: string },
-        config: Record<string, unknown>,
-        pluginId: string
-      ) {
-        this.config = config;
-        this.pluginId = pluginId;
-      }),
-      mockGetChannelService: vi.fn(() => ({
-        getChannel: vi.fn(() => mockChannelApi),
-      })),
-      mockChannelApi,
-    };
-  });
+  return {
+    mockGetFieldValue: vi.fn(() => null),
+    MockTelegramChannelAPI: vi.fn(function (
+      this: { config: Record<string, unknown>; pluginId: string },
+      config: Record<string, unknown>,
+      pluginId: string
+    ) {
+      this.config = config;
+      this.pluginId = pluginId;
+    }),
+    mockGetChannelService: vi.fn(() => ({
+      getChannel: vi.fn(() => mockChannelApi),
+    })),
+    mockChannelApi,
+    mockVoiceGetConfig: vi.fn(async () => ({
+      available: true,
+      ttsSupported: true,
+      ttsAvailable: true,
+    })),
+    mockVoiceSynthesize: vi.fn(async () => ({
+      audio: Buffer.from('voice-bytes'),
+      format: 'opus',
+      contentType: 'audio/opus',
+    })),
+  };
+});
 
 // Keep createChannelPlugin real — only override getChannelService.
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -61,6 +77,13 @@ vi.mock('../../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getFieldValue: mockGetFieldValue,
   },
+}));
+
+vi.mock('../../../services/voice-service.js', () => ({
+  getVoiceService: () => ({
+    getConfig: mockVoiceGetConfig,
+    synthesize: mockVoiceSynthesize,
+  }),
 }));
 
 // ============================================================================
@@ -88,8 +111,8 @@ function getFactory() {
   return factory!;
 }
 
-/** Extract the single tool definition from the built plugin. */
-function getToolEntry() {
+/** Extract a tool definition from the built plugin. */
+function getToolEntry(name = 'channel_telegram_send') {
   const plugin = build();
   const tools = plugin.implementation.tools as Map<
     string,
@@ -99,7 +122,7 @@ function getToolEntry() {
     }
   >;
   expect(tools).toBeDefined();
-  const entry = tools.get('channel_telegram_send');
+  const entry = tools.get(name);
   expect(entry).toBeDefined();
   return entry!;
 }
@@ -107,6 +130,11 @@ function getToolEntry() {
 /** Execute the tool executor with given params. */
 async function runExecutor(params: Record<string, unknown>) {
   const { executor } = getToolEntry();
+  return executor(params);
+}
+
+async function runVoiceExecutor(params: Record<string, unknown>) {
+  const { executor } = getToolEntry('channel_telegram_send_voice');
   return executor(params);
 }
 
@@ -121,6 +149,16 @@ beforeEach(() => {
   mockGetFieldValue.mockReturnValue(null);
   mockChannelApi.getStatus.mockReturnValue('connected');
   mockChannelApi.sendMessage.mockResolvedValue('msg-123');
+  mockVoiceGetConfig.mockResolvedValue({
+    available: true,
+    ttsSupported: true,
+    ttsAvailable: true,
+  });
+  mockVoiceSynthesize.mockResolvedValue({
+    audio: Buffer.from('voice-bytes'),
+    format: 'opus',
+    contentType: 'audio/opus',
+  });
   mockGetChannelService.mockReturnValue({
     getChannel: vi.fn(() => mockChannelApi),
   });
@@ -278,8 +316,8 @@ describe('buildTelegramChannelPlugin() — requiredServices', () => {
     expect((getFirstService().docsUrl ?? '').toLowerCase()).toContain('botfather');
   });
 
-  it('configSchema has exactly 6 fields', () => {
-    expect(getSchema()).toHaveLength(6);
+  it('configSchema has exactly 9 fields', () => {
+    expect(getSchema()).toHaveLength(9);
   });
 
   // ---- configSchema fields are in ascending order by `order` ----
@@ -481,6 +519,27 @@ describe('buildTelegramChannelPlugin() — requiredServices', () => {
     expect(typeof ph).toBe('string');
     expect(ph.length).toBeGreaterThan(0);
   });
+
+  it('voice_reply_mode field: name is "voice_reply_mode"', () => {
+    expect(getSchema()[6]!.name).toBe('voice_reply_mode');
+  });
+
+  it('voice_reply_mode field: defaultValue is "never"', () => {
+    expect(getSchema()[6]!.defaultValue).toBe('never');
+  });
+
+  it('voice_reply_mode options include voice_messages', () => {
+    const opts = getSchema()[6]!.options as Array<{ value: string; label: string }>;
+    expect(opts.some((o) => o.value === 'voice_messages')).toBe(true);
+  });
+
+  it('voice_reply_voice field: name is "voice_reply_voice"', () => {
+    expect(getSchema()[7]!.name).toBe('voice_reply_voice');
+  });
+
+  it('voice_reply_speed field: name is "voice_reply_speed"', () => {
+    expect(getSchema()[8]!.name).toBe('voice_reply_speed');
+  });
 });
 
 // ============================================================================
@@ -629,6 +688,30 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
     expect(inst.config.webhook_secret).toBe('');
   });
 
+  it('uses voice_reply_mode from config when present', () => {
+    const factory = getFactory();
+    factory({ bot_token: 'tok', voice_reply_mode: 'voice_messages' });
+    const inst = MockTelegramChannelAPI.mock.instances[0] as { config: Record<string, unknown> };
+    expect(inst.config.voice_reply_mode).toBe('voice_messages');
+  });
+
+  it('falls back to configServicesRepo.getFieldValue for voice_reply_mode', () => {
+    mockGetFieldValue.mockImplementation((_svc: string, field: string) =>
+      field === 'voice_reply_mode' ? 'always' : null
+    );
+    const factory = getFactory();
+    factory({ bot_token: 'tok' });
+    const inst = MockTelegramChannelAPI.mock.instances[0] as { config: Record<string, unknown> };
+    expect(inst.config.voice_reply_mode).toBe('always');
+  });
+
+  it('defaults voice_reply_mode to never', () => {
+    const factory = getFactory();
+    factory({ bot_token: 'tok' });
+    const inst = MockTelegramChannelAPI.mock.instances[0] as { config: Record<string, unknown> };
+    expect(inst.config.voice_reply_mode).toBe('never');
+  });
+
   // ---- config spread ----
 
   it('spreads all original config keys into resolvedConfig', () => {
@@ -690,9 +773,9 @@ describe('buildTelegramChannelPlugin() — channelApi factory', () => {
 // ============================================================================
 
 describe('buildTelegramChannelPlugin() — tool definition', () => {
-  it('implementation.tools is a Map with exactly 1 entry', () => {
+  it('implementation.tools is a Map with exactly 2 entries', () => {
     const tools = build().implementation.tools as Map<string, unknown>;
-    expect(tools.size).toBe(1);
+    expect(tools.size).toBe(2);
   });
 
   it('tools Map contains "channel_telegram_send" key', () => {
@@ -700,8 +783,19 @@ describe('buildTelegramChannelPlugin() — tool definition', () => {
     expect(tools.has('channel_telegram_send')).toBe(true);
   });
 
+  it('tools Map contains "channel_telegram_send_voice" key', () => {
+    const tools = build().implementation.tools as Map<string, unknown>;
+    expect(tools.has('channel_telegram_send_voice')).toBe(true);
+  });
+
   it('tool definition name is "channel_telegram_send"', () => {
     expect(getToolEntry().definition.name).toBe('channel_telegram_send');
+  });
+
+  it('voice tool definition name is "channel_telegram_send_voice"', () => {
+    expect(getToolEntry('channel_telegram_send_voice').definition.name).toBe(
+      'channel_telegram_send_voice'
+    );
   });
 
   it('tool definition description contains "Telegram"', () => {
@@ -1023,5 +1117,67 @@ describe('buildTelegramChannelPlugin() — edge cases', () => {
 
   it('manifest.permissions is an array', () => {
     expect(Array.isArray(build().manifest.permissions)).toBe(true);
+  });
+});
+
+describe('buildTelegramChannelPlugin() voice tool executor', () => {
+  it('synthesizes speech as opus and sends it as an audio attachment', async () => {
+    const result = await runVoiceExecutor({ chat_id: '42', text: 'Merhaba' });
+
+    expect(mockVoiceSynthesize).toHaveBeenCalledWith('Merhaba', {
+      voice: undefined,
+      speed: undefined,
+      format: 'opus',
+    });
+    expect(mockChannelApi.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platformChatId: '42',
+        text: '',
+        options: { telegram: { asVoice: true } },
+        attachments: [
+          expect.objectContaining({
+            type: 'audio',
+            mimeType: 'audio/opus',
+            filename: expect.stringMatching(/^ownpilot_voice_\d+\.opus$/),
+            data: expect.any(Buffer),
+          }),
+        ],
+      })
+    );
+    expect(result.content).toContain('Voice message sent');
+  });
+
+  it('passes optional voice and speed to the voice service', async () => {
+    await runVoiceExecutor({ chat_id: '42', text: 'Hello', voice: 'nova', speed: 1.25 });
+
+    expect(mockVoiceSynthesize).toHaveBeenCalledWith('Hello', {
+      voice: 'nova',
+      speed: 1.25,
+      format: 'opus',
+    });
+  });
+
+  it('does not synthesize when Telegram is disconnected', async () => {
+    mockChannelApi.getStatus.mockReturnValue('disconnected');
+
+    const result = await runVoiceExecutor({ chat_id: '42', text: 'Hello' });
+
+    expect(result.content).toContain('not connected');
+    expect(mockVoiceSynthesize).not.toHaveBeenCalled();
+    expect(mockChannelApi.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('does not send when voice service is unavailable', async () => {
+    mockVoiceGetConfig.mockResolvedValueOnce({
+      available: false,
+      ttsSupported: false,
+      ttsAvailable: false,
+    });
+
+    const result = await runVoiceExecutor({ chat_id: '42', text: 'Hello' });
+
+    expect(result.content).toContain('Voice service is not configured');
+    expect(mockVoiceSynthesize).not.toHaveBeenCalled();
+    expect(mockChannelApi.sendMessage).not.toHaveBeenCalled();
   });
 });

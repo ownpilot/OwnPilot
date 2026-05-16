@@ -110,6 +110,49 @@ describe('GET /voice/config', () => {
     expect(json.success).toBe(false);
     expect(json.error.message).toContain('Config read failure');
   });
+
+  it('returns voice status from /status alias', async () => {
+    mockService.getConfig.mockResolvedValueOnce({
+      available: true,
+      provider: 'openai',
+      sttSupported: true,
+      ttsSupported: true,
+      sttAvailable: true,
+      ttsAvailable: true,
+      voices: [{ id: 'nova', name: 'Nova' }],
+    });
+
+    const res = await app.request('/voice/status');
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.data.available).toBe(true);
+    expect(json.data.provider).toBe('openai');
+  });
+
+  it('returns available voices from /voices', async () => {
+    mockService.getConfig.mockResolvedValueOnce({
+      available: true,
+      provider: 'openai',
+      sttSupported: true,
+      ttsSupported: true,
+      sttAvailable: true,
+      ttsAvailable: true,
+      voices: [{ id: 'shimmer', name: 'Shimmer' }],
+    });
+
+    const res = await app.request('/voice/voices');
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
+    expect(json.data).toEqual({
+      available: true,
+      provider: 'openai',
+      voices: [{ id: 'shimmer', name: 'Shimmer' }],
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
