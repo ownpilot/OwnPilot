@@ -318,13 +318,14 @@ function serializeNode(node: Node): WorkflowNode {
   }
 
   if (node.type === 'dataStoreNode') {
+    const operation = data.operation ?? 'get';
     return {
       ...base,
       type: 'dataStoreNode',
       data: {
         label: data.label ?? 'Data Store',
-        operation: data.operation ?? 'get',
-        key: data.key ?? '',
+        operation,
+        ...(operation !== 'list' ? { key: data.key ?? '' } : {}),
         ...(data.value !== undefined ? { value: data.value } : {}),
         ...pickDefined(data, ['namespace', 'description']),
         ...alias(data),

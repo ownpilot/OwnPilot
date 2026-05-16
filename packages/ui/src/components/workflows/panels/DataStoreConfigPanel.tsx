@@ -68,19 +68,21 @@ export function DataStoreConfigPanel({
         </div>
 
         {/* Key */}
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted">
-            Key
-          </label>
-          <input
-            type="text"
-            value={(data.key as string) ?? ''}
-            onChange={(e) => onUpdate(node.id, { ...data, key: e.target.value })}
-            placeholder="my_key or {{node_1.output.id}}"
-            className={INPUT_CLS}
-          />
-          <p className="text-[10px] text-text-muted">{'Supports {{template}} expressions'}</p>
-        </div>
+        {operation !== 'list' && (
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted">
+              Key
+            </label>
+            <input
+              type="text"
+              value={(data.key as string) ?? ''}
+              onChange={(e) => onUpdate(node.id, { ...data, key: e.target.value })}
+              placeholder="my_key or {{node_1.output.id}}"
+              className={INPUT_CLS}
+            />
+            <p className="text-[10px] text-text-muted">{'Supports {{template}} expressions'}</p>
+          </div>
+        )}
 
         {/* Value — only for set */}
         {operation === 'set' && (

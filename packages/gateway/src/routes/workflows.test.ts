@@ -1731,6 +1731,50 @@ describe('Workflow Routes', () => {
       const json = await res.json();
       expect(json.error.message).toContain('branchCount');
     });
+
+    it('allows dataStoreNode list without key', async () => {
+      const res = await postWorkflow(
+        [{ id: 'n1', type: 'dataStoreNode', data: { operation: 'list' } }],
+        []
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('returns 400 for dataStoreNode keyless non-list operations', async () => {
+      const res = await postWorkflow(
+        [{ id: 'n1', type: 'dataStoreNode', data: { operation: 'get' } }],
+        []
+      );
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('key');
+    });
+
+    it('returns 400 for invalid dataStoreNode operation', async () => {
+      const res = await postWorkflow(
+        [{ id: 'n1', type: 'dataStoreNode', data: { operation: 'append', key: 'x' } }],
+        []
+      );
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('operation');
+    });
+
+    it('returns 400 for invalid aggregateNode operation', async () => {
+      const res = await postWorkflow(
+        [
+          {
+            id: 'n1',
+            type: 'aggregateNode',
+            data: { arrayExpression: '{{source.output}}', operation: 'median' },
+          },
+        ],
+        []
+      );
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('operation');
+    });
   });
 
   // ========================================================================

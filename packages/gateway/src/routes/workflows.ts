@@ -52,6 +52,17 @@ type WfEdge = ValidationEdge;
  * Returns an array of error messages (empty = valid).
  */
 const MAX_WORKFLOW_NODES = 500;
+const DATA_STORE_OPERATIONS = new Set(['get', 'set', 'delete', 'list', 'has']);
+const AGGREGATE_OPERATIONS = new Set([
+  'sum',
+  'count',
+  'avg',
+  'min',
+  'max',
+  'groupBy',
+  'flatten',
+  'unique',
+]);
 
 function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
   const errors: string[] = [];
@@ -126,7 +137,11 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
         break;
       case 'dataStoreNode':
         if (!d.operation) errors.push(`Node "${node.id}": DataStore node requires "operation"`);
-        if (!d.key) errors.push(`Node "${node.id}": DataStore node requires "key"`);
+        else if (typeof d.operation !== 'string' || !DATA_STORE_OPERATIONS.has(d.operation)) {
+          errors.push(`Node "${node.id}": DataStore node has invalid "operation"`);
+        }
+        if (d.operation !== 'list' && !d.key)
+          errors.push(`Node "${node.id}": DataStore node requires "key"`);
         break;
       case 'schemaValidatorNode':
         if (!d.schema || typeof d.schema !== 'object')
@@ -146,6 +161,9 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
         if (!d.arrayExpression)
           errors.push(`Node "${node.id}": Aggregate node requires "arrayExpression"`);
         if (!d.operation) errors.push(`Node "${node.id}": Aggregate node requires "operation"`);
+        else if (typeof d.operation !== 'string' || !AGGREGATE_OPERATIONS.has(d.operation)) {
+          errors.push(`Node "${node.id}": Aggregate node has invalid "operation"`);
+        }
         break;
       case 'webhookResponseNode':
         // All fields are optional

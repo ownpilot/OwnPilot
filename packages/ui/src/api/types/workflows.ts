@@ -157,7 +157,7 @@ export interface WorkflowMergeNodeData extends WorkflowNodeDataCommon {
 
 export interface WorkflowDataStoreNodeData extends WorkflowNodeDataCommon {
   operation: 'get' | 'set' | 'delete' | 'list' | 'has';
-  key: string;
+  key?: string;
   value?: unknown;
   namespace?: string;
 }

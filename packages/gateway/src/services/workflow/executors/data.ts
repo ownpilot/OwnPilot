@@ -72,12 +72,28 @@ export function executeDataStoreNode(
   try {
     const data = node.data as DataStoreNodeData;
     const resolved = resolveTemplates(
-      { _key: data.key, _value: data.value, _ns: data.namespace ?? 'default' },
+      {
+        ...(data.operation !== 'list' ? { _key: data.key } : {}),
+        _value: data.value,
+        _ns: data.namespace ?? 'default',
+      },
       nodeOutputs,
       variables
     );
     const ns = resolved._ns as string;
-    const key = resolved._key as string;
+    const key = typeof resolved._key === 'string' ? resolved._key : undefined;
+
+    if (data.operation !== 'list' && !key) {
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: 'DataStore key is required for this operation',
+        durationMs: Date.now() - startTime,
+        startedAt: new Date(startTime).toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+    const keyForOperation = key ?? '';
 
     if (!workflowDataStore.has(ns)) {
       workflowDataStore.set(ns, new Map());
@@ -87,11 +103,11 @@ export function executeDataStoreNode(
     let output: unknown;
     switch (data.operation) {
       case 'get':
-        output = store.get(key) ?? null;
+        output = store.get(keyForOperation) ?? null;
         break;
       case 'set': {
-        const prev = store.get(key) ?? null;
-        store.set(key, resolved._value);
+        const prev = store.get(keyForOperation) ?? null;
+        store.set(keyForOperation, resolved._value);
         while (getDataStoreSize() > MAX_DATASTORE_ENTRIES) {
           evictOldest();
         }
@@ -99,14 +115,23 @@ export function executeDataStoreNode(
         break;
       }
       case 'delete':
-        output = { existed: store.delete(key) };
+        output = { existed: store.delete(keyForOperation) };
         break;
       case 'list':
         output = [...store.keys()];
         break;
       case 'has':
-        output = store.has(key);
+        output = store.has(keyForOperation);
         break;
+      default:
+        return {
+          nodeId: node.id,
+          status: 'error',
+          error: `Unsupported DataStore operation: ${String(data.operation)}`,
+          durationMs: Date.now() - startTime,
+          startedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+        };
     }
 
     log.info('DataStore operation completed', {
@@ -119,7 +144,7 @@ export function executeDataStoreNode(
       nodeId: node.id,
       status: 'success',
       output,
-      resolvedArgs: { operation: data.operation, namespace: ns, key },
+      resolvedArgs: { operation: data.operation, namespace: ns, ...(key ? { key } : {}) },
       durationMs: Date.now() - startTime,
       startedAt: new Date(startTime).toISOString(),
       completedAt: new Date().toISOString(),
@@ -423,6 +448,15 @@ export function executeAggregateNode(
           output = [...new Set(arr)];
         }
         break;
+      default:
+        return {
+          nodeId: node.id,
+          status: 'error',
+          error: `Unsupported aggregate operation: ${String(data.operation)}`,
+          durationMs: Date.now() - startTime,
+          startedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+        };
     }
 
     log.info('Aggregate completed', {

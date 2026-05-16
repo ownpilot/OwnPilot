@@ -151,6 +151,9 @@ import {
   executeNotificationNode,
   executeMergeNode,
   executeSwitchNode,
+  clearDataStore,
+  executeDataStoreNode,
+  executeAggregateNode,
 } from './node-executors.js';
 import { resolveTemplates } from './template-resolver.js';
 
@@ -1629,5 +1632,80 @@ describe('executeSwitchNode', () => {
 
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
     expect(result.startedAt).toBeDefined();
+  });
+});
+
+// ============================================================================
+// executeDataStoreNode
+// ============================================================================
+
+describe('executeDataStoreNode', () => {
+  beforeEach(() => {
+    clearDataStore();
+    vi.mocked(resolveTemplates).mockImplementation((args: Record<string, unknown>) => args);
+  });
+
+  it('allows list operation without a key', () => {
+    const setNode = makeNode('store_set', 'dataStoreNode', {
+      operation: 'set',
+      key: 'answer',
+      value: 42,
+      namespace: 'test',
+    });
+    const listNode = makeNode('store_list', 'dataStoreNode', {
+      operation: 'list',
+      namespace: 'test',
+    });
+
+    expect(executeDataStoreNode(setNode, {}, {}).status).toBe('success');
+    const result = executeDataStoreNode(listNode, {}, {});
+
+    expect(result.status).toBe('success');
+    expect(result.output).toEqual(['answer']);
+    expect(result.resolvedArgs).toEqual({ operation: 'list', namespace: 'test' });
+  });
+
+  it('returns error for keyless non-list operations', () => {
+    const node = makeNode('store_get', 'dataStoreNode', { operation: 'get' });
+
+    const result = executeDataStoreNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('key is required');
+  });
+
+  it('returns error for unsupported operations', () => {
+    const node = makeNode('store_bad', 'dataStoreNode', {
+      operation: 'append',
+      key: 'answer',
+    });
+
+    const result = executeDataStoreNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('Unsupported DataStore operation');
+  });
+});
+
+// ============================================================================
+// executeAggregateNode
+// ============================================================================
+
+describe('executeAggregateNode', () => {
+  beforeEach(() => {
+    vi.mocked(resolveTemplates).mockImplementation((args: Record<string, unknown>) => args);
+  });
+
+  it('returns error for unsupported aggregate operations', () => {
+    vi.mocked(resolveTemplates).mockReturnValue({ _arr: [1, 2, 3] });
+    const node = makeNode('agg_bad', 'aggregateNode', {
+      arrayExpression: '{{source.output}}',
+      operation: 'median',
+    });
+
+    const result = executeAggregateNode(node, {}, {});
+
+    expect(result.status).toBe('error');
+    expect(result.error).toContain('Unsupported aggregate operation');
   });
 });

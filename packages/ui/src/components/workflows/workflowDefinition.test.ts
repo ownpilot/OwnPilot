@@ -145,4 +145,22 @@ describe('buildWorkflowDefinition', () => {
       args: { q: 'ownpilot' },
     });
   });
+
+  it('omits key from portable dataStore list definitions', () => {
+    const definition = buildWorkflowDefinition('List Keys', [
+      makeNode('dataStoreNode', {
+        label: 'List Keys',
+        operation: 'list',
+        namespace: 'reports',
+      }),
+    ]);
+
+    expect(definition.nodes[0]).toMatchObject({
+      type: 'dataStore',
+      label: 'List Keys',
+      operation: 'list',
+      namespace: 'reports',
+    });
+    expect(definition.nodes[0]).not.toHaveProperty('key');
+  });
 });

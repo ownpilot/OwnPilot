@@ -254,12 +254,13 @@ function serializeNode(node: Node): Record<string, unknown> {
   }
 
   if (node.type === 'dataStoreNode') {
+    const operation = data.operation ?? 'get';
     return {
       ...base,
       type: 'dataStore',
       label: data.label ?? 'Data Store',
-      operation: data.operation ?? 'get',
-      key: data.key ?? '',
+      operation,
+      ...(operation !== 'list' ? { key: data.key ?? '' } : {}),
       ...pickDefined(data, ['value', 'namespace', 'description']),
     };
   }

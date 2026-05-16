@@ -122,4 +122,27 @@ describe('serializeWorkflowCanvas', () => {
       },
     });
   });
+
+  it('omits key for dataStore list operations', () => {
+    const serialized = serializeWorkflowCanvas(
+      [
+        makeNode('dataStoreNode', {
+          label: 'List Keys',
+          operation: 'list',
+          namespace: 'reports',
+        }),
+      ],
+      []
+    );
+
+    expect(serialized.nodes[0]).toMatchObject({
+      type: 'dataStoreNode',
+      data: {
+        label: 'List Keys',
+        operation: 'list',
+        namespace: 'reports',
+      },
+    });
+    expect(serialized.nodes[0]!.data).not.toHaveProperty('key');
+  });
 });

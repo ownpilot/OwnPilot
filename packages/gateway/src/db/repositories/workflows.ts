@@ -206,7 +206,7 @@ export interface MergeNodeData {
 export interface DataStoreNodeData {
   label: string;
   operation: 'get' | 'set' | 'delete' | 'list' | 'has';
-  key: string;
+  key?: string;
   value?: unknown;
   namespace?: string;
   description?: string;
@@ -849,7 +849,7 @@ export class WorkflowsRepository extends BaseRepository {
        JOIN workflows w ON wl.workflow_id = w.id
        WHERE wl.status = 'running'`
     );
-    return rows.map(r => ({ id: r.id, userId: r.user_id }));
+    return rows.map((r) => ({ id: r.id, userId: r.user_id }));
   }
 
   /**
@@ -925,10 +925,7 @@ export class WorkflowsRepository extends BaseRepository {
       workflow_id: string;
       node_results: string;
       status: WorkflowLogStatus;
-    }>(
-      `SELECT id, workflow_id, node_results, status FROM workflow_logs WHERE id = $1`,
-      [logId]
-    );
+    }>(`SELECT id, workflow_id, node_results, status FROM workflow_logs WHERE id = $1`, [logId]);
     if (rows.length === 0) return null;
     const row = rows[0]!;
     if (row.status !== 'running') return null;
