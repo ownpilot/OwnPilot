@@ -48,7 +48,7 @@ export interface WorkflowEditorToolbarProps {
   setShowSource: (v: boolean) => void;
   setSelectedNodeId: (id: string | null) => void;
   navigate: (path: string) => void;
-  handleSave: () => void;
+  handleSave: () => void | Promise<unknown>;
   handleArrange: () => void;
   handleExecute: (dryRun: boolean) => void;
   handleCancel: () => void;

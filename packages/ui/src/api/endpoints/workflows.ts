@@ -59,9 +59,9 @@ export const workflowsApi = {
   clone: (id: string) => apiClient.post<Workflow>(`/workflows/${id}/clone`),
 
   /** Execute workflow — returns raw Response for SSE streaming */
-  execute: (id: string, options?: { dryRun?: boolean }) => {
+  execute: (id: string, options?: { dryRun?: boolean; signal?: AbortSignal }) => {
     const query = options?.dryRun ? '?dryRun=true' : '';
-    return apiClient.stream(`/workflows/${id}/execute${query}`, {});
+    return apiClient.stream(`/workflows/${id}/execute${query}`, {}, { signal: options?.signal });
   },
 
   cancel: (id: string) => apiClient.post<{ message: string }>(`/workflows/${id}/cancel`),

@@ -39,6 +39,15 @@ export interface WorkflowNodePayload {
     variables: Record<string, unknown>;
   };
   userId: string;
+  /**
+   * Service-orchestrated executions enqueue topological levels themselves.
+   * Crash recovery can opt into worker-chained downstream enqueueing.
+   */
+  orchestrateDownstream?: boolean;
+}
+
+function isSuccessfulDependency(result: NodeResult | undefined): boolean {
+  return result?.status === 'success' || result?.output !== undefined;
 }
 
 /**
@@ -70,12 +79,10 @@ export async function enqueueWorkflowLevel(
   nodeOutputs: Record<string, NodeResult>
 ): Promise<void> {
   const queue = JobQueueService.getInstance();
-  const nodesToEnqueue = level
-    .map(id => nodeMap.get(id)!)
-    .filter(n => n && !nodeOutputs[n.id]); // skip already-executed nodes
+  const nodesToEnqueue = level.map((id) => nodeMap.get(id)!).filter((n) => n && !nodeOutputs[n.id]); // skip already-executed nodes
 
   await Promise.all(
-    nodesToEnqueue.map(node =>
+    nodesToEnqueue.map((node) =>
       queue.enqueue(
         'workflow_node',
         {
@@ -89,6 +96,7 @@ export async function enqueueWorkflowLevel(
             variables: workflowVariables,
           },
           userId,
+          orchestrateDownstream: false,
         } satisfies WorkflowNodePayload,
         { queue: 'workflow_nodes' }
       )
@@ -102,13 +110,20 @@ export async function enqueueWorkflowLevel(
  * On error, the job is marked failed (JobQueueService.fail called automatically).
  */
 async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, unknown>> {
-  const { workflowId, nodeId, workflowRunId, nodeOutputs, workflowSnapshot, userId } =
-    job.payload as unknown as WorkflowNodePayload;
+  const {
+    workflowId,
+    nodeId,
+    workflowRunId,
+    nodeOutputs,
+    workflowSnapshot,
+    userId,
+    orchestrateDownstream,
+  } = job.payload as unknown as WorkflowNodePayload;
 
   const repo = createWorkflowsRepository(userId);
 
   // Reconstruct nodeMap from snapshot
-  const nodeMap = new Map(workflowSnapshot.nodes.map(n => [n.id, n]));
+  const nodeMap = new Map(workflowSnapshot.nodes.map((n) => [n.id, n]));
 
   // Gate: check all upstream nodes have completed successfully
   const node = nodeMap.get(nodeId);
@@ -117,7 +132,7 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
   }
 
   for (const edge of workflowSnapshot.edges) {
-    if (edge.target === nodeId && !nodeOutputs[edge.source]?.output) {
+    if (edge.target === nodeId && !isSuccessfulDependency(nodeOutputs[edge.source])) {
       throw new Error(`Upstream node ${edge.source} has not completed — cannot execute ${nodeId}`);
     }
   }
@@ -129,29 +144,33 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
   // Build the execution context for dispatchNode
   // The real dispatchNode in WorkflowService does the full routing.
   // Here we inline the minimal dispatch for this node.
-  const result = await executeNodeInline(
-    node,
-    nodeOutputs,
-    workflowSnapshot,
-    userId,
-    toolService
-  );
+  const result = await executeNodeInline(node, nodeOutputs, workflowSnapshot, userId, toolService);
 
-  // Persist node output to workflow log (enables crash recovery)
-  const newNodeOutputs = { ...nodeOutputs, [nodeId]: result };
+  // Persist node output to workflow log (enables crash recovery). Merge with
+  // the latest log state so parallel nodes in the same level do not clobber
+  // each other's results when they started from the same payload snapshot.
+  const currentLog = await repo.getLog(workflowRunId);
+  const newNodeOutputs = {
+    ...nodeOutputs,
+    ...(currentLog?.nodeResults ?? {}),
+    [nodeId]: result,
+  };
   await repo.persistNodeOutputs(workflowRunId, newNodeOutputs);
 
-  // Enqueue downstream nodes if they are now unblocked
-  await enqueueUnblockedDownstream(
-    workflowId,
-    workflowRunId,
-    userId,
-    nodeId,
-    nodeMap,
-    workflowSnapshot.edges,
-    workflowSnapshot.variables,
-    newNodeOutputs
-  );
+  // Service-orchestrated runs advance by topological level; recovery runs can
+  // let workers enqueue the next unblocked nodes from persisted state.
+  if (orchestrateDownstream) {
+    await enqueueUnblockedDownstream(
+      workflowId,
+      workflowRunId,
+      userId,
+      nodeId,
+      nodeMap,
+      workflowSnapshot.edges,
+      workflowSnapshot.variables,
+      newNodeOutputs
+    );
+  }
 
   log.debug('Workflow node job completed', { jobId: job.id, nodeId, status: result.status });
 
@@ -165,7 +184,11 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
 async function executeNodeInline(
   node: WorkflowNode,
   nodeOutputs: Record<string, NodeResult>,
-  workflowSnapshot: { nodes: WorkflowNode[]; edges: WorkflowEdge[]; variables: Record<string, unknown> },
+  workflowSnapshot: {
+    nodes: WorkflowNode[];
+    edges: WorkflowEdge[];
+    variables: Record<string, unknown>;
+  },
   userId: string,
   toolService: IToolService
 ): Promise<NodeResult> {
@@ -179,10 +202,22 @@ async function executeNodeInline(
       return nodeExecutors.executeConditionNode(node, nodeOutputs, workflowSnapshot.variables);
 
     case 'codeNode':
-      return nodeExecutors.executeCodeNode(node, nodeOutputs, workflowSnapshot.variables, userId, toolService);
+      return nodeExecutors.executeCodeNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables,
+        userId,
+        toolService
+      );
 
     case 'toolNode':
-      return nodeExecutors.executeNode(node, nodeOutputs, workflowSnapshot.variables, userId, toolService);
+      return nodeExecutors.executeNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables,
+        userId,
+        toolService
+      );
 
     case 'httpRequestNode':
       return nodeExecutors.executeHttpRequestNode(node, nodeOutputs, workflowSnapshot.variables);
@@ -198,16 +233,25 @@ async function executeNodeInline(
 
     case 'mergeNode': {
       const incomingNodeIds = workflowSnapshot.edges
-        .filter(e => e.target === node.id)
-        .map(e => e.source);
-      return nodeExecutors.executeMergeNode(node, nodeOutputs, workflowSnapshot.variables, incomingNodeIds);
+        .filter((e) => e.target === node.id)
+        .map((e) => e.source);
+      return nodeExecutors.executeMergeNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables,
+        incomingNodeIds
+      );
     }
 
     case 'dataStoreNode':
       return nodeExecutors.executeDataStoreNode(node, nodeOutputs, workflowSnapshot.variables);
 
     case 'schemaValidatorNode':
-      return nodeExecutors.executeSchemaValidatorNode(node, nodeOutputs, workflowSnapshot.variables);
+      return nodeExecutors.executeSchemaValidatorNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables
+      );
 
     case 'filterNode':
       return nodeExecutors.executeFilterNode(node, nodeOutputs, workflowSnapshot.variables);
@@ -219,7 +263,11 @@ async function executeNodeInline(
       return nodeExecutors.executeAggregateNode(node, nodeOutputs, workflowSnapshot.variables);
 
     case 'webhookResponseNode':
-      return nodeExecutors.executeWebhookResponseNode(node, nodeOutputs, workflowSnapshot.variables);
+      return nodeExecutors.executeWebhookResponseNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables
+      );
 
     case 'errorHandlerNode':
     case 'stickyNoteNode':
@@ -229,16 +277,28 @@ async function executeNodeInline(
     case 'forEachNode':
     case 'triggerNode':
       log.warn(`Node type ${node.type} not yet jobified, running sync`);
-      return nodeExecutors.executeNode(node, nodeOutputs, workflowSnapshot.variables, userId, toolService);
+      return nodeExecutors.executeNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables,
+        userId,
+        toolService
+      );
 
     default:
-      return nodeExecutors.executeNode(node, nodeOutputs, workflowSnapshot.variables, userId, toolService);
+      return nodeExecutors.executeNode(
+        node,
+        nodeOutputs,
+        workflowSnapshot.variables,
+        userId,
+        toolService
+      );
   }
 }
 
 /**
  * Check if any downstream nodes are now unblocked and enqueue them.
- * A node is unblocked when ALL its upstream dependencies have outputs.
+ * A node is unblocked when ALL its upstream dependencies have completed successfully.
  */
 async function enqueueUnblockedDownstream(
   workflowId: string,
@@ -253,9 +313,11 @@ async function enqueueUnblockedDownstream(
   const downstream = getDownstreamNodes(completedNodeId, workflowEdges);
 
   for (const downId of downstream) {
-    // Check if all upstream nodes of this downstream node have outputs
-    const upstreamEdges = workflowEdges.filter(e => e.target === downId);
-    const allUpstreamComplete = upstreamEdges.every(e => nodeOutputs[e.source]?.output !== undefined);
+    // Check if all upstream nodes of this downstream node completed successfully
+    const upstreamEdges = workflowEdges.filter((e) => e.target === downId);
+    const allUpstreamComplete = upstreamEdges.every((e) =>
+      isSuccessfulDependency(nodeOutputs[e.source])
+    );
 
     if (!allUpstreamComplete) continue;
 
@@ -282,10 +344,14 @@ async function enqueueUnblockedDownstream(
           variables: workflowVariables,
         },
         userId,
+        orchestrateDownstream: true,
       } satisfies WorkflowNodePayload,
       { queue: 'workflow_nodes' }
     );
-    log.debug('Enqueued unblocked downstream node', { nodeId: downId, unblockedBy: completedNodeId });
+    log.debug('Enqueued unblocked downstream node', {
+      nodeId: downId,
+      unblockedBy: completedNodeId,
+    });
   }
 }
 
@@ -315,10 +381,17 @@ export async function resumeWorkflowFromRecovery(
 
   const executableNodes = workflow.nodes.filter((n: WorkflowNode) => n.type !== 'triggerNode');
 
-  // Find all pending nodes (not in nodeOutputs or marked as skipped/error)
+  // Find pending nodes whose upstream dependencies are already persisted.
+  // Workers will chain further downstream nodes after each recovery job.
   const pendingNodeIds: string[] = [];
   for (const n of executableNodes) {
-    if (!nodeOutputs[n.id]) {
+    if (nodeOutputs[n.id]) continue;
+    const incoming = workflow.edges.filter((e: WorkflowEdge) => e.target === n.id);
+    const upstreamReady = incoming.every((e: WorkflowEdge) => {
+      const result = nodeOutputs[e.source];
+      return isSuccessfulDependency(result);
+    });
+    if (upstreamReady) {
       pendingNodeIds.push(n.id);
     }
   }
@@ -336,7 +409,7 @@ export async function resumeWorkflowFromRecovery(
   // Enqueue all pending nodes — they'll gate on upstream completion
   const queue = JobQueueService.getInstance();
   await Promise.all(
-    pendingNodeIds.map(nodeId =>
+    pendingNodeIds.map((nodeId) =>
       queue.enqueue(
         'workflow_node',
         {
@@ -350,6 +423,7 @@ export async function resumeWorkflowFromRecovery(
             variables: workflow.variables,
           },
           userId,
+          orchestrateDownstream: true,
         } satisfies WorkflowNodePayload,
         { queue: 'workflow_nodes' }
       )

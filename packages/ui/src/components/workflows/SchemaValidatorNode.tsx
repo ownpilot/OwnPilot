@@ -12,7 +12,7 @@ import type { NodeExecutionStatus } from '../../api/types';
 export interface SchemaValidatorNodeData extends Record<string, unknown> {
   label: string;
   /** JSON schema definition */
-  schema?: string;
+  schema?: string | Record<string, unknown>;
   /** Whether strict mode is enabled (no additional properties allowed) */
   strict?: boolean;
   /** Number of required fields in the schema */
@@ -43,9 +43,14 @@ const statusIcons: Record<string, React.ComponentType<{ className?: string }>> =
 };
 
 /** Try to extract first 3 property names from a JSON schema string */
-function extractSchemaProperties(schema: string): string[] {
+function extractSchemaProperties(schema: unknown): string[] {
   try {
-    const parsed = JSON.parse(schema);
+    const parsed =
+      typeof schema === 'string'
+        ? JSON.parse(schema)
+        : schema && typeof schema === 'object'
+          ? schema
+          : null;
     if (parsed.properties) {
       return Object.keys(parsed.properties).slice(0, 3);
     }
@@ -61,7 +66,7 @@ function SchemaValidatorNodeComponent({ data, selected }: NodeProps<SchemaValida
   const StatusIcon = statusIcons[status];
   const isStrict = data.strict as boolean | undefined;
   const requiredCount = (data.requiredFields as number) ?? 0;
-  const schema = (data.schema as string) ?? '';
+  const schema = data.schema ?? '';
   const properties = extractSchemaProperties(schema);
 
   return (

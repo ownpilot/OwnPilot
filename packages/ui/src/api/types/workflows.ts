@@ -9,6 +9,14 @@ export type WorkflowLogStatus =
   | 'awaiting_approval';
 export type NodeExecutionStatus = 'pending' | 'running' | 'success' | 'error' | 'skipped';
 
+export interface WorkflowNodeDataCommon {
+  label: string;
+  description?: string;
+  retryCount?: number;
+  timeoutMs?: number;
+  outputAlias?: string;
+}
+
 export interface WorkflowToolNodeData {
   toolName: string;
   toolArgs: Record<string, unknown>;
@@ -42,6 +50,9 @@ export interface WorkflowLlmNodeData {
   baseUrl?: string;
   retryCount?: number;
   timeoutMs?: number;
+  responseFormat?: 'text' | 'json';
+  conversationMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  outputAlias?: string;
 }
 
 export interface WorkflowConditionNodeData {
@@ -78,6 +89,105 @@ export interface WorkflowForEachNodeData {
   description?: string;
   retryCount?: number;
   timeoutMs?: number;
+  outputAlias?: string;
+}
+
+export interface WorkflowHttpRequestNodeData extends WorkflowNodeDataCommon {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  url: string;
+  headers?: Record<string, string>;
+  queryParams?: Record<string, string>;
+  body?: string;
+  bodyType?: 'json' | 'text' | 'form';
+  auth?: {
+    type: 'none' | 'bearer' | 'basic' | 'apiKey';
+    token?: string;
+    username?: string;
+    password?: string;
+    headerName?: string;
+  };
+  maxResponseSize?: number;
+}
+
+export interface WorkflowDelayNodeData extends WorkflowNodeDataCommon {
+  duration: string;
+  unit: 'seconds' | 'minutes' | 'hours';
+}
+
+export interface WorkflowSwitchNodeData extends WorkflowNodeDataCommon {
+  expression: string;
+  cases: Array<{ label: string; value: string }>;
+}
+
+export interface WorkflowErrorHandlerNodeData extends WorkflowNodeDataCommon {
+  continueOnSuccess?: boolean;
+}
+
+export interface WorkflowSubWorkflowNodeData extends WorkflowNodeDataCommon {
+  subWorkflowId?: string;
+  subWorkflowName?: string;
+  inputMapping?: Record<string, string>;
+  maxDepth?: number;
+}
+
+export interface WorkflowApprovalNodeData extends WorkflowNodeDataCommon {
+  approvalMessage?: string;
+  timeoutMinutes?: number;
+}
+
+export interface WorkflowStickyNoteNodeData {
+  label: string;
+  text?: string;
+  color?: string;
+}
+
+export interface WorkflowNotificationNodeData extends WorkflowNodeDataCommon {
+  message?: string;
+  severity?: 'info' | 'warning' | 'error' | 'success';
+}
+
+export interface WorkflowParallelNodeData extends WorkflowNodeDataCommon {
+  branchCount: number;
+  branchLabels?: string[];
+}
+
+export interface WorkflowMergeNodeData extends WorkflowNodeDataCommon {
+  mode?: 'waitAll' | 'firstCompleted';
+}
+
+export interface WorkflowDataStoreNodeData extends WorkflowNodeDataCommon {
+  operation: 'get' | 'set' | 'delete' | 'list' | 'has';
+  key: string;
+  value?: unknown;
+  namespace?: string;
+}
+
+export interface WorkflowSchemaValidatorNodeData extends WorkflowNodeDataCommon {
+  schema: Record<string, unknown>;
+  strict?: boolean;
+}
+
+export interface WorkflowFilterNodeData extends WorkflowNodeDataCommon {
+  arrayExpression: string;
+  condition: string;
+}
+
+export interface WorkflowMapNodeData extends WorkflowNodeDataCommon {
+  arrayExpression: string;
+  expression: string;
+}
+
+export interface WorkflowAggregateNodeData extends WorkflowNodeDataCommon {
+  arrayExpression: string;
+  operation: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'groupBy' | 'flatten' | 'unique';
+  field?: string;
+}
+
+export interface WorkflowWebhookResponseNodeData extends WorkflowNodeDataCommon {
+  statusCode?: number;
+  body?: string;
+  headers?: Record<string, string>;
+  contentType?: string;
 }
 
 export type WorkflowNodeData =
@@ -87,7 +197,24 @@ export type WorkflowNodeData =
   | WorkflowConditionNodeData
   | WorkflowCodeNodeData
   | WorkflowTransformerNodeData
-  | WorkflowForEachNodeData;
+  | WorkflowForEachNodeData
+  | WorkflowHttpRequestNodeData
+  | WorkflowDelayNodeData
+  | WorkflowSwitchNodeData
+  | WorkflowErrorHandlerNodeData
+  | WorkflowSubWorkflowNodeData
+  | WorkflowApprovalNodeData
+  | WorkflowStickyNoteNodeData
+  | WorkflowNotificationNodeData
+  | WorkflowParallelNodeData
+  | WorkflowMergeNodeData
+  | WorkflowDataStoreNodeData
+  | WorkflowSchemaValidatorNodeData
+  | WorkflowFilterNodeData
+  | WorkflowMapNodeData
+  | WorkflowAggregateNodeData
+  | WorkflowWebhookResponseNodeData
+  | Record<string, unknown>;
 
 export interface WorkflowNode {
   id: string;
@@ -136,6 +263,9 @@ export interface NodeResult {
   durationMs?: number;
   startedAt?: string;
   completedAt?: string;
+  branchTaken?: string;
+  iterationCount?: number;
+  totalItems?: number;
   retryAttempts?: number;
 }
 

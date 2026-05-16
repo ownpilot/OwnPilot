@@ -300,13 +300,15 @@ export class WorkflowService implements IWorkflowService {
         if (jobifiedNodeIds.length > 0 && !dryRun) {
           const levelNodeMap = new Map(level.map((id) => [id, nodeMap.get(id)!]));
           await this.jobifiedExecuteLevel(
+            workflowId,
             jobifiedNodeIds,
             levelNodeMap,
             workflow,
             userId,
             abortController.signal,
             repo,
-            wfLog.id
+            wfLog.id,
+            nodeOutputs
           );
           // Read back results from the log (persisted by job handler)
           const updatedLog = await repo.getLog(wfLog.id);
@@ -1451,15 +1453,16 @@ export class WorkflowService implements IWorkflowService {
    * Preserves level-by-level sequential execution while making individual nodes async.
    */
   private async jobifiedExecuteLevel(
+    workflowId: string,
     levelNodeIds: string[],
     nodeMap: Map<string, WorkflowNode>,
     workflow: { edges: WorkflowEdge[]; variables: Record<string, unknown> },
     userId: string,
     abortSignal: AbortSignal,
     repo: ReturnType<typeof createWorkflowsRepository>,
-    logId: string
+    logId: string,
+    nodeOutputs: Record<string, NodeResult>
   ): Promise<void> {
-    const workflowId = ''; // not used in enqueue call but stored in payload
     const wfRunId = logId;
     await enqueueWorkflowLevel(
       workflowId,
@@ -1469,7 +1472,7 @@ export class WorkflowService implements IWorkflowService {
       nodeMap,
       workflow.edges,
       workflow.variables,
-      {}
+      nodeOutputs
     );
 
     // Poll until all level nodes appear in nodeResults (or abort, or timeout).
@@ -1488,6 +1491,7 @@ export class WorkflowService implements IWorkflowService {
       const allDone = levelNodeIds.every(
         (id) =>
           results[id]?.output !== undefined ||
+          results[id]?.status === 'success' ||
           results[id]?.status === 'error' ||
           results[id]?.status === 'skipped'
       );
@@ -1496,6 +1500,7 @@ export class WorkflowService implements IWorkflowService {
         const pending = levelNodeIds.filter(
           (id) =>
             results[id]?.output === undefined &&
+            results[id]?.status !== 'success' &&
             results[id]?.status !== 'error' &&
             results[id]?.status !== 'skipped'
         );

@@ -21,6 +21,56 @@ import type {
   SwitchNodeData,
 } from '../../components/workflows';
 
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function optionalRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function parseJsonObject(value: unknown): Record<string, unknown> | undefined {
+  if (!value) return undefined;
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    return optionalRecord(parsed);
+  } catch {
+    return undefined;
+  }
+}
+
+function parseHeaderLines(value: unknown): Record<string, string> | undefined {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => typeof v === 'string')
+        .map(([k, v]) => [k, v as string])
+    );
+  }
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const headers: Record<string, string> = {};
+  for (const line of value.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const separator = trimmed.indexOf(':');
+    if (separator <= 0) continue;
+    const key = trimmed.slice(0, separator).trim();
+    const headerValue = trimmed.slice(separator + 1).trim();
+    if (key) headers[key] = headerValue;
+  }
+  return Object.keys(headers).length > 0 ? headers : undefined;
+}
+
 export interface WorkflowExecutionParams {
   id: string | undefined;
   workflow: Workflow | null;
@@ -97,7 +147,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
   // ========================================================================
 
   const handleSave = useCallback(async () => {
-    if (!id || !workflow) return;
+    if (!id || !workflow) return false;
     setIsSaving(true);
     try {
       // Helper: extract optional outputAlias from any node data
@@ -384,6 +434,124 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
             },
           };
         }
+        if (n.type === 'dataStoreNode') {
+          const ds = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'dataStoreNode',
+            position: n.position,
+            data: {
+              label: ds.label ?? 'Data Store',
+              operation: ds.operation ?? 'get',
+              key: ds.key ?? '',
+              ...(ds.value !== undefined ? { value: ds.value } : {}),
+              ...(optionalString(ds.namespace) ? { namespace: optionalString(ds.namespace) } : {}),
+              ...(optionalString(ds.description)
+                ? { description: optionalString(ds.description) }
+                : {}),
+              ...getAlias(ds),
+            },
+          };
+        }
+        if (n.type === 'schemaValidatorNode') {
+          const sv = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'schemaValidatorNode',
+            position: n.position,
+            data: {
+              label: sv.label ?? 'Schema Validator',
+              schema: parseJsonObject(sv.schema) ?? {},
+              ...((sv.strict ?? sv.strictMode)
+                ? { strict: Boolean(sv.strict ?? sv.strictMode) }
+                : {}),
+              ...(optionalString(sv.description)
+                ? { description: optionalString(sv.description) }
+                : {}),
+              ...(optionalNumber(sv.retryCount) != null ? { retryCount: sv.retryCount } : {}),
+              ...(optionalNumber(sv.timeoutMs) != null ? { timeoutMs: sv.timeoutMs } : {}),
+              ...getAlias(sv),
+            },
+          };
+        }
+        if (n.type === 'filterNode') {
+          const fn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'filterNode',
+            position: n.position,
+            data: {
+              label: fn.label ?? 'Filter',
+              arrayExpression: fn.arrayExpression ?? '',
+              condition: fn.condition ?? '',
+              ...(optionalString(fn.description)
+                ? { description: optionalString(fn.description) }
+                : {}),
+              ...(optionalNumber(fn.retryCount) != null ? { retryCount: fn.retryCount } : {}),
+              ...(optionalNumber(fn.timeoutMs) != null ? { timeoutMs: fn.timeoutMs } : {}),
+              ...getAlias(fn),
+            },
+          };
+        }
+        if (n.type === 'mapNode') {
+          const mn = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'mapNode',
+            position: n.position,
+            data: {
+              label: mn.label ?? 'Map',
+              arrayExpression: mn.arrayExpression ?? '',
+              expression: mn.expression ?? '',
+              ...(optionalString(mn.description)
+                ? { description: optionalString(mn.description) }
+                : {}),
+              ...(optionalNumber(mn.retryCount) != null ? { retryCount: mn.retryCount } : {}),
+              ...(optionalNumber(mn.timeoutMs) != null ? { timeoutMs: mn.timeoutMs } : {}),
+              ...getAlias(mn),
+            },
+          };
+        }
+        if (n.type === 'aggregateNode') {
+          const an = n.data as unknown as Record<string, unknown>;
+          return {
+            id: n.id,
+            type: 'aggregateNode',
+            position: n.position,
+            data: {
+              label: an.label ?? 'Aggregate',
+              arrayExpression: an.arrayExpression ?? '',
+              operation: an.operation ?? 'count',
+              ...(optionalString(an.field) ? { field: optionalString(an.field) } : {}),
+              ...(optionalString(an.description)
+                ? { description: optionalString(an.description) }
+                : {}),
+              ...getAlias(an),
+            },
+          };
+        }
+        if (n.type === 'webhookResponseNode') {
+          const wr = n.data as unknown as Record<string, unknown>;
+          const headers = parseHeaderLines(wr.headers);
+          return {
+            id: n.id,
+            type: 'webhookResponseNode',
+            position: n.position,
+            data: {
+              label: wr.label ?? 'Webhook Response',
+              ...(optionalNumber(wr.statusCode) != null ? { statusCode: wr.statusCode } : {}),
+              ...(optionalString(wr.body) ? { body: optionalString(wr.body) } : {}),
+              ...(headers ? { headers } : {}),
+              ...(optionalString(wr.contentType)
+                ? { contentType: optionalString(wr.contentType) }
+                : {}),
+              ...(optionalString(wr.description)
+                ? { description: optionalString(wr.description) }
+                : {}),
+              ...getAlias(wr),
+            },
+          };
+        }
         const toolData = n.data as ToolNodeData;
         return {
           id: n.id,
@@ -449,8 +617,10 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
 
       setHasUnsavedChanges(false);
       toast.success('Workflow saved');
+      return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -614,7 +784,8 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
       if (!id || isExecuting) return;
 
       if (hasUnsavedChanges) {
-        await handleSave();
+        const saved = await handleSave();
+        if (!saved) return;
       }
 
       setIsExecuting(true);
@@ -645,7 +816,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
       abortRef.current = abort;
 
       try {
-        const response = await workflowsApi.execute(id, { dryRun });
+        const response = await workflowsApi.execute(id, { dryRun, signal: abort.signal });
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No stream available');
 

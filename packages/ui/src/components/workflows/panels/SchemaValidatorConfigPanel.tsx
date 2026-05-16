@@ -8,6 +8,18 @@ import { X, Shield, Trash2 } from '../../icons';
 import type { NodeConfigPanelProps } from '../NodeConfigPanel';
 import { INPUT_CLS, OutputAliasField, RetryTimeoutFields } from '../NodeConfigPanel';
 
+function schemaToText(schema: unknown): string {
+  if (typeof schema === 'string') return schema;
+  if (schema && typeof schema === 'object') {
+    try {
+      return JSON.stringify(schema, null, 2);
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
 export function SchemaValidatorConfigPanel({
   node,
   upstreamNodes: _upstreamNodes,
@@ -16,7 +28,7 @@ export function SchemaValidatorConfigPanel({
   onClose,
 }: NodeConfigPanelProps) {
   const data = node.data as Record<string, unknown>;
-  const schema = (data.schema as string) ?? '';
+  const schema = schemaToText(data.schema);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const handleSchemaChange = (value: string) => {
@@ -83,10 +95,8 @@ export function SchemaValidatorConfigPanel({
           <input
             type="checkbox"
             id="strictMode"
-            checked={(data.strictMode as boolean) ?? false}
-            onChange={(e) =>
-              onUpdate(node.id, { ...data, strictMode: e.target.checked || undefined })
-            }
+            checked={(data.strict as boolean) ?? false}
+            onChange={(e) => onUpdate(node.id, { ...data, strict: e.target.checked || undefined })}
             className="rounded border-border dark:border-dark-border"
           />
           <label

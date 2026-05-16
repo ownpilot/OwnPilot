@@ -311,7 +311,7 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         id: newNodeId,
         type: 'schemaValidatorNode',
         position: { x, y },
-        data: { label: 'Schema Validator', schema: '', strict: false, requiredFields: 0 },
+        data: { label: 'Schema Validator', schema: '{}', strict: false, requiredFields: 0 },
       },
     ]);
     setSelectedNodeId(newNodeId);
@@ -330,7 +330,7 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         id: newNodeId,
         type: 'filterNode',
         position: { x, y },
-        data: { label: 'Filter', condition: '' },
+        data: { label: 'Filter', arrayExpression: '', condition: '' },
       },
     ]);
     setSelectedNodeId(newNodeId);
@@ -349,7 +349,7 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         id: newNodeId,
         type: 'mapNode',
         position: { x, y },
-        data: { label: 'Map', expression: '' },
+        data: { label: 'Map', arrayExpression: '', expression: '' },
       },
     ]);
     setSelectedNodeId(newNodeId);
@@ -368,7 +368,7 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         id: newNodeId,
         type: 'aggregateNode',
         position: { x, y },
-        data: { label: 'Aggregate', operation: 'count', field: '' },
+        data: { label: 'Aggregate', arrayExpression: '', operation: 'count', field: '' },
       },
     ]);
     setSelectedNodeId(newNodeId);

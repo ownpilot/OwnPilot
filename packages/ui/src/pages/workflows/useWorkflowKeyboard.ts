@@ -25,7 +25,7 @@ export interface WorkflowKeyboardParams {
   setHasUnsavedChanges: (v: boolean) => void;
   nodeIdCounter: React.MutableRefObject<number>;
   clipboardRef: React.MutableRefObject<{ nodes: Node[]; edges: Edge[] } | null>;
-  handleSave: () => Promise<void>;
+  handleSave: () => Promise<unknown>;
   deleteNode: (nodeId: string) => void;
   undo: () => void;
   redo: () => void;
