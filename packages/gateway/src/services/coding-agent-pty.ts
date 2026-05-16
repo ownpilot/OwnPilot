@@ -138,14 +138,15 @@ export async function runWithPty(
       killed = true;
       try {
         proc.kill('SIGTERM');
-        // Force kill after 5s
+        // Force kill after 5s. unref so this fallback doesn't hold the
+        // event loop after SIGTERM successfully exits the process.
         setTimeout(() => {
           try {
             proc.kill('SIGKILL');
           } catch {
             // Process may already be dead
           }
-        }, 5000);
+        }, 5000).unref?.();
       } catch {
         // Process may already be dead
       }
@@ -258,13 +259,15 @@ export async function spawnStreamingPty(
     killed = true;
     try {
       proc.kill('SIGTERM');
+      // unref the SIGKILL fallback so it doesn't keep the loop alive
+      // when SIGTERM exits cleanly.
       setTimeout(() => {
         try {
           proc.kill('SIGKILL');
         } catch {
           // Process may already be dead
         }
-      }, 5000);
+      }, 5000).unref?.();
     } catch {
       // Process may already be dead
     }
@@ -375,9 +378,10 @@ export function spawnStreamingProcess(
   const timer = setTimeout(() => {
     killed = true;
     proc.kill('SIGTERM');
+    // unref so this SIGKILL fallback doesn't hold the loop after clean exit.
     setTimeout(() => {
       if (!proc.killed) proc.kill('SIGKILL');
-    }, 5000);
+    }, 5000).unref?.();
     callbacks.onError(`Process timed out after ${timeout}ms`);
   }, timeout);
 

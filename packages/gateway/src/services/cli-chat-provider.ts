@@ -430,11 +430,13 @@ export class CliChatProvider implements IProvider {
   cancel(): void {
     if (this.currentProcess && !this.currentProcess.killed) {
       this.currentProcess.kill('SIGTERM');
+      // unref so this fallback timer doesn't hold the event loop for 5s
+      // after SIGTERM successfully exits the process.
       setTimeout(() => {
         if (this.currentProcess && !this.currentProcess.killed) {
           this.currentProcess.kill('SIGKILL');
         }
-      }, 5000);
+      }, 5000).unref?.();
     }
   }
 
@@ -760,9 +762,11 @@ export class CliChatProvider implements IProvider {
       const timer = setTimeout(() => {
         killed = true;
         proc.kill('SIGTERM');
+        // unref so this SIGKILL fallback doesn't hold the event loop for
+        // 5s after SIGTERM successfully exits the process.
         setTimeout(() => {
           if (!proc.killed) proc.kill('SIGKILL');
-        }, 5000);
+        }, 5000).unref?.();
       }, timeout);
 
       proc.stdout?.on('data', (chunk: Buffer) => {
