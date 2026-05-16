@@ -174,10 +174,6 @@ export async function runClaudeCode(
     };
   }
 
-  // Set API key in env only for the duration of the SDK call (avoid global mutation)
-  const prevKey = process.env.ANTHROPIC_API_KEY;
-  process.env.ANTHROPIC_API_KEY = apiKey;
-
   let sdkModule: { query: (...args: unknown[]) => AsyncIterable<Record<string, unknown>> };
   try {
     sdkModule = (await tryImport('@anthropic-ai/claude-agent-sdk')) as typeof sdkModule;
@@ -209,6 +205,16 @@ export async function runClaudeCode(
     );
   }
 
+  // Pass the API key via the SDK's `env` option rather than mutating
+  // process.env.ANTHROPIC_API_KEY. The previous save/restore-around-await
+  // approach raced under concurrent calls (each call would clobber the
+  // env var while another's `await` was suspended), so two simultaneous
+  // claude-code invocations could authenticate with the wrong key.
+  const sdkEnv: Record<string, string | undefined> = {
+    ...process.env,
+    ANTHROPIC_API_KEY: apiKey,
+  };
+
   try {
     for await (const msg of sdkModule.query({
       prompt: fullPrompt,
@@ -217,6 +223,7 @@ export async function runClaudeCode(
         permissionMode: perms.autonomy === 'full-auto' ? 'bypassPermissions' : 'default',
         allowDangerouslySkipPermissions: true,
         cwd,
+        env: sdkEnv,
         model: task.model && task.model !== 'default' ? task.model : undefined,
         maxTurns: task.maxTurns ?? DEFAULT_MAX_TURNS,
         maxBudgetUsd: task.maxBudgetUsd ?? DEFAULT_MAX_BUDGET_USD,
@@ -234,13 +241,6 @@ export async function runClaudeCode(
       durationMs: Date.now() - start,
       error: getErrorMessage(err),
     };
-  } finally {
-    // Restore original env to avoid leaking API key across concurrent calls
-    if (prevKey !== undefined) {
-      process.env.ANTHROPIC_API_KEY = prevKey;
-    } else {
-      delete process.env.ANTHROPIC_API_KEY;
-    }
   }
 
   return {
