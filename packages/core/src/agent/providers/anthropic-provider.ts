@@ -306,6 +306,10 @@ export class AnthropicProvider extends BaseProvider {
 
         return ok(completionResponse);
       } catch (error) {
+        // Clear timer on the fetch-error path too — a network error before
+        // `await fetch` returns would otherwise leave a 5-minute setTimeout
+        // pinned to the event loop calling abort() on an already-failed request.
+        this.clearRequestTimeout();
         if (error instanceof Error && error.name === 'AbortError') {
           const timeoutError = new TimeoutError('Anthropic request', this.config.timeout ?? 300000);
           logError('anthropic', timeoutError, 'Request timeout');

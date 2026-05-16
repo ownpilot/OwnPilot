@@ -218,13 +218,12 @@ export class OpenAICompatibleProvider {
       // Inject X-Runtime header for bridge multi-provider routing
       // Provider name 'bridge-opencode' → X-Runtime: opencode
       if (this.providerId.startsWith('bridge-')) {
-        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
-          this.providerId.replace('bridge-', '');
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] = this.providerId.replace(
+          'bridge-',
+          ''
+        );
       }
-      const response = await fetch(
-        `${this.config.baseUrl}/chat/completions`,
-        fetchOptions
-      );
+      const response = await fetch(`${this.config.baseUrl}/chat/completions`, fetchOptions);
       this.clearRequestTimeout();
 
       if (!response.ok) {
@@ -259,11 +258,16 @@ export class OpenAICompatibleProvider {
         usage: data.usage ? this.mapUsage(data.usage) : undefined,
         model: data.model ?? model,
         createdAt: new Date((data.created ?? Date.now() / 1000) * 1000),
-        ...(bridgeConvId || bridgeSessionId ? {
-          responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-        } : {}),
+        ...(bridgeConvId || bridgeSessionId
+          ? {
+              responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+            }
+          : {}),
       });
     } catch (error) {
+      // Clear the request timeout on the fetch-error path so a network error
+      // before fetch resolves doesn't leak a setTimeout into the event loop.
+      this.clearRequestTimeout();
       if (error instanceof Error && error.name === 'AbortError') {
         return err(new TimeoutError(`${this.providerId} request`, this.config.timeout ?? 300000));
       }
@@ -295,13 +299,12 @@ export class OpenAICompatibleProvider {
       }
       // Inject X-Runtime header for bridge multi-provider routing (streaming path)
       if (this.providerId.startsWith('bridge-')) {
-        (fetchOptions.headers as Record<string, string>)['X-Runtime'] =
-          this.providerId.replace('bridge-', '');
+        (fetchOptions.headers as Record<string, string>)['X-Runtime'] = this.providerId.replace(
+          'bridge-',
+          ''
+        );
       }
-      const response = await fetch(
-        `${this.config.baseUrl}/chat/completions`,
-        fetchOptions
-      );
+      const response = await fetch(`${this.config.baseUrl}/chat/completions`, fetchOptions);
       this.clearRequestTimeout();
 
       if (!response.ok || !response.body) {
@@ -340,9 +343,11 @@ export class OpenAICompatibleProvider {
               yield ok({
                 id: '',
                 done: true,
-                ...(bridgeConvId || bridgeSessionId ? {
-                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                } : {}),
+                ...(bridgeConvId || bridgeSessionId
+                  ? {
+                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                    }
+                  : {}),
               });
               return;
             }
@@ -387,9 +392,11 @@ export class OpenAICompatibleProvider {
                   ? this.mapFinishReason(choice.finish_reason)
                   : undefined,
                 usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
-                ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId) ? {
-                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                } : {}),
+                ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId)
+                  ? {
+                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                    }
+                  : {}),
               });
             } catch {
               // Skip malformed chunks
@@ -404,6 +411,9 @@ export class OpenAICompatibleProvider {
         }
       }
     } catch (error) {
+      // Clear timer on the fetch-error path — if the failure happens before
+      // `await fetch` resolves we'd otherwise leak the 5-minute timeout.
+      this.clearRequestTimeout();
       yield err(new InternalError(`${this.providerId} stream failed: ${getErrorMessage(error)}`));
     }
   }
@@ -696,4 +706,3 @@ export function createOpenAICompatibleProvider(
 ): OpenAICompatibleProvider | null {
   return OpenAICompatibleProvider.fromProviderId(providerId);
 }
-

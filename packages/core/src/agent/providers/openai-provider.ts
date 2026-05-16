@@ -194,7 +194,8 @@ export class OpenAIProvider extends BaseProvider {
         // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
         // container path invalid for host bridge, bridge's default CWD is sufficient.
         if (request.metadata?.conversationId) {
-          (fetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+          (fetchOpts.headers as Record<string, string>)['X-Conversation-Id'] =
+            request.metadata.conversationId;
         }
         if (this.config.headers) {
           Object.assign(fetchOpts.headers as Record<string, string>, this.config.headers);
@@ -229,9 +230,11 @@ export class OpenAIProvider extends BaseProvider {
           usage: data.usage ? this.mapUsage(data.usage) : undefined,
           model: data.model ?? request.model.model,
           createdAt: new Date((data.created ?? Date.now() / 1000) * 1000),
-          ...(bridgeConvId || bridgeSessionId ? {
-            responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-          } : {}),
+          ...(bridgeConvId || bridgeSessionId
+            ? {
+                responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+              }
+            : {}),
         };
 
         // Log response
@@ -247,6 +250,9 @@ export class OpenAIProvider extends BaseProvider {
 
         return ok(completionResponse);
       } catch (error) {
+        // Clear timer on the fetch-error path so a network error doesn't
+        // leave a 5-minute timeout pinned to the event loop.
+        this.clearRequestTimeout();
         if (error instanceof Error && error.name === 'AbortError') {
           const timeoutError = new TimeoutError('OpenAI request', this.config.timeout ?? 300000);
           logError('openai', timeoutError, 'Request timeout');
@@ -301,7 +307,8 @@ export class OpenAIProvider extends BaseProvider {
       // X-Project-Dir was tried in v7.2 (commits 88853c92/fc90fc0b) but removed —
       // container path invalid for host bridge, bridge's default CWD is sufficient.
       if (request.metadata?.conversationId) {
-        (streamFetchOpts.headers as Record<string, string>)['X-Conversation-Id'] = request.metadata.conversationId;
+        (streamFetchOpts.headers as Record<string, string>)['X-Conversation-Id'] =
+          request.metadata.conversationId;
       }
       if (this.config.headers) {
         Object.assign(streamFetchOpts.headers as Record<string, string>, this.config.headers);
@@ -310,26 +317,26 @@ export class OpenAIProvider extends BaseProvider {
       // Once streaming begins (first chunk yielded), no more retries.
       // Uses withRetry (same as complete()) — mocked in tests to skip delays.
       const fetchResult = await withRetry(async () => {
-        const resp = await fetch(
-          `${this.config.baseUrl}/chat/completions`,
-          streamFetchOpts
-        );
+        const resp = await fetch(`${this.config.baseUrl}/chat/completions`, streamFetchOpts);
         this.clearRequestTimeout();
 
         if (!resp.ok || !resp.body) {
           const errorText = await resp.text().catch(() => '');
-          return err(new InternalError(
-            `OpenAI stream error: ${resp.status}${errorText ? ` - ${errorText}` : ''}`
-          ));
+          return err(
+            new InternalError(
+              `OpenAI stream error: ${resp.status}${errorText ? ` - ${errorText}` : ''}`
+            )
+          );
         }
 
         return ok(resp as unknown);
       }, DEFAULT_RETRY_CONFIG);
 
       if (!fetchResult.ok) {
-        const fetchError = fetchResult.error instanceof InternalError
-          ? fetchResult.error
-          : new InternalError(fetchResult.error.message);
+        const fetchError =
+          fetchResult.error instanceof InternalError
+            ? fetchResult.error
+            : new InternalError(fetchResult.error.message);
         logError('openai', fetchError, 'stream fetch failed');
         yield err(fetchError);
         return;
@@ -360,9 +367,11 @@ export class OpenAIProvider extends BaseProvider {
               yield ok({
                 id: '',
                 done: true,
-                ...(bridgeConvId || bridgeSessionId ? {
-                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                } : {}),
+                ...(bridgeConvId || bridgeSessionId
+                  ? {
+                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                    }
+                  : {}),
               });
               return;
             }
@@ -400,6 +409,9 @@ export class OpenAIProvider extends BaseProvider {
         }
       }
     } catch (error) {
+      // Clear timer on the fetch-error path so a network error doesn't
+      // leave the 5-minute streaming timeout pinned to the event loop.
+      this.clearRequestTimeout();
       yield err(new InternalError(`OpenAI stream failed: ${getErrorMessage(error)}`));
     }
   }
