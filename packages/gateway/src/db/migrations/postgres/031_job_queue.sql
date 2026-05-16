@@ -5,7 +5,7 @@
 -- =====================================================
 -- Jobs table
 -- =====================================================
-DO $ BEGIN
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'jobs') THEN
     CREATE TABLE jobs (
       id              TEXT        PRIMARY KEY,
@@ -26,9 +26,9 @@ DO $ BEGIN
       CONSTRAINT jobs_attempts_check CHECK (attempts <= max_attempts)
     );
   END IF;
-END $;
+END $$;
 
-DO $ BEGIN
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'job_history') THEN
     CREATE TABLE job_history (
       id              TEXT        PRIMARY KEY,
@@ -44,12 +44,12 @@ DO $ BEGIN
       error           TEXT
     );
   END IF;
-END $;
+END $$;
 
 -- =====================================================
 -- Provider metrics table (gap 24.4)
 -- =====================================================
-DO $ BEGIN
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'provider_metrics') THEN
     CREATE TABLE provider_metrics (
       id                  TEXT        PRIMARY KEY,
@@ -67,7 +67,7 @@ DO $ BEGIN
       user_id             TEXT
     );
   END IF;
-END $;
+END $$;
 
 -- =====================================================
 -- Indexes (idempotent)
@@ -82,4 +82,8 @@ CREATE INDEX IF NOT EXISTS idx_job_history_failed_at ON job_history(failed_at);
 -- Provider metrics indexes
 CREATE INDEX IF NOT EXISTS idx_provider_metrics_provider_model ON provider_metrics(provider_id, model_id);
 CREATE INDEX IF NOT EXISTS idx_provider_metrics_recorded_at ON provider_metrics(recorded_at DESC);
-CREATE INDEX IF NOT EXISTS idx_provider_metrics_recent ON provider_metrics(provider_id, model_id, latency_ms) WHERE recorded_at > NOW() - INTERVAL '1 hour';
+-- Removed: idx_provider_metrics_recent — `WHERE recorded_at > NOW() - INTERVAL '1 hour'`
+-- is invalid as a partial-index predicate because NOW() is STABLE, not IMMUTABLE.
+-- Even if accepted, the predicate would be evaluated at INSERT time (not query
+-- time), so it would index ~nothing. The recorded_at DESC index above already
+-- serves "recent rows" lookups efficiently.
