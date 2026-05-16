@@ -13,6 +13,7 @@ import { cleanStreamingChatContent, stripChatInternalTags } from '../../utils/ch
 import { ignoreError } from '../../utils/ignore-error';
 import { MarkdownContent } from '../MarkdownContent';
 import { Sparkles, Send, StopCircle, X, Play, AlertCircle, RefreshCw } from '../icons';
+import { buildWorkflowDefinition, type WorkflowDefinition } from './workflowDefinition';
 
 // ============================================================================
 // Types
@@ -27,11 +28,7 @@ interface CopilotMessage {
   isError?: boolean;
 }
 
-export interface WorkflowDefinition {
-  name: string;
-  nodes: Record<string, unknown>[];
-  edges: Array<{ source: string; target: string; sourceHandle?: string; targetHandle?: string }>;
-}
+export type { WorkflowDefinition } from './workflowDefinition';
 
 export interface WorkflowCopilotPanelProps {
   workflowName: string;
@@ -82,200 +79,6 @@ function extractWorkflowJson(content: string): WorkflowDefinition | null {
     // Invalid JSON
   }
   return null;
-}
-
-// ============================================================================
-// Build current workflow context (same format as WorkflowSourceModal export)
-// ============================================================================
-
-function buildCurrentWorkflow(name: string, nodes: Node[], edges: Edge[]) {
-  if (nodes.length === 0) return undefined;
-  return {
-    name,
-    nodes: nodes.map((n) => {
-      const base: Record<string, unknown> = {
-        id: n.id,
-        position: { x: Math.round(n.position.x), y: Math.round(n.position.y) },
-      };
-      const d = n.data as Record<string, unknown>;
-
-      if (n.type === 'triggerNode') {
-        return {
-          ...base,
-          type: 'trigger',
-          triggerType: d.triggerType ?? 'manual',
-          label: d.label ?? 'Trigger',
-          ...pickDefined(d, ['cron', 'eventType', 'condition', 'threshold', 'webhookPath']),
-        };
-      }
-      if (n.type === 'llmNode') {
-        return {
-          ...base,
-          type: 'llm',
-          label: d.label,
-          provider: d.provider,
-          model: d.model,
-          ...pickDefined(d, [
-            'systemPrompt',
-            'userMessage',
-            'temperature',
-            'maxTokens',
-            'responseFormat',
-            'conversationMessages',
-          ]),
-        };
-      }
-      if (n.type === 'conditionNode') {
-        return {
-          ...base,
-          type: 'condition',
-          label: d.label,
-          expression: d.expression,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'codeNode') {
-        return {
-          ...base,
-          type: 'code',
-          label: d.label,
-          language: d.language,
-          code: d.code,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'transformerNode') {
-        return {
-          ...base,
-          type: 'transformer',
-          label: d.label,
-          expression: d.expression,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'forEachNode') {
-        return {
-          ...base,
-          type: 'forEach',
-          label: d.label,
-          arrayExpression: d.arrayExpression,
-          ...pickDefined(d, ['itemVariable', 'maxIterations', 'onError', 'description']),
-        };
-      }
-      if (n.type === 'httpRequestNode') {
-        return {
-          ...base,
-          type: 'httpRequest',
-          label: d.label,
-          method: d.method,
-          url: d.url,
-          ...pickDefined(d, ['headers', 'queryParams', 'body', 'bodyType', 'auth', 'description']),
-        };
-      }
-      if (n.type === 'delayNode') {
-        return {
-          ...base,
-          type: 'delay',
-          label: d.label,
-          duration: d.duration,
-          unit: d.unit,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'switchNode') {
-        return {
-          ...base,
-          type: 'switch',
-          label: d.label,
-          expression: d.expression,
-          cases: d.cases,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'dataStoreNode') {
-        return {
-          ...base,
-          type: 'dataStore',
-          label: d.label,
-          operation: d.operation,
-          key: d.key,
-          ...pickDefined(d, ['value', 'namespace', 'description']),
-        };
-      }
-      if (n.type === 'schemaValidatorNode') {
-        return {
-          ...base,
-          type: 'schemaValidator',
-          label: d.label,
-          schema: d.schema,
-          ...pickDefined(d, ['strict', 'description']),
-        };
-      }
-      if (n.type === 'filterNode') {
-        return {
-          ...base,
-          type: 'filter',
-          label: d.label,
-          arrayExpression: d.arrayExpression,
-          condition: d.condition,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'mapNode') {
-        return {
-          ...base,
-          type: 'map',
-          label: d.label,
-          arrayExpression: d.arrayExpression,
-          expression: d.expression,
-          ...pickDefined(d, ['description']),
-        };
-      }
-      if (n.type === 'aggregateNode') {
-        return {
-          ...base,
-          type: 'aggregate',
-          label: d.label,
-          arrayExpression: d.arrayExpression,
-          operation: d.operation,
-          ...pickDefined(d, ['field', 'description']),
-        };
-      }
-      if (n.type === 'webhookResponseNode') {
-        return {
-          ...base,
-          type: 'webhookResponse',
-          label: d.label,
-          ...pickDefined(d, ['statusCode', 'body', 'headers', 'contentType', 'description']),
-        };
-      }
-      // Tool node
-      return {
-        ...base,
-        tool: d.toolName,
-        label: d.label,
-        ...pickDefined(d, ['description']),
-        ...(d.toolArgs &&
-        typeof d.toolArgs === 'object' &&
-        Object.keys(d.toolArgs as object).length > 0
-          ? { args: d.toolArgs }
-          : {}),
-      };
-    }),
-    edges: edges.map((e) => {
-      const edge: Record<string, string> = { source: e.source, target: e.target };
-      if (e.sourceHandle) edge.sourceHandle = e.sourceHandle;
-      return edge;
-    }),
-  };
-}
-
-function pickDefined(obj: Record<string, unknown>, keys: string[]): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const key of keys) {
-    if (obj[key] != null && obj[key] !== '') result[key] = obj[key];
-  }
-  return result;
 }
 
 // ============================================================================
@@ -331,7 +134,8 @@ export function WorkflowCopilotPanel({
     abortRef.current = abort;
 
     try {
-      const currentWorkflow = buildCurrentWorkflow(workflowName, nodes, edges);
+      const currentWorkflow =
+        nodes.length > 0 ? buildWorkflowDefinition(workflowName, nodes, edges) : undefined;
       const response = await workflowsApi.copilot(
         {
           messages: [...apiMessages, { role: 'user', content: trimmed }],

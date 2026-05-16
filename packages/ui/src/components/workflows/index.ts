@@ -43,6 +43,7 @@ export {
   convertDefinitionToReactFlow,
   type WorkflowDefinition,
 } from './WorkflowCopilotPanel';
+export { buildWorkflowDefinition } from './workflowDefinition';
 export { VariablesPanel } from './VariablesPanel';
 export { WorkflowVersionsPanel } from './WorkflowVersionsPanel';
 export { autoArrangeNodes } from './auto-arrange';

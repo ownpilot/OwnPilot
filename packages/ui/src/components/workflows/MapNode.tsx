@@ -11,6 +11,8 @@ import type { NodeExecutionStatus } from '../../api/types';
 
 export interface MapNodeData extends Record<string, unknown> {
   label: string;
+  /** Collection expression to map */
+  arrayExpression?: string;
   /** JS expression applied to each item */
   expression?: string;
   description?: string;

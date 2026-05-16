@@ -11,6 +11,8 @@ import type { NodeExecutionStatus } from '../../api/types';
 
 export interface FilterNodeData extends Record<string, unknown> {
   label: string;
+  /** Collection expression to filter */
+  arrayExpression?: string;
   /** Condition expression to filter by */
   condition?: string;
   description?: string;

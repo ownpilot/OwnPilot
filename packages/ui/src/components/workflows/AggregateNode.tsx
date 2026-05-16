@@ -11,6 +11,8 @@ import type { NodeExecutionStatus } from '../../api/types';
 
 export interface AggregateNodeData extends Record<string, unknown> {
   label: string;
+  /** Collection expression to aggregate */
+  arrayExpression?: string;
   /** Aggregation operation */
   operation?: 'sum' | 'count' | 'avg' | 'min' | 'max' | 'groupBy' | 'flatten' | 'unique';
   /** Field name to aggregate on */

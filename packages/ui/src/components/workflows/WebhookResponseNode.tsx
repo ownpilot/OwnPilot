@@ -15,6 +15,10 @@ export interface WebhookResponseNodeData extends Record<string, unknown> {
   statusCode?: number;
   /** Response content type */
   contentType?: string;
+  /** Response body */
+  body?: string;
+  /** Response headers */
+  headers?: Record<string, string> | string;
   description?: string;
   executionStatus?: NodeExecutionStatus;
   executionError?: string;
