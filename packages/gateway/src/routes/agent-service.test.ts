@@ -1022,6 +1022,26 @@ describe('getAgent', () => {
     await mod.getAgent('agent-fail-cleanup');
     expect(pendingAgents.has('agent-fail-cleanup')).toBe(false);
   });
+
+  it('deduplicates concurrent cache-miss calls (one DB read, one build)', async () => {
+    // Regression test: previously, two concurrent getAgent calls under the
+    // same id would each await getById and build their own agent because the
+    // pending entry was installed AFTER the await on getById. The cache-miss
+    // path now installs the pending promise synchronously.
+    const { agent } = makeMockAgent();
+    const record = makeAgentRecord({ id: 'agent-race' });
+    // Two cache misses
+    mockLruGet.mockReturnValueOnce(undefined).mockReturnValueOnce(undefined);
+    mockAgentsRepo.getById.mockResolvedValue(record);
+    mockCreateAgent.mockReturnValue(agent);
+
+    const [a, b] = await Promise.all([mod.getAgent('agent-race'), mod.getAgent('agent-race')]);
+    expect(a).toBe(agent);
+    expect(b).toBe(agent);
+    // The DB should have been hit exactly once even with two concurrent callers.
+    expect(mockAgentsRepo.getById).toHaveBeenCalledTimes(1);
+    expect(mockCreateAgent).toHaveBeenCalledTimes(1);
+  });
 });
 
 // =============================================================================

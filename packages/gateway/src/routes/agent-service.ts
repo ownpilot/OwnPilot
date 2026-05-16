@@ -327,6 +327,13 @@ export async function getOrCreateAgentInstance(record: AgentRecord): Promise<Age
 
 /**
  * Get agent from store (database + cache).
+ *
+ * Race-safety: the pending entry is installed synchronously (no await
+ * between check and set), so concurrent callers under the same id all
+ * await the same DB read + agent construction. Without this, two
+ * requests racing through the cache-miss path would each start their
+ * own DB query and agent build — orphaning one of the resulting agents
+ * when the second `agentCache.set` overwrites the first.
  */
 export async function getAgent(id: string): Promise<Agent | undefined> {
   const cached = lruGet(agentCache, id);
@@ -341,13 +348,14 @@ export async function getAgent(id: string): Promise<Agent | undefined> {
     }
   }
 
-  const record = await agentsRepo.getById(id);
-  if (!record) return undefined;
-
-  const promise = createAgentFromRecord(record).finally(() => {
+  const promise = (async () => {
+    const record = await agentsRepo.getById(id);
+    if (!record) return undefined;
+    return createAgentFromRecord(record);
+  })().finally(() => {
     pendingAgents.delete(id);
   });
-  pendingAgents.set(id, promise);
+  pendingAgents.set(id, promise as Promise<Agent>);
 
   try {
     return await promise;
