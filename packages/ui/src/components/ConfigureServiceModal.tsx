@@ -1,6 +1,18 @@
-import { X, CheckCircle2, AlertCircle, Save, Trash2, Plus, Star } from './icons';
+import { useEffect, useState } from 'react';
+import {
+  X,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Save,
+  Trash2,
+  Plus,
+  Star,
+  RefreshCw,
+} from './icons';
 import { DynamicConfigForm } from './DynamicConfigForm';
-import type { ConfigEntryView, ConfigServiceView } from '../api';
+import { voiceApi } from '../api';
+import type { ConfigEntryView, ConfigServiceView, VoiceDiagnostics } from '../api';
 
 // ---------------------------------------------------------------------------
 // Constants (duplicated from ConfigCenterPage to keep modal self-contained)
@@ -78,6 +90,28 @@ export function ConfigureServiceModal({
     : (service.entries.find((e) => e.id === activeEntryId) ?? null);
   const canDelete = !isCreating && service.entries.length > 1;
   const isDefault = activeEntry?.isDefault ?? false;
+  const isAudioService = service.name === 'audio_service';
+  const [diagnostics, setDiagnostics] = useState<VoiceDiagnostics | null>(null);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
+  const [isCheckingDiagnostics, setIsCheckingDiagnostics] = useState(false);
+
+  const runDiagnostics = async () => {
+    setIsCheckingDiagnostics(true);
+    setDiagnosticsError(null);
+    try {
+      setDiagnostics(await voiceApi.getDiagnostics());
+    } catch (err) {
+      setDiagnostics(null);
+      setDiagnosticsError(err instanceof Error ? err.message : 'Diagnostics failed');
+    } finally {
+      setIsCheckingDiagnostics(false);
+    }
+  };
+
+  useEffect(() => {
+    setDiagnostics(null);
+    setDiagnosticsError(null);
+  }, [service.name, activeEntryId]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -193,6 +227,79 @@ export function ConfigureServiceModal({
             disabled={isSaving}
           />
 
+          {isAudioService && (
+            <div className="border-t border-border dark:border-dark-border pt-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                    Audio Diagnostics
+                  </p>
+                  {diagnostics && (
+                    <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                      Provider: {diagnostics.provider ?? 'not configured'}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={runDiagnostics}
+                  disabled={isCheckingDiagnostics}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary border border-border dark:border-dark-border rounded-lg hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isCheckingDiagnostics ? 'animate-spin' : ''}`}
+                  />
+                  {isCheckingDiagnostics ? 'Checking...' : 'Check'}
+                </button>
+              </div>
+
+              {diagnosticsError && (
+                <div className="flex items-center gap-2 text-xs text-error">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {diagnosticsError}
+                </div>
+              )}
+
+              {diagnostics && (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <DiagnosticsSummary label="STT" ok={diagnostics.stt.ok} />
+                    <DiagnosticsSummary label="TTS" ok={diagnostics.tts.ok} />
+                  </div>
+                  {diagnostics.checks.length > 0 && (
+                    <div className="space-y-1.5">
+                      {diagnostics.checks.map((check) => (
+                        <div
+                          key={check.name}
+                          className="flex items-start gap-2 text-xs text-text-secondary dark:text-dark-text-secondary"
+                        >
+                          {check.ok ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-success flex-shrink-0" />
+                          ) : check.optional ? (
+                            <AlertCircle className="w-3.5 h-3.5 mt-0.5 text-amber-500 flex-shrink-0" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5 mt-0.5 text-error flex-shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-text-primary dark:text-dark-text-primary">
+                              {check.name}
+                              {check.optional && (
+                                <span className="ml-1 font-normal text-text-muted dark:text-dark-text-muted">
+                                  optional
+                                </span>
+                              )}
+                            </p>
+                            <p className="break-words">{check.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Active toggle */}
           <div className="flex items-center justify-between p-3 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-lg">
             <div>
@@ -300,6 +407,19 @@ export function ConfigureServiceModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DiagnosticsSummary({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-text-secondary dark:text-dark-text-secondary">
+      {ok ? (
+        <CheckCircle2 className="w-3.5 h-3.5 text-success flex-shrink-0" />
+      ) : (
+        <XCircle className="w-3.5 h-3.5 text-error flex-shrink-0" />
+      )}
+      <span className="font-medium text-text-primary dark:text-dark-text-primary">{label}</span>
     </div>
   );
 }

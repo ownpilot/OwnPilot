@@ -21,6 +21,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { configServicesApi } from '../api';
 import { useToast } from '../components/ToastProvider';
 import type { ConfigEntryView, ConfigServiceView, ConfigServiceStats } from '../api';
+import { normalizeConfigFormData } from '../utils/config-form-validation';
 
 type TabId = 'home' | 'config';
 
@@ -324,6 +325,20 @@ export function ConfigCenterPage() {
           }
         }
       }
+
+      const activeEntry = activeEntryId
+        ? editingService.entries.find((e) => e.id === activeEntryId)
+        : null;
+      const normalized = normalizeConfigFormData(
+        bodyData,
+        editingService,
+        isCreating ? {} : (activeEntry?.data ?? {})
+      );
+      if (normalized.errors.length > 0) {
+        setSaveMessage({ type: 'error', text: normalized.errors.join('; ') });
+        return;
+      }
+      bodyData = normalized.data;
 
       const body: Record<string, unknown> = {
         data: bodyData,

@@ -424,6 +424,46 @@ describe('Config Services Routes', () => {
       expect(updateCall[1].data.app_password).toBe('supersecretpassword123');
     });
 
+    it('merges partial data updates before writing to avoid dropping existing fields', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([sampleEntry]);
+      mockConfigServicesRepo.updateEntry.mockResolvedValue({
+        ...sampleEntry,
+        data: { ...sampleEntry.data, email: 'new@gmail.com' },
+      });
+
+      const res = await app.request('/config-services/gmail/entries/entry-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { email: 'new@gmail.com' } }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockConfigServicesRepo.updateEntry).toHaveBeenCalledWith(
+        'entry-1',
+        expect.objectContaining({
+          data: {
+            email: 'new@gmail.com',
+            app_password: 'supersecretpassword123',
+          },
+        })
+      );
+    });
+
+    it('returns 404 when entry exists globally but not under the requested service', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
+
+      const res = await app.request('/config-services/gmail/entries/entry-from-other-service', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { email: 'new@gmail.com' } }),
+      });
+
+      expect(res.status).toBe(404);
+      expect(mockConfigServicesRepo.updateEntry).not.toHaveBeenCalled();
+    });
+
     it('returns 404 when entry not found', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
       mockConfigServicesRepo.getEntries.mockReturnValue([]);
@@ -446,6 +486,7 @@ describe('Config Services Routes', () => {
   describe('DELETE /config-services/:name/entries/:entryId', () => {
     it('deletes an entry', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([sampleEntry]);
       mockConfigServicesRepo.deleteEntry.mockResolvedValue(true);
 
       const res = await app.request('/config-services/gmail/entries/entry-1', {
@@ -469,6 +510,7 @@ describe('Config Services Routes', () => {
 
     it('returns 404 when entry not found', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(sampleService);
+      mockConfigServicesRepo.getEntries.mockReturnValue([]);
       mockConfigServicesRepo.deleteEntry.mockResolvedValue(false);
 
       const res = await app.request('/config-services/gmail/entries/nonexistent', {
@@ -476,6 +518,7 @@ describe('Config Services Routes', () => {
       });
 
       expect(res.status).toBe(404);
+      expect(mockConfigServicesRepo.deleteEntry).not.toHaveBeenCalled();
     });
   });
 
@@ -547,6 +590,20 @@ describe('Config Services Routes', () => {
       expect(json.error.message).toContain('API Key');
     });
 
+    it('POST entry returns 400 when required data object is omitted', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: 'Missing data' }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('API Key');
+    });
+
     it('POST entry allows when required field present', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue(serviceWithRequired);
       mockConfigServicesRepo.createEntry.mockResolvedValue(sampleEntry);
@@ -591,6 +648,87 @@ describe('Config Services Routes', () => {
       });
 
       expect(res.status).toBe(200);
+    });
+  });
+
+  // ========================================================================
+  // Field type validation
+  // ========================================================================
+
+  describe('field type validation', () => {
+    const typedService = {
+      ...sampleService,
+      configSchema: [
+        { name: 'endpoint', type: 'url', label: 'Endpoint' },
+        { name: 'timeout', type: 'number', label: 'Timeout' },
+        { name: 'enabled', type: 'boolean', label: 'Enabled' },
+        {
+          name: 'mode',
+          type: 'select',
+          label: 'Mode',
+          options: [
+            { value: 'local', label: 'Local' },
+            { value: 'cloud', label: 'Cloud' },
+          ],
+        },
+        { name: 'metadata', type: 'json', label: 'Metadata' },
+      ],
+    };
+
+    it('rejects invalid typed fields on create', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(typedService);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            endpoint: 'not-a-url',
+            timeout: 'slow',
+            enabled: 'yes',
+            mode: 'hybrid',
+            metadata: '{bad json',
+          },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Endpoint');
+      expect(json.error.message).toContain('Timeout');
+      expect(json.error.message).toContain('Enabled');
+      expect(json.error.message).toContain('Mode');
+      expect(json.error.message).toContain('Metadata');
+    });
+
+    it('normalizes number strings and JSON strings before create', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue(typedService);
+      mockConfigServicesRepo.createEntry.mockResolvedValue(sampleEntry);
+
+      const res = await app.request('/config-services/gmail/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            endpoint: 'http://localhost:3000',
+            timeout: '30',
+            enabled: true,
+            mode: 'local',
+            metadata: '{"region":"tr"}',
+          },
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockConfigServicesRepo.createEntry).toHaveBeenCalledWith(
+        'gmail',
+        expect.objectContaining({
+          data: expect.objectContaining({
+            timeout: 30,
+            metadata: { region: 'tr' },
+          }),
+        })
+      );
     });
   });
 });

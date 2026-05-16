@@ -58,6 +58,80 @@ function validateRequiredFields(
   return missing;
 }
 
+function isEmptyConfigValue(value: unknown): boolean {
+  return value === undefined || value === null || value === '';
+}
+
+function normalizeAndValidateEntryData(
+  data: Record<string, unknown>,
+  schema: ConfigFieldDefinition[]
+): { data: Record<string, unknown>; errors: string[] } {
+  const normalized = { ...data };
+  const errors: string[] = [];
+
+  for (const field of schema) {
+    const value = normalized[field.name];
+    if (isEmptyConfigValue(value)) continue;
+
+    const label = field.label || field.name;
+    switch (field.type) {
+      case 'string':
+      case 'secret':
+        if (typeof value !== 'string') {
+          errors.push(`${label} must be a string`);
+        }
+        break;
+      case 'url':
+        if (typeof value !== 'string') {
+          errors.push(`${label} must be a URL string`);
+          break;
+        }
+        try {
+          new URL(value);
+        } catch {
+          errors.push(`${label} must be a valid URL`);
+        }
+        break;
+      case 'number': {
+        const numberValue = typeof value === 'string' ? Number(value) : value;
+        if (typeof numberValue !== 'number' || !Number.isFinite(numberValue)) {
+          errors.push(`${label} must be a number`);
+        } else {
+          normalized[field.name] = numberValue;
+        }
+        break;
+      }
+      case 'boolean':
+        if (typeof value !== 'boolean') {
+          errors.push(`${label} must be true or false`);
+        }
+        break;
+      case 'select': {
+        if (typeof value !== 'string') {
+          errors.push(`${label} must be one of the configured options`);
+          break;
+        }
+        const allowed = field.options?.map((option) => option.value);
+        if (allowed && allowed.length > 0 && !allowed.includes(value)) {
+          errors.push(`${label} must be one of: ${allowed.join(', ')}`);
+        }
+        break;
+      }
+      case 'json':
+        if (typeof value === 'string') {
+          try {
+            normalized[field.name] = JSON.parse(value);
+          } catch {
+            errors.push(`${label} must be valid JSON`);
+          }
+        }
+        break;
+    }
+  }
+
+  return { data: normalized, errors };
+}
+
 /**
  * Detect if a value looks like it was masked by maskSecret().
  * Matches patterns like "abcd...wxyz" or "****".
@@ -294,7 +368,20 @@ configServicesRoutes.post('/:name/entries', async (c) => {
   }
 
   // Validate required fields
-  if (body.data && service.configSchema.length > 0) {
+  if (service.configSchema.length > 0) {
+    const normalized = normalizeAndValidateEntryData(body.data ?? {}, service.configSchema);
+    if (normalized.errors.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Invalid fields: ${normalized.errors.join(', ')}`,
+        },
+        400
+      );
+    }
+    body.data = normalized.data;
+
     const missing = validateRequiredFields(body.data, service.configSchema);
     if (missing.length > 0) {
       return apiError(
@@ -334,20 +421,22 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(e) }, 400);
   }
 
+  const existingEntry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
+  if (!existingEntry) {
+    return notFoundError(c, 'Config entry', entryId);
+  }
+
   // Protect against masked secret values being written back to DB.
   // If a secret field's value looks like a masked string, preserve the original.
   if (body.data) {
     const secretFields = service.configSchema.filter((f) => f.type === 'secret').map((f) => f.name);
 
     if (secretFields.length > 0) {
-      const existingEntry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
-      if (existingEntry) {
-        for (const field of secretFields) {
-          const incoming = body.data[field];
-          if (typeof incoming === 'string' && isMaskedValue(incoming)) {
-            // Restore original value — the client sent back a masked string
-            body.data[field] = existingEntry.data[field];
-          }
+      for (const field of secretFields) {
+        const incoming = body.data[field];
+        if (typeof incoming === 'string' && isMaskedValue(incoming)) {
+          // Restore original value — the client sent back a masked string
+          body.data[field] = existingEntry.data[field];
         }
       }
     }
@@ -355,9 +444,18 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
 
   // Validate required fields (merge with existing data to allow partial updates)
   if (body.data && service.configSchema.length > 0) {
-    const existingData =
-      configServicesRepo.getEntries(name).find((e) => e.id === entryId)?.data ?? {};
-    const mergedData = { ...existingData, ...body.data };
+    const normalized = normalizeAndValidateEntryData(body.data, service.configSchema);
+    if (normalized.errors.length > 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: `Invalid fields: ${normalized.errors.join(', ')}`,
+        },
+        400
+      );
+    }
+    const mergedData = { ...existingEntry.data, ...normalized.data };
     const missing = validateRequiredFields(mergedData, service.configSchema);
     if (missing.length > 0) {
       return apiError(
@@ -369,6 +467,7 @@ configServicesRoutes.put('/:name/entries/:entryId', async (c) => {
         400
       );
     }
+    body.data = mergedData;
   }
 
   const updated = await configServicesRepo.updateEntry(entryId, body);
@@ -391,6 +490,11 @@ configServicesRoutes.delete('/:name/entries/:entryId', async (c) => {
   const service = configServicesRepo.getByName(name);
   if (!service) {
     return notFoundError(c, 'Config service', name);
+  }
+
+  const entry = configServicesRepo.getEntries(name).find((e) => e.id === entryId);
+  if (!entry) {
+    return notFoundError(c, 'Config entry', entryId);
   }
 
   const deleted = await configServicesRepo.deleteEntry(entryId);
