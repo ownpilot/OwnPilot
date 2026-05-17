@@ -17,6 +17,7 @@ const COLORS = {
 const LABEL_COLORS = {
   system: 'bg-blue-500',
   messages: 'bg-amber-500',
+  free: 'bg-bg-tertiary dark:bg-dark-bg-tertiary border border-border dark:border-dark-border',
 };
 
 // =============================================================================
@@ -68,9 +69,25 @@ export function ContextDetailModal({
   const systemTokens = breakdown?.systemPromptTokens ?? 0;
   const messageTokens = breakdown?.messageHistoryTokens ?? sessionInfo.estimatedTokens;
   const totalUsed = systemTokens + messageTokens;
-  const systemPct = maxTokens > 0 ? (systemTokens / maxTokens) * 100 : 0;
-  const messagePct = maxTokens > 0 ? (messageTokens / maxTokens) * 100 : 0;
-  const fillPct = Math.min(100, Math.round((totalUsed / maxTokens) * 100));
+  const systemPct = maxTokens > 0 ? Math.min(100, (systemTokens / maxTokens) * 100) : 0;
+  const rawMessagePct = maxTokens > 0 ? (messageTokens / maxTokens) * 100 : 0;
+  const messagePct = Math.min(Math.max(0, 100 - systemPct), rawMessagePct);
+  const fillPct = maxTokens > 0 ? Math.min(100, Math.round((totalUsed / maxTokens) * 100)) : 0;
+  const remainingTokens = Math.max(0, maxTokens - totalUsed);
+  const freePct = Math.max(0, 100 - systemPct - messagePct);
+  const statusLabel = fillPct >= 90 ? 'Near limit' : fillPct >= 75 ? 'Getting full' : 'Healthy';
+  const statusColor =
+    fillPct >= 90
+      ? 'text-red-700 dark:text-red-300'
+      : fillPct >= 75
+        ? 'text-yellow-700 dark:text-yellow-300'
+        : 'text-emerald-700 dark:text-emerald-300';
+  const recommendation =
+    fillPct >= 90
+      ? 'Near limit. Compact this session or start a fresh chat before the model starts losing older context.'
+      : fillPct >= 75
+        ? 'Getting full. You can continue, but compacting soon will keep older details easier to recover.'
+        : 'Healthy. There is still enough room for this conversation to keep growing.';
 
   return (
     <div
@@ -113,8 +130,18 @@ export function ContextDetailModal({
               <span className="text-xs text-text-muted dark:text-dark-text-muted">
                 {formatNumber(totalUsed)} / {formatNumber(maxTokens)}
               </span>
+              <span className="ml-auto text-xs text-text-muted dark:text-dark-text-muted">
+                {formatNumber(remainingTokens)} left
+              </span>
             </div>
-            <div className="h-3 rounded-full overflow-hidden flex bg-bg-tertiary dark:bg-dark-bg-tertiary">
+            <div
+              className="h-3 rounded-full overflow-hidden flex bg-bg-tertiary dark:bg-dark-bg-tertiary"
+              role="progressbar"
+              aria-label="Context window usage"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={fillPct}
+            >
               {systemPct > 0 && (
                 <div
                   className={`${COLORS.system} transition-all duration-300`}
@@ -129,6 +156,13 @@ export function ContextDetailModal({
                   title={`Messages: ${formatNumber(messageTokens)}`}
                 />
               )}
+              {freePct > 0 && (
+                <div
+                  className={`${COLORS.free} transition-all duration-300`}
+                  style={{ width: `${freePct}%` }}
+                  title={`Free: ${formatNumber(remainingTokens)}`}
+                />
+              )}
             </div>
             <div className="flex items-center gap-4 mt-1.5 text-[10px] text-text-muted dark:text-dark-text-muted">
               <span className="flex items-center gap-1">
@@ -139,8 +173,24 @@ export function ContextDetailModal({
                 <span className={`inline-block w-2 h-2 rounded-sm ${LABEL_COLORS.messages}`} />
                 Messages ({formatNumber(messageTokens)})
               </span>
+              <span className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-sm ${LABEL_COLORS.free}`} />
+                Free ({formatNumber(remainingTokens)})
+              </span>
               <span className="ml-auto">{sessionInfo.messageCount} msgs</span>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary/70 dark:bg-dark-bg-secondary/70 px-3 py-2">
+            <div className={`text-xs font-medium ${statusColor}`}>{statusLabel}</div>
+            <p className="mt-1 text-xs leading-5 text-text-secondary dark:text-dark-text-secondary">
+              {recommendation}
+            </p>
+            {sessionInfo.cachedTokens != null && sessionInfo.cachedTokens > 0 && (
+              <p className="mt-1 text-[11px] text-text-muted dark:text-dark-text-muted">
+                {formatNumber(sessionInfo.cachedTokens)} tokens served from prompt cache.
+              </p>
+            )}
           </div>
 
           {/* Section breakdown */}
