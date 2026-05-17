@@ -28,12 +28,18 @@ import { getErrorMessage } from '../services/error-utils.js';
  * path disclosure when sandbox errors are returned in debug mode.
  */
 function stripHostPaths(stack: string): string {
-  // Match absolute Unix paths (/home/, /Users/, /root/)
-  const unixPathPattern = /\B\/[a-zA-Z][^\s:]*\//g;
-  // Match Windows paths (C:\, D:\, etc.)
-  const windowsPathPattern = /\B[a-zA-Z]:\\[^\s:]*\\/g;
+  // Match absolute Unix paths in stack traces: /home/..., /Users/..., /root/...
+  const unixPathPattern = /\/home\/[^\s'")]+/g;
+  const usersPathPattern = /\/Users\/[^\s'")]+/g;
+  const rootPathPattern = /\/root\/[^\s'")]+/g;
+  // Match Windows paths: C:\Users\...
+  const windowsPathPattern = /[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g;
 
-  return stack.replace(unixPathPattern, '/<sandbox>/').replace(windowsPathPattern, '<sandbox>\\');
+  return stack
+    .replace(unixPathPattern, '/<sandbox>/')
+    .replace(usersPathPattern, '/<sandbox>/')
+    .replace(rootPathPattern, '/<sandbox>/')
+    .replace(windowsPathPattern, '<sandbox>\\');
 }
 
 /**
