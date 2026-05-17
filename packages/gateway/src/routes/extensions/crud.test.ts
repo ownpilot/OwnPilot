@@ -193,6 +193,9 @@ describe('Extensions CRUD Routes', () => {
       mockExtService.uninstall.mockResolvedValue(true);
       const res = await app.request('/ext/ext-1', { method: 'DELETE' });
       expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deleted).toBe(true);
+      expect(json.data.removed).toBe(true);
       expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
     });
 
@@ -200,6 +203,22 @@ describe('Extensions CRUD Routes', () => {
       mockExtService.getById.mockReturnValue(undefined);
       const res = await app.request('/ext/nonexistent', { method: 'DELETE' });
       expect(res.status).toBe(404);
+    });
+
+    it('supports POST /:id/remove as a remove alias', async () => {
+      mockExtService.uninstall.mockResolvedValue(true);
+      const res = await app.request('/ext/ext-1/remove', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
+    });
+
+    it('supports POST /:id/uninstall as an uninstall alias', async () => {
+      mockExtService.uninstall.mockResolvedValue(true);
+      const res = await app.request('/ext/ext-1/uninstall', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
     });
   });
 

@@ -5,7 +5,7 @@
  * POST /:id/enable, POST /:id/disable, POST /:id/reload
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { getServiceRegistry, Services } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension-service.js';
 import {
@@ -24,6 +24,34 @@ export const crudRoutes = new Hono();
 
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
 const getExtService = () => getServiceRegistry().get(Services.Extension) as ExtensionService;
+
+async function uninstallExtension(c: Context) {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  if (!id) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Extension id is required' },
+      400
+    );
+  }
+
+  const service = getExtService();
+  const deleted = await service.uninstall(id, userId);
+
+  if (!deleted) {
+    return notFoundError(c, 'Extension', id);
+  }
+
+  wsGateway.broadcast('data:changed', { entity: 'extension', action: 'deleted', id });
+  return apiResponse(c, {
+    deleted: true,
+    uninstalled: true,
+    removed: true,
+    message: 'Extension removed successfully.',
+  });
+}
 
 /**
  * GET / - List extensions
@@ -114,19 +142,14 @@ crudRoutes.get('/:id', async (c) => {
  * DELETE /:id - Uninstall package
  */
 crudRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
-  const id = c.req.param('id');
-
-  const service = getExtService();
-  const deleted = await service.uninstall(id, userId);
-
-  if (!deleted) {
-    return notFoundError(c, 'Extension', id);
-  }
-
-  wsGateway.broadcast('data:changed', { entity: 'extension', action: 'deleted', id });
-  return apiResponse(c, { message: 'Extension uninstalled successfully.' });
+  return uninstallExtension(c);
 });
+
+/** POST /:id/uninstall - Uninstall package (alias for clients that avoid DELETE) */
+crudRoutes.post('/:id/uninstall', async (c) => uninstallExtension(c));
+
+/** POST /:id/remove - Remove package (alias of uninstall) */
+crudRoutes.post('/:id/remove', async (c) => uninstallExtension(c));
 
 /**
  * PATCH /:id - Update extension metadata (name, description, version)

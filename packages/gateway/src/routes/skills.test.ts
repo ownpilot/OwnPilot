@@ -22,6 +22,10 @@ const mockInstall = vi.fn();
 const mockGetPackageInfo = vi.fn();
 const mockCheckForUpdate = vi.fn(async () => ({ hasUpdate: false, latestVersion: '1.0.0' }));
 
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: vi.fn() },
+}));
+
 vi.mock('../services/skill-npm-installer.js', () => ({
   getNpmInstaller: vi.fn(() => ({
     search: mockSearch,
@@ -33,6 +37,7 @@ vi.mock('../services/skill-npm-installer.js', () => ({
 
 const mockExtService = {
   install: vi.fn(),
+  uninstall: vi.fn(),
 };
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -99,6 +104,7 @@ describe('Skills Routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearch.mockResolvedValue(sampleResults);
+    mockExtService.uninstall.mockResolvedValue(true);
     mockCheckForUpdate.mockResolvedValue({ hasUpdate: false, latestVersion: '1.0.0' });
     app = createApp();
   });
@@ -114,22 +120,27 @@ describe('Skills Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.packages).toHaveLength(2);
-      expect(mockSearch).toHaveBeenCalledWith('pdf', 20);
+      expect(mockSearch).toHaveBeenCalledWith('pdf', 20, 0);
     });
 
     it('passes limit query parameter (capped at 50)', async () => {
       await app.request('/skills/search?q=test&limit=10');
-      expect(mockSearch).toHaveBeenCalledWith('test', 10);
+      expect(mockSearch).toHaveBeenCalledWith('test', 10, 0);
     });
 
     it('caps limit at 50', async () => {
       await app.request('/skills/search?q=test&limit=999');
-      expect(mockSearch).toHaveBeenCalledWith('test', 50);
+      expect(mockSearch).toHaveBeenCalledWith('test', 50, 0);
+    });
+
+    it('passes offset query parameter', async () => {
+      await app.request('/skills/search?q=test&limit=10&offset=20');
+      expect(mockSearch).toHaveBeenCalledWith('test', 10, 20);
     });
 
     it('uses empty string when q is omitted', async () => {
       await app.request('/skills/search');
-      expect(mockSearch).toHaveBeenCalledWith('', 20);
+      expect(mockSearch).toHaveBeenCalledWith('', 20, 0);
     });
 
     it('returns 500 when search throws', async () => {
@@ -148,17 +159,22 @@ describe('Skills Routes', () => {
       const res = await app.request('/skills/featured');
 
       expect(res.status).toBe(200);
-      expect(mockSearch).toHaveBeenCalledWith('', 20);
+      expect(mockSearch).toHaveBeenCalledWith('', 20, 0);
     });
 
     it('respects limit param', async () => {
       await app.request('/skills/featured?limit=5');
-      expect(mockSearch).toHaveBeenCalledWith('', 5);
+      expect(mockSearch).toHaveBeenCalledWith('', 5, 0);
     });
 
     it('caps limit at 50', async () => {
       await app.request('/skills/featured?limit=100');
-      expect(mockSearch).toHaveBeenCalledWith('', 50);
+      expect(mockSearch).toHaveBeenCalledWith('', 50, 0);
+    });
+
+    it('respects offset param', async () => {
+      await app.request('/skills/featured?limit=5&offset=10');
+      expect(mockSearch).toHaveBeenCalledWith('', 5, 10);
     });
 
     it('returns 500 when search throws', async () => {
@@ -219,6 +235,44 @@ describe('Skills Routes', () => {
       });
 
       expect(res.status).toBe(500);
+    });
+  });
+
+  // =========================================================================
+  // Skill removal aliases
+  // =========================================================================
+
+  describe('skill removal aliases', () => {
+    it('deletes a skill by id', async () => {
+      const res = await app.request('/skills/ext-1', { method: 'DELETE' });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.data.deleted).toBe(true);
+      expect(json.data.removed).toBe(true);
+      expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
+    });
+
+    it('removes a skill through POST /:id/remove', async () => {
+      const res = await app.request('/skills/ext-1/remove', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
+    });
+
+    it('uninstalls a skill through POST /:id/uninstall', async () => {
+      const res = await app.request('/skills/ext-1/uninstall', { method: 'POST' });
+
+      expect(res.status).toBe(200);
+      expect(mockExtService.uninstall).toHaveBeenCalledWith('ext-1', USER_ID);
+    });
+
+    it('returns 404 when removal target is missing', async () => {
+      mockExtService.uninstall.mockResolvedValueOnce(false);
+
+      const res = await app.request('/skills/missing', { method: 'DELETE' });
+
+      expect(res.status).toBe(404);
     });
   });
 

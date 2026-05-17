@@ -50,7 +50,7 @@ import {
   skillAudit,
 } from './skill.js';
 
-import { confirm, checkbox } from '@inquirer/prompts';
+import { confirm, checkbox, select } from '@inquirer/prompts';
 
 describe('Skill CLI Commands', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
@@ -71,16 +71,19 @@ describe('Skill CLI Commands', () => {
   describe('skillList', () => {
     it('lists installed skills', async () => {
       mockFetch.mockResolvedValueOnce(
-        apiOk([
-          {
-            id: 'smart-search',
-            name: 'Smart Search',
-            format: 'ownpilot',
-            status: 'enabled',
-            manifest: {},
-            settings: {},
-          },
-        ])
+        apiOk({
+          packages: [
+            {
+              id: 'smart-search',
+              name: 'Smart Search',
+              format: 'ownpilot',
+              status: 'enabled',
+              manifest: {},
+              settings: {},
+            },
+          ],
+          total: 1,
+        })
       );
 
       await skillList();
@@ -91,7 +94,7 @@ describe('Skill CLI Commands', () => {
     });
 
     it('shows empty message when no skills', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([]));
+      mockFetch.mockResolvedValueOnce(apiOk({ packages: [], total: 0 }));
 
       await skillList();
 
@@ -231,6 +234,23 @@ describe('Skill CLI Commands', () => {
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('cancelled'));
     });
+
+    it('installs from local path through extensions install endpoint', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ package: { id: 'local-skill', name: 'Local Skill' } })
+      );
+
+      await skillInstall('.\\skills\\local\\SKILL.md');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/extensions/install'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ path: '.\\skills\\local\\SKILL.md' }),
+        })
+      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Local Skill'));
+    });
   });
 
   // --------------------------------------------------------------------------
@@ -239,17 +259,25 @@ describe('Skill CLI Commands', () => {
 
   describe('skillUninstall', () => {
     it('uninstalls by ID', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', name: 'Test Extension' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', name: 'Test Extension' }], total: 1 })
+      );
       vi.mocked(confirm).mockResolvedValueOnce(true);
       mockFetch.mockResolvedValueOnce(apiOk(null));
 
       await skillUninstall('ext-1');
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Uninstalled'));
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/v1/skills/ext-1'),
+        expect.objectContaining({ method: 'DELETE' })
+      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Removed'));
     });
 
     it('shows not found for unknown ID', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'other', name: 'Other' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'other', name: 'Other' }], total: 1 })
+      );
 
       await skillUninstall('nonexistent');
 
@@ -257,7 +285,7 @@ describe('Skill CLI Commands', () => {
     });
 
     it('shows empty message when no skills', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([]));
+      mockFetch.mockResolvedValueOnce(apiOk({ packages: [], total: 0 }));
 
       await skillUninstall();
 
@@ -271,21 +299,55 @@ describe('Skill CLI Commands', () => {
 
   describe('skillEnable', () => {
     it('shows message when none disabled', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', status: 'enabled' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', status: 'enabled' }], total: 1 })
+      );
 
       await skillEnable();
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No disabled skills'));
     });
+
+    it('enables selected skill through enable endpoint', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', name: 'Test', status: 'disabled' }], total: 1 })
+      );
+      vi.mocked(select).mockResolvedValueOnce('ext-1');
+      mockFetch.mockResolvedValueOnce(apiOk(null));
+
+      await skillEnable();
+
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/v1/extensions/ext-1/enable'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
   });
 
   describe('skillDisable', () => {
     it('shows message when none enabled', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', status: 'disabled' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', status: 'disabled' }], total: 1 })
+      );
 
       await skillDisable();
 
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No enabled skills'));
+    });
+
+    it('disables selected skill through disable endpoint', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', name: 'Test', status: 'enabled' }], total: 1 })
+      );
+      vi.mocked(select).mockResolvedValueOnce('ext-1');
+      mockFetch.mockResolvedValueOnce(apiOk(null));
+
+      await skillDisable();
+
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('/api/v1/extensions/ext-1/disable'),
+        expect.objectContaining({ method: 'POST' })
+      );
     });
   });
 
@@ -321,7 +383,9 @@ describe('Skill CLI Commands', () => {
 
   describe('skillAudit', () => {
     it('shows audit result', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', name: 'Test' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', name: 'Test' }], total: 1 })
+      );
       mockFetch.mockResolvedValueOnce(
         apiOk({ id: 'ext-1', safe: true, risk: 'low', findings: [] })
       );
@@ -333,7 +397,9 @@ describe('Skill CLI Commands', () => {
     });
 
     it('shows findings when issues detected', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([{ id: 'ext-1', name: 'Test' }]));
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ packages: [{ id: 'ext-1', name: 'Test' }], total: 1 })
+      );
       mockFetch.mockResolvedValueOnce(
         apiOk({
           id: 'ext-1',
@@ -349,7 +415,7 @@ describe('Skill CLI Commands', () => {
     });
 
     it('shows empty message when no skills', async () => {
-      mockFetch.mockResolvedValueOnce(apiOk([]));
+      mockFetch.mockResolvedValueOnce(apiOk({ packages: [], total: 0 }));
 
       await skillAudit();
 

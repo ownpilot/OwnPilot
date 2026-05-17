@@ -66,7 +66,7 @@ function ConfirmDialog({
             onClick={onConfirm}
             className="px-4 py-2 text-sm bg-error text-white rounded-lg hover:bg-error/90 transition-colors"
           >
-            Uninstall
+            Remove
           </button>
         </div>
       </div>
@@ -137,12 +137,12 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
 
   const uninstallPackage = async (pkg: ExtensionInfo) => {
     try {
-      await extensionsApi.uninstall(pkg.id);
-      toast.success(`Uninstalled "${pkg.name}"`);
+      await extensionsApi.remove(pkg.id);
+      toast.success(`Removed "${pkg.name}"`);
       setSelectedPackage(null);
       await fetchPackages();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Uninstall failed');
+      toast.error(err instanceof Error ? err.message : 'Remove failed');
     }
   };
 
@@ -432,7 +432,7 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
       {/* Uninstall Confirmation */}
       {confirmUninstall && (
         <ConfirmDialog
-          message={`Uninstall "${confirmUninstall.name}"? This cannot be undone.`}
+          message={`Remove "${confirmUninstall.name}"? This cannot be undone.`}
           onConfirm={() => {
             uninstallPackage(confirmUninstall);
             setConfirmUninstall(null);

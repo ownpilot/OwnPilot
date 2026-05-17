@@ -78,6 +78,8 @@ export const extensionsApi = {
   installFromPath: (path: string) =>
     apiClient.post<{ package: ExtensionInfo }>('/extensions/install', { path }),
   uninstall: (id: string) => apiClient.delete<void>(`/extensions/${id}`),
+  remove: (id: string) =>
+    apiClient.post<{ deleted: boolean; removed: boolean }>(`/extensions/${id}/remove`),
   enable: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/enable`),
   disable: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/disable`),
   reload: (id: string) => apiClient.post<{ package: ExtensionInfo }>(`/extensions/${id}/reload`),

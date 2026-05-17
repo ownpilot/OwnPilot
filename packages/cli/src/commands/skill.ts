@@ -33,6 +33,11 @@ interface ExtensionInfo {
   settings?: Record<string, unknown>;
 }
 
+interface ExtensionsListResponse {
+  packages?: ExtensionInfo[];
+  total?: number;
+}
+
 interface PermissionInfo {
   name: string;
   description: string;
@@ -81,6 +86,20 @@ function ensureGatewayError(error: unknown): never {
   process.exit(1);
 }
 
+async function listExtensions(): Promise<ExtensionInfo[]> {
+  const data = await apiFetch<ExtensionInfo[] | ExtensionsListResponse>('/extensions');
+  return Array.isArray(data) ? data : (data.packages ?? []);
+}
+
+function isLikelyLocalPath(value: string): boolean {
+  return (
+    value.includes('/') ||
+    value.includes('\\') ||
+    value.startsWith('.') ||
+    /^[A-Za-z]:[\\/]/.test(value)
+  );
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -110,7 +129,7 @@ const SENSITIVITY_ICONS: Record<string, string> = {
  */
 export async function skillList(): Promise<void> {
   try {
-    const data = await apiFetch<ExtensionInfo[]>('/extensions');
+    const data = await listExtensions();
 
     console.log('\nInstalled Skills:');
     console.log('\u2500'.repeat(90));
@@ -197,7 +216,7 @@ export async function skillInstall(nameOrPath: string): Promise<void> {
 
   try {
     // Detect npm vs local
-    const isNpm = nameOrPath.startsWith('@') || !nameOrPath.includes('/');
+    const isNpm = !isLikelyLocalPath(nameOrPath);
 
     if (isNpm) {
       console.log(`\nFetching package info for ${nameOrPath}...`);
@@ -296,13 +315,17 @@ export async function skillInstall(nameOrPath: string): Promise<void> {
       // Local path install — just call the existing extension install endpoint
       console.log(`\nInstalling from local path: ${nameOrPath}`);
 
-      const result = await apiFetch<{ id: string; name: string }>('/extensions', {
-        method: 'POST',
-        body: JSON.stringify({ path: nameOrPath }),
-      });
+      const result = await apiFetch<{ package?: ExtensionInfo; id?: string; name?: string }>(
+        '/extensions/install',
+        {
+          method: 'POST',
+          body: JSON.stringify({ path: nameOrPath }),
+        }
+      );
 
-      console.log(`\n\u2705 Installed "${result.name}"`);
-      console.log(`  Extension ID: ${result.id}\n`);
+      const installed = result.package ?? result;
+      console.log(`\n\u2705 Installed "${installed.name}"`);
+      console.log(`  Extension ID: ${installed.id}\n`);
     }
   } catch (error) {
     if (error instanceof Error && error.message.includes('ExitPromptError')) return;
@@ -315,7 +338,7 @@ export async function skillInstall(nameOrPath: string): Promise<void> {
  */
 export async function skillUninstall(id?: string): Promise<void> {
   try {
-    const extensions = await apiFetch<ExtensionInfo[]>('/extensions');
+    const extensions = await listExtensions();
 
     if (!extensions || extensions.length === 0) {
       console.log('\nNo skills installed.\n');
@@ -348,8 +371,8 @@ export async function skillUninstall(id?: string): Promise<void> {
       return;
     }
 
-    await apiFetch(`/extensions/${targetId}`, { method: 'DELETE' });
-    console.log(`\n\u2705 Uninstalled "${ext.name}"\n`);
+    await apiFetch(`/skills/${targetId}`, { method: 'DELETE' });
+    console.log(`\n\u2705 Removed "${ext.name}"\n`);
   } catch (error) {
     if (error instanceof Error && error.message.includes('ExitPromptError')) return;
     ensureGatewayError(error);
@@ -361,7 +384,7 @@ export async function skillUninstall(id?: string): Promise<void> {
  */
 export async function skillEnable(id?: string): Promise<void> {
   try {
-    const extensions = await apiFetch<ExtensionInfo[]>('/extensions');
+    const extensions = await listExtensions();
     const disabled = (extensions ?? []).filter((e) => e.status === 'disabled');
 
     if (disabled.length === 0) {
@@ -379,10 +402,7 @@ export async function skillEnable(id?: string): Promise<void> {
         })),
       }));
 
-    await apiFetch(`/extensions/${targetId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'enabled' }),
-    });
+    await apiFetch(`/extensions/${targetId}/enable`, { method: 'POST' });
 
     console.log(`\n\u2705 Enabled "${targetId}"\n`);
   } catch (error) {
@@ -396,7 +416,7 @@ export async function skillEnable(id?: string): Promise<void> {
  */
 export async function skillDisable(id?: string): Promise<void> {
   try {
-    const extensions = await apiFetch<ExtensionInfo[]>('/extensions');
+    const extensions = await listExtensions();
     const enabled = (extensions ?? []).filter((e) => e.status === 'enabled');
 
     if (enabled.length === 0) {
@@ -414,10 +434,7 @@ export async function skillDisable(id?: string): Promise<void> {
         })),
       }));
 
-    await apiFetch(`/extensions/${targetId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'disabled' }),
-    });
+    await apiFetch(`/extensions/${targetId}/disable`, { method: 'POST' });
 
     console.log(`\n\u26AA Disabled "${targetId}"\n`);
   } catch (error) {
@@ -465,7 +482,7 @@ export async function skillCheckUpdates(): Promise<void> {
  */
 export async function skillAudit(id?: string): Promise<void> {
   try {
-    const extensions = await apiFetch<ExtensionInfo[]>('/extensions');
+    const extensions = await listExtensions();
 
     if (!extensions || extensions.length === 0) {
       console.log('\nNo skills installed.\n');

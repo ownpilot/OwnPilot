@@ -291,8 +291,8 @@ describe('NpmSkillInstaller', () => {
       await installer.search('my query');
 
       const calledUrl = mockHttpsGet.mock.calls[0]![0] as string;
-      expect(calledUrl).toContain('ownpilot-skill');
-      expect(calledUrl).toContain(encodeURIComponent('my query'));
+      const params = new URL(calledUrl).searchParams;
+      expect(params.get('text')).toBe('keywords:ownpilot-skill my query');
     });
 
     it('uses provided limit in the search URL', async () => {
@@ -302,6 +302,15 @@ describe('NpmSkillInstaller', () => {
 
       const calledUrl = mockHttpsGet.mock.calls[0]![0] as string;
       expect(calledUrl).toContain('size=50');
+    });
+
+    it('uses provided offset in the search URL', async () => {
+      setupFetchJsonResponse(200, { objects: [], total: 0 });
+
+      await installer.search('test', 20, 40);
+
+      const calledUrl = mockHttpsGet.mock.calls[0]![0] as string;
+      expect(new URL(calledUrl).searchParams.get('from')).toBe('40');
     });
 
     it('handles empty results', async () => {

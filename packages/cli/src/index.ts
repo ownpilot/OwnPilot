@@ -242,6 +242,12 @@ skillCmd
   .action((id) => skillUninstall(id));
 
 skillCmd
+  .command('remove [id]')
+  .alias('rm')
+  .description('Remove a skill')
+  .action((id) => skillUninstall(id));
+
+skillCmd
   .command('enable [id]')
   .description('Enable a disabled skill')
   .action((id) => skillEnable(id));

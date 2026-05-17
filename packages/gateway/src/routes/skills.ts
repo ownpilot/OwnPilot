@@ -5,7 +5,7 @@
  * permission management, and update checking.
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { getUserId, apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 import { getErrorMessage, getServiceRegistry, Services } from '@ownpilot/core';
@@ -18,6 +18,7 @@ import {
 import type { SkillPermission } from '../services/extension-types.js';
 import { extensionsRepo } from '../db/repositories/extensions.js';
 import { validateBody } from '../middleware/validation.js';
+import { wsGateway } from '../ws/server.js';
 
 const installNpmSchema = z.object({
   packageName: z.string().min(1).max(500),
@@ -29,6 +30,36 @@ const grantPermissionsSchema = z.object({
 
 export const skillsRoutes = new Hono();
 
+async function uninstallSkill(c: Context) {
+  const userId = getUserId(c);
+  const id = c.req.param('id');
+
+  if (!id) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'Skill id is required' },
+      400
+    );
+  }
+
+  const service = getServiceRegistry().get(Services.Extension) as unknown as {
+    uninstall: (id: string, userId: string) => Promise<boolean>;
+  };
+
+  const deleted = await service.uninstall(id, userId);
+  if (!deleted) {
+    return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: `Skill ${id} not found` }, 404);
+  }
+
+  wsGateway.broadcast('data:changed', { entity: 'extension', action: 'deleted', id });
+  return apiResponse(c, {
+    deleted: true,
+    uninstalled: true,
+    removed: true,
+    message: 'Skill removed successfully.',
+  });
+}
+
 // ============================================================================
 // Skill Discovery (npm search)
 // ============================================================================
@@ -37,9 +68,10 @@ skillsRoutes.get('/search', async (c) => {
   try {
     const q = c.req.query('q') ?? '';
     const limit = getIntParam(c, 'limit', 20, 1, 50);
+    const offset = getIntParam(c, 'offset', 0, 0, 5000);
 
     const installer = getNpmInstaller();
-    const results = await installer.search(q, limit);
+    const results = await installer.search(q, limit, offset);
     return apiResponse(c, results);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -53,8 +85,9 @@ skillsRoutes.get('/search', async (c) => {
 skillsRoutes.get('/featured', async (c) => {
   try {
     const limit = getIntParam(c, 'limit', 20, 1, 50);
+    const offset = getIntParam(c, 'offset', 0, 0, 5000);
     const installer = getNpmInstaller();
-    const results = await installer.search('', limit);
+    const results = await installer.search('', limit, offset);
     return apiResponse(c, results);
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
@@ -93,6 +126,14 @@ skillsRoutes.post('/install-npm', async (c) => {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
 });
+
+// ============================================================================
+// Skill Removal (aliases for uninstall/remove/delete)
+// ============================================================================
+
+skillsRoutes.delete('/:id', async (c) => uninstallSkill(c));
+skillsRoutes.post('/:id/uninstall', async (c) => uninstallSkill(c));
+skillsRoutes.post('/:id/remove', async (c) => uninstallSkill(c));
 
 // ============================================================================
 // npm Package Info

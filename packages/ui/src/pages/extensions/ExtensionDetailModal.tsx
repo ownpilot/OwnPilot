@@ -703,10 +703,10 @@ export function ExtensionDetailModal({
               <button
                 onClick={() => setConfirmUninstall(true)}
                 className="px-4 py-2 rounded-lg flex items-center gap-2 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
-                title="Uninstall this extension"
+                title="Remove this skill or extension"
               >
                 <Trash2 className="w-4 h-4" />
-                Uninstall
+                Remove
               </button>
             ) : (
               <button
@@ -714,7 +714,7 @@ export function ExtensionDetailModal({
                 className="px-4 py-2 rounded-lg flex items-center gap-2 bg-error text-white hover:bg-error/90 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
-                Confirm Uninstall
+                Confirm Remove
               </button>
             )}
           </div>

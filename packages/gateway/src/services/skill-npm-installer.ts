@@ -73,8 +73,13 @@ export class NpmSkillInstaller {
   /**
    * Search npm registry for OwnPilot skills.
    */
-  async search(query: string, limit = 20): Promise<NpmSearchResult> {
-    const url = `${NPM_SEARCH}?text=keywords:${SKILL_KEYWORD}+${encodeURIComponent(query)}&size=${limit}`;
+  async search(query: string, limit = 20, offset = 0): Promise<NpmSearchResult> {
+    const params = new URLSearchParams({
+      text: `keywords:${SKILL_KEYWORD} ${query}`,
+      size: String(limit),
+      from: String(offset),
+    });
+    const url = `${NPM_SEARCH}?${params.toString()}`;
 
     const data = await this.fetchJson(url);
     const objects = (data as { objects?: unknown[] }).objects ?? [];
