@@ -77,6 +77,7 @@ export class SessionService implements ISessionService {
   get(sessionId: string): Session | null {
     const session = this.sessions.get(sessionId);
     if (!session || !session.isActive) return null;
+    if ((session as { revokedAt?: Date }).revokedAt) return null;
     return session;
   }
 
@@ -117,8 +118,8 @@ export class SessionService implements ISessionService {
   close(sessionId: string): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
-
-    (session as { isActive: boolean }).isActive = false;
+    session.isActive = false;
+    (session as { revokedAt: Date }).revokedAt = new Date();
 
     // Clean up channel index
     if (session.channelPluginId && session.platformChatId) {
