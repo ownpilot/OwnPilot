@@ -221,6 +221,7 @@ export {
   notesApi,
   bookmarksApi,
   contactsApi,
+  habitsApi,
   calendarApi,
   goalsApi,
   memoriesApi,

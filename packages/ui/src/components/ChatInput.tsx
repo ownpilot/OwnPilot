@@ -341,7 +341,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
         )}
 
         {attachmentError && (
-          <div className="mb-2 px-1 text-xs text-error" role="status">
+          <div className="mb-2 px-1 text-xs text-error" role="status" aria-live="polite">
             {attachmentError}
           </div>
         )}
