@@ -404,6 +404,7 @@ export function InstalledTab({ initialFormat, onCountChange }: InstalledTabProps
                 onClick={() => setSelectedPackage(pkg)}
                 formatBadge={<FormatBadge fmt={getFormat(pkg)} />}
                 isToggling={togglingIds.has(pkg.id)}
+                onRemove={() => setConfirmUninstall(pkg)}
               />
             ))}
           </div>

@@ -131,6 +131,7 @@ describe('Expenses Routes', () => {
       expect(json.data.summary.grandTotal).toBe(150);
       expect(json.data.summary.totalExpenses).toBe(3);
       expect(json.data.summary.totalByCategory.food).toBe(100);
+      expect(json.data.categories.transport).toEqual({ color: '#4ECDC4' });
     });
 
     it('supports period parameter', async () => {
@@ -150,6 +151,9 @@ describe('Expenses Routes', () => {
       const json = await res.json();
       expect(json.data.months).toHaveLength(12);
       expect(json.data.year).toBe(2026);
+      expect(json.data.expenseCount).toBe(36);
+      expect(json.data.categories.transport).toEqual({ color: '#4ECDC4' });
+      expect(json.data.months[0].byCategory.food).toBe(100);
     });
   });
 

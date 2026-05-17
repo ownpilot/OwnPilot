@@ -12,6 +12,7 @@ import {
   Home,
   Puzzle,
   Terminal,
+  AlertTriangle,
 } from '../../components/icons';
 import { PageHomeTab } from '../../components/PageHomeTab';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -23,6 +24,43 @@ import { ExtensionCard } from './ExtensionCard';
 import { InstallModal } from './InstallModal';
 import { ExtensionDetailModal } from './ExtensionDetailModal';
 import { CreatorModal } from './CreatorModal';
+
+function ConfirmRemoveDialog({
+  name,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+      <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+        <div className="flex items-start gap-3 mb-5">
+          <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+          <p className="text-sm text-text-primary dark:text-dark-text-primary">
+            Remove "{name}"? This cannot be undone.
+          </p>
+        </div>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm bg-error text-white rounded-lg hover:bg-error/90 transition-colors"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Tab system
@@ -80,6 +118,7 @@ export function ExtensionsPage() {
   const [packages, setPackages] = useState<ExtensionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPackage, setSelectedPackage] = useState<ExtensionInfo | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<ExtensionInfo | null>(null);
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [showCreatorModal, setShowCreatorModal] = useState(false);
@@ -116,12 +155,13 @@ export function ExtensionsPage() {
 
   const uninstallPackage = async (pkg: ExtensionInfo) => {
     try {
-      await extensionsApi.uninstall(pkg.id);
-      toast.success(`Uninstalled "${pkg.name}"`);
+      await extensionsApi.remove(pkg.id);
+      toast.success(`Removed "${pkg.name}"`);
       setSelectedPackage(null);
+      setConfirmRemove(null);
       fetchPackages();
-    } catch {
-      // API client handles error reporting
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Remove failed');
     }
   };
 
@@ -421,6 +461,7 @@ export function ExtensionsPage() {
                     pkg={pkg}
                     onToggle={() => togglePackage(pkg)}
                     onClick={() => setSelectedPackage(pkg)}
+                    onRemove={() => setConfirmRemove(pkg)}
                   />
                 ))}
               </div>
@@ -436,6 +477,14 @@ export function ExtensionsPage() {
           onClose={() => setSelectedPackage(null)}
           onToggle={() => togglePackage(selectedPackage)}
           onUninstall={() => uninstallPackage(selectedPackage)}
+        />
+      )}
+
+      {confirmRemove && (
+        <ConfirmRemoveDialog
+          name={confirmRemove.name}
+          onConfirm={() => uninstallPackage(confirmRemove)}
+          onCancel={() => setConfirmRemove(null)}
         />
       )}
 

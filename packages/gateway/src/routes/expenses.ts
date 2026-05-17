@@ -39,8 +39,18 @@ const VALID_CATEGORIES: readonly ExpenseCategory[] = [
 ];
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
@@ -56,6 +66,10 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   housing: '#85C1E9',
   other: '#AEB6BF',
 };
+
+const CATEGORY_METADATA: Record<ExpenseCategory, { color: string }> = Object.fromEntries(
+  VALID_CATEGORIES.map((cat) => [cat, { color: CATEGORY_COLORS[cat] }])
+) as Record<ExpenseCategory, { color: string }>;
 
 // =============================================================================
 // Routes
@@ -94,9 +108,7 @@ expensesRoutes.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async
       total,
       limit,
       offset,
-      categories: Object.fromEntries(
-        VALID_CATEGORIES.map((cat) => [cat, { color: CATEGORY_COLORS[cat] }])
-      ),
+      categories: CATEGORY_METADATA,
     });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
@@ -172,7 +184,8 @@ expensesRoutes.get('/summary', async (c) => {
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const dayCount = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      const dayCount =
+        Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))) + 1;
       dailyAverage = summary.totalAmount / dayCount;
     }
 
@@ -191,7 +204,7 @@ expensesRoutes.get('/summary', async (c) => {
         topCategories,
         biggestExpenses: [],
       },
-      categories: CATEGORY_COLORS,
+      categories: CATEGORY_METADATA,
     });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
@@ -218,12 +231,20 @@ expensesRoutes.get('/monthly', async (c) => {
         monthNum: String(m),
         total: summary.totalAmount,
         count: summary.count,
-        byCategory: summary.byCategory,
+        byCategory: Object.fromEntries(
+          Object.entries(summary.byCategory).map(([category, data]) => [category, data.amount])
+        ),
         year: Number(year),
       });
     }
 
-    return apiResponse(c, { year: Number(year), months, yearTotal: months.reduce((s, m) => s + m.total, 0) });
+    return apiResponse(c, {
+      year: Number(year),
+      months,
+      yearTotal: months.reduce((s, m) => s + m.total, 0),
+      expenseCount: months.reduce((s, m) => s + m.count, 0),
+      categories: CATEGORY_METADATA,
+    });
   } catch (error) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(error) }, 500);
   }

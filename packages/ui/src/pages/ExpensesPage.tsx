@@ -46,6 +46,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
+const FALLBACK_CATEGORY_COLOR = '#AEB6BF';
+
+function getCategoryColor(categories: unknown, category: string) {
+  if (!categories || typeof categories !== 'object') return FALLBACK_CATEGORY_COLOR;
+
+  const value = (categories as Record<string, { color?: unknown } | string | undefined>)[category];
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && typeof value.color === 'string') {
+    return value.color;
+  }
+
+  return FALLBACK_CATEGORY_COLOR;
+}
+
 export function ExpensesPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -106,19 +120,28 @@ export function ExpensesPage() {
     try {
       // Fetch monthly data
       const monthlyJson = await expensesApi.monthly(year);
-      setMonthlyData(monthlyJson);
+      const months = Array.isArray(monthlyJson.months) ? monthlyJson.months : [];
+      setMonthlyData({
+        ...monthlyJson,
+        months,
+        yearTotal: monthlyJson.yearTotal ?? months.reduce((sum, month) => sum + month.total, 0),
+        expenseCount:
+          monthlyJson.expenseCount ?? months.reduce((sum, month) => sum + month.count, 0),
+        categories: monthlyJson.categories ?? {},
+      });
 
       // Fetch summary for current period
       // Use proper end-of-month (new Date(year, month, 0) gives last day of previous month)
       const lastDay = selectedMonth ? new Date(year, parseInt(selectedMonth, 10), 0).getDate() : 31;
+      const selectedMonthPadded = selectedMonth?.padStart(2, '0');
       const summaryParams: Record<string, string> = selectedMonth
         ? {
-            startDate: `${year}-${selectedMonth}-01`,
-            endDate: `${year}-${selectedMonth}-${String(lastDay).padStart(2, '0')}`,
+            startDate: `${year}-${selectedMonthPadded}-01`,
+            endDate: `${year}-${selectedMonthPadded}-${String(lastDay).padStart(2, '0')}`,
           }
         : { period: 'this_year' };
       const summaryJson = await expensesApi.summary(summaryParams);
-      setSummaryData(summaryJson);
+      setSummaryData({ ...summaryJson, categories: summaryJson.categories ?? {} });
 
       // Fetch expense list
       const listLastDay = selectedMonth
@@ -126,13 +149,13 @@ export function ExpensesPage() {
         : 31;
       const listParams: Record<string, string> = selectedMonth
         ? {
-            startDate: `${year}-${selectedMonth}-01`,
-            endDate: `${year}-${selectedMonth}-${String(listLastDay).padStart(2, '0')}`,
+            startDate: `${year}-${selectedMonthPadded}-01`,
+            endDate: `${year}-${selectedMonthPadded}-${String(listLastDay).padStart(2, '0')}`,
             limit: '50',
           }
         : { startDate: `${year}-01-01`, endDate: `${year}-12-31`, limit: '50' };
       const listJson = await expensesApi.list(listParams);
-      setExpenses(listJson.expenses);
+      setExpenses(Array.isArray(listJson.expenses) ? listJson.expenses : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load expenses');
     } finally {
@@ -523,10 +546,10 @@ export function ExpensesPage() {
                     <div
                       className="w-2 h-2 rounded-full"
                       style={{
-                        backgroundColor:
-                          monthlyData?.categories[
-                            expense.category as keyof typeof monthlyData.categories
-                          ]?.color ?? '#AEB6BF',
+                        backgroundColor: getCategoryColor(
+                          monthlyData?.categories ?? summaryData?.categories,
+                          expense.category
+                        ),
                       }}
                     />
                     <div className="flex-1 min-w-0">

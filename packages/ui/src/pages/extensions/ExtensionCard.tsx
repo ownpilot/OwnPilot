@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Sparkles, Power, Wrench, Zap, Shield } from '../../components/icons';
+import { Sparkles, Power, Wrench, Zap, Shield, Trash2 } from '../../components/icons';
 import type { ExtensionInfo } from '../../api/types';
 import { STATUS_COLORS, CATEGORY_COLORS } from './constants';
 
@@ -11,6 +11,8 @@ interface ExtensionCardProps {
   formatBadge?: ReactNode;
   /** Shows spinner on toggle button while toggling */
   isToggling?: boolean;
+  /** Optional direct remove action. Parent should confirm before deleting. */
+  onRemove?: () => void;
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -26,6 +28,7 @@ export function ExtensionCard({
   onClick,
   formatBadge,
   isToggling = false,
+  onRemove,
 }: ExtensionCardProps) {
   const isEnabled = pkg.status === 'enabled';
   const security = pkg.manifest._security;
@@ -62,27 +65,41 @@ export function ExtensionCard({
           </div>
         </button>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!isToggling) onToggle();
-          }}
-          disabled={isToggling}
-          className={`p-2 rounded-lg transition-colors shrink-0 ${
-            isToggling
-              ? 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted cursor-wait'
-              : isEnabled
-                ? 'bg-success/10 text-success hover:bg-success/20'
-                : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted hover:bg-bg-primary dark:hover:bg-dark-bg-primary'
-          }`}
-          title={isToggling ? 'Please wait...' : isEnabled ? 'Disable' : 'Enable'}
-        >
-          {isToggling ? (
-            <div className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
-          ) : (
-            <Power className="w-4 h-4" />
+        <div className="flex items-center gap-1 shrink-0">
+          {onRemove && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              className="p-2 rounded-lg text-text-muted dark:text-dark-text-muted hover:text-error hover:bg-error/10 transition-colors"
+              title="Remove"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           )}
-        </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isToggling) onToggle();
+            }}
+            disabled={isToggling}
+            className={`p-2 rounded-lg transition-colors ${
+              isToggling
+                ? 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted cursor-wait'
+                : isEnabled
+                  ? 'bg-success/10 text-success hover:bg-success/20'
+                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted hover:bg-bg-primary dark:hover:bg-dark-bg-primary'
+            }`}
+            title={isToggling ? 'Please wait...' : isEnabled ? 'Disable' : 'Enable'}
+          >
+            {isToggling ? (
+              <div className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+            ) : (
+              <Power className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       </div>
 
       {description && (
