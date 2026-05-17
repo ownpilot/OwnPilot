@@ -19,6 +19,7 @@ const {
   mockUsageRecord,
   mockLogsLog,
   mockGetOrCreateConversation,
+  mockGetLatestMessage,
   mockAddMessage,
   mockLogChatEvent,
   mockCheckToolCallApproval,
@@ -34,6 +35,7 @@ const {
   mockUsageRecord: vi.fn().mockResolvedValue(undefined),
   mockLogsLog: vi.fn(),
   mockGetOrCreateConversation: vi.fn(),
+  mockGetLatestMessage: vi.fn(),
   mockAddMessage: vi.fn(),
   mockLogChatEvent: vi.fn().mockResolvedValue(undefined),
   mockCheckToolCallApproval: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock('../../db/repositories/index.js', () => ({
   ChatRepository: vi.fn().mockImplementation(function () {
     return {
       getOrCreateConversation: mockGetOrCreateConversation,
+      getLatestMessage: mockGetLatestMessage,
       addMessage: mockAddMessage,
     };
   }),
@@ -550,6 +553,7 @@ describe('Pipeline Middleware', () => {
   describe('createPersistenceMiddleware', () => {
     beforeEach(() => {
       mockGetOrCreateConversation.mockResolvedValue({ id: 'db-conv-001' });
+      mockGetLatestMessage.mockResolvedValue(null);
       mockAddMessage.mockResolvedValue({ id: 'db-msg-001' });
     });
 

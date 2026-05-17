@@ -49,7 +49,7 @@ async function uninstallExtension(c: Context) {
     deleted: true,
     uninstalled: true,
     removed: true,
-    message: 'Extension removed successfully.',
+    message: 'Extension uninstalled and removed successfully.',
   });
 }
 

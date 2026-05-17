@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-17
+
+### Added
+
+- **Release scripts** - Added root `pnpm run` commands for version inspection, semver bumps, release preflight checks, release notes extraction, verification, tagging, and publishing.
+- **Cross-platform release helpers** - Added Node-based scripts for version bumping, release checks, changelog-based notes, and annotated Git tag creation.
+- **Release documentation** - Documented the expanded command list and the minor release workflow in the README.
+
+### Changed
+
+- Bumped OwnPilot workspace packages from `0.3.2` to `0.4.0` for the next minor release.
+- Updated architecture metadata and release documentation to match the `0.4.0` release train.
+
+### Fixed
+
+- Avoided passing an explicit `undefined` stream options argument when executing workflows without an abort signal.
+- Aligned extension uninstall responses and middleware persistence tests with current gateway behavior.
+
+### Release
+
+- `pnpm release:check` validates workspace version alignment, changelog coverage, and release workflow presence.
+- `pnpm release:verify` runs release preflight, production audit, build, typecheck, lint, and tests before tagging.
+- `pnpm release:verify:strict` adds the full repository format check for CI parity.
+- `pnpm release:notes` prints the current version's changelog section for GitHub release notes.
+
+### Security
+
+- Updated pnpm overrides for `fast-uri` and `protobufjs` to patched versions required by the production audit gate.
+
 ## [0.2.9] - 2026-03-16
 
 ### Added
@@ -398,6 +427,8 @@ Initial release of OwnPilot.
 - Docker multi-arch image (amd64 + arm64) published to `ghcr.io/ownpilot/ownpilot`
 - PostgreSQL with pgvector for vector search
 
+[0.4.0]: https://github.com/ownpilot/ownpilot/releases/tag/v0.4.0
+[0.2.9]: https://github.com/ownpilot/ownpilot/releases/tag/v0.2.9
 [0.1.10]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.10
 [0.1.9]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.9
 [0.1.8]: https://github.com/ownpilot/ownpilot/releases/tag/v0.1.8

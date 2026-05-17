@@ -52,6 +52,8 @@
 - [Configuration](#configuration)
 - [Deployment](#deployment)
 - [Development](#development)
+- [Release Process](#release-process)
+- [Changelog](CHANGELOG.md)
 - [License](#license)
 
 ---
@@ -1682,18 +1684,60 @@ ownpilot start    # Start production server on port 8080
 #   --no-ui    Gateway only, without UI
 
 # Package scripts
-pnpm dev              # Watch mode for all packages
-pnpm build            # Build all packages
-pnpm test             # Run all tests
-pnpm test:watch       # Watch test mode
-pnpm test:coverage    # Coverage reports
-pnpm lint             # ESLint check
-pnpm lint:fix         # Auto-fix lint issues
-pnpm typecheck        # TypeScript type checking
-pnpm format           # Prettier formatting
-pnpm format:check     # Check formatting
-pnpm clean            # Clear all build artifacts
+pnpm dev                    # Watch mode for all packages
+pnpm build                  # Build all packages
+pnpm test                   # Run all tests
+pnpm test:watch             # Watch test mode
+pnpm test:coverage          # Coverage reports
+pnpm lint                   # ESLint check
+pnpm lint:fix               # Auto-fix lint issues
+pnpm typecheck              # TypeScript type checking
+pnpm typecheck:ci           # CI TypeScript type checking
+pnpm audit:prod             # Production dependency audit
+pnpm format                 # Prettier formatting
+pnpm format:check           # Check formatting
+pnpm clean                  # Clear build artifacts and node_modules
+
+# Version scripts
+pnpm version:show           # Print current root version
+pnpm version:set 0.4.1      # Set an explicit semver version
+pnpm version:patch          # Bump x.y.z -> x.y.(z+1)
+pnpm version:minor          # Bump x.y.z -> x.(y+1).0
+pnpm version:major          # Bump x.y.z -> (x+1).0.0
+pnpm version:prerelease     # Bump or start an rc prerelease suffix
+
+# Release scripts
+pnpm release:check          # Validate versions, changelog entry, release workflow
+pnpm release:notes          # Print changelog notes for the current version
+pnpm release:dry-run        # Run release check and print release notes
+pnpm release:verify         # Release workflow gates: audit, build, typecheck, lint, test
+pnpm release:verify:strict  # Release gates plus full repo format check
+pnpm release:prepare        # Bump minor version, then run release check
+pnpm release:prepare:patch  # Bump patch version, then run release check
+pnpm release:prepare:major  # Bump major version, then run release check
+pnpm release:tag            # Create annotated git tag v<current version>
+pnpm release:publish        # Push the current branch and annotated tag
+pnpm ci                     # Alias for pnpm release:verify
 ```
+
+## Release Process
+
+OwnPilot uses semantic versioning. The current release train is `0.4.0`, prepared as a minor release from `0.3.2`.
+
+For a normal minor release:
+
+```bash
+pnpm release:prepare        # bumps to the next minor and checks release metadata
+# Update CHANGELOG.md with user-facing changes
+pnpm release:verify         # audit, build, typecheck, lint, tests
+pnpm release:notes          # preview notes copied from CHANGELOG.md
+pnpm release:tag            # creates v<version>
+pnpm release:publish        # pushes the current branch and tag; GitHub Actions builds the release
+```
+
+Release automation is tag-driven. Pushing a `v*` tag runs `.github/workflows/release.yml`, builds the multi-arch Docker image, publishes `ghcr.io/ownpilot/ownpilot`, and creates the GitHub Release.
+
+For this release, `CHANGELOG.md` already contains the `0.4.0` entry. If another minor bump is needed before publishing, run `pnpm version:minor`, refresh the changelog heading, and rerun `pnpm release:check`.
 
 ### Tech Stack
 
