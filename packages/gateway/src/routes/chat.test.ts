@@ -12,6 +12,7 @@ import { Hono } from 'hono';
 
 const mockChatRepo = {
   listConversations: vi.fn(),
+  countConversations: vi.fn(),
   getConversationWithMessages: vi.fn(),
   deleteConversation: vi.fn(),
   deleteConversations: vi.fn(),
@@ -352,6 +353,13 @@ vi.mock('../services/conversation-service.js', () => ({
     };
   }),
   runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),
+  toAttachmentMeta: (attachments: Array<Record<string, unknown>> | undefined) =>
+    attachments?.map((a) => ({
+      type: a.type,
+      mimeType: a.mimeType,
+      filename: a.filename,
+      size: a.size,
+    })),
 }));
 
 vi.mock('./chat-prompt.js', () => ({
@@ -491,6 +499,7 @@ describe('Chat Routes', () => {
 
     // Reset repository mocks
     mockChatRepo.listConversations.mockResolvedValue([]);
+    mockChatRepo.countConversations.mockResolvedValue(0);
     mockChatRepo.getConversationWithMessages.mockResolvedValue(null);
     mockChatRepo.deleteConversation.mockResolvedValue(false);
     mockChatRepo.deleteConversations.mockResolvedValue(0);

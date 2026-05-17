@@ -25,6 +25,8 @@ import {
   Home,
   Download,
   Brain,
+  FileText,
+  Image,
 } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { chatApi } from '../api';
@@ -35,8 +37,48 @@ import { useToast } from '../components/ToastProvider';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { TraceDisplay } from '../components/TraceDisplay';
-import type { TraceInfo } from '../types';
+import type { MessageAttachment, TraceInfo } from '../types';
 import { stripChatInternalTags } from '../utils/chat-content';
+
+function formatAttachmentSize(size: number | undefined): string | null {
+  if (!size || size <= 0) return null;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function HistoryAttachmentChip({
+  attachment,
+  inverted,
+}: {
+  attachment: MessageAttachment;
+  inverted: boolean;
+}) {
+  const label =
+    attachment.filename || (attachment.type === 'image' ? 'Attached image' : 'Attached file');
+  const size = formatAttachmentSize(attachment.size);
+  const Icon = attachment.type === 'image' ? Image : FileText;
+
+  return (
+    <div
+      className={`inline-flex max-w-[220px] items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] ${
+        inverted
+          ? 'border-white/25 bg-white/15 text-white/90'
+          : 'border-border bg-bg-secondary text-text-secondary dark:border-dark-border dark:bg-dark-bg-secondary dark:text-dark-text-secondary'
+      }`}
+    >
+      <Icon className="h-3 w-3 flex-shrink-0" />
+      <span className="truncate">{label}</span>
+      {size && (
+        <span
+          className={`flex-shrink-0 ${inverted ? 'text-white/60' : 'text-text-muted dark:text-dark-text-muted'}`}
+        >
+          {size}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -951,6 +993,18 @@ export function ChatHistoryPage() {
                                 compact
                                 className="text-sm"
                               />
+
+                              {msg.attachments && msg.attachments.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {msg.attachments.map((attachment, index) => (
+                                    <HistoryAttachmentChip
+                                      key={index}
+                                      attachment={attachment}
+                                      inverted={!isAssistant}
+                                    />
+                                  ))}
+                                </div>
+                              )}
 
                               {/* Tool calls indicator */}
                               {msg.toolCalls && msg.toolCalls.length > 0 && (

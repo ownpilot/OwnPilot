@@ -80,7 +80,12 @@ export function parseSSELine(line: string): SSEEventType {
     };
   }
 
-  if (data.type === 'status' || data.type === 'tool_start' || data.type === 'tool_end') {
+  if (
+    data.type === 'status' ||
+    data.type === 'tool_start' ||
+    data.type === 'tool_end' ||
+    data.type === 'tool_blocked'
+  ) {
     return { kind: 'progress', data: data as { type: string } };
   }
 

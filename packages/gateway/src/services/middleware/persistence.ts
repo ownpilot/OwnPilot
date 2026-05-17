@@ -10,6 +10,7 @@ import { ChatRepository } from '../../db/repositories/index.js';
 import { truncate } from '../../routes/helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getLog } from '../log.js';
+import { toAttachmentMeta } from '../conversation-service.js';
 
 const log = getLog('Middleware:Persistence');
 
@@ -69,28 +70,23 @@ export function createPersistenceMiddleware(): MessageMiddleware {
         provider,
         model,
       });
+      const attachmentMeta = toAttachmentMeta(message.attachments);
+      const latest = await chatRepo.getLatestMessage(dbConversation.id);
+      const userAlreadyPersisted = latest?.role === 'user' && latest.content === message.content;
+      let savedMessageCount = 1; // Assistant message is always persisted by this middleware.
 
       // Save user message (store attachment metadata, not base64 blobs)
-      await chatRepo.addMessage({
-        conversationId: dbConversation.id,
-        role: 'user',
-        content: message.content,
-        provider,
-        model,
-        ...(message.attachments?.length && {
-          attachments: message.attachments
-            .filter(
-              (a): a is typeof a & { type: 'image' | 'file' } =>
-                a.type === 'image' || a.type === 'file'
-            )
-            .map((a) => ({
-              type: a.type,
-              mimeType: a.mimeType,
-              filename: a.filename,
-              size: a.size,
-            })),
-        }),
-      });
+      if (!userAlreadyPersisted) {
+        await chatRepo.addMessage({
+          conversationId: dbConversation.id,
+          role: 'user',
+          content: message.content,
+          provider,
+          model,
+          ...(attachmentMeta?.length && { attachments: attachmentMeta }),
+        });
+        savedMessageCount += 1;
+      }
 
       // Save assistant message
       await chatRepo.addMessage({
@@ -114,7 +110,7 @@ export function createPersistenceMiddleware(): MessageMiddleware {
         conversationId: dbConversation.id,
         title: dbConversation.title,
         source: message.metadata.source ?? 'web',
-        messageCount: dbConversation.messageCount + 2,
+        messageCount: dbConversation.messageCount + savedMessageCount,
       });
     } catch (err) {
       log.warn('Failed to save chat history', { error: err });

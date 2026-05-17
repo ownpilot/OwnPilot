@@ -61,6 +61,46 @@ export interface SaveStreamingParams extends Omit<SaveChatParams, 'streaming' | 
 // Service
 // ─────────────────────────────────────────────
 
+export interface RawChatAttachment {
+  type: string;
+  data?: string;
+  mimeType?: string;
+  filename?: string;
+  size?: number;
+  path?: string;
+}
+
+function estimateBase64Bytes(data: string | undefined): number | undefined {
+  if (!data) return undefined;
+  const raw = data.includes(',') ? data.split(',').pop()! : data;
+  const clean = raw.replace(/\s/g, '');
+  if (!clean) return undefined;
+  const padding = clean.endsWith('==') ? 2 : clean.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((clean.length * 3) / 4) - padding);
+}
+
+/** Convert incoming attachment payloads into DB-safe metadata; never stores base64 blobs. */
+export function toAttachmentMeta(
+  attachments: readonly RawChatAttachment[] | undefined
+): AttachmentMeta[] | undefined {
+  if (!attachments?.length) return undefined;
+
+  const result = attachments
+    .filter(
+      (a): a is RawChatAttachment & { type: 'image' | 'file' } =>
+        a.type === 'image' || a.type === 'file'
+    )
+    .map((a) => ({
+      type: a.type,
+      mimeType: a.mimeType,
+      filename: a.filename,
+      size: a.size ?? estimateBase64Bytes(a.data),
+      ...(a.path && { path: a.path }),
+    }));
+
+  return result.length > 0 ? result : undefined;
+}
+
 export class ConversationService {
   private chatRepo: ChatRepository;
   private logsRepo: LogsRepository;
@@ -82,12 +122,15 @@ export class ConversationService {
 
   // ── WebSocket broadcast ────────────────────
 
-  broadcastUpdate(conversation: { id: string; title: string | null; messageCount: number }): void {
+  broadcastUpdate(
+    conversation: { id: string; title: string | null; messageCount: number },
+    messageDelta = 2
+  ): void {
     wsGateway.broadcast('chat:history:updated', {
       conversationId: conversation.id,
       title: conversation.title ?? '',
       source: 'web',
-      messageCount: conversation.messageCount + 2,
+      messageCount: conversation.messageCount + messageDelta,
     });
   }
 
@@ -138,11 +181,14 @@ export class ConversationService {
         provider: params.provider,
         model: params.model,
       });
+      let savedMessageCount = 0;
 
       if (!logOnly) {
-        // Skip user message if early persist already saved it (prevents duplicates).
-        const existing = await this.chatRepo.getMessages(conv.id, { limit: 1 });
-        if (!existing.some((m) => m.role === 'user')) {
+        // Skip only when early persistence already saved this exact user message.
+        const latest = await this.chatRepo.getLatestMessage(conv.id);
+        const userAlreadyPersisted =
+          latest?.role === 'user' && latest.content === params.userMessage;
+        if (!userAlreadyPersisted) {
           await this.chatRepo.addMessage({
             conversationId: conv.id,
             role: 'user',
@@ -151,6 +197,7 @@ export class ConversationService {
             model: params.model,
             ...(params.attachments?.length && { attachments: params.attachments }),
           });
+          savedMessageCount += 1;
         }
 
         await this.chatRepo.addMessage({
@@ -164,6 +211,7 @@ export class ConversationService {
           inputTokens: params.usage?.promptTokens,
           outputTokens: params.usage?.completionTokens,
         });
+        savedMessageCount += 1;
       }
 
       // Extract payload breakdown from debug log
@@ -198,10 +246,10 @@ export class ConversationService {
       });
 
       log.info(
-        `Saved${params.streaming ? ' streaming' : ''} to history: conversation=${conv.id}${logOnly ? ' (log only)' : ', messages=+2'}`
+        `Saved${params.streaming ? ' streaming' : ''} to history: conversation=${conv.id}${logOnly ? ' (log only)' : `, messages=+${savedMessageCount}`}`
       );
 
-      this.broadcastUpdate(conv);
+      this.broadcastUpdate(conv, savedMessageCount);
     } catch (err) {
       log.warn(`Failed to save${params.streaming ? ' streaming' : ''} chat history:`, err);
     }
@@ -276,12 +324,13 @@ export function broadcastChatUpdate(conversation: {
   id: string;
   title: string | null;
   messageCount: number;
+  messageDelta?: number;
 }): void {
   wsGateway.broadcast('chat:history:updated', {
     conversationId: conversation.id,
     title: conversation.title ?? '',
     source: 'web',
-    messageCount: conversation.messageCount + 2,
+    messageCount: conversation.messageCount + (conversation.messageDelta ?? 2),
   });
 }
 

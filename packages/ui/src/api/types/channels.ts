@@ -77,6 +77,13 @@ export interface HistoryMessage {
   toolCalls?: Array<{ id: string; name: string; arguments: Record<string, unknown> }>;
   trace?: Record<string, unknown>;
   isError?: boolean;
+  attachments?: Array<{
+    type: 'image' | 'file';
+    mimeType?: string;
+    filename?: string;
+    size?: number;
+    path?: string;
+  }> | null;
   createdAt: string;
 }
 
@@ -90,6 +97,13 @@ export interface UnifiedMessage {
   toolCalls?: unknown[] | null;
   trace?: Record<string, unknown> | null;
   isError?: boolean;
+  attachments?: Array<{
+    type: 'image' | 'file';
+    mimeType?: string;
+    filename?: string;
+    size?: number;
+    path?: string;
+  }> | null;
   createdAt: string;
   source: 'channel' | 'ai' | 'web';
   direction: 'inbound' | 'outbound';

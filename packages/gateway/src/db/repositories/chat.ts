@@ -264,6 +264,47 @@ export class ChatRepository extends BaseRepository {
     return rows.map(rowToConversation);
   }
 
+  async countConversations(
+    query: Omit<ConversationQuery, 'limit' | 'offset'> = {}
+  ): Promise<number> {
+    const conditions: string[] = ['user_id = $1'];
+    const params: unknown[] = [this.userId];
+    let paramIndex = 2;
+
+    if (query.agentId !== undefined) {
+      conditions.push(`agent_id = $${paramIndex++}`);
+      params.push(query.agentId);
+    }
+
+    if (query.isArchived !== undefined) {
+      conditions.push(`is_archived = $${paramIndex++}`);
+      params.push(query.isArchived);
+    }
+
+    if (query.search) {
+      conditions.push(`(title ILIKE $${paramIndex} OR agent_name ILIKE $${paramIndex})`);
+      params.push(`%${this.escapeLike(query.search)}%`);
+      paramIndex++;
+    }
+
+    if (query.source) {
+      conditions.push(`metadata->>'source' = $${paramIndex++}`);
+      params.push(query.source);
+    }
+
+    if (query.channelPlatform) {
+      conditions.push(`metadata->>'platform' = $${paramIndex++}`);
+      params.push(query.channelPlatform);
+    }
+
+    const row = await this.queryOne<{ count: string | number }>(
+      `SELECT COUNT(*) AS count FROM conversations WHERE ${conditions.join(' AND ')}`,
+      params
+    );
+
+    return Number(row?.count ?? 0);
+  }
+
   async updateConversation(
     id: string,
     updates: Partial<CreateConversationInput & { isArchived?: boolean }>
@@ -429,6 +470,17 @@ export class ChatRepository extends BaseRepository {
 
   async getMessage(id: string): Promise<Message | null> {
     const row = await this.queryOne<MessageRow>('SELECT * FROM messages WHERE id = $1', [id]);
+    return row ? rowToMessage(row) : null;
+  }
+
+  async getLatestMessage(conversationId: string): Promise<Message | null> {
+    const row = await this.queryOne<MessageRow>(
+      `SELECT * FROM messages
+       WHERE conversation_id = $1
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [conversationId]
+    );
     return row ? rowToMessage(row) : null;
   }
 

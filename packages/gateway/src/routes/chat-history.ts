@@ -64,7 +64,7 @@ chatHistoryRoutes.get('/history', async (c) => {
   const channelPlatform = c.req.query('channelPlatform');
 
   const chatRepo = new ChatRepository(userId);
-  const conversations = await chatRepo.listConversations({
+  const query = {
     limit,
     offset,
     search,
@@ -72,7 +72,17 @@ chatHistoryRoutes.get('/history', async (c) => {
     isArchived: archived,
     source,
     channelPlatform,
-  });
+  };
+  const [conversations, total] = await Promise.all([
+    chatRepo.listConversations(query),
+    chatRepo.countConversations({
+      search,
+      agentId,
+      isArchived: archived,
+      source,
+      channelPlatform,
+    }),
+  ]);
 
   return apiResponse(c, {
     conversations: conversations.map((conv) => {
@@ -94,7 +104,7 @@ chatHistoryRoutes.get('/history', async (c) => {
         channelSenderName: source === 'channel' ? ((meta.displayName as string) ?? null) : null,
       };
     }),
-    total: conversations.length,
+    total,
     limit,
     offset,
   });
@@ -256,6 +266,7 @@ chatHistoryRoutes.get('/history/:id', async (c) => {
         toolCalls: msg.toolCalls,
         trace: msg.trace,
         isError: msg.isError,
+        attachments: msg.attachments,
         createdAt: msg.createdAt.toISOString(),
       })),
     });
@@ -317,6 +328,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           toolCalls: msg.toolCalls,
           trace: msg.trace,
           isError: msg.isError,
+          attachments: msg.attachments,
           createdAt: msg.createdAt.toISOString(),
           source: 'web' as const,
           direction: msg.role === 'user' ? 'inbound' : 'outbound',
@@ -351,6 +363,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
       toolCalls?: unknown[] | null;
       trace?: Record<string, unknown> | null;
       isError?: boolean;
+      attachments?: unknown[] | null;
       createdAt: string;
       source: 'channel' | 'ai';
       direction: 'inbound' | 'outbound';
@@ -402,6 +415,7 @@ chatHistoryRoutes.get('/history/:id/unified', async (c) => {
           toolCalls: msg.toolCalls,
           trace: msg.trace,
           isError: msg.isError,
+          attachments: msg.attachments,
           createdAt: msg.createdAt.toISOString(),
           source: 'ai',
           direction: msg.role === 'user' ? 'inbound' : 'outbound',

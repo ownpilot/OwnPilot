@@ -12,6 +12,7 @@ import type { NormalizedMessage, MessageProcessingResult, PipelineContext } from
 const { mockChatRepo, mockTruncate, mockBroadcast, mockLog } = vi.hoisted(() => ({
   mockChatRepo: {
     getOrCreateConversation: vi.fn(),
+    getLatestMessage: vi.fn(),
     addMessage: vi.fn(),
   },
   mockTruncate: vi.fn((text: string) => text),
@@ -140,6 +141,7 @@ describe('createPersistenceMiddleware', () => {
     // Default mock implementations (re-set after clearAllMocks)
     mockTruncate.mockImplementation((text: string) => text);
     mockChatRepo.getOrCreateConversation.mockResolvedValue(createDbConversation());
+    mockChatRepo.getLatestMessage.mockResolvedValue(null);
     mockChatRepo.addMessage.mockResolvedValue({ id: 'msg-db-1' });
   });
 
@@ -412,6 +414,83 @@ describe('createPersistenceMiddleware', () => {
       await middleware(msg, ctx, next);
 
       expect(mockChatRepo.addMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('should skip the user message when early persistence already saved it', async () => {
+      const ctx = createContext({
+        store: {
+          agentResult: createAgentResult(),
+          conversationId: 'conv-1',
+          provider: 'openai',
+          model: 'gpt-4',
+        },
+      });
+      const dbConv = createDbConversation({ id: 'conv-db-early', messageCount: 1 });
+      mockChatRepo.getOrCreateConversation.mockResolvedValue(dbConv);
+      mockChatRepo.getLatestMessage.mockResolvedValue({
+        id: 'msg-user-existing',
+        conversationId: 'conv-db-early',
+        role: 'user',
+        content: 'Hello',
+      });
+      const msg = createMessage({ content: 'Hello' });
+      const next = vi.fn().mockResolvedValue(
+        createNextResult({
+          response: {
+            id: 'r1',
+            sessionId: 's1',
+            role: 'assistant',
+            content: 'Reply',
+            metadata: { source: 'web' },
+            timestamp: new Date(),
+          },
+        })
+      );
+
+      await middleware(msg, ctx, next);
+
+      expect(mockChatRepo.addMessage).toHaveBeenCalledTimes(1);
+      expect(mockChatRepo.addMessage).toHaveBeenCalledWith({
+        conversationId: 'conv-db-early',
+        role: 'assistant',
+        content: 'Reply',
+        provider: 'openai',
+        model: 'gpt-4',
+        toolCalls: undefined,
+        trace: undefined,
+        inputTokens: 10,
+        outputTokens: 20,
+      });
+      expect(mockBroadcast).toHaveBeenCalledWith('chat:history:updated', {
+        conversationId: 'conv-db-early',
+        title: dbConv.title,
+        source: 'web',
+        messageCount: 2,
+      });
+    });
+
+    it('should still save the user message when the latest message is not the same user content', async () => {
+      const ctx = createContext({
+        store: {
+          agentResult: createAgentResult(),
+          conversationId: 'conv-1',
+        },
+      });
+      mockChatRepo.getLatestMessage.mockResolvedValue({
+        id: 'msg-assistant',
+        conversationId: 'conv-db-1',
+        role: 'assistant',
+        content: 'Previous response',
+      });
+      const msg = createMessage({ content: 'Fresh question' });
+      const next = vi.fn().mockResolvedValue(createNextResult());
+
+      await middleware(msg, ctx, next);
+
+      expect(mockChatRepo.addMessage).toHaveBeenCalledTimes(2);
+      expect(mockChatRepo.addMessage.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ role: 'user', content: 'Fresh question' })
+      );
     });
 
     it('should save user message with correct fields', async () => {

@@ -71,7 +71,11 @@ import {
   generateDemoResponse,
   tryGetMessageBus,
 } from './chat-prompt.js';
-import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
+import {
+  ConversationService,
+  runPostChatProcessing,
+  toAttachmentMeta,
+} from '../services/conversation-service.js';
 import { handleLegacySend } from './chat-legacy-send.js';
 import type { McpToolEvent } from '../mcp/mcp-events.js';
 
@@ -190,10 +194,21 @@ chatRoutes.post('/', async (c) => {
   const idempotencyKey = c.req.header('Idempotency-Key');
   if (idempotencyKey) {
     try {
-      const idempotencyRepo = (await import('../db/repositories/idempotency-keys.js')).getIdempotencyKeysRepository();
+      const idempotencyRepo = (
+        await import('../db/repositories/idempotency-keys.js')
+      ).getIdempotencyKeysRepository();
       const cached = await idempotencyRepo.getRecord(idempotencyKey);
       if (cached) {
-        const result = cached.result as { id: string; conversationId: string; message: string; response: string; model: string; toolCalls: unknown[]; usage: unknown; processingTime: number };
+        const result = cached.result as {
+          id: string;
+          conversationId: string;
+          message: string;
+          response: string;
+          model: string;
+          toolCalls: unknown[];
+          usage: unknown;
+          processingTime: number;
+        };
         return apiResponse(c, {
           id: result.id,
           conversationId: result.conversationId,
@@ -281,8 +296,9 @@ chatRoutes.post('/', async (c) => {
   // Get agent based on agentId or provider/model from request
   let agent: Awaited<ReturnType<typeof getAgent>>;
   // HDR-001: prefer configured PUBLIC_BASE_URL over request headers
-  const gatewayUrl = PUBLIC_BASE_URL
-    || `${c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '')}://${c.req.header('x-forwarded-host') ?? c.req.header('host') ?? new URL(c.req.url).host}`;
+  const gatewayUrl =
+    PUBLIC_BASE_URL ||
+    `${c.req.header('x-forwarded-proto') ?? new URL(c.req.url).protocol.replace(':', '')}://${c.req.header('x-forwarded-host') ?? c.req.header('host') ?? new URL(c.req.url).host}`;
 
   if (body.agentId) {
     agent = await getAgent(body.agentId);
@@ -330,11 +346,13 @@ chatRoutes.post('/', async (c) => {
         // Create conversation in agent memory with the ORIGINAL DB ID.
         // FIX: fall back to agent's rich init prompt if DB stored NULL — otherwise
         // ContextInjection middleware hits its generic "helpful AI assistant" fallback.
-        agent.getMemory().createWithId(
-          dbData.conversation.id,
-          dbData.conversation.systemPrompt || agentInitialPrompt,
-          { restoredFromDb: true, restoredAt: new Date().toISOString() }
-        );
+        agent
+          .getMemory()
+          .createWithId(
+            dbData.conversation.id,
+            dbData.conversation.systemPrompt || agentInitialPrompt,
+            { restoredFromDb: true, restoredAt: new Date().toISOString() }
+          );
         // Replay messages from DB into agent memory
         for (const msg of dbData.messages) {
           if (msg.role === 'user') {
@@ -356,11 +374,10 @@ chatRoutes.post('/', async (c) => {
           : 'client-generated';
         // FIX: use agent's rich init prompt instead of undefined so the new
         // conversation inherits the configured OwnPilot identity + tool docs.
-        agent.getMemory().createWithId(
-          body.conversationId,
-          agentInitialPrompt,
-          { source, createdAt: new Date().toISOString() }
-        );
+        agent.getMemory().createWithId(body.conversationId, agentInitialPrompt, {
+          source,
+          createdAt: new Date().toISOString(),
+        });
         loaded = agent.loadConversation(body.conversationId);
         if (!loaded) {
           return notFoundError(c, 'Conversation', body.conversationId);
@@ -462,22 +479,23 @@ chatRoutes.post('/', async (c) => {
   try {
     const chatRepo = new ChatRepository(chatUserId);
     const earlyConvId = body.conversationId || conversationId;
-    const earlyConv = await chatRepo.getOrCreateConversation(
-      earlyConvId,
-      {
-        title: truncate(chatMessage),
-        agentId: body.agentId,
-        agentName: body.agentId ? undefined : 'Chat',
-        provider,
-        model,
-      }
-    );
+    const attachmentMeta = toAttachmentMeta(body.attachments);
+    const earlyConv = await chatRepo.getOrCreateConversation(earlyConvId, {
+      title: truncate(chatMessage),
+      agentId: body.agentId,
+      agentName: body.agentId ? undefined : 'Chat',
+      provider,
+      model,
+    });
     // Persist user message NOW so it survives even if AI stream fails/aborts.
     // The later saveStreamingChat is idempotent — it won't duplicate this message.
     await chatRepo.addMessage({
       conversationId: earlyConv.id,
       role: 'user',
       content: chatMessage,
+      provider,
+      model,
+      ...(attachmentMeta?.length && { attachments: attachmentMeta }),
     });
     wsGateway.broadcast('chat:history:updated', {
       conversationId: earlyConv.id,
@@ -652,6 +670,7 @@ chatRoutes.post('/', async (c) => {
             toolCalls: result.value.toolCalls ? [...result.value.toolCalls] : undefined,
             finishReason: result.value.finishReason,
             historyLength: body.historyLength,
+            attachments: toAttachmentMeta(body.attachments),
             ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
             userAgent: c.req.header('user-agent'),
           });
@@ -826,7 +845,9 @@ chatRoutes.post('/', async (c) => {
 
     // Store idempotency result before returning (fire-and-forget)
     if (idempotencyKey) {
-      const idempotencyRepo = (await import('../db/repositories/idempotency-keys.js')).getIdempotencyKeysRepository();
+      const idempotencyRepo = (
+        await import('../db/repositories/idempotency-keys.js')
+      ).getIdempotencyKeysRepository();
       idempotencyRepo.setRecord(idempotencyKey, responseObj).catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         log.warn(`[chat] idempotency record failed: ${msg}`);

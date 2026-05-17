@@ -31,7 +31,11 @@ import {
   extractMemoriesFromResponse,
   normalizeChatWidgets,
 } from '../utils/index.js';
-import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
+import {
+  ConversationService,
+  runPostChatProcessing,
+  toAttachmentMeta,
+} from '../services/conversation-service.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('ChatLegacySend');
@@ -422,6 +426,7 @@ export async function handleLegacySend(params: LegacySendParams): Promise<Respon
         }
       : undefined,
     historyLength: body.historyLength,
+    attachments: toAttachmentMeta(body.attachments),
     ipAddress: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
     userAgent: c.req.header('user-agent'),
   });

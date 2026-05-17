@@ -139,6 +139,7 @@ const sampleChannelSession = {
 
 const mockChatRepo = {
   listConversations: vi.fn(async () => [sampleConversation]),
+  countConversations: vi.fn(async () => 1),
   getConversation: vi.fn(async (id: string) =>
     id === 'conv-ch-1' ? sampleChannelConversation : id === 'conv-1' ? sampleConversation : null
   ),
@@ -310,6 +311,7 @@ describe('Chat History & Logs Routes', () => {
     vi.clearAllMocks();
     // Reset default implementations
     mockChatRepo.listConversations.mockResolvedValue([sampleConversation]);
+    mockChatRepo.countConversations.mockResolvedValue(1);
     mockChatRepo.getConversationWithMessages.mockImplementation(async (id: string) =>
       id === 'conv-1'
         ? { conversation: sampleConversation, messages: [sampleMessage, sampleMessage2] }
@@ -389,6 +391,15 @@ describe('Chat History & Logs Routes', () => {
         search: undefined,
         agentId: undefined,
         isArchived: false,
+        source: undefined,
+        channelPlatform: undefined,
+      });
+      expect(mockChatRepo.countConversations).toHaveBeenCalledWith({
+        search: undefined,
+        agentId: undefined,
+        isArchived: false,
+        source: undefined,
+        channelPlatform: undefined,
       });
     });
 
@@ -426,6 +437,7 @@ describe('Chat History & Logs Routes', () => {
 
     it('returns empty list when no conversations', async () => {
       mockChatRepo.listConversations.mockResolvedValue([]);
+      mockChatRepo.countConversations.mockResolvedValue(0);
 
       const res = await app.request('/api/history');
       const json = await res.json();
@@ -444,6 +456,7 @@ describe('Chat History & Logs Routes', () => {
 
     it('returns multiple conversations', async () => {
       mockChatRepo.listConversations.mockResolvedValue([sampleConversation, sampleConversation2]);
+      mockChatRepo.countConversations.mockResolvedValue(2);
 
       const res = await app.request('/api/history');
       const json = await res.json();
@@ -765,6 +778,24 @@ describe('Chat History & Logs Routes', () => {
       expect(json.data.messages[0].content).toBe('What about <context>this</context>?');
     });
 
+    it('returns attachment metadata with history messages', async () => {
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleConversation,
+        messages: [
+          {
+            ...sampleMessage,
+            attachments: [{ type: 'image', mimeType: 'image/png', filename: 'pic.png', size: 12 }],
+          },
+        ],
+      });
+
+      const res = await app.request('/api/history/conv-1');
+      const json = await res.json();
+      expect(json.data.messages[0].attachments).toEqual([
+        { type: 'image', mimeType: 'image/png', filename: 'pic.png', size: 12 },
+      ]);
+    });
+
     it('returns 500 when repository throws', async () => {
       mockChatRepo.getConversationWithMessages.mockRejectedValue(new Error('DB error'));
 
@@ -820,6 +851,24 @@ describe('Chat History & Logs Routes', () => {
       const json = await res.json();
       const userMsg = json.data.messages.find((m: { role: string }) => m.role === 'user');
       expect(userMsg.content).toBe('User <context>ctx</context> msg');
+    });
+
+    it('returns attachment metadata in unified web path', async () => {
+      mockChatRepo.getConversationWithMessages.mockResolvedValueOnce({
+        conversation: sampleConversation,
+        messages: [
+          {
+            ...sampleMessage,
+            attachments: [{ type: 'image', mimeType: 'image/jpeg', filename: 'photo.jpg' }],
+          },
+        ],
+      });
+
+      const res = await app.request('/api/history/conv-1/unified');
+      const json = await res.json();
+      expect(json.data.messages[0].attachments).toEqual([
+        { type: 'image', mimeType: 'image/jpeg', filename: 'photo.jpg' },
+      ]);
     });
 
     it('returns 404 when conversation not found', async () => {

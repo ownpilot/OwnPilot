@@ -66,6 +66,22 @@ describe('parseSSELine', () => {
     expect(parseSSELine(line).kind).toBe('progress');
   });
 
+  it('parses tool_blocked autonomy events as progress', () => {
+    const line =
+      'data: ' +
+      JSON.stringify({
+        type: 'tool_blocked',
+        toolCall: { id: 'tc-1', name: 'delete_file' },
+        reason: 'Blocked by policy',
+      });
+    const result = parseSSELine(line);
+    expect(result.kind).toBe('progress');
+    if (result.kind === 'progress') {
+      expect(result.data.type).toBe('tool_blocked');
+      expect(result.data.reason).toBe('Blocked by policy');
+    }
+  });
+
   // ── delta ─────────────────────────────────────────────────────────────────
 
   it('parses streaming delta chunks', () => {

@@ -9,6 +9,8 @@ import {
   ChevronDown,
   Wrench,
   Brain,
+  FileText,
+  Image,
 } from './icons';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { TraceDisplay } from './TraceDisplay';
@@ -16,8 +18,12 @@ import { MarkdownContent } from './MarkdownContent';
 import { ChatMessageWidget } from './ChatMessageWidget';
 import { SuggestionChips } from './SuggestionChips';
 import { VoicePlayButton } from './VoicePlayButton';
-import { stripChatInternalTags, parseMarkers, type ParsedMarkerWidget } from '../utils/chat-content';
-import type { Message } from '../types';
+import {
+  stripChatInternalTags,
+  parseMarkers,
+  type ParsedMarkerWidget,
+} from '../utils/chat-content';
+import type { Message, MessageAttachment } from '../types';
 
 interface MessageListProps {
   messages: Message[];
@@ -60,6 +66,47 @@ interface MessageBubbleProps {
   onSuggestionSelect?: (title: string, detail: string) => void;
 }
 
+function formatAttachmentSize(size: number | undefined): string | null {
+  if (!size || size <= 0) return null;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentChip({ attachment }: { attachment: MessageAttachment }) {
+  const label =
+    attachment.filename || (attachment.type === 'image' ? 'Attached image' : 'Attached file');
+  const size = formatAttachmentSize(attachment.size);
+  const Icon = attachment.type === 'image' ? Image : FileText;
+
+  return (
+    <div className="inline-flex max-w-[240px] items-center gap-2 rounded-lg border border-border bg-bg-secondary px-2.5 py-1.5 text-xs text-text-secondary dark:border-dark-border dark:bg-dark-bg-secondary dark:text-dark-text-secondary">
+      <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+      <span className="truncate">{label}</span>
+      {size && (
+        <span className="flex-shrink-0 text-text-muted dark:text-dark-text-muted">{size}</span>
+      )}
+    </div>
+  );
+}
+
+function resolveAttachmentImageSrc(
+  attachment: MessageAttachment,
+  workspaceId?: string | null
+): string | undefined {
+  if (attachment.data) {
+    return `data:${attachment.mimeType || 'image/png'};base64,${attachment.data}`;
+  }
+
+  if (!attachment.path) return undefined;
+  const cleanPath = attachment.path.replace(/^[/\\]+/, '');
+  if (workspaceId) {
+    return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;
+  }
+
+  return `/api/v1/files/workspace/${cleanPath}`;
+}
+
 function MessageBubble({
   message,
   onRetry,
@@ -87,7 +134,9 @@ function MessageBubble({
     : message.content;
 
   // Parse markers from assistant messages — extract interactive widgets and suggestions
-  const { widgets, suggestions } = !isUser ? parseMarkers(strippedContent) : { widgets: [], suggestions: [] };
+  const { widgets, suggestions } = !isUser
+    ? parseMarkers(strippedContent)
+    : { widgets: [], suggestions: [] };
   const displayContent = isUser ? strippedContent : stripChatInternalTags(strippedContent);
 
   const copyToClipboard = async () => {
@@ -115,28 +164,33 @@ function MessageBubble({
 
       {/* Content */}
       <div className={`group flex-1 max-w-[85%] ${isUser ? 'text-right' : 'text-left'}`}>
-        {/* User image attachments */}
+        {/* User attachments */}
         {isUser && message.attachments && message.attachments.length > 0 && (
           <div className={`flex gap-2 mb-2 ${isUser ? 'justify-end' : ''} flex-wrap`}>
-            {message.attachments
-              .filter((a) => a.type === 'image')
-              .map((att, i) => {
-                const src = att.data
-                  ? `data:${att.mimeType || 'image/png'};base64,${att.data}`
-                  : att.path
-                    ? `/api/v1/files/workspace/${att.path}`
-                    : undefined;
-                if (!src) return null;
-                return (
-                  <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
-                    <img
-                      src={src}
-                      alt={att.filename || 'Attached image'}
-                      className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
-                    />
-                  </a>
-                );
-              })}
+            {message.attachments.map((att, i) => {
+              if (att.type === 'image') {
+                const src = resolveAttachmentImageSrc(att, workspaceId);
+                if (src) {
+                  return (
+                    <a
+                      key={i}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img
+                        src={src}
+                        alt={att.filename || 'Attached image'}
+                        className="max-w-[200px] max-h-[200px] rounded-xl border border-border dark:border-dark-border object-cover hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                  );
+                }
+              }
+
+              return <AttachmentChip key={i} attachment={att} />;
+            })}
           </div>
         )}
 

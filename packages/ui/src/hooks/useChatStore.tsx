@@ -25,7 +25,7 @@ import { ignoreError } from '../utils/ignore-error';
 
 // Progress event types from the stream
 export interface ProgressEvent {
-  type: 'status' | 'tool_start' | 'tool_end';
+  type: 'status' | 'tool_start' | 'tool_end' | 'tool_blocked';
   message?: string;
   tool?: {
     id: string;
@@ -33,6 +33,11 @@ export interface ProgressEvent {
     arguments?: Record<string, unknown>;
     reason?: string;
   };
+  toolCall?: {
+    id: string;
+    name: string;
+  };
+  reason?: string;
   result?: {
     success: boolean;
     preview: string;
@@ -49,6 +54,7 @@ interface ChatState {
   isLoading: boolean;
   error: string | null;
   lastFailedMessage: string | null;
+  lastFailedRequest: FailedChatRequest | null;
   provider: string;
   model: string;
   agentId: string | null;
@@ -85,6 +91,7 @@ export interface ChatSessionSnapshot {
   isLoading: boolean;
   error: string | null;
   lastFailedMessage: string | null;
+  lastFailedRequest: FailedChatRequest | null;
   streamingContent: string;
   thinkingContent: string;
   isThinking: boolean;
@@ -99,6 +106,12 @@ export interface SessionTab {
   id: string;
   title: string;
   createdAt: number;
+}
+
+interface FailedChatRequest {
+  content: string;
+  directTools?: string[];
+  imageAttachments?: MessageAttachment[];
 }
 
 const MAX_SESSIONS = 10;
@@ -138,6 +151,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [lastFailedRequest, setLastFailedRequest] = useState<FailedChatRequest | null>(null);
   const [provider, setProviderState] = useState(() => {
     try {
       return localStorage.getItem(STORAGE_KEYS.CHAT_PROVIDER) ?? '';
@@ -224,6 +238,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     lastFailedMessage,
+    lastFailedRequest,
     streamingContent,
     thinkingContent,
     isThinking,
@@ -236,6 +251,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     lastFailedMessage,
+    lastFailedRequest,
     streamingContent,
     thinkingContent,
     isThinking,
@@ -311,7 +327,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     async (
       content: string,
       directToolsOrRetry?: string[] | boolean,
-      isRetryOrAttachments?: boolean | MessageAttachment[]
+      isRetryOrAttachments?: boolean | MessageAttachment[],
+      retryAttachments?: MessageAttachment[]
     ) => {
       // Support both old signature (content, isRetry) and new (content, directTools, isRetry/attachments)
       const directTools = Array.isArray(directToolsOrRetry) ? directToolsOrRetry : undefined;
@@ -323,7 +340,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             : false;
       const imageAttachments = Array.isArray(isRetryOrAttachments)
         ? isRetryOrAttachments
-        : undefined;
+        : retryAttachments;
       // Cancel any previous ongoing request before starting a new one
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -595,6 +612,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           // Stream complete - add final message
           setLastFailedMessage(null);
+          setLastFailedRequest(null);
           setStreamingContent('');
           setThinkingContent('');
           setProgressEvents([]);
@@ -650,6 +668,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           }
 
           setLastFailedMessage(null);
+          setLastFailedRequest(null);
 
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
@@ -691,6 +710,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         // Store the failed message for retry
         setLastFailedMessage(content);
+        setLastFailedRequest({
+          content,
+          ...(directTools?.length && { directTools: [...directTools] }),
+          ...(imageAttachments?.length && {
+            imageAttachments: imageAttachments.map((attachment) => ({ ...attachment })),
+          }),
+        });
         setStreamingContent('');
         setProgressEvents([]);
 
@@ -720,9 +746,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   const retryLastMessage = useCallback(async () => {
-    if (!lastFailedMessage) return;
-    await sendMessage(lastFailedMessage, true);
-  }, [lastFailedMessage, sendMessage]);
+    const request =
+      lastFailedRequest ?? (lastFailedMessage ? { content: lastFailedMessage } : null);
+    if (!request) return;
+    await sendMessage(request.content, request.directTools, true, request.imageAttachments);
+  }, [lastFailedMessage, lastFailedRequest, sendMessage]);
 
   const clearMessages = useCallback(() => {
     // Orphan any running stream — it keeps reading in background so the backend
@@ -741,6 +769,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
     setError(null);
     setLastFailedMessage(null);
+    setLastFailedRequest(null);
     setStreamingContent('');
     setThinkingContent('');
     setProgressEvents([]);
@@ -767,6 +796,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       setError(null);
       setLastFailedMessage(null);
+      setLastFailedRequest(null);
       setStreamingContent('');
       setThinkingContent('');
       setProgressEvents([]);
@@ -791,6 +821,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       isLoading: s.isLoading,
       error: s.error,
       lastFailedMessage: s.lastFailedMessage,
+      lastFailedRequest: s.lastFailedRequest,
       streamingContent: s.streamingContent,
       thinkingContent: s.thinkingContent,
       isThinking: s.isThinking,
@@ -808,6 +839,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsLoading(snap.isLoading);
     setError(snap.error);
     setLastFailedMessage(snap.lastFailedMessage);
+    setLastFailedRequest(snap.lastFailedRequest ?? null);
     setStreamingContent(snap.streamingContent);
     setThinkingContent(snap.thinkingContent);
     setIsThinking(snap.isThinking);
@@ -825,6 +857,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
     setError(null);
     setLastFailedMessage(null);
+    setLastFailedRequest(null);
     setStreamingContent('');
     setThinkingContent('');
     setProgressEvents([]);
@@ -938,6 +971,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     isLoading,
     error,
     lastFailedMessage,
+    lastFailedRequest,
     provider,
     model,
     agentId,

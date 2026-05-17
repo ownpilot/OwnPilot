@@ -437,6 +437,7 @@ export function ChatPage() {
             provider: m.provider ?? undefined,
             model: m.model ?? undefined,
             isError: m.isError,
+            attachments: m.attachments ?? undefined,
           }));
         if (msgs.length > 0) {
           loadConversation(id, msgs);
@@ -1082,8 +1083,9 @@ export function ChatPage() {
                     {/* Security block banner */}
                     {progressEvents.some(
                       (e) =>
-                        e.type === 'tool_end' &&
-                        e.result?.preview?.includes('blocked in Execution Security')
+                        e.type === 'tool_blocked' ||
+                        (e.type === 'tool_end' &&
+                          e.result?.preview?.includes('blocked in Execution Security'))
                     ) && (
                       <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -1164,6 +1166,23 @@ export function ChatPage() {
                                     </span>
                                   )
                                 )}
+                              </>
+                            )}
+                            {event.type === 'tool_blocked' && (
+                              <>
+                                <span className="w-2 h-2 bg-error rounded-full" />
+                                <span>
+                                  Blocked <strong>{event.toolCall?.name ?? 'tool'}</strong>
+                                  {event.reason && (
+                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
+                                      - {event.reason}
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
+                                  <Shield className="w-3 h-3" />
+                                  BLOCKED
+                                </span>
                               </>
                             )}
                           </div>

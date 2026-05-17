@@ -364,6 +364,41 @@ describe('ChatRepository', () => {
     });
   });
 
+  describe('countConversations', () => {
+    it('should count conversations for the current user', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: '12' });
+
+      const result = await repo.countConversations();
+
+      expect(result).toBe(12);
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      expect(sql).toContain('COUNT(*)');
+      expect(sql).toContain('user_id = $1');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['user-1']);
+    });
+
+    it('should apply the same filters as listConversations', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce({ count: 3 });
+
+      await repo.countConversations({
+        agentId: 'agent-1',
+        isArchived: false,
+        search: '50%_off',
+        source: 'channel',
+        channelPlatform: 'telegram',
+      });
+
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      const params = mockAdapter.queryOne.mock.calls[0]![1] as unknown[];
+      expect(sql).toContain('agent_id = $2');
+      expect(sql).toContain('is_archived = $3');
+      expect(sql).toContain('title ILIKE');
+      expect(sql).toContain("metadata->>'source'");
+      expect(sql).toContain("metadata->>'platform'");
+      expect(params).toEqual(['user-1', 'agent-1', false, '%50\\%\\_off%', 'channel', 'telegram']);
+    });
+  });
+
   // =========================================================================
   // updateConversation
   // =========================================================================
@@ -724,6 +759,26 @@ describe('ChatRepository', () => {
 
       expect(result!.toolCalls).toBeNull();
       expect(result!.trace).toBeNull();
+    });
+  });
+
+  describe('getLatestMessage', () => {
+    it('should return the newest message for a conversation', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeMessageRow({ id: 'msg-latest' }));
+
+      const result = await repo.getLatestMessage('conv-1');
+
+      expect(result!.id).toBe('msg-latest');
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      expect(sql).toContain('ORDER BY created_at DESC');
+      expect(sql).toContain('LIMIT 1');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['conv-1']);
+    });
+
+    it('should return null when the conversation has no messages', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+
+      await expect(repo.getLatestMessage('conv-empty')).resolves.toBeNull();
     });
   });
 

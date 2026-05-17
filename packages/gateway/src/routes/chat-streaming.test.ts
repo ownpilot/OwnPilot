@@ -49,6 +49,13 @@ vi.mock('../services/conversation-service.js', () => ({
     };
   }),
   runPostChatProcessing: (...args: unknown[]) => mockRunPostChatProcessing(...args),
+  toAttachmentMeta: (attachments: Array<Record<string, unknown>> | undefined) =>
+    attachments?.map((a) => ({
+      type: a.type,
+      mimeType: a.mimeType,
+      filename: a.filename,
+      size: a.size,
+    })),
 }));
 
 vi.mock('hono/streaming', () => ({

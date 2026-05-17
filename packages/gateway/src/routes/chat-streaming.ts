@@ -27,7 +27,11 @@ import {
 } from '../utils/index.js';
 import { generateApprovalId, createApprovalRequest } from '../services/execution-approval.js';
 import type { getAgent } from './agent-service.js';
-import { ConversationService, runPostChatProcessing } from '../services/conversation-service.js';
+import {
+  ConversationService,
+  runPostChatProcessing,
+  toAttachmentMeta,
+} from '../services/conversation-service.js';
 import type { McpToolEvent } from '../mcp/mcp-events.js';
 
 /**
@@ -745,6 +749,7 @@ export async function processStreamingViaBus(
       toolCalls,
       finishReason: result.response.metadata.finishReason as string | undefined,
       historyLength: body.historyLength,
+      attachments: toAttachmentMeta(body.attachments),
     });
 
     // Post-processing middleware skips web UI memory extraction.

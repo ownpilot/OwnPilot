@@ -29,6 +29,7 @@ const { mockChatRepo, mockLogsRepo, MockChatRepository, MockLogsRepository } = v
     deleteConversation: vi.fn(),
     deleteConversations: vi.fn(),
     archiveConversations: vi.fn(),
+    getLatestMessage: vi.fn(),
     getMessages: vi.fn(),
     getMessage: vi.fn(),
     addMessageDirect: vi.fn(),
@@ -156,6 +157,7 @@ import {
   clearChannelSession,
   runPostChatProcessing,
   waitForPendingProcessing,
+  toAttachmentMeta,
   type SaveChatParams,
   type SaveStreamingParams,
 } from './conversation-service.js';
@@ -223,6 +225,7 @@ describe('ConversationService', () => {
     mockExtractMemories.mockResolvedValue(0);
     mockUpdateGoalProgress.mockResolvedValue(undefined);
     mockEvaluateTriggers.mockResolvedValue({ triggered: [], pending: [], executed: [] });
+    mockChatRepo.getLatestMessage.mockResolvedValue(null);
     mockChatRepo.getMessages.mockResolvedValue([]);
     service = new ConversationService('user-1');
   });
@@ -234,6 +237,39 @@ describe('ConversationService', () => {
       new ConversationService('user-abc');
       expect(MockChatRepository).toHaveBeenCalledWith('user-abc');
       expect(MockLogsRepository).toHaveBeenCalledWith('user-abc');
+    });
+  });
+
+  describe('toAttachmentMeta', () => {
+    it('keeps only safe attachment metadata and estimates base64 size', () => {
+      expect(
+        toAttachmentMeta([
+          { type: 'image', data: 'aGVsbG8=', mimeType: 'image/png', filename: 'pic.png' },
+          { type: 'audio', data: 'ignored', mimeType: 'audio/ogg' },
+        ])
+      ).toEqual([{ type: 'image', mimeType: 'image/png', filename: 'pic.png', size: 5 }]);
+    });
+
+    it('preserves workspace file paths while dropping base64 data', () => {
+      expect(
+        toAttachmentMeta([
+          {
+            type: 'image',
+            data: 'ignored',
+            mimeType: 'image/png',
+            filename: 'saved.png',
+            path: 'uploads/saved.png',
+          },
+        ])
+      ).toEqual([
+        {
+          type: 'image',
+          mimeType: 'image/png',
+          filename: 'saved.png',
+          size: 5,
+          path: 'uploads/saved.png',
+        },
+      ]);
     });
   });
 
@@ -290,6 +326,19 @@ describe('ConversationService', () => {
         title: '',
         source: 'web',
         messageCount: 2, // 0 + 2
+      });
+    });
+
+    it('uses a custom message delta when provided', () => {
+      const conv = makeConversation({ id: 'conv-43', messageCount: 7 });
+
+      service.broadcastUpdate(conv, 1);
+
+      expect(mockWsBroadcast).toHaveBeenCalledWith('chat:history:updated', {
+        conversationId: 'conv-43',
+        title: conv.title,
+        source: 'web',
+        messageCount: 8,
       });
     });
   });
@@ -365,6 +414,71 @@ describe('ConversationService', () => {
 
       const userMsgCall = mockChatRepo.addMessage.mock.calls[0][0];
       expect(userMsgCall).not.toHaveProperty('attachments');
+    });
+
+    it('skips the user message only when the latest message is the same early-persisted user text', async () => {
+      const conv = makeConversation();
+      mockChatRepo.getOrCreateConversation.mockResolvedValue(conv);
+      mockChatRepo.getLatestMessage.mockResolvedValue({
+        id: 'early-user',
+        conversationId: conv.id,
+        role: 'user',
+        content: 'Hi there',
+        provider: 'openai',
+        model: 'gpt-4o',
+        toolCalls: null,
+        toolCallId: null,
+        trace: null,
+        isError: false,
+        inputTokens: null,
+        outputTokens: null,
+        attachments: null,
+        createdAt: new Date(),
+      });
+      mockChatRepo.addMessage.mockResolvedValue({ id: 'msg-1' });
+
+      await service.saveChat(makeSaveChatParams({ userMessage: 'Hi there' }));
+
+      expect(mockChatRepo.addMessage).toHaveBeenCalledTimes(1);
+      expect(mockChatRepo.addMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'assistant' })
+      );
+      expect(mockWsBroadcast).toHaveBeenCalledWith('chat:history:updated', {
+        conversationId: conv.id,
+        title: conv.title,
+        source: 'web',
+        messageCount: 6,
+      });
+    });
+
+    it('saves a new user message when the latest message is from an earlier assistant turn', async () => {
+      const conv = makeConversation();
+      mockChatRepo.getOrCreateConversation.mockResolvedValue(conv);
+      mockChatRepo.getLatestMessage.mockResolvedValue({
+        id: 'last-assistant',
+        conversationId: conv.id,
+        role: 'assistant',
+        content: 'Previous answer',
+        provider: 'openai',
+        model: 'gpt-4o',
+        toolCalls: null,
+        toolCallId: null,
+        trace: null,
+        isError: false,
+        inputTokens: null,
+        outputTokens: null,
+        attachments: null,
+        createdAt: new Date(),
+      });
+      mockChatRepo.addMessage.mockResolvedValue({ id: 'msg-1' });
+
+      await service.saveChat(makeSaveChatParams({ userMessage: 'Next question' }));
+
+      expect(mockChatRepo.addMessage).toHaveBeenCalledTimes(2);
+      expect(mockChatRepo.addMessage).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ role: 'user', content: 'Next question' })
+      );
     });
 
     it('includes toolCalls in assistant message when provided', async () => {
@@ -481,7 +595,7 @@ describe('ConversationService', () => {
       expect(mockLogsRepo.log).toHaveBeenCalledTimes(1);
     });
 
-    it('still broadcasts a WebSocket update after log-only save', async () => {
+    it('still broadcasts a WebSocket update after log-only save without changing message count', async () => {
       const conv = makeConversation({ messageCount: 2 });
       mockChatRepo.getOrCreateConversation.mockResolvedValue(conv);
       mockLogsRepo.log.mockResolvedValue({ id: 'log-1' });
@@ -492,7 +606,7 @@ describe('ConversationService', () => {
         conversationId: conv.id,
         title: conv.title,
         source: 'web',
-        messageCount: 4, // 2 + 2
+        messageCount: 2,
       });
     });
 
@@ -592,6 +706,29 @@ describe('ConversationService', () => {
         toolCalls: [{ name: 'get_weather', success: true }],
       });
     });
+
+    it('passes attachment metadata to the streamed user message', async () => {
+      const conv = makeConversation();
+      mockChatRepo.getOrCreateConversation.mockResolvedValue(conv);
+      mockChatRepo.addMessage.mockResolvedValue({ id: 'msg-1' });
+
+      await service.saveStreamingChat(makeStreamState(), {
+        conversationId: 'conv-1',
+        provider: 'openai',
+        model: 'gpt-4o',
+        userMessage: 'Analyze this',
+        assistantContent: 'Looks good',
+        attachments: [{ type: 'image', mimeType: 'image/png', filename: 'pic.png', size: 5 }],
+      });
+
+      expect(mockChatRepo.addMessage).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          role: 'user',
+          attachments: [{ type: 'image', mimeType: 'image/png', filename: 'pic.png', size: 5 }],
+        })
+      );
+    });
   });
 
   // ── saveStreamingLog ─────────────────────────────────────────────────────
@@ -655,6 +792,22 @@ describe('broadcastChatUpdate', () => {
       title: '',
       source: 'web',
       messageCount: 2,
+    });
+  });
+
+  it('accepts a custom message delta', () => {
+    broadcastChatUpdate({
+      id: 'conv-101',
+      title: 'One new reply',
+      messageCount: 3,
+      messageDelta: 1,
+    });
+
+    expect(mockWsBroadcast).toHaveBeenCalledWith('chat:history:updated', {
+      conversationId: 'conv-101',
+      title: 'One new reply',
+      source: 'web',
+      messageCount: 4,
     });
   });
 });
