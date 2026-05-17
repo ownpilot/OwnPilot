@@ -112,6 +112,20 @@ describe('parseSSELine', () => {
 
   // ── error ─────────────────────────────────────────────────────────────────
 
+  it('preserves thinkingContent on final chunks', () => {
+    const line =
+      'data: ' +
+      JSON.stringify({
+        done: true,
+        thinkingContent: 'Reasoned through the constraints.',
+      });
+    const result = parseSSELine(line);
+    expect(result.kind).toBe('delta');
+    if (result.kind === 'delta') {
+      expect(result.data.thinkingContent).toBe('Reasoned through the constraints.');
+    }
+  });
+
   it('parses error events', () => {
     const line = 'data: ' + JSON.stringify({ error: 'Rate limit exceeded' });
     const result = parseSSELine(line);

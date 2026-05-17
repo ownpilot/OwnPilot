@@ -216,6 +216,8 @@ export interface ChatResponse {
   suggestions?: Array<{ title: string; detail: string }>;
   /** AI-extracted memories pending user acceptance */
   memories?: Array<{ type: string; content: string; importance?: number }>;
+  /** Final thinking/reasoning content for models that send it in the done event */
+  thinkingContent?: string;
 }
 
 export interface StreamChunk {

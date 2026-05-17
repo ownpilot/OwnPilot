@@ -1078,7 +1078,7 @@ export function ChatPage() {
                 />
 
                 {/* Streaming content and progress */}
-                {isLoading && (streamingContent || progressEvents.length > 0) && (
+                {isLoading && (
                   <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
                     {/* Security block banner */}
                     {progressEvents.some(

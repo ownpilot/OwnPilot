@@ -27,6 +27,9 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
+const MAX_IMAGE_ATTACHMENTS = 5;
+const MAX_IMAGE_BYTES = 14 * 1024 * 1024;
+
 export interface ChatInputHandle {
   setValue: (text: string) => void;
   focus: () => void;
@@ -88,6 +91,12 @@ function getChipLabel(type: ResourceType): string {
   }
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
 // --- Build hidden context block from attachments ---
 
 function buildContextBlock(attachments: ResourceAttachment[]): string {
@@ -117,6 +126,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
   const [value, setValue] = useState('');
   const [attachments, setAttachments] = useState<ResourceAttachment[]>([]);
   const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,9 +168,17 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     if (!files) return;
 
     const newPreviews: ImagePreview[] = [];
+    let nextError: string | null = null;
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('image/')) continue;
-      if (imagePreviews.length + newPreviews.length >= 5) break; // max 5
+      if (imagePreviews.length + newPreviews.length >= MAX_IMAGE_ATTACHMENTS) {
+        nextError = `You can attach up to ${MAX_IMAGE_ATTACHMENTS} images.`;
+        break;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        nextError = `${file.name} is too large (${formatFileSize(file.size)}). Max image size is ${formatFileSize(MAX_IMAGE_BYTES)}.`;
+        continue;
+      }
 
       const base64 = await new Promise<string>((resolve) => {
         const reader = new FileReader();
@@ -181,6 +199,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
     }
 
     setImagePreviews((prev) => [...prev, ...newPreviews]);
+    setAttachmentError(nextError);
     // Reset input so the same file can be re-selected
     e.target.value = '';
     setTimeout(() => textareaRef.current?.focus(), 0);
@@ -191,6 +210,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       URL.revokeObjectURL(prev[index]!.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
+    setAttachmentError(null);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -227,6 +247,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
       );
       setValue('');
       setAttachments([]);
+      setAttachmentError(null);
       // Cleanup previews
       for (const p of imagePreviews) URL.revokeObjectURL(p.previewUrl);
       setImagePreviews([]);
@@ -319,6 +340,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           </div>
         )}
 
+        {attachmentError && (
+          <div className="mb-2 px-1 text-xs text-error" role="status">
+            {attachmentError}
+          </div>
+        )}
+
         <div className="flex items-end gap-1">
           {/* Resource Picker Button */}
           <ToolPicker onSelect={handleResourceSelect} disabled={isLoading} />
@@ -327,10 +354,10 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function Ch
           <button
             type="button"
             onClick={handleImageSelect}
-            disabled={isLoading || imagePreviews.length >= 5}
+            disabled={isLoading || imagePreviews.length >= MAX_IMAGE_ATTACHMENTS}
             className="p-2.5 text-text-muted dark:text-dark-text-muted hover:text-primary dark:hover:text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Attach image"
-            title="Attach image (max 5)"
+            title={`Attach image (max ${MAX_IMAGE_ATTACHMENTS})`}
           >
             <Image className="w-5 h-5" />
           </button>

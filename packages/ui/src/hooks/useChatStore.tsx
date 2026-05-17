@@ -579,6 +579,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                         session: event.data.session as ChatResponse['session'],
                         suggestions: event.data.suggestions as ChatResponse['suggestions'],
                         memories: event.data.memories as ChatResponse['memories'],
+                        thinkingContent: event.data.thinkingContent,
                       };
                       // Update session context info (merge cachedTokens from usage)
                       if (event.data.session) {
