@@ -28,19 +28,15 @@ import { getErrorMessage } from '../services/error-utils.js';
  * path disclosure when sandbox errors are returned in debug mode.
  */
 function stripHostPaths(stack: string): string {
-  // Match absolute Unix paths in stack traces: /home/..., /Users/..., /root/...
-  // Uses lookbehind to ensure we only match paths preceded by non-word chars (space, parenthesis)
-  const unixPathPattern = /(?<=\B)\/home\/[^\s'")]+/g;
-  const usersPathPattern = /(?<=\B)\/Users\/[^\s'")]+/g;
-  const rootPathPattern = /(?<=\B)\/root\/[^\s'")]+/g;
-  // Match Windows paths: C:\Users\... (preceded by non-word char)
-  const windowsPathPattern = /(?<=\B)[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g;
-
+  // Strip absolute host paths from sandbox error stack traces.
+  // Stack traces from Node.js vm module include paths like:
+  //   "Error\n    at plugin:test:sandbox-escape:3:24\n    at Object.<anonymous> (/home/runner/work/...)"
+  // We remove all occurrences of these host path patterns.
   return stack
-    .replace(usersPathPattern, '/<sandbox>/')
-    .replace(rootPathPattern, '/<sandbox>/')
-    .replace(unixPathPattern, '/<sandbox>/')
-    .replace(windowsPathPattern, '<sandbox>\\');
+    .replace(/\/home\/[^\s'")]+/g, '/<sandbox>/')
+    .replace(/\/Users\/[^\s'")]+/g, '/<sandbox>/')
+    .replace(/\/root\/[^\s'")]+/g, '/<sandbox>/')
+    .replace(/[A-Z]:\\(?:Users|home|root)[^\s'")\\]+/g, '<sandbox>\\');
 }
 
 /**
