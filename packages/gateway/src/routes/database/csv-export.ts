@@ -219,9 +219,16 @@ csvExportRoutes.get('/export/csv/:table', async (c) => {
 
     if (
       userId &&
-      ['habits', 'bookmarks', 'notes', 'tasks', 'contacts', 'calendar_events', 'captures'].includes(
-        tableName
-      )
+      [
+        'expenses',
+        'habits',
+        'bookmarks',
+        'notes',
+        'tasks',
+        'contacts',
+        'calendar_events',
+        'captures',
+      ].includes(tableName)
     ) {
       query += ` WHERE user_id = $1`;
       params.push(userId);
@@ -276,6 +283,7 @@ csvExportRoutes.get('/export/csv', async (c) => {
         if (
           userId &&
           [
+            'expenses',
             'habits',
             'bookmarks',
             'notes',
