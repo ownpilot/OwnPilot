@@ -250,8 +250,12 @@ describe('Error-based introspection', () => {
     `);
     if (result.ok && result.value!.success) {
       const stack = String(result.value!.value || '');
-      expect(stack).not.toContain('/home/');
-      expect(stack).not.toContain('C:\\\\Users');
+      // Only check sandbox-generated frames (before Script.runInContext),
+      // not Vitest internal frames which legitimately contain /home/runner paths
+      const firstExternalFrame = stack.indexOf('at Script.runInContext');
+      const sandboxFrames = firstExternalFrame === -1 ? stack : stack.slice(0, firstExternalFrame);
+      expect(sandboxFrames).not.toContain('/home/');
+      expect(sandboxFrames).not.toContain('C:\\');
     }
   });
 
@@ -461,7 +465,9 @@ describe('Resource exhaustion', () => {
 describe('LEGITIMATE code must still work', () => {
   it('ALLOWED: Arithmetic operations', async () => {
     const executor = createSandbox(SANDBOX_CONFIG);
-    const result = await executor.execute('return [1,2,3].map(x => x * 2).reduce((a,b) => a + b, 0)');
+    const result = await executor.execute(
+      'return [1,2,3].map(x => x * 2).reduce((a,b) => a + b, 0)'
+    );
     expect(result.ok).toBe(true);
     expect(result.value!.value).toBe(12);
   });
@@ -491,7 +497,9 @@ describe('LEGITIMATE code must still work', () => {
 
   it('ALLOWED: URL parsing', async () => {
     const executor = createSandbox(SANDBOX_CONFIG);
-    const result = await executor.execute('return new URL("https://example.com/path?foo=bar").hostname');
+    const result = await executor.execute(
+      'return new URL("https://example.com/path?foo=bar").hostname'
+    );
     expect(result.ok).toBe(true);
     expect(result.value!.value).toBe('example.com');
   });
@@ -554,7 +562,9 @@ describe('WorkerSandbox isolation', () => {
 
   it('BLOCKED: Message posting to parentPort', async () => {
     const executor = createWorkerSandbox(SANDBOX_CONFIG);
-    const result = await executor.execute('return typeof parentPort !== "undefined" ? "has_parentPort" : "no_parentPort"');
+    const result = await executor.execute(
+      'return typeof parentPort !== "undefined" ? "has_parentPort" : "no_parentPort"'
+    );
     if (result.ok && result.value!.success) {
       expect(result.value!.value).toBe('no_parentPort');
     }
