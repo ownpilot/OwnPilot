@@ -1728,6 +1728,28 @@ describe('Workflow Routes', () => {
       expect(json.error.message).toContain('expression');
     });
 
+    it('returns 400 for switchNode cases with invalid labels', async () => {
+      const res = await postWorkflow(
+        [
+          {
+            id: 'n1',
+            type: 'switchNode',
+            data: {
+              expression: 'type',
+              cases: [{ label: '' }, { label: 'default' }, { label: 'paid' }, { label: 'paid' }],
+            },
+          },
+        ],
+        []
+      );
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('requires "label"');
+      expect(json.error.message).toContain('reserved');
+      expect(json.error.message).toContain('duplicated');
+    });
+
     it('returns 400 for toolNode missing toolName', async () => {
       const res = await postWorkflow([{ id: 'n1', type: 'toolNode', data: {} }], []);
       expect(res.status).toBe(400);

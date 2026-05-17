@@ -118,8 +118,35 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
         break;
       case 'switchNode':
         if (!d.expression) errors.push(`Node "${node.id}": Switch node requires "expression"`);
-        if (!Array.isArray(d.cases) || d.cases.length === 0)
+        if (!Array.isArray(d.cases) || d.cases.length === 0) {
           errors.push(`Node "${node.id}": Switch node requires at least one case`);
+        } else {
+          const labels = new Set<string>();
+          for (const [index, item] of d.cases.entries()) {
+            const label =
+              item && typeof item === 'object' && 'label' in item
+                ? String((item as { label?: unknown }).label ?? '').trim()
+                : '';
+
+            if (!label) {
+              errors.push(`Node "${node.id}": Switch case ${index + 1} requires "label"`);
+              continue;
+            }
+
+            if (label.length > 100) {
+              errors.push(`Node "${node.id}": Switch case "${label}" label is too long`);
+            }
+
+            if (label.toLowerCase() === 'default') {
+              errors.push(`Node "${node.id}": Switch case label "default" is reserved`);
+            }
+
+            if (labels.has(label)) {
+              errors.push(`Node "${node.id}": Switch case label "${label}" is duplicated`);
+            }
+            labels.add(label);
+          }
+        }
         break;
       case 'toolNode':
         if (!d.toolName) errors.push(`Node "${node.id}": Tool node requires "toolName"`);

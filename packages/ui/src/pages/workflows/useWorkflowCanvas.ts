@@ -33,6 +33,39 @@ export interface WorkflowCanvasParams {
   pushHistory: () => void;
 }
 
+type SwitchCaseHandle = { label: string };
+
+export function reconcileSwitchCaseEdges(
+  edges: Edge[],
+  nodeId: string,
+  oldCases: SwitchCaseHandle[],
+  newCases: SwitchCaseHandle[]
+): Edge[] {
+  const newLabels = new Set(newCases.map((c) => c.label));
+  newLabels.add('default'); // default handle is always valid
+
+  const labelMap = new Map<string, string>();
+  if (oldCases.length === newCases.length) {
+    for (let i = 0; i < oldCases.length; i++) {
+      if (oldCases[i]!.label !== newCases[i]!.label) {
+        labelMap.set(oldCases[i]!.label, newCases[i]!.label);
+      }
+    }
+  }
+
+  return edges
+    .map((edge) => {
+      if (edge.source !== nodeId || !edge.sourceHandle) return edge;
+      const renamed = labelMap.get(edge.sourceHandle);
+      if (renamed) return { ...edge, sourceHandle: renamed };
+      return edge;
+    })
+    .filter((edge) => {
+      if (edge.source !== nodeId || !edge.sourceHandle) return true;
+      return newLabels.has(edge.sourceHandle);
+    });
+}
+
 export function useWorkflowCanvas(params: WorkflowCanvasParams) {
   const {
     nodes,
@@ -206,32 +239,7 @@ export function useWorkflowCanvas(params: WorkflowCanvasParams) {
             needsHandleUpdate = true;
           }
 
-          // Build old->new label mapping for renames
-          const labelMap = new Map<string, string>();
-          const newLabels = new Set(newCases.map((c) => c.label));
-          newLabels.add('default'); // default handle is always valid
-
-          for (let i = 0; i < Math.min(oldCases.length, newCases.length); i++) {
-            if (oldCases[i]!.label !== newCases[i]!.label) {
-              labelMap.set(oldCases[i]!.label, newCases[i]!.label);
-            }
-          }
-
-          setEdges((eds) =>
-            eds
-              .map((e) => {
-                if (e.source !== nodeId || !e.sourceHandle) return e;
-                // Rename handle if label changed
-                const renamed = labelMap.get(e.sourceHandle);
-                if (renamed) return { ...e, sourceHandle: renamed };
-                return e;
-              })
-              // Remove edges pointing to deleted case handles
-              .filter((e) => {
-                if (e.source !== nodeId || !e.sourceHandle) return true;
-                return newLabels.has(e.sourceHandle);
-              })
-          );
+          setEdges((eds) => reconcileSwitchCaseEdges(eds, nodeId, oldCases, newCases));
         }
 
         return nds.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, ...data } } : n));

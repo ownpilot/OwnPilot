@@ -51,11 +51,16 @@ const statusIcons: Record<string, React.ComponentType<{ className?: string }>> =
   skipped: AlertCircle,
 };
 
+export function isDefaultSwitchBranch(branchTaken: string | undefined): boolean {
+  return branchTaken?.toLowerCase() === 'default';
+}
+
 function SwitchNodeComponent({ data, selected }: NodeProps<SwitchNodeType>) {
   const status = (data.executionStatus as NodeExecutionStatus | undefined) ?? 'pending';
   const style = statusStyles[status];
   const StatusIcon = statusIcons[status];
   const branchTaken = data.branchTaken as string | undefined;
+  const defaultBranchActive = isDefaultSwitchBranch(branchTaken) && status === 'success';
   const cases = (data.cases as Array<{ label: string; value: string }>) ?? [];
   const expression = (data.expression as string) ?? '';
 
@@ -135,7 +140,7 @@ function SwitchNodeComponent({ data, selected }: NodeProps<SwitchNodeType>) {
             {/* Default case — shown dimmed */}
             <span
               className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-medium rounded ${
-                branchTaken === 'Default' && status === 'success'
+                defaultBranchActive
                   ? 'bg-fuchsia-500 text-white ring-1 ring-fuchsia-400'
                   : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500'
               }`}

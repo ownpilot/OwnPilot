@@ -27,7 +27,7 @@ interface SwitchCase {
   value: string;
 }
 
-interface SwitchNodeData {
+export interface SwitchNodeData {
   label?: string;
   expression?: string;
   cases?: SwitchCase[];
@@ -41,6 +41,22 @@ interface SwitchNodeData {
   retryAttempts?: number;
   evaluatedValue?: unknown;
   matchedCase?: string;
+  branchTaken?: string;
+  resolvedArgs?: {
+    evaluatedValue?: unknown;
+    matchedCase?: string;
+  };
+}
+
+export function getSwitchExecutionDetails(data: SwitchNodeData): {
+  evaluatedValue: unknown;
+  branchTaken?: string;
+} {
+  return {
+    evaluatedValue:
+      data.evaluatedValue ?? data.resolvedArgs?.evaluatedValue ?? data.executionOutput,
+    branchTaken: data.branchTaken ?? data.matchedCase ?? data.resolvedArgs?.matchedCase,
+  };
 }
 
 // ============================================================================
@@ -63,6 +79,7 @@ export function SwitchConfigPanel({
   const [description, setDescription] = useState(data.description ?? '');
 
   const hasResults = !!(data.executionStatus as string) && data.executionStatus !== 'pending';
+  const executionDetails = getSwitchExecutionDetails(data);
   const [activeTab, setActiveTab] = useState<'config' | 'results'>(
     hasResults ? 'results' : 'config'
   );
@@ -117,6 +134,7 @@ export function SwitchConfigPanel({
 
   const removeCase = useCallback(
     (index: number) => {
+      if (cases.length <= 1) return;
       const next = cases.filter((_, i) => i !== index);
       setCases(next);
       pushUpdate({ cases: next });
@@ -202,35 +220,36 @@ export function SwitchConfigPanel({
           </div>
 
           {/* Evaluated value */}
-          {data.evaluatedValue !== undefined && (
+          {executionDetails.evaluatedValue !== undefined && (
             <div>
               <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
                 Evaluated Value
               </label>
-              {typeof data.evaluatedValue === 'object' && data.evaluatedValue !== null ? (
+              {typeof executionDetails.evaluatedValue === 'object' &&
+              executionDetails.evaluatedValue !== null ? (
                 <div className="px-2 py-1.5 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md max-h-40 overflow-y-auto">
                   <JsonTreeView
-                    data={data.evaluatedValue}
+                    data={executionDetails.evaluatedValue}
                     pathPrefix={`${node.id}.output.value`}
                     onClickPath={copyToClipboard}
                   />
                 </div>
               ) : (
                 <pre className="px-3 py-2 text-xs font-mono bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-md text-text-primary dark:text-dark-text-primary">
-                  {String(data.evaluatedValue)}
+                  {String(executionDetails.evaluatedValue)}
                 </pre>
               )}
             </div>
           )}
 
           {/* Matched case */}
-          {data.matchedCase && (
+          {executionDetails.branchTaken && (
             <div>
               <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">
                 Branch Taken
               </label>
               <span className="inline-block px-2 py-0.5 text-xs font-medium rounded bg-cyan-500/20 text-cyan-700 dark:text-cyan-300">
-                {data.matchedCase}
+                {executionDetails.branchTaken}
               </span>
             </div>
           )}
@@ -310,8 +329,9 @@ export function SwitchConfigPanel({
                     <button
                       type="button"
                       onClick={() => removeCase(i)}
-                      className="p-1 text-text-muted hover:text-error transition-colors shrink-0"
-                      title="Remove case"
+                      disabled={cases.length <= 1}
+                      className="p-1 text-text-muted hover:text-error disabled:opacity-40 disabled:hover:text-text-muted transition-colors shrink-0"
+                      title={cases.length <= 1 ? 'At least one case is required' : 'Remove case'}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
