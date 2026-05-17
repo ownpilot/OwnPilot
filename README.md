@@ -4,6 +4,8 @@
 >
 > **Self-hosted. Your data stays yours.**
 
+v0.4.0
+
 <p align="center">
   <img src="ownpilot_.jpeg" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
 </p>
