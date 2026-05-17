@@ -1,0 +1,149 @@
+{
+  "id": "gmicloud",
+  "name": "GMI Cloud",
+  "type": "openai-compatible",
+  "apiKeyEnv": "GMICLOUD_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048575,
+      "maxOutput": 384000,
+      "inputPrice": 0.112,
+      "outputPrice": 0.224,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 1.392,
+      "outputPrice": 2.784,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0.855,
+      "outputPrice": 3.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "anthropic/claude-opus-4.7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 409600,
+      "maxOutput": 128000,
+      "inputPrice": 4.5,
+      "outputPrice": 22.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "zai-org/GLM-5.1-FP8",
+      "name": "GLM-5.1",
+      "contextWindow": 202752,
+      "maxOutput": 131072,
+      "inputPrice": 0.98,
+      "outputPrice": 3.08,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-27"
+    },
+    {
+      "id": "anthropic/claude-sonnet-4.6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 409600,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "zai-org/GLM-5-FP8",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 131072,
+      "inputPrice": 0.6,
+      "outputPrice": 1.92,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-11"
+    },
+    {
+      "id": "anthropic/claude-opus-4.6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 409600,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    }
+  ],
+  "baseUrl": "https://api.gmi-serving.com/v1",
+  "docsUrl": "https://docs.gmicloud.ai/inference-engine/api-reference/llm-api-reference"
+}

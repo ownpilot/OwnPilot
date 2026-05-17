@@ -1,0 +1,49 @@
+{
+  "id": "sarvam",
+  "name": "Sarvam AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SARVAM_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "sarvam-30b",
+      "name": "Sarvam-30B",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-02-18"
+    },
+    {
+      "id": "sarvam-105b",
+      "name": "Sarvam-105B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-18"
+    }
+  ],
+  "baseUrl": "https://api.sarvam.ai/v1",
+  "docsUrl": "https://docs.sarvam.ai/api-reference-docs/getting-started/models"
+}

@@ -12,24 +12,6 @@
   },
   "models": [
     {
-      "id": "mistralai/mistral-medium-3.5-128b",
-      "name": "Mistral Medium 3.5 128B",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-04-29"
-    },
-    {
       "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "name": "Nemotron 3 Nano Omni",
       "contextWindow": 256000,
@@ -45,16 +27,16 @@
         "reasoning",
         "streaming"
       ],
-      "default": false,
+      "default": true,
       "releaseDate": "2026-04-28"
     },
     {
-      "id": "deepseek-ai/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-ai/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1048576,
       "maxOutput": 393216,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
       "capabilities": [
         "chat",
         "function_calling",
@@ -66,12 +48,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-ai/deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-ai/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1048576,
       "maxOutput": 393216,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",
@@ -101,6 +83,50 @@
       "releaseDate": "2026-04-21"
     },
     {
+      "id": "nvidia/active-speaker-detection",
+      "name": "Active Speaker Detection",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "nvidia/synthetic-video-detector",
+      "name": "synthetic-video-detector",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "nvidia/nemotron-3-content-safety",
+      "name": "nemotron-3-content-safety",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
       "id": "google/gemma-4-31b-it",
       "name": "Gemma-4-31B-IT",
       "contextWindow": 256000,
@@ -116,6 +142,21 @@
       ],
       "default": false,
       "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "nvidia/llama-nemotron-rerank-vl-1b-v2",
+      "name": "llama-nemotron-rerank-vl-1b-v2",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-31"
     },
     {
       "id": "z-ai/glm-5.1",
@@ -151,6 +192,37 @@
       "releaseDate": "2026-03-18"
     },
     {
+      "id": "nvidia/nemotron-voicechat",
+      "name": "nemotron-voicechat",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
+    },
+    {
+      "id": "mistralai/mistral-small-4-119b-2603",
+      "name": "mistral-small-4-119b-2603",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
+    },
+    {
       "id": "nvidia/nemotron-3-super-120b-a12b",
       "name": "Nemotron 3 Super",
       "contextWindow": 262144,
@@ -165,6 +237,54 @@
       ],
       "default": false,
       "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "nvidia/gliner-pii",
+      "name": "gliner-pii",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-03"
+    },
+    {
+      "id": "nvidia/cosmos-transfer2_5-2b",
+      "name": "cosmos-transfer2.5-2b",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-26"
+    },
+    {
+      "id": "qwen/qwen3.5-122b-a10b",
+      "name": "Qwen3.5 122B-A10B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-23"
     },
     {
       "id": "qwen/qwen3.5-397b-a17b",
@@ -201,21 +321,19 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "z-ai/glm5",
-      "name": "GLM5",
-      "contextWindow": 202752,
-      "maxOutput": 131000,
+      "id": "nvidia/llama-nemotron-embed-vl-1b-v2",
+      "name": "llama-nemotron-embed-vl-1b-v2",
+      "contextWindow": 32768,
+      "maxOutput": 2048,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
+        "vision",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02-12"
+      "releaseDate": "2026-02-10"
     },
     {
       "id": "stepfun-ai/step-3.5-flash",
@@ -234,37 +352,48 @@
       "releaseDate": "2026-02-02"
     },
     {
-      "id": "moonshotai/kimi-k2.5",
-      "name": "Kimi K2.5",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
+      "id": "nvidia/nemotron-content-safety-reasoning-4b",
+      "name": "nemotron-content-safety-reasoning-4b",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-22"
+    },
+    {
+      "id": "black-forest-labs/flux_2-klein-4b",
+      "name": "FLUX.2 Klein 4B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-01-27"
+      "releaseDate": "2026-01-14"
     },
     {
-      "id": "minimaxai/minimax-m2.1",
-      "name": "MiniMax-M2.1",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
+      "id": "nvidia/usdcode",
+      "name": "usdcode",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-12-23"
+      "releaseDate": "2026-01-01"
     },
     {
       "id": "z-ai/glm4.7",
@@ -281,6 +410,20 @@
       ],
       "default": false,
       "releaseDate": "2025-12-22"
+    },
+    {
+      "id": "nvidia/riva-translate-4b-instruct-v1_1",
+      "name": "riva-translate-4b-instruct-v1_1",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-12"
     },
     {
       "id": "mistralai/devstral-2-123b-instruct-2512",
@@ -317,23 +460,6 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "mistralai/ministral-14b-instruct-2512",
-      "name": "Ministral 3 14B Instruct 2512",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
-    },
-    {
       "id": "deepseek-ai/deepseek-v3.2",
       "name": "DeepSeek V3.2",
       "contextWindow": 163840,
@@ -348,6 +474,21 @@
       ],
       "default": false,
       "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "nvidia/streampetr",
+      "name": "streampetr",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
     },
     {
       "id": "moonshotai/kimi-k2-thinking",
@@ -365,6 +506,49 @@
       ],
       "default": false,
       "releaseDate": "2025-11"
+    },
+    {
+      "id": "nvidia/llama-3_1-nemotron-safety-guard-8b-v3",
+      "name": "llama-3.1-nemotron-safety-guard-8b-v3",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-28"
+    },
+    {
+      "id": "mistralai/magistral-small-2506",
+      "name": "Magistral Small 2506",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "mistralai/mistral-medium-3-instruct",
+      "name": "Mistral Medium 3",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
     },
     {
       "id": "deepseek-ai/deepseek-v3.1-terminus",
@@ -398,20 +582,35 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "deepseek-ai/deepseek-v3.1",
-      "name": "DeepSeek V3.1",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
+      "id": "bytedance/seed-oss-36b-instruct",
+      "name": "ByteDance-Seed/Seed-OSS-36B-Instruct",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
+        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-08-20"
+      "releaseDate": "2025-09-04"
+    },
+    {
+      "id": "qwen/qwen-image-edit",
+      "name": "Qwen Image Edit",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-19"
     },
     {
       "id": "nvidia/nvidia-nemotron-nano-9b-v2",
@@ -430,6 +629,53 @@
       "releaseDate": "2025-08-18"
     },
     {
+      "id": "black-forest-labs/flux_1-kontext-dev",
+      "name": "FLUX.1-Kontext-dev",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-12"
+    },
+    {
+      "id": "qwen/qwen-image",
+      "name": "Qwen Image",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
       "id": "openai/gpt-oss-120b",
       "name": "GPT-OSS-120B",
       "contextWindow": 128000,
@@ -445,6 +691,65 @@
       "releaseDate": "2025-08-04"
     },
     {
+      "id": "microsoft/phi-4-multimodal-instruct",
+      "name": "Phi 4 Multimodal",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-26"
+    },
+    {
+      "id": "nvidia/llama-3_3-nemotron-super-49b-v1_5",
+      "name": "Llama 3.3 Nemotron Super 49B v1.5",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "sarvamai/sarvam-m",
+      "name": "sarvam-m",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-25"
+    },
+    {
+      "id": "nvidia/llama-3_2-nemoretriever-300m-embed-v1",
+      "name": "llama-3_2-nemoretriever-300m-embed-v1",
+      "contextWindow": 32768,
+      "maxOutput": 2048,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-24"
+    },
+    {
       "id": "qwen/qwen3-coder-480b-a35b-instruct",
       "name": "Qwen3 Coder 480B A35B Instruct",
       "contextWindow": 262144,
@@ -458,6 +763,21 @@
       ],
       "default": false,
       "releaseDate": "2025-07-23"
+    },
+    {
+      "id": "nvidia/cosmos-transfer1-7b",
+      "name": "cosmos-transfer1-7b",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-13"
     },
     {
       "id": "google/gemma-3n-e2b-it",
@@ -477,6 +797,21 @@
       "releaseDate": "2025-06-12"
     },
     {
+      "id": "mistralai/mistral-nemotron",
+      "name": "mistral-nemotron",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-11"
+    },
+    {
       "id": "google/gemma-3n-e4b-it",
       "name": "Gemma 3n E4b It",
       "contextWindow": 128000,
@@ -494,38 +829,66 @@
       "releaseDate": "2025-06-03"
     },
     {
-      "id": "deepseek-ai/deepseek-r1-0528",
-      "name": "Deepseek R1 0528",
-      "contextWindow": 128000,
+      "id": "nvidia/magpie-tts-zeroshot",
+      "name": "magpie-tts-zeroshot",
+      "contextWindow": 0,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "nvidia/llama-3_3-nemotron-super-49b-v1",
+      "name": "Llama 3.3 Nemotron Super 49B v1",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-05-28"
+      "releaseDate": "2025-04-07"
     },
     {
-      "id": "meta/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17b 16e Instruct",
+      "id": "meta/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 16384,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "mistralai/mistral-7b-instruct-v03",
+      "name": "Mistral-7B-Instruct-v0.3",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-04-02"
+      "releaseDate": "2025-04-01"
     },
     {
       "id": "meta/llama-4-maverick-17b-128e-instruct",
@@ -545,8 +908,53 @@
       "releaseDate": "2025-04-01"
     },
     {
-      "id": "nvidia/llama-embed-nemotron-8b",
-      "name": "Llama Embed Nemotron 8B",
+      "id": "nvidia/sparsedrive",
+      "name": "sparsedrive",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-18"
+    },
+    {
+      "id": "nvidia/cosmos-predict1-5b",
+      "name": "cosmos-predict1-5b",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-18"
+    },
+    {
+      "id": "nvidia/bevformer",
+      "name": "bevformer",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-18"
+    },
+    {
+      "id": "nvidia/nv-embedcode-7b-v1",
+      "name": "nv-embedcode-7b-v1",
       "contextWindow": 32768,
       "maxOutput": 2048,
       "inputPrice": 0,
@@ -556,114 +964,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-03-18"
-    },
-    {
-      "id": "nvidia/llama-3.3-nemotron-super-49b-v1",
-      "name": "Llama 3.3 Nemotron Super 49b V1",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-16"
-    },
-    {
-      "id": "nvidia/llama-3.3-nemotron-super-49b-v1.5",
-      "name": "Llama 3.3 Nemotron Super 49b V1.5",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-16"
-    },
-    {
-      "id": "mistralai/mistral-small-3.1-24b-instruct-2503",
-      "name": "Mistral Small 3.1 24b Instruct 2503",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-11"
-    },
-    {
-      "id": "google/gemma-3-1b-it",
-      "name": "Gemma 3 1b It",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-10"
-    },
-    {
-      "id": "qwen/qwq-32b",
-      "name": "Qwq 32b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-05"
-    },
-    {
-      "id": "google/gemma-3-12b-it",
-      "name": "Gemma 3 12b It",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-01"
-    },
-    {
-      "id": "deepseek-ai/deepseek-r1",
-      "name": "Deepseek R1",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
+      "releaseDate": "2025-03-17"
     },
     {
       "id": "moonshotai/kimi-k2-instruct",
@@ -682,38 +983,19 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "microsoft/phi-4-mini-instruct",
-      "name": "Phi-4-Mini",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "qwen/qwen3-235b-a22b",
-      "name": "Qwen3-235B-A22B",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
+      "id": "meta/llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 16000,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-12-01"
+      "releaseDate": "2025-01-01"
     },
     {
       "id": "qwen/qwen3-next-80b-a3b-thinking",
@@ -756,6 +1038,24 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "microsoft/phi-4-mini-instruct",
+      "name": "Phi-4-Mini",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
         "function_calling",
         "reasoning",
         "streaming"
@@ -812,24 +1112,38 @@
       "releaseDate": "2024-11-06"
     },
     {
-      "id": "nvidia/llama-3.1-nemotron-70b-instruct",
-      "name": "Llama 3.1 Nemotron 70b Instruct",
+      "id": "nvidia/studiovoice",
+      "name": "studiovoice",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-10-12"
+      "releaseDate": "2024-10-03"
     },
     {
-      "id": "nvidia/llama-3.1-nemotron-51b-instruct",
-      "name": "Llama 3.1 Nemotron 51b Instruct",
+      "id": "meta/llama-3.2-90b-vision-instruct",
+      "name": "Llama-3.2-90B-Vision-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1b Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -841,7 +1155,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-09-22"
+      "releaseDate": "2024-09-18"
     },
     {
       "id": "meta/llama-3.2-11b-vision-instruct",
@@ -861,15 +1175,14 @@
       "releaseDate": "2024-09-18"
     },
     {
-      "id": "meta/llama-3.2-1b-instruct",
-      "name": "Llama 3.2 1b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
+      "id": "meta/llama-3.2-3b-instruct",
+      "name": "Llama 3.2 3B Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 32000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
         "json_mode",
         "streaming"
       ],
@@ -877,53 +1190,62 @@
       "releaseDate": "2024-09-18"
     },
     {
-      "id": "qwen/qwen2.5-coder-7b-instruct",
-      "name": "Qwen2.5 Coder 7b Instruct",
+      "id": "abacusai/dracarys-llama-3_1-70b-instruct",
+      "name": "dracarys-llama-3.1-70b-instruct",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-09-17"
+      "releaseDate": "2024-09-11"
     },
     {
-      "id": "microsoft/phi-3.5-moe-instruct",
-      "name": "Phi 3.5 Moe Instruct",
+      "id": "meta/esm2-650m",
+      "name": "esm2-650m",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-08-17"
+      "releaseDate": "2024-08-29"
     },
     {
-      "id": "microsoft/phi-3.5-vision-instruct",
-      "name": "Phi 3.5 Vision Instruct",
+      "id": "nvidia/nemotron-mini-4b-instruct",
+      "name": "nemotron-mini-4b-instruct",
       "contextWindow": 128000,
-      "maxOutput": 4096,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-08-16"
+      "releaseDate": "2024-08-21"
+    },
+    {
+      "id": "black-forest-labs/flux_1-schnell",
+      "name": "FLUX.1-schnell",
+      "contextWindow": 77,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-08-01"
     },
     {
       "id": "black-forest-labs/flux.1-dev",
@@ -940,8 +1262,22 @@
       "releaseDate": "2024-08-01"
     },
     {
-      "id": "mistralai/mistral-large-2-instruct",
-      "name": "Mistral Large 2 Instruct",
+      "id": "nvidia/usdvalidate",
+      "name": "usdvalidate",
+      "contextWindow": 0,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-24"
+    },
+    {
+      "id": "google/gemma-2-2b-it",
+      "name": "Gemma 2 2b It",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -950,20 +1286,6 @@
         "chat",
         "function_calling",
         "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-24"
-    },
-    {
-      "id": "mistralai/mamba-codestral-7b-v0.1",
-      "name": "Mamba Codestral 7b V0.1",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,
@@ -986,337 +1308,120 @@
       "releaseDate": "2024-07-16"
     },
     {
-      "id": "meta/llama-3.1-405b-instruct",
-      "name": "Llama 3.1 405b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
+      "id": "nvidia/nv-embed-v1",
+      "name": "nv-embed-v1",
+      "contextWindow": 32768,
+      "maxOutput": 2048,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-16"
+      "releaseDate": "2024-06-07"
     },
     {
-      "id": "google/gemma-2-2b-it",
-      "name": "Gemma 2 2b It",
+      "id": "upstage/solar-10_7b-instruct",
+      "name": "solar-10.7b-instruct",
       "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-16"
-    },
-    {
-      "id": "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-      "name": "Llama-3.1-Nemotron-Ultra-253B-v1",
-      "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-01"
+      "releaseDate": "2024-06-05"
     },
     {
-      "id": "google/gemma-2-27b-it",
-      "name": "Gemma 2 27b It",
+      "id": "google/google-paligemma",
+      "name": "paligemma",
       "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-06-24"
-    },
-    {
-      "id": "nvidia/nemotron-4-340b-instruct",
-      "name": "Nemotron 4 340b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-06-13"
-    },
-    {
-      "id": "mistralai/codestral-22b-instruct-v0.1",
-      "name": "Codestral 22b Instruct V0.1",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-29"
-    },
-    {
-      "id": "microsoft/phi-3-vision-128k-instruct",
-      "name": "Phi 3 Vision 128k Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-19"
-    },
-    {
-      "id": "microsoft/phi-3-medium-4k-instruct",
-      "name": "Phi 3 Medium 4k Instruct",
-      "contextWindow": 4000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-07"
-    },
-    {
-      "id": "microsoft/phi-3-small-8k-instruct",
-      "name": "Phi 3 Small 8k Instruct",
-      "contextWindow": 8000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-07"
-    },
-    {
-      "id": "microsoft/phi-3-small-128k-instruct",
-      "name": "Phi 3 Small 128k Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-07"
-    },
-    {
-      "id": "microsoft/phi-3-medium-128k-instruct",
-      "name": "Phi 3 Medium 128k Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-07"
-    },
-    {
-      "id": "google/codegemma-1.1-7b",
-      "name": "Codegemma 1.1 7b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-30"
-    },
-    {
-      "id": "nvidia/llama3-chatqa-1.5-70b",
-      "name": "Llama3 Chatqa 1.5 70b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-28"
-    },
-    {
-      "id": "meta/llama3-8b-instruct",
-      "name": "Llama3 8b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-17"
-    },
-    {
-      "id": "meta/llama3-70b-instruct",
-      "name": "Llama3 70b Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-17"
-    },
-    {
-      "id": "google/codegemma-7b",
-      "name": "Codegemma 7b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-03-21"
-    },
-    {
-      "id": "meta/codellama-70b",
-      "name": "Codellama 70b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-29"
-    },
-    {
-      "id": "nvidia/parakeet-tdt-0.6b-v2",
-      "name": "Parakeet TDT 0.6B v2",
-      "contextWindow": 0,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "audio",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-01-01"
-    },
-    {
-      "id": "nvidia/cosmos-nemotron-34b",
-      "name": "Cosmos Nemotron 34B",
-      "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-01-01"
+      "releaseDate": "2024-05-14"
     },
     {
-      "id": "nvidia/nemoretriever-ocr-v1",
-      "name": "NeMo Retriever OCR v1",
-      "contextWindow": 0,
-      "maxOutput": 4096,
+      "id": "mistralai/mixtral-8x22b-instruct",
+      "name": "Mistral: Mixtral 8x22B Instruct",
+      "contextWindow": 65536,
+      "maxOutput": 13108,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-01-01"
+      "releaseDate": "2024-04-17"
     },
     {
-      "id": "deepseek-ai/deepseek-coder-6.7b-instruct",
-      "name": "Deepseek Coder 6.7b Instruct",
+      "id": "nvidia/rerank-qa-mistral-4b",
+      "name": "rerank-qa-mistral-4b",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2023-10-29"
+      "releaseDate": "2024-03-17"
+    },
+    {
+      "id": "meta/esmfold",
+      "name": "esmfold",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-03-15"
+    },
+    {
+      "id": "baai/bge-m3",
+      "name": "BGE M3",
+      "contextWindow": 8192,
+      "maxOutput": 1024,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-30"
+    },
+    {
+      "id": "mistralai/mixtral-8x7b-instruct",
+      "name": "Mistral: Mixtral 8x7B Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-12-10"
     },
     {
       "id": "openai/whisper-large-v3",

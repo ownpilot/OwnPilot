@@ -31,8 +31,8 @@
       "releaseDate": "2026-05-07"
     },
     {
-      "id": "gemma-4-31b-it",
-      "name": "Gemma 4 31B",
+      "id": "gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B",
       "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -49,8 +49,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "gemma-4-26b-a4b-it",
-      "name": "Gemma 4 26B",
+      "id": "gemma-4-31b-it",
+      "name": "Gemma 4 31B",
       "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -90,7 +90,7 @@
       "name": "Gemini 3.1 Flash Image (Preview)",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.25,
+      "inputPrice": 0.5,
       "outputPrice": 60,
       "capabilities": [
         "chat",
@@ -178,44 +178,6 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "gemini-2.5-flash-lite-preview-09-2025",
-      "name": "Gemini 2.5 Flash Lite Preview 09-25",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
       "id": "gemini-flash-latest",
       "name": "Gemini Flash Latest",
       "contextWindow": 1048576,
@@ -254,6 +216,44 @@
       "releaseDate": "2025-09-25"
     },
     {
+      "id": "gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-25"
+    },
+    {
       "id": "gemini-live-2.5-flash",
       "name": "Gemini Live 2.5 Flash",
       "contextWindow": 128000,
@@ -272,8 +272,8 @@
       "releaseDate": "2025-09-01"
     },
     {
-      "id": "gemini-2.5-flash-image",
-      "name": "Gemini 2.5 Flash Image",
+      "id": "gemini-2.5-flash-image-preview",
+      "name": "Gemini 2.5 Flash Image (Preview)",
       "contextWindow": 32768,
       "maxOutput": 32768,
       "inputPrice": 0.3,
@@ -288,8 +288,8 @@
       "releaseDate": "2025-08-26"
     },
     {
-      "id": "gemini-2.5-flash-image-preview",
-      "name": "Gemini 2.5 Flash Image (Preview)",
+      "id": "gemini-2.5-flash-image",
+      "name": "Gemini 2.5 Flash Image",
       "contextWindow": 32768,
       "maxOutput": 32768,
       "inputPrice": 0.3,
@@ -336,24 +336,6 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "gemini-2.5-flash-lite-preview-06-17",
-      "name": "Gemini 2.5 Flash Lite Preview 06-17",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-06-17"
-    },
-    {
       "id": "gemini-2.5-flash-lite",
       "name": "Gemini 2.5 Flash Lite",
       "contextWindow": 1048576,
@@ -366,6 +348,24 @@
         "audio",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-17"
+    },
+    {
+      "id": "gemini-2.5-flash-lite-preview-06-17",
+      "name": "Gemini 2.5 Flash Lite Preview 06-17",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -392,20 +392,6 @@
       "releaseDate": "2025-06-05"
     },
     {
-      "id": "gemma-3n-e4b-it",
-      "name": "Gemma 3n 4B",
-      "contextWindow": 8192,
-      "maxOutput": 2000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-20"
-    },
-    {
       "id": "gemini-2.5-flash-preview-05-20",
       "name": "Gemini 2.5 Flash Preview 05-20",
       "contextWindow": 1048576,
@@ -419,6 +405,20 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "gemma-3n-e4b-it",
+      "name": "Gemma 3n 4B",
+      "contextWindow": 8192,
+      "maxOutput": 2000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -458,12 +458,12 @@
       "releaseDate": "2025-05-06"
     },
     {
-      "id": "gemini-2.5-flash-preview-tts",
-      "name": "Gemini 2.5 Flash Preview TTS",
+      "id": "gemini-2.5-pro-preview-tts",
+      "name": "Gemini 2.5 Pro Preview TTS",
       "contextWindow": 8000,
       "maxOutput": 16000,
-      "inputPrice": 0.5,
-      "outputPrice": 10,
+      "inputPrice": 1,
+      "outputPrice": 20,
       "capabilities": [
         "chat",
         "streaming"
@@ -472,12 +472,12 @@
       "releaseDate": "2025-05-01"
     },
     {
-      "id": "gemini-2.5-pro-preview-tts",
-      "name": "Gemini 2.5 Pro Preview TTS",
+      "id": "gemini-2.5-flash-preview-tts",
+      "name": "Gemini 2.5 Flash Preview TTS",
       "contextWindow": 8000,
       "maxOutput": 16000,
-      "inputPrice": 1,
-      "outputPrice": 20,
+      "inputPrice": 0.5,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "streaming"
@@ -590,12 +590,12 @@
       "releaseDate": "2025-03-12"
     },
     {
-      "id": "gemini-2.0-flash",
-      "name": "Gemini 2.0 Flash",
+      "id": "gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash Lite",
       "contextWindow": 1048576,
       "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "vision",
@@ -608,12 +608,12 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "gemini-2.0-flash-lite",
-      "name": "Gemini 2.0 Flash Lite",
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
       "contextWindow": 1048576,
       "maxOutput": 8192,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",

@@ -34,8 +34,8 @@
       "name": "Qwen3.6 Plus",
       "contextWindow": 991000,
       "maxOutput": 64000,
-      "inputPrice": 0.282,
-      "outputPrice": 1.692,
+      "inputPrice": 0.28,
+      "outputPrice": 1.69,
       "capabilities": [
         "chat",
         "vision",
@@ -52,8 +52,8 @@
       "name": "Qwen3.6 Max Preview",
       "contextWindow": 240000,
       "maxOutput": 64000,
-      "inputPrice": 1.268,
-      "outputPrice": 7.608,
+      "inputPrice": 1.27,
+      "outputPrice": 7.61,
       "capabilities": [
         "chat",
         "function_calling",
@@ -63,6 +63,25 @@
       ],
       "default": false,
       "releaseDate": "2026-05-09"
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "name": "Gemini 3.1 Flash Lite",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-07"
     },
     {
       "id": "grok-4.3",
@@ -83,46 +102,99 @@
       "releaseDate": "2026-05-01"
     },
     {
-      "id": "deepseek-v4-flash-think",
-      "name": "DeepSeek V4 Flash Think",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 0.154,
-      "outputPrice": 0.308,
+      "id": "doubao-seed-2-0-lite-260428",
+      "name": "Doubao Seed 2.0 Lite 260428",
+      "contextWindow": 256000,
+      "maxOutput": 128000,
+      "inputPrice": 0.08,
+      "outputPrice": 0.51,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-24"
+      "releaseDate": "2026-04-28"
     },
     {
-      "id": "deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 0.154,
-      "outputPrice": 0.308,
+      "id": "doubao-seed-2-0-mini-260428",
+      "name": "Doubao Seed 2.0 Mini 260428",
+      "contextWindow": 256000,
+      "maxOutput": 128000,
+      "inputPrice": 0.03,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-24"
+      "releaseDate": "2026-04-28"
     },
     {
-      "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deep-deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro (DeepSeek)",
       "contextWindow": 1000000,
       "maxOutput": 384000,
       "inputPrice": 0.478,
       "outputPrice": 0.956,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deep-deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash (DeepSeek)",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.154,
+      "outputPrice": 0.308,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "alicloud-deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash (Alibaba Cloud)",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "alicloud-deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro (Alibaba Cloud)",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 1.69,
+      "outputPrice": 3.38,
       "capabilities": [
         "chat",
         "function_calling",
@@ -152,12 +224,114 @@
       "releaseDate": "2026-04-23"
     },
     {
+      "id": "xiaomi-mimo-v2.5-pro-free",
+      "name": "Xiaomi MiMo-V2.5-Pro (free)",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "coding-xiaomi-mimo-v2.5",
+      "name": "Coding Xiaomi MiMo-V2.5",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.08,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "xiaomi-mimo-v2.5",
+      "name": "Xiaomi MiMo-V2.5",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.44,
+      "outputPrice": 2.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "xiaomi-mimo-v2.5-pro",
+      "name": "Xiaomi MiMo-V2.5-Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.1,
+      "outputPrice": 3.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "xiaomi-mimo-v2.5-free",
+      "name": "Xiaomi MiMo-V2.5 (free)",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "coding-xiaomi-mimo-v2.5-pro",
+      "name": "Coding Xiaomi MiMo-V2.5-Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
-      "maxOutput": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.95,
-      "outputPrice": 3.9995,
+      "outputPrice": 4,
       "capabilities": [
         "chat",
         "vision",
@@ -170,27 +344,10 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "claude-opus-4-7",
-      "name": "Claude Opus 4.7",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-16"
-    },
-    {
       "id": "claude-opus-4-7-think",
       "name": "Claude Opus 4.7 Thinking",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
       "capabilities": [
@@ -205,9 +362,44 @@
       "releaseDate": "2026-04-16"
     },
     {
+      "id": "claude-opus-4-7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "coding-glm-5.1",
+      "name": "Coding GLM 5.1",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
+      "inputPrice": 0.06,
+      "outputPrice": 0.22,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-11"
+    },
+    {
       "id": "coding-glm-5.1-free",
       "name": "Coding GLM 5.1 (free)",
-      "contextWindow": 204800,
+      "contextWindow": 200000,
       "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -222,28 +414,12 @@
       "releaseDate": "2026-04-11"
     },
     {
-      "id": "coding-glm-5.1",
-      "name": "Coding-GLM-5.1",
-      "contextWindow": 200000,
-      "maxOutput": 128000,
-      "inputPrice": 0.06,
-      "outputPrice": 0.22,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-11"
-    },
-    {
       "id": "qwen3.6-flash",
       "name": "Qwen3.6 Flash",
       "contextWindow": 991000,
       "maxOutput": 64000,
-      "inputPrice": 0.169,
-      "outputPrice": 1.014,
+      "inputPrice": 0.17,
+      "outputPrice": 1.01,
       "capabilities": [
         "chat",
         "vision",
@@ -256,8 +432,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "glm-5.1",
-      "name": "GLM-5.1",
+      "id": "zai-glm-5.1",
+      "name": "GLM-5.1 (Z.ai)",
       "contextWindow": 200000,
       "maxOutput": 128000,
       "inputPrice": 0.845,
@@ -273,15 +449,50 @@
       "releaseDate": "2026-03-27"
     },
     {
-      "id": "minimax-m2.7",
-      "name": "MiniMax-M2.7",
+      "id": "alicloud-glm-5.1",
+      "name": "GLM-5.1 (Alibaba Cloud)",
       "contextWindow": 200000,
       "maxOutput": 128000,
-      "inputPrice": 0.2958,
-      "outputPrice": 1.1832,
+      "inputPrice": 0.84,
+      "outputPrice": 3.38,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-27"
+    },
+    {
+      "id": "coding-minimax-m2.7",
+      "name": "Coding MiniMax M2.7",
+      "contextWindow": 204800,
+      "maxOutput": 128100,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "minimax-m2.7",
+      "name": "MiniMax M2.7",
+      "contextWindow": 204800,
+      "maxOutput": 128000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -292,7 +503,7 @@
       "id": "coding-minimax-m2.7-highspeed",
       "name": "Coding MiniMax M2.7 Highspeed",
       "contextWindow": 204800,
-      "maxOutput": 13100,
+      "maxOutput": 128100,
       "inputPrice": 0.2,
       "outputPrice": 0.2,
       "capabilities": [
@@ -307,27 +518,11 @@
     },
     {
       "id": "coding-minimax-m2.7-free",
-      "name": "Coding-MiniMax-M2.7-Free",
+      "name": "Coding MiniMax M2.7 (Free)",
       "contextWindow": 204800,
-      "maxOutput": 13100,
+      "maxOutput": 128100,
       "inputPrice": 0,
       "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-18"
-    },
-    {
-      "id": "coding-minimax-m2.7",
-      "name": "Coding MiniMax M2.7",
-      "contextWindow": 204800,
-      "maxOutput": 13100,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -340,7 +535,7 @@
     },
     {
       "id": "gpt-5.4-mini",
-      "name": "GPT-5.4-Mini",
+      "name": "GPT-5.4 mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0.75,
@@ -350,15 +545,16 @@
         "vision",
         "function_calling",
         "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-11"
+      "releaseDate": "2026-03-17"
     },
     {
       "id": "gpt-5.4",
       "name": "GPT-5.4",
-      "contextWindow": 400000,
+      "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 2.5,
       "outputPrice": 15,
@@ -371,26 +567,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-11"
-    },
-    {
-      "id": "gemini-3.1-flash-lite",
-      "name": "Gemini 3.1 Flash Lite",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.25,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-03"
+      "releaseDate": "2026-03-05"
     },
     {
       "id": "gemini-3.1-pro-preview-customtools",
@@ -431,9 +608,9 @@
       "releaseDate": "2026-02-19"
     },
     {
-      "id": "claude-sonnet-4-6",
-      "name": "Claude Sonnet 4.6",
-      "contextWindow": 200000,
+      "id": "claude-sonnet-4-6-think",
+      "name": "Claude Sonnet 4.6 Thinking",
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -441,6 +618,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -448,9 +626,9 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "claude-sonnet-4-6-think",
-      "name": "Claude Sonnet 4.6 Think",
-      "contextWindow": 200000,
+      "id": "claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 1000000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -458,11 +636,66 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "doubao-seed-2-0-code-preview",
+      "name": "Doubao Seed 2.0 Code Preview",
+      "contextWindow": 256000,
+      "maxOutput": 128000,
+      "inputPrice": 0.48,
+      "outputPrice": 2.41,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-14"
+    },
+    {
+      "id": "doubao-seed-2-0-pro",
+      "name": "Doubao Seed 2.0 Pro",
+      "contextWindow": 256000,
+      "maxOutput": 128000,
+      "inputPrice": 0.48,
+      "outputPrice": 2.41,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-14"
+    },
+    {
+      "id": "claude-opus-4-6-think",
+      "name": "Claude Opus 4.6 Thinking",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
     },
     {
       "id": "gpt-5.3-codex",
@@ -483,23 +716,6 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "claude-opus-4-6-think",
-      "name": "Claude Opus 4.6",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
       "id": "claude-opus-4-6",
       "name": "Claude Opus 4.6",
       "contextWindow": 1000000,
@@ -510,6 +726,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -517,28 +734,10 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "gpt-5.2-codex",
-      "name": "GPT-5.2-Codex",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-14"
-    },
-    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
-      "contextWindow": 256000,
-      "maxOutput": 0,
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.6,
       "outputPrice": 3,
       "capabilities": [
@@ -582,6 +781,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -589,21 +789,22 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "gpt-5.1",
-      "name": "GPT-5.1",
+      "id": "gpt-5.2-codex",
+      "name": "GPT-5.2 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-11-15"
+      "releaseDate": "2025-12-11"
     },
     {
       "id": "gpt-5.1-codex-mini",
@@ -612,6 +813,24 @@
       "maxOutput": 128000,
       "inputPrice": 0.25,
       "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
+    },
+    {
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -642,56 +861,6 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "o4-mini",
-      "name": "o4-mini",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 1.1,
-      "outputPrice": 4.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-16"
-    },
-    {
-      "id": "gpt-4.1",
-      "name": "GPT-4.1",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
-      "id": "gpt-4.1-mini",
-      "name": "GPT-4.1 mini",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gemini-2.5-pro",
       "name": "Gemini 2.5 Pro",
       "contextWindow": 1048576,
@@ -716,7 +885,7 @@
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.3,
-      "outputPrice": 2.499,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",

@@ -82,6 +82,21 @@
       "releaseDate": "2026-03-16"
     },
     {
+      "id": "devstral-2512",
+      "name": "Devstral 2",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
       "id": "labs-devstral-small-2512",
       "name": "Devstral Small 2",
       "contextWindow": 256000,
@@ -91,21 +106,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-09"
-    },
-    {
-      "id": "devstral-2512",
-      "name": "Devstral 2",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
         "function_calling",
         "streaming"
       ],
@@ -269,22 +269,6 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "pixtral-large-latest",
-      "name": "Pixtral Large (latest)",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 2,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-01"
-    },
-    {
       "id": "mistral-large-2411",
       "name": "Mistral Large 2.1",
       "contextWindow": 131072,
@@ -316,12 +300,28 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "ministral-8b-latest",
-      "name": "Ministral 8B (latest)",
+      "id": "pixtral-large-latest",
+      "name": "Pixtral Large (latest)",
       "contextWindow": 128000,
       "maxOutput": 128000,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "ministral-3b-latest",
+      "name": "Ministral 3B (latest)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
         "function_calling",
@@ -331,12 +331,12 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "ministral-3b-latest",
-      "name": "Ministral 3B (latest)",
+      "id": "ministral-8b-latest",
+      "name": "Ministral 8B (latest)",
       "contextWindow": 128000,
       "maxOutput": 128000,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
         "function_calling",
@@ -407,6 +407,20 @@
       "releaseDate": "2024-04-17"
     },
     {
+      "id": "mistral-embed",
+      "name": "Mistral Embed",
+      "contextWindow": 8000,
+      "maxOutput": 3072,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-12-11"
+    },
+    {
       "id": "open-mixtral-8x7b",
       "name": "Mixtral 8x7B",
       "contextWindow": 32000,
@@ -416,20 +430,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-12-11"
-    },
-    {
-      "id": "mistral-embed",
-      "name": "Mistral Embed",
-      "contextWindow": 8000,
-      "maxOutput": 3072,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,

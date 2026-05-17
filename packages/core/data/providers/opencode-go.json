@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 384000,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
       "capabilities": [
         "chat",
         "function_calling",
@@ -29,12 +29,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
       "maxOutput": 384000,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",
@@ -130,22 +130,6 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "minimax-m2.7",
-      "name": "MiniMax M2.7",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-18"
-    },
-    {
       "id": "mimo-v2-omni",
       "name": "MiMo V2 Omni",
       "contextWindow": 262144,
@@ -156,6 +140,22 @@
         "chat",
         "vision",
         "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "minimax-m2.7",
+      "name": "MiniMax M2.7",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"

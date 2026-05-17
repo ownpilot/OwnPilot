@@ -1,0 +1,34 @@
+{
+  "id": "xpersona",
+  "name": "Xpersona",
+  "type": "openai-compatible",
+  "apiKeyEnv": "XPERSONA_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "xpersona-frieren-coder",
+      "name": "Xpersona Frieren Coder",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.5,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-01"
+    }
+  ],
+  "baseUrl": "https://www.xpersona.co/v1",
+  "docsUrl": "https://www.xpersona.co/docs"
+}

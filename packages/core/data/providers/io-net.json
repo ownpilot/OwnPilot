@@ -180,16 +180,16 @@
       "releaseDate": "2024-11-15"
     },
     {
-      "id": "Qwen/Qwen2.5-VL-32B-Instruct",
-      "name": "Qwen 2.5 VL 32B Instruct",
-      "contextWindow": 32000,
+      "id": "moonshotai/Kimi-K2-Thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 32768,
       "maxOutput": 4096,
-      "inputPrice": 0.05,
-      "outputPrice": 0.22,
+      "inputPrice": 0.55,
+      "outputPrice": 2.25,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -212,16 +212,16 @@
       "releaseDate": "2024-11-01"
     },
     {
-      "id": "moonshotai/Kimi-K2-Thinking",
-      "name": "Kimi K2 Thinking",
-      "contextWindow": 32768,
+      "id": "Qwen/Qwen2.5-VL-32B-Instruct",
+      "name": "Qwen 2.5 VL 32B Instruct",
+      "contextWindow": 32000,
       "maxOutput": 4096,
-      "inputPrice": 0.55,
-      "outputPrice": 2.25,
+      "inputPrice": 0.05,
+      "outputPrice": 0.22,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

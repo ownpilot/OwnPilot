@@ -79,12 +79,12 @@
       "releaseDate": "2025-07-29"
     },
     {
-      "id": "meta-llama/Llama-3.3-70B-Instruct",
-      "name": "Llama 3.3 70B Instruct",
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B Instruct",
       "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.6,
-      "outputPrice": 0.6,
+      "maxOutput": 8000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
         "function_calling",
@@ -95,12 +95,12 @@
       "releaseDate": "2024-08-01"
     },
     {
-      "id": "meta-llama/Llama-3.1-8B-Instruct",
-      "name": "Llama 3.1 8B Instruct",
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "name": "Llama 3.3 70B Instruct",
       "contextWindow": 131072,
-      "maxOutput": 8000,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
+      "maxOutput": 131072,
+      "inputPrice": 0.6,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",

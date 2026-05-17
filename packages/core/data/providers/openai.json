@@ -12,24 +12,6 @@
   },
   "models": [
     {
-      "id": "gpt-5.5",
-      "name": "GPT-5.5",
-      "contextWindow": 1050000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 30,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-04-23"
-    },
-    {
       "id": "gpt-5.5-pro",
       "name": "GPT-5.5 Pro",
       "contextWindow": 1050000,
@@ -44,16 +26,16 @@
         "reasoning",
         "streaming"
       ],
-      "default": false,
+      "default": true,
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 mini",
-      "contextWindow": 400000,
+      "id": "gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
       "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "inputPrice": 5,
+      "outputPrice": 30,
       "capabilities": [
         "chat",
         "vision",
@@ -63,7 +45,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-17"
+      "releaseDate": "2026-04-23"
     },
     {
       "id": "gpt-5.4-nano",
@@ -84,21 +66,22 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-pro",
-      "name": "GPT-5.4 Pro",
-      "contextWindow": 1050000,
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 mini",
+      "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 30,
-      "outputPrice": 180,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-05"
+      "releaseDate": "2026-03-17"
     },
     {
       "id": "gpt-5.4",
@@ -112,6 +95,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "name": "GPT-5.4 Pro",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 30,
+      "outputPrice": 180,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -136,10 +136,10 @@
       "releaseDate": "2026-03-03"
     },
     {
-      "id": "gpt-5.3-codex",
-      "name": "GPT-5.3 Codex",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
+      "id": "gpt-5.3-codex-spark",
+      "name": "GPT-5.3 Codex Spark",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -154,10 +154,10 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "gpt-5.3-codex-spark",
-      "name": "GPT-5.3 Codex Spark",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
+      "id": "gpt-5.3-codex",
+      "name": "GPT-5.3 Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -187,6 +187,24 @@
       "releaseDate": "2025-12-16"
     },
     {
+      "id": "gpt-5.2",
+      "name": "GPT-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-11"
+    },
+    {
       "id": "gpt-5.2-pro",
       "name": "GPT-5.2 Pro",
       "contextWindow": 400000,
@@ -204,10 +222,10 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "gpt-5.2",
-      "name": "GPT-5.2",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
+      "id": "gpt-5.2-chat-latest",
+      "name": "GPT-5.2 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -240,24 +258,6 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "gpt-5.2-chat-latest",
-      "name": "GPT-5.2 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-11"
-    },
-    {
       "id": "gpt-image-1.5",
       "name": "gpt-image-1.5",
       "contextWindow": 0,
@@ -273,12 +273,12 @@
       "releaseDate": "2025-11-25"
     },
     {
-      "id": "gpt-5.1-codex-max",
-      "name": "GPT-5.1 Codex Max",
+      "id": "gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -291,12 +291,12 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex-mini",
-      "name": "GPT-5.1 Codex mini",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "id": "gpt-5.1-chat-latest",
+      "name": "GPT-5.1 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -327,10 +327,10 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-chat-latest",
-      "name": "GPT-5.1 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
+      "id": "gpt-5.1-codex-max",
+      "name": "GPT-5.1 Codex Max",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 1.25,
       "outputPrice": 10,
       "capabilities": [
@@ -414,16 +414,15 @@
       "releaseDate": "2025-09-15"
     },
     {
-      "id": "gpt-5-mini",
-      "name": "GPT-5 Mini",
+      "id": "gpt-5-chat-latest",
+      "name": "GPT-5 Chat (latest)",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
@@ -450,12 +449,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5",
-      "name": "GPT-5",
+      "id": "gpt-5-mini",
+      "name": "GPT-5 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -468,8 +467,8 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-chat-latest",
-      "name": "GPT-5 Chat (latest)",
+      "id": "gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -477,6 +476,7 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
@@ -554,23 +554,6 @@
       "releaseDate": "2025-04-16"
     },
     {
-      "id": "gpt-4.1-nano",
-      "name": "GPT-4.1 nano",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gpt-4.1",
       "name": "GPT-4.1",
       "contextWindow": 1047576,
@@ -594,6 +577,23 @@
       "maxOutput": 32768,
       "inputPrice": 0.4,
       "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -675,6 +675,21 @@
       "releaseDate": "2024-11-20"
     },
     {
+      "id": "o1-preview",
+      "name": "o1-preview",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 15,
+      "outputPrice": 60,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-12"
+    },
+    {
       "id": "o1-mini",
       "name": "o1-mini",
       "contextWindow": 128000,
@@ -684,21 +699,6 @@
       "capabilities": [
         "chat",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-12"
-    },
-    {
-      "id": "o1-preview",
-      "name": "o1-preview",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 15,
-      "outputPrice": 60,
-      "capabilities": [
-        "chat",
         "reasoning",
         "streaming"
       ],
@@ -774,12 +774,12 @@
       "releaseDate": "2024-06-26"
     },
     {
-      "id": "gpt-4o-2024-05-13",
-      "name": "GPT-4o (2024-05-13)",
+      "id": "gpt-4o",
+      "name": "GPT-4o",
       "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 5,
-      "outputPrice": 15,
+      "maxOutput": 16384,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -791,12 +791,12 @@
       "releaseDate": "2024-05-13"
     },
     {
-      "id": "gpt-4o",
-      "name": "GPT-4o",
+      "id": "gpt-4o-2024-05-13",
+      "name": "GPT-4o (2024-05-13)",
       "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 2.5,
-      "outputPrice": 10,
+      "maxOutput": 4096,
+      "inputPrice": 5,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",

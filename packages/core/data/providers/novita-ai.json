@@ -12,17 +12,16 @@
   },
   "models": [
     {
-      "id": "deepseek/deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
-      "contextWindow": 1048576,
-      "maxOutput": 393216,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
+      "id": "inclusionai/ling-2.6-flash",
+      "name": "Ling-2.6-flash",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": true,
@@ -35,6 +34,23 @@
       "maxOutput": 393216,
       "inputPrice": 1.69,
       "outputPrice": 3.38,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 393216,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "function_calling",
@@ -80,12 +96,12 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "qwen/qwen3.6-27b",
-      "name": "Qwen3.6-27B",
+      "id": "google/gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B A4B",
       "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0.6,
-      "outputPrice": 3.6,
+      "maxOutput": 131072,
+      "inputPrice": 0.13,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -108,23 +124,7 @@
         "chat",
         "vision",
         "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-02"
-    },
-    {
-      "id": "google/gemma-4-26b-a4b-it",
-      "name": "Gemma 4 26B A4B",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.13,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -184,12 +184,12 @@
       "releaseDate": "2026-02-26"
     },
     {
-      "id": "qwen/qwen3.5-27b",
-      "name": "Qwen3.5-27B",
+      "id": "qwen/qwen3.5-35b-a3b",
+      "name": "Qwen3.5-35B-A3B",
       "contextWindow": 262144,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.4,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -202,12 +202,12 @@
       "releaseDate": "2026-02-26"
     },
     {
-      "id": "qwen/qwen3.5-35b-a3b",
-      "name": "Qwen3.5-35B-A3B",
+      "id": "qwen/qwen3.5-27b",
+      "name": "Qwen3.5-27B",
       "contextWindow": 262144,
       "maxOutput": 65536,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "inputPrice": 0.3,
+      "outputPrice": 2.4,
       "capabilities": [
         "chat",
         "vision",
@@ -305,21 +305,6 @@
       "releaseDate": "2026-02-03"
     },
     {
-      "id": "deepseek/deepseek-ocr-2",
-      "name": "deepseek/deepseek-ocr-2",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.03,
-      "outputPrice": 0.03,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-27"
-    },
-    {
       "id": "moonshotai/kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
@@ -332,6 +317,21 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "deepseek/deepseek-ocr-2",
+      "name": "deepseek/deepseek-ocr-2",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.03,
+      "outputPrice": 0.03,
+      "capabilities": [
+        "chat",
+        "vision",
         "streaming"
       ],
       "default": false,
@@ -670,16 +670,15 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "qwen/qwen3-omni-30b-a3b-instruct",
-      "name": "Qwen3 Omni 30B A3B Instruct",
-      "contextWindow": 65536,
-      "maxOutput": 16384,
-      "inputPrice": 0.25,
-      "outputPrice": 0.97,
+      "id": "qwen/qwen3-vl-235b-a22b-instruct",
+      "name": "Qwen3 VL 235B A22B Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 1.5,
       "capabilities": [
         "chat",
         "vision",
-        "audio",
         "function_calling",
         "json_mode",
         "streaming"
@@ -704,8 +703,8 @@
       "releaseDate": "2025-09-24"
     },
     {
-      "id": "qwen/qwen3-omni-30b-a3b-thinking",
-      "name": "Qwen3 Omni 30B A3B Thinking",
+      "id": "qwen/qwen3-omni-30b-a3b-instruct",
+      "name": "Qwen3 Omni 30B A3B Instruct",
       "contextWindow": 65536,
       "maxOutput": 16384,
       "inputPrice": 0.25,
@@ -716,7 +715,6 @@
         "audio",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -739,17 +737,19 @@
       "releaseDate": "2025-09-24"
     },
     {
-      "id": "qwen/qwen3-vl-235b-a22b-instruct",
-      "name": "Qwen3 VL 235B A22B Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0.3,
-      "outputPrice": 1.5,
+      "id": "qwen/qwen3-omni-30b-a3b-thinking",
+      "name": "Qwen3 Omni 30B A3B Thinking",
+      "contextWindow": 65536,
+      "maxOutput": 16384,
+      "inputPrice": 0.25,
+      "outputPrice": 0.97,
       "capabilities": [
         "chat",
         "vision",
+        "audio",
         "function_calling",
         "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -1140,11 +1140,11 @@
       "releaseDate": "2025-04-30"
     },
     {
-      "id": "qwen/qwen3-32b-fp8",
-      "name": "Qwen3 32B",
+      "id": "qwen/qwen3-30b-a3b-fp8",
+      "name": "Qwen3 30B A3B",
       "contextWindow": 40960,
       "maxOutput": 20000,
-      "inputPrice": 0.1,
+      "inputPrice": 0.09,
       "outputPrice": 0.45,
       "capabilities": [
         "chat",
@@ -1170,12 +1170,12 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen/qwen3-30b-a3b-fp8",
-      "name": "Qwen3 30B A3B",
+      "id": "qwen/qwen3-235b-a22b-fp8",
+      "name": "Qwen3 235B A22B",
       "contextWindow": 40960,
       "maxOutput": 20000,
-      "inputPrice": 0.09,
-      "outputPrice": 0.45,
+      "inputPrice": 0.2,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "reasoning",
@@ -1185,12 +1185,12 @@
       "releaseDate": "2025-04-29"
     },
     {
-      "id": "qwen/qwen3-235b-a22b-fp8",
-      "name": "Qwen3 235B A22B",
+      "id": "qwen/qwen3-32b-fp8",
+      "name": "Qwen3 32B",
       "contextWindow": 40960,
       "maxOutput": 20000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.8,
+      "inputPrice": 0.1,
+      "outputPrice": 0.45,
       "capabilities": [
         "chat",
         "reasoning",
@@ -1231,21 +1231,6 @@
       "releaseDate": "2025-04-16"
     },
     {
-      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.18,
-      "outputPrice": 0.59,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-06"
-    },
-    {
       "id": "meta-llama/llama-4-maverick-17b-128e-instruct-fp8",
       "name": "Llama 4 Maverick Instruct",
       "contextWindow": 1048576,
@@ -1261,20 +1246,19 @@
       "releaseDate": "2025-04-06"
     },
     {
-      "id": "deepseek/deepseek-v3-0324",
-      "name": "DeepSeek V3 0324",
-      "contextWindow": 163840,
-      "maxOutput": 163840,
-      "inputPrice": 0.27,
-      "outputPrice": 1.12,
+      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.18,
+      "outputPrice": 0.59,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
+        "vision",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-03-25"
+      "releaseDate": "2025-04-06"
     },
     {
       "id": "qwen/qwen2.5-vl-72b-instruct",
@@ -1301,6 +1285,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-25"
+    },
+    {
+      "id": "deepseek/deepseek-v3-0324",
+      "name": "DeepSeek V3 0324",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.27,
+      "outputPrice": 1.12,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -1369,22 +1369,6 @@
       "releaseDate": "2025-01-27"
     },
     {
-      "id": "deepseek/deepseek-r1-distill-qwen-32b",
-      "name": "DeepSeek R1 Distill Qwen 32B",
-      "contextWindow": 64000,
-      "maxOutput": 32000,
-      "inputPrice": 0.3,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
-    },
-    {
       "id": "deepseek/deepseek-r1-distill-qwen-14b",
       "name": "DeepSeek R1 Distill Qwen 14B",
       "contextWindow": 32768,
@@ -1393,8 +1377,20 @@
       "outputPrice": 0.15,
       "capabilities": [
         "chat",
-        "json_mode",
-        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "deepseek/deepseek-r1-distill-qwen-32b",
+      "name": "DeepSeek R1 Distill Qwen 32B",
+      "contextWindow": 64000,
+      "maxOutput": 32000,
+      "inputPrice": 0.3,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -1416,7 +1412,7 @@
       "releaseDate": "2024-12-07"
     },
     {
-      "id": "sao10k/L3-8B-Stheno-v3.2",
+      "id": "Sao10K/L3-8B-Stheno-v3.2",
       "name": "L3 8B Stheno V3.2",
       "contextWindow": 8192,
       "maxOutput": 32000,
@@ -1485,7 +1481,6 @@
       "outputPrice": 0.05,
       "capabilities": [
         "chat",
-        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -1551,12 +1546,12 @@
       "releaseDate": "2024-06-18"
     },
     {
-      "id": "meta-llama/llama-3-8b-instruct",
-      "name": "Llama 3 8B Instruct",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
+      "id": "gryphe/mythomax-l2-13b",
+      "name": "Mythomax L2 13B",
+      "contextWindow": 4096,
+      "maxOutput": 3200,
+      "inputPrice": 0.09,
+      "outputPrice": 0.09,
       "capabilities": [
         "chat",
         "streaming"
@@ -1580,12 +1575,12 @@
       "releaseDate": "2024-04-25"
     },
     {
-      "id": "gryphe/mythomax-l2-13b",
-      "name": "Mythomax L2 13B",
-      "contextWindow": 4096,
-      "maxOutput": 3200,
-      "inputPrice": 0.09,
-      "outputPrice": 0.09,
+      "id": "meta-llama/llama-3-8b-instruct",
+      "name": "Llama 3 8B Instruct",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
         "streaming"

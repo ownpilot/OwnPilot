@@ -1,6 +1,6 @@
 {
   "id": "minimax-cn-coding-plan",
-  "name": "MiniMax Coding Plan (minimaxi.com)",
+  "name": "MiniMax Token Plan (minimaxi.com)",
   "type": "openai-compatible",
   "apiKeyEnv": "MINIMAX_API_KEY",
   "features": {
@@ -109,5 +109,5 @@
     }
   ],
   "baseUrl": "https://api.minimaxi.com/anthropic/v1",
-  "docsUrl": "https://platform.minimaxi.com/docs/coding-plan/intro"
+  "docsUrl": "https://platform.minimaxi.com/docs/token-plan/intro"
 }

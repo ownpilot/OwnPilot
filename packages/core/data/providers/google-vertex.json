@@ -331,8 +331,8 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
+      "id": "gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview 09-25",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,
@@ -349,8 +349,8 @@
       "releaseDate": "2025-09-25"
     },
     {
-      "id": "gemini-2.5-flash-lite-preview-09-2025",
-      "name": "Gemini 2.5 Flash Lite Preview 09-25",
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,
@@ -401,12 +401,12 @@
       "releaseDate": "2025-08-13"
     },
     {
-      "id": "openai/gpt-oss-120b-maas",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b-maas",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
+      "inputPrice": 0.07,
+      "outputPrice": 0.25,
       "capabilities": [
         "chat",
         "function_calling",
@@ -417,12 +417,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-20b-maas",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b-maas",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.07,
-      "outputPrice": 0.25,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
@@ -522,12 +522,12 @@
       "releaseDate": "2025-06-05"
     },
     {
-      "id": "claude-sonnet-4@20250514",
-      "name": "Claude Sonnet 4",
+      "id": "claude-opus-4@20250514",
+      "name": "Claude Opus 4",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -539,12 +539,12 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "claude-opus-4@20250514",
-      "name": "Claude Opus 4",
+      "id": "claude-sonnet-4@20250514",
+      "name": "Claude Sonnet 4",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",

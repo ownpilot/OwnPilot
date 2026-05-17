@@ -45,22 +45,6 @@
       "releaseDate": "2025-05-01"
     },
     {
-      "id": "openai/gpt-4.1-nano",
-      "name": "GPT-4.1-nano",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "openai/gpt-4.1",
       "name": "GPT-4.1",
       "contextWindow": 128000,
@@ -79,6 +63,22 @@
     {
       "id": "openai/gpt-4.1-mini",
       "name": "GPT-4.1-mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "openai/gpt-4.1-nano",
+      "name": "GPT-4.1-nano",
       "contextWindow": 128000,
       "maxOutput": 16384,
       "inputPrice": 0,
@@ -173,23 +173,6 @@
       "releaseDate": "2025-01-31"
     },
     {
-      "id": "meta/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B 16E Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-31"
-    },
-    {
       "id": "meta/llama-4-maverick-17b-128e-instruct-fp8",
       "name": "Llama 4 Maverick 17B 128E Instruct FP8",
       "contextWindow": 128000,
@@ -207,8 +190,25 @@
       "releaseDate": "2025-01-31"
     },
     {
-      "id": "deepseek/deepseek-r1",
-      "name": "DeepSeek-R1",
+      "id": "meta/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B 16E Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-31"
+    },
+    {
+      "id": "microsoft/mai-ds-r1",
+      "name": "MAI-DS-R1",
       "contextWindow": 65536,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -223,8 +223,8 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "microsoft/mai-ds-r1",
-      "name": "MAI-DS-R1",
+      "id": "deepseek/deepseek-r1",
+      "name": "DeepSeek-R1",
       "contextWindow": 65536,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -255,9 +255,9 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "microsoft/phi-4-mini-instruct",
-      "name": "Phi-4-mini-instruct",
-      "contextWindow": 128000,
+      "id": "microsoft/phi-4",
+      "name": "Phi-4",
+      "contextWindow": 16000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -287,8 +287,8 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "microsoft/phi-4-mini-reasoning",
-      "name": "Phi-4-mini-reasoning",
+      "id": "microsoft/phi-4-mini-instruct",
+      "name": "Phi-4-mini-instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -303,9 +303,9 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "microsoft/phi-4",
-      "name": "Phi-4",
-      "contextWindow": 16000,
+      "id": "microsoft/phi-4-mini-reasoning",
+      "name": "Phi-4-mini-reasoning",
+      "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -469,21 +469,6 @@
       "releaseDate": "2024-09-25"
     },
     {
-      "id": "openai/o1-mini",
-      "name": "OpenAI o1-mini",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-12"
-    },
-    {
       "id": "openai/o1-preview",
       "name": "OpenAI o1-preview",
       "contextWindow": 128000,
@@ -508,6 +493,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-12"
+    },
+    {
+      "id": "openai/o1-mini",
+      "name": "OpenAI o1-mini",
+      "contextWindow": 128000,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "reasoning",
         "streaming"
       ],
@@ -547,14 +547,15 @@
       "releaseDate": "2024-08-29"
     },
     {
-      "id": "microsoft/phi-3.5-mini-instruct",
-      "name": "Phi-3.5-mini instruct (128k)",
+      "id": "microsoft/phi-3.5-vision-instruct",
+      "name": "Phi-3.5-vision instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -579,36 +580,20 @@
       "releaseDate": "2024-08-20"
     },
     {
-      "id": "microsoft/phi-3.5-vision-instruct",
-      "name": "Phi-3.5-vision instruct (128k)",
+      "id": "microsoft/phi-3.5-mini-instruct",
+      "name": "Phi-3.5-mini instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "cohere/cohere-command-r-08-2024",
-      "name": "Cohere Command R 08-2024",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-01"
     },
     {
       "id": "cohere/cohere-command-r-plus-08-2024",
@@ -626,20 +611,19 @@
       "releaseDate": "2024-08-01"
     },
     {
-      "id": "meta/meta-llama-3.1-8b-instruct",
-      "name": "Meta-Llama-3.1-8B-Instruct",
+      "id": "cohere/cohere-command-r-08-2024",
+      "name": "Cohere Command R 08-2024",
       "contextWindow": 128000,
-      "maxOutput": 32768,
+      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-23"
+      "releaseDate": "2024-08-01"
     },
     {
       "id": "meta/meta-llama-3.1-405b-instruct",
@@ -660,6 +644,22 @@
     {
       "id": "meta/meta-llama-3.1-70b-instruct",
       "name": "Meta-Llama-3.1-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta/meta-llama-3.1-8b-instruct",
+      "name": "Meta-Llama-3.1-8B-Instruct",
       "contextWindow": 128000,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -724,6 +724,22 @@
       "releaseDate": "2024-05-13"
     },
     {
+      "id": "microsoft/phi-3-medium-128k-instruct",
+      "name": "Phi-3-medium instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
       "id": "microsoft/phi-3-medium-4k-instruct",
       "name": "Phi-3-medium instruct (4k)",
       "contextWindow": 4096,
@@ -742,6 +758,22 @@
     {
       "id": "microsoft/phi-3-mini-128k-instruct",
       "name": "Phi-3-mini instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "microsoft/phi-3-small-128k-instruct",
+      "name": "Phi-3-small instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -776,38 +808,6 @@
       "name": "Phi-3-mini instruct (4k)",
       "contextWindow": 4096,
       "maxOutput": 1024,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "microsoft/phi-3-small-128k-instruct",
-      "name": "Phi-3-small instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "microsoft/phi-3-medium-128k-instruct",
-      "name": "Phi-3-medium instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

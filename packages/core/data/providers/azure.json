@@ -48,21 +48,6 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "grok-4-20-non-reasoning",
-      "name": "Grok 4.20 (Non-Reasoning)",
-      "contextWindow": 262000,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-08"
-    },
-    {
       "id": "grok-4-20-reasoning",
       "name": "Grok 4.20 (Reasoning)",
       "contextWindow": 262000,
@@ -79,22 +64,19 @@
       "releaseDate": "2026-04-08"
     },
     {
-      "id": "gpt-5.4-mini",
-      "name": "GPT-5.4 Mini",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.75,
-      "outputPrice": 4.5,
+      "id": "grok-4-20-non-reasoning",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "contextWindow": 262000,
+      "maxOutput": 8192,
+      "inputPrice": 2,
+      "outputPrice": 6,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
-        "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-17"
+      "releaseDate": "2026-04-08"
     },
     {
       "id": "gpt-5.4-nano",
@@ -115,21 +97,22 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "gpt-5.4-pro",
-      "name": "GPT-5.4 Pro",
-      "contextWindow": 1050000,
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 Mini",
+      "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 30,
-      "outputPrice": 180,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-05"
+      "releaseDate": "2026-03-17"
     },
     {
       "id": "gpt-5.4",
@@ -143,6 +126,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "name": "GPT-5.4 Pro",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 30,
+      "outputPrice": 180,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -257,10 +257,10 @@
       "releaseDate": "2026-01-14"
     },
     {
-      "id": "gpt-5.2-chat",
-      "name": "GPT-5.2 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
+      "id": "gpt-5.2",
+      "name": "GPT-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -275,10 +275,10 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "gpt-5.2",
-      "name": "GPT-5.2",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
+      "id": "gpt-5.2-chat",
+      "name": "GPT-5.2 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -359,24 +359,6 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "claude-opus-4-1",
-      "name": "Claude Opus 4.1",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-18"
-    },
-    {
       "id": "claude-sonnet-4-5",
       "name": "Claude Sonnet 4.5",
       "contextWindow": 200000,
@@ -395,23 +377,22 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gpt-5.1-chat",
-      "name": "GPT-5.1 Chat",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "id": "claude-opus-4-1",
+      "name": "Claude Opus 4.1",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
-        "audio",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-11-14"
+      "releaseDate": "2025-11-18"
     },
     {
       "id": "gpt-5.1-codex-mini",
@@ -423,6 +404,25 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-14"
+    },
+    {
+      "id": "gpt-5.1-chat",
+      "name": "GPT-5.1 Chat",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -539,22 +539,6 @@
       "releaseDate": "2025-09-19"
     },
     {
-      "id": "grok-4-fast-non-reasoning",
-      "name": "Grok 4 Fast (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 30000,
-      "inputPrice": 0.2,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-19"
-    },
-    {
       "id": "gpt-5-codex",
       "name": "GPT-5-Codex",
       "contextWindow": 400000,
@@ -572,22 +556,6 @@
       "releaseDate": "2025-09-15"
     },
     {
-      "id": "grok-code-fast-1",
-      "name": "Grok Code Fast 1",
-      "contextWindow": 256000,
-      "maxOutput": 10000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-28"
-    },
-    {
       "id": "deepseek-v3.1",
       "name": "DeepSeek-V3.1",
       "contextWindow": 131072,
@@ -602,6 +570,23 @@
       ],
       "default": false,
       "releaseDate": "2025-08-21"
+    },
+    {
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "contextWindow": 272000,
+      "maxOutput": 128000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
     },
     {
       "id": "gpt-5-chat",
@@ -637,23 +622,6 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
-      "contextWindow": 272000,
-      "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-07"
-    },
-    {
       "id": "gpt-5",
       "name": "GPT-5",
       "contextWindow": 272000,
@@ -669,22 +637,6 @@
       ],
       "default": false,
       "releaseDate": "2025-08-07"
-    },
-    {
-      "id": "grok-4",
-      "name": "Grok 4",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-09"
     },
     {
       "id": "grok-4-1-fast-reasoning",
@@ -833,22 +785,6 @@
       "releaseDate": "2025-04-15"
     },
     {
-      "id": "gpt-4.1-nano",
-      "name": "GPT-4.1 nano",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "gpt-4.1",
       "name": "GPT-4.1",
       "contextWindow": 1047576,
@@ -881,12 +817,28 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B 16E Instruct",
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 nano",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama 4 Maverick 17B 128E Instruct FP8",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.2,
-      "outputPrice": 0.78,
+      "inputPrice": 0.25,
+      "outputPrice": 1,
       "capabilities": [
         "chat",
         "vision",
@@ -897,12 +849,12 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "llama-4-maverick-17b-128e-instruct-fp8",
-      "name": "Llama 4 Maverick 17B 128E Instruct FP8",
+      "id": "llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B 16E Instruct",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.25,
-      "outputPrice": 1,
+      "inputPrice": 0.2,
+      "outputPrice": 0.78,
       "capabilities": [
         "chat",
         "vision",
@@ -958,37 +910,6 @@
       ],
       "default": false,
       "releaseDate": "2025-03-01"
-    },
-    {
-      "id": "grok-3-mini",
-      "name": "Grok 3 Mini",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.3,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
-    },
-    {
-      "id": "grok-3",
-      "name": "Grok 3",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-17"
     },
     {
       "id": "deepseek-r1",
@@ -1052,6 +973,21 @@
       "releaseDate": "2024-12-20"
     },
     {
+      "id": "phi-4-reasoning-plus",
+      "name": "Phi-4-reasoning-plus",
+      "contextWindow": 32000,
+      "maxOutput": 4096,
+      "inputPrice": 0.125,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-11"
+    },
+    {
       "id": "phi-4-multimodal",
       "name": "Phi-4-multimodal",
       "contextWindow": 128000,
@@ -1068,6 +1004,20 @@
       "releaseDate": "2024-12-11"
     },
     {
+      "id": "phi-4",
+      "name": "Phi-4",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.125,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-11"
+    },
+    {
       "id": "phi-4-reasoning",
       "name": "Phi-4-reasoning",
       "contextWindow": 32000,
@@ -1076,22 +1026,6 @@
       "outputPrice": 0.5,
       "capabilities": [
         "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-11"
-    },
-    {
-      "id": "phi-4-mini-reasoning",
-      "name": "Phi-4-mini-reasoning",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -1114,28 +1048,15 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "phi-4",
-      "name": "Phi-4",
+      "id": "phi-4-mini-reasoning",
+      "name": "Phi-4-mini-reasoning",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.125,
-      "outputPrice": 0.5,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-11"
-    },
-    {
-      "id": "phi-4-reasoning-plus",
-      "name": "Phi-4-reasoning-plus",
-      "contextWindow": 32000,
-      "maxOutput": 4096,
-      "inputPrice": 0.125,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -1237,22 +1158,6 @@
       "releaseDate": "2024-09-25"
     },
     {
-      "id": "o1-mini",
-      "name": "o1-mini",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 1.1,
-      "outputPrice": 4.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-12"
-    },
-    {
       "id": "o1-preview",
       "name": "o1-preview",
       "contextWindow": 128000,
@@ -1269,19 +1174,20 @@
       "releaseDate": "2024-09-12"
     },
     {
-      "id": "cohere-command-r-08-2024",
-      "name": "Command R",
+      "id": "o1-mini",
+      "name": "o1-mini",
       "contextWindow": 128000,
-      "maxOutput": 4000,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "maxOutput": 65536,
+      "inputPrice": 1.1,
+      "outputPrice": 4.4,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-08-30"
+      "releaseDate": "2024-09-12"
     },
     {
       "id": "cohere-command-r-plus-08-2024",
@@ -1299,18 +1205,19 @@
       "releaseDate": "2024-08-30"
     },
     {
-      "id": "phi-3.5-mini-instruct",
-      "name": "Phi-3.5-mini-instruct",
+      "id": "cohere-command-r-08-2024",
+      "name": "Command R",
       "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.13,
-      "outputPrice": 0.52,
+      "maxOutput": 4000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-08-20"
+      "releaseDate": "2024-08-30"
     },
     {
       "id": "phi-3.5-moe-instruct",
@@ -1327,19 +1234,18 @@
       "releaseDate": "2024-08-20"
     },
     {
-      "id": "meta-llama-3.1-8b-instruct",
-      "name": "Meta-Llama-3.1-8B-Instruct",
+      "id": "phi-3.5-mini-instruct",
+      "name": "Phi-3.5-mini-instruct",
       "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.3,
-      "outputPrice": 0.61,
+      "maxOutput": 4096,
+      "inputPrice": 0.13,
+      "outputPrice": 0.52,
       "capabilities": [
         "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-23"
+      "releaseDate": "2024-08-20"
     },
     {
       "id": "meta-llama-3.1-405b-instruct",
@@ -1363,6 +1269,21 @@
       "maxOutput": 32768,
       "inputPrice": 2.68,
       "outputPrice": 3.54,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama-3.1-8b-instruct",
+      "name": "Meta-Llama-3.1-8B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.3,
+      "outputPrice": 0.61,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1419,6 +1340,20 @@
       "releaseDate": "2024-05-13"
     },
     {
+      "id": "phi-3-medium-128k-instruct",
+      "name": "Phi-3-medium-instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.17,
+      "outputPrice": 0.68,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
       "id": "phi-3-medium-4k-instruct",
       "name": "Phi-3-medium-instruct (4k)",
       "contextWindow": 4096,
@@ -1447,6 +1382,20 @@
       "releaseDate": "2024-04-23"
     },
     {
+      "id": "phi-3-small-128k-instruct",
+      "name": "Phi-3-small-instruct (128k)",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
       "id": "phi-3-small-8k-instruct",
       "name": "Phi-3-small-instruct (8k)",
       "contextWindow": 8192,
@@ -1467,34 +1416,6 @@
       "maxOutput": 1024,
       "inputPrice": 0.13,
       "outputPrice": 0.52,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-small-128k-instruct",
-      "name": "Phi-3-small-instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "phi-3-medium-128k-instruct",
-      "name": "Phi-3-medium-instruct (128k)",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.17,
-      "outputPrice": 0.68,
       "capabilities": [
         "chat",
         "streaming"
@@ -1675,10 +1596,10 @@
       "releaseDate": "2023-06-13"
     },
     {
-      "id": "gpt-4",
-      "name": "GPT-4",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
+      "id": "gpt-4-32k",
+      "name": "GPT-4 32K",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
       "inputPrice": 60,
       "outputPrice": 120,
       "capabilities": [
@@ -1690,10 +1611,10 @@
       "releaseDate": "2023-03-14"
     },
     {
-      "id": "gpt-4-32k",
-      "name": "GPT-4 32K",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
+      "id": "gpt-4",
+      "name": "GPT-4",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
       "inputPrice": 60,
       "outputPrice": 120,
       "capabilities": [

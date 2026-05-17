@@ -48,12 +48,12 @@
       "releaseDate": "2026-01"
     },
     {
-      "id": "kimi-k2-thinking",
-      "name": "Kimi K2 Thinking",
+      "id": "kimi-k2-thinking-turbo",
+      "name": "Kimi K2 Thinking Turbo",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.6,
-      "outputPrice": 2.5,
+      "inputPrice": 1.15,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "function_calling",
@@ -64,12 +64,12 @@
       "releaseDate": "2025-11-06"
     },
     {
-      "id": "kimi-k2-thinking-turbo",
-      "name": "Kimi K2 Thinking Turbo",
+      "id": "kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 1.15,
-      "outputPrice": 8,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "function_calling",

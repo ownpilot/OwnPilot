@@ -76,20 +76,6 @@
       "releaseDate": "2025-07-30"
     },
     {
-      "id": "Qwen/Qwen3-Embedding-8B",
-      "name": "Qwen3 Embedding 8B",
-      "contextWindow": 40960,
-      "maxOutput": 40960,
-      "inputPrice": 0.12,
-      "outputPrice": 0.12,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-30"
-    },
-    {
       "id": "Qwen/Qwen3-30B-A3B-Instruct-2507-FP8",
       "name": "Qwen3 30B 2507",
       "contextWindow": 64000,
@@ -99,6 +85,20 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-30"
+    },
+    {
+      "id": "Qwen/Qwen3-Embedding-8B",
+      "name": "Qwen3 Embedding 8B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0.12,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -163,10 +163,10 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "KBLab/kb-whisper-large",
-      "name": "KB Whisper",
+      "id": "openai/whisper-large-v3",
+      "name": "Whisper 3 Large",
       "contextWindow": 448,
-      "maxOutput": 448,
+      "maxOutput": 4096,
       "inputPrice": 0.00236,
       "outputPrice": 0.00236,
       "capabilities": [
@@ -178,10 +178,10 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "openai/whisper-large-v3",
-      "name": "Whisper 3 Large",
+      "id": "KBLab/kb-whisper-large",
+      "name": "KB Whisper",
       "contextWindow": 448,
-      "maxOutput": 4096,
+      "maxOutput": 448,
       "inputPrice": 0.00236,
       "outputPrice": 0.00236,
       "capabilities": [

@@ -45,14 +45,16 @@
       "releaseDate": "2026-03-10"
     },
     {
-      "id": "qwen-image",
-      "name": "Qwen-Image",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 0.5,
-      "outputPrice": 2,
+      "id": "gpt-oss-20b",
+      "name": "GPT-OSS-20B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 1.8,
       "capabilities": [
         "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -75,48 +77,18 @@
       "releaseDate": "2026-03-01"
     },
     {
-      "id": "gpt-oss-20b",
-      "name": "GPT-OSS-20B",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.4,
-      "outputPrice": 1.8,
+      "id": "qwen-image",
+      "name": "Qwen-Image",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
-        "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-03-01"
-    },
-    {
-      "id": "qwen3-embedding-8b",
-      "name": "Qwen3-Embedding-8B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-01"
-    },
-    {
-      "id": "qwen3-reranker-4b",
-      "name": "Qwen3-Reranker-4B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0.12,
-      "outputPrice": 0.12,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-01"
     },
     {
       "id": "qwen3.5-122b",
@@ -147,6 +119,34 @@
         "vision",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3-embedding-8b",
+      "name": "Qwen3-Embedding-8B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3-reranker-4b",
+      "name": "Qwen3-Reranker-4B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.12,
+      "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,

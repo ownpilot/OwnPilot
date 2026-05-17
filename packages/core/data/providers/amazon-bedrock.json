@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "global.anthropic.claude-opus-4-7",
-      "name": "Claude Opus 4.7 (Global)",
+      "id": "anthropic.claude-opus-4-7",
+      "name": "Claude Opus 4.7",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -22,7 +22,6 @@
         "chat",
         "vision",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -40,25 +39,6 @@
         "chat",
         "vision",
         "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-16"
-    },
-    {
-      "id": "anthropic.claude-opus-4-7",
-      "name": "Claude Opus 4.7",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -76,7 +56,23 @@
         "chat",
         "vision",
         "function_calling",
-        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "global.anthropic.claude-opus-4-7",
+      "name": "Claude Opus 4.7 (Global)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -110,6 +106,7 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -142,26 +139,12 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-03-11"
-    },
-    {
-      "id": "mistral.devstral-2-123b",
-      "name": "Devstral 2 123B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-17"
     },
     {
       "id": "au.anthropic.claude-sonnet-4-6",
@@ -182,6 +165,22 @@
       "releaseDate": "2026-02-17"
     },
     {
+      "id": "mistral.devstral-2-123b",
+      "name": "Devstral 2 123B",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
       "id": "anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6",
       "contextWindow": 1000000,
@@ -192,23 +191,7 @@
         "chat",
         "vision",
         "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-17"
-    },
-    {
-      "id": "jp.anthropic.claude-sonnet-4-6",
-      "name": "Claude Sonnet 4.6 (JP)",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -226,6 +209,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -243,6 +227,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -260,6 +245,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -267,20 +253,22 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "deepseek.v3.2",
-      "name": "DeepSeek-V3.2",
-      "contextWindow": 163840,
-      "maxOutput": 81920,
-      "inputPrice": 0.62,
-      "outputPrice": 1.85,
+      "id": "jp.anthropic.claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6 (JP)",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02-06"
+      "releaseDate": "2026-02-17"
     },
     {
       "id": "moonshotai.kimi-k2.5",
@@ -293,6 +281,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -306,6 +295,23 @@
       "maxOutput": 65536,
       "inputPrice": 0.22,
       "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-06"
+    },
+    {
+      "id": "deepseek.v3.2",
+      "name": "DeepSeek-V3.2",
+      "contextWindow": 163840,
+      "maxOutput": 81920,
+      "inputPrice": 0.62,
+      "outputPrice": 1.85,
       "capabilities": [
         "chat",
         "function_calling",
@@ -335,44 +341,8 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "eu.anthropic.claude-opus-4-6-v1",
-      "name": "Claude Opus 4.6 (EU)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
       "id": "global.anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6 (Global)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
-      "id": "us.anthropic.claude-opus-4-6-v1",
-      "name": "Claude Opus 4.6 (US)",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -407,6 +377,42 @@
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "eu.anthropic.claude-opus-4-6-v1",
+      "name": "Claude Opus 4.6 (EU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "us.anthropic.claude-opus-4-6-v1",
+      "name": "Claude Opus 4.6 (US)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "zai.glm-4.7-flash",
       "name": "GLM-4.7-Flash",
       "contextWindow": 200000,
@@ -416,27 +422,12 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-01-19"
-    },
-    {
-      "id": "nvidia.nemotron-nano-3-30b",
-      "name": "NVIDIA Nemotron Nano 3 30B",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.06,
-      "outputPrice": 0.24,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-23"
     },
     {
       "id": "minimax.minimax-m2.1",
@@ -455,6 +446,23 @@
       "releaseDate": "2025-12-23"
     },
     {
+      "id": "nvidia.nemotron-nano-3-30b",
+      "name": "NVIDIA Nemotron Nano 3 30B",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.06,
+      "outputPrice": 0.24,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-23"
+    },
+    {
       "id": "zai.glm-4.7",
       "name": "GLM-4.7",
       "contextWindow": 204800,
@@ -464,46 +472,12 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2025-12-22"
-    },
-    {
-      "id": "mistral.ministral-3-3b-instruct",
-      "name": "Ministral 3 3B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-02"
-    },
-    {
-      "id": "mistral.magistral-small-2509",
-      "name": "Magistral Small 1.2",
-      "contextWindow": 128000,
-      "maxOutput": 40000,
-      "inputPrice": 0.5,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-02"
     },
     {
       "id": "moonshot.kimi-k2-thinking",
@@ -538,6 +512,59 @@
       ],
       "default": false,
       "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "mistral.magistral-small-2509",
+      "name": "Magistral Small 1.2",
+      "contextWindow": 128000,
+      "maxOutput": 40000,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "mistral.ministral-3-3b-instruct",
+      "name": "Ministral 3 3B",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+      "name": "Claude Opus 4.5 (US)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-24"
     },
     {
       "id": "global.anthropic.claude-opus-4-5-20251101-v1:0",
@@ -576,24 +603,6 @@
       "releaseDate": "2025-11-24"
     },
     {
-      "id": "us.anthropic.claude-opus-4-5-20251101-v1:0",
-      "name": "Claude Opus 4.5 (US)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-24"
-    },
-    {
       "id": "eu.anthropic.claude-opus-4-5-20251101-v1:0",
       "name": "Claude Opus 4.5 (EU)",
       "contextWindow": 200000,
@@ -612,6 +621,38 @@
       "releaseDate": "2025-11-24"
     },
     {
+      "id": "openai.gpt-oss-safeguard-120b",
+      "name": "GPT OSS Safeguard 120B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-29"
+    },
+    {
+      "id": "openai.gpt-oss-safeguard-20b",
+      "name": "GPT OSS Safeguard 20B",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.07,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-29"
+    },
+    {
       "id": "minimax.minimax-m2",
       "name": "MiniMax M2",
       "contextWindow": 204608,
@@ -626,24 +667,6 @@
       ],
       "default": false,
       "releaseDate": "2025-10-27"
-    },
-    {
-      "id": "anthropic.claude-haiku-4-5-20251001-v1:0",
-      "name": "Claude Haiku 4.5",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 1,
-      "outputPrice": 5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-15"
     },
     {
       "id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
@@ -700,6 +723,24 @@
       "releaseDate": "2025-10-15"
     },
     {
+      "id": "anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    },
+    {
       "id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
       "name": "Claude Haiku 4.5 (AU)",
       "contextWindow": 200000,
@@ -710,6 +751,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -734,8 +776,8 @@
       "releaseDate": "2025-10-04"
     },
     {
-      "id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5",
+      "id": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (Global)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -770,8 +812,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (Global)",
+      "id": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -806,23 +848,6 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (JP)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-29"
-    },
-    {
       "id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
       "name": "Claude Sonnet 4.5 (AU)",
       "contextWindow": 200000,
@@ -833,6 +858,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -840,17 +866,34 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "qwen.qwen3-32b-v1:0",
-      "name": "Qwen3 32B (dense)",
-      "contextWindow": 16384,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (JP)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "qwen.qwen3-235b-a22b-2507-v1:0",
+      "name": "Qwen3 235B A22B 2507",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -863,6 +906,22 @@
       "maxOutput": 65536,
       "inputPrice": 0.22,
       "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-18"
+    },
+    {
+      "id": "qwen.qwen3-coder-30b-a3b-v1:0",
+      "name": "Qwen3 Coder 30B A3B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -890,6 +949,23 @@
       "releaseDate": "2025-09-18"
     },
     {
+      "id": "qwen.qwen3-32b-v1:0",
+      "name": "Qwen3 32B (dense)",
+      "contextWindow": 16384,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-18"
+    },
+    {
       "id": "qwen.qwen3-next-80b-a3b",
       "name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
       "contextWindow": 262000,
@@ -906,10 +982,26 @@
       "releaseDate": "2025-09-18"
     },
     {
-      "id": "qwen.qwen3-coder-30b-a3b-v1:0",
-      "name": "Qwen3 Coder 30B A3B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
+      "id": "openai.gpt-oss-20b-1:0",
+      "name": "gpt-oss-20b",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai.gpt-oss-120b-1:0",
+      "name": "gpt-oss-120b",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
       "inputPrice": 0.15,
       "outputPrice": 0.6,
       "capabilities": [
@@ -919,27 +1011,11 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-09-18"
+      "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen.qwen3-235b-a22b-2507-v1:0",
-      "name": "Qwen3 235B A22B 2507",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.22,
-      "outputPrice": 0.88,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-18"
-    },
-    {
-      "id": "anthropic.claude-opus-4-1-20250805-v1:0",
-      "name": "Claude Opus 4.1",
+      "id": "us.anthropic.claude-opus-4-1-20250805-v1:0",
+      "name": "Claude Opus 4.1 (US)",
       "contextWindow": 200000,
       "maxOutput": 32000,
       "inputPrice": 15,
@@ -955,8 +1031,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "us.anthropic.claude-opus-4-1-20250805-v1:0",
-      "name": "Claude Opus 4.1 (US)",
+      "id": "anthropic.claude-opus-4-1-20250805-v1:0",
+      "name": "Claude Opus 4.1",
       "contextWindow": 200000,
       "maxOutput": 32000,
       "inputPrice": 15,
@@ -1006,12 +1082,12 @@
       "releaseDate": "2025-07-01"
     },
     {
-      "id": "writer.palmyra-x5-v1:0",
-      "name": "Palmyra X5",
-      "contextWindow": 1040000,
+      "id": "writer.palmyra-x4-v1:0",
+      "name": "Palmyra X4",
+      "contextWindow": 122880,
       "maxOutput": 8192,
-      "inputPrice": 0.6,
-      "outputPrice": 6,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1022,12 +1098,12 @@
       "releaseDate": "2025-04-28"
     },
     {
-      "id": "writer.palmyra-x4-v1:0",
-      "name": "Palmyra X4",
-      "contextWindow": 122880,
+      "id": "writer.palmyra-x5-v1:0",
+      "name": "Palmyra X5",
+      "contextWindow": 1040000,
       "maxOutput": 8192,
-      "inputPrice": 2.5,
-      "outputPrice": 10,
+      "inputPrice": 0.6,
+      "outputPrice": 6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1054,12 +1130,12 @@
       "releaseDate": "2025-04-08"
     },
     {
-      "id": "meta.llama4-maverick-17b-instruct-v1:0",
-      "name": "Llama 4 Maverick 17B Instruct",
-      "contextWindow": 1000000,
+      "id": "meta.llama4-scout-17b-instruct-v1:0",
+      "name": "Llama 4 Scout 17B Instruct",
+      "contextWindow": 3500000,
       "maxOutput": 16384,
-      "inputPrice": 0.24,
-      "outputPrice": 0.97,
+      "inputPrice": 0.17,
+      "outputPrice": 0.66,
       "capabilities": [
         "chat",
         "vision",
@@ -1070,12 +1146,12 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "meta.llama4-scout-17b-instruct-v1:0",
-      "name": "Llama 4 Scout 17B Instruct",
-      "contextWindow": 3500000,
+      "id": "meta.llama4-maverick-17b-instruct-v1:0",
+      "name": "Llama 4 Maverick 17B Instruct",
+      "contextWindow": 1000000,
       "maxOutput": 16384,
-      "inputPrice": 0.17,
-      "outputPrice": 0.66,
+      "inputPrice": 0.24,
+      "outputPrice": 0.97,
       "capabilities": [
         "chat",
         "vision",
@@ -1181,21 +1257,6 @@
       "releaseDate": "2024-12-03"
     },
     {
-      "id": "amazon.nova-micro-v1:0",
-      "name": "Nova Micro",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.035,
-      "outputPrice": 0.14,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-03"
-    },
-    {
       "id": "amazon.nova-lite-v1:0",
       "name": "Nova Lite",
       "contextWindow": 300000,
@@ -1212,12 +1273,27 @@
       "releaseDate": "2024-12-03"
     },
     {
-      "id": "openai.gpt-oss-safeguard-120b",
-      "name": "GPT OSS Safeguard 120B",
+      "id": "amazon.nova-micro-v1:0",
+      "name": "Nova Micro",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.035,
+      "outputPrice": 0.14,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "mistral.ministral-3-8b-instruct",
+      "name": "Ministral 3 8B",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "outputPrice": 0.15,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1228,12 +1304,12 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "mistral.ministral-3-8b-instruct",
-      "name": "Ministral 3 8B",
+      "id": "mistral.ministral-3-14b-instruct",
+      "name": "Ministral 14B 3.0",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.15,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1260,14 +1336,48 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "openai.gpt-oss-20b-1:0",
-      "name": "gpt-oss-20b",
+      "id": "nvidia.nemotron-nano-9b-v2",
+      "name": "NVIDIA Nemotron Nano 9B v2",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.07,
-      "outputPrice": 0.3,
+      "inputPrice": 0.06,
+      "outputPrice": 0.23,
       "capabilities": [
         "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "nvidia.nemotron-nano-12b-v2",
+      "name": "NVIDIA Nemotron Nano 12B v2 VL BF16",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "mistral.voxtral-mini-3b-2507",
+      "name": "Voxtral Mini 3B 2507",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
+      "capabilities": [
+        "chat",
+        "audio",
         "function_calling",
         "json_mode",
         "streaming"
@@ -1302,104 +1412,6 @@
         "chat",
         "vision",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "mistral.ministral-3-14b-instruct",
-      "name": "Ministral 14B 3.0",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "mistral.voxtral-mini-3b-2507",
-      "name": "Voxtral Mini 3B 2507",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
-      "capabilities": [
-        "chat",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "openai.gpt-oss-120b-1:0",
-      "name": "gpt-oss-120b",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "nvidia.nemotron-nano-12b-v2",
-      "name": "NVIDIA Nemotron Nano 12B v2 VL BF16",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "openai.gpt-oss-safeguard-20b",
-      "name": "GPT OSS Safeguard 20B",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.07,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "nvidia.nemotron-nano-9b-v2",
-      "name": "NVIDIA Nemotron Nano 9B v2",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.06,
-      "outputPrice": 0.23,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,

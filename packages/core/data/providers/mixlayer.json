@@ -28,22 +28,6 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "qwen/qwen3.5-27b",
-      "name": "Qwen3.5 27B",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.3,
-      "outputPrice": 2.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-18"
-    },
-    {
       "id": "qwen/qwen3.5-397b-a17b",
       "name": "Qwen3.5 397B A17B",
       "contextWindow": 262144,
@@ -82,6 +66,22 @@
       "maxOutput": 262144,
       "inputPrice": 0.25,
       "outputPrice": 1.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "qwen/qwen3.5-27b",
+      "name": "Qwen3.5 27B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.3,
+      "outputPrice": 2.4,
       "capabilities": [
         "chat",
         "function_calling",

@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "moonshotai/Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.83,
+      "outputPrice": 3.85,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-07"
+    },
+    {
       "id": "mistralai/Mistral-Medium-3.5-128B",
       "name": "Mistral Medium 3.5 128B",
       "contextWindow": 262144,
@@ -26,7 +44,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-29"
     },
     {

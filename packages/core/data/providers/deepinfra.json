@@ -46,6 +46,40 @@
       "releaseDate": "2026-04-24"
     },
     {
+      "id": "xiaomi/mimo-v2.5-pro",
+      "name": "MiMo-V2.5-Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "xiaomi/mimo-v2.5",
+      "name": "MiMo-V2.5",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "moonshotai/Kimi-K2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
@@ -314,6 +348,22 @@
       "releaseDate": "2025-11-06"
     },
     {
+      "id": "zai-org/GLM-4.6",
+      "name": "GLM-4.6",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.43,
+      "outputPrice": 1.74,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-30"
+    },
+    {
       "id": "zai-org/GLM-4.6V",
       "name": "GLM-4.6V",
       "contextWindow": 204800,
@@ -323,22 +373,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-30"
-    },
-    {
-      "id": "zai-org/GLM-4.6",
-      "name": "GLM-4.6",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
-      "inputPrice": 0.43,
-      "outputPrice": 1.74,
-      "capabilities": [
-        "chat",
         "function_calling",
         "reasoning",
         "streaming"
@@ -565,6 +599,21 @@
       "releaseDate": "2024-07-23"
     },
     {
+      "id": "meta-llama/Llama-3.1-70B-Instruct-Turbo",
+      "name": "Llama 3.1 70B Turbo",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
       "id": "meta-llama/Llama-3.1-70B-Instruct",
       "name": "Llama 3.1 70B",
       "contextWindow": 131072,
@@ -586,21 +635,6 @@
       "maxOutput": 16384,
       "inputPrice": 0.02,
       "outputPrice": 0.03,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "meta-llama/Llama-3.1-70B-Instruct-Turbo",
-      "name": "Llama 3.1 70B Turbo",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.4,
-      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "function_calling",
