@@ -383,8 +383,19 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
     try {
       const eventSystem = getServiceRegistry().get(Services.Event);
 
-      const resyncExtensionTools = () => {
+      const unregisterExtensionTools = (extensionId?: string) => {
+        if (!extensionId) return 0;
+        return (
+          registry.unregisterExtTools(extensionId) + registry.unregisterSkillTools(extensionId)
+        );
+      };
+
+      const getExtensionIdFromEvent = (e: unknown) =>
+        (e as { data?: { extensionId?: string } } | undefined)?.data?.extensionId;
+
+      const resyncExtensionTools = (e?: unknown) => {
         try {
+          unregisterExtensionTools(getExtensionIdFromEvent(e));
           const freshDefs = service.getToolDefinitions();
           for (const d of freshDefs) {
             registerSingleExtensionTool(d, registry, dynamicRegistry);
@@ -395,9 +406,19 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
         }
       };
 
+      const removeExtensionTools = (e?: unknown) => {
+        try {
+          unregisterExtensionTools(getExtensionIdFromEvent(e));
+          dynamicRegistry.setCallableTools(registry.getAllTools());
+        } catch (err) {
+          log.warn('[tool-executor] Extension tool removal failed', { error: err });
+        }
+      };
+
       eventUnsubscribers.push(eventSystem.onAny('extension.installed', resyncExtensionTools));
       eventUnsubscribers.push(eventSystem.onAny('extension.enabled', resyncExtensionTools));
-      eventUnsubscribers.push(eventSystem.onAny('extension.disabled', resyncExtensionTools));
+      eventUnsubscribers.push(eventSystem.onAny('extension.disabled', removeExtensionTools));
+      eventUnsubscribers.push(eventSystem.onAny('extension.uninstalled', removeExtensionTools));
     } catch {
       // EventSystem not available yet
     }
@@ -566,7 +587,9 @@ export async function executeTool(
   }
 
   // Idempotency: check for cached result to avoid duplicate execution
-  const idempotencyKey = `tool:${createHash('sha256').update(`${userId}:${toolName}:${JSON.stringify(args)}`).digest('hex')}`;
+  const idempotencyKey = `tool:${createHash('sha256')
+    .update(`${userId}:${toolName}:${JSON.stringify(args)}`)
+    .digest('hex')}`;
   try {
     const idempotencyRepo = getIdempotencyKeysRepository();
     const cached = await idempotencyRepo.getRecord(idempotencyKey);

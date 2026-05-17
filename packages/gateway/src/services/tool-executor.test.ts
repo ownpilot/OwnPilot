@@ -21,6 +21,8 @@ const mockToolRegistry = {
   use: vi.fn(),
   registerPluginTools: vi.fn(),
   unregisterPluginTools: vi.fn(),
+  unregisterExtTools: vi.fn(() => 0),
+  unregisterSkillTools: vi.fn(() => 0),
   register: vi.fn(),
   registerCustomTool: vi.fn(),
   getAllTools: vi.fn(() => []),
@@ -1419,6 +1421,11 @@ describe('Tool Executor', () => {
       return call![1] as () => void;
     }
 
+    function getExtensionEventCallback(eventName: string) {
+      const call = vi.mocked(mockEventSystem.onAny).mock.calls.find((c) => c[0] === eventName);
+      return call![1] as (event?: unknown) => void;
+    }
+
     function makeToolDef(name: string, format = 'ownpilot') {
       return {
         name,
@@ -1569,6 +1576,23 @@ describe('Tool Executor', () => {
       });
 
       expect(() => resync()).not.toThrow();
+    });
+
+    it('unregisters extension and skill tools on disable/uninstall events', () => {
+      mockExtensionService.getToolDefinitions.mockReturnValue([]);
+      getSharedToolRegistry();
+
+      const disabled = getExtensionEventCallback('extension.disabled');
+      const uninstalled = getExtensionEventCallback('extension.uninstalled');
+
+      disabled({ data: { extensionId: 'ext-removed' } });
+      uninstalled({ data: { extensionId: 'skill-removed' } });
+
+      expect(mockToolRegistry.unregisterExtTools).toHaveBeenCalledWith('ext-removed');
+      expect(mockToolRegistry.unregisterSkillTools).toHaveBeenCalledWith('ext-removed');
+      expect(mockToolRegistry.unregisterExtTools).toHaveBeenCalledWith('skill-removed');
+      expect(mockToolRegistry.unregisterSkillTools).toHaveBeenCalledWith('skill-removed');
+      expect(mockDynamicRegistry.setCallableTools).toHaveBeenCalled();
     });
   });
 });

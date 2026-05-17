@@ -126,6 +126,14 @@ CREATE TABLE IF NOT EXISTS user_extensions (
   installed_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS user_extension_removals (
+  user_id TEXT NOT NULL,
+  extension_id TEXT NOT NULL,
+  source_path TEXT,
+  removed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, extension_id)
+);
 `;
 
 export const CHANNELS_INDEXES_SQL = `
@@ -146,4 +154,7 @@ CREATE INDEX IF NOT EXISTS idx_channel_assets_expires ON channel_assets(expires_
 -- Extension indexes
 CREATE INDEX IF NOT EXISTS idx_user_extensions_user ON user_extensions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_extensions_status ON user_extensions(status);
+CREATE INDEX IF NOT EXISTS idx_user_extension_removals_source
+  ON user_extension_removals(user_id, source_path)
+  WHERE source_path IS NOT NULL;
 `;

@@ -44,6 +44,9 @@ const {
     upsert: vi.fn(),
     updateStatus: vi.fn(),
     delete: vi.fn(),
+    markRemoved: vi.fn(),
+    clearRemoval: vi.fn(),
+    isRemoved: vi.fn(async () => false),
   },
   mockReadFile: vi.fn(),
   mockReaddir: vi.fn(() => [] as unknown[]),
@@ -198,6 +201,9 @@ describe('ExtensionService', () => {
     mockRepo.upsert.mockResolvedValue(makeRecord());
     mockRepo.updateStatus.mockResolvedValue(makeRecord());
     mockRepo.delete.mockResolvedValue(true);
+    mockRepo.markRemoved.mockResolvedValue(undefined);
+    mockRepo.clearRemoval.mockResolvedValue(undefined);
+    mockRepo.isRemoved.mockResolvedValue(false);
     mockTrigSvc.listTriggers.mockResolvedValue([]);
     svc = new ExtensionService();
   });
@@ -427,6 +433,18 @@ describe('ExtensionService', () => {
       expect(manifest._security).toBeDefined();
       expect(manifest._security!.blocked).toBe(false);
     });
+
+    it('clears removal marker when installing directly from a source path', async () => {
+      const manifest = makeManifest();
+
+      await svc.installFromManifest(manifest, 'default', '/skills/test-ext/SKILL.md');
+
+      expect(mockRepo.clearRemoval).toHaveBeenCalledWith(
+        'default',
+        manifest.id,
+        expect.stringContaining('SKILL.md')
+      );
+    });
   });
 
   // ==========================================================================
@@ -447,13 +465,15 @@ describe('ExtensionService', () => {
     });
 
     it('deletes extension and emits events on success', async () => {
-      mockRepo.getById.mockReturnValue(makeRecord());
+      const record = makeRecord();
+      mockRepo.getById.mockReturnValue(record);
       mockRepo.delete.mockResolvedValue(true);
 
       const result = await svc.uninstall('test-ext');
 
       expect(result).toBe(true);
       expect(mockRepo.delete).toHaveBeenCalledWith('test-ext');
+      expect(mockRepo.markRemoved).toHaveBeenCalledWith(record);
       expect(mockESEmit).toHaveBeenCalledWith(
         'extension.uninstalled',
         'extension-service',
@@ -1048,6 +1068,27 @@ describe('ExtensionService', () => {
       const result = await svc.scanDirectory('/scan-dir');
       expect(result.installed).toBe(0);
       expect(result.errors).toHaveLength(1);
+    });
+
+    it('does not reinstall a manifest remembered as removed', async () => {
+      mockExists.mockImplementation((p: string) => {
+        const n = norm(p);
+        if (n.endsWith('/scan-dir') || n === '/scan-dir') return true;
+        if (n.includes('/removed/') && n.endsWith('SKILL.md')) return true;
+        return false;
+      });
+      mockReaddir.mockReturnValue([{ isDirectory: () => true, name: 'removed' }]);
+      mockRepo.isRemoved.mockResolvedValue(true);
+
+      const result = await svc.scanDirectory('/scan-dir');
+
+      expect(result.installed).toBe(0);
+      expect(mockReadFile).not.toHaveBeenCalled();
+      expect(mockRepo.isRemoved).toHaveBeenCalledWith(
+        'default',
+        undefined,
+        expect.stringContaining('SKILL.md')
+      );
     });
 
     it('scans multiple directories when no directory specified', async () => {

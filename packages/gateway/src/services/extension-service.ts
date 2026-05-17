@@ -136,6 +136,8 @@ export class ExtensionService implements IExtensionService {
     userId = 'default',
     sourcePath?: string
   ): Promise<ExtensionRecord> {
+    const normalizedSourcePath = sourcePath ? resolve(sourcePath) : undefined;
+
     // Validate manifest format
     if (manifest.format === 'agentskills') {
       const fmValidation = validateAgentSkillsFrontmatter(
@@ -212,6 +214,23 @@ export class ExtensionService implements IExtensionService {
     }
 
     // Upsert DB record
+    try {
+      await (
+        extensionsRepo as typeof extensionsRepo & {
+          clearRemoval?: (
+            userId: string,
+            extensionId: string,
+            sourcePath?: string
+          ) => Promise<void>;
+        }
+      ).clearRemoval?.(userId, manifest.id, normalizedSourcePath);
+    } catch (e) {
+      log.warn('Failed to clear extension removal marker', {
+        id: manifest.id,
+        error: String(e),
+      });
+    }
+
     const record = await extensionsRepo.upsert({
       id: manifest.id,
       userId,
@@ -223,7 +242,7 @@ export class ExtensionService implements IExtensionService {
       icon: manifest.icon,
       authorName: manifest.author?.name,
       manifest,
-      sourcePath,
+      sourcePath: normalizedSourcePath,
       toolCount: manifest.tools.length,
       triggerCount: manifest.triggers?.length ?? 0,
     });
@@ -285,6 +304,16 @@ export class ExtensionService implements IExtensionService {
     const deleted = await extensionsRepo.delete(id);
 
     if (deleted) {
+      try {
+        await (
+          extensionsRepo as typeof extensionsRepo & {
+            markRemoved?: (record: ExtensionRecord) => Promise<void>;
+          }
+        ).markRemoved?.(record);
+      } catch (e) {
+        log.warn('Failed to remember extension removal', { id, error: String(e) });
+      }
+
       getEventBus().emit(
         createEvent<ResourceDeletedData>(
           EventTypes.RESOURCE_DELETED,
@@ -622,19 +651,40 @@ export class ExtensionService implements IExtensionService {
 
   async scanDirectory(directory?: string, userId = 'default'): Promise<ScanResult> {
     const installFn = (manifestPath: string, uid: string) => this.install(manifestPath, uid);
+    const shouldSkipRemoved = async (manifestPath: string, uid: string) => {
+      try {
+        return Boolean(
+          await (
+            extensionsRepo as typeof extensionsRepo & {
+              isRemoved?: (
+                userId: string,
+                extensionId?: string,
+                sourcePath?: string
+              ) => Promise<boolean>;
+            }
+          ).isRemoved?.(uid, undefined, resolve(manifestPath))
+        );
+      } catch (e) {
+        log.warn('Failed to check extension removal marker', {
+          path: manifestPath,
+          error: String(e),
+        });
+        return false;
+      }
+    };
 
     if (!directory) {
       const dirs = getAllScanDirectories();
       let totalInstalled = 0;
       const allErrors: Array<{ path: string; error: string }> = [];
       for (const dir of dirs) {
-        const r = await scanSingleDirectory(dir, userId, installFn);
+        const r = await scanSingleDirectory(dir, userId, installFn, shouldSkipRemoved);
         totalInstalled += r.installed;
         allErrors.push(...r.errors);
       }
       return { installed: totalInstalled, errors: allErrors };
     }
-    return scanSingleDirectory(directory, userId, installFn);
+    return scanSingleDirectory(directory, userId, installFn, shouldSkipRemoved);
   }
 
   // --------------------------------------------------------------------------

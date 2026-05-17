@@ -38,6 +38,13 @@ interface ExtensionRow {
   updated_at: string;
 }
 
+interface ExtensionRemovalRow {
+  user_id: string;
+  extension_id: string;
+  source_path: string | null;
+  removed_at: string;
+}
+
 // =============================================================================
 // PUBLIC TYPES
 // =============================================================================
@@ -143,7 +150,23 @@ export class ExtensionsRepository extends BaseRepository {
   // ---------------------------------------------------------------------------
 
   async initialize(): Promise<void> {
+    await this.ensureRemovalTable();
     await this.refreshCache();
+  }
+
+  private async ensureRemovalTable(): Promise<void> {
+    await this.exec(`
+      CREATE TABLE IF NOT EXISTS user_extension_removals (
+        user_id TEXT NOT NULL,
+        extension_id TEXT NOT NULL,
+        source_path TEXT,
+        removed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, extension_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_extension_removals_source
+        ON user_extension_removals(user_id, source_path)
+        WHERE source_path IS NOT NULL;
+    `);
   }
 
   async refreshCache(): Promise<void> {
@@ -231,6 +254,42 @@ export class ExtensionsRepository extends BaseRepository {
 
     await this.refreshRecordCache(input.id);
     return cache.get(input.id)!;
+  }
+
+  async markRemoved(record: ExtensionRecord): Promise<void> {
+    await this.execute(
+      `INSERT INTO user_extension_removals (user_id, extension_id, source_path, removed_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (user_id, extension_id) DO UPDATE SET
+         source_path = EXCLUDED.source_path,
+         removed_at = NOW()`,
+      [record.userId, record.id, record.sourcePath ?? null]
+    );
+  }
+
+  async clearRemoval(userId: string, extensionId: string, sourcePath?: string): Promise<void> {
+    await this.execute(
+      `DELETE FROM user_extension_removals
+       WHERE user_id = $1
+         AND (extension_id = $2 OR ($3 IS NOT NULL AND source_path = $3))`,
+      [userId, extensionId, sourcePath ?? null]
+    );
+  }
+
+  async isRemoved(userId: string, extensionId?: string, sourcePath?: string): Promise<boolean> {
+    if (!extensionId && !sourcePath) return false;
+
+    const row = await this.queryOne<ExtensionRemovalRow>(
+      `SELECT user_id, extension_id, source_path, removed_at
+       FROM user_extension_removals
+       WHERE user_id = $1
+         AND (($2 IS NOT NULL AND extension_id = $2)
+           OR ($3 IS NOT NULL AND source_path = $3))
+       LIMIT 1`,
+      [userId, extensionId ?? null, sourcePath ?? null]
+    );
+
+    return row !== null;
   }
 
   async updateStatus(

@@ -107,6 +107,9 @@ describe('ExtensionsRepository', () => {
 
       await repo.initialize();
 
+      expect(mockAdapter.exec).toHaveBeenCalledWith(
+        expect.stringContaining('user_extension_removals')
+      );
       expect(repo.getAll()).toHaveLength(2);
       expect(repo.getById('ext-a')).toBeTruthy();
       expect(repo.getById('ext-b')).toBeTruthy();
@@ -313,6 +316,43 @@ describe('ExtensionsRepository', () => {
 
       const deleted = await repo.delete('unknown');
       expect(deleted).toBe(false);
+    });
+  });
+
+  describe('removal markers', () => {
+    it('marks an extension as removed', async () => {
+      const record = {
+        ...makeRow(),
+        userId: 'default',
+        sourcePath: '/skills/test-ext/SKILL.md',
+      } as never;
+
+      await repo.markRemoved(record);
+
+      expect(mockAdapter.execute).toHaveBeenCalledWith(
+        expect.stringContaining('user_extension_removals'),
+        ['default', 'test-ext', '/skills/test-ext/SKILL.md']
+      );
+    });
+
+    it('clears removal marker by id or source path', async () => {
+      await repo.clearRemoval('default', 'test-ext', '/skills/test-ext/SKILL.md');
+
+      expect(mockAdapter.execute).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM user_extension_removals'),
+        ['default', 'test-ext', '/skills/test-ext/SKILL.md']
+      );
+    });
+
+    it('checks removal marker by id or source path', async () => {
+      mockAdapter.queryOne.mockResolvedValue({
+        user_id: 'default',
+        extension_id: 'test-ext',
+        source_path: '/skills/test-ext/SKILL.md',
+        removed_at: NOW,
+      });
+
+      await expect(repo.isRemoved('default', 'test-ext')).resolves.toBe(true);
     });
   });
 

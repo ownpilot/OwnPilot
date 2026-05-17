@@ -100,6 +100,27 @@ describe('scanSingleDirectory', () => {
     expect(result.errors[0].error).toContain('Invalid manifest');
   });
 
+  it('skips manifests when shouldSkip returns true', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      const p = String(path);
+      if (p === '/scan') return true;
+      if (p.endsWith('SKILL.md')) return true;
+      return false;
+    });
+    vi.mocked(readdirSync).mockReturnValue([
+      { name: 'removed-skill', isDirectory: () => true },
+    ] as never);
+
+    const installFn = vi.fn(async () => ({}));
+    const shouldSkip = vi.fn(async () => true);
+    const result = await scanSingleDirectory('/scan', 'user-1', installFn, shouldSkip);
+
+    expect(shouldSkip).toHaveBeenCalledTimes(1);
+    expect(installFn).not.toHaveBeenCalled();
+    expect(result.installed).toBe(0);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('handles unreadable directory', async () => {
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readdirSync).mockImplementation(() => {

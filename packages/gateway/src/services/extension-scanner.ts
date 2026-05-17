@@ -84,7 +84,8 @@ export interface ScanResult {
 export async function scanSingleDirectory(
   scanDir: string,
   userId: string,
-  installFn: (manifestPath: string, userId: string) => Promise<unknown>
+  installFn: (manifestPath: string, userId: string) => Promise<unknown>,
+  shouldSkip?: (manifestPath: string, userId: string) => boolean | Promise<boolean>
 ): Promise<ScanResult> {
   const errors: Array<{ path: string; error: string }> = [];
   let installed = 0;
@@ -125,6 +126,9 @@ export async function scanSingleDirectory(
     if (!manifestPath) continue;
 
     try {
+      if (shouldSkip && (await shouldSkip(manifestPath, userId))) {
+        continue;
+      }
       await installFn(manifestPath, userId);
       installed++;
     } catch (e) {
