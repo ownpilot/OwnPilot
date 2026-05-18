@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ClawConfig } from '../../../api/endpoints/claws';
 import { clawsApi } from '../../../api/endpoints/claws';
 import { useToast } from '../../../components/ToastProvider';
-import { Save, Settings2, Activity, Shield, BookOpen } from '../../../components/icons';
+import { chatApi } from '../../../api/endpoints/chat';
+import { settingsApi } from '../../../api/endpoints/settings';
+import { Save, Settings2, Activity, Shield, BookOpen, Sparkles } from '../../../components/icons';
 import { labelClass as lbl, inputClass as ic } from '../utils';
 
 const splitLines = (value: string) =>
@@ -70,6 +72,9 @@ export function SettingsTab({
   const [activeSection, setActiveSection] = useState<'general' | 'ai' | 'autonomy' | 'contract'>(
     'general'
   );
+  const [isAiSuggesting, setIsAiSuggesting] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setEditMission(claw.mission);
@@ -149,6 +154,92 @@ export function SettingsTab({
     }
   };
 
+  const suggestMission = async () => {
+    if (!editMission.trim()) {
+      toast.error('Enter a brief mission description first');
+      return;
+    }
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsAiSuggesting(true);
+    setAiSuggestion('');
+
+    let provider = 'openai';
+    let model = 'gpt-4o';
+    try {
+      const settings = await settingsApi.get();
+      provider = settings.defaultProvider || 'openai';
+      model = settings.defaultModel || 'gpt-4o';
+    } catch {
+      // use defaults
+    }
+
+    const userBrief = editMission.trim();
+    const clawContext = `Name: ${claw.name}
+Mode: ${editMode}
+Sandbox: ${editSandbox}
+Coding Agent: ${editCodingAgent || 'none'}
+Current mission: ${userBrief}`;
+
+    try {
+      const response = await chatApi.send(
+        {
+          message: `You are a claw mission designer. Generate a concise, actionable claw mission (1-3 sentences) that is specific and outcome-oriented. Keep it under 500 characters. Respond with ONLY the mission text.\n\nContext:\n${clawContext}`,
+          provider,
+          model,
+          stream: true,
+        },
+        { signal: controller.signal }
+      );
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim();
+            if (data === '[DONE]' || data === '') continue;
+            if (data.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content;
+                if (delta) {
+                  setAiSuggestion((prev) => prev + delta);
+                }
+              } catch {
+                setAiSuggestion((prev) => prev + data);
+              }
+            } else {
+              setAiSuggestion((prev) => prev + data);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        toast.error('AI suggestion failed');
+      }
+    } finally {
+      setIsAiSuggesting(false);
+    }
+  };
+
+  const applyAiSuggestion = () => {
+    if (aiSuggestion.trim()) {
+      setEditMission(aiSuggestion.trim());
+      setAiSuggestion('');
+    }
+  };
+
   const sectionTab = (
     id: 'general' | 'ai' | 'autonomy' | 'contract',
     label: string,
@@ -181,7 +272,18 @@ export function SettingsTab({
       {activeSection === 'general' && (
         <div className="space-y-4">
           <div>
-            <label className={lbl}>Mission</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className={lbl}>Mission</label>
+              <button
+                type="button"
+                onClick={suggestMission}
+                disabled={isAiSuggesting}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+              >
+                <Sparkles className="w-3 h-3" />
+                {isAiSuggesting ? 'Generating...' : 'AI assist'}
+              </button>
+            </div>
             <textarea
               value={editMission}
               onChange={(e) => setEditMission(e.target.value)}
@@ -189,6 +291,33 @@ export function SettingsTab({
               className={`${ic} resize-none`}
               placeholder="What should this claw do?"
             />
+            {aiSuggestion && (
+              <div className="mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-[10px] text-primary font-medium mb-1 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  AI suggestion
+                </p>
+                <p className="text-xs text-text-secondary dark:text-dark-text-secondary whitespace-pre-wrap">
+                  {aiSuggestion}
+                </p>
+                <div className="flex gap-1.5 mt-2">
+                  <button
+                    type="button"
+                    onClick={applyAiSuggestion}
+                    className="px-2 py-1 text-xs rounded bg-primary text-white hover:bg-primary/90 transition-colors"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAiSuggestion('')}
+                    className="px-2 py-1 text-xs rounded border border-border dark:border-dark-border text-text-muted hover:bg-bg-tertiary transition-colors"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
