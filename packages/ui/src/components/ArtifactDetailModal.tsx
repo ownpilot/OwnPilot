@@ -262,7 +262,7 @@ export function ArtifactDetailModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6 bg-bg-primary dark:bg-dark-bg-primary">
+        <div className="flex-1 overflow-auto p-6 bg-bg-primary dark:bg-dark-bg-primary min-h-0">
           {showSource ? (
             <pre className="w-full p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg overflow-auto text-sm font-mono text-text-primary dark:text-dark-text-primary border border-border dark:border-dark-border">
               {currentArtifact.content}

@@ -93,14 +93,12 @@ function HtmlRenderer({
   content,
   dataBindings,
   className,
-  fullWidth,
   autoHeight,
   height,
 }: {
   content: string;
   dataBindings?: DataBinding[];
   className?: string;
-  fullWidth?: boolean;
   autoHeight?: boolean;
   height?: number;
 }) {
@@ -128,10 +126,9 @@ function HtmlRenderer({
       sandbox="allow-scripts"
       className={`w-full border-0 rounded-lg bg-white dark:bg-dark-bg-tertiary ${className ?? ''}`}
       style={{
-        minHeight: fullWidth ? 400 : 200,
-        height: iframeHeight ? `${iframeHeight}px` : undefined,
+        height: iframeHeight ? `${iframeHeight}px` : '100%',
         display: 'block',
-        flexShrink: 0,
+        flex: 'none',
       }}
       title="Artifact"
     />
@@ -233,7 +230,6 @@ export function ArtifactRenderer({
           content={content}
           dataBindings={dataBindings}
           className={className}
-          fullWidth={fullWidth}
           autoHeight={autoHeight}
           height={height}
         />
