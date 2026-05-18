@@ -21,6 +21,7 @@ export { AuditTab, type AuditEntry } from './tabs/AuditTab';
 export { FilesTab } from './tabs/FilesTab';
 export { OutputTab, type ClawOutputEvent } from './tabs/OutputTab';
 export { ConversationTab } from './tabs/ConversationTab';
+export { SchedulesTab } from './tabs/SchedulesTab';
 
 // Re-export FileBrowser and FileEditorModal for parent (preserved from original)
 export { FileBrowser, FileEditorModal } from './FileBrowser';

@@ -20,6 +20,7 @@ import {
   Play,
   Pause,
   Square,
+  Clock,
 } from '../../components/icons';
 import { authedFetch, getStateBadge, inputClass as ic } from './utils';
 import {
@@ -34,6 +35,7 @@ import {
   FilesTab,
   OutputTab,
   ConversationTab,
+  SchedulesTab,
   type ClawOutputEvent,
   type AuditEntry,
 } from './ClawDetailTabs';
@@ -41,12 +43,13 @@ import {
 type DetailTab =
   | 'overview'
   | 'stats'
+  | 'runs'
+  | 'doctor'
+  | 'schedules'
   | 'settings'
   | 'skills'
   | 'memory'
   | 'config'
-  | 'runs'
-  | 'doctor'
   | 'files'
   | 'output'
   | 'conversation';
@@ -60,6 +63,7 @@ const DETAIL_TABS: {
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'runs', label: 'Runs', icon: FileText },
   { id: 'doctor', label: 'Doctor', icon: Wrench },
+  { id: 'schedules', label: 'Schedules', icon: Clock },
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'skills', label: 'Skills', icon: Puzzle },
   { id: 'memory', label: '.claw', icon: FileText },
@@ -512,6 +516,8 @@ export function ClawManagementPanel({
               applyDoctorFixes={applyDoctorFixes}
             />
           )}
+
+          {tab === 'schedules' && <SchedulesTab claw={claw} />}
 
           {tab === 'files' && (
             <FilesTab
