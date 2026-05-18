@@ -137,6 +137,7 @@ export function ArtifactCard({
               type={artifact.type}
               content={artifact.content}
               dataBindings={artifact.dataBindings}
+              cardView
             />
           </div>
         )}
@@ -219,6 +220,7 @@ export function ArtifactCard({
           type={artifact.type}
           content={artifact.content}
           dataBindings={artifact.dataBindings}
+          cardView
         />
       </div>
     </div>

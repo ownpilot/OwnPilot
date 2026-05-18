@@ -24,6 +24,8 @@ interface ArtifactRendererProps {
   fullWidth?: boolean;
   autoHeight?: boolean;
   height?: number;
+  /** When true, markdown content is truncated to a max-height with scroll */
+  cardView?: boolean;
 }
 
 function buildIframeDoc(content: string, dataBindings?: DataBinding[], autoHeight = false): string {
@@ -157,7 +159,28 @@ function SvgRenderer({
   );
 }
 
-function MarkdownRenderer({ content, className }: { content: string; className?: string }) {
+function MarkdownRenderer({
+  content,
+  className,
+  cardView,
+}: {
+  content: string;
+  className?: string;
+  cardView?: boolean;
+}) {
+  if (cardView) {
+    return (
+      <div
+        className={`prose dark:prose-invert max-w-none overflow-y-auto ${className ?? ''}`}
+        style={{ maxHeight: '12rem' }}
+      >
+        <MarkdownContent
+          content={content}
+          className="text-sm text-text-primary dark:text-dark-text-primary leading-relaxed"
+        />
+      </div>
+    );
+  }
   return (
     <div className={`prose dark:prose-invert max-w-none ${className ?? ''}`}>
       <MarkdownContent
@@ -221,6 +244,7 @@ export function ArtifactRenderer({
   fullWidth,
   autoHeight,
   height,
+  cardView,
 }: ArtifactRendererProps) {
   switch (type) {
     case 'html':
@@ -237,7 +261,7 @@ export function ArtifactRenderer({
     case 'svg':
       return <SvgRenderer content={content} className={className} fullWidth={fullWidth} />;
     case 'markdown':
-      return <MarkdownRenderer content={content} className={className} />;
+      return <MarkdownRenderer content={content} className={className} cardView={cardView} />;
     case 'form':
       return <FormRenderer content={content} className={className} />;
     case 'react':
