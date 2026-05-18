@@ -23,6 +23,8 @@ import {
   Wrench,
   X,
   Terminal,
+  Play,
+  Pause,
 } from '../components/icons';
 import { timeAgo } from './claws/utils';
 import type { ClawOutputEvent } from './claws/tabs/OutputTab';
@@ -38,7 +40,7 @@ import { ClawManagementPanel } from './claws/ClawManagementPanel';
 
 type PageTab = 'home' | 'claws';
 type DetailTab = 'overview' | 'doctor' | 'runs';
-type BulkOp = 'stop' | 'delete';
+type BulkOp = 'stop' | 'delete' | 'start' | 'pause';
 
 export function ClawsPage() {
   const [pageTab, setPageTab] = useState<PageTab>('claws');
@@ -337,6 +339,42 @@ export function ClawsPage() {
     fetchClaws();
   };
 
+  const bulkStart = async () => {
+    setBulkOp('start');
+    setBulkResults([]);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map((id) => clawsApi.start(id)));
+    const named = ids.map((id, i) => ({
+      id,
+      ok: results[i]?.status === 'fulfilled',
+      name: claws.find((c) => c.id === id)?.name ?? id,
+    }));
+    setBulkResults(named);
+    setBulkOp(null);
+    const ok = named.filter((r) => r.ok).length;
+    toast.success(`Started ${ok}/${ids.length} claws`);
+    setSelectedIds(new Set());
+    fetchClaws();
+  };
+
+  const bulkPause = async () => {
+    setBulkOp('pause');
+    setBulkResults([]);
+    const ids = [...selectedIds];
+    const results = await Promise.allSettled(ids.map((id) => clawsApi.pause(id)));
+    const named = ids.map((id, i) => ({
+      id,
+      ok: results[i]?.status === 'fulfilled',
+      name: claws.find((c) => c.id === id)?.name ?? id,
+    }));
+    setBulkResults(named);
+    setBulkOp(null);
+    const ok = named.filter((r) => r.ok).length;
+    toast.success(`Paused ${ok}/${ids.length} claws`);
+    setSelectedIds(new Set());
+    fetchClaws();
+  };
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const n = new Set(prev);
@@ -560,13 +598,39 @@ export function ClawsPage() {
               {/* Escalations */}
               {escalations.length > 0 && (
                 <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                      Pending Escalations
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-500/20 text-red-600 dark:text-red-300">
-                      {escalations.length}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-red-700 dark:text-red-300">
+                        Pending Escalations
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-500/20 text-red-600 dark:text-red-300">
+                        {escalations.length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          for (const esc of escalations) {
+                            await approveEscalation(esc.clawId);
+                          }
+                          setEscalations([]);
+                        }}
+                        className="px-2 py-1 text-[11px] rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                      >
+                        Approve All
+                      </button>
+                      <button
+                        onClick={async () => {
+                          for (const esc of escalations) {
+                            await denyEscalation(esc.clawId);
+                          }
+                          setEscalations([]);
+                        }}
+                        className="px-2 py-1 text-[11px] rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                      >
+                        Deny All
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     {escalations.map((esc) => (
@@ -716,11 +780,23 @@ export function ClawsPage() {
 
               {/* Bulk Actions (when items selected) */}
               {selectedIds.size > 0 && !bulkOp && (
-                <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
                   <span className="text-sm font-medium text-primary">
                     {selectedIds.size} selected
                   </span>
                   <div className="flex-1" />
+                  <button
+                    onClick={bulkStart}
+                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                  >
+                    <Play className="w-3 h-3" /> Start All
+                  </button>
+                  <button
+                    onClick={bulkPause}
+                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+                  >
+                    <Pause className="w-3 h-3" /> Pause All
+                  </button>
                   <button
                     onClick={bulkStop}
                     className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
@@ -747,7 +823,13 @@ export function ClawsPage() {
                 <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                      {bulkOp === 'stop' ? 'Stopping claws...' : 'Deleting claws...'}
+                      {bulkOp === 'start'
+                        ? 'Starting claws...'
+                        : bulkOp === 'pause'
+                          ? 'Pausing claws...'
+                          : bulkOp === 'stop'
+                            ? 'Stopping claws...'
+                            : 'Deleting claws...'}
                     </span>
                     <span className="text-xs text-text-muted">
                       {bulkResults.filter((r) => r.ok).length}/{bulkResults.length} done
