@@ -65,6 +65,7 @@ export function ClawsPage() {
     Array<{ clawId: string; name: string; type: string; reason: string; requestedAt: string }>
   >([]);
   const [outputFeed, setOutputFeed] = useState<ClawOutputEvent[]>([]);
+  const [needsAttentionCount, setNeedsAttentionCount] = useState(0);
 
   const { subscribe } = useGateway();
   const toast = useToast();
@@ -72,13 +73,15 @@ export function ClawsPage() {
 
   const fetchClaws = useCallback(async () => {
     try {
-      const [data, recs] = await Promise.all([
+      const [data, recs, stats] = await Promise.all([
         clawsApi.list(pageSize, page * pageSize),
         clawsApi.recommendations().catch(() => ({ recommendations: [] })),
+        clawsApi.stats().catch(() => ({ needsAttention: 0 })),
       ]);
       setClaws(data.claws);
       setTotalClaws(data.total);
       setRecommendations(recs.recommendations);
+      setNeedsAttentionCount(stats.needsAttention ?? 0);
     } catch {
       toast.error('Failed to load claws');
     } finally {
@@ -428,6 +431,7 @@ export function ClawsPage() {
           <p className="text-sm text-text-muted dark:text-dark-text-muted">
             {claws.length} claw{claws.length !== 1 ? 's' : ''}
             {runningCount > 0 && ` \u00B7 ${runningCount} running`}
+            {needsAttentionCount > 0 && ` \u00B7 ${needsAttentionCount} needs attention`}
           </p>
         </div>
         <div className="flex items-center gap-2">
