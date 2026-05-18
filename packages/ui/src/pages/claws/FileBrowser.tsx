@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../../components/ToastProvider';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import {
-  Plus,
-  X,
-  Save,
-  FolderOpen,
-  FileText,
-  Download,
-  ArrowLeft,
-} from '../../components/icons';
+import { Plus, X, Save, FolderOpen, FileText, Download, ArrowLeft } from '../../components/icons';
 import { authedFetch } from './utils';
 
 export function FileBrowser({
@@ -41,6 +33,10 @@ export function FileBrowser({
   const [newFileName, setNewFileName] = useState('');
   const [newFileContent, setNewFileContent] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const toast = useToast();
 
   const createFile = async () => {
@@ -69,10 +65,39 @@ export function FileBrowser({
     }
   };
 
+  const createFolder = async () => {
+    if (!newFolderName.trim()) {
+      toast.error('Folder name required');
+      return;
+    }
+    setIsCreatingFolder(true);
+    try {
+      const fullPath = currentPath
+        ? `${currentPath}/${newFolderName.trim()}`
+        : newFolderName.trim();
+      const res = await authedFetch(`/api/v1/file-workspaces/${workspaceId}/folder/${fullPath}`, {
+        method: 'PUT',
+      });
+      if (!res.ok) throw new Error('Create folder failed');
+      toast.success(`Created ${newFolderName.trim()}/`);
+      setShowNewFolder(false);
+      setNewFolderName('');
+      onFileCreated();
+    } catch {
+      toast.error('Failed to create folder');
+    } finally {
+      setIsCreatingFolder(false);
+    }
+  };
+
   const sorted = [...files].sort((a, b) => {
     if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
+
+  const filteredFiles = searchQuery
+    ? sorted.filter((f) => f.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : sorted;
 
   return (
     <div>
@@ -91,11 +116,29 @@ export function FileBrowser({
           {currentPath ? `/${currentPath}` : '/'}
         </span>
         <div className="flex-1" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Filter..."
+          className="w-28 px-2 py-1 text-xs rounded border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+        />
         <button
-          onClick={() => setShowNewFile(!showNewFile)}
+          onClick={() => {
+            setShowNewFolder(!showNewFolder);
+            setShowNewFile(false);
+          }}
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+        >
+          <Plus className="w-3 h-3" /> Folder
+        </button>
+        <button
+          onClick={() => {
+            setShowNewFile(!showNewFile);
+            setShowNewFolder(false);
+          }}
           className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-primary/10 text-primary hover:bg-primary/20"
         >
-          <Plus className="w-3 h-3" /> New File
+          <Plus className="w-3 h-3" /> File
         </button>
         <button onClick={onRefresh} className="text-xs text-primary hover:underline">
           Refresh
@@ -107,6 +150,36 @@ export function FileBrowser({
           ZIP
         </a>
       </div>
+
+      {/* New folder form */}
+      {showNewFolder && (
+        <div className="mb-3 p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-amber-500/20 space-y-2">
+          <input
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            placeholder="folder-name"
+            className="w-full px-3 py-1.5 text-sm rounded border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={createFolder}
+              disabled={isCreatingFolder}
+              className="px-3 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+            >
+              {isCreatingFolder ? 'Creating...' : 'Create Folder'}
+            </button>
+            <button
+              onClick={() => {
+                setShowNewFolder(false);
+                setNewFolderName('');
+              }}
+              className="px-3 py-1 text-xs rounded text-text-muted hover:text-text-primary"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* New file form */}
       {showNewFile && (
@@ -135,8 +208,10 @@ export function FileBrowser({
             <button
               onClick={() => {
                 setShowNewFile(false);
+                setShowNewFolder(false);
                 setNewFileName('');
                 setNewFileContent('');
+                setNewFolderName('');
               }}
               className="px-3 py-1 text-xs rounded text-text-muted hover:text-text-primary"
             >
@@ -149,13 +224,17 @@ export function FileBrowser({
       {/* File list */}
       {isLoading ? (
         <LoadingSpinner message="Loading files..." />
-      ) : sorted.length === 0 ? (
+      ) : filteredFiles.length === 0 ? (
         <p className="text-sm text-text-muted dark:text-dark-text-muted py-4 text-center">
-          {currentPath ? 'Empty directory.' : 'Workspace is empty. Create files or start the claw.'}
+          {searchQuery
+            ? `No files match "${searchQuery}"`
+            : currentPath
+              ? 'Empty directory.'
+              : 'Workspace is empty. Create files or start the claw.'}
         </p>
       ) : (
         <div className="space-y-1">
-          {sorted.map((file) => (
+          {filteredFiles.map((file) => (
             <button
               key={file.path}
               onClick={() => {
