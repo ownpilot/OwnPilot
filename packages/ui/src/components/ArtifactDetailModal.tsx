@@ -164,9 +164,7 @@ export function ArtifactDetailModal({
       <div className="w-full max-w-7xl h-full max-h-[90vh] bg-bg-primary dark:bg-dark-bg-primary rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center bg-bg-tertiary dark:bg-dark-bg-tertiary"
-          >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-bg-tertiary dark:bg-dark-bg-tertiary">
             <TypeIcon className={`w-5 h-5 ${cfg.color}`} />
           </div>
           <div className="flex-1 min-w-0">
@@ -270,14 +268,13 @@ export function ArtifactDetailModal({
               {currentArtifact.content}
             </pre>
           ) : (
-            <div className="w-full min-h-full">
-              <ArtifactRenderer
-                type={currentArtifact.type}
-                content={currentArtifact.content}
-                dataBindings={currentArtifact.dataBindings}
-                fullWidth
-              />
-            </div>
+            <ArtifactRenderer
+              type={currentArtifact.type}
+              content={currentArtifact.content}
+              dataBindings={currentArtifact.dataBindings}
+              fullWidth
+              autoHeight
+            />
           )}
         </div>
 

@@ -7,9 +7,12 @@
  * - markdown: MarkdownContent component
  * - form: JSON form schema rendered as inputs
  * - react: placeholder (deferred to v2)
+ *
+ * Auto-height: when autoHeight=true, iframes report their scrollHeight via
+ * postMessage so the parent can resize them to fit content exactly.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
 import { MarkdownContent } from './MarkdownContent';
 import type { ArtifactType, DataBinding } from '../api/endpoints/artifacts';
 
@@ -19,9 +22,11 @@ interface ArtifactRendererProps {
   dataBindings?: DataBinding[];
   className?: string;
   fullWidth?: boolean;
+  autoHeight?: boolean;
+  height?: number;
 }
 
-function buildIframeDoc(content: string, dataBindings?: DataBinding[]): string {
+function buildIframeDoc(content: string, dataBindings?: DataBinding[], autoHeight = false): string {
   const dataScript = dataBindings?.length
     ? `<script>window.__DATA__ = ${JSON.stringify(
         Object.fromEntries(
@@ -30,6 +35,24 @@ function buildIframeDoc(content: string, dataBindings?: DataBinding[]): string {
             .map((b) => [b.variableName, b.lastValue])
         )
       )};</script>`
+    : '';
+
+  const resizeObserver = autoHeight
+    ? `<script>
+  (function() {
+    function sendHeight() {
+      const h = document.body ? Math.max(document.body.scrollHeight, document.documentElement.scrollHeight) : 0;
+      window.parent.postMessage({ type: 'artifactHeight', height: h }, '*');
+    }
+    sendHeight();
+    if (window.ResizeObserver) {
+      new ResizeObserver(sendHeight).observe(document.body);
+    }
+    window.addEventListener('load', function() {
+      setTimeout(sendHeight, 100);
+    });
+  })();
+</script>`
     : '';
 
   return `<!DOCTYPE html>
@@ -45,6 +68,7 @@ function buildIframeDoc(content: string, dataBindings?: DataBinding[]): string {
   }
 </style>
 ${dataScript}
+${resizeObserver}
 </head>
 <body>${content}</body>
 </html>`;
@@ -70,26 +94,58 @@ function HtmlRenderer({
   dataBindings,
   className,
   fullWidth,
+  autoHeight,
+  height,
 }: {
   content: string;
   dataBindings?: DataBinding[];
   className?: string;
   fullWidth?: boolean;
+  autoHeight?: boolean;
+  height?: number;
 }) {
-  const srcdoc = useMemo(() => buildIframeDoc(content, dataBindings), [content, dataBindings]);
+  const [iframeHeight, setIframeHeight] = useState<number | undefined>(height);
+  const srcdoc = useMemo(
+    () => buildIframeDoc(content, dataBindings, autoHeight),
+    [content, dataBindings, autoHeight]
+  );
+
+  const handleMessage = useCallback((event: MessageEvent) => {
+    if (event.data?.type === 'artifactHeight') {
+      setIframeHeight(event.data.height);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!autoHeight) return;
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [autoHeight, handleMessage]);
 
   return (
     <iframe
       srcDoc={srcdoc}
       sandbox="allow-scripts"
       className={`w-full border-0 rounded-lg bg-white dark:bg-dark-bg-tertiary ${className ?? ''}`}
-      style={{ minHeight: fullWidth ? 400 : 200 }}
+      style={{
+        minHeight: fullWidth ? 400 : 200,
+        height: iframeHeight ? `${iframeHeight}px` : undefined,
+        ...(iframeHeight ? {} : {}),
+      }}
       title="Artifact"
     />
   );
 }
 
-function SvgRenderer({ content, className, fullWidth }: { content: string; className?: string; fullWidth?: boolean }) {
+function SvgRenderer({
+  content,
+  className,
+  fullWidth,
+}: {
+  content: string;
+  className?: string;
+  fullWidth?: boolean;
+}) {
   const srcdoc = useMemo(() => buildSvgDoc(content), [content]);
 
   return (
@@ -165,11 +221,22 @@ export function ArtifactRenderer({
   dataBindings,
   className,
   fullWidth,
+  autoHeight,
+  height,
 }: ArtifactRendererProps) {
   switch (type) {
     case 'html':
     case 'chart':
-      return <HtmlRenderer content={content} dataBindings={dataBindings} className={className} fullWidth={fullWidth} />;
+      return (
+        <HtmlRenderer
+          content={content}
+          dataBindings={dataBindings}
+          className={className}
+          fullWidth={fullWidth}
+          autoHeight={autoHeight}
+          height={height}
+        />
+      );
     case 'svg':
       return <SvgRenderer content={content} className={className} fullWidth={fullWidth} />;
     case 'markdown':
