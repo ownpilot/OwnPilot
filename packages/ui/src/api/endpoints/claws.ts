@@ -308,6 +308,17 @@ export const clawsApi = {
       byState: Record<string, number>;
       byHealth: Record<string, number>;
       needsAttention: number;
+      llmConcurrency: {
+        max: number;
+        active: number;
+        queued: number;
+        slots: Array<{
+          slotIdx: number;
+          agentId: string;
+          label: string;
+          state: 'active' | 'queued' | 'free';
+        }>;
+      };
     }>('/claws/stats'),
 
   approveEscalation: (id: string) =>

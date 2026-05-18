@@ -368,6 +368,7 @@ export function ClawManagementPanel({
   const state = claw.session?.state ?? null;
   const isRunning = state === 'running' || state === 'starting' || state === 'waiting';
   const isPaused = state === 'paused';
+  const session = claw.session;
 
   return (
     <div className="bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-sm animate-fade-in-up overflow-hidden">
@@ -375,6 +376,12 @@ export function ClawManagementPanel({
       <div className="px-5 py-3 border-b border-border dark:border-dark-border flex items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Zap className="w-4 h-4 text-primary shrink-0" />
+          {isRunning && (
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+          )}
           <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary truncate">
             {claw.name}
           </h3>
@@ -383,6 +390,15 @@ export function ClawManagementPanel({
           >
             {badge.text}
           </span>
+          {session && (
+            <div className="hidden sm:flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted ml-1">
+              <span title="Cycles">{session.cyclesCompleted}c</span>
+              <span className="text-border dark:text-dark-border">·</span>
+              <span title="Tool calls">{session.totalToolCalls}t</span>
+              <span className="text-border dark:text-dark-border">·</span>
+              <span title="Cost">${session.totalCostUsd.toFixed(3)}</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {!isRunning && !isPaused && (

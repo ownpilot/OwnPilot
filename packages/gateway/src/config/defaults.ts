@@ -426,6 +426,13 @@ export const RISK_HIGH_COST_THRESHOLD = 1000;
 export const RISK_HIGH_TOKEN_THRESHOLD = 5000;
 
 // ============================================================================
+// LLM Concurrency
+// ============================================================================
+
+/** Default maximum concurrent LLM calls across all agents (claws, fleet, subagents) */
+export const DEFAULT_MAX_LLM_CONCURRENCY = 3;
+
+// ============================================================================
 // Auth / Password Hashing
 // ============================================================================
 

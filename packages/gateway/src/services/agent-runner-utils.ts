@@ -36,6 +36,7 @@ import {
 } from '../tools/agent-tool-registry.js';
 import { gatewayConfigCenter } from './config-center-impl.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
+import { getLlmSemaphore } from './llm-semaphore.js';
 import type { ExtensionService } from './extension-service.js';
 import { getProviderMetricsRepository } from '../db/repositories/provider-metrics.js';
 
@@ -429,29 +430,39 @@ export async function executeAgentPipeline(
     opts.onToolEnd?.(tc, result);
   };
 
+  // LLM concurrency semaphore — prevents provider stampede across all agents
+  const llmSemaphore = getLlmSemaphore();
+  let releaseSemaphore: (() => void) | null = null;
+
   // Race: agent execution vs timeout vs optional cancellation
   const timeout = createTimeoutPromise(opts.timeoutMs, opts.timeoutLabel ?? 'Agent');
   const cancellation = opts.abortSignal ? createCancellationPromise(opts.abortSignal) : null;
-  const agentPromise = opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd });
-  // If timeout or cancellation wins the race, agentPromise keeps running and
-  // may eventually reject (provider error, late timeout). Without a handler,
-  // Node would emit unhandledRejection. timeout.promise / cancellation.promise
-  // already suppress this internally.
-  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-  agentPromise.catch(() => {});
-  const promises: Promise<unknown>[] = [agentPromise, timeout.promise];
-  if (cancellation) {
-    promises.push(cancellation.promise);
-  }
-
   let chatResult: {
     ok: boolean;
     value?: { content?: string; usage?: { promptTokens?: number; completionTokens?: number } };
     error?: { message?: string };
   };
   try {
+    // Acquire a concurrency slot before the LLM call fires
+    releaseSemaphore = await llmSemaphore.acquire(
+      opts.agentId ?? 'unknown',
+      opts.agentId ?? opts.timeoutLabel ?? 'agent'
+    );
+
+    const agentPromise = opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd });
+    // If timeout or cancellation wins the race, agentPromise keeps running and
+    // may eventually reject (provider error, late timeout). Without a handler,
+    // Node would emit unhandledRejection. timeout.promise / cancellation.promise
+    // already suppress this internally.
+    // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+    agentPromise.catch(() => {});
+    const promises: Promise<unknown>[] = [agentPromise, timeout.promise];
+    if (cancellation) {
+      promises.push(cancellation.promise);
+    }
     chatResult = (await Promise.race(promises)) as typeof chatResult;
   } finally {
+    releaseSemaphore?.();
     // Always clear the timeout and abort listener so we do not leak timers
     // or event listeners when the agent wins the race.
     timeout.cancel();

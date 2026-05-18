@@ -33,6 +33,8 @@ import {
 } from '@ownpilot/core';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getMigrationStatus } from '../paths/migration.js';
+import { getLlmSemaphore } from '../services/llm-semaphore.js';
+import { DEFAULT_MAX_LLM_CONCURRENCY } from '../config/defaults.js';
 
 export const settingsRoutes = new Hono();
 
@@ -734,3 +736,58 @@ settingsRoutes.put('/tool-groups', async (c) => {
 export function getEnabledToolGroupIds(): string[] {
   return settingsRepo.get<string[]>(TOOL_GROUPS_KEY) ?? DEFAULT_ENABLED_GROUPS;
 }
+
+// ============================================
+// LLM Concurrency Settings
+// ============================================
+
+const MAX_LLM_CONCURRENCY_KEY = 'gateway.max_llm_concurrency';
+
+/**
+ * GET /settings/max-llm-concurrency
+ * Returns the current max concurrent LLM calls setting.
+ */
+settingsRoutes.get('/max-llm-concurrency', async (c) => {
+  const stored = settingsRepo.get<number>(MAX_LLM_CONCURRENCY_KEY);
+  const semaphore = getLlmSemaphore();
+  return apiResponse(c, {
+    maxConcurrency: stored ?? DEFAULT_MAX_LLM_CONCURRENCY,
+    activeCalls: semaphore.activeCount,
+    queuedCalls: semaphore.queuedCount,
+  });
+});
+
+/**
+ * PUT /settings/max-llm-concurrency
+ * Updates the max concurrent LLM calls at runtime.
+ */
+settingsRoutes.put('/max-llm-concurrency', async (c) => {
+  try {
+    const body = await c.req.json<{ maxConcurrency?: number }>();
+    const val = body?.maxConcurrency;
+
+    if (val === undefined || typeof val !== 'number' || !Number.isInteger(val) || val < 1) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'maxConcurrency must be a positive integer',
+        },
+        400
+      );
+    }
+
+    await settingsRepo.set(MAX_LLM_CONCURRENCY_KEY, val);
+    getLlmSemaphore().setMaxSlots(val);
+
+    return apiResponse(c, {
+      maxConcurrency: val,
+      activeCalls: getLlmSemaphore().activeCount,
+      queuedCalls: getLlmSemaphore().queuedCount,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Validation failed:'))
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: err.message }, 400);
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});

@@ -33,6 +33,8 @@ import { CreateClawModal } from './claws/CreateClawModal';
 import { ClawCard } from './claws/ClawCard';
 import { ClawHomeTab } from './claws/ClawHomeTab';
 import { ClawManagementPanel } from './claws/ClawManagementPanel';
+import { ConcurrencyBar } from './claws/ConcurrencyBar';
+import { ignoreError } from '../utils/ignore-error';
 
 // =============================================================================
 // Page
@@ -68,6 +70,17 @@ export function ClawsPage() {
   >([]);
   const [outputFeed, setOutputFeed] = useState<ClawOutputEvent[]>([]);
   const [needsAttentionCount, setNeedsAttentionCount] = useState(0);
+  const [llmConcurrency, setLlmConcurrency] = useState<{
+    max: number;
+    active: number;
+    queued: number;
+    slots: Array<{
+      slotIdx: number;
+      agentId: string;
+      label: string;
+      state: 'active' | 'queued' | 'free';
+    }>;
+  } | null>(null);
 
   const { subscribe } = useGateway();
   const toast = useToast();
@@ -78,18 +91,38 @@ export function ClawsPage() {
       const [data, recs, stats] = await Promise.all([
         clawsApi.list(pageSize, page * pageSize),
         clawsApi.recommendations().catch(() => ({ recommendations: [] })),
-        clawsApi.stats().catch(() => ({ needsAttention: 0 })),
+        clawsApi.stats().catch(() => ({ needsAttention: 0, llmConcurrency: null })),
       ]);
       setClaws(data.claws);
       setTotalClaws(data.total);
       setRecommendations(recs.recommendations);
       setNeedsAttentionCount(stats.needsAttention ?? 0);
+      if (stats.llmConcurrency) setLlmConcurrency(stats.llmConcurrency);
     } catch {
       toast.error('Failed to load claws');
     } finally {
       setIsLoading(false);
     }
   }, [page, pageSize, toast]);
+
+  const updateLlmConcurrency = async (newMax: number) => {
+    try {
+      const res = await fetch('/settings/max-llm-concurrency', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxConcurrency: newMax }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.data?.llmConcurrency) {
+        setLlmConcurrency(data.data.llmConcurrency);
+      } else if (llmConcurrency) {
+        setLlmConcurrency({ ...llmConcurrency, max: newMax });
+      }
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     fetchClaws();
@@ -135,6 +168,21 @@ export function ClawsPage() {
           const next = [...prev, evt];
           return next.slice(-100); // keep last 100 events
         });
+      }),
+      subscribe<{ max: number; active: number; queued: number }>('llm.slot.update', (p) => {
+        // Refetch stats to get updated slot labels — stats endpoint resolves agentIds to claw names
+        ignoreError(
+          clawsApi.stats().then((s) => {
+            if (s.llmConcurrency) setLlmConcurrency(s.llmConcurrency);
+          }),
+          'llm.slot.update'
+        );
+        // Apply lightweight count update immediately for responsiveness
+        setLlmConcurrency((prev) =>
+          prev
+            ? { ...prev, max: p.max, active: p.active, queued: p.queued }
+            : { max: p.max, active: p.active, queued: p.queued, slots: [] }
+        );
       }),
     ];
     return () => unsubs.forEach((u) => u());
@@ -492,6 +540,24 @@ export function ClawsPage() {
           </button>
         </div>
       </header>
+
+      {/* LLM Concurrency Slots Bar — always visible, skeleton while loading */}
+      <ConcurrencyBar
+        maxSlots={llmConcurrency?.max ?? 3}
+        active={llmConcurrency?.active ?? 0}
+        queued={llmConcurrency?.queued ?? 0}
+        slots={
+          llmConcurrency?.slots ??
+          Array.from({ length: llmConcurrency?.max ?? 3 }, (_, i) => ({
+            slotIdx: i,
+            agentId: '',
+            label: `Slot ${i + 1}`,
+            state: 'free' as const,
+          }))
+        }
+        onIncrease={() => updateLlmConcurrency((llmConcurrency?.max ?? 3) + 1)}
+        onDecrease={() => updateLlmConcurrency((llmConcurrency?.max ?? 3) - 1)}
+      />
 
       {/* Live Output Feed — collapsed strip showing real-time claw output */}
       {outputFeed.length > 0 && (

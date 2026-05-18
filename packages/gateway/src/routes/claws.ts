@@ -21,6 +21,7 @@ import type {
   UpdateClawInput,
 } from '@ownpilot/core';
 import { getClawService } from '../services/claw-service.js';
+import { getLlmSemaphore } from '../services/llm-semaphore.js';
 import {
   getUserId,
   apiResponse,
@@ -532,6 +533,14 @@ clawRoutes.get('/stats', async (c) => {
       byHealth[health] = (byHealth[health] ?? 0) + 1;
     }
 
+    // LLM concurrency slots
+    const sem = getLlmSemaphore();
+    const llmSlots = sem.getDetailedSlots((agentId) => {
+      // Resolve agentId to claw name if available in this user's claws
+      const found = configs.find((cfg) => cfg.id === agentId);
+      return found?.name ?? agentId;
+    });
+
     return apiResponse(c, {
       total: configs.length,
       running: sessions.filter((s) => ['running', 'starting', 'waiting'].includes(s.state)).length,
@@ -544,6 +553,12 @@ clawRoutes.get('/stats', async (c) => {
       byMode,
       byState,
       byHealth,
+      llmConcurrency: {
+        max: sem.currentMaxSlots,
+        active: sem.activeCount,
+        queued: sem.queuedCount,
+        slots: llmSlots,
+      },
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);

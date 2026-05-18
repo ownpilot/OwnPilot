@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ClawHistoryEntry } from '../../../api/endpoints/claws';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import { CheckCircle2, XCircle } from '../../../components/icons';
+import { CheckCircle2, XCircle, Search } from '../../../components/icons';
 import { formatDuration, formatCost, timeAgo } from '../utils';
 
 export function HistoryTab({
@@ -16,11 +16,18 @@ export function HistoryTab({
   loadHistory: () => void;
 }) {
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const filtered =
-    filter === 'all'
-      ? history
-      : history.filter((e) => (filter === 'success' ? e.success : !e.success));
+  const filtered = history.filter((e) => {
+    const matchState = filter === 'all' || (filter === 'success' ? e.success : !e.success);
+    const q = searchQuery.toLowerCase();
+    const matchSearch =
+      !q ||
+      (e.error ?? '').toLowerCase().includes(q) ||
+      (e.outputMessage ?? '').toLowerCase().includes(q) ||
+      String(e.cycleNumber).includes(q);
+    return matchState && matchSearch;
+  });
 
   return (
     <div className="space-y-3">
@@ -29,6 +36,15 @@ export function HistoryTab({
           {historyTotal} total cycles
         </p>
         <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search cycles..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted"
+            />
+          </div>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as typeof filter)}
