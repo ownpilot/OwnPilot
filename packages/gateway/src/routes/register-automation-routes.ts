@@ -12,6 +12,7 @@ import {
   workflowRoutes,
   autonomyRoutes,
   executionPermissionsRoutes,
+  pulseRoutes,
 } from './index.js';
 
 export function registerAutomationRoutes(app: Hono): void {
@@ -29,4 +30,7 @@ export function registerAutomationRoutes(app: Hono): void {
 
   // Execution Permissions (granular code execution security)
   app.route('/api/v1/execution-permissions', executionPermissionsRoutes);
+
+  // Pulse Engine routes (soul + claw monitoring)
+  app.route('/api/v1/pulse', pulseRoutes);
 }

@@ -366,6 +366,9 @@ export {
   listCrewTemplates,
 } from './soul/index.js';
 
+// Claw Agent (autonomous runtime monitoring)
+export { ClawCircuitBreaker, ClawMetricsCollector } from './claw/index.js';
+
 // Soul Communication Tools (tool definitions for agent-to-agent messaging)
 export {
   SOUL_COMMUNICATION_TOOLS,

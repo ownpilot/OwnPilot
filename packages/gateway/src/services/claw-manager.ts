@@ -741,6 +741,19 @@ export class ClawManager {
       // Broadcast update for UI
       this.broadcastUpdate(clawId, managed);
 
+      // Emit structured summary for Pulse Engine metrics collector
+      this.emitEvent('claw.cycle.summary', {
+        clawId,
+        cycleNumber,
+        success: result.success,
+        durationMs: result.durationMs,
+        costUsd: result.costUsd,
+        toolCallsCount: result.toolCalls.length,
+        consecutiveErrors: managed.consecutiveErrors,
+        totalCostUsd: managed.session.totalCostUsd,
+        state: managed.session.state,
+      });
+
       // Check stop conditions
       if (this.shouldStop(managed, result)) {
         await this.stopClawInternal(clawId, managed, 'completed');
@@ -992,7 +1005,7 @@ export class ClawManager {
       for (const eventType of filters) {
         const handler: EventHandler = (event: unknown) => {
           // Guard against self-trigger loops when an event-mode claw filters on
-          // event types it can emit itself (e.g. claw.*, claw.cycle.complete).
+          // event types it can emit itself (e.g. claw.*, claw.cycle.complete, claw.cycle.summary).
           const ev = event as
             | { source?: string; payload?: { _clawId?: string; clawId?: string } }
             | undefined;

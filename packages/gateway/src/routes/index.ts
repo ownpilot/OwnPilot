@@ -64,3 +64,4 @@ export { cliChatRoutes } from './cli-chat.js';
 export { fleetRoutes } from './fleet.js';
 export { notificationRoutes } from './notifications.js';
 export { clawRoutes } from './claws.js';
+export { pulseRoutes } from './pulse.js';

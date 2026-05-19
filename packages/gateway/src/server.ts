@@ -463,6 +463,10 @@ async function main() {
   const { getHeartbeatService } = await import('./services/heartbeat-service.js');
   registry.register(Services.Heartbeat, getHeartbeatService());
 
+  // 19b. Pulse Metrics Service (claw + soul monitoring)
+  const { getPulseMetricsService } = await import('./services/pulse-metrics-service.js');
+  getPulseMetricsService().start();
+
   // 20. Coding Agent Service (external AI coding CLI orchestration)
   const { getCodingAgentService } = await import('./services/coding-agent-service.js');
   registry.register(Services.CodingAgent, getCodingAgentService());
