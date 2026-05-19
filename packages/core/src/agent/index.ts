@@ -368,6 +368,12 @@ export {
 
 // Claw Agent (autonomous runtime monitoring)
 export { ClawCircuitBreaker, ClawMetricsCollector } from './claw/index.js';
+export type {
+  ClawCircuitState,
+  ClawCircuitSnapshot,
+  ClawMetrics,
+  ClawCycleSummary,
+} from './claw/index.js';
 
 // Soul Communication Tools (tool definitions for agent-to-agent messaging)
 export {
