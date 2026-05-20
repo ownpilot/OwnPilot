@@ -196,7 +196,7 @@ crudRoutes.patch('/:id', async (c) => {
 
     await extensionsRepo.upsert({
       id: record.id,
-      userId: record.userId,
+      userId: userId, // [SECURITY] Use authenticated userId, not record.userId (AUTH-003)
       name: newName,
       description: newDesc,
       version: newVersion,

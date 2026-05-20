@@ -287,6 +287,9 @@ webhookRoutes.post('/trigger/:triggerId', async (c) => {
     try {
       const service = getServiceRegistry().get(Services.Workflow);
       // Fire-and-forget: execute in background, don't block the webhook response
+      // [SECURITY] trigger.userId is set at trigger creation time by the owning user.
+      // HMAC signature above guarantees the caller knows the trigger secret, which only
+      // the trigger owner should have — so we can trust trigger.userId here.
       service
         .executeWorkflow(workflowId, trigger.userId ?? 'default')
         .catch((err: Error) => log.error(`Webhook workflow execution failed: ${err.message}`));
@@ -371,6 +374,8 @@ webhookRoutes.post('/workflow/:path', async (c) => {
   // Execute the workflow with webhook data as input
   try {
     const service = getServiceRegistry().get(Services.Workflow);
+    // [SECURITY] HMAC above proves the caller knows the workflow's webhookSecret, which
+    // only the workflow owner should have — so workflow.userId is implicitly authorized.
     const userId = workflow.userId ?? 'default';
 
     // Fire-and-forget: execute in background, don't block the webhook response
