@@ -5,10 +5,74 @@
  * All endpoints are protected by API key authentication.
  */
 
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { getTunnelService } from '../services/tunnel-service.js';
+import { apiError, apiResponse, ERROR_CODES, getErrorMessage } from './helpers.js';
 
 const app = new Hono();
+
+// cloudflared's --basic-auth expects user:password — disallow ':' so a stray
+// colon can't split the password into a second username segment. Restrict to
+// printable ASCII excluding space and ':' to keep the value safe to pass as a
+// process argument and to avoid newline/control-char injection.
+const PASSWORD_RE = /^[!-9;-~]{8,128}$/;
+
+// FQDN-ish: lowercase letters, digits, dashes (not at segment boundaries),
+// segments separated by dots, total length 1-253.
+const HOSTNAME_RE =
+  /^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+interface ConfigBody {
+  password?: unknown;
+  port?: unknown;
+  hostname?: unknown;
+}
+
+function validatePassword(
+  value: unknown
+): { ok: true; value: string | undefined } | { ok: false; error: string } {
+  if (value === undefined || value === null || value === '') return { ok: true, value: undefined };
+  if (typeof value !== 'string') return { ok: false, error: 'password must be a string' };
+  if (!PASSWORD_RE.test(value)) {
+    return {
+      ok: false,
+      error: 'password must be 8-128 printable ASCII chars (no spaces or ":")',
+    };
+  }
+  return { ok: true, value };
+}
+
+function validatePort(
+  value: unknown
+): { ok: true; value: number | undefined } | { ok: false; error: string } {
+  if (value === undefined || value === null) return { ok: true, value: undefined };
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 65535) {
+    return { ok: false, error: 'port must be an integer in [1, 65535]' };
+  }
+  return { ok: true, value };
+}
+
+function validateHostname(
+  value: unknown
+): { ok: true; value: string | undefined } | { ok: false; error: string } {
+  if (value === undefined || value === null || value === '') return { ok: true, value: undefined };
+  if (typeof value !== 'string') return { ok: false, error: 'hostname must be a string' };
+  if (!HOSTNAME_RE.test(value)) {
+    return { ok: false, error: 'hostname must be a valid FQDN' };
+  }
+  return { ok: true, value };
+}
+
+async function readJsonBody(c: Context): Promise<Record<string, unknown>> {
+  try {
+    const body = (await c.req.json()) as unknown;
+    return body && typeof body === 'object' && !Array.isArray(body)
+      ? (body as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
 
 /**
  * GET /api/v1/tunnel
@@ -16,8 +80,7 @@ const app = new Hono();
  */
 app.get('/', (c) => {
   const service = getTunnelService();
-  const status = service.getStatus();
-  return c.json({ ...status });
+  return apiResponse(c, service.getStatus());
 });
 
 /**
@@ -28,9 +91,9 @@ app.get('/url', (c) => {
   const service = getTunnelService();
   const url = service.getUrl();
   if (!url) {
-    return c.json({ error: 'Tunnel not running', code: 'TUNNEL_NOT_RUNNING' }, 404);
+    return apiError(c, { code: 'TUNNEL_NOT_RUNNING', message: 'Tunnel not running' }, 404);
   }
-  return c.json({ url });
+  return apiResponse(c, { url });
 });
 
 /**
@@ -38,15 +101,18 @@ app.get('/url', (c) => {
  * Starts the tunnel with optional password override.
  */
 app.post('/start', async (c) => {
-  const service = getTunnelService();
-  const body = (await c.req.json().catch(() => ({}))) as { password?: string };
+  const body = (await readJsonBody(c)) as { password?: unknown };
+  const password = validatePassword(body.password);
+  if (!password.ok) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: password.error }, 400);
+  }
 
   try {
-    const status = await service.start(body.password);
-    return c.json({ url: status.url, status: status.status });
+    const service = getTunnelService();
+    const status = await service.start(password.value);
+    return apiResponse(c, { url: status.url, status: status.status });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return c.json({ error: message, code: 'TUNNEL_START_FAILED' }, 500);
+    return apiError(c, { code: 'TUNNEL_START_FAILED', message: getErrorMessage(err) }, 500);
   }
 });
 
@@ -57,7 +123,7 @@ app.post('/start', async (c) => {
 app.post('/stop', async (c) => {
   const service = getTunnelService();
   await service.stop();
-  return c.json({ status: 'stopped' });
+  return apiResponse(c, { status: 'stopped' });
 });
 
 /**
@@ -65,20 +131,29 @@ app.post('/stop', async (c) => {
  * Updates tunnel configuration for the next start.
  */
 app.put('/config', async (c) => {
-  const service = getTunnelService();
-  const body = (await c.req.json().catch(() => ({}))) as {
-    password?: string;
-    port?: number;
-    hostname?: string;
-  };
+  const body = (await readJsonBody(c)) as ConfigBody;
 
+  const password = validatePassword(body.password);
+  if (!password.ok) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: password.error }, 400);
+  }
+  const port = validatePort(body.port);
+  if (!port.ok) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: port.error }, 400);
+  }
+  const hostname = validateHostname(body.hostname);
+  if (!hostname.ok) {
+    return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: hostname.error }, 400);
+  }
+
+  const service = getTunnelService();
   service.configure({
-    password: body.password,
-    port: body.port,
-    hostname: body.hostname,
+    password: password.value,
+    port: port.value,
+    hostname: hostname.value,
   });
 
-  return c.json({ status: 'configured' });
+  return apiResponse(c, { status: 'configured' });
 });
 
 export { app as tunnelRoutes };
