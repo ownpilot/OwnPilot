@@ -922,6 +922,10 @@ CREATE INDEX IF NOT EXISTS idx_triggers_user ON triggers(user_id);
 CREATE INDEX IF NOT EXISTS idx_triggers_type ON triggers(type);
 CREATE INDEX IF NOT EXISTS idx_triggers_enabled ON triggers(enabled);
 CREATE INDEX IF NOT EXISTS idx_triggers_next_fire ON triggers(next_fire);
+-- Partial index for getDueTriggers() polling query (user_id + next_fire ordering,
+-- predicates pushed into the index condition so disabled/event/null rows are skipped).
+CREATE INDEX IF NOT EXISTS idx_triggers_due ON triggers(user_id, next_fire)
+  WHERE enabled = true AND type = 'schedule' AND next_fire IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_trigger_history_trigger ON trigger_history(trigger_id);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_fired ON trigger_history(fired_at DESC);
 CREATE INDEX IF NOT EXISTS idx_trigger_history_status ON trigger_history(status);

@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS fleet_tasks (
 
 CREATE INDEX IF NOT EXISTS idx_fleet_tasks_fleet_id ON fleet_tasks(fleet_id);
 CREATE INDEX IF NOT EXISTS idx_fleet_tasks_status ON fleet_tasks(status);
+-- Composite for FleetManager.tick() ready-task lookup (fleet_id + status filter).
+CREATE INDEX IF NOT EXISTS idx_fleet_tasks_fleet_status ON fleet_tasks(fleet_id, status);
 
 -- Fleet worker execution history
 CREATE TABLE IF NOT EXISTS fleet_worker_history (
