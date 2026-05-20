@@ -36,6 +36,14 @@ export const WS_SESSION_TIMEOUT_MS = 300_000;
 /** Maximum WebSocket payload size (bytes) */
 export const WS_MAX_PAYLOAD_BYTES = 1024 * 1024; // 1 MB
 
+/**
+ * Maximum outbound buffered bytes per socket before broadcast frames are
+ * dropped for that socket. Protects the gateway from OOM when one client
+ * (e.g. mobile on a flaky link) can't drain frames as fast as we produce
+ * them. Targeted clients still get future frames once their buffer drains.
+ */
+export const WS_MAX_BUFFERED_BYTES = 4 * 1024 * 1024; // 4 MB
+
 /** Maximum concurrent WebSocket connections */
 export const WS_MAX_CONNECTIONS = 50;
 

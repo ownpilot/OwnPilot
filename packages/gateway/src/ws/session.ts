@@ -14,6 +14,7 @@ import {
   WS_RATE_LIMIT_BURST,
   WS_MAX_METADATA_VALUE_BYTES,
   WS_MAX_METADATA_KEY_LENGTH,
+  WS_MAX_BUFFERED_BYTES,
   WS_READY_STATE_OPEN,
 } from '../config/defaults.js';
 
@@ -301,6 +302,10 @@ export class SessionManager {
   ): boolean {
     const session = this.sessions.get(sessionId);
     if (session && session.socket.readyState === WS_READY_STATE_OPEN) {
+      if (session.socket.bufferedAmount > WS_MAX_BUFFERED_BYTES) {
+        log.warn(`Dropped ${event} for session ${sessionId} (slow client)`);
+        return false;
+      }
       const message: WSMessage<ServerEvents[K]> = {
         type: event,
         payload,
@@ -331,8 +336,13 @@ export class SessionManager {
     const data = JSON.stringify(message);
 
     const stale: string[] = [];
+    let dropped = 0;
     for (const session of this.sessions.values()) {
       if (session.socket.readyState === WS_READY_STATE_OPEN) {
+        if (session.socket.bufferedAmount > WS_MAX_BUFFERED_BYTES) {
+          dropped++;
+          continue;
+        }
         try {
           session.socket.send(data);
           count++;
@@ -345,6 +355,11 @@ export class SessionManager {
     // Clean up stale sessions
     for (const id of stale) {
       this.remove(id);
+    }
+    if (dropped > 0) {
+      log.warn(
+        `Dropped ${event} for ${dropped} slow client(s) (bufferedAmount > ${WS_MAX_BUFFERED_BYTES})`
+      );
     }
 
     return count;
@@ -367,8 +382,13 @@ export class SessionManager {
     const data = JSON.stringify(message);
 
     const stale: string[] = [];
+    let dropped = 0;
     for (const session of this.sessions.values()) {
       if (session.channels.has(channelId) && session.socket.readyState === WS_READY_STATE_OPEN) {
+        if (session.socket.bufferedAmount > WS_MAX_BUFFERED_BYTES) {
+          dropped++;
+          continue;
+        }
         try {
           session.socket.send(data);
           count++;
@@ -379,6 +399,9 @@ export class SessionManager {
     }
     for (const id of stale) {
       this.remove(id);
+    }
+    if (dropped > 0) {
+      log.warn(`Dropped channel ${channelId} ${event} for ${dropped} slow client(s)`);
     }
 
     return count;
