@@ -120,6 +120,25 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
       setSaveError(cronValidation.error ?? 'Invalid cron expression');
       return;
     }
+    if (type === 'event' && !eventType.trim()) {
+      setSaveError('Event type is required');
+      return;
+    }
+    if (type === 'webhook') {
+      const path = webhookPath.trim();
+      if (!path) {
+        setSaveError('Webhook path is required');
+        return;
+      }
+      if (!path.startsWith('/')) {
+        setSaveError('Webhook path must start with "/"');
+        return;
+      }
+      if (!/^\/[A-Za-z0-9/_-]+$/.test(path)) {
+        setSaveError('Webhook path may contain letters, digits, "/", "_" and "-" only');
+        return;
+      }
+    }
 
     setIsSaving(true);
     try {
@@ -127,12 +146,12 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
       if (type === 'schedule') {
         config.cron = cron.trim();
       } else if (type === 'event') {
-        config.eventType = eventType;
+        config.eventType = eventType.trim();
       } else if (type === 'condition') {
         config.condition = condition;
         if (threshold > 0) config.threshold = threshold;
       } else if (type === 'webhook') {
-        config.webhookPath = webhookPath;
+        config.webhookPath = webhookPath.trim();
       }
 
       let payload: Record<string, unknown> = {};
@@ -437,7 +456,11 @@ export function TriggerModal({ trigger, onClose, onSave }: TriggerModalProps) {
               <button
                 type="submit"
                 disabled={
-                  !name.trim() || isSaving || (type === 'schedule' && !cronValidation.valid)
+                  !name.trim() ||
+                  isSaving ||
+                  (type === 'schedule' && !cronValidation.valid) ||
+                  (type === 'event' && !eventType.trim()) ||
+                  (type === 'webhook' && !webhookPath.trim())
                 }
                 className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >

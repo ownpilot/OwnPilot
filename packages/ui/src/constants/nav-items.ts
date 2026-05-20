@@ -104,6 +104,7 @@ export const navGroups: NavGroup[] = [
       { to: '/triggers', icon: Zap, label: 'Triggers' },
       { to: '/workflows', icon: GitBranch, label: 'Workflows' },
       { to: '/autonomous', icon: Bot, label: 'Autonomous Agents' },
+      { to: '/subagents', icon: Bot, label: 'Subagents' },
       { to: '/artifacts', icon: LayoutTemplate, label: 'Artifacts' },
       { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },

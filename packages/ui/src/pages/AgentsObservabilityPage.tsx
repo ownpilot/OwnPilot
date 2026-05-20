@@ -1450,8 +1450,8 @@ export function AgentsObservabilityPage() {
     const unsubs = [
       subscribe('subagent:completed', loadAll),
       subscribe('subagent:spawned', loadAll),
-      subscribe('claw:cycle:completed', loadAll),
-      subscribe('orchestra:step:completed', loadAll),
+      subscribe('claw:cycle:complete', loadAll),
+      subscribe('orchestration:step:completed', loadAll),
       subscribe('crew:task:completed', loadAll),
       subscribe('soul:heartbeat:completed', loadAll),
       subscribe('fleet:worker:completed', loadAll),
