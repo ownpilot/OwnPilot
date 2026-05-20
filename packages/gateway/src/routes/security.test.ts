@@ -39,6 +39,8 @@ const {
   mockScanTriggers,
   mockScanWorkflows,
   mockScanCliPolicies,
+  mockScanSingleTrigger,
+  mockScanSingleWorkflow,
   mockAnalyzeToolCode,
   mockCalculateSecurityScore,
   mockTriggersRepo,
@@ -50,6 +52,8 @@ const {
   mockScanTriggers: vi.fn(async () => mockSectionResult),
   mockScanWorkflows: vi.fn(async () => mockSectionResult),
   mockScanCliPolicies: vi.fn(async () => mockSectionResult),
+  mockScanSingleTrigger: vi.fn(async () => null as unknown),
+  mockScanSingleWorkflow: vi.fn(async () => null as unknown),
   mockAnalyzeToolCode: vi.fn(() => ({
     valid: true,
     errors: [],
@@ -70,6 +74,8 @@ vi.mock('../services/security-scanner.js', () => ({
   scanTriggers: mockScanTriggers,
   scanWorkflows: mockScanWorkflows,
   scanCliPolicies: mockScanCliPolicies,
+  scanSingleTrigger: mockScanSingleTrigger,
+  scanSingleWorkflow: mockScanSingleWorkflow,
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -255,12 +261,11 @@ describe('Security Routes', () => {
 
   describe('POST /security/scan/trigger', () => {
     it('returns scan result for existing trigger', async () => {
-      mockTriggersRepo.get.mockResolvedValueOnce({ id: 'trg-1', name: 'My Trigger' });
-      mockScanTriggers.mockResolvedValueOnce({
-        count: 1,
-        issues: 0,
+      mockScanSingleTrigger.mockResolvedValueOnce({
+        id: 'trg-1',
+        name: 'My Trigger',
         score: 95,
-        items: [{ id: 'trg-1', name: 'My Trigger', score: 95, risks: [] }],
+        risks: [],
       });
 
       const res = await app.request('/security/scan/trigger', {
@@ -274,24 +279,7 @@ describe('Security Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.id).toBe('trg-1');
       expect(json.data.score).toBe(95);
-    });
-
-    it('returns default safe result when trigger not found in scan items', async () => {
-      mockTriggersRepo.get.mockResolvedValueOnce({ id: 'trg-2', name: 'Other Trigger' });
-      // scanTriggers returns items without trg-2
-      mockScanTriggers.mockResolvedValueOnce({ count: 0, issues: 0, score: 100, items: [] });
-
-      const res = await app.request('/security/scan/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ triggerId: 'trg-2' }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.id).toBe('trg-2');
-      expect(json.data.score).toBe(100);
-      expect(json.data.risks).toEqual([]);
+      expect(mockScanSingleTrigger).toHaveBeenCalledWith(expect.any(String), 'trg-1');
     });
 
     it('returns 400 when triggerId is missing', async () => {
@@ -307,7 +295,7 @@ describe('Security Routes', () => {
     });
 
     it('returns 404 when trigger does not exist in DB', async () => {
-      mockTriggersRepo.get.mockResolvedValueOnce(null);
+      mockScanSingleTrigger.mockResolvedValueOnce(null);
 
       const res = await app.request('/security/scan/trigger', {
         method: 'POST',
@@ -340,12 +328,11 @@ describe('Security Routes', () => {
 
   describe('POST /security/scan/workflow', () => {
     it('returns scan result for existing workflow', async () => {
-      mockWorkflowsRepo.get.mockResolvedValueOnce({ id: 'wf-1', name: 'My Workflow' });
-      mockScanWorkflows.mockResolvedValueOnce({
-        count: 1,
-        issues: 0,
+      mockScanSingleWorkflow.mockResolvedValueOnce({
+        id: 'wf-1',
+        name: 'My Workflow',
         score: 88,
-        items: [{ id: 'wf-1', name: 'My Workflow', score: 88, riskyNodes: [] }],
+        riskyNodes: [],
       });
 
       const res = await app.request('/security/scan/workflow', {
@@ -359,23 +346,7 @@ describe('Security Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.id).toBe('wf-1');
       expect(json.data.score).toBe(88);
-    });
-
-    it('returns default safe result when workflow not found in scan items', async () => {
-      mockWorkflowsRepo.get.mockResolvedValueOnce({ id: 'wf-2', name: 'Other Workflow' });
-      mockScanWorkflows.mockResolvedValueOnce({ count: 0, issues: 0, score: 100, items: [] });
-
-      const res = await app.request('/security/scan/workflow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflowId: 'wf-2' }),
-      });
-
-      expect(res.status).toBe(200);
-      const json = await res.json();
-      expect(json.data.id).toBe('wf-2');
-      expect(json.data.score).toBe(100);
-      expect(json.data.riskyNodes).toEqual([]);
+      expect(mockScanSingleWorkflow).toHaveBeenCalledWith(expect.any(String), 'wf-1');
     });
 
     it('returns 400 when workflowId is missing', async () => {
@@ -391,7 +362,7 @@ describe('Security Routes', () => {
     });
 
     it('returns 404 when workflow does not exist in DB', async () => {
-      mockWorkflowsRepo.get.mockResolvedValueOnce(null);
+      mockScanSingleWorkflow.mockResolvedValueOnce(null);
 
       const res = await app.request('/security/scan/workflow', {
         method: 'POST',

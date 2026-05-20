@@ -290,6 +290,25 @@ export async function scanTriggers(userId: string): Promise<SectionScanResult<Tr
   };
 }
 
+export async function scanSingleTrigger(
+  userId: string,
+  triggerId: string
+): Promise<TriggerScanItem | null> {
+  const repo = createTriggersRepository(userId);
+  const trigger = await repo.get(triggerId);
+  if (!trigger) return null;
+  const { score, risks } = assessTriggerRisk(trigger);
+  return {
+    id: trigger.id,
+    name: trigger.name,
+    type: trigger.type,
+    enabled: trigger.enabled,
+    score,
+    actionType: trigger.action.type,
+    risks,
+  };
+}
+
 function assessTriggerRisk(trigger: Trigger): { score: number; risks: string[] } {
   const risks: string[] = [];
   let baseScore = TRIGGER_ACTION_RISK[trigger.action.type] ?? 70;
@@ -361,6 +380,24 @@ export async function scanWorkflows(userId: string): Promise<SectionScanResult<W
     issues,
     score: averageScores(items.map((i) => i.score)),
     items,
+  };
+}
+
+export async function scanSingleWorkflow(
+  userId: string,
+  workflowId: string
+): Promise<WorkflowScanItem | null> {
+  const repo = createWorkflowsRepository(userId);
+  const wf = await repo.get(workflowId);
+  if (!wf) return null;
+  const { score, riskyNodes } = assessWorkflowRisk(wf);
+  return {
+    id: wf.id,
+    name: wf.name,
+    status: wf.status,
+    score,
+    nodeCount: wf.nodes.length,
+    riskyNodes,
   };
 }
 

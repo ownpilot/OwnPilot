@@ -76,7 +76,8 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
             <StatCard label="IoT" value="3" sub="2 online" />
           </div>
           <p className="text-sm text-text-secondary dark:text-dark-text-secondary leading-relaxed">
-            Manage IoT and edge devices via MQTT. Register sensors, actuators, and machines on your Tailscale network.
+            Manage IoT and edge devices via MQTT. Register sensors, actuators, and machines on your
+            Tailscale network.
           </p>
         </div>
         <div className="p-4 border-t border-border dark:border-dark-border">
@@ -179,9 +180,7 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
               </h4>
               <span
                 className={`inline-block text-xs px-2 py-0.5 rounded font-semibold ${
-                  iot.status === 'online'
-                    ? 'bg-success/10 text-success'
-                    : 'bg-error/10 text-error'
+                  iot.status === 'online' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
                 }`}
               >
                 {iot.status === 'online' ? 'Online' : 'Offline'}
@@ -220,9 +219,7 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
   }
 
   // ---- Nav item detail (original behavior) ----
-  const item = selectedItemPath
-    ? ALL_NAV_ITEMS.find((i) => i.to === selectedItemPath)
-    : undefined;
+  const item = selectedItemPath ? ALL_NAV_ITEMS.find((i) => i.to === selectedItemPath) : undefined;
 
   const isPinned = selectedItemPath ? pinnedItems.includes(selectedItemPath) : false;
   const description = selectedItemPath ? (NAV_DESCRIPTIONS[selectedItemPath] ?? '') : '';
@@ -234,7 +231,7 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
       return;
     }
     setPinnedItems((prev) =>
-      isPinned ? prev.filter((p) => p !== selectedItemPath) : [...prev, selectedItemPath],
+      isPinned ? prev.filter((p) => p !== selectedItemPath) : [...prev, selectedItemPath]
     );
   };
 
@@ -321,10 +318,7 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
           }`}
           data-testid="customize-detail-pin"
         >
-          <Pin
-            className="w-3.5 h-3.5"
-            style={!isPinned ? { fill: 'currentColor' } : undefined}
-          />
+          <Pin className="w-3.5 h-3.5" style={!isPinned ? { fill: 'currentColor' } : undefined} />
           {isPinned ? 'Unpin from Sidebar' : 'Pin to Sidebar'}
         </button>
 
@@ -335,19 +329,6 @@ export function CustomizeDetailPanel({ selectedItemPath }: CustomizeDetailPanelP
         >
           Open Page
           <ExternalLink className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => {
-            // Switch to local-files tab — future enhancement
-          }}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-muted dark:text-dark-text-muted border border-border dark:border-dark-border rounded-md opacity-50 cursor-not-allowed"
-          disabled
-          title="Coming soon"
-          data-testid="customize-detail-files"
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          Show in Files
         </button>
       </div>
     </aside>

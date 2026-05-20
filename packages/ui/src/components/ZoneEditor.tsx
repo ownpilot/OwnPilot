@@ -10,11 +10,34 @@ import { useLayoutConfig } from '../hooks/useLayoutConfig';
 import { useHeaderItems } from '../hooks/useHeaderItems';
 import { ALL_NAV_ITEMS, NAV_ITEM_MAP, navGroups } from '../constants/nav-items';
 import { PAGE_LAYOUT_REGISTRY } from '../constants/page-layouts';
-import { LayoutDashboard, AlignLeft, Type, X, Plus, ChevronDown, FileCode, GripVertical, ListChecks, Minus } from './icons';
+import {
+  LayoutDashboard,
+  AlignLeft,
+  Type,
+  X,
+  Plus,
+  ChevronDown,
+  FileCode,
+  GripVertical,
+  ListChecks,
+  Minus,
+} from './icons';
 import type { WireframeZone } from './LayoutWireframe';
 import type { HeaderZoneId, HeaderItemDisplayMode } from '../types/layout-config';
-import { SIDEBAR_SECTION_LABELS, SIDEBAR_WIDTH_VALUES, CORE_SECTION_IDS, type SidebarWidth } from '../types/layout-config';
-import { SECTION_GROUP_LABELS, getSectionIcon, getSectionLabel, getSectionGroup as getGroup, DATA_SECTION_ROUTES, type SidebarSectionGroup } from '../constants/sidebar-sections';
+import {
+  SIDEBAR_SECTION_LABELS,
+  SIDEBAR_WIDTH_VALUES,
+  CORE_SECTION_IDS,
+  type SidebarWidth,
+} from '../types/layout-config';
+import {
+  SECTION_GROUP_LABELS,
+  getSectionIcon,
+  getSectionLabel,
+  getSectionGroup as getGroup,
+  DATA_SECTION_ROUTES,
+  type SidebarSectionGroup,
+} from '../constants/sidebar-sections';
 
 const ZONE_LABELS: Record<WireframeZone, string> = {
   'header-brand': 'Header — Brand',
@@ -34,19 +57,31 @@ const HEADER_ZONE_MAP: Record<string, HeaderZoneId> = {
   'header-right': 'right',
 };
 
-const DISPLAY_MODES: { mode: HeaderItemDisplayMode; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const DISPLAY_MODES: {
+  mode: HeaderItemDisplayMode;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { mode: 'icon', label: 'Icon', icon: LayoutDashboard },
   { mode: 'icon-text', label: 'Icon+Text', icon: AlignLeft },
   { mode: 'text', label: 'Text', icon: Type },
 ];
 
-function isEditableHeaderZone(zone: WireframeZone): zone is 'header-left' | 'header-center' | 'header-right' {
+function isEditableHeaderZone(
+  zone: WireframeZone
+): zone is 'header-left' | 'header-center' | 'header-right' {
   return zone in HEADER_ZONE_MAP;
 }
 
 export function ZoneEditor({ zone }: { zone: WireframeZone }) {
-  const { config, getZone, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry } = useLayoutConfig();
-  const { headerItems, addItem: addLegacyItem, addGroup: addLegacyGroup, removeByIndex: removeLegacyByIndex } = useHeaderItems();
+  const { config, getZone, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry } =
+    useLayoutConfig();
+  const {
+    headerItems,
+    addItem: addLegacyItem,
+    addGroup: addLegacyGroup,
+    removeByIndex: removeLegacyByIndex,
+  } = useHeaderItems();
   const [addMenuOpen, setAddMenuOpen] = useState<'item' | 'group' | null>(null);
   const [addItemSearch, setAddItemSearch] = useState('');
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -68,10 +103,12 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   if (!isEditableHeaderZone(zone)) {
     return (
       <div className="rounded-lg border border-border dark:border-dark-border p-4">
-        <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">{label}</h3>
+        <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary mb-2">
+          {label}
+        </h3>
         {zone === 'header-brand' && (
           <p className="text-xs text-text-muted dark:text-dark-text-muted">
-            Displays the application name. Brand customization coming soon.
+            Fixed zone — displays the application name. Not configurable.
           </p>
         )}
         {zone === 'header-settings' && (
@@ -81,12 +118,13 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
         )}
         {zone === 'customize' && (
           <p className="text-xs text-text-muted dark:text-dark-text-muted">
-            The sidebar panel for pinning items and groups to Sidebar/Header. Managed via the Customize button in the sidebar.
+            The sidebar panel for pinning items and groups to Sidebar/Header. Managed via the
+            Customize button in the sidebar.
           </p>
         )}
         {zone === 'stats-panel' && (
-          <p className="text-xs text-text-muted dark:text-dark-text-muted italic">
-            {label} customization options coming soon — width, density, visibility.
+          <p className="text-xs text-text-muted dark:text-dark-text-muted">
+            Fixed zone — stats display. Not configurable.
           </p>
         )}
       </div>
@@ -101,10 +139,18 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
   // Items already in ANY zone (prevent duplicates across zones)
   const allZoneIds: (typeof zoneId)[] = ['left', 'center', 'right'];
   const usedPaths = new Set(
-    allZoneIds.flatMap((z) => getZone(z).entries.filter((e) => e.type === 'item').map((e) => (e as { path: string }).path))
+    allZoneIds.flatMap((z) =>
+      getZone(z)
+        .entries.filter((e) => e.type === 'item')
+        .map((e) => (e as { path: string }).path)
+    )
   );
   const usedGroupIds = new Set(
-    allZoneIds.flatMap((z) => getZone(z).entries.filter((e) => e.type === 'group').map((e) => (e as { id: string }).id))
+    allZoneIds.flatMap((z) =>
+      getZone(z)
+        .entries.filter((e) => e.type === 'group')
+        .map((e) => (e as { id: string }).id)
+    )
   );
 
   const availableItems = ALL_NAV_ITEMS.filter((item) => !usedPaths.has(item.to));
@@ -116,9 +162,18 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
     setAddMenuOpen(null);
   };
 
-  const handleAddGroup = (group: typeof navGroups[number]) => {
-    addZoneEntry(zoneId, { type: 'group', id: group.id, label: group.label, items: group.items.map((i) => i.to) });
-    addLegacyGroup(group.id, group.label, group.items.map((i) => i.to)); // sync to legacy store
+  const handleAddGroup = (group: (typeof navGroups)[number]) => {
+    addZoneEntry(zoneId, {
+      type: 'group',
+      id: group.id,
+      label: group.label,
+      items: group.items.map((i) => i.to),
+    });
+    addLegacyGroup(
+      group.id,
+      group.label,
+      group.items.map((i) => i.to)
+    ); // sync to legacy store
     setAddMenuOpen(null);
   };
 
@@ -211,14 +266,24 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                 entryLabel = `${entry.label} (${entry.items.length} items)`;
               }
 
-              const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
+              const showLineBefore =
+                dragIdx !== null &&
+                dropTarget === i &&
+                dropTarget !== dragIdx &&
+                dropTarget !== dragIdx + 1;
 
               return (
-                <div key={entry.type === 'item' ? entry.path : entry.type === 'group' ? entry.id : `widget-${i}`}>
+                <div
+                  key={
+                    entry.type === 'item'
+                      ? entry.path
+                      : entry.type === 'group'
+                        ? entry.id
+                        : `widget-${i}`
+                  }
+                >
                   {/* Drop indicator line BEFORE this item */}
-                  {showLineBefore && (
-                    <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
-                  )}
+                  {showLineBefore && <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />}
                   <div
                     draggable
                     onDragStart={() => setDragIdx(i)}
@@ -228,21 +293,32 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                       dragIdx === i ? 'opacity-30' : ''
                     }`}
                   >
-                  <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
-                  {EntryIcon && <EntryIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />}
-                  {entry.type === 'group' && <ChevronDown className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />}
-                  <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">{entryLabel}</span>
-                  <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">{entry.type}</span>
-                  <button
-                    onClick={() => handleRemoveEntry(i)}
-                    className="w-5 h-5 flex items-center justify-center rounded hover:bg-error/10 hover:text-error transition-colors text-text-muted dark:text-dark-text-muted"
-                    title="Remove"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                    <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
+                    {EntryIcon && (
+                      <EntryIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />
+                    )}
+                    {entry.type === 'group' && (
+                      <ChevronDown className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
+                    )}
+                    <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">
+                      {entryLabel}
+                    </span>
+                    <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">
+                      {entry.type}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveEntry(i)}
+                      className="w-5 h-5 flex items-center justify-center rounded hover:bg-error/10 hover:text-error transition-colors text-text-muted dark:text-dark-text-muted"
+                      title="Remove"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </div>
                   {/* Drop indicator line AFTER last item */}
-                  {(i === zoneConfig.entries.length - 1 && dragIdx !== null && dropTarget === zoneConfig.entries.length && dropTarget !== dragIdx) ? (
+                  {i === zoneConfig.entries.length - 1 &&
+                  dragIdx !== null &&
+                  dropTarget === zoneConfig.entries.length &&
+                  dropTarget !== dragIdx ? (
                     <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
                   ) : null}
                 </div>
@@ -256,7 +332,10 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
       <div className="flex gap-2 relative">
         <div className="relative">
           <button
-            onClick={() => { setAddMenuOpen(addMenuOpen === 'item' ? null : 'item'); setAddItemSearch(''); }}
+            onClick={() => {
+              setAddMenuOpen(addMenuOpen === 'item' ? null : 'item');
+              setAddItemSearch('');
+            }}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
           >
             <Plus className="w-3 h-3" /> Add Item
@@ -274,30 +353,30 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                 />
               </div>
               <div className="max-h-[280px] overflow-y-auto py-1">
-              {(() => {
-                const filtered = availableItems.filter((item) =>
-                  item.label.toLowerCase().includes(addItemSearch.toLowerCase())
-                );
-                return filtered.length === 0 ? (
-                  <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">
-                    {availableItems.length === 0 ? 'All items already added' : 'No matches'}
-                  </p>
-                ) : (
-                  filtered.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.to}
-                        onClick={() => handleAddItem(item.to)}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                      >
-                        <Icon className="w-3.5 h-3.5 shrink-0" />
-                        <span className="truncate">{item.label}</span>
-                      </button>
-                    );
-                  })
-                );
-              })()}
+                {(() => {
+                  const filtered = availableItems.filter((item) =>
+                    item.label.toLowerCase().includes(addItemSearch.toLowerCase())
+                  );
+                  return filtered.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-text-muted dark:text-dark-text-muted italic">
+                      {availableItems.length === 0 ? 'All items already added' : 'No matches'}
+                    </p>
+                  ) : (
+                    filtered.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.to}
+                          onClick={() => handleAddItem(item.to)}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+                        >
+                          <Icon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </button>
+                      );
+                    })
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -314,7 +393,9 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
             <div className="absolute top-full left-0 mt-1 min-w-[220px] max-h-[280px] overflow-y-auto py-1 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shadow-lg z-50">
               {availableGroups.length > 0 && (
                 <>
-                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">Preset Groups</p>
+                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+                    Preset Groups
+                  </p>
                   {availableGroups.map((group) => {
                     const GIcon = group.icon;
                     return (
@@ -325,7 +406,9 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
                       >
                         <GIcon className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">{group.label}</span>
-                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">{group.items.length}</span>
+                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">
+                          {group.items.length}
+                        </span>
                       </button>
                     );
                   })}
@@ -336,21 +419,30 @@ export function ZoneEditor({ zone }: { zone: WireframeZone }) {
               {config.customGroups.length > 0 && (
                 <>
                   <div className="h-px bg-border/50 dark:bg-dark-border/50 my-1" />
-                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">Custom Groups</p>
+                  <p className="px-3 py-1 text-[9px] text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
+                    Custom Groups
+                  </p>
                   {config.customGroups
                     .filter((g) => !usedGroupIds.has(g.id))
                     .map((group) => (
                       <button
                         key={group.id}
                         onClick={() => {
-                          addZoneEntry(zoneId, { type: 'group', id: group.id, label: group.label, items: group.items });
+                          addZoneEntry(zoneId, {
+                            type: 'group',
+                            id: group.id,
+                            label: group.label,
+                            items: group.items,
+                          });
                           setAddMenuOpen(null);
                         }}
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
                       >
                         <ChevronDown className="w-3.5 h-3.5 shrink-0 text-text-muted dark:text-dark-text-muted" />
                         <span className="truncate">{group.label}</span>
-                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">{group.items.length}</span>
+                        <span className="ml-auto text-[9px] text-text-muted dark:text-dark-text-muted">
+                          {group.items.length}
+                        </span>
                       </button>
                     ))}
                 </>
@@ -379,7 +471,15 @@ function getAddableSectionGroup(id: string): SidebarSectionGroup {
 }
 
 function SidebarZoneEditor() {
-  const { config, getSidebarSections, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth } = useLayoutConfig();
+  const {
+    config,
+    getSidebarSections,
+    addSidebarSection,
+    removeSidebarSection,
+    toggleSidebarSectionStyle,
+    reorderSidebarSections,
+    setSidebarWidth,
+  } = useLayoutConfig();
   const sections = getSidebarSections();
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -430,7 +530,12 @@ function SidebarZoneEditor() {
       <div className="space-y-2">
         <p className="text-xs text-text-muted dark:text-dark-text-muted">Width (desktop only)</p>
         <div className="flex gap-1">
-          {(Object.entries(SIDEBAR_WIDTH_VALUES) as [SidebarWidth, typeof SIDEBAR_WIDTH_VALUES[SidebarWidth]][]).map(([key, val]) => (
+          {(
+            Object.entries(SIDEBAR_WIDTH_VALUES) as [
+              SidebarWidth,
+              (typeof SIDEBAR_WIDTH_VALUES)[SidebarWidth],
+            ][]
+          ).map(([key, val]) => (
             <button
               key={key}
               onClick={() => setSidebarWidth(key)}
@@ -456,16 +561,18 @@ function SidebarZoneEditor() {
         <div className="space-y-1">
           {sections.map((section, i) => {
             const sectionLabel = getSectionLabel(section.id);
-            const showLineBefore = dragIdx !== null && dropTarget === i && dropTarget !== dragIdx && dropTarget !== dragIdx + 1;
+            const showLineBefore =
+              dragIdx !== null &&
+              dropTarget === i &&
+              dropTarget !== dragIdx &&
+              dropTarget !== dragIdx + 1;
             const isCore = CORE_SECTION_IDS.has(section.id);
             const isFlat = section.style === 'flat';
             const SectionIcon = getSectionIcon(section.id);
 
             return (
               <div key={section.id}>
-                {showLineBefore && (
-                  <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
-                )}
+                {showLineBefore && <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />}
                 <div
                   draggable
                   onDragStart={() => setDragIdx(i)}
@@ -476,12 +583,16 @@ function SidebarZoneEditor() {
                   }`}
                 >
                   <GripVertical className="w-3 h-3 shrink-0 text-text-muted dark:text-dark-text-muted" />
-                  {SectionIcon && <SectionIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />}
+                  {SectionIcon && (
+                    <SectionIcon className="w-3.5 h-3.5 shrink-0 text-text-secondary dark:text-dark-text-secondary" />
+                  )}
                   <span className="flex-1 truncate text-text-primary dark:text-dark-text-primary">
                     {sectionLabel}
                   </span>
                   {isCore && (
-                    <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">core</span>
+                    <span className="text-[9px] text-text-muted dark:text-dark-text-muted uppercase">
+                      core
+                    </span>
                   )}
                   {/* Style toggle — available for all non-core sections */}
                   {!isCore && (
@@ -492,9 +603,15 @@ function SidebarZoneEditor() {
                           ? 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
                           : 'text-primary hover:bg-primary/10'
                       }`}
-                      title={isFlat ? 'Switch to accordion (show items)' : 'Switch to flat (link only)'}
+                      title={
+                        isFlat ? 'Switch to accordion (show items)' : 'Switch to flat (link only)'
+                      }
                     >
-                      {isFlat ? <Minus className="w-3.5 h-3.5" /> : <ListChecks className="w-3.5 h-3.5" />}
+                      {isFlat ? (
+                        <Minus className="w-3.5 h-3.5" />
+                      ) : (
+                        <ListChecks className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   )}
                   {/* Remove button — not shown for core sections */}
@@ -509,7 +626,10 @@ function SidebarZoneEditor() {
                   )}
                 </div>
                 {/* Drop indicator line AFTER last item */}
-                {i === sections.length - 1 && dragIdx !== null && dropTarget === sections.length && dropTarget !== dragIdx ? (
+                {i === sections.length - 1 &&
+                dragIdx !== null &&
+                dropTarget === sections.length &&
+                dropTarget !== dragIdx ? (
                   <div className="h-0.5 bg-primary rounded-full mx-2 my-0.5" />
                 ) : null}
               </div>
@@ -540,7 +660,10 @@ function SidebarZoneEditor() {
                     return (
                       <button
                         key={id}
-                        onClick={() => { addSidebarSection(id); setAddMenuOpen(false); }}
+                        onClick={() => {
+                          addSidebarSection(id);
+                          setAddMenuOpen(false);
+                        }}
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-text-primary dark:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
                       >
                         {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
@@ -677,19 +800,27 @@ function ContentZoneEditor() {
             </p>
             <p>
               <span className="text-text-muted dark:text-dark-text-muted">Lines: </span>
-              {activeSection.lines[0]}–{activeSection.lines[1]} ({activeSection.lines[1] - activeSection.lines[0]} lines)
+              {activeSection.lines[0]}–{activeSection.lines[1]} (
+              {activeSection.lines[1] - activeSection.lines[0]} lines)
             </p>
           </div>
           {activeSection.subComponents && activeSection.subComponents.length > 0 && (
             <div className="pt-1 border-t border-border/50 dark:border-dark-border/50">
-              <p className="text-[10px] text-text-muted dark:text-dark-text-muted mb-1">Sub-components:</p>
+              <p className="text-[10px] text-text-muted dark:text-dark-text-muted mb-1">
+                Sub-components:
+              </p>
               <div className="space-y-0.5">
                 {activeSection.subComponents.map((sub) => (
-                  <div key={sub.name} className="flex items-center gap-2 text-[10px] font-mono text-text-secondary dark:text-dark-text-secondary">
+                  <div
+                    key={sub.name}
+                    className="flex items-center gap-2 text-[10px] font-mono text-text-secondary dark:text-dark-text-secondary"
+                  >
                     <span className="text-primary">{sub.name}</span>
                     <span className="text-text-muted dark:text-dark-text-muted">→</span>
                     <span className="truncate">{sub.file}</span>
-                    <span className="text-text-muted dark:text-dark-text-muted shrink-0">({sub.lines}L)</span>
+                    <span className="text-text-muted dark:text-dark-text-muted shrink-0">
+                      ({sub.lines}L)
+                    </span>
                   </div>
                 ))}
               </div>

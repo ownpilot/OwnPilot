@@ -18,6 +18,8 @@ import {
   scanTriggers,
   scanWorkflows,
   scanCliPolicies,
+  scanSingleTrigger,
+  scanSingleWorkflow,
 } from '../services/security-scanner.js';
 import {
   getUserId,
@@ -27,7 +29,6 @@ import {
   parseJsonBody,
   notFoundError,
 } from './helpers.js';
-import { createTriggersRepository, createWorkflowsRepository } from '../db/repositories/index.js';
 
 export const securityRoutes = new Hono();
 
@@ -114,17 +115,9 @@ securityRoutes.post('/scan/trigger', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'triggerId is required' }, 400);
   }
 
-  const repo = createTriggersRepository(userId);
-  const trigger = await repo.get(body.triggerId);
-  if (!trigger) {
-    return notFoundError(c, 'Trigger', body.triggerId);
-  }
-
-  // Run scan on all triggers and find the specific one
-  const result = await scanTriggers(userId);
-  const item = result.items.find((i) => i.id === body.triggerId);
-
-  return apiResponse(c, item ?? { id: body.triggerId, score: 100, risks: [] });
+  const item = await scanSingleTrigger(userId, body.triggerId);
+  if (!item) return notFoundError(c, 'Trigger', body.triggerId);
+  return apiResponse(c, item);
 });
 
 // =============================================================================
@@ -149,17 +142,9 @@ securityRoutes.post('/scan/workflow', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'workflowId is required' }, 400);
   }
 
-  const repo = createWorkflowsRepository(userId);
-  const wf = await repo.get(body.workflowId);
-  if (!wf) {
-    return notFoundError(c, 'Workflow', body.workflowId);
-  }
-
-  // Run scan on all workflows and find the specific one
-  const result = await scanWorkflows(userId);
-  const item = result.items.find((i) => i.id === body.workflowId);
-
-  return apiResponse(c, item ?? { id: body.workflowId, score: 100, riskyNodes: [] });
+  const item = await scanSingleWorkflow(userId, body.workflowId);
+  if (!item) return notFoundError(c, 'Workflow', body.workflowId);
+  return apiResponse(c, item);
 });
 
 // =============================================================================
