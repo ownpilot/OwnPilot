@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-22
+
+### Added
+
+- **Tunnel system** — Full tunnel wizard, service, routes, and UI for exposing local services securely.
+- **OpenAPI 3.1 spec** — Auto-generated OpenAPI document with embedded Swagger UI explorer for gateway endpoints.
+- **Pulse Engine: claw monitoring** — Claw runtime state surfaced through the Pulse Engine.
+- **Heartbeat: full feature set** — Circuit breaker, retries, metrics, and forecasting layered onto the soul heartbeat service.
+- **Claws: 8 new management tools** — `pause_claw`, `resume_claw`, `update_claw`, `delete_claw`, `doctor_claw`, `apply_fixes_claw`, `restart_claw`, plus one additional management primitive.
+- **Claws: LLM concurrency slot limiter** — Bounded provider parallelism with live UI feedback in `ClawsPage`.
+- **Claws UI rework** — Sidebar tabs, header start/stop/pause controls, dedicated Runs tab, Schedules tab for interval/mode monitoring, enriched Overview/Stats/Skills/Config/Doctor/Audit/Conversation/Output tabs (search, filters, expanded views, JSON export), bulk start/pause and escalations batch approve/deny, needs-attention badge in header, live output feed, interval config in CreateClawModal and ClawCard, AI mission assist in CreateClawModal and SettingsTab.
+- **FileBrowser enrichment** — In-tree search, folder creation, and folder toggle.
+- **ClawCard enrichment** — Skills, coding agent, and preset badges surfaced on each card.
+
+### Changed
+
+- Bumped OwnPilot workspace packages from `0.4.0` to `0.5.0` for the next minor release.
+
+### Fixed
+
+- **Channel resilience** — Both WhatsApp (`consecutive440Count`) and Telegram (`reconnectAttempts`) now defer the on-success counter reset behind a 2-minute stable-connection window. A 409/440 displace storm with brief successful opens between conflicts can no longer zero the counter on every cycle and loop past `maxAttempts`.
+- **8 CRITICAL gateway findings** — Transaction boundaries, semaphore correctness, retention sweeps, and schema/DB mismatches across hot paths.
+- **Database hardening** — Authorization scoping, deterministic ordering, missing row locks, JSONB tag handling, OFFSET caps, and batch-insert correctness across multiple repositories.
+- **Multi-tenant authz** — `conversations.getAll` scoped by `userId`, claws scans capped, three additional cross-tenant leaks closed, SSE cancel signals propagated, bridges route updated to `repo.listForUser(userId)`.
+- **Chat** — Accurate context-window resolution via `resolveContextWindow` / `resolveMaxOutput` / `computeMemoryMaxTokens` (synced from models.dev, no hardcoded limits). Durable auto-compact mirrors compaction to the database so it survives gateway restart / agent eviction; concurrency guard rechecks message count after summarization to refuse mid-flight collisions.
+- **Concurrency** — Singleton timers now stop in graceful shutdown; race-safe conversation create with dead cache deletes removed; orchestrator cancel propagated through stream tear-down; single `--disallowed-tools` flag; pre-flight LLM API-key check.
+- **WebSocket** — Backpressure guard on broadcast/send drops slow clients instead of unbounded queueing.
+- **Fleet / MQTT** — Orphan detection, true round-robin scheduling, MQTT host fallback.
+- **Tunnel routes** — `apiResponse`/`apiError` envelope normalization and input validation.
+- **Gateway routing** — Route ordering fix, dead code removed, load all env files.
+- **UI** — WS event names, trigger validation, subagents nav; artifact card view truncates long markdown with scroll; ArtifactDetailModal iframe auto-height for HTML/SVG and fills full height; skip-home targets `tools` tab (not `customtools`); FleetPage refetch coalescing; radix and v2 copy polish; ZoneEditor docs.
+
+### Security
+
+- **Token hygiene** — `pg_dump` output redaction, bootstrap token minimum length raised to 32, API-key comparison via timing-safe SHA-256 digest, JWT lifetime bounded with `requiredClaims: ['iat']` + `maxTokenAge`.
+- **SSRF DNS-rebinding** — Shared `utils/ssrf.ts` (`isBlockedUrl` + `isPrivateUrlAsync` with 1-minute cache) covers `browser-service`, `/chat/fetch-url`, and `web-fetch` executors; `call_json_api` now in `PERMISSION_GATED_TOOLS` with the `network` permission.
+- **Sandbox / signing** — Sandbox constructor escape closed; webhook signing hardened (HMAC + timestamp freshness).
+- **Trusted-proxy gating** — `getRequestOrigin` / `getRequestUrl` / `isSecureRequest` honor `X-Forwarded-*` only when `TRUSTED_PROXY=true` and the connection IP is in `TRUSTED_PROXY_IPS`.
+- **Extension privilege boundaries** — Skill script bridges gated behind `OWNPILOT_ENABLE_SKILL_SCRIPTS`; `git_branch` added to `BLOCKED_CALLABLE_TOOLS`.
+- **Access control** — AUTH-001 through AUTH-003 closed.
+
+### Performance
+
+- **N+1 collapse** — `GET /acc/analytics` and `GET /acc/status` batch heartbeat lookups (N+1 → 1).
+- **Hot-path indexes** — Composite indexes for `channel_messages` hot queries; composite + partial indexes for two additional polling queries.
+
+### Dependencies
+
+- `vite` → `7.3.3` (postcss XSS + path traversal/file read; also collapses duplicate `rollup` in UI build).
+- `postcss` → `8.5.10` (CVE-2026-41305 XSS in `website`).
+- `hono` → `4.12.21` (2 medium CVEs).
+- `axios` → `1.16.1` (13 medium CVEs).
+- `turbo` → `2.9.14` (2 medium CVEs).
+- `protobufjs` → `7.6.0`.
+- All vulnerable dependencies pinned to exact fixed versions via `pnpm.overrides`.
+
+### CI
+
+- Added a `Build @ownpilot/core` step before the migration smoke test so the smoke test can resolve `@ownpilot/core/dist/index.js`.
+
+### Tests
+
+- `bridges.test.ts` mock updated to match the user-scoped `repo.listForUser(userId)` route signature; added coverage for cross-tenant filtering.
+
 ## [0.4.0] - 2026-05-17
 
 ### Added

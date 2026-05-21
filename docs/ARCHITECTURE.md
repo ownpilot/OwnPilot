@@ -2,7 +2,7 @@
 
 > Comprehensive architecture documentation for OwnPilot -- a privacy-first personal AI assistant platform.
 
-**Version:** 0.4.0
+**Version:** 0.5.0
 **Last updated:** May 2026
 
 ---
