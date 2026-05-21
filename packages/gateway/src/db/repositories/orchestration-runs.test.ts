@@ -488,8 +488,13 @@ describe('OrchestrationRunsRepository', () => {
   });
 
   describe('delete', () => {
+    // NOTE: BaseRepository.execute() returns { changes: number } — the
+    // adapter converts pg's rowCount to changes. Tests previously mocked
+    // rowCount, which matched the old buggy double-cast in delete() that
+    // looked for a non-existent rowCount property and therefore always
+    // returned true.
     it('returns true when run was deleted', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ rowCount: 1 });
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
       const result = await repo.delete('run-123', 'user-456');
 
@@ -501,20 +506,11 @@ describe('OrchestrationRunsRepository', () => {
     });
 
     it('returns false when no run was found', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ rowCount: 0 });
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
 
       const result = await repo.delete('nonexistent', 'user-456');
 
       expect(result).toBe(false);
-    });
-
-    it('returns true when execute returns undefined (rowCount !== 0)', async () => {
-      mockAdapter.execute.mockResolvedValueOnce(undefined);
-
-      const result = await repo.delete('run-123', 'user-456');
-
-      // When result is undefined, undefined?.rowCount is undefined, and undefined !== 0 is true
-      expect(result).toBe(true);
     });
   });
 

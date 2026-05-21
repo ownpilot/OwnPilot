@@ -20,6 +20,28 @@ export const DB_IDLE_TIMEOUT_MS = 30_000;
 /** Connection acquisition timeout (ms) */
 export const DB_CONNECT_TIMEOUT_MS = 5_000;
 
+/**
+ * H-D10 fix: per-query statement timeout. Without this, a single bad
+ * query (deep OFFSET, ILIKE on millions of rows, runaway plan) can wedge
+ * a pool connection indefinitely; ten such queries DoS the gateway.
+ * 30s is generous for normal operations and aggressive against runaways.
+ * Override with `DB_STATEMENT_TIMEOUT_MS` env var.
+ */
+export const DB_STATEMENT_TIMEOUT_MS = Number.parseInt(
+  process.env.DB_STATEMENT_TIMEOUT_MS ?? '30000',
+  10
+);
+
+/**
+ * Maximum time a transaction can sit idle (waiting between statements)
+ * before Postgres terminates it. Catches code that BEGINs then forgets
+ * to COMMIT/ROLLBACK due to an exception escape.
+ */
+export const DB_IDLE_TX_TIMEOUT_MS = Number.parseInt(
+  process.env.DB_IDLE_TX_TIMEOUT_MS ?? '60000',
+  10
+);
+
 // ============================================================================
 // WebSocket
 // ============================================================================

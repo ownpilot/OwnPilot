@@ -15,12 +15,26 @@ import { z } from 'zod';
 
 // ─── Plans ───────────────────────────────────────────────────────
 
+// Plan priority: DB column is INTEGER NOT NULL DEFAULT 5 CHECK(1..10).
+// Accept either a number directly or one of four UX labels that map to a
+// representative value in that range. Prior schema only accepted labels and
+// the route inserted them into an INTEGER column — every POST /plans failed.
+const PRIORITY_LABEL_TO_NUM = { low: 2, medium: 5, high: 7, critical: 10 } as const;
+const planPrioritySchema = z
+  .union([
+    z.number().int().min(1).max(10),
+    z
+      .enum(['low', 'medium', 'high', 'critical'])
+      .transform((label) => PRIORITY_LABEL_TO_NUM[label]),
+  ])
+  .optional();
+
 export const createPlanSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
   goal: z.string().min(1).max(5000),
   deadline: z.string().max(100).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  priority: planPrioritySchema,
 });
 
 export const updatePlanSchema = z.object({
@@ -28,7 +42,7 @@ export const updatePlanSchema = z.object({
   description: z.string().max(5000).optional(),
   goal: z.string().max(5000).optional(),
   deadline: z.string().max(100).optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  priority: planPrioritySchema,
   status: z.enum(['pending', 'running', 'paused', 'completed', 'failed', 'cancelled']).optional(),
 });
 

@@ -55,11 +55,13 @@ describe('IdempotencyKeysRepository', () => {
   });
 
   describe('setRecord', () => {
-    it('writes with userId-namespaced key and stringified payload', async () => {
+    it('writes with userId-namespaced key, stringified payload, and parameterised TTL', async () => {
+      // CRIT-4 fix: TTL is now passed as $3 (parameterised) instead of
+      // interpolated into the SQL string. The third param is the rounded ms.
       await repo.setRecord('alice', 'req-123', { foo: 1 });
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('idempotency_keys'),
-        ['alice:req-123', JSON.stringify({ foo: 1 })]
+        ['alice:req-123', JSON.stringify({ foo: 1 }), expect.any(Number)]
       );
     });
   });

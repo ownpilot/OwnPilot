@@ -108,7 +108,7 @@ export class ProviderMetricsRepository extends BaseRepository {
       sample_count: string;
     }>(sql, []);
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
       providerId: r.provider_id,
       modelId: r.model_id,
       avgLatencyMs: r.avg_latency_ms,
@@ -123,7 +123,11 @@ export class ProviderMetricsRepository extends BaseRepository {
   /**
    * Get cheapest provider/model by $/token (lowest total cost / total tokens).
    */
-  async getCheapestRoute(): Promise<{ providerId: string; modelId: string; costPerToken: number } | null> {
+  async getCheapestRoute(): Promise<{
+    providerId: string;
+    modelId: string;
+    costPerToken: number;
+  } | null> {
     const sql = `
       SELECT
         provider_id,
@@ -139,7 +143,11 @@ export class ProviderMetricsRepository extends BaseRepository {
       ORDER BY cost_per_token ASC
       LIMIT 1
     `;
-    const rows = await this.query<{ provider_id: string; model_id: string; cost_per_token: number }>(sql, []);
+    const rows = await this.query<{
+      provider_id: string;
+      model_id: string;
+      cost_per_token: number;
+    }>(sql, []);
     if (rows.length === 0) return null;
     const r = rows[0]!;
     return { providerId: r.provider_id, modelId: r.model_id, costPerToken: r.cost_per_token };
@@ -148,7 +156,11 @@ export class ProviderMetricsRepository extends BaseRepository {
   /**
    * Get fastest provider/model by p50 latency (lowest median latency).
    */
-  async getFastestRoute(): Promise<{ providerId: string; modelId: string; avgLatencyMs: number } | null> {
+  async getFastestRoute(): Promise<{
+    providerId: string;
+    modelId: string;
+    avgLatencyMs: number;
+  } | null> {
     const sql = `
       SELECT provider_id, model_id, AVG(latency_ms) AS avg_latency_ms
       FROM ${TABLE}
@@ -157,7 +169,11 @@ export class ProviderMetricsRepository extends BaseRepository {
       ORDER BY avg_latency_ms ASC
       LIMIT 1
     `;
-    const rows = await this.query<{ provider_id: string; model_id: string; avg_latency_ms: number }>(sql, []);
+    const rows = await this.query<{
+      provider_id: string;
+      model_id: string;
+      avg_latency_ms: number;
+    }>(sql, []);
     if (rows.length === 0) return null;
     const r = rows[0]!;
     return { providerId: r.provider_id, modelId: r.model_id, avgLatencyMs: r.avg_latency_ms };
@@ -166,7 +182,11 @@ export class ProviderMetricsRepository extends BaseRepository {
   /**
    * Get most reliable provider/model (lowest error rate, min 10 samples).
    */
-  async getMostReliableRoute(): Promise<{ providerId: string; modelId: string; errorRate: number } | null> {
+  async getMostReliableRoute(): Promise<{
+    providerId: string;
+    modelId: string;
+    errorRate: number;
+  } | null> {
     const sql = `
       SELECT provider_id, model_id, AVG(CASE WHEN error THEN 1.0 ELSE 0.0 END) AS error_rate
       FROM ${TABLE}
@@ -176,7 +196,10 @@ export class ProviderMetricsRepository extends BaseRepository {
       ORDER BY error_rate ASC
       LIMIT 1
     `;
-    const rows = await this.query<{ provider_id: string; model_id: string; error_rate: number }>(sql, []);
+    const rows = await this.query<{ provider_id: string; model_id: string; error_rate: number }>(
+      sql,
+      []
+    );
     if (rows.length === 0) return null;
     const r = rows[0]!;
     return { providerId: r.provider_id, modelId: r.model_id, errorRate: r.error_rate };
@@ -187,7 +210,8 @@ export class ProviderMetricsRepository extends BaseRepository {
    */
   async purgeOld(maxAgeDays = 30): Promise<number> {
     const result = await this.execute(
-      `DELETE FROM ${TABLE} WHERE recorded_at < NOW() - INTERVAL '${maxAgeDays} days'`
+      `DELETE FROM ${TABLE} WHERE recorded_at < NOW() - INTERVAL '1 day' * $1`,
+      [maxAgeDays]
     );
     return result.changes;
   }

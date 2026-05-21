@@ -212,7 +212,7 @@ export class OrchestrationRunsRepository extends BaseRepository {
       'DELETE FROM orchestration_runs WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
-    return (result as unknown as { rowCount?: number })?.rowCount !== 0;
+    return result.changes !== 0;
   }
 }
 

@@ -5,7 +5,7 @@
  * that was in core/agent/tools/expense-tracker.ts.
  */
 
-import { BaseRepository } from './base.js';
+import { BaseRepository, parseJsonField } from './base.js';
 import { generateId } from '@ownpilot/core';
 
 // =============================================================================
@@ -91,7 +91,10 @@ interface ExpenseRow {
   category: string;
   description: string;
   payment_method: string | null;
-  tags: string;
+  // JSONB column: pg-node returns the parsed value (array), not a string.
+  // Old code assumed `string` and ran JSON.parse on an array, throwing every
+  // time and silently dropping tags. Use parseJsonField to handle both shapes.
+  tags: unknown;
   source: string;
   receipt_image: string | null;
   notes: string | null;
@@ -100,12 +103,10 @@ interface ExpenseRow {
 }
 
 function rowToExpense(row: ExpenseRow): Expense {
-  let tags: string[] = [];
-  try {
-    tags = JSON.parse(row.tags ?? '[]');
-  } catch {
-    tags = [];
-  }
+  const parsed = parseJsonField<string[]>(row.tags, []);
+  const tags = Array.isArray(parsed)
+    ? parsed.filter((t): t is string => typeof t === 'string')
+    : [];
   return {
     id: row.id,
     userId: row.user_id,

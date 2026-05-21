@@ -315,15 +315,24 @@ export function createStreamCallbacks(config: StreamingConfig): {
           conversationId,
           delta: cleanDelta,
           thinking: state.isThinking || undefined,
-          toolCalls: chunk.toolCalls?.map((tc) => {
-            let args: Record<string, unknown> | undefined;
-            try {
-              args = tc.arguments ? JSON.parse(tc.arguments) : undefined;
-            } catch {
-              args = undefined;
-            }
-            return { id: tc.id!, name: tc.name!, arguments: args };
-          }),
+          // StreamChunk.toolCalls is Partial<ToolCall>[] — id/name may not be
+          // present on partial deltas (args can stream before the header).
+          // Skip those: UI dedupes on id, and emitting id:null would collapse
+          // every in-flight partial into one bogus entry.
+          toolCalls: chunk.toolCalls
+            ?.filter(
+              (tc): tc is { id: string; name: string; arguments?: string } =>
+                typeof tc.id === 'string' && typeof tc.name === 'string'
+            )
+            .map((tc) => {
+              let args: Record<string, unknown> | undefined;
+              try {
+                args = tc.arguments ? JSON.parse(tc.arguments) : undefined;
+              } catch {
+                args = undefined;
+              }
+              return { id: tc.id, name: tc.name, arguments: args };
+            }),
           done: chunk.done,
           finishReason: chunk.finishReason,
           usage: chunk.usage

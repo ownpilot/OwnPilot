@@ -42,6 +42,11 @@ vi.mock('../../config/defaults.js', () => ({
   DB_POOL_MAX: 10,
   DB_IDLE_TIMEOUT_MS: 10000,
   DB_CONNECT_TIMEOUT_MS: 5000,
+  // H-D10 fix added two new exports; set both to 0 so the test pool doesn't
+  // install per-connection SET timeouts (which would call client.query on a
+  // mock that's only loosely typed).
+  DB_STATEMENT_TIMEOUT_MS: 0,
+  DB_IDLE_TX_TIMEOUT_MS: 0,
 }));
 vi.mock('pgvector/pg', () => {
   throw new Error('pgvector not installed');

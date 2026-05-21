@@ -8,7 +8,13 @@ import type { DatabaseAdapter, DatabaseConfig, Row, QueryParams } from './types.
 import pg from 'pg';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getLog } from '../../services/log.js';
-import { DB_POOL_MAX, DB_IDLE_TIMEOUT_MS, DB_CONNECT_TIMEOUT_MS } from '../../config/defaults.js';
+import {
+  DB_POOL_MAX,
+  DB_IDLE_TIMEOUT_MS,
+  DB_CONNECT_TIMEOUT_MS,
+  DB_STATEMENT_TIMEOUT_MS,
+  DB_IDLE_TX_TIMEOUT_MS,
+} from '../../config/defaults.js';
 
 /**
  * AsyncLocalStorage to thread the transaction client through repository calls.
@@ -53,6 +59,26 @@ export class PostgresAdapter implements DatabaseAdapter {
     this.pool.on('error', (err: Error) => {
       log.warn('[PostgreSQL] Idle client error (pool will reconnect):', err.message);
     });
+
+    // H-D10 fix: install per-connection statement_timeout and
+    // idle_in_transaction_session_timeout. Setting these via SET at connect
+    // time scopes them to the connection (no global server change required)
+    // and applies to every query issued through the pool. Setting to 0
+    // disables the timeout (matches Postgres semantics).
+    if (DB_STATEMENT_TIMEOUT_MS > 0 || DB_IDLE_TX_TIMEOUT_MS > 0) {
+      this.pool.on('connect', (client) => {
+        const statements: string[] = [];
+        if (DB_STATEMENT_TIMEOUT_MS > 0) {
+          statements.push(`SET statement_timeout = ${DB_STATEMENT_TIMEOUT_MS}`);
+        }
+        if (DB_IDLE_TX_TIMEOUT_MS > 0) {
+          statements.push(`SET idle_in_transaction_session_timeout = ${DB_IDLE_TX_TIMEOUT_MS}`);
+        }
+        client.query(statements.join('; ')).catch((err: Error) => {
+          log.warn('[PostgreSQL] Failed to apply per-connection timeouts:', err.message);
+        });
+      });
+    }
 
     // Test connection and register pgvector types
     const client = await this.pool.connect();
@@ -115,53 +141,53 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (!this.pool) throw new Error('Database not initialized');
     const client = await this.pool.connect();
 
+    // CRIT-1 fix: race fn against a timeout instead of letting a timer fire
+    // concurrently with fn. The previous design released the client to the
+    // pool on timeout while fn was still running — fn's later queries could
+    // land on a different request's transaction or throw asynchronously.
+    //
+    // The race ensures that either fn finishes (commit/rollback as usual) or
+    // the wrapper throws a TimeoutError (rollback in catch). The client is
+    // released exactly once, in finally. On timeout we pass an Error to
+    // release(): pg-pool DISCARDS the client (closes the underlying socket)
+    // instead of returning it to the pool, so any in-flight fn() query
+    // observes a destroyed connection and any subsequent fn() queries fail
+    // loudly instead of corrupting another caller's state.
+    let timeoutHandle: NodeJS.Timeout | undefined;
     let timedOut = false;
-    let clientReleased = false;
-
-    const releaseClient = () => {
-      if (!clientReleased) {
-        clientReleased = true;
-        try {
-          client.release();
-        } catch (releaseError) {
-          log.error('[PostgreSQL] Client release failed:', releaseError);
-        }
-      }
-    };
-
-    // Set up transaction timeout
-    const timeoutId = setTimeout(async () => {
-      timedOut = true;
-      log.error('[PostgreSQL] Transaction timeout, forcing rollback');
-      try {
-        await client.query('ROLLBACK');
-      } catch (err) {
-        // Client might already be disconnected - log but don't throw
-        log.debug('[PostgreSQL] Rollback during timeout cleanup failed:', err);
-      }
-      releaseClient();
-    }, timeoutMs);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        timedOut = true;
+        reject(new Error(`Transaction timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
 
     try {
       await client.query('BEGIN');
-      const result = await txClientStorage.run(client, fn);
-      if (!timedOut) {
-        await client.query('COMMIT');
-      }
+      const result = await Promise.race([txClientStorage.run(client, fn), timeoutPromise]);
+      await client.query('COMMIT');
       return result;
     } catch (error) {
-      // Only rollback if not already rolled back by timeout
-      if (!timedOut) {
-        try {
-          await client.query('ROLLBACK');
-        } catch (rollbackError) {
-          log.error('[PostgreSQL] Rollback failed:', rollbackError);
-        }
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        log.error('[PostgreSQL] Rollback failed:', rollbackError);
       }
       throw error;
     } finally {
-      clearTimeout(timeoutId);
-      releaseClient();
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      try {
+        // On timeout, force the pool to destroy this client (the connection
+        // may still be servicing fn's in-flight query). On the happy path,
+        // call release() with no arg so the client returns to the pool.
+        if (timedOut) {
+          client.release(new Error('Transaction timed out — client discarded'));
+        } else {
+          client.release();
+        }
+      } catch (releaseError) {
+        log.error('[PostgreSQL] Client release failed:', releaseError);
+      }
     }
   }
 

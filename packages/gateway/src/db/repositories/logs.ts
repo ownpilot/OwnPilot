@@ -406,7 +406,8 @@ export class LogsRepository extends BaseRepository {
    */
   async cleanupOld(maxAgeDays = 30): Promise<number> {
     const result = await this.execute(
-      `DELETE FROM request_logs WHERE created_at < NOW() - INTERVAL '${maxAgeDays} days'`
+      `DELETE FROM request_logs WHERE created_at < NOW() - INTERVAL '1 day' * $1`,
+      [maxAgeDays]
     );
     return result.changes;
   }

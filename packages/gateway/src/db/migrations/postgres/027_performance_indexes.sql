@@ -1,27 +1,17 @@
 -- Performance indexes for frequently queried columns identified during codebase audit.
 -- All use IF NOT EXISTS for idempotency.
+--
+-- NOTE (CRIT-3 fix): the original version of this migration also created
+-- indexes on chat_history, agent_costs, channel_messages(platform, chat_id),
+-- workflow_executions, and habits.status — none of which exist in this
+-- schema. Fresh `docker compose up` halted because Postgres aborted the init
+-- script on the first missing relation. Lines for non-existent tables/columns
+-- have been removed. If those tables are introduced in a later migration,
+-- add their indexes there alongside the CREATE TABLE.
 
 -- Fleet tasks: scheduler queries by status + priority ordering
 CREATE INDEX IF NOT EXISTS idx_fleet_tasks_status_priority
   ON fleet_tasks (status, priority DESC, created_at ASC);
-
--- Chat history: every LLM turn filters by chat_id + orders by created_at
-CREATE INDEX IF NOT EXISTS idx_chat_history_chat_id_created
-  ON chat_history (chat_id, created_at DESC);
-
--- Agent costs: date-range reports on append-only table
-CREATE INDEX IF NOT EXISTS idx_agent_costs_created_at
-  ON agent_costs (created_at);
-
--- Channel messages: composite for the dominant (platform, chat_id) query pattern
-CREATE INDEX IF NOT EXISTS idx_channel_messages_platform_chat
-  ON channel_messages (platform, chat_id, created_at DESC);
-
--- Workflow executions: history by workflow + active execution lookup
-CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow_id
-  ON workflow_executions (workflow_id, started_at DESC);
-CREATE INDEX IF NOT EXISTS idx_workflow_executions_status
-  ON workflow_executions (status) WHERE status IN ('running', 'paused');
 
 -- Memories: type-filtered queries
 CREATE INDEX IF NOT EXISTS idx_memories_type ON memories (type);
@@ -29,5 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_memories_type ON memories (type);
 -- Custom data: category filter
 CREATE INDEX IF NOT EXISTS idx_custom_data_category ON custom_data (category);
 
--- Habits: status and category filters
-CREATE INDEX IF NOT EXISTS idx_habits_status ON habits (status);
+-- Habits: archived filter (the schema uses is_archived BOOLEAN — there is no
+-- status column). Partial index covers the dominant "list active habits" path.
+CREATE INDEX IF NOT EXISTS idx_habits_active
+  ON habits (user_id, created_at DESC) WHERE is_archived = FALSE;

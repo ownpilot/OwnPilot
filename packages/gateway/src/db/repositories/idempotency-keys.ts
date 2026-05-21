@@ -67,10 +67,10 @@ export class IdempotencyKeysRepository extends BaseRepository {
   ): Promise<void> {
     const sql = `
       INSERT INTO ${TABLE} (key, result, expires_at)
-      VALUES ($1, $2, NOW() + INTERVAL '${Math.round(ttlMs)} milliseconds')
+      VALUES ($1, $2, NOW() + INTERVAL '1 millisecond' * $3)
       ON CONFLICT (key) DO UPDATE SET result = EXCLUDED.result, expires_at = EXCLUDED.expires_at
     `;
-    await this.execute(sql, [nsKey(userId, key), JSON.stringify(result)]);
+    await this.execute(sql, [nsKey(userId, key), JSON.stringify(result), Math.round(ttlMs)]);
   }
 
   /**
