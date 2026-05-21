@@ -44,6 +44,15 @@ const RECONNECT_CONFIG = {
   backoffMultiplier: 2,
 };
 
+/**
+ * How long the polling connection must stay open before we consider it
+ * "stable" and reset the reconnect-attempts counter. Without this delay
+ * a 409-conflict storm (two pollers fighting for the slot, each kicking
+ * the other off after a brief success) keeps resetting the counter and
+ * defeats `RECONNECT_CONFIG.maxAttempts`, looping forever.
+ */
+const STABLE_CONNECTION_MS = 2 * 60_000;
+
 /** Detect Telegram "can't parse entities" errors so we can retry as plain text. */
 function isParseEntityError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -118,6 +127,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   /** Reconnection state */
   private reconnectAttempts = 0;
   private reconnectTimer?: NodeJS.Timeout;
+  private stableConnectionTimer: NodeJS.Timeout | null = null;
   private isReconnecting = false;
   private lastErrorWasConflict = false;
 
@@ -419,7 +429,10 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
         this.bot
           .start({
             onStart: () => {
-              this.reconnectAttempts = 0; // Reset on successful connection
+              // Defer reconnect-attempts reset behind a 2-minute stable window so a
+              // 409-conflict displace storm cannot loop forever by re-zeroing the counter
+              // on every brief successful poll.
+              this.scheduleStableConnectionReset();
               this.status = 'connected';
               log.info('[Telegram] Bot connected and polling');
               this.emitConnectionEvent('connected');
@@ -428,6 +441,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
           .catch((err) => {
             const httpCode = (err as { error_code?: number }).error_code;
             log.error('[Telegram] Bot polling crashed:', err);
+            this.clearStableConnectionTimer();
             this.status = 'error';
             this.emitConnectionEvent('error');
             // Trigger reconnect for 409 conflicts or other connection errors
@@ -476,6 +490,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     }
     this.webhookMode = false;
     this.clearReconnectTimer();
+    this.clearStableConnectionTimer();
     this.status = 'disconnected';
     this.emitConnectionEvent('disconnected');
   }
@@ -537,11 +552,13 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
       const waitTime = this.lastErrorWasConflict ? 5000 : 2000;
       await new Promise((resolve) => setTimeout(resolve, waitTime));
 
-      // Attempt to reconnect
+      // Attempt to reconnect. The `reconnectAttempts` counter is intentionally
+      // NOT reset here — `connect()`'s onStart will schedule the reset via
+      // `scheduleStableConnectionReset()` so a flaky reconnect that re-fails
+      // quickly cannot zero out the attempt counter and loop forever.
       await this.connect();
 
       log.info('[Telegram] Reconnected successfully');
-      this.reconnectAttempts = 0;
       this.lastErrorWasConflict = false;
       this.isReconnecting = false;
     } catch (error) {
@@ -569,11 +586,34 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     this.isReconnecting = false;
   }
 
+  /**
+   * Arm the stable-connection window: only after the connection has stayed
+   * open for {@link STABLE_CONNECTION_MS} do we reset {@link reconnectAttempts}.
+   * A new successful `onStart` cancels the prior pending reset so back-to-back
+   * brief opens cannot reset the counter early.
+   */
+  private scheduleStableConnectionReset(): void {
+    this.clearStableConnectionTimer();
+    this.stableConnectionTimer = setTimeout(() => {
+      this.reconnectAttempts = 0;
+      this.stableConnectionTimer = null;
+    }, STABLE_CONNECTION_MS);
+    this.stableConnectionTimer.unref?.();
+  }
+
+  private clearStableConnectionTimer(): void {
+    if (this.stableConnectionTimer) {
+      clearTimeout(this.stableConnectionTimer);
+      this.stableConnectionTimer = null;
+    }
+  }
+
   /** Manually trigger a reconnect (useful for external recovery) */
   async reconnect(): Promise<void> {
     this.reconnectAttempts = 0;
     this.lastErrorWasConflict = false;
     this.clearReconnectTimer();
+    this.clearStableConnectionTimer();
     await this.performReconnect();
   }
 
