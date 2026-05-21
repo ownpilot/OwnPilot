@@ -36,6 +36,19 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('AcpClient');
 
+// Runtime narrowing for event payloads (replaces `as unknown as` casts).
+function isAcpToolCall(v: unknown): v is AcpToolCall {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    typeof (v as { toolCallId?: unknown }).toolCallId === 'string'
+  );
+}
+
+function isAcpPlan(v: unknown): v is AcpPlan {
+  return typeof v === 'object' && v !== null && Array.isArray((v as { entries?: unknown }).entries);
+}
+
 // =============================================================================
 // ACP CLIENT
 // =============================================================================
@@ -398,35 +411,42 @@ export class AcpClient {
   private handleEvent(event: MappedAcpEvent): void {
     // Track tool calls internally
     if (event.type === 'coding-agent:acp:tool-call') {
-      const payload = event.payload as unknown as { toolCall: AcpToolCall };
-      this.toolCalls.set(payload.toolCall.toolCallId, payload.toolCall);
+      const tc = event.payload.toolCall;
+      if (isAcpToolCall(tc)) {
+        this.toolCalls.set(tc.toolCallId, tc);
+      }
     }
 
     // Update tool calls
     if (event.type === 'coding-agent:acp:tool-update') {
-      const payload = event.payload as unknown as {
-        toolCallId: string;
-        status?: string;
-        content?: unknown[];
-        locations?: unknown[];
-        title?: string;
-      };
-      const existing = this.toolCalls.get(payload.toolCallId);
-      if (existing) {
-        if (payload.status) existing.status = payload.status as AcpToolCall['status'];
-        if (payload.title) existing.title = payload.title;
-        if (payload.content) existing.content = payload.content as AcpToolCall['content'];
-        if (payload.locations) existing.locations = payload.locations as AcpToolCall['locations'];
-        if (payload.status === 'completed' || payload.status === 'failed') {
-          existing.completedAt = new Date().toISOString();
+      const p = event.payload;
+      const toolCallId = typeof p.toolCallId === 'string' ? p.toolCallId : null;
+      if (toolCallId) {
+        const existing = this.toolCalls.get(toolCallId);
+        if (existing) {
+          if (typeof p.status === 'string') {
+            existing.status = p.status as AcpToolCall['status'];
+            if (p.status === 'completed' || p.status === 'failed') {
+              existing.completedAt = new Date().toISOString();
+            }
+          }
+          if (typeof p.title === 'string') existing.title = p.title;
+          if (Array.isArray(p.content)) {
+            existing.content = p.content as AcpToolCall['content'];
+          }
+          if (Array.isArray(p.locations)) {
+            existing.locations = p.locations as AcpToolCall['locations'];
+          }
         }
       }
     }
 
     // Track plans
     if (event.type === 'coding-agent:acp:plan') {
-      const payload = event.payload as unknown as { plan: AcpPlan };
-      this.currentPlan = payload.plan;
+      const plan = event.payload.plan;
+      if (isAcpPlan(plan)) {
+        this.currentPlan = plan;
+      }
     }
 
     // Forward to subscriber callback with event type
