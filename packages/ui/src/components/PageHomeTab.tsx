@@ -119,7 +119,7 @@ export function PageHomeTab({
   children,
   skipHomeChecked,
   onSkipHomeChange,
-  skipHomeLabel = "Skip this screen next time",
+  skipHomeLabel = 'Skip this screen next time',
 }: PageHomeTabProps) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-10 overflow-y-auto h-full">

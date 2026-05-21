@@ -236,7 +236,11 @@ export async function executeHabitTool(
       case 'delete_habit': {
         const deleted = await repo.delete(args.habitId as string);
         if (!deleted) return { success: false, error: `Habit not found: ${args.habitId}` };
-        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'deleted', id: args.habitId as string });
+        wsGateway.broadcast('data:changed', {
+          entity: 'habit',
+          action: 'deleted',
+          id: args.habitId as string,
+        });
         return { success: true, result: { message: 'Habit deleted permanently.' } };
       }
 
@@ -247,7 +251,11 @@ export async function executeHabitTool(
           notes: args.notes as string | undefined,
         });
         if (!logEntry) return { success: false, error: `Habit not found: ${args.habitId}` };
-        wsGateway.broadcast('data:changed', { entity: 'habit', action: 'updated', id: args.habitId as string });
+        wsGateway.broadcast('data:changed', {
+          entity: 'habit',
+          action: 'updated',
+          id: args.habitId as string,
+        });
         return { success: true, result: { log: logEntry, message: 'Habit logged successfully!' } };
       }
 

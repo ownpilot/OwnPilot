@@ -33,7 +33,36 @@ function sanitizeHtml(html: string): string {
   // Use DOMPurify for production-grade XSS sanitization
   return dp.sanitize(html, {
     USE_PROFILES: { html: true },
-    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span'],
+    ALLOWED_TAGS: [
+      'p',
+      'br',
+      'b',
+      'i',
+      'em',
+      'strong',
+      'ul',
+      'ol',
+      'li',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'blockquote',
+      'pre',
+      'code',
+      'a',
+      'img',
+      'table',
+      'thead',
+      'tbody',
+      'tr',
+      'th',
+      'td',
+      'div',
+      'span',
+    ],
     ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'],
     ALLOW_DATA_ATTR: false,
   });
@@ -42,7 +71,12 @@ function sanitizeHtml(html: string): string {
 function HtmlIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+      />
     </svg>
   );
 }
@@ -51,11 +85,7 @@ export function HtmlWidget({ data, title: titleProp }: Props) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp;
 
-  const htmlContent = isHtmlData(data)
-    ? data.html
-    : typeof data === 'string'
-      ? data
-      : '';
+  const htmlContent = isHtmlData(data) ? data.html : typeof data === 'string' ? data : '';
 
   const sanitized = useMemo(() => sanitizeHtml(htmlContent), [htmlContent]);
 

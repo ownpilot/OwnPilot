@@ -27,8 +27,7 @@ const log = getLog('ClientIP');
 
 const TRUST_PROXY = process.env.TRUSTED_PROXY === 'true';
 const RAW_TRUSTED_PROXY_IPS = process.env.TRUSTED_PROXY_IPS ?? '';
-const TRUSTED_PROXY_IPS = RAW_TRUSTED_PROXY_IPS
-  .split(',')
+const TRUSTED_PROXY_IPS = RAW_TRUSTED_PROXY_IPS.split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 /** Special sentinel meaning "trust any proxy IP" (useful in tests) */
@@ -46,7 +45,7 @@ let warnedMisconfig = false;
 function warnIfMisconfigured(): void {
   if (TRUST_PROXY && TRUSTED_PROXY_IPS.length === 0 && !warnedMisconfig) {
     warnedMisconfig = true;
-     
+
     log.warn(
       '[client-ip] TRUSTED_PROXY=true but TRUSTED_PROXY_IPS is empty — ' +
         'X-Forwarded-For will be IGNORED (fail-safe). Set TRUSTED_PROXY_IPS to ' +
@@ -67,16 +66,17 @@ function warnIfMisconfigured(): void {
  *     attackers share the same bucket — but that's safer than the alternative
  *     (every attacker rotates X-Forwarded-For and bypasses the limiter).
  */
-export function getClientIp(req: {
-  header: (name: string) => string | undefined;
-}): string {
+export function getClientIp(req: { header: (name: string) => string | undefined }): string {
   warnIfMisconfigured();
 
   if (!isProxyAwareConfigured()) return 'direct';
 
   const xff = req.header('X-Forwarded-For');
   if (xff) {
-    const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+    const parts = xff
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     const last = parts[parts.length - 1];
     if (last) return last;
   }

@@ -167,9 +167,9 @@ After`}
     );
 
     expect(html).toContain('Onedio Haber Takip Sistemi');
-    expect(html).toContain("09:00&#x27;da");
-    expect(html).toContain("Telegram&#x27;a");
-    expect(html).toContain("Postimees&#x27;ten");
+    expect(html).toContain('09:00&#x27;da');
+    expect(html).toContain('Telegram&#x27;a');
+    expect(html).toContain('Postimees&#x27;ten');
     expect(html).toContain('Pomodoro Timer');
     expect(html).not.toContain('&lt;widget');
     expect(html).not.toContain('Invalid widget data');

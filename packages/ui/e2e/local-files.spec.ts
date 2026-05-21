@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Local Files Tab', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/customize');
     await page.waitForSelector('[data-testid="customize-tab-local-files"]', { timeout: 10000 });
@@ -90,7 +89,7 @@ test.describe('Local Files Tab', () => {
   test('clicking a bookmark shows its detail panel', async ({ page }) => {
     // First expand a device to see bookmarks
     const devices = page.locator('[data-testid^="local-files-device-"]');
-    if (await devices.count() === 0) {
+    if ((await devices.count()) === 0) {
       test.skip();
       return;
     }
@@ -101,7 +100,7 @@ test.describe('Local Files Tab', () => {
 
     // Find bookmarks
     const bookmarks = page.locator('[data-testid^="local-files-bookmark-"]');
-    if (await bookmarks.count() === 0) {
+    if ((await bookmarks.count()) === 0) {
       test.skip();
       return;
     }
@@ -117,7 +116,7 @@ test.describe('Local Files Tab', () => {
 
   test('bookmark detail shows path and device info', async ({ page }) => {
     const devices = page.locator('[data-testid^="local-files-device-"]');
-    if (await devices.count() === 0) {
+    if ((await devices.count()) === 0) {
       test.skip();
       return;
     }
@@ -126,7 +125,7 @@ test.describe('Local Files Tab', () => {
     await page.waitForTimeout(500);
 
     const bookmarks = page.locator('[data-testid^="local-files-bookmark-"]');
-    if (await bookmarks.count() === 0) {
+    if ((await bookmarks.count()) === 0) {
       test.skip();
       return;
     }
@@ -135,7 +134,7 @@ test.describe('Local Files Tab', () => {
     await page.waitForTimeout(500);
 
     const bookmarkDetail = page.locator('[data-testid="customize-detail-bookmark"]');
-    if (await bookmarkDetail.count() === 0) {
+    if ((await bookmarkDetail.count()) === 0) {
       test.skip();
       return;
     }
@@ -157,7 +156,7 @@ test.describe('Local Files Tab', () => {
 
   test('clicking IoT device shows its detail', async ({ page }) => {
     const iotDevices = page.locator('[data-testid^="local-files-iot-"]');
-    if (await iotDevices.count() === 0) {
+    if ((await iotDevices.count()) === 0) {
       test.skip();
       return;
     }
@@ -171,7 +170,7 @@ test.describe('Local Files Tab', () => {
 
   test('IoT device detail shows status badge', async ({ page }) => {
     const iotDevices = page.locator('[data-testid^="local-files-iot-"]');
-    if (await iotDevices.count() === 0) {
+    if ((await iotDevices.count()) === 0) {
       test.skip();
       return;
     }
@@ -180,7 +179,7 @@ test.describe('Local Files Tab', () => {
     await page.waitForTimeout(500);
 
     const iotDetail = page.locator('[data-testid="customize-detail-iot"]');
-    if (await iotDetail.count() === 0) {
+    if ((await iotDetail.count()) === 0) {
       test.skip();
       return;
     }
@@ -207,7 +206,7 @@ test.describe('Local Files Tab', () => {
     await page.waitForTimeout(500);
 
     const openEdgeBtn = page.locator('[data-testid="customize-detail-open-edge"]');
-    if (await openEdgeBtn.count() === 0) {
+    if ((await openEdgeBtn.count()) === 0) {
       test.skip();
       return;
     }
@@ -216,5 +215,4 @@ test.describe('Local Files Tab', () => {
     await page.waitForURL('**/edge-devices', { timeout: 5000 });
     expect(page.url()).toContain('/edge-devices');
   });
-
 });

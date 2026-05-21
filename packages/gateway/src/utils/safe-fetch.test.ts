@@ -24,18 +24,21 @@ vi.mock('../services/log.js', () => ({
 // Import after mocks
 // =============================================================================
 
-const { safeFetch, SafeFetchError, DEFAULT_MAX_REQUEST_BODY_SIZE } = await import('./safe-fetch.js');
+const { safeFetch, SafeFetchError, DEFAULT_MAX_REQUEST_BODY_SIZE } =
+  await import('./safe-fetch.js');
 
 // =============================================================================
 // Helpers
 // =============================================================================
 
-function makeResponse(overrides: {
-  status?: number;
-  headers?: Record<string, string>;
-  body?: string;
-  location?: string;
-} = {}): Response {
+function makeResponse(
+  overrides: {
+    status?: number;
+    headers?: Record<string, string>;
+    body?: string;
+    location?: string;
+  } = {}
+): Response {
   const headers = new Map(Object.entries(overrides.headers ?? { 'content-type': 'text/plain' }));
   if (overrides.location) {
     headers.set('location', overrides.location);
@@ -45,7 +48,10 @@ function makeResponse(overrides: {
     ok: (overrides.status ?? 200) >= 200 && (overrides.status ?? 200) < 300,
     status: overrides.status ?? 200,
     statusText: 'OK',
-    headers: { get, forEach: (fn: (v: string, k: string) => void) => headers.forEach(fn) } as unknown as Headers,
+    headers: {
+      get,
+      forEach: (fn: (v: string, k: string) => void) => headers.forEach(fn),
+    } as unknown as Headers,
     text: async () => overrides.body ?? '',
     json: async () => (overrides.body ? JSON.parse(overrides.body) : undefined),
     body: null,

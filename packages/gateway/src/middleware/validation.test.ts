@@ -1667,9 +1667,7 @@ describe('clawLimitsSchema', () => {
   });
 
   it('rejects runaway cycleTimeoutMs (BIZ-001)', () => {
-    expect(clawLimitsSchema.safeParse({ cycleTimeoutMs: 24 * 60 * 60 * 1000 }).success).toBe(
-      false
-    );
+    expect(clawLimitsSchema.safeParse({ cycleTimeoutMs: 24 * 60 * 60 * 1000 }).success).toBe(false);
     expect(clawLimitsSchema.safeParse({ cycleTimeoutMs: 999 }).success).toBe(false);
   });
 

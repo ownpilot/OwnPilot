@@ -17,15 +17,15 @@ export interface PageSection {
   id: string;
   label: string;
   lines: [number, number]; // [startLine, endLine] in main file
-  file: string;            // relative to packages/ui/src/
+  file: string; // relative to packages/ui/src/
   description: string;
   subComponents?: PageSubComponent[];
 }
 
 export interface PageLayout {
-  path: string;        // route path (e.g. "/")
-  label: string;       // display name (e.g. "Chat")
-  file: string;        // main file relative to packages/ui/src/
+  path: string; // route path (e.g. "/")
+  label: string; // display name (e.g. "Chat")
+  file: string; // main file relative to packages/ui/src/
   totalLines: number;
   sections: PageSection[];
 }
@@ -80,7 +80,11 @@ const CHAT_PAGE: PageLayout = {
       description: 'Security panels, tool call limit, thinking toggle, chat input',
       subComponents: [
         { name: 'ChatInput', file: 'components/ChatInput.tsx', lines: 386 },
-        { name: 'ExecutionSecurityPanel', file: 'components/ExecutionSecurityPanel.tsx', lines: 60 },
+        {
+          name: 'ExecutionSecurityPanel',
+          file: 'components/ExecutionSecurityPanel.tsx',
+          lines: 60,
+        },
         { name: 'ToolCallLimitPanel', file: 'components/ToolCallLimitPanel.tsx', lines: 50 },
       ],
     },
@@ -91,7 +95,11 @@ const CHAT_PAGE: PageLayout = {
       file: 'pages/ChatPage.tsx',
       description: 'Execution approval dialog (lazy loaded)',
       subComponents: [
-        { name: 'ExecutionApprovalDialog', file: 'components/ExecutionApprovalDialog.tsx', lines: 120 },
+        {
+          name: 'ExecutionApprovalDialog',
+          file: 'components/ExecutionApprovalDialog.tsx',
+          lines: 120,
+        },
       ],
     },
   ],
@@ -121,7 +129,11 @@ const DASHBOARD_PAGE: PageLayout = {
       subComponents: [
         { name: 'AIBriefingCard', file: 'components/AIBriefingCard.tsx', lines: 150 },
         { name: 'TimelineView', file: 'components/TimelineView.tsx', lines: 200 },
-        { name: 'SystemStatsWidget', file: 'components/dashboard/SystemStatsWidget.tsx', lines: 100 },
+        {
+          name: 'SystemStatsWidget',
+          file: 'components/dashboard/SystemStatsWidget.tsx',
+          lines: 100,
+        },
       ],
     },
     {

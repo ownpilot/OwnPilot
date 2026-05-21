@@ -336,7 +336,10 @@ describe('UI Session Service', () => {
       mockSettingsRepo.set.mockResolvedValue(undefined);
       await setPasswordHash('salt:hash');
       expect(mockSettingsRepo.set).toHaveBeenCalledWith('ui_password_hash', 'salt:hash');
-      expect(mockSettingsRepo.set).toHaveBeenCalledWith('ui_password_hash_created_at', expect.any(Number));
+      expect(mockSettingsRepo.set).toHaveBeenCalledWith(
+        'ui_password_hash_created_at',
+        expect.any(Number)
+      );
     });
   });
 

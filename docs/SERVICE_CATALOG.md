@@ -42,10 +42,10 @@ Quality ratings:
 
 ## 2. Autonomous Agent System
 
-| Service                    | Lines | Responsibility                                                                                                                                                                                                                                                 |
-| -------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agent-runner-utils`       | 414   | Shared utilities for all runners: `registerAllToolSources()`, `createConfiguredAgent()`, `resolveProviderAndModel()`, `executeAgentPipeline()`, `createToolCallCollector()`, `resolveToolFilter()`, `calculateExecutionCost()`, `createCancellationPromise()`. |
-| `agent-registry`           | 137   | DB-backed agent config registry. Maps agent names to configs (system prompt, preferred model).                                                                                                                                                                 |
+| Service              | Lines | Responsibility                                                                                                                                                                                                                                                 |
+| -------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent-runner-utils` | 414   | Shared utilities for all runners: `registerAllToolSources()`, `createConfiguredAgent()`, `resolveProviderAndModel()`, `executeAgentPipeline()`, `createToolCallCollector()`, `resolveToolFilter()`, `calculateExecutionCost()`, `createCancellationPromise()`. |
+| `agent-registry`     | 137   | DB-backed agent config registry. Maps agent names to configs (system prompt, preferred model).                                                                                                                                                                 |
 
 **Quality**: REFACTORED. `executeAgentPipeline()` unified across 3 runners. Manager is large (834 lines) but well-organized.
 

@@ -797,9 +797,7 @@ describe('ClawManager', () => {
           },
         })
       );
-      mockRunCycle.mockResolvedValueOnce(
-        makeCycleResult({ costUsd: NaN as unknown as number })
-      );
+      mockRunCycle.mockResolvedValueOnce(makeCycleResult({ costUsd: NaN as unknown as number }));
       // Subsequent cycles return real cost so we can detect budget enforcement
       mockRunCycle.mockResolvedValue(makeCycleResult({ costUsd: 1.5 }));
 

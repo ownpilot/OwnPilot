@@ -20,13 +20,13 @@ OwnPilot's API is at `/api/v1/`. As the platform matures, breaking changes will 
 
 ## Why Side-by-Side
 
-| Factor | Side-by-Side | Header-based |
-|--------|-------------|--------------|
-| Complexity | Low — same handlers registered twice | High — version detection logic in every handler |
-| Backward compat | Full — callers migrate on their timeline | Partial — header must be present |
-| Testability | Easy — same tests for both versions | Hard — version branching in tests |
-| Extension impact | Extensions using v1 keep working | Extensions break if they don't send header |
-| Observability | Version visible in URL | Requires header log extraction |
+| Factor           | Side-by-Side                             | Header-based                                    |
+| ---------------- | ---------------------------------------- | ----------------------------------------------- |
+| Complexity       | Low — same handlers registered twice     | High — version detection logic in every handler |
+| Backward compat  | Full — callers migrate on their timeline | Partial — header must be present                |
+| Testability      | Easy — same tests for both versions      | Hard — version branching in tests               |
+| Extension impact | Extensions using v1 keep working         | Extensions break if they don't send header      |
+| Observability    | Version visible in URL                   | Requires header log extraction                  |
 
 ## Implementation
 
@@ -51,6 +51,7 @@ packages/gateway/src/app.ts
 ### Version Detection
 
 No version detection middleware. The URL path determines the version:
+
 - `/api/v1/chat` → v1 handlers
 - `/api/v2/chat` → v2 handlers (same implementation initially)
 
@@ -94,11 +95,13 @@ When v1 is deprecated:
 ## Consequences
 
 **Positive:**
+
 - Extensions and channel adapters continue working without changes
 - v2 can evolve independently
 - No complex version-detection logic in handlers
 
 **Negative:**
+
 - Route registration is duplicated (but consolidated in one file per domain)
 - Some code duplication if v2-specific handlers are needed
 

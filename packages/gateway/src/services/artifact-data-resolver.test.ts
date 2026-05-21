@@ -277,7 +277,7 @@ describe('resolveBinding', () => {
       type: 'aggregate',
       entity: 'memories',
       operation: 'avg',
-      field: "score) FROM memories; --",
+      field: 'score) FROM memories; --',
     });
     const result = await resolveBinding(USER_ID, binding);
     expect(result).toBeNull();

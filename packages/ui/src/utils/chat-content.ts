@@ -136,14 +136,17 @@ const parseMarkerData = (inner: string): Array<{ title: string; detail: string }
   } catch {
     /* fall through to line parsing */
   }
-  return inner.split('\n').filter(Boolean).map((line) => {
-    try {
-      const obj = JSON.parse(line);
-      return { title: obj.title ?? line, detail: obj.detail ?? obj.description ?? '' };
-    } catch {
-      return { title: line, detail: '' };
-    }
-  });
+  return inner
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        const obj = JSON.parse(line);
+        return { title: obj.title ?? line, detail: obj.detail ?? obj.description ?? '' };
+      } catch {
+        return { title: line, detail: '' };
+      }
+    });
 };
 
 const parseMarkerWidgetData = (dataStr: string): unknown => {
@@ -172,12 +175,22 @@ export function parseMarkers(content: string): {
     if (sep === -1) continue;
     const name = inner.slice(0, sep).trim();
     const dataStr = inner.slice(sep + 1);
-    widgets.push({ type: 'widget', id, name, data: parseMarkerWidgetData(dataStr), markerText: match[0] });
+    widgets.push({
+      type: 'widget',
+      id,
+      name,
+      data: parseMarkerWidgetData(dataStr),
+      markerText: match[0],
+    });
   }
 
   MARKER_SUGGESTIONS_REGEX.lastIndex = 0;
   while ((match = MARKER_SUGGESTIONS_REGEX.exec(content)) !== null) {
-    suggestions.push({ type: 'suggestion', items: parseMarkerData(match[1]!), markerText: match[0] });
+    suggestions.push({
+      type: 'suggestion',
+      items: parseMarkerData(match[1]!),
+      markerText: match[0],
+    });
   }
 
   return { widgets, suggestions };
@@ -185,10 +198,7 @@ export function parseMarkers(content: string): {
 
 /** Remove all marker tags — returns pure text */
 export function stripMarkerTags(content: string): string {
-  return content
-    .replace(MARKER_WIDGET_REGEX, '')
-    .replace(MARKER_SUGGESTIONS_REGEX, '')
-    .trim();
+  return content.replace(MARKER_WIDGET_REGEX, '').replace(MARKER_SUGGESTIONS_REGEX, '').trim();
 }
 
 export function stripChatInternalTags(content: string): string {

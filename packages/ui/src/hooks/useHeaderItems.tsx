@@ -61,7 +61,9 @@ function persistHeaderItems(items: HeaderItemConfig[]): void {
 
 interface HeaderItemsValue {
   headerItems: HeaderItemConfig[];
-  setHeaderItems: (updater: HeaderItemConfig[] | ((prev: HeaderItemConfig[]) => HeaderItemConfig[])) => void;
+  setHeaderItems: (
+    updater: HeaderItemConfig[] | ((prev: HeaderItemConfig[]) => HeaderItemConfig[])
+  ) => void;
   addItem: (path: string) => void;
   addGroup: (id: string, label: string, items: string[]) => void;
   removeByIndex: (index: number) => void;

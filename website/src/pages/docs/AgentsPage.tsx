@@ -132,10 +132,16 @@ export function AgentsPage() {
       <ul>
         <li>Full tool access: same 250+ tools as chat agents</li>
         <li>Workspace isolation: each agent gets a private file workspace</li>
-        <li>Working memory: persistent cross-cycle state via <code>claw_set_context</code> / <code>claw_get_context</code></li>
+        <li>
+          Working memory: persistent cross-cycle state via <code>claw_set_context</code> /{' '}
+          <code>claw_get_context</code>
+        </li>
         <li>Subclaws: nested autonomous agents (max depth 3)</li>
         <li>Escalation: approval-gated actions with deny support</li>
-        <li>Stop conditions: <code>max_cycles</code>, <code>on_report</code>, <code>on_error</code>, <code>idle:N</code></li>
+        <li>
+          Stop conditions: <code>max_cycles</code>, <code>on_report</code>, <code>on_error</code>,{' '}
+          <code>idle:N</code>
+        </li>
         <li>Auto-fail after 5 consecutive errors</li>
         <li>Audit trail: full history with 90-day retention</li>
         <li>Budget tracking: auto-stop when budget exceeded</li>
@@ -143,9 +149,8 @@ export function AgentsPage() {
 
       <h2>Subagents</h2>
       <p>
-        Chat and claw agents can spawn subagents for parallel task execution. The
-        fire-and-forget model lets the parent agent continue working while subagents run
-        concurrently.
+        Chat and claw agents can spawn subagents for parallel task execution. The fire-and-forget
+        model lets the parent agent continue working while subagents run concurrently.
       </p>
 
       <h3>LLM-callable tools</h3>

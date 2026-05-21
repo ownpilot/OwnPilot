@@ -13,9 +13,12 @@ export function CodeWidget({ data, title: titleProp }: Props) {
   const record = typeof data === 'object' && data !== null ? data : {};
 
   const title = (record as { title?: string }).title || titleProp || 'Code';
-  const code = typeof (record as { code?: string }).code === 'string'
-    ? (record as { code: string }).code
-    : typeof data === 'string' ? data : '';
+  const code =
+    typeof (record as { code?: string }).code === 'string'
+      ? (record as { code: string }).code
+      : typeof data === 'string'
+        ? data
+        : '';
   const language = ((record as { language?: string }).language || 'text').toLowerCase();
   const showLineNumbers = (record as { showLineNumbers?: boolean }).showLineNumbers !== false;
 
@@ -44,7 +47,9 @@ export function CodeWidget({ data, title: titleProp }: Props) {
                     {i + 1}
                   </span>
                 )}
-                <span className="text-text-primary dark:text-dark-text-primary whitespace-pre">{line}</span>
+                <span className="text-text-primary dark:text-dark-text-primary whitespace-pre">
+                  {line}
+                </span>
               </span>
             ))}
           </code>
@@ -57,7 +62,12 @@ export function CodeWidget({ data, title: titleProp }: Props) {
 function CodeIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+      />
     </svg>
   );
 }

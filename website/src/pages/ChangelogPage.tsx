@@ -50,12 +50,8 @@ const changelog: ChangelogEntry[] = [
       'Claw FileBrowser — Corrected parent directory navigation',
       'Provider model specs — Updated defaults and added DInference provider',
     ],
-    security: [
-      'Fixed 13 Dependabot vulnerabilities via dependency overrides',
-    ],
-    testing: [
-      '7 new claw-manager unit tests + analytics endpoint coverage',
-    ],
+    security: ['Fixed 13 Dependabot vulnerabilities via dependency overrides'],
+    testing: ['7 new claw-manager unit tests + analytics endpoint coverage'],
   },
   {
     version: '0.2.9',

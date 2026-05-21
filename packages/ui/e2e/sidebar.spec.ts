@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Sidebar — Structure & Navigation', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('[data-testid="sidebar"]', { timeout: 10000 });
@@ -113,7 +112,9 @@ test.describe('Sidebar — Structure & Navigation', () => {
   // === NAVIGATION ===
 
   test('clicking Dashboard link navigates correctly', async ({ page }) => {
-    const dashboardLink = page.locator('[data-testid="sidebar-pinned-items"] a[href="/dashboard"]').first();
+    const dashboardLink = page
+      .locator('[data-testid="sidebar-pinned-items"] a[href="/dashboard"]')
+      .first();
     await expect(dashboardLink).toBeVisible();
     await dashboardLink.click();
     await page.waitForURL('**/dashboard', { timeout: 5000 });
@@ -133,9 +134,17 @@ test.describe('Sidebar — Structure & Navigation', () => {
   // === OLD COLLAPSIBLE GROUPS REMOVED ===
 
   test('old collapsible groups no longer exist', async ({ page }) => {
-    const groupLabels = ['Personal Data', 'AI & Automation', 'Tools & Extensions', 'System', 'Experimental'];
+    const groupLabels = [
+      'Personal Data',
+      'AI & Automation',
+      'Tools & Extensions',
+      'System',
+      'Experimental',
+    ];
     for (const label of groupLabels) {
-      const count = await page.locator(`[data-testid="sidebar"] button:has-text("${label}")`).count();
+      const count = await page
+        .locator(`[data-testid="sidebar"] button:has-text("${label}")`)
+        .count();
       expect(count, `CollapsibleGroup "${label}" should not exist in sidebar`).toBe(0);
     }
   });
@@ -181,9 +190,12 @@ test.describe('Sidebar — Structure & Navigation', () => {
 
     // Filter known harmless dev errors
     const realErrors = consoleErrors.filter(
-      (e) => !e.includes('favicon') && !e.includes('net::ERR') && !e.includes('WebSocket') && !e.includes('404')
+      (e) =>
+        !e.includes('favicon') &&
+        !e.includes('net::ERR') &&
+        !e.includes('WebSocket') &&
+        !e.includes('404')
     );
     expect(realErrors.length).toBe(0);
   });
-
 });

@@ -1012,7 +1012,12 @@ describe('BrowserService', () => {
       abortFn.mockClear();
       continueFn.mockClear();
       // Use https URL so isBlockedUrl passes and isPrivateUrlAsync is reached
-      handler({ resourceType: () => 'document', url: () => 'https://example.com/doc', abort: abortFn, continue: continueFn });
+      handler({
+        resourceType: () => 'document',
+        url: () => 'https://example.com/doc',
+        abort: abortFn,
+        continue: continueFn,
+      });
       await new Promise((r) => setTimeout(r, 200));
       expect(continueFn).toHaveBeenCalled();
       expect(abortFn).not.toHaveBeenCalled();

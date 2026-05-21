@@ -68,10 +68,7 @@ describe('ChatMessageWidget', () => {
 
   it('promotes "key: value" strings in key_value to records', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="key_value"
-        data={{ items: ['OS: Windows', 'Node.js: v24'] }}
-      />
+      <ChatMessageWidget name="key_value" data={{ items: ['OS: Windows', 'Node.js: v24'] }} />
     );
 
     expect(html).toContain('OS');
@@ -102,10 +99,7 @@ describe('ChatMessageWidget', () => {
   // Code & Media widget tests
   it('renders code widget with language and content', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="code"
-        data={{ language: 'javascript', code: 'const x = 42;' }}
-      />
+      <ChatMessageWidget name="code" data={{ language: 'javascript', code: 'const x = 42;' }} />
     );
 
     expect(html).toContain('const x = 42;');
@@ -174,10 +168,7 @@ describe('ChatMessageWidget', () => {
 
   it('renders video widget with url', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="video"
-        data={{ src: 'https://example.com/video.mp4' }}
-      />
+      <ChatMessageWidget name="video" data={{ src: 'https://example.com/video.mp4' }} />
     );
 
     expect(html).toContain('video.mp4');
@@ -186,10 +177,7 @@ describe('ChatMessageWidget', () => {
 
   it('renders audio widget with url', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="audio"
-        data={{ src: 'https://example.com/podcast.mp3' }}
-      />
+      <ChatMessageWidget name="audio" data={{ src: 'https://example.com/podcast.mp3' }} />
     );
 
     expect(html).toContain('podcast.mp3');
@@ -271,10 +259,7 @@ describe('ChatMessageWidget', () => {
 
   it('renders json widget with pretty-printed data', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="json"
-        data={{ name: 'test-widget', version: 1 }}
-      />
+      <ChatMessageWidget name="json" data={{ name: 'test-widget', version: 1 }} />
     );
 
     expect(html).toContain('test-widget');
@@ -292,10 +277,7 @@ describe('ChatMessageWidget', () => {
 
   it('renders progress widget with percentage', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="progress"
-        data={{ label: 'Uploading', value: 75, max: 100 }}
-      />
+      <ChatMessageWidget name="progress" data={{ label: 'Uploading', value: 75, max: 100 }} />
     );
 
     expect(html).toContain('Uploading');
@@ -375,10 +357,7 @@ describe('ChatMessageWidget', () => {
 
   it('renders callout widget with warning tone', () => {
     const html = renderToStaticMarkup(
-      <ChatMessageWidget
-        name="callout"
-        data={{ body: 'Be careful!', tone: 'warning' }}
-      />
+      <ChatMessageWidget name="callout" data={{ body: 'Be careful!', tone: 'warning' }} />
     );
 
     expect(html).toContain('Be careful');

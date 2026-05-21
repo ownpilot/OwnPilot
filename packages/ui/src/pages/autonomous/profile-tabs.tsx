@@ -190,16 +190,9 @@ export function OverviewTab({
         />
         <StatCard
           label="Success Rate"
-          value={
-            stats
-              ? `${((1 - stats.failureRate) * 100).toFixed(0)}%`
-              : '—'
-          }
+          value={stats ? `${((1 - stats.failureRate) * 100).toFixed(0)}%` : '—'}
         />
-        <StatCard
-          label="Total Cost"
-          value={stats ? formatCost(stats.totalCost) : '$0.00'}
-        />
+        <StatCard label="Total Cost" value={stats ? formatCost(stats.totalCost) : '$0.00'} />
         <StatCard label="Messages" value={String(messages.length)} />
       </div>
 
@@ -419,7 +412,6 @@ export function OverviewTab({
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -631,7 +623,6 @@ export function ActivityTab({
               })}
             </>
           )}
-
         </div>
       )}
     </div>

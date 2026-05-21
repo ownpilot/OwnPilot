@@ -49,11 +49,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
   const apiBase = import.meta.env.VITE_API_BASE;
   const wsHost = apiBase ? new URL(apiBase).host : window.location.host;
 
-  const {
-    url = `${wsProtocol}//${wsHost}/ws`,
-    reconnect = true,
-    reconnectDelay = 3000,
-  } = options;
+  const { url = `${wsProtocol}//${wsHost}/ws`, reconnect = true, reconnectDelay = 3000 } = options;
 
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [sessionId, setSessionId] = useState<string | null>(null);

@@ -61,4 +61,3 @@ export function fromSoul(soul: AgentSoul, crews: AgentCrew[]): UnifiedAgent {
     soul,
   };
 }
-

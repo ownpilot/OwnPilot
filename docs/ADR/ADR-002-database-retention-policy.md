@@ -21,21 +21,21 @@ Centralize retention enforcement at the database level using a single nightly cl
 
 ### Retention Intervals
 
-| Table | Retention | Rationale |
-|-------|-----------|-----------|
-| `request_logs` | 30 days | API debugging, auditability |
-| `audit_log` | 90 days | Compliance requirement |
-| `claw_history` | 90 days | Audit trail |
-| `claw_audit_log` | 30 days | High-volume audit detail |
-| `workflow_logs` | 90 days | Workflow execution history |
-| `plan_history` | 90 days | Plan execution history |
-| `trigger_history` | 30 days | Trigger event log |
-| `heartbeat_log` | 30 days | High-frequency heartbeat events |
-| `subagent_history` | 90 days | Agent execution history |
-| `embedding_cache` | 7 days | LRU cache, auto-evicts |
-| `jobs` | 30 days | Completed/failed jobs |
-| `job_history` | 90 days | Dead-letter entries |
-| `provider_metrics` | 30 days | High-frequency telemetry |
+| Table              | Retention | Rationale                       |
+| ------------------ | --------- | ------------------------------- |
+| `request_logs`     | 30 days   | API debugging, auditability     |
+| `audit_log`        | 90 days   | Compliance requirement          |
+| `claw_history`     | 90 days   | Audit trail                     |
+| `claw_audit_log`   | 30 days   | High-volume audit detail        |
+| `workflow_logs`    | 90 days   | Workflow execution history      |
+| `plan_history`     | 90 days   | Plan execution history          |
+| `trigger_history`  | 30 days   | Trigger event log               |
+| `heartbeat_log`    | 30 days   | High-frequency heartbeat events |
+| `subagent_history` | 90 days   | Agent execution history         |
+| `embedding_cache`  | 7 days    | LRU cache, auto-evicts          |
+| `jobs`             | 30 days   | Completed/failed jobs           |
+| `job_history`      | 90 days   | Dead-letter entries             |
+| `provider_metrics` | 30 days   | High-frequency telemetry        |
 
 ---
 
@@ -71,6 +71,7 @@ ON CONFLICT (table_name) DO NOTHING;
 ## Cleanup Job
 
 A single `nightly_retention_cleanup` job runs daily at 02:00 UTC (configurable). For each enabled policy:
+
 1. Call the table's existing `cleanup{N}(retention_days)` method
 2. Update `retention_policies.last_cleanup = NOW()`
 3. Log count of deleted records
@@ -93,32 +94,40 @@ export class RetentionService {
 
   private async cleanupTable(table: string, days: number): Promise<number> {
     const methods: Record<string, () => Promise<number>> = {
-      request_logs:      () => getRequestLogsRepository().cleanupOld(days),
-      audit_log:        () => getAuditRepository().cleanupOld(days),
-      claw_history:     () => getClawsRepository().cleanupOldHistory(days),
-      claw_audit_log:   () => getClawsRepository().cleanupOldAuditLog(days),
-      workflow_logs:    () => getWorkflowsRepository().cleanupOld(days),
-      plan_history:     () => getPlansRepository().cleanupOld(days),
-      trigger_history:  () => getTriggersRepository().cleanupHistory(days),
-      heartbeat_log:    () => getHeartbeatRepository().cleanupOld(days),
+      request_logs: () => getRequestLogsRepository().cleanupOld(days),
+      audit_log: () => getAuditRepository().cleanupOld(days),
+      claw_history: () => getClawsRepository().cleanupOldHistory(days),
+      claw_audit_log: () => getClawsRepository().cleanupOldAuditLog(days),
+      workflow_logs: () => getWorkflowsRepository().cleanupOld(days),
+      plan_history: () => getPlansRepository().cleanupOld(days),
+      trigger_history: () => getTriggersRepository().cleanupHistory(days),
+      heartbeat_log: () => getHeartbeatRepository().cleanupOld(days),
       subagent_history: () => getSubagentsRepository().cleanupOld(days),
-      embedding_cache:  () => getEmbeddingCacheRepository().cleanupOld(days),
-      jobs:             () => getJobsRepository().cleanupOld(days),
-      job_history:      () => getJobsRepository().cleanupHistory(days),
+      embedding_cache: () => getEmbeddingCacheRepository().cleanupOld(days),
+      jobs: () => getJobsRepository().cleanupOld(days),
+      job_history: () => getJobsRepository().cleanupHistory(days),
       provider_metrics: () => getProviderMetricsRepository().cleanupOld(days),
     };
     const fn = methods[table];
-    if (!fn) { log.warn('No cleanup method for table', { table }); return 0; }
+    if (!fn) {
+      log.warn('No cleanup method for table', { table });
+      return 0;
+    }
     return fn();
   }
 }
 ```
 
 Nightly job registration in `server.ts`:
+
 ```typescript
 const { getJobQueueService } = await import('./services/job-queue-service.js');
 const queue = getJobQueueService();
-await queue.enqueue('nightly_retention_cleanup', {}, { queue: 'system', priority: 100, runAfter: nextUTCMidnight() });
+await queue.enqueue(
+  'nightly_retention_cleanup',
+  {},
+  { queue: 'system', priority: 100, runAfter: nextUTCMidnight() }
+);
 ```
 
 ---

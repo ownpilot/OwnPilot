@@ -18,7 +18,11 @@ import {
   notFoundError,
   validateQueryEnum,
 } from './helpers.js';
-import { validateBody, createArtifactSchema, updateArtifactSchema } from '../middleware/validation.js';
+import {
+  validateBody,
+  createArtifactSchema,
+  updateArtifactSchema,
+} from '../middleware/validation.js';
 
 export const artifactsRoutes = new Hono();
 

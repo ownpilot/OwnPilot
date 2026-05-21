@@ -827,7 +827,10 @@ function calculateDirSize(dirPath: string): { size: number; fileCount: number } 
 /**
  * Update session workspace metadata timestamp
  */
-export function updateSessionWorkspaceMeta(id: string, extra?: Partial<SessionWorkspaceMeta>): void {
+export function updateSessionWorkspaceMeta(
+  id: string,
+  extra?: Partial<SessionWorkspaceMeta>
+): void {
   const workspaceRoot = getDataPaths().workspace;
   const metaPath = join(workspaceRoot, id, '.meta.json');
 

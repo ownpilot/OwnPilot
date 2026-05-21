@@ -39,7 +39,12 @@ export class WidgetErrorBoundary extends Component<Props, State> {
         <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4">
           <div className="flex items-center gap-2 text-red-400">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
             </svg>
             <span className="font-medium">Widget Error</span>
           </div>
@@ -63,9 +68,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
 }
 
 // Hook version for functional components
-export function useWidgetErrorBoundary(
-  onError?: (error: Error, info: React.ErrorInfo) => void
-) {
+export function useWidgetErrorBoundary(onError?: (error: Error, info: React.ErrorInfo) => void) {
   const [error, setError] = React.useState<Error | null>(null);
 
   const reset = React.useCallback(() => setError(null), []);

@@ -34,10 +34,10 @@ function writeJson(key: string, state: ExpandState) {
 
 export function useLocalFiles() {
   const [deviceState, setDeviceState] = useState<ExpandState>(() =>
-    readJson(STORAGE_KEYS.LOCAL_FILES_DEVICES),
+    readJson(STORAGE_KEYS.LOCAL_FILES_DEVICES)
   );
   const [dirState, setDirState] = useState<ExpandState>(() =>
-    readJson(STORAGE_KEYS.LOCAL_FILES_DIRS),
+    readJson(STORAGE_KEYS.LOCAL_FILES_DIRS)
   );
 
   /** Check if a device is expanded. Active device defaults to open. */
@@ -47,7 +47,7 @@ export function useLocalFiles() {
       // Default: active device is open, others closed
       return isActive === true;
     },
-    [deviceState],
+    [deviceState]
   );
 
   /** Toggle device expand/collapse */
@@ -61,10 +61,7 @@ export function useLocalFiles() {
   }, []);
 
   /** Check if a bookmark directory is expanded. Keyed as "deviceId:bookmarkId". */
-  const isDirOpen = useCallback(
-    (key: string): boolean => dirState[key] === true,
-    [dirState],
-  );
+  const isDirOpen = useCallback((key: string): boolean => dirState[key] === true, [dirState]);
 
   /** Toggle bookmark directory expand/collapse */
   const toggleDir = useCallback((key: string) => {

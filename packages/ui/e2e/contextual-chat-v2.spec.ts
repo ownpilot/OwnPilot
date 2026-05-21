@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Contextual Chat v2 — Sidebar Chat Integration', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');

@@ -101,23 +101,27 @@ CREATE TABLE job_history (
 ## Integration Plan
 
 ### Phase 1: Infrastructure (gateway)
+
 1. ✅ Add `jobs` + `job_history` tables to `schema/core.ts` + migration 031_job_queue.sql
 2. ✅ Add `JobQueueService` to `services/`
 3. ✅ Add `enqueueJob(name, payload, options)` function
 4. ✅ Add `enqueueJobAtPriority(queue, priority)` for system jobs
 
 ### Phase 2: Workflow System (gateway)
+
 1. Refactor `WorkflowService.dispatchNode()` to enqueue each node as a job instead of executing synchronously
 2. Worker pool (configurable size, default 4) claims available jobs, executes, writes results, triggers dependents via gating
 3. Node outputs stored in DB — crash recovery reads last successful node output + resumes from next pending node
 4. Workflow-level job groups: all nodes in a workflow share a `workflow_run_id`; orphan cleanup marks incomplete runs on restart
 
 ### Phase 3: Trigger + Plan Systems (gateway)
+
 1. `TriggerService.scheduleJob()` → enqueue for cron jobs
 2. `PlanExecutor` → each step becomes a job; step N+1 enqueued after step N succeeds
 3. Subagent sessions → wake up, re-claim in-progress job on reconnect
 
 ### Phase 4: Fleet + Subagent (gateway)
+
 1. Fleet worker pool claims jobs from `fleet_tasks` queue
 2. Subagent worker pool claims from `subagent_jobs` queue
 3. `requeueOrphanedTasks()` replaced by jobs that self-recover on worker restart
@@ -127,17 +131,20 @@ CREATE TABLE job_history (
 ## Consequences
 
 ### Positive
+
 - **Crash recovery**: workers restart, see `active`/`available` jobs, continue
 - **Horizontal scaling**: multiple gateway instances share the same queue via `FOR UPDATE SKIP LOCKED`
 - **Retry with backoff**: no thundering herd on transient failures
 - **No extra infra**: uses existing Postgres, deployed via migration
 
 ### Negative
+
 - **Added latency**: jobs are queued, not synchronous; UI feedback must reflect queued state
 - **Complexity**: requires managing job state machine + worker pool lifecycle
 - **Transaction boundaries**: job claim + result write must be atomic; careful use of `FOR UPDATE SKIP LOCKED`
 
 ### Risks
+
 - **Queue depth explosion**: if workers are slower than enqueuers, queue grows unbounded. Mitigate: monitor queue depth in metrics, alert at threshold, circuit-breaker on enqueue
 - **Job lock contention**: many workers competing for same priority tier. Mitigate: partition by queue name + priority
 
@@ -145,12 +152,12 @@ CREATE TABLE job_history (
 
 ## Alternatives Considered
 
-| Option | Why Not |
-|--------|---------|
-| **Redis** (Bull/BullMQ) | Extra infrastructure to deploy/monitor; Redis failure = queue unavailable |
-| **Graphile Worker** | More opinionated (synchronous, migration-first); pg-boss async API fits our enqueue-anywhere pattern better |
-| **In-memory only** | Already the problem we are solving |
-| **SQS/IronMQ** | Cloud-only, not self-hosted; adds vendor lock-in |
+| Option                  | Why Not                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Redis** (Bull/BullMQ) | Extra infrastructure to deploy/monitor; Redis failure = queue unavailable                                   |
+| **Graphile Worker**     | More opinionated (synchronous, migration-first); pg-boss async API fits our enqueue-anywhere pattern better |
+| **In-memory only**      | Already the problem we are solving                                                                          |
+| **SQS/IronMQ**          | Cloud-only, not self-hosted; adds vendor lock-in                                                            |
 
 ---
 

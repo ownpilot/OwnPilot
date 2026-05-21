@@ -21,7 +21,11 @@ import { RotateCcw, Sun, Moon, Monitor, Palette, Plus, X } from '../components/i
 
 type ThemeOption = 'system' | 'light' | 'dark' | 'claude';
 
-const THEME_OPTIONS: { value: ThemeOption; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const THEME_OPTIONS: {
+  value: ThemeOption;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { value: 'system', label: 'System', icon: Monitor },
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
@@ -66,7 +70,11 @@ export function LayoutConfigPage() {
             Custom Groups
           </h2>
           <button
-            onClick={() => { setShowCreateGroup(true); setNewGroupName(''); setNewGroupItems(new Set()); }}
+            onClick={() => {
+              setShowCreateGroup(true);
+              setNewGroupName('');
+              setNewGroupItems(new Set());
+            }}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
           >
             <Plus className="w-3 h-3" /> New Group
@@ -81,9 +89,16 @@ export function LayoutConfigPage() {
         {config.customGroups.length > 0 && (
           <div className="space-y-1">
             {config.customGroups.map((group) => (
-              <div key={group.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary text-xs">
-                <span className="font-medium text-text-primary dark:text-dark-text-primary flex-1">{group.label}</span>
-                <span className="text-text-muted dark:text-dark-text-muted">{group.items.length} items</span>
+              <div
+                key={group.id}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary text-xs"
+              >
+                <span className="font-medium text-text-primary dark:text-dark-text-primary flex-1">
+                  {group.label}
+                </span>
+                <span className="text-text-muted dark:text-dark-text-muted">
+                  {group.items.length} items
+                </span>
                 <button
                   onClick={() => removeCustomGroup(group.id)}
                   className="w-5 h-5 flex items-center justify-center rounded hover:bg-error/10 hover:text-error transition-colors text-text-muted dark:text-dark-text-muted"
@@ -122,7 +137,9 @@ export function LayoutConfigPage() {
                   <label
                     key={item.to}
                     className={`flex items-center gap-2 px-2 py-1 rounded text-xs cursor-pointer transition-colors ${
-                      checked ? 'bg-primary/10 text-primary' : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+                      checked
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
                     }`}
                   >
                     <input
@@ -131,7 +148,8 @@ export function LayoutConfigPage() {
                       onChange={() => {
                         setNewGroupItems((prev) => {
                           const next = new Set(prev);
-                          if (next.has(item.to)) next.delete(item.to); else next.add(item.to);
+                          if (next.has(item.to)) next.delete(item.to);
+                          else next.add(item.to);
                           return next;
                         });
                       }}

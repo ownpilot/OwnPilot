@@ -29,16 +29,17 @@
 
 OwnPilot is not a single agent — it's an **ecosystem** of agent concepts, each designed for a specific operational pattern. Understanding the differences is critical for both users (choosing the right tool) and developers (extending the system correctly).
 
-| # | Concept | Primary File(s) | DB Tables | Trigger Model |
-|---|---------|-----------------|-----------|---------------|
-| 1 | **Personal Assistant** | `agents.ts`, `agent-service.ts` | `agents`, `agent_messages` | Reactive (user message) |
-| 2 | **Soul Agent** | `souls.ts`, `agent-souls` | `agent_souls`, `agent_soul_versions` | Scheduled (cron heartbeat) |
-| 3 | **Claw** | `claw-runner.ts`, `claw-manager.ts` | `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` | Mission-driven cyclic |
-| 4 | **Coding Agent** | `coding-agent-service.ts` | `coding_agent_*` | External CLI spawn |
-| 5 | **Subagent** | `subagent-runner.ts`, `subagent-manager.ts` | `subagent_history` | Parent delegation |
-| 6 | **Fleet Worker** | `fleet-manager.ts`, `fleet-worker.ts` | `fleets`, `fleet_sessions`, `fleet_tasks`, `fleet_worker_history` | Task queue + concurrency |
+| #   | Concept                | Primary File(s)                             | DB Tables                                                         | Trigger Model              |
+| --- | ---------------------- | ------------------------------------------- | ----------------------------------------------------------------- | -------------------------- |
+| 1   | **Personal Assistant** | `agents.ts`, `agent-service.ts`             | `agents`, `agent_messages`                                        | Reactive (user message)    |
+| 2   | **Soul Agent**         | `souls.ts`, `agent-souls`                   | `agent_souls`, `agent_soul_versions`                              | Scheduled (cron heartbeat) |
+| 3   | **Claw**               | `claw-runner.ts`, `claw-manager.ts`         | `claws`, `claw_sessions`, `claw_history`, `claw_audit_log`        | Mission-driven cyclic      |
+| 4   | **Coding Agent**       | `coding-agent-service.ts`                   | `coding_agent_*`                                                  | External CLI spawn         |
+| 5   | **Subagent**           | `subagent-runner.ts`, `subagent-manager.ts` | `subagent_history`                                                | Parent delegation          |
+| 6   | **Fleet Worker**       | `fleet-manager.ts`, `fleet-worker.ts`       | `fleets`, `fleet_sessions`, `fleet_tasks`, `fleet_worker_history` | Task queue + concurrency   |
 
 Plus **two coordination layers** that orchestrate the above:
+
 - **Agent Crews** (`agent_crews`, `agent_crew_members`) — DB-persisted multi-agent teams
 - **Orchestra** (`orchestra/`) — Runtime DAG-based multi-agent execution
 
@@ -215,13 +216,13 @@ Budget:      $0.20/hour
 
 ### Distinction from Personal Assistant
 
-| Aspect | Personal Assistant | Soul Agent |
-|--------|-------------------|------------|
-| Trigger | User message (reactive) | Cron heartbeat (proactive) |
-| Identity | Generic "OwnPilot" | Custom persona with personality |
-| Budget | None | Daily/monthly limits enforced |
-| Tools | ALL tools | Filtered by `skillAccess` |
-| Memory | Shared user memory | Soul-specific + shared |
+| Aspect   | Personal Assistant      | Soul Agent                      |
+| -------- | ----------------------- | ------------------------------- |
+| Trigger  | User message (reactive) | Cron heartbeat (proactive)      |
+| Identity | Generic "OwnPilot"      | Custom persona with personality |
+| Budget   | None                    | Daily/monthly limits enforced   |
+| Tools    | ALL tools               | Filtered by `skillAccess`       |
+| Memory   | Shared user memory      | Soul-specific + shared          |
 
 ---
 
@@ -276,22 +277,24 @@ Every claw workspace gets auto-scaffolded with:
 ```
 
 These files are:
+
 - **Auto-injected** into the claw's system prompt every cycle
 - **Persistent** across restarts
 - **Editable** by the claw itself (self-modification)
 
 Plus a **Working Memory API**:
+
 - `claw_set_context(key, value)` — persist state across cycles
 - `claw_get_context(key)` — retrieve state
 
 ### Modes
 
-| Mode | Loop Behavior | Use Case |
-|------|--------------|----------|
-| `continuous` | Adaptive 500ms-10s loop | Real-time research, monitoring |
-| `interval` | Fixed period (default 5min) | Periodic health checks |
-| `event` | Triggered by EventBus events | Reactive automation |
-| `single-shot` | One execution, stops | One-off missions |
+| Mode          | Loop Behavior                | Use Case                       |
+| ------------- | ---------------------------- | ------------------------------ |
+| `continuous`  | Adaptive 500ms-10s loop      | Real-time research, monitoring |
+| `interval`    | Fixed period (default 5min)  | Periodic health checks         |
+| `event`       | Triggered by EventBus events | Reactive automation            |
+| `single-shot` | One execution, stops         | One-off missions               |
 
 ### Stop Conditions
 
@@ -358,13 +361,13 @@ Stop: on_report
 
 ### Distinction from Soul Agent
 
-| Aspect | Soul Agent | Claw |
-|--------|-----------|------|
-| Trigger | Cron schedule | Mission-driven |
-| Duration | Indefinite | Until mission complete |
-| State | Learning evolution | .claw/ files |
-| Goal | Repeated behavior | Finish a mission |
-| Persona | Required (identity) | Optional (can attach soul) |
+| Aspect   | Soul Agent          | Claw                       |
+| -------- | ------------------- | -------------------------- |
+| Trigger  | Cron schedule       | Mission-driven             |
+| Duration | Indefinite          | Until mission complete     |
+| State    | Learning evolution  | .claw/ files               |
+| Goal     | Repeated behavior   | Finish a mission           |
+| Persona  | Required (identity) | Optional (can attach soul) |
 
 ---
 
@@ -389,12 +392,12 @@ Output:    Ring buffer (100KB) + WebSocket streaming to XTerminal
 
 ### Supported Providers
 
-| Provider | Binary | Auth | API Key Env |
-|----------|--------|------|-------------|
-| `claude-code` | `claude` | Pro subscription or API key | `ANTHROPIC_API_KEY` |
-| `codex` | `codex` | ChatGPT Plus or API key | `CODEX_API_KEY` |
-| `gemini-cli` | `gemini` | Google account or API key | `GEMINI_API_KEY` |
-| `custom:<name>` | User-defined | User-configured | User-configured |
+| Provider        | Binary       | Auth                        | API Key Env         |
+| --------------- | ------------ | --------------------------- | ------------------- |
+| `claude-code`   | `claude`     | Pro subscription or API key | `ANTHROPIC_API_KEY` |
+| `codex`         | `codex`      | ChatGPT Plus or API key     | `CODEX_API_KEY`     |
+| `gemini-cli`    | `gemini`     | Google account or API key   | `GEMINI_API_KEY`    |
+| `custom:<name>` | User-defined | User-configured             | User-configured     |
 
 ### Execution Modes
 
@@ -615,14 +618,14 @@ Execution:
 
 ## Isolation Mechanisms
 
-| Agent Type | Isolation Boundary | Workspace | Tool Scope |
-|------------|-------------------|-----------|------------|
-| Personal Assistant | None (global) | Session workspace | ALL tools |
-| Soul Agent | `workspace_id` + `skillAccess` | `agent_souls.workspace_id` | Soul's `skillAccess` list |
-| Claw | `workspace_id` + `.claw/` dir | Dedicated workspace | `allowed_tools` + claw tools |
-| Coding Agent | CWD + sanitized env | User-specified path | Attached skills only |
-| Subagent | Parent's delegation | Parent workspace | Scoped by parent |
-| Fleet Worker | Fleet session context | Fleet workspace | Fleet task type limits |
+| Agent Type         | Isolation Boundary             | Workspace                  | Tool Scope                   |
+| ------------------ | ------------------------------ | -------------------------- | ---------------------------- |
+| Personal Assistant | None (global)                  | Session workspace          | ALL tools                    |
+| Soul Agent         | `workspace_id` + `skillAccess` | `agent_souls.workspace_id` | Soul's `skillAccess` list    |
+| Claw               | `workspace_id` + `.claw/` dir  | Dedicated workspace        | `allowed_tools` + claw tools |
+| Coding Agent       | CWD + sanitized env            | User-specified path        | Attached skills only         |
+| Subagent           | Parent's delegation            | Parent workspace           | Scoped by parent             |
+| Fleet Worker       | Fleet session context          | Fleet workspace            | Fleet task type limits       |
 
 **Environment sanitization (Coding Agents):** OwnPilot's own secrets (`POSTGRES_*`, session tokens, internal API keys) are stripped from the child process environment. Only the explicit provider API key + user-defined vars pass through.
 
@@ -664,18 +667,18 @@ type OrchestraStrategy = 'sequential' | 'parallel' | 'dag';
 
 interface AgentTask {
   id: string;
-  agentName: string;      // Must match agents.name
+  agentName: string; // Must match agents.name
   input: string;
   context?: Record<string, unknown>;
-  dependsOn?: string[];   // DAG edges
+  dependsOn?: string[]; // DAG edges
   timeout?: number;
-  optional?: boolean;     // If true, failure doesn't block pipeline
+  optional?: boolean; // If true, failure doesn't block pipeline
 }
 
 interface OrchestraPlan {
-  strategy: OrchestraStrategy,
-  tasks: AgentTask[],
-  providerRouting?: Record<string, {provider: string, model: string}>
+  strategy: OrchestraStrategy;
+  tasks: AgentTask[];
+  providerRouting?: Record<string, { provider: string; model: string }>;
 }
 ```
 
@@ -716,29 +719,29 @@ Execution flow:
 
 ### By User Intent
 
-| User Says | Route to |
-|-----------|----------|
-| "Chat with me about X" | **Personal Assistant** |
-| "Specialized assistant for Y" (custom persona) | **Agents** (create custom) |
-| "Every morning / daily / hourly / weekly..." | **Soul Agent** (scheduled) |
-| "Monitor / watch / keep an eye on..." | **Claw** (continuous/interval) |
-| "Finish this mission / do X until done" | **Claw** (single-shot) |
-| "Write / refactor / fix code" | **Coding Agent** |
-| "Quickly research X and report back" | **Subagent** |
-| "Process 100 items / batch analyze..." | **Fleet** |
-| "Multi-step feature development" | **Orchestra / Crew** |
+| User Says                                      | Route to                       |
+| ---------------------------------------------- | ------------------------------ |
+| "Chat with me about X"                         | **Personal Assistant**         |
+| "Specialized assistant for Y" (custom persona) | **Agents** (create custom)     |
+| "Every morning / daily / hourly / weekly..."   | **Soul Agent** (scheduled)     |
+| "Monitor / watch / keep an eye on..."          | **Claw** (continuous/interval) |
+| "Finish this mission / do X until done"        | **Claw** (single-shot)         |
+| "Write / refactor / fix code"                  | **Coding Agent**               |
+| "Quickly research X and report back"           | **Subagent**                   |
+| "Process 100 items / batch analyze..."         | **Fleet**                      |
+| "Multi-step feature development"               | **Orchestra / Crew**           |
 
 ### By Technical Pattern
 
-| Pattern | Choose |
-|---------|--------|
-| Reactive + conversational | Personal Assistant / custom Agent |
-| Proactive + scheduled + persona | Soul |
-| Proactive + mission-driven + stateful | Claw |
-| External tool wrapping | Coding Agent |
-| Task decomposition | Subagent |
-| Parallel batch | Fleet |
-| Multi-agent pipeline | Orchestra / Crew |
+| Pattern                               | Choose                            |
+| ------------------------------------- | --------------------------------- |
+| Reactive + conversational             | Personal Assistant / custom Agent |
+| Proactive + scheduled + persona       | Soul                              |
+| Proactive + mission-driven + stateful | Claw                              |
+| External tool wrapping                | Coding Agent                      |
+| Task decomposition                    | Subagent                          |
+| Parallel batch                        | Fleet                             |
+| Multi-agent pipeline                  | Orchestra / Crew                  |
 
 ---
 
@@ -779,13 +782,13 @@ SETTINGS
 
 #### Current Tool Inventory
 
-| Tool | Status | Description Keywords |
-|------|--------|---------------------|
-| `create_claw` | Exists | "continuous/interval/event/single-shot", "monitoring", "periodic checks" |
-| `create_fleet` | Exists | "parallel", "task queue", "workers" |
-| `spawn_subagent` | Exists | "delegate", "parallel research", "single subtask" |
-| `create_autonomous_agent` | **MISSING** | — |
-| `create_soul` | **MISSING** | — |
+| Tool                      | Status      | Description Keywords                                                     |
+| ------------------------- | ----------- | ------------------------------------------------------------------------ |
+| `create_claw`             | Exists      | "continuous/interval/event/single-shot", "monitoring", "periodic checks" |
+| `create_fleet`            | Exists      | "parallel", "task queue", "workers"                                      |
+| `spawn_subagent`          | Exists      | "delegate", "parallel research", "single subtask"                        |
+| `create_autonomous_agent` | **MISSING** | —                                                                        |
+| `create_soul`             | **MISSING** | —                                                                        |
 
 #### Why This Matters
 
@@ -901,6 +904,7 @@ These tools wrap the existing REST API (`/api/v1/souls/*`) — no new backend lo
 Even with all creation tools present, the AI relies on **tool descriptions alone** to pick the right one. This is **implicit routing** — it works when descriptions are excellent, but produces inconsistent choices in edge cases.
 
 **Example edge cases where AI gets confused:**
+
 - "Agent that monitors my email every 5 minutes" — Soul (scheduled) or Claw (continuous)?
 - "Daily code review of new commits" — Soul or Orchestra?
 - "Run this query once" — Subagent or direct tool call?
@@ -935,11 +939,12 @@ A skill that the Personal Assistant invokes **before** creating any agent, to sy
 
 When the user requests agent creation or task delegation, analyze their intent
 and route to the correct tool. Always invoke this skill BEFORE calling any
-create_*/spawn_* tool.
+create*\*/spawn*\* tool.
 
 ## Step 1: Classify User Intent
 
 Ask yourself:
+
 1. Is this TEK SEFERLİK (one-off) or TEKRARLI (recurring)?
 2. Is there a TIME/SCHEDULE mentioned?
 3. Is a PERSONA/IDENTITY described?
@@ -951,17 +956,20 @@ Ask yourself:
 ### Q1: One-off or recurring?
 
 #### ONE-OFF
+
 - Small + need result fast → `spawn_subagent`
 - Large + until complete → `create_claw(mode='single-shot')`
 - Many parallel items → `create_fleet(scheduleType='on-demand')`
 - Code writing needed → `start_coding_session`
 
 #### RECURRING + SCHEDULED
+
 - Identity/persona important → `create_autonomous_agent` (Soul)
 - Just monitoring, no persona → `create_claw(mode='interval')`
 - Batch cyclic work → `create_fleet(scheduleType='interval')`
 
 #### RECURRING + EVENT-DRIVEN
+
 - Single event handler → `create_claw(mode='event')`
 - Multiple event listeners → `create_fleet(scheduleType='event')`
 
@@ -973,36 +981,38 @@ If 3+ different expertise areas needed → `create_orchestra` (DAG plan)
 
 ### Keyword → Tool Mapping
 
-| User said | Route to |
-|-----------|----------|
-| "every morning/day/hour", "daily", "hourly" | **Soul** |
-| "continuously monitor", "watch over" | **Claw continuous/interval** |
-| "until done", "finish", "complete" | **Claw single-shot** |
-| "all in parallel", "batch process" | **Fleet** |
-| "quickly research", "look up X" | **Subagent** |
-| "write code", "refactor", "run tests" | **Coding Agent** |
-| "[persona name]" with personality | **Soul** (identity field) |
+| User said                                   | Route to                     |
+| ------------------------------------------- | ---------------------------- |
+| "every morning/day/hour", "daily", "hourly" | **Soul**                     |
+| "continuously monitor", "watch over"        | **Claw continuous/interval** |
+| "until done", "finish", "complete"          | **Claw single-shot**         |
+| "all in parallel", "batch process"          | **Fleet**                    |
+| "quickly research", "look up X"             | **Subagent**                 |
+| "write code", "refactor", "run tests"       | **Coding Agent**             |
+| "[persona name]" with personality           | **Soul** (identity field)    |
 
 ### Budget Heuristics
 
 If user mentions "cheap", "limit spending", "budget":
+
 - Soul → add `autonomy.dailyBudget`
 - Claw → add `limits.max_cost_usd`
 - Fleet → add `budget_cap_usd`
 
 ### Cron Translation
 
-| User phrase | Cron expression |
-|-------------|----------------|
-| "every morning at 8" | `0 8 * * *` |
-| "every hour" | `0 * * * *` |
-| "every 5 minutes" | `*/5 * * * *` |
-| "weekdays at 9am" | `0 9 * * 1-5` |
-| "every Monday 10am" | `0 10 * * 1` |
+| User phrase          | Cron expression |
+| -------------------- | --------------- |
+| "every morning at 8" | `0 8 * * *`     |
+| "every hour"         | `0 * * * *`     |
+| "every 5 minutes"    | `*/5 * * * *`   |
+| "weekdays at 9am"    | `0 9 * * 1-5`   |
+| "every Monday 10am"  | `0 10 * * 1`    |
 
 ## Step 4: Validate
 
 Before executing, confirm:
+
 - All required parameters present
 - Tool choice matches user intent
 - Budget/limits are sensible
@@ -1012,37 +1022,41 @@ If unclear, ASK user before creating.
 ## Examples
 
 ### Example 1
+
 **User:** "Sabah 8'de product hunt'a bakıp bana brief gönderen agent"
 
 **Analysis:**
-- Recurring + scheduled (sabah 8 = cron "0 8 * * *")
+
+- Recurring + scheduled (sabah 8 = cron "0 8 \* \* \*")
 - Persona implied ("brief gönderen" = researcher)
 - No budget mentioned → default
 
 **Action:**
 ```
+
 create_autonomous_agent({
-  identity: {
-    name: "ProductHunt Radar",
-    emoji: "🔍",
-    role: "Tech Scout",
-    personality: "Curious, fact-focused, concise"
-  },
-  purpose: {
-    mission: "Scan Product Hunt daily for new tech launches",
-    goals: ["Morning brief of top 5 launches"]
-  },
-  heartbeat: {
-    enabled: true,
-    cron: "0 8 * * *",
-    timezone: "Europe/Istanbul"
-  },
-  autonomy: {
-    approvalLevel: 'autonomous',
-    dailyBudget: 0.50
-  },
-  skillAccess: ['web_search', 'fetch_url', 'add_note', 'send_notification']
+identity: {
+name: "ProductHunt Radar",
+emoji: "🔍",
+role: "Tech Scout",
+personality: "Curious, fact-focused, concise"
+},
+purpose: {
+mission: "Scan Product Hunt daily for new tech launches",
+goals: ["Morning brief of top 5 launches"]
+},
+heartbeat: {
+enabled: true,
+cron: "0 8 \* \* \*",
+timezone: "Europe/Istanbul"
+},
+autonomy: {
+approvalLevel: 'autonomous',
+dailyBudget: 0.50
+},
+skillAccess: ['web_search', 'fetch_url', 'add_note', 'send_notification']
 })
+
 ```
 
 ### Example 2
@@ -1052,10 +1066,12 @@ create_autonomous_agent({
 
 **Action:**
 ```
+
 spawn_subagent({
-  name: "bug-finder",
-  task: "Analyze the specified file for bugs, return structured list"
+name: "bug-finder",
+task: "Analyze the specified file for bugs, return structured list"
 })
+
 ```
 
 ### Example 3
@@ -1067,14 +1083,17 @@ spawn_subagent({
 
 **Action:**
 ```
+
 create_claw({
-  name: "Server Monitor",
-  mission: "Check servers every 5min, WhatsApp alert after 3 errors",
-  mode: 'interval',
-  interval_ms: 300000,
-  stop_condition: null  // runs forever
+name: "Server Monitor",
+mission: "Check servers every 5min, WhatsApp alert after 3 errors",
+mode: 'interval',
+interval_ms: 300000,
+stop_condition: null // runs forever
 })
+
 ```
+
 ```
 
 ### Integration Options
@@ -1108,6 +1127,7 @@ Install `agent-router` as a skill. AI calls `skill.agent-router.classify(userReq
 **Cons:** AI must remember to call skill, 1 extra tool round-trip
 
 **Option C — Hybrid (Recommended)**
+
 - System prompt has the **short decision table** (Option A content)
 - Skill has the **detailed examples, edge cases, keyword mapping**
 - AI uses skill only when uncertain
@@ -1121,11 +1141,13 @@ Install `agent-router` as a skill. AI calls `skill.agent-router.classify(userReq
 **Goal:** Personal Assistant can create Soul Agents.
 
 **Files to create:**
+
 ```
 packages/gateway/src/tools/soul-management-tools.ts
 ```
 
 **Tool definitions:**
+
 - `create_autonomous_agent` — main creation tool
 - `list_autonomous_agents` — enumerate existing souls
 - `pause_autonomous_agent` — pause heartbeat
@@ -1135,11 +1157,13 @@ packages/gateway/src/tools/soul-management-tools.ts
 - `delete_autonomous_agent` — remove
 
 **Implementation:**
+
 - Each tool wraps existing `/api/v1/souls/*` endpoints
 - Zod schemas for parameters
 - Error handling for missing fields, invalid cron, etc.
 
 **Files to modify:**
+
 ```
 packages/gateway/src/routes/agent-service.ts
   → Import SOUL_MANAGEMENT_TOOLS
@@ -1147,6 +1171,7 @@ packages/gateway/src/routes/agent-service.ts
 ```
 
 **Tests:**
+
 ```
 packages/gateway/src/tools/soul-management-tools.test.ts
   → Test each tool creates valid soul via API
@@ -1160,6 +1185,7 @@ packages/gateway/src/tools/soul-management-tools.test.ts
 **Option:** Hybrid (A + B)
 
 **Files to create:**
+
 ```
 packages/gateway/src/routes/agent-prompt.ts
   → Add "## Agent Creation Routing" section to BASE_SYSTEM_PROMPT
@@ -1169,6 +1195,7 @@ packages/gateway/src/routes/agent-prompt.ts
 ```
 
 **Files to modify:**
+
 ```
 docs/AGENTS.md
   → Add "Agent Routing" section with decision tree
@@ -1179,6 +1206,7 @@ docs/AGENTS.md
 **Goal:** Show user which agent type AI chose and why.
 
 **Example UX:**
+
 ```
 User: "Sabah 8'de product hunt baksın"
 AI:   "I'm creating an Autonomous Agent (Soul) because you specified
@@ -1190,6 +1218,7 @@ AI:   "I'm creating an Autonomous Agent (Soul) because you specified
 ```
 
 **Files to modify:**
+
 ```
 packages/ui/src/components/AgentCreationConfirmation.tsx (NEW)
 packages/ui/src/pages/ChatPage.tsx
@@ -1199,11 +1228,13 @@ packages/ui/src/pages/ChatPage.tsx
 ### Phase 4: Testing & Iteration (ongoing)
 
 **Test scenarios:**
+
 - 20 varied user requests → AI must pick correct agent type
 - Edge cases: ambiguous requests, mixed signals
 - User corrections: "No, make it a Claw instead" → learn
 
 **Metrics to track:**
+
 - Agent type selection accuracy
 - User override rate (if high, improve routing)
 - Time from user request to agent running
@@ -1215,6 +1246,7 @@ packages/ui/src/pages/ChatPage.tsx
 During this analysis, a critical config bug was discovered and fixed in `packages/core/data/providers/minimax.json`:
 
 **Bug:**
+
 ```json
 // BEFORE (broken)
 "baseUrl": "https://api.minimax.io/anthropic/v1"
@@ -1227,6 +1259,7 @@ fetch(`${baseUrl}/chat/completions`)
 ```
 
 **Fix:**
+
 ```json
 // AFTER (working)
 "baseUrl": "https://api.minimax.io/v1"
@@ -1234,6 +1267,7 @@ fetch(`${baseUrl}/chat/completions`)
 ```
 
 **Verification via MiniMax official docs:**
+
 - OpenAI-compatible: `OPENAI_BASE_URL=https://api.minimax.io/v1`
 - Anthropic-compatible: `ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic`
 
@@ -1244,6 +1278,7 @@ The `openai-compatible` type in OwnPilot appends `/chat/completions`, which is o
 ## Appendix — File Reference
 
 ### Core Agent Files
+
 ```
 packages/core/src/agent/
 ├── agent.ts                    # Agent class (production runtime)
@@ -1255,6 +1290,7 @@ packages/core/src/agent/
 ```
 
 ### Gateway Agent Files
+
 ```
 packages/gateway/src/
 ├── assistant/orchestrator.ts   # buildEnhancedSystemPrompt (memories/goals/autonomy)
@@ -1290,5 +1326,5 @@ packages/gateway/src/
 
 ---
 
-*Last updated: 2026-04-14*
-*Authors: OwnPilot team + collaborative analysis session*
+_Last updated: 2026-04-14_
+_Authors: OwnPilot team + collaborative analysis session_

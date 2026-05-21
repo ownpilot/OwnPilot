@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Global Search Overlay', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('[data-testid="sidebar"]', { timeout: 10000 });
@@ -149,5 +148,4 @@ test.describe('Global Search Overlay', () => {
     // Should navigate to /tasks
     await page.waitForURL('**/tasks', { timeout: 5000 });
   });
-
 });

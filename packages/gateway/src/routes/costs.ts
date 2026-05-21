@@ -53,7 +53,9 @@ getUsageRepository()
     log.warn(`[costs] UsageRepository unavailable, DB persistence disabled: ${msg}`);
   });
 
-async function getUsageRepository(): Promise<import('../db/repositories/usage.js').UsageRepository> {
+async function getUsageRepository(): Promise<
+  import('../db/repositories/usage.js').UsageRepository
+> {
   const { getUsageRepository: getRepo } = await import('../db/repositories/usage.js');
   return getRepo();
 }
@@ -246,8 +248,18 @@ costRoutes.get('/breakdown', async (c) => {
   const summary = await usageTracker.getSummary(startDate, endDate, userId);
 
   // Enrich with DB-backed records for durability (graceful — endpoint works even if repo unavailable)
-  type DbSummary = Awaited<ReturnType<import('../db/repositories/usage.js').UsageRepository['getSummary']>>;
-  let dbSummary: DbSummary = { totalRecords: 0, totalInputTokens: 0, totalOutputTokens: 0, totalCost: 0, byProvider: {}, byModel: {}, byDay: {} };
+  type DbSummary = Awaited<
+    ReturnType<import('../db/repositories/usage.js').UsageRepository['getSummary']>
+  >;
+  let dbSummary: DbSummary = {
+    totalRecords: 0,
+    totalInputTokens: 0,
+    totalOutputTokens: 0,
+    totalCost: 0,
+    byProvider: {},
+    byModel: {},
+    byDay: {},
+  };
   try {
     const dbRepo = await getUsageRepository();
     dbSummary = await dbRepo.getSummary(startDate, endDate, userId ?? undefined);
@@ -257,7 +269,16 @@ costRoutes.get('/breakdown', async (c) => {
   }
 
   // Merge: use in-memory summary totals, supplement with DB breakdown data
-  const mergedByProvider: Record<string, { requests: number; inputTokens: number; outputTokens: number; cost: number; averageLatencyMs: number }> = {};
+  const mergedByProvider: Record<
+    string,
+    {
+      requests: number;
+      inputTokens: number;
+      outputTokens: number;
+      cost: number;
+      averageLatencyMs: number;
+    }
+  > = {};
   for (const [provider, stats] of Object.entries(summary.byProvider)) {
     mergedByProvider[provider] = { ...stats };
   }
@@ -272,7 +293,17 @@ costRoutes.get('/breakdown', async (c) => {
     }
   }
 
-  const mergedByModel: Record<string, { provider: string; requests: number; inputTokens: number; outputTokens: number; cost: number; averageLatencyMs: number }> = {};
+  const mergedByModel: Record<
+    string,
+    {
+      provider: string;
+      requests: number;
+      inputTokens: number;
+      outputTokens: number;
+      cost: number;
+      averageLatencyMs: number;
+    }
+  > = {};
   for (const [model, stats] of Object.entries(summary.byModel)) {
     mergedByModel[model] = { ...stats };
   }
@@ -288,9 +319,18 @@ costRoutes.get('/breakdown', async (c) => {
   }
 
   // Merge daily data
-  const mergedDaily = new Map<string, { date: string; requests: number; cost: number; inputTokens: number; outputTokens: number }>();
+  const mergedDaily = new Map<
+    string,
+    { date: string; requests: number; cost: number; inputTokens: number; outputTokens: number }
+  >();
   for (const d of summary.daily) {
-    mergedDaily.set(d.date, { date: d.date, requests: d.requests, cost: d.cost, inputTokens: d.inputTokens, outputTokens: d.outputTokens });
+    mergedDaily.set(d.date, {
+      date: d.date,
+      requests: d.requests,
+      cost: d.cost,
+      inputTokens: d.inputTokens,
+      outputTokens: d.outputTokens,
+    });
   }
   for (const [day, stats] of Object.entries(dbSummary.byDay)) {
     const existing = mergedDaily.get(day);

@@ -364,7 +364,10 @@ export class WSGateway {
     // soul.heartbeat.completed → soul:heartbeat:completed
     this.legacyUnsubs.push(
       eventSystem.onAny('soul.heartbeat.completed', (event) => {
-        this.broadcast('soul:heartbeat:completed', event.data as unknown as ServerEvents['soul:heartbeat:completed']);
+        this.broadcast(
+          'soul:heartbeat:completed',
+          event.data as unknown as ServerEvents['soul:heartbeat:completed']
+        );
       })
     );
 
@@ -1418,7 +1421,9 @@ const _wsAllowedOrigins = (process.env.WS_ALLOWED_ORIGINS ?? process.env.CORS_OR
   .filter(Boolean)
   .filter((origin) => {
     if (origin === '*') {
-      log.warn('[WARN] WS: CORS_ORIGINS contains "*" — treating as no cross-origin allowlist (WS connections will use localhost defaults)');
+      log.warn(
+        '[WARN] WS: CORS_ORIGINS contains "*" — treating as no cross-origin allowlist (WS connections will use localhost defaults)'
+      );
       return false;
     }
     return true;

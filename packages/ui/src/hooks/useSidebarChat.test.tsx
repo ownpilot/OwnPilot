@@ -14,7 +14,10 @@ import { SidebarChatProvider, useSidebarChat } from './useSidebarChat';
 
 // ---- Minimal renderHook (no @testing-library/react needed) ----
 
-function renderHook<T>(useHook: () => T, options?: { wrapper?: React.FC<{ children: ReactNode }> }) {
+function renderHook<T>(
+  useHook: () => T,
+  options?: { wrapper?: React.FC<{ children: ReactNode }> }
+) {
   const result = { current: null as unknown as T };
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -26,7 +29,9 @@ function renderHook<T>(useHook: () => T, options?: { wrapper?: React.FC<{ childr
   }
 
   const element = options?.wrapper
-    ? createElement(options.wrapper, { children: createElement(TestComponent) } as { children: ReactNode })
+    ? createElement(options.wrapper, { children: createElement(TestComponent) } as {
+        children: ReactNode;
+      })
     : createElement(TestComponent);
 
   act(() => {
@@ -205,8 +210,8 @@ describe('useSidebarChat', () => {
   });
 
   test('throws when used outside provider', () => {
-    expect(() =>
-      renderHook(() => useSidebarChat())
-    ).toThrow('useSidebarChat must be used within a SidebarChatProvider');
+    expect(() => renderHook(() => useSidebarChat())).toThrow(
+      'useSidebarChat must be used within a SidebarChatProvider'
+    );
   });
 });

@@ -110,7 +110,6 @@ export class ClawRunner {
     });
 
     try {
-
       // Reuse cached agent if provider/model unchanged, otherwise create and cache
       if (!this.agent || this.cachedProvider !== provider || this.cachedModel !== model) {
         const newAgent = await this.createAgent(provider, model);

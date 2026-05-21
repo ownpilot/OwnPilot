@@ -28,10 +28,7 @@ export function useAgents(): UseAgentsResult {
   const fetchAll = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const [soulsData, crewsData] = await Promise.allSettled([
-        soulsApi.list(),
-        crewsApi.list(),
-      ]);
+      const [soulsData, crewsData] = await Promise.allSettled([soulsApi.list(), crewsApi.list()]);
 
       if (soulsData.status === 'fulfilled') setSouls(soulsData.value.items);
       if (crewsData.status === 'fulfilled') setCrews(crewsData.value.items);

@@ -47,7 +47,7 @@ const CATEGORY_ROUTES: Record<string, PageContext['type']> = {
 
 async function fetchContext(
   type: 'workspace' | 'coding-agent' | 'claw',
-  id: string,
+  id: string
 ): Promise<PageContext> {
   switch (type) {
     case 'workspace': {

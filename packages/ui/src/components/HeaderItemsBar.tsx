@@ -14,7 +14,13 @@ import type { HeaderZoneId, HeaderZoneEntry, HeaderItemDisplayMode } from '../ty
 
 const ZONE_IDS: HeaderZoneId[] = ['left', 'center', 'right'];
 
-function ZoneEntries({ entries, displayMode }: { entries: HeaderZoneEntry[]; displayMode: HeaderItemDisplayMode }) {
+function ZoneEntries({
+  entries,
+  displayMode,
+}: {
+  entries: HeaderZoneEntry[];
+  displayMode: HeaderItemDisplayMode;
+}) {
   if (entries.length === 0) return null;
   return (
     <>

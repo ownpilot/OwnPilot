@@ -36,7 +36,10 @@ interface SidebarFooterProps {
 export function SidebarFooter({ wsStatus }: SidebarFooterProps) {
   const { passwordConfigured, logout } = useAuth();
   return (
-    <div className="p-2 border-t border-border dark:border-dark-border space-y-1" data-testid="sidebar-footer">
+    <div
+      className="p-2 border-t border-border dark:border-dark-border space-y-1"
+      data-testid="sidebar-footer"
+    >
       {passwordConfigured && (
         <button
           onClick={() => logout()}

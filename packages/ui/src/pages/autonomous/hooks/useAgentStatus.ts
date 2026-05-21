@@ -24,9 +24,7 @@ export function useAgentStatus(onUpdate: (payload: AgentUpdatePayload) => void):
 
   useEffect(() => {
     const unsubs = [
-      subscribe<AgentUpdatePayload>('soul:heartbeat', (payload) =>
-        onUpdateRef.current(payload)
-      ),
+      subscribe<AgentUpdatePayload>('soul:heartbeat', (payload) => onUpdateRef.current(payload)),
     ];
     return () => unsubs.forEach((fn) => fn());
   }, [subscribe]);

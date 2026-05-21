@@ -1,14 +1,5 @@
 import type { FleetConfig } from '../../api/endpoints/fleet';
-import {
-  Play,
-  Pause,
-  Square,
-  Trash2,
-  Clock,
-  Plus,
-  Send,
-  Gauge,
-} from '../../components/icons';
+import { Play, Pause, Square, Trash2, Clock, Plus, Send, Gauge } from '../../components/icons';
 import {
   getStateBadge,
   getWorkerTypeIcon,

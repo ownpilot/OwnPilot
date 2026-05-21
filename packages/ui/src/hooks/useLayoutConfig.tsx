@@ -37,8 +37,12 @@ function isValidZoneEntry(v: unknown): v is HeaderZoneEntry {
   const obj = v as Record<string, unknown>;
   if (obj.type === 'item') return typeof obj.path === 'string';
   if (obj.type === 'group') {
-    return typeof obj.id === 'string' && typeof obj.label === 'string' &&
-      Array.isArray(obj.items) && obj.items.every((x: unknown) => typeof x === 'string');
+    return (
+      typeof obj.id === 'string' &&
+      typeof obj.label === 'string' &&
+      Array.isArray(obj.items) &&
+      obj.items.every((x: unknown) => typeof x === 'string')
+    );
   }
   if (obj.type === 'widget') return typeof obj.widgetId === 'string';
   return false;
@@ -65,8 +69,12 @@ function isValidPinnedConfig(v: unknown): v is SidebarPinnedConfig {
   const obj = v as Record<string, unknown>;
   if (obj.type === 'item') return typeof obj.path === 'string';
   if (obj.type === 'group') {
-    return typeof obj.id === 'string' && typeof obj.label === 'string' &&
-      Array.isArray(obj.items) && obj.items.every((x: unknown) => typeof x === 'string');
+    return (
+      typeof obj.id === 'string' &&
+      typeof obj.label === 'string' &&
+      Array.isArray(obj.items) &&
+      obj.items.every((x: unknown) => typeof x === 'string')
+    );
   }
   return false;
 }
@@ -161,18 +169,20 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // V5 → V6: remove `visible` field, keep only visible sections (add/remove pattern)
   if (typeof obj.version === 'number' && obj.version === 5) {
     const config = obj as unknown as LayoutConfig;
-    const oldSections = (config.sidebar?.sections ?? []) as (SidebarSectionConfig & { visible?: boolean })[];
+    const oldSections = (config.sidebar?.sections ?? []) as (SidebarSectionConfig & {
+      visible?: boolean;
+    })[];
     // Keep sections that were visible (or core sections that must always exist)
     const keptSections = oldSections
       .filter((s) => s.visible === true || s.visible === undefined || CORE_SECTION_IDS.has(s.id))
       .map(({ visible: _, ...rest }, idx) => ({ ...rest, order: idx }));
     // Ensure core sections exist (in case of corrupted config)
     const keptIds = new Set(keptSections.map((s) => s.id));
-    const missingCore = DEFAULT_SIDEBAR_SECTIONS
-      .filter((s) => CORE_SECTION_IDS.has(s.id) && !keptIds.has(s.id));
+    const missingCore = DEFAULT_SIDEBAR_SECTIONS.filter(
+      (s) => CORE_SECTION_IDS.has(s.id) && !keptIds.has(s.id)
+    );
     // Full reindex to ensure contiguous 0-based order (no gaps)
-    const allSections = [...keptSections, ...missingCore]
-      .map((s, i) => ({ ...s, order: i }));
+    const allSections = [...keptSections, ...missingCore].map((s, i) => ({ ...s, order: i }));
     return migrateConfig({
       ...config,
       version: 6, // chain to V6→V7
@@ -195,7 +205,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
     if (Array.isArray(configPinned)) {
       pinnedPaths = configPinned
         .filter((c: SidebarPinnedConfig) => c.type === 'item')
-        .map((c: SidebarPinnedConfig) => c.type === 'item' ? c.path : '');
+        .map((c: SidebarPinnedConfig) => (c.type === 'item' ? c.path : ''));
     }
     // Fallback: old localStorage key
     if (pinnedPaths.length === 0) {
@@ -207,11 +217,15 @@ function migrateConfig(raw: unknown): LayoutConfig {
             if (parsed.length > 0 && typeof parsed[0] === 'string') {
               pinnedPaths = parsed;
             } else if (parsed.every(isValidPinnedConfig)) {
-              pinnedPaths = parsed.filter((c: SidebarPinnedConfig) => c.type === 'item').map((c: SidebarPinnedConfig) => c.type === 'item' ? c.path : '');
+              pinnedPaths = parsed
+                .filter((c: SidebarPinnedConfig) => c.type === 'item')
+                .map((c: SidebarPinnedConfig) => (c.type === 'item' ? c.path : ''));
             }
           }
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     // Default if nothing found
     if (pinnedPaths.length === 0) pinnedPaths = ['/', '/dashboard'];
@@ -222,11 +236,14 @@ function migrateConfig(raw: unknown): LayoutConfig {
     const navSections: SidebarSectionConfig[] = pinnedPaths
       .filter((p) => !existingIds.has(p))
       .map((path, i) => ({ id: path, order: i }));
-    const reindexed = [...navSections, ...withoutPinned]
-      .map((s, i) => ({ ...s, order: i }));
+    const reindexed = [...navSections, ...withoutPinned].map((s, i) => ({ ...s, order: i }));
 
     // Clean up old localStorage key
-    try { localStorage.removeItem('ownpilot-sidebar-pinned'); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem('ownpilot-sidebar-pinned');
+    } catch {
+      /* ignore */
+    }
 
     return {
       ...config,
@@ -246,13 +263,17 @@ function migrateConfig(raw: unknown): LayoutConfig {
       const hasFooter = config.sidebar.sections.some((s) => s.id === 'footer');
       if (hasPinned || hasFooter) {
         // If 'pinned' exists, convert to nav item sections
-        let sections = config.sidebar.sections.filter((s) => s.id !== 'footer' && s.id !== 'pinned');
+        let sections = config.sidebar.sections.filter(
+          (s) => s.id !== 'footer' && s.id !== 'pinned'
+        );
         if (hasPinned) {
           // Add default nav items if not already present
           const ids = new Set(sections.map((s) => s.id));
           const defaults = ['/', '/dashboard'].filter((p) => !ids.has(p));
-          sections = [...defaults.map((id, i) => ({ id, order: i })), ...sections]
-            .map((s, i) => ({ ...s, order: i }));
+          sections = [...defaults.map((id, i) => ({ id, order: i })), ...sections].map((s, i) => ({
+            ...s,
+            order: i,
+          }));
         }
         config.sidebar = { ...config.sidebar, sections };
       }
@@ -332,7 +353,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         return next;
       });
     },
-    [],
+    []
   );
 
   const setHeaderDisplayMode = useCallback(
@@ -348,7 +369,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const setZoneDisplayMode = useCallback(
@@ -357,11 +378,14 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         ...prev,
         header: {
           ...prev.header,
-          zones: { ...prev.header.zones, [zoneId]: { ...prev.header.zones[zoneId], displayMode: mode } },
+          zones: {
+            ...prev.header.zones,
+            [zoneId]: { ...prev.header.zones[zoneId], displayMode: mode },
+          },
         },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const setZoneEntries = useCallback(
@@ -374,7 +398,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const addZoneEntry = useCallback(
@@ -385,12 +409,15 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
           ...prev,
           header: {
             ...prev.header,
-            zones: { ...prev.header.zones, [zoneId]: { ...zone, entries: [...zone.entries, entry] } },
+            zones: {
+              ...prev.header.zones,
+              [zoneId]: { ...zone, entries: [...zone.entries, entry] },
+            },
           },
         };
       });
     },
-    [setConfig],
+    [setConfig]
   );
 
   const removeZoneEntry = useCallback(
@@ -401,17 +428,20 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
           ...prev,
           header: {
             ...prev.header,
-            zones: { ...prev.header.zones, [zoneId]: { ...zone, entries: zone.entries.filter((_, i) => i !== index) } },
+            zones: {
+              ...prev.header.zones,
+              [zoneId]: { ...zone, entries: zone.entries.filter((_, i) => i !== index) },
+            },
           },
         };
       });
     },
-    [setConfig],
+    [setConfig]
   );
 
   const getZone = useCallback(
     (zoneId: HeaderZoneId): HeaderZoneConfig => config.header.zones[zoneId] ?? EMPTY_ZONE,
-    [config],
+    [config]
   );
 
   const addCustomGroup = useCallback(
@@ -420,14 +450,17 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
       setConfig((prev) => ({ ...prev, customGroups: [...prev.customGroups, group] }));
       return group;
     },
-    [setConfig],
+    [setConfig]
   );
 
   const removeCustomGroup = useCallback(
     (id: string) => {
-      setConfig((prev) => ({ ...prev, customGroups: prev.customGroups.filter((g) => g.id !== id) }));
+      setConfig((prev) => ({
+        ...prev,
+        customGroups: prev.customGroups.filter((g) => g.id !== id),
+      }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const updateCustomGroup = useCallback(
@@ -437,7 +470,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         customGroups: prev.customGroups.map((g) => (g.id === id ? { ...g, label, items } : g)),
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   // --- Sidebar helpers ---
@@ -459,7 +492,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    [setConfig],
+    [setConfig]
   );
 
   const removeSidebarSection = useCallback(
@@ -476,7 +509,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const toggleSidebarSectionStyle = useCallback(
@@ -486,12 +519,12 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         sidebar: {
           ...prev.sidebar,
           sections: (prev.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS).map((s) =>
-            s.id === sectionId ? { ...s, style: (s.style === 'flat' ? 'accordion' : 'flat') } : s
+            s.id === sectionId ? { ...s, style: s.style === 'flat' ? 'accordion' : 'flat' } : s
           ),
         },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const reorderSidebarSections = useCallback(
@@ -501,7 +534,7 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         sidebar: { ...prev.sidebar, sections },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const setSidebarWidth = useCallback(
@@ -511,17 +544,35 @@ export function LayoutConfigProvider({ children }: { children: ReactNode }) {
         sidebar: { ...prev.sidebar, width },
       }));
     },
-    [setConfig],
+    [setConfig]
   );
 
   const getSidebarSections = useCallback(
     (): SidebarSectionConfig[] => config.sidebar.sections ?? DEFAULT_SIDEBAR_SECTIONS,
-    [config],
+    [config]
   );
 
   return (
     <LayoutConfigContext.Provider
-      value={{ config, setConfig, setHeaderDisplayMode, setZoneDisplayMode, setZoneEntries, addZoneEntry, removeZoneEntry, getZone, addCustomGroup, removeCustomGroup, updateCustomGroup, addSidebarSection, removeSidebarSection, toggleSidebarSectionStyle, reorderSidebarSections, setSidebarWidth, getSidebarSections }}
+      value={{
+        config,
+        setConfig,
+        setHeaderDisplayMode,
+        setZoneDisplayMode,
+        setZoneEntries,
+        addZoneEntry,
+        removeZoneEntry,
+        getZone,
+        addCustomGroup,
+        removeCustomGroup,
+        updateCustomGroup,
+        addSidebarSection,
+        removeSidebarSection,
+        toggleSidebarSectionStyle,
+        reorderSidebarSections,
+        setSidebarWidth,
+        getSidebarSections,
+      }}
     >
       {children}
     </LayoutConfigContext.Provider>

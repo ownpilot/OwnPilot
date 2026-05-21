@@ -513,12 +513,14 @@ export class FleetWorker {
     const durationMs = Date.now() - startTime;
     const success = cycleResult?.success ?? false;
     const output = cycleResult?.outputMessage ?? '';
-    const toolCalls = (cycleResult?.toolCalls ?? []).map((tc: { tool: string; args: unknown; result: unknown }) => ({
-      tool: tc.tool,
-      name: tc.tool,
-      args: tc.args,
-      result: tc.result,
-    }));
+    const toolCalls = (cycleResult?.toolCalls ?? []).map(
+      (tc: { tool: string; args: unknown; result: unknown }) => ({
+        tool: tc.tool,
+        name: tc.tool,
+        args: tc.args,
+        result: tc.result,
+      })
+    );
 
     log.info(`[${this.fleetId}:${this.config.name}] claw completed`, {
       taskId: task.id,

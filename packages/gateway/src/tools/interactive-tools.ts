@@ -108,9 +108,7 @@ export async function executeInteractiveTool(
   const rawWidgets = args.widgets as
     | Array<{ id: number; type: string; title?: string; data: unknown }>
     | undefined;
-  const rawSuggestions = args.suggestions as
-    | Array<{ title: string; detail: string }>
-    | undefined;
+  const rawSuggestions = args.suggestions as Array<{ title: string; detail: string }> | undefined;
 
   try {
     // Build marker-text result

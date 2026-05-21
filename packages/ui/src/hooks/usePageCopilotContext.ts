@@ -32,13 +32,11 @@ export function parseRoute(pathname: string): { sectionId: string; entityId: str
   const segments = pathname.split('/').filter(Boolean);
 
   // /settings/mcp-servers → sectionId='mcp-servers', no entityId
-  const sectionId =
-    segments.length >= 2 && segments[0] === 'settings' ? segments[1] : segments[0];
+  const sectionId = segments.length >= 2 && segments[0] === 'settings' ? segments[1] : segments[0];
 
   // /workspaces/abc123 → entityId='abc123'
   // /settings/mcp-servers → entityId=undefined (settings sub-page, no entity)
-  const entityId =
-    segments.length >= 2 && segments[0] !== 'settings' ? segments[1] : undefined;
+  const entityId = segments.length >= 2 && segments[0] !== 'settings' ? segments[1] : undefined;
 
   return { sectionId: sectionId ?? '', entityId };
 }

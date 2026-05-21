@@ -239,9 +239,7 @@ describe('CrewMemoryRepository', () => {
     });
 
     it('falls back to empty object when metadata is missing', async () => {
-      mockAdapter.queryOne.mockResolvedValueOnce(
-        makeRow({ metadata: null as unknown as string })
-      );
+      mockAdapter.queryOne.mockResolvedValueOnce(makeRow({ metadata: null as unknown as string }));
 
       const entry = await repo.getById('mem-1');
       expect(entry?.metadata).toEqual({});

@@ -61,15 +61,21 @@ function extractZipSafely(zip: any, tempDir: string): void {
 
   for (const entry of zip.getEntries()) {
     if (++entryCount > MAX_ENTRY_COUNT) {
-      throw new ExtensionError('ZIP contains too many entries (max 500)', ERROR_CODES.VALIDATION_ERROR);
+      throw new ExtensionError(
+        'ZIP contains too many entries (max 500)',
+        ERROR_CODES.VALIDATION_ERROR
+      );
     }
 
     // Reject symlink entries (UPLOAD-002 hardening)
     const unixPermissions = entry.header?.externalFileAttribute ?? 0;
-    const attr = (unixPermissions >> 16) & 0xFFFF;
+    const attr = (unixPermissions >> 16) & 0xffff;
     if (attr === 0o120000) {
       // symlink
-      throw new ExtensionError('ZIP contains symbolic links which are not allowed', ERROR_CODES.VALIDATION_ERROR);
+      throw new ExtensionError(
+        'ZIP contains symbolic links which are not allowed',
+        ERROR_CODES.VALIDATION_ERROR
+      );
     }
 
     const entryName = normalizeArchiveEntryPath(String(entry.entryName ?? ''));
@@ -92,7 +98,10 @@ function extractZipSafely(zip: any, tempDir: string): void {
     totalDecompressedSize += data.length;
 
     if (totalDecompressedSize > MAX_TOTAL_DECOMPRESSED) {
-      throw new ExtensionError('ZIP decompressed size exceeds 50 MB limit', ERROR_CODES.VALIDATION_ERROR);
+      throw new ExtensionError(
+        'ZIP decompressed size exceeds 50 MB limit',
+        ERROR_CODES.VALIDATION_ERROR
+      );
     }
 
     writeFileSync(destPath, data);
@@ -215,7 +224,13 @@ installRoutes.post('/upload', async (c) => {
 
     // UPLOAD-002: validate ZIP magic bytes before passing to adm-zip
     if (ext === '.zip' || ext === '.skill') {
-      if (fileBuffer.length < 4 || fileBuffer[0] !== 0x50 || fileBuffer[1] !== 0x4B || fileBuffer[2] !== 0x03 || fileBuffer[3] !== 0x04) {
+      if (
+        fileBuffer.length < 4 ||
+        fileBuffer[0] !== 0x50 ||
+        fileBuffer[1] !== 0x4b ||
+        fileBuffer[2] !== 0x03 ||
+        fileBuffer[3] !== 0x04
+      ) {
         return apiError(
           c,
           {

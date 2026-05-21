@@ -53,7 +53,9 @@ mcpRoutes.get('/serve/info', async (c) => {
     const allTools = registry.getAllTools();
 
     // Build the server URL — HDR-002: prefer configured PUBLIC_BASE_URL over request headers
-    const baseUrl = PUBLIC_BASE_URL || `${c.req.header('x-forwarded-proto') ?? (c.req.url.startsWith('https') ? 'https' : 'http')}://${c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:8080'}`;
+    const baseUrl =
+      PUBLIC_BASE_URL ||
+      `${c.req.header('x-forwarded-proto') ?? (c.req.url.startsWith('https') ? 'https' : 'http')}://${c.req.header('x-forwarded-host') ?? c.req.header('host') ?? 'localhost:8080'}`;
     const endpoint = `${baseUrl}/api/v1/mcp/serve`;
 
     // Categorize tools by source/namespace

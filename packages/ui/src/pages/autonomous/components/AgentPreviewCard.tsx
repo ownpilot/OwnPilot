@@ -31,9 +31,7 @@ interface Props {
 }
 
 export function AgentPreviewCard({ config, onConfirm, confirmLabel, isCreating }: Props) {
-  const schedule = config.heartbeatInterval
-    ? cronToHuman(config.heartbeatInterval)
-    : null;
+  const schedule = config.heartbeatInterval ? cronToHuman(config.heartbeatInterval) : null;
 
   return (
     <div className="border border-primary/30 bg-primary/5 rounded-xl p-4 space-y-3">
@@ -45,9 +43,7 @@ export function AgentPreviewCard({ config, onConfirm, confirmLabel, isCreating }
             <h4 className="font-semibold text-text-primary dark:text-dark-text-primary truncate">
               {config.name}
             </h4>
-            <span
-              className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-primary/10 text-primary"
-            >
+            <span className="text-xs px-2 py-0.5 rounded-full shrink-0 bg-primary/10 text-primary">
               Soul Agent
             </span>
           </div>

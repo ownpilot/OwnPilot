@@ -47,9 +47,8 @@ vi.mock('../workspace/file-workspace.js', () => ({
   writeSessionWorkspaceFile: vi.fn(),
 }));
 
-const { executeClawTool, CLAW_TOOLS, CLAW_TOOL_NAMES, buildSandboxEnv } = await import(
-  './claw-tools.js'
-);
+const { executeClawTool, CLAW_TOOLS, CLAW_TOOL_NAMES, buildSandboxEnv } =
+  await import('./claw-tools.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -64,7 +64,7 @@ export async function runRetentionCleanup(): Promise<RetentionResult[]> {
 
   const total = results.reduce((sum, r) => sum + r.deleted, 0);
   log.info(`Retention cleanup complete. Total deleted: ${total}`, {
-    byTable: results.map(r => `${r.table}:${r.deleted}`).join(', '),
+    byTable: results.map((r) => `${r.table}:${r.deleted}`).join(', '),
   });
 
   return results;
@@ -79,7 +79,9 @@ export async function runRetentionCleanup(): Promise<RetentionResult[]> {
 export function scheduleRetentionCleanup(hour = 2): string {
   // Calculate next UTC midnight + hour
   const now = new Date();
-  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, hour, 0, 0, 0));
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, hour, 0, 0, 0)
+  );
   const runAfter = new Date(next);
 
   const queue = JobQueueService.getInstance();

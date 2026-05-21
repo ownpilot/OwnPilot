@@ -19,7 +19,11 @@ import { buildToolGroupsCopilotSection } from './tool-groups-copilot-prompt.js';
 import { buildWorkflowToolsCopilotSection } from './workflow-tools-copilot-prompt.js';
 import { STATIC_PROMPT as WORKFLOW_FULL_PROMPT } from '../workflow-copilot-prompt.js';
 
-export function getPageCopilotPrompt(pageType: string, contextData?: Record<string, unknown>, hasEntity = false): string {
+export function getPageCopilotPrompt(
+  pageType: string,
+  contextData?: Record<string, unknown>,
+  hasEntity = false
+): string {
   switch (pageType) {
     case 'workflow':
       return hasEntity ? buildWorkflowCopilotFull() : buildWorkflowCopilotSection();

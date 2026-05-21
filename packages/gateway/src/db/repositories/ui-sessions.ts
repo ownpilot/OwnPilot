@@ -122,9 +122,7 @@ export class UISessionsRepository extends BaseRepository {
    * Delete expired sessions
    */
   async deleteExpired(): Promise<number> {
-    const result = await this.execute(
-      'DELETE FROM ui_sessions WHERE expires_at < NOW()'
-    );
+    const result = await this.execute('DELETE FROM ui_sessions WHERE expires_at < NOW()');
     return result.changes;
   }
 

@@ -8,7 +8,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import type { NavItem } from '../constants/nav-items';
 import type { HeaderItemDisplayMode } from '../types/layout-config';
 
-export function HeaderItem({ item, displayMode = 'icon' }: { item: NavItem; displayMode?: HeaderItemDisplayMode }) {
+export function HeaderItem({
+  item,
+  displayMode = 'icon',
+}: {
+  item: NavItem;
+  displayMode?: HeaderItemDisplayMode;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const Icon = item.icon;

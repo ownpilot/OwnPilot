@@ -27,10 +27,7 @@ function readState(): CollapseState {
 export function useGroupCollapseState() {
   const [state, setState] = useState<CollapseState>(() => readState());
 
-  const isOpen = useCallback(
-    (groupId: string): boolean => state[groupId] !== false,
-    [state],
-  );
+  const isOpen = useCallback((groupId: string): boolean => state[groupId] !== false, [state]);
 
   const toggle = useCallback((groupId: string) => {
     setState((prev) => {

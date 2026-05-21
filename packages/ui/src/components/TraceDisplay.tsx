@@ -32,14 +32,20 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
   }
 
   // Calculate summary stats
-  const totalInputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
-  const totalOutputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
+  const totalInputTokens = (trace.modelCalls ?? []).reduce(
+    (sum, m) => sum + (m.inputTokens ?? 0),
+    0
+  );
+  const totalOutputTokens = (trace.modelCalls ?? []).reduce(
+    (sum, m) => sum + (m.outputTokens ?? 0),
+    0
+  );
   const totalTokens = (trace.modelCalls ?? []).reduce(
     (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
     0
   );
   const hasErrors = (trace.errors?.length ?? 0) > 0;
-  const autonomyBlocked = (trace.autonomyChecks?.filter((a) => !a.approved).length ?? 0);
+  const autonomyBlocked = trace.autonomyChecks?.filter((a) => !a.approved).length ?? 0;
   const hasRetries = (trace.retries?.length ?? 0) > 0;
   const mcpEventCount = trace.mcpToolEvents?.length ?? 0;
 
@@ -229,14 +235,15 @@ export function TraceDisplay({ trace }: TraceDisplayProps) {
 
                   {/* Categories + confidence */}
                   <div className="flex flex-wrap gap-2">
-                    {(trace.routing.relevantCategories?.length ?? 0) > 0 && trace.routing.relevantCategories!.map((cat) => (
-                      <span
-                        key={cat}
-                        className="px-2 py-0.5 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded"
-                      >
-                        {cat}
-                      </span>
-                    ))}
+                    {(trace.routing.relevantCategories?.length ?? 0) > 0 &&
+                      trace.routing.relevantCategories!.map((cat) => (
+                        <span
+                          key={cat}
+                          className="px-2 py-0.5 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded"
+                        >
+                          {cat}
+                        </span>
+                      ))}
                     <span className="px-2 py-0.5 text-xs bg-gray-500/10 text-text-muted dark:text-dark-text-muted rounded">
                       confidence: {Math.round((trace.routing.confidence ?? 0) * 100)}%
                     </span>

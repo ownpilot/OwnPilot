@@ -72,7 +72,9 @@ export async function reconcileOrphanedClaws(): Promise<ReconciliationResult> {
     }
 
     if (orphaned.length > 0) {
-      log.warn(`[reconcile] Claw: found ${orphaned.length} orphaned sessions, recovered ${result.recovered}`);
+      log.warn(
+        `[reconcile] Claw: found ${orphaned.length} orphaned sessions, recovered ${result.recovered}`
+      );
     }
   } catch (err) {
     const msg = `Claw reconciliation failed: ${err}`;
@@ -290,7 +292,9 @@ export async function reconcileOrphanedSessions(): Promise<ReconciliationResult[
   ]);
 
   const summaries = results.map((r) =>
-    r.status === 'fulfilled' ? r.value : { system: 'unknown', orphaned: 0, recovered: 0, errors: [String(r.reason)] }
+    r.status === 'fulfilled'
+      ? r.value
+      : { system: 'unknown', orphaned: 0, recovered: 0, errors: [String(r.reason)] }
   );
 
   const totalOrphaned = summaries.reduce((sum, r) => sum + r.orphaned, 0);

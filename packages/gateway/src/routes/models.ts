@@ -51,7 +51,7 @@ interface BridgeModelEntry {
 async function fetchBridgeModels(
   baseUrl: string,
   providerName: string,
-  apiKey?: string,
+  apiKey?: string
 ): Promise<BridgeModelEntry[]> {
   try {
     const base = baseUrl.replace(/\/+$/, '');
@@ -69,7 +69,7 @@ async function fetchBridgeModels(
       signal: AbortSignal.timeout(5000),
     });
     if (!resp.ok) return [];
-    const body = await resp.json() as { data?: BridgeModelEntry[] };
+    const body = (await resp.json()) as { data?: BridgeModelEntry[] };
     return body.data ?? [];
   } catch {
     log.warn?.(`Failed to fetch models from bridge provider ${providerName}`);

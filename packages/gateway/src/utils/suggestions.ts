@@ -66,10 +66,7 @@ export function extractSuggestions(rawContent: string): SuggestionExtractionResu
 
   if (!match?.[1]) {
     const unclosedTagIndex = rawContent.lastIndexOf('<suggestions>');
-    if (
-      unclosedTagIndex !== -1 &&
-      rawContent.indexOf('</suggestions>', unclosedTagIndex) === -1
-    ) {
+    if (unclosedTagIndex !== -1 && rawContent.indexOf('</suggestions>', unclosedTagIndex) === -1) {
       return { content: rawContent.slice(0, unclosedTagIndex).trimEnd(), suggestions: [] };
     }
     return { content: rawContent, suggestions: [] };

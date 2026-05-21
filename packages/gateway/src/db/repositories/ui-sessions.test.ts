@@ -16,8 +16,12 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: () => mockAdapter,
 }));
 
-const { UISessionsRepository, createUISessionsRepository, uiSessionsRepo, initializeUISessionsRepo } =
-  await import('./ui-sessions.js');
+const {
+  UISessionsRepository,
+  createUISessionsRepository,
+  uiSessionsRepo,
+  initializeUISessionsRepo,
+} = await import('./ui-sessions.js');
 
 const NOW = '2025-01-01T00:00:00Z';
 const FUTURE = '2025-01-02T00:00:00Z';

@@ -31,10 +31,7 @@ export function LocalFilesTab({ onSelectItem }: LocalFilesTabProps) {
   }, [onSelectItem]);
 
   return (
-    <div
-      className="flex-1 overflow-y-auto py-1"
-      data-testid="local-files-tree"
-    >
+    <div className="flex-1 overflow-y-auto py-1" data-testid="local-files-tree">
       {/* Edge Devices header */}
       <button
         className="w-full flex items-center gap-1.5 px-2.5 py-2 cursor-pointer hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
@@ -84,13 +81,7 @@ export function LocalFilesTab({ onSelectItem }: LocalFilesTabProps) {
         }
 
         if (entry.type === 'iot') {
-          return (
-            <IoTDeviceItem
-              key={entry.id}
-              device={entry}
-              onSelectItem={onSelectItem}
-            />
-          );
+          return <IoTDeviceItem key={entry.id} device={entry} onSelectItem={onSelectItem} />;
         }
 
         return null;
@@ -184,11 +175,7 @@ interface BookmarkItemProps {
   onSelectItem: (key: string) => void;
 }
 
-function BookmarkItem({
-  bookmark,
-  deviceId,
-  onSelectItem,
-}: BookmarkItemProps) {
+function BookmarkItem({ bookmark, deviceId, onSelectItem }: BookmarkItemProps) {
   if ('type' in bookmark && bookmark.type === 'separator') return null;
   const bm = bookmark as Exclude<BookmarkEntry, { type: 'separator' }>;
 
@@ -234,9 +221,7 @@ function IoTDeviceItem({ device, onSelectItem }: IoTDeviceItemProps) {
       </span>
       <span
         className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
-          device.status === 'online'
-            ? 'bg-success/10 text-success'
-            : 'bg-error/10 text-error'
+          device.status === 'online' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
         }`}
       >
         {device.status === 'online' ? 'ON' : 'OFF'}

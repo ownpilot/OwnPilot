@@ -7,7 +7,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDialog } from './ConfirmDialog';
-import { Check, Server, Edit2, Save, X, ExternalLink, Search, RefreshCw, AlertTriangle } from './icons';
+import {
+  Check,
+  Server,
+  Edit2,
+  Save,
+  X,
+  ExternalLink,
+  Search,
+  RefreshCw,
+  AlertTriangle,
+} from './icons';
 import { useToast } from './ToastProvider';
 import { providersApi } from '../api';
 import type { ProviderInfo, UserOverride } from '../types';

@@ -59,7 +59,11 @@ export class ConversationMemory {
    * Create a conversation with a specific ID (for DB restore scenarios).
    * Used when reloading a conversation from database after agent memory eviction.
    */
-  createWithId(id: string, systemPrompt?: string, metadata?: Record<string, unknown>): Conversation {
+  createWithId(
+    id: string,
+    systemPrompt?: string,
+    metadata?: Record<string, unknown>
+  ): Conversation {
     const now = new Date();
     const conversation: Conversation = {
       id,

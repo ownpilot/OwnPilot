@@ -17,7 +17,10 @@ function addCorsHeaders(res, origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-API-Key,X-Request-ID,X-Session-Token,X-Runtime,X-Conversation-Id');
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type,Authorization,X-API-Key,X-Request-ID,X-Session-Token,X-Runtime,X-Conversation-Id'
+    );
     res.setHeader('Access-Control-Expose-Headers', 'X-Request-ID,X-Response-Time');
   }
 }
@@ -88,8 +91,10 @@ server.on('upgrade', (clientReq, clientSocket, head) => {
 
     clientSocket.write(
       `HTTP/1.1 101 Switching Protocols\r\n` +
-      Object.entries(proxyRes.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n') +
-      '\r\n\r\n'
+        Object.entries(proxyRes.headers)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\r\n') +
+        '\r\n\r\n'
     );
     if (proxyHead.length) proxySocket.unshift(proxyHead);
     proxySocket.pipe(clientSocket);
@@ -103,7 +108,9 @@ server.on('upgrade', (clientReq, clientSocket, head) => {
 });
 
 server.listen(PROXY_PORT, '0.0.0.0', () => {
-  console.log(`[dev-proxy] Proxying http://0.0.0.0:${PROXY_PORT} → http://${TARGET_HOST}:${TARGET_PORT}`);
+  console.log(
+    `[dev-proxy] Proxying http://0.0.0.0:${PROXY_PORT} → http://${TARGET_HOST}:${TARGET_PORT}`
+  );
   console.log(`[dev-proxy] CORS enabled for: ${ALLOWED_ORIGINS.join(', ')}`);
   console.log(`[dev-proxy] WebSocket upgrade enabled`);
 });

@@ -27,15 +27,24 @@ function isChartData(item: unknown): item is ChartData {
 
 const DEFAULT_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-function BarChart({ data, showGrid = true }: { data: Array<{ label: string; value: number; color?: string }>; showGrid: boolean }) {
-  const maxValue = Math.max(1, ...data.map(d => Math.abs(d.value || 0)));
+function BarChart({
+  data,
+  showGrid = true,
+}: {
+  data: Array<{ label: string; value: number; color?: string }>;
+  showGrid: boolean;
+}) {
+  const maxValue = Math.max(1, ...data.map((d) => Math.abs(d.value || 0)));
 
   return (
     <div className="space-y-2">
       {data.map((item, index) => {
         const width = Math.max(2, Math.min(100, (Math.abs(item.value) / maxValue) * 100));
         return (
-          <div key={index} className="grid grid-cols-[minmax(96px,1fr)_minmax(0,2fr)_auto] items-center gap-2 text-sm">
+          <div
+            key={index}
+            className="grid grid-cols-[minmax(96px,1fr)_minmax(0,2fr)_auto] items-center gap-2 text-sm"
+          >
             <div className="truncate font-medium text-text-secondary dark:text-dark-text-secondary">
               {item.label}
             </div>
@@ -43,7 +52,10 @@ function BarChart({ data, showGrid = true }: { data: Array<{ label: string; valu
               <div className="h-2 overflow-hidden rounded-full bg-bg-tertiary dark:bg-dark-bg-tertiary">
                 <div
                   className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${width}%`, backgroundColor: item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length] }}
+                  style={{
+                    width: `${width}%`,
+                    backgroundColor: item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
+                  }}
                 />
               </div>
             )}
@@ -76,7 +88,13 @@ function PieChart({ data }: { data: Array<{ label: string; value: number; color?
     const largeArc = angle > 180 ? 1 : 0;
     const color = item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
 
-    return { path: `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`, color, label: item.label, value: item.value, percentage };
+    return {
+      path: `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`,
+      color,
+      label: item.label,
+      value: item.value,
+      percentage,
+    };
   });
 
   return (
@@ -119,7 +137,13 @@ function DonutChart({ data }: { data: Array<{ label: string; value: number; colo
     const largeArc = angle > 180 ? 1 : 0;
     const color = item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
 
-    return { path: `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`, color, label: item.label, value: item.value, percentage };
+    return {
+      path: `M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`,
+      color,
+      label: item.label,
+      value: item.value,
+      percentage,
+    };
   });
 
   return (
@@ -143,7 +167,7 @@ function DonutChart({ data }: { data: Array<{ label: string; value: number; colo
 }
 
 function LineChart({ data }: { data: Array<{ x: string | number; y: number }> }) {
-  const maxY = Math.max(...data.map(d => Math.abs(d.y || 0)), 1);
+  const maxY = Math.max(...data.map((d) => Math.abs(d.y || 0)), 1);
   const points = data.map((d, i) => ({
     x: (i / Math.max(1, data.length - 1)) * 100,
     y: 100 - ((Math.abs(d.y || 0) / maxY) * 80 + 10),
@@ -153,7 +177,7 @@ function LineChart({ data }: { data: Array<{ x: string | number; y: number }> })
     <div className="relative">
       <svg viewBox="0 0 100 100" className="w-full h-32" preserveAspectRatio="none">
         <polyline
-          points={points.map(p => `${p.x},${p.y}`).join(' ')}
+          points={points.map((p) => `${p.x},${p.y}`).join(' ')}
           fill="none"
           stroke="var(--primary)"
           strokeWidth="2"
@@ -170,8 +194,18 @@ function LineChart({ data }: { data: Array<{ x: string | number; y: number }> })
 function ChartIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+      />
     </svg>
   );
 }
@@ -216,7 +250,9 @@ function ChartRenderer({ data }: { data: ChartData }) {
   const normalizedData = chartData.map((item, index) => {
     if (typeof item === 'object' && item !== null) {
       const record = item as Record<string, unknown>;
-      const label = String(record.label || record.name || record[xKey || 'x'] || `Item ${index + 1}`);
+      const label = String(
+        record.label || record.name || record[xKey || 'x'] || `Item ${index + 1}`
+      );
       const value = Number(record.value || record.y || record.count || 0);
       return { label, value, color: record.color as string | undefined };
     }
@@ -228,8 +264,12 @@ function ChartRenderer({ data }: { data: ChartData }) {
       {type === 'bar' && <BarChart data={normalizedData} showGrid={showGrid} />}
       {type === 'pie' && <PieChart data={normalizedData} />}
       {type === 'donut' && <DonutChart data={normalizedData} />}
-      {type === 'line' && <LineChart data={normalizedData.map((d) => ({ x: d.label, y: d.value }))} />}
-      {(type === 'area' || type === 'scatter') && <BarChart data={normalizedData} showGrid={showGrid} />}
+      {type === 'line' && (
+        <LineChart data={normalizedData.map((d) => ({ x: d.label, y: d.value }))} />
+      )}
+      {(type === 'area' || type === 'scatter') && (
+        <BarChart data={normalizedData} showGrid={showGrid} />
+      )}
     </WidgetShell>
   );
 }

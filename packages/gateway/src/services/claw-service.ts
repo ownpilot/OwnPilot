@@ -87,7 +87,8 @@ export class ClawServiceImpl implements IClawService {
       if (!parent) throw new Error('Parent claw not found');
       if (parent.userId !== input.userId) throw new Error('Parent claw belongs to another user');
       depth = parent.depth + 1;
-      if (depth > MAX_CLAW_DEPTH) throw new Error(`Maximum claw depth (${MAX_CLAW_DEPTH}) exceeded`);
+      if (depth > MAX_CLAW_DEPTH)
+        throw new Error(`Maximum claw depth (${MAX_CLAW_DEPTH}) exceeded`);
     }
 
     return repo.create({

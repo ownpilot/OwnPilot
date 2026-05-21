@@ -63,9 +63,7 @@ export function AgentProfilePage() {
   const name = soul?.identity.name ?? 'Unknown';
   const emoji = soul?.identity.emoji ?? '🤖';
   const role = soul?.identity.role ?? 'Agent';
-  const status = (soul?.heartbeat.enabled
-    ? 'running'
-    : 'idle') as AgentStatus;
+  const status = (soul?.heartbeat.enabled ? 'running' : 'idle') as AgentStatus;
   const crewId = soul?.relationships?.crewId;
   const crewName = crewId ? (crews.find((c) => c.id === crewId)?.name ?? crewId) : undefined;
 
@@ -90,14 +88,13 @@ export function AgentProfilePage() {
 
       setSoul(soulData);
 
-      const [statsData, heartbeatsData, messagesData, crewsData, agentInfo] =
-        await Promise.all([
-          heartbeatLogsApi.getStats(id).catch(() => null),
-          heartbeatLogsApi.listByAgent(id, 20, 0).catch(() => [] as HeartbeatLog[]),
-          agentMessagesApi.listByAgent(id, 30, 0).catch(() => [] as AgentMessage[]),
-          crewsApi.list().catch(() => null),
-          agentsApi.get(id).catch(() => null),
-        ]);
+      const [statsData, heartbeatsData, messagesData, crewsData, agentInfo] = await Promise.all([
+        heartbeatLogsApi.getStats(id).catch(() => null),
+        heartbeatLogsApi.listByAgent(id, 20, 0).catch(() => [] as HeartbeatLog[]),
+        agentMessagesApi.listByAgent(id, 30, 0).catch(() => [] as AgentMessage[]),
+        crewsApi.list().catch(() => null),
+        agentsApi.get(id).catch(() => null),
+      ]);
 
       if (statsData) setStats(statsData);
       setHeartbeats(heartbeatsData);

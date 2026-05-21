@@ -138,7 +138,7 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
     pageType: 'agent',
     suggestions: [
       'What tools does this agent have access to?',
-      'How can I improve this agent\'s system prompt?',
+      "How can I improve this agent's system prompt?",
       'What tasks is this agent best suited for?',
       'Help me configure this agent for a new use case',
     ],
@@ -300,7 +300,7 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
     systemPromptHint:
       'You are helping manage personal contacts. Focus on contact search, organization, communication history, and relationship management.',
     suggestions: [
-      'Find contacts I haven\'t spoken to recently',
+      "Find contacts I haven't spoken to recently",
       'Help me draft a message to a contact',
       'Show contacts in a specific organization',
     ],
@@ -345,7 +345,7 @@ export const PAGE_COPILOT_REGISTRY: Record<string, PageCopilotConfig> = {
       'You are helping manage AI-generated artifacts — code snippets, documents, images, and other outputs created during conversations. Focus on artifact content, usage in workflows, and organization.',
     suggestions: [
       'What artifacts have been created recently?',
-      'Help me understand this artifact\'s content',
+      "Help me understand this artifact's content",
       'How can I use this artifact in a workflow?',
     ],
   },

@@ -16,11 +16,15 @@ setup('authenticate', async ({ page }) => {
   });
 
   // Fill password
-  const passwordInput = page.locator('input[type="password"], input[placeholder*="assword"]').first();
+  const passwordInput = page
+    .locator('input[type="password"], input[placeholder*="assword"]')
+    .first();
   await passwordInput.fill(TEST_PASSWORD);
 
   // Click sign in button
-  const signInButton = page.locator('button:has-text("Sign In"), button:has-text("Login"), button[type="submit"]').first();
+  const signInButton = page
+    .locator('button:has-text("Sign In"), button:has-text("Login"), button[type="submit"]')
+    .first();
   await signInButton.click();
 
   // Wait for redirect away from login (auth success)

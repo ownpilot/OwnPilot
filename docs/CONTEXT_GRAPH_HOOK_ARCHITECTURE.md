@@ -4,6 +4,7 @@
 > **Scope:** OwnPilot super-assistant chat / per-page chat / context budget management
 > **Audience:** Architecture reviewers, next implementation session
 > **Related docs:**
+>
 > - `AGENT_ECOSYSTEM.md` — agent type taxonomy
 > - `INJECT_ARCHITECTURE_ANALYSIS.md` — current prompt injection pipeline (P0/P1/P2)
 > - `PERSONAL_ASSISTANT_INJECTION_ROOT_CAUSE.md` — P0 fix root cause (v8.12)
@@ -36,12 +37,12 @@ OwnPilot'ta bu kısmen zaten var — `.claude/rules/page-contexts.md` dosyası b
 
 **EVET — en production-grade yaklaşım bu. Hatta tek gerçekçi yol.**
 
-| Yaklaşım | Token | Flexibility | Prod Grade | Örnek |
-|----------|-------|-------------|------------|-------|
-| Static prompt (hardcode all) | 50K+ | ❌ | ❌ Boğulur | Amatör |
-| Per-page agent | 10K/agent × N | ❌ | ❌ Memory bombası | Yok |
-| Per-page prompt injection (static) | 8-12K | ⚠️ | ⚠️ | Basic RAG |
-| **Hook + RAG + Graph** | **3-6K dinamik** | ✅ | ✅ | Cursor, Windsurf, Claude Projects, Raycast AI |
+| Yaklaşım                           | Token            | Flexibility | Prod Grade        | Örnek                                         |
+| ---------------------------------- | ---------------- | ----------- | ----------------- | --------------------------------------------- |
+| Static prompt (hardcode all)       | 50K+             | ❌          | ❌ Boğulur        | Amatör                                        |
+| Per-page agent                     | 10K/agent × N    | ❌          | ❌ Memory bombası | Yok                                           |
+| Per-page prompt injection (static) | 8-12K            | ⚠️          | ⚠️                | Basic RAG                                     |
+| **Hook + RAG + Graph**             | **3-6K dinamik** | ✅          | ✅                | Cursor, Windsurf, Claude Projects, Raycast AI |
 
 Cursor nasıl yapıyor: `@codebase` query gelince → embedding search → top-K file retrieve → relevant symbols extract → prompt'a kat. Semantic + syntactic hybrid.
 
@@ -83,16 +84,16 @@ Mantık: OwnPilot'taki her "şey" bir node, aralarındaki ilişkiler edge. Query
 
 **Edge Types:**
 
-| Edge | Source → Target | Example |
-|------|-----------------|---------|
-| `uses` | Agent → Tool | default agent uses `core.add_task` |
-| `calls` | WorkflowNode → Tool | LLM node calls a tool |
-| `depends_on` | Claw → Skill | Claw depends on skill.code_review |
-| `references` | Memory → Entity | memory about a specific workflow |
-| `triggers` | Trigger → Agent/Claw/Workflow | cron trigger fires workflow |
-| `produces` | Workflow → Artifact | workflow produces a report |
-| `owns` | User → (Agent \| Claw \| Soul) | user owns their claws |
-| `page_of` | Page → Entity | workflow page owns workflow |
+| Edge         | Source → Target                | Example                            |
+| ------------ | ------------------------------ | ---------------------------------- |
+| `uses`       | Agent → Tool                   | default agent uses `core.add_task` |
+| `calls`      | WorkflowNode → Tool            | LLM node calls a tool              |
+| `depends_on` | Claw → Skill                   | Claw depends on skill.code_review  |
+| `references` | Memory → Entity                | memory about a specific workflow   |
+| `triggers`   | Trigger → Agent/Claw/Workflow  | cron trigger fires workflow        |
+| `produces`   | Workflow → Artifact            | workflow produces a report         |
+| `owns`       | User → (Agent \| Claw \| Soul) | user owns their claws              |
+| `page_of`    | Page → Entity                  | workflow page owns workflow        |
 
 ### Hook Pipeline (UserPromptSubmit Protocol)
 
@@ -272,4 +273,4 @@ Bu yapıldıktan sonra **her sayfaya chat** + **graph-based context** otomatik g
 
 ---
 
-*End of architecture proposal. Next session should start with Faz 1 (hook middleware refactor) for highest ROI.*
+_End of architecture proposal. Next session should start with Faz 1 (hook middleware refactor) for highest ROI._

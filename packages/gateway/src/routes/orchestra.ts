@@ -95,7 +95,9 @@ orchestraRoutes.get('/health', async (c) => {
     const engine = getOrchestraEngine();
 
     const running: OrchestraExecution[] = [];
-    for (const exec of (engine as unknown as { executions: Map<string, OrchestraExecution> }).executions?.values() ?? []) {
+    for (const exec of (
+      engine as unknown as { executions: Map<string, OrchestraExecution> }
+    ).executions?.values() ?? []) {
       if (exec.state === 'running') running.push(exec);
     }
 
@@ -112,7 +114,10 @@ orchestraRoutes.get('/health', async (c) => {
     }
 
     const stale = running.filter(
-      (ex) => ex.startedAt && Date.now() - ex.startedAt.getTime() > 30 * 60 * 1000 && ex.taskResults.length === 0
+      (ex) =>
+        ex.startedAt &&
+        Date.now() - ex.startedAt.getTime() > 30 * 60 * 1000 &&
+        ex.taskResults.length === 0
     );
     if (stale.length > 0) {
       signals.push(`${stale.length} executions with no progress`);

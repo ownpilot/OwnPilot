@@ -154,7 +154,8 @@ async function checkExecutionPermission(
         error: {
           content: {
             error: `${category} is blocked: set OWNPILOT_ALLOW_LOCAL_EXEC=1 to enable local execution for CLI/API.`,
-            solution: 'Enable Execution Security in the dashboard or set the OWNPILOT_ALLOW_LOCAL_EXEC=1 environment variable.',
+            solution:
+              'Enable Execution Security in the dashboard or set the OWNPILOT_ALLOW_LOCAL_EXEC=1 environment variable.',
           },
           isError: true,
         },
@@ -736,12 +737,18 @@ export const compileCodeExecutor: ToolExecutor = async (
   try {
     const extraTokens = sanitizeArgs(extraArgs);
     const safeFilePath = sanitizeFilePath(filePath);
-    args = compiler === 'go' ? ['build', ...extraTokens, safeFilePath] : [safeFilePath, ...extraTokens];
+    args =
+      compiler === 'go' ? ['build', ...extraTokens, safeFilePath] : [safeFilePath, ...extraTokens];
   } catch (err) {
     return { content: { error: (err as Error).message }, isError: true };
   }
 
-  const permCheck = await checkExecutionPermission('compile_code', args.join(' '), 'shell', context);
+  const permCheck = await checkExecutionPermission(
+    'compile_code',
+    args.join(' '),
+    'shell',
+    context
+  );
   if (!permCheck.allowed) return permCheck.error!;
 
   const localResult = await executeShellLocal(`${compiler} ${args.join(' ')}`, { timeout });

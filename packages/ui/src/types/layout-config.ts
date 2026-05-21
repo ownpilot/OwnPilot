@@ -27,7 +27,7 @@ export type HeaderZoneId = 'left' | 'center' | 'right';
 export type HeaderZoneEntry =
   | { type: 'item'; path: string }
   | { type: 'group'; id: string; label: string; items: string[] }
-  | { type: 'widget'; widgetId: string };  // Future: pulse-slots, pomodoro, ws-status
+  | { type: 'widget'; widgetId: string }; // Future: pulse-slots, pomodoro, ws-status
 
 export interface HeaderZoneConfig {
   entries: HeaderZoneEntry[];
@@ -170,7 +170,10 @@ export const SIDEBAR_SECTION_LABELS: Record<string, string> = {
 };
 
 /** Sidebar width presets — narrow is still text-visible, not icon-only */
-export const SIDEBAR_WIDTH_VALUES: Record<SidebarWidth, { class: string; label: string; px: number }> = {
+export const SIDEBAR_WIDTH_VALUES: Record<
+  SidebarWidth,
+  { class: string; label: string; px: number }
+> = {
   narrow: { class: 'w-48', label: 'Compact', px: 192 },
   default: { class: 'w-60', label: 'Default', px: 240 },
   wide: { class: 'w-72', label: 'Wide', px: 288 },
@@ -183,9 +186,9 @@ export interface LayoutConfigSidebar {
 
 /** User-defined custom group — global, reusable across zones and sidebar */
 export interface CustomGroup {
-  id: string;        // custom-{timestamp}
-  label: string;     // user-defined name
-  items: string[];   // route paths
+  id: string; // custom-{timestamp}
+  label: string; // user-defined name
+  items: string[]; // route paths
 }
 
 export interface LayoutConfig {

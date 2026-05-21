@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Regression Tests — Cross-Feature Verification', () => {
-
   // === STATS PANEL ===
 
   test('StatsPanel is visible on non-customize pages (desktop)', async ({ page }) => {
@@ -61,7 +60,7 @@ test.describe('Regression Tests — Cross-Feature Verification', () => {
     await page.waitForTimeout(2000);
 
     const chatButton = page.locator('[aria-label="Open chat"]');
-    if (await chatButton.count() === 0) {
+    if ((await chatButton.count()) === 0) {
       test.skip();
       return;
     }
@@ -217,5 +216,4 @@ test.describe('Regression Tests — Cross-Feature Verification', () => {
     await page.keyboard.press('Control+k');
     await expect(dialog).toBeVisible({ timeout: 3000 });
   });
-
 });

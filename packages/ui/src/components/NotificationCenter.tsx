@@ -207,7 +207,9 @@ export function NotificationCenter({
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-1.5 rounded-lg ${colors.bg} ${colors.icon} shrink-0 mt-0.5`}>
+                        <div
+                          className={`p-1.5 rounded-lg ${colors.bg} ${colors.icon} shrink-0 mt-0.5`}
+                        >
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -251,7 +253,7 @@ export function NotificationCenter({
           {history.length > 0 && (
             <div className="px-4 py-2 border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-center">
               <span className="text-xs text-text-muted">
-                {history.filter(i => !i.read).length} unread · {history.length} total
+                {history.filter((i) => !i.read).length} unread · {history.length} total
               </span>
             </div>
           )}

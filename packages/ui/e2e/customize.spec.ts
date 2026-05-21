@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/customize');
     await page.waitForSelector('[data-testid="customize-tab-items"]', { timeout: 10000 });
@@ -17,8 +16,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
   });
 
   test('Items tab is active by default', async ({ page }) => {
-    const itemsTab = page.locator('[data-testid="customize-tab-items"]');
-    // Active tab typically has different styling — check it's not muted/inactive
+    // Active tab typically has different styling — check the items list is visible
     const itemsList = page.locator('[data-testid="customize-items-list"]');
     await expect(itemsList).toBeVisible();
   });
@@ -31,7 +29,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
     let foundGroups = 0;
     for (const groupId of groups) {
       const toggle = page.locator(`[data-testid="customize-group-toggle-${groupId}"]`);
-      if (await toggle.count() > 0) {
+      if ((await toggle.count()) > 0) {
         foundGroups++;
       }
     }
@@ -45,7 +43,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
 
     for (const groupId of groupIds) {
       const toggle = page.locator(`[data-testid="customize-group-toggle-${groupId}"]`);
-      if (await toggle.count() > 0) {
+      if ((await toggle.count()) > 0) {
         toggleFound = true;
 
         // Click to toggle (close if open, open if closed)
@@ -67,7 +65,9 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
 
   // === ITEMS TAB: PIN BUTTON ===
 
-  test('pin button exists on items and uses stopPropagation (item not selected on pin click)', async ({ page }) => {
+  test('pin button exists on items and uses stopPropagation (item not selected on pin click)', async ({
+    page,
+  }) => {
     // Find a pin button
     const pinButtons = page.locator('[data-testid^="customize-pin-"]').filter({
       hasNot: page.locator('[data-testid="customize-pin-footer"]'),
@@ -85,7 +85,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
     // Click pin — should NOT trigger item selection (stopPropagation)
     // The detail panel should stay in empty state or not change to this item
     const detailEmpty = page.locator('[data-testid="customize-detail-empty"]');
-    const wasEmpty = await detailEmpty.count() > 0;
+    const wasEmpty = (await detailEmpty.count()) > 0;
 
     await firstPin.click();
     await page.waitForTimeout(300);
@@ -102,7 +102,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
   test('pin/unpin cycle works from Items tab', async ({ page }) => {
     // Find Tasks item and pin it
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -207,7 +207,7 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
   test('pinning item on customize page shows it in sidebar', async ({ page }) => {
     // Find and pin Tasks
     const tasksPin = page.locator('[data-testid="customize-pin-tasks"]');
-    if (await tasksPin.count() === 0) {
+    if ((await tasksPin.count()) === 0) {
       test.skip();
       return;
     }
@@ -225,5 +225,4 @@ test.describe('Customize Page — Tabs, Drawers & Pin Flow', () => {
     await tasksPin.click();
     await page.waitForTimeout(500);
   });
-
 });

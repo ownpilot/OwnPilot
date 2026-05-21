@@ -61,9 +61,7 @@ crewRoutes.get('/stats', async (c) => {
       crewRepo.count(userId),
     ]);
 
-    const allStats = await Promise.all(
-      crews.map((crew) => hbRepo.getStatsByUser(userId, crew.id))
-    );
+    const allStats = await Promise.all(crews.map((crew) => hbRepo.getStatsByUser(userId, crew.id)));
 
     const combined = allStats.reduce(
       (acc, s) => ({
@@ -79,10 +77,13 @@ crewRoutes.get('/stats', async (c) => {
       totalCycles: combined.totalCycles,
       totalCost: combined.totalCost,
       failureRate: combined.totalCycles > 0 ? combined.totalFailures / combined.totalCycles : 0,
-      byStatus: crews.reduce((acc, crew) => {
-        acc[crew.status] = (acc[crew.status] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      byStatus: crews.reduce(
+        (acc, crew) => {
+          acc[crew.status] = (acc[crew.status] ?? 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);

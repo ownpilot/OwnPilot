@@ -230,26 +230,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeToast = useCallback((id: string) => {
-    // Prevent double-removal
-    if (exitTimersRef.current.has(id)) return;
+  const removeToast = useCallback(
+    (id: string) => {
+      // Prevent double-removal
+      if (exitTimersRef.current.has(id)) return;
 
-    // Find toast before removing to add to history
-    const toast = toasts.find((t) => t.id === id);
-    if (toast) {
-      addToHistory(toast);
-    }
+      // Find toast before removing to add to history
+      const toast = toasts.find((t) => t.id === id);
+      if (toast) {
+        addToHistory(toast);
+      }
 
-    // Mark as exiting first for slide-out animation
-    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+      // Mark as exiting first for slide-out animation
+      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
 
-    // Remove from DOM after animation completes
-    const timer = setTimeout(() => {
-      exitTimersRef.current.delete(id);
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 300);
-    exitTimersRef.current.set(id, timer);
-  }, [toasts, addToHistory]);
+      // Remove from DOM after animation completes
+      const timer = setTimeout(() => {
+        exitTimersRef.current.delete(id);
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 300);
+      exitTimersRef.current.set(id, timer);
+    },
+    [toasts, addToHistory]
+  );
 
   const addToast = useCallback((input: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => {
     const id = `toast-${++toastCounter}`;
@@ -285,9 +288,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   // History management
   const markAsRead = useCallback((id: string) => {
-    setHistory((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, read: true } : item))
-    );
+    setHistory((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
   }, []);
 
   const markAllAsRead = useCallback(() => {

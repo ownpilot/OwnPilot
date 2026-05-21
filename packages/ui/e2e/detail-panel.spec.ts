@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Customize Detail Panel', () => {
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/customize');
     await page.waitForSelector('[data-testid="customize-tab-items"]', { timeout: 10000 });
@@ -22,7 +21,7 @@ test.describe('Customize Detail Panel', () => {
   test('clicking an item shows its details in the panel', async ({ page }) => {
     // Click on a nav item (e.g. Tasks)
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       // Try Dashboard as fallback
       const dashItem = page.locator('[data-testid="customize-item-dashboard"]');
       await dashItem.scrollIntoViewIfNeeded();
@@ -42,7 +41,7 @@ test.describe('Customize Detail Panel', () => {
   test('detail panel shows item title and description', async ({ page }) => {
     // Click Dashboard item
     const dashItem = page.locator('[data-testid="customize-item-dashboard"]');
-    if (await dashItem.count() === 0) {
+    if ((await dashItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -61,7 +60,7 @@ test.describe('Customize Detail Panel', () => {
 
   test('detail panel shows route path', async ({ page }) => {
     const dashItem = page.locator('[data-testid="customize-item-dashboard"]');
-    if (await dashItem.count() === 0) {
+    if ((await dashItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -74,7 +73,7 @@ test.describe('Customize Detail Panel', () => {
 
     // Route should show as code block with the path
     const routeCode = detailPanel.locator('code');
-    if (await routeCode.count() > 0) {
+    if ((await routeCode.count()) > 0) {
       const routeText = await routeCode.first().textContent();
       expect(routeText).toContain('/dashboard');
     }
@@ -85,7 +84,7 @@ test.describe('Customize Detail Panel', () => {
   test('pin button exists in detail panel', async ({ page }) => {
     // Select an item first
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -99,7 +98,7 @@ test.describe('Customize Detail Panel', () => {
 
   test('pin button toggles pin state in detail panel', async ({ page }) => {
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -133,7 +132,7 @@ test.describe('Customize Detail Panel', () => {
 
   test('"Open Page" button exists in detail panel', async ({ page }) => {
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -147,7 +146,7 @@ test.describe('Customize Detail Panel', () => {
 
   test('"Open Page" button navigates to the item route', async ({ page }) => {
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -168,7 +167,7 @@ test.describe('Customize Detail Panel', () => {
 
   test('"Show in Files" button exists but is disabled', async ({ page }) => {
     const tasksItem = page.locator('[data-testid="customize-item-tasks"]');
-    if (await tasksItem.count() === 0) {
+    if ((await tasksItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -177,7 +176,7 @@ test.describe('Customize Detail Panel', () => {
     await page.waitForTimeout(500);
 
     const filesBtn = page.locator('[data-testid="customize-detail-files"]');
-    if (await filesBtn.count() > 0) {
+    if ((await filesBtn.count()) > 0) {
       // Should have opacity-50 or cursor-not-allowed class
       await expect(filesBtn).toHaveClass(/opacity-50|cursor-not-allowed/);
     }
@@ -188,7 +187,7 @@ test.describe('Customize Detail Panel', () => {
   test('clicking different items updates detail panel', async ({ page }) => {
     // Click Dashboard
     const dashItem = page.locator('[data-testid="customize-item-dashboard"]');
-    if (await dashItem.count() === 0) {
+    if ((await dashItem.count()) === 0) {
       test.skip();
       return;
     }
@@ -201,7 +200,7 @@ test.describe('Customize Detail Panel', () => {
 
     // Now click a different item
     const analyticsItem = page.locator('[data-testid="customize-item-analytics"]');
-    if (await analyticsItem.count() > 0) {
+    if ((await analyticsItem.count()) > 0) {
       await analyticsItem.scrollIntoViewIfNeeded();
       await analyticsItem.click();
       await page.waitForTimeout(500);
@@ -210,5 +209,4 @@ test.describe('Customize Detail Panel', () => {
       expect(secondText).not.toBe(firstText);
     }
   });
-
 });

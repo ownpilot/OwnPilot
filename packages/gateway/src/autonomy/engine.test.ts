@@ -3,10 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  AutonomyEngine,
-  stopAutonomyEngine,
-} from './engine.js';
+import { AutonomyEngine, stopAutonomyEngine } from './engine.js';
 
 // ============================================================================
 // Mocks

@@ -151,7 +151,10 @@ describe('PAGE_COPILOT_REGISTRY', () => {
     for (const [key, config] of Object.entries(PAGE_COPILOT_REGISTRY)) {
       expect(config.pageType, `${key} missing pageType`).toBeTruthy();
       expect(Array.isArray(config.suggestions), `${key} suggestions not array`).toBe(true);
-      expect(config.suggestions.length, `${key} needs at least 3 suggestions`).toBeGreaterThanOrEqual(3);
+      expect(
+        config.suggestions.length,
+        `${key} needs at least 3 suggestions`
+      ).toBeGreaterThanOrEqual(3);
     }
   });
 
@@ -173,13 +176,18 @@ describe('PAGE_COPILOT_REGISTRY', () => {
 
   test('all path-based pages have preferBridge=true', () => {
     for (const key of ['workspaces', 'coding-agents', 'claws']) {
-      expect(PAGE_COPILOT_REGISTRY[key]?.preferBridge, `${key} should have preferBridge=true`).toBe(true);
+      expect(PAGE_COPILOT_REGISTRY[key]?.preferBridge, `${key} should have preferBridge=true`).toBe(
+        true
+      );
     }
   });
 
   test('no-path pages do not have preferBridge=true', () => {
     for (const key of ['workflows', 'agents', 'tools', 'tasks', 'notes']) {
-      expect(PAGE_COPILOT_REGISTRY[key]?.preferBridge, `${key} should not have preferBridge=true`).toBeFalsy();
+      expect(
+        PAGE_COPILOT_REGISTRY[key]?.preferBridge,
+        `${key} should not have preferBridge=true`
+      ).toBeFalsy();
     }
   });
 
@@ -204,14 +212,21 @@ describe('resolveContext', () => {
     // Restore default mock implementations after clearAllMocks
     mockFileWorkspacesApi.list.mockResolvedValue({ workspaces: [] });
     mockCodingAgentsApi.getSession.mockResolvedValue({
-      id: 's1', displayName: 'Session 1', provider: 'claude', cwd: '/home/user/project',
+      id: 's1',
+      displayName: 'Session 1',
+      provider: 'claude',
+      cwd: '/home/user/project',
     });
     mockClawsApi.get.mockResolvedValue({
-      id: 'c1', name: 'Test Claw', workspaceId: '/path/to/ws', mode: 'continuous',
+      id: 'c1',
+      name: 'Test Claw',
+      workspaceId: '/path/to/ws',
+      mode: 'continuous',
     });
     mockWorkflowsApi.get.mockResolvedValue({ id: 'wf1', name: 'Test Workflow', status: 'active' });
     mockExtensionsApi.getById.mockResolvedValue({
-      name: 'my-skill', manifest: { format: 'agentskills' },
+      name: 'my-skill',
+      manifest: { format: 'agentskills' },
     });
   });
 

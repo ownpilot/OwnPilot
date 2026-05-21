@@ -105,9 +105,21 @@ export function useSidebarRecents(): SidebarRecentsState {
     if (filter === 'web')
       return { limit: 50, offset: 0, search: q || undefined, source: 'web' as const };
     if (filter === 'whatsapp')
-      return { limit: 50, offset: 0, search: q || undefined, source: 'channel' as const, channelPlatform: 'whatsapp' };
+      return {
+        limit: 50,
+        offset: 0,
+        search: q || undefined,
+        source: 'channel' as const,
+        channelPlatform: 'whatsapp',
+      };
     if (filter === 'telegram')
-      return { limit: 50, offset: 0, search: q || undefined, source: 'channel' as const, channelPlatform: 'telegram' };
+      return {
+        limit: 50,
+        offset: 0,
+        search: q || undefined,
+        source: 'channel' as const,
+        channelPlatform: 'telegram',
+      };
     return { limit: 50, offset: 0, search: q || undefined };
   }, []);
 
@@ -196,19 +208,16 @@ export function useSidebarRecents(): SidebarRecentsState {
     [load]
   );
 
-  const handleDelete = useCallback(
-    async (id: string) => {
-      try {
-        await chatApi.deleteHistory(id);
-        setConversations((prev) => prev.filter((c) => c.id !== id));
-        setTotal((t) => t - 1);
-      } catch {
-        // Error handling done by caller
-        throw new Error('Failed to delete conversation');
-      }
-    },
-    []
-  );
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await chatApi.deleteHistory(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      setTotal((t) => t - 1);
+    } catch {
+      // Error handling done by caller
+      throw new Error('Failed to delete conversation');
+    }
+  }, []);
 
   const startEdit = useCallback((conv: Conversation) => {
     setEditingId(conv.id);

@@ -116,9 +116,7 @@ describe('ClawService authorization', () => {
         state: 'running',
       });
       mockExecuteNow.mockResolvedValue(null);
-      await expect(service.executeNow('claw-1', 'user-1')).rejects.toThrow(
-        'Cycle in progress'
-      );
+      await expect(service.executeNow('claw-1', 'user-1')).rejects.toThrow('Cycle in progress');
     });
   });
 
@@ -307,9 +305,9 @@ describe('ClawService authorization', () => {
     });
 
     it('rejects mission longer than 10000 chars', async () => {
-      await expect(
-        service.createClaw(makeInput({ mission: 'x'.repeat(10_001) }))
-      ).rejects.toThrow(/10,000/);
+      await expect(service.createClaw(makeInput({ mission: 'x'.repeat(10_001) }))).rejects.toThrow(
+        /10,000/
+      );
     });
 
     it('accepts a valid config', async () => {

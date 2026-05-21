@@ -39,7 +39,7 @@ export function buildPageContextSection(pageContext: PageContext | undefined | n
   const copilotPrompt = getPageCopilotPrompt(
     pageContext.pageType,
     pageContext.contextData,
-    !!pageContext.entityId,
+    !!pageContext.entityId
   );
   if (copilotPrompt) {
     parts.push(copilotPrompt);

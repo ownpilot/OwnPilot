@@ -107,9 +107,24 @@ export class UsageRepository extends BaseRepository {
     totalInputTokens: number;
     totalOutputTokens: number;
     totalCost: number;
-    byProvider: Record<string, { requests: number; inputTokens: number; outputTokens: number; cost: number }>;
-    byModel: Record<string, { provider: string; requests: number; inputTokens: number; outputTokens: number; cost: number }>;
-    byDay: Record<string, { requests: number; cost: number; inputTokens: number; outputTokens: number }>;
+    byProvider: Record<
+      string,
+      { requests: number; inputTokens: number; outputTokens: number; cost: number }
+    >;
+    byModel: Record<
+      string,
+      {
+        provider: string;
+        requests: number;
+        inputTokens: number;
+        outputTokens: number;
+        cost: number;
+      }
+    >;
+    byDay: Record<
+      string,
+      { requests: number; cost: number; inputTokens: number; outputTokens: number }
+    >;
   }> {
     const conditions = ['timestamp >= $1', 'timestamp <= $2'];
     const params: unknown[] = [startDate.toISOString(), endDate.toISOString()];
@@ -135,7 +150,13 @@ export class UsageRepository extends BaseRepository {
       params
     );
 
-    const providerRows = await this.query<{ provider: string; requests: string; input_tokens: string; output_tokens: string; cost: string }>(
+    const providerRows = await this.query<{
+      provider: string;
+      requests: string;
+      input_tokens: string;
+      output_tokens: string;
+      cost: string;
+    }>(
       `SELECT provider, COUNT(*)::text AS requests,
               COALESCE(SUM(input_tokens), 0)::text AS input_tokens,
               COALESCE(SUM(output_tokens), 0)::text AS output_tokens,
@@ -146,7 +167,14 @@ export class UsageRepository extends BaseRepository {
       params
     );
 
-    const modelRows = await this.query<{ model: string; provider: string; requests: string; input_tokens: string; output_tokens: string; cost: string }>(
+    const modelRows = await this.query<{
+      model: string;
+      provider: string;
+      requests: string;
+      input_tokens: string;
+      output_tokens: string;
+      cost: string;
+    }>(
       `SELECT model, provider, COUNT(*)::text AS requests,
               COALESCE(SUM(input_tokens), 0)::text AS input_tokens,
               COALESCE(SUM(output_tokens), 0)::text AS output_tokens,
@@ -157,7 +185,13 @@ export class UsageRepository extends BaseRepository {
       params
     );
 
-    const dayRows = await this.query<{ day: string; requests: string; cost: string; input_tokens: string; output_tokens: string }>(
+    const dayRows = await this.query<{
+      day: string;
+      requests: string;
+      cost: string;
+      input_tokens: string;
+      output_tokens: string;
+    }>(
       `SELECT DATE(timestamp)::text AS day,
               COUNT(*)::text AS requests,
               COALESCE(SUM(cost), 0)::text AS cost,
@@ -170,7 +204,10 @@ export class UsageRepository extends BaseRepository {
       params
     );
 
-    const byProvider: Record<string, { requests: number; inputTokens: number; outputTokens: number; cost: number }> = {};
+    const byProvider: Record<
+      string,
+      { requests: number; inputTokens: number; outputTokens: number; cost: number }
+    > = {};
     for (const r of providerRows) {
       byProvider[r.provider] = {
         requests: parseInt(r.requests, 10),
@@ -180,7 +217,16 @@ export class UsageRepository extends BaseRepository {
       };
     }
 
-    const byModel: Record<string, { provider: string; requests: number; inputTokens: number; outputTokens: number; cost: number }> = {};
+    const byModel: Record<
+      string,
+      {
+        provider: string;
+        requests: number;
+        inputTokens: number;
+        outputTokens: number;
+        cost: number;
+      }
+    > = {};
     for (const r of modelRows) {
       byModel[r.model] = {
         provider: r.provider,
@@ -191,7 +237,10 @@ export class UsageRepository extends BaseRepository {
       };
     }
 
-    const byDay: Record<string, { requests: number; cost: number; inputTokens: number; outputTokens: number }> = {};
+    const byDay: Record<
+      string,
+      { requests: number; cost: number; inputTokens: number; outputTokens: number }
+    > = {};
     for (const r of dayRows) {
       byDay[r.day] = {
         requests: parseInt(r.requests, 10),

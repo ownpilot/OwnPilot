@@ -253,7 +253,16 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   // ─────────────────────────────────────────────
   // UTILITY / MATH / TEXT
   // ─────────────────────────────────────────────
-  get_current_datetime: ['time', 'date', 'now', 'today', 'what time', 'current time', 'get time', 'clock'],
+  get_current_datetime: [
+    'time',
+    'date',
+    'now',
+    'today',
+    'what time',
+    'current time',
+    'get time',
+    'clock',
+  ],
   calculate: ['calculate', 'math', 'formula', 'operation', 'compute'],
   convert_units: [
     'convert',

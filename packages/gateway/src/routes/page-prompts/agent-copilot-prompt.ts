@@ -42,9 +42,12 @@ You are helping the user configure an OwnPilot agent. Focus on practical guidanc
 
     const refs: string[] = [];
     if (name) refs.push(`- Agent name: **${name}**`);
-    if (provider || model) refs.push(`- Current model: ${provider ?? 'default'} / ${model ?? 'default'}`);
+    if (provider || model)
+      refs.push(`- Current model: ${provider ?? 'default'} / ${model ?? 'default'}`);
     if (tools && Array.isArray(tools) && tools.length > 0) {
-      refs.push(`- Enabled tools (${tools.length}): ${tools.slice(0, 8).join(', ')}${tools.length > 8 ? '…' : ''}`);
+      refs.push(
+        `- Enabled tools (${tools.length}): ${tools.slice(0, 8).join(', ')}${tools.length > 8 ? '…' : ''}`
+      );
     }
     if (systemPrompt && typeof systemPrompt === 'string') {
       const wordCount = systemPrompt.split(/\s+/).length;

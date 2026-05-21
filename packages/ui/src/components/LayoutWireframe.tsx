@@ -86,7 +86,6 @@ export function LayoutWireframe({ selectedZone, onZoneSelect }: LayoutWireframeP
     <div className="w-full max-w-lg mx-auto">
       {/* Mini wireframe container */}
       <div className="rounded-xl border border-border dark:border-dark-border bg-bg-tertiary/30 dark:bg-dark-bg-tertiary/30 overflow-hidden shadow-sm">
-
         {/* Header row */}
         <div className="flex items-stretch h-10 bg-bg-secondary/50 dark:bg-dark-bg-secondary/50 border-b border-border/50 dark:border-dark-border/50 gap-px p-1">
           <ZoneBox

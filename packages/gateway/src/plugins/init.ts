@@ -392,7 +392,10 @@ function buildNewsRssPlugin(): BuiltinPluginEntry {
         }
         const { isPrivateUrlAsync } = await import('../utils/ssrf.js');
         if (await isPrivateUrlAsync(feedUrl)) {
-          return { content: { error: 'Feed URL points to private/loopback address' }, isError: true };
+          return {
+            content: { error: 'Feed URL points to private/loopback address' },
+            isError: true,
+          };
         }
 
         try {

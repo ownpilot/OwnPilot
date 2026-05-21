@@ -52,7 +52,9 @@ describe('createLoginThrottle', () => {
     // Subsequent calls during lockout return remaining time
     const second = throttle.check('1.2.3.4');
     expect(second.allowed).toBe(false);
-    expect((second as { allowed: false; retryAfterMs: number }).retryAfterMs).toBeLessThanOrEqual(30_000);
+    expect((second as { allowed: false; retryAfterMs: number }).retryAfterMs).toBeLessThanOrEqual(
+      30_000
+    );
     expect((second as { allowed: false; retryAfterMs: number }).retryAfterMs).toBeGreaterThan(0);
   });
 

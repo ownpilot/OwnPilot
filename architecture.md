@@ -54,6 +54,7 @@
 ```
 
 **OwnPilot** is a privacy-first personal AI assistant platform. It runs as a single self-hosted server with:
+
 - An HTTP API (Hono) + WebSocket server (Gateway)
 - A React SPA frontend
 - An autonomous Claw runtime that composes LLMs + workspace + soul + coding agents
@@ -97,12 +98,12 @@
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Package | Path | Responsibility | Dependencies |
-|---------|------|---------------|-------------|
-| **@ownpilot/core** | `packages/core` | Agent engine, tools, plugins, events, sandbox, crypto, channels, edge | Zero (base) |
-| **@ownpilot/gateway** | `packages/gateway` | HTTP API, WebSocket, PostgreSQL, all business logic | core |
-| **@ownpilot/ui** | `packages/ui` | React 19 SPA (64 pages) | gateway (HTTP API) |
-| **@ownpilot/cli** | `packages/cli` | CLI commands | gateway, core |
+| Package               | Path               | Responsibility                                                        | Dependencies       |
+| --------------------- | ------------------ | --------------------------------------------------------------------- | ------------------ |
+| **@ownpilot/core**    | `packages/core`    | Agent engine, tools, plugins, events, sandbox, crypto, channels, edge | Zero (base)        |
+| **@ownpilot/gateway** | `packages/gateway` | HTTP API, WebSocket, PostgreSQL, all business logic                   | core               |
+| **@ownpilot/ui**      | `packages/ui`      | React 19 SPA (64 pages)                                               | gateway (HTTP API) |
+| **@ownpilot/cli**     | `packages/cli`     | CLI commands                                                          | gateway, core      |
 
 ### Dependency Rules
 
@@ -709,13 +710,13 @@ ToolRegistry
 
 ### Tool Sources
 
-| Source | Count | Example | Execution |
-|--------|-------|---------|-----------|
-| **core** | 50+ | `file_read`, `code_execute`, `http_request` | Direct |
-| **gateway** | 10+ | `memory_*`, `goal_*`, `custom_data_*` | ProviderService |
-| **plugin** | 20+ | `weather_*`, `expense_*` | Worker thread (SecurePluginRuntime) |
-| **custom** | N | User/LLM-created | DynamicToolRegistry (sandboxed) |
-| **dynamic** | N | `ext.*`, `skill.*` | ExtensionSandbox (sandboxed) |
+| Source      | Count | Example                                     | Execution                           |
+| ----------- | ----- | ------------------------------------------- | ----------------------------------- |
+| **core**    | 50+   | `file_read`, `code_execute`, `http_request` | Direct                              |
+| **gateway** | 10+   | `memory_*`, `goal_*`, `custom_data_*`       | ProviderService                     |
+| **plugin**  | 20+   | `weather_*`, `expense_*`                    | Worker thread (SecurePluginRuntime) |
+| **custom**  | N     | User/LLM-created                            | DynamicToolRegistry (sandboxed)     |
+| **dynamic** | N     | `ext.*`, `skill.*`                          | ExtensionSandbox (sandboxed)        |
 
 ### Tool Permission Levels
 
@@ -802,11 +803,11 @@ ClawSession
 
 ### Claw Modes
 
-| Mode | Description |
-|------|-------------|
-| `continuous` | Runs until stop condition met |
-| `interval` | Runs on a schedule (interval-based) |
-| `event` | Runs when triggered by an event |
+| Mode          | Description                                     |
+| ------------- | ----------------------------------------------- |
+| `continuous`  | Runs until stop condition met                   |
+| `interval`    | Runs on a schedule (interval-based)             |
+| `event`       | Runs when triggered by an event                 |
 | `single-shot` | Runs once and stops (used by Fleet claw worker) |
 
 ### Stop Conditions
@@ -967,9 +968,9 @@ ExtensionService
 
 ```typescript
 // Available to extension code via SDK
-utils.callTool(name, args)     // Call any of 150+ built-in tools
-utils.getConfig(key)           // Get configuration
-utils.log(message)             // Structured logging
+utils.callTool(name, args); // Call any of 150+ built-in tools
+utils.getConfig(key); // Get configuration
+utils.log(message); // Structured logging
 ```
 
 ### Permission System
@@ -1273,15 +1274,15 @@ registerIntegrationRoutes()
 
 ### Key REST Endpoint Families
 
-| Domain | Base Path | Key Endpoints |
-|--------|----------|--------------|
-| **Claws** | `/api/v1/claws` | 16 endpoints: CRUD + `/stats`, `/audit`, `/deny-escalation` |
-| **Workflows** | `/api/v1/workflows` | CRUD + DAG validation + execution |
-| **Subagents** | `/api/v1/subagents` | Ephemeral task agents |
-| **Fleets** | `/api/v1/fleet` | Fleet CRUD + task coordination |
-| **Souls** | `/api/v1/souls` | Soul agent CRUD |
-| **Crews** | `/api/v1/crews` | Crew orchestration |
-| **Habits** | `/api/v1/habits` | Habit CRUD + logging + stats |
+| Domain        | Base Path           | Key Endpoints                                               |
+| ------------- | ------------------- | ----------------------------------------------------------- |
+| **Claws**     | `/api/v1/claws`     | 16 endpoints: CRUD + `/stats`, `/audit`, `/deny-escalation` |
+| **Workflows** | `/api/v1/workflows` | CRUD + DAG validation + execution                           |
+| **Subagents** | `/api/v1/subagents` | Ephemeral task agents                                       |
+| **Fleets**    | `/api/v1/fleet`     | Fleet CRUD + task coordination                              |
+| **Souls**     | `/api/v1/souls`     | Soul agent CRUD                                             |
+| **Crews**     | `/api/v1/crews`     | Crew orchestration                                          |
+| **Habits**    | `/api/v1/habits`    | Habit CRUD + logging + stats                                |
 
 ---
 
@@ -1301,16 +1302,16 @@ registerIntegrationRoutes()
 
 ### Security Features
 
-| Feature | Implementation |
-|---------|----------------|
-| **SSRF Protection** | `isBlockedUrl()` (sync) + `isPrivateUrlAsync()` (DNS rebinding) |
-| **Timing-safe comparison** | API key comparison, Twilio signature |
-| **Sandbox isolation** | Worker threads for plugins, vm for extensions |
-| **SVG iframe restriction** | Sandbox restriction on SVG rendering |
-| **IDOR guard** | Bridge route protection |
-| **Open-redirect guard** | Composio callback validation |
-| **Rate limiting** | Token bucket algorithm on all API endpoints |
-| **Hard-blocked tools** | Shell, file mutation, email, git, code-exec from extensions |
+| Feature                    | Implementation                                                  |
+| -------------------------- | --------------------------------------------------------------- |
+| **SSRF Protection**        | `isBlockedUrl()` (sync) + `isPrivateUrlAsync()` (DNS rebinding) |
+| **Timing-safe comparison** | API key comparison, Twilio signature                            |
+| **Sandbox isolation**      | Worker threads for plugins, vm for extensions                   |
+| **SVG iframe restriction** | Sandbox restriction on SVG rendering                            |
+| **IDOR guard**             | Bridge route protection                                         |
+| **Open-redirect guard**    | Composio callback validation                                    |
+| **Rate limiting**          | Token bucket algorithm on all API endpoints                     |
+| **Hard-blocked tools**     | Shell, file mutation, email, git, code-exec from extensions     |
 
 ---
 
@@ -1351,7 +1352,7 @@ CREATE INDEX IF NOT EXISTS ...;
 
 ```typescript
 const { MockFoo } = vi.hoisted(() => {
-  const MockFoo = vi.fn().mockImplementation(function() {
+  const MockFoo = vi.fn().mockImplementation(function () {
     return { method: vi.fn() };
   });
   return { MockFoo };
@@ -1411,6 +1412,7 @@ log.warn('message', { error: err });
 **Resolution:** Introduce a durable job queue layer using Postgres (Graphile Worker or pg-boss). Both use Postgres as the queue backend — no extra infrastructure (Redis/RabbitMQ) required. Jobs live in a `jobs` table, workers use `FOR UPDATE SKIP LOCKED` to avoid contention, exponential backoff retry on failure, dead letter queue after N attempts.
 
 **Refactor Scope:**
+
 - `WorkflowService.dispatchNode` → enqueues each node as a job
 - Worker pool executes nodes, writes results to DB, triggers dependent nodes via gating
 - `TriggerService` schedules cron-like jobs into the queue
@@ -1426,6 +1428,7 @@ log.warn('message', { error: err });
 **Problem:** `SecurePluginRuntime` uses worker thread isolation; the `vm` module is used for extensions. Both run inside the JavaScript runtime — not real isolation.
 
 **Attack Vectors (within current sandbox):**
+
 - `process.binding('fs')` — direct Node.js internal API access
 - `eval` — arbitrary code execution
 - Prototype pollution — object property injection
@@ -1438,12 +1441,12 @@ log.warn('message', { error: err });
 
 **Real Sandbox Options:**
 
-| Option | Isolation Level | Complexity | Notes |
-|--------|----------------|------------|-------|
-| **wasmtime + QuickJS** | Hardware enforced WASM | Very High | JS→WASM transpile required; QuickJS semantics differ; not practical |
-| **Worker threads + vm** | V8 context + process boundary | Low | Current approach; correct for Node.js 22; defense-in-depth |
-| **Firecracker** (microVM) | Hypervisor | Very High | VM infra required |
-| **Docker containers** | OS process | Medium | Recommended for production; `--read-only --network=none --cap-drop=ALL` |
+| Option                    | Isolation Level               | Complexity | Notes                                                                   |
+| ------------------------- | ----------------------------- | ---------- | ----------------------------------------------------------------------- |
+| **wasmtime + QuickJS**    | Hardware enforced WASM        | Very High  | JS→WASM transpile required; QuickJS semantics differ; not practical     |
+| **Worker threads + vm**   | V8 context + process boundary | Low        | Current approach; correct for Node.js 22; defense-in-depth              |
+| **Firecracker** (microVM) | Hypervisor                    | Very High  | VM infra required                                                       |
+| **Docker containers**     | OS process                    | Medium     | Recommended for production; `--read-only --network=none --cap-drop=ALL` |
 
 **Current State:** `BLOCKED_CALLABLE_TOOLS` (shell, file mutation, email, git, code-exec) and 100+ regex patterns are **blacklist-based**. Blacklists are bypassed eventually. WASM capability-based is **whitelist**: _"if not granted, it does not exist"_.
 
@@ -1465,7 +1468,7 @@ log.warn('message', { error: err });
 **Current state:** Cleanup methods exist across repositories: `memories.cleanup(maxAge, minImportance)`, `channel_sessions.cleanupOld(90 days)`, `trigger_history.cleanupHistory(30 days)`, `claws.cleanupOldHistory(30 days)`, `autonomy_log.cleanup(olderThanDays)`, `orchestra.cleanupOld(retentionDays)`, `subagents.cleanupOld(retentionDays)`, `fleet.cleanupOldSessions(olderThanDays)`. Retention intervals vary by table. Periodic cleanup via `setInterval` in each service. **Gap:** No automated retention policy enforcement at the DB level (no partition-based TTL expiry). After 6 months without maintenance, Postgres can hit 100GB.
 
 **Resolution — Drizzle ORM (future):**
-The long-term resolution for Problems 1-3 is Drizzle ORM, which generates migrations from schema definitions and provides type-safe query builders. The schema `/*.ts` files would become Drizzle schema definitions. This is a larger refactor (P2 priority) — not a quick fix.**
+The long-term resolution for Problems 1-3 is Drizzle ORM, which generates migrations from schema definitions and provides type-safe query builders. The schema `/*.ts` files would become Drizzle schema definitions. This is a larger refactor (P2 priority) — not a quick fix.\*\*
 
 ```typescript
 // gateway/src/db/schema/claws.ts
@@ -1473,7 +1476,9 @@ import { pgTable, text, timestamp, jsonb, integer } from 'drizzle-orm/pg-core';
 
 export const claws = pgTable('claws', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
   mission: text('mission').notNull(),
   mode: text('mode', { enum: ['continuous', 'interval', 'event', 'single-shot'] }).notNull(),
   status: text('status').default('idle').notNull(),
@@ -1491,6 +1496,7 @@ Then `drizzle-kit generate` produces both `up.sql` and `down.sql`. `drizzle-kit 
 **Migration Path:** Port 13 schema files to Drizzle incrementally. New tables first (forward-compatible), then existing tables (Drizzle definitions that match current schema), then refactor repository classes to Drizzle queries. Last step: wrap multi-step operations in `db.transaction()`.
 
 **Retention Policy (Immediate Action):** Define per-table retention now, not later:
+
 - `audit_log`: 90 days
 - `request_logs`: 30 days
 - `embedding_cache`: TTL field-based expiry
@@ -1517,6 +1523,7 @@ Then `drizzle-kit generate` produces both `up.sql` and `down.sql`. `drizzle-kit 
 **Problem 1 — Unbounded In-Memory Collections:** `ClawManager.tracks: Map<clawId, ClawSession>`, `MAX_CONCURRENT_CLAWS=50`. What happens when 50 are full and a new claw request arrives? Reject? Queue? Evict oldest? If queued, is the queue bounded? Unbounded queue = memory exhaustion.
 
 **Required Policy for Every In-Memory Collection:**
+
 - `ClawManager.tracks` — max 50 + LRU eviction or bounded queue
 - `FleetManager.fleets` — max N fleets + eviction policy
 - `EventBus` listeners — max unbounded but attach cleanup on unsubscribe
@@ -1542,12 +1549,14 @@ Then `drizzle-kit generate` produces both `up.sql` and `down.sql`. `drizzle-kit 
 **Current State:** `AuditService`, hash-chain audit log, structured logging via `getLog`, `request_logs` table — good for "what happened." Not sufficient for "why was it slow."
 
 **Missing — Distributed Tracing:**
+
 - Audit answers: _"user X called tool Y at time Z"_
 - Tracing answers: _"request arrived → middleware 12ms → orchestrator 8ms → provider call 2400ms (!) → tool execution 145ms → memory write 22ms → SSE send 4ms"_
 
 Without tracing, performance problems are black boxes. The question "customers complained it was slow — why?" cannot be answered systematically.
 
 **Resolution — OpenTelemetry:**
+
 - `@hono/otel` middleware for automatic HTTP instrumentation
 - Manual spans around provider calls (biggest unknown: which provider, which model, token count, duration)
 - `X-Trace-ID` response header on every response
@@ -1555,6 +1564,7 @@ Without tracing, performance problems are black boxes. The question "customers c
 - OTLP exporter → Tempo/Jaeger/Datadog
 
 **Metrics — Prometheus Endpoint:**
+
 ```
 /api/v1/metrics endpoint (Prometheus format):
 ownpilot_chat_requests_total{provider, model, status}
@@ -1564,6 +1574,7 @@ ownpilot_provider_token_cost_usd_total
 ```
 
 **Alerts (Grafana):**
+
 - p99 latency > 5s
 - error rate > 5%
 - claw memory > 80% limit
@@ -1575,10 +1586,12 @@ ownpilot_provider_token_cost_usd_total
 ### 24.7 API Tasarımı — Versioning ve Idempotency (MEDIUM)
 
 **Problem 1 — No v2 Strategy:** `/api/v1/` prefix exists but no v2 evolution plan. When a breaking change is needed: extensions and channel adapters calling v1 endpoints will break. Strategy needed:
+
 - **Side-by-side (recommended):** v1 and v2 served in parallel. v1 has a documented deprecation period, then removed. Simple but route duplication.
 - **Header-based:** `Accept: application/vnd.ownpilot.v2+json` header switching. More complex but single codebase.
 
 **Problem 2 — Webhook Signature Validation Inconsistency:** Twilio uses timing-safe comparison (good). Other channels:
+
 - Telegram: `X-Telegram-Bot-Api-Secret-Token`
 - Discord: `X-Signature-Ed25519` + `X-Signature-Timestamp`
 - Stripe-style: HMAC-SHA256
@@ -1597,6 +1610,7 @@ Each channel needs validation middleware. Mis-signed requests must be rejected, 
 **Current State:** No validation. Process boots with insecure defaults → user believes system is secure when it is not.
 
 **Resolution — Boot-Time Validation:**
+
 ```typescript
 // Zod schema validates all env vars at startup
 // MEMORY_SALT: must not equal "change-this-in-production"
@@ -1622,12 +1636,14 @@ if (invalid) {
 ### 24.9 Test Disiplini — Pyramid ve Adversarial (MEDIUM)
 
 **Current State:**
+
 - **Unit layer:** Vitest, `vi.hoisted()` pattern, 9307 core tests + 16696 gateway tests. Unit layer is solid.
 - **Integration layer (partial):** Tests verify SQL patterns (e.g., `FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`). SQL query generation is tested against expected output. `BaseRepository.transaction()` has test coverage. However, most repository tests use mocked adapters, not real Postgres connections.
 - **E2E layer:** Playwright configured (`packages/ui/playwright.config.ts`), 8 spec files in `packages/ui/e2e/`. **Not yet wired into CI.** No GitHub Actions step runs Playwright on every PR. This is the missing piece.
 - **Adversarial testing (done):** `sandbox-escape.test.ts` covers 41 attack vectors. Runs in CI on release.
 
 **Recommended Test Pyramid:**
+
 ```
 Top: E2E (Playwright)
   └── 5-10 core user journeys (Login → Chat → Tool → Approval → Result)
@@ -1645,11 +1661,13 @@ Base: Unit (fast, many)
 ```
 
 **Adversarial Testing (Immediate):**
+
 - `test/sandbox-escape/` — prototype pollution, regex bypass, env exfiltration, `process.send` abuse, async stack manipulation
 - `test/security/` — SSRF bypass URLs, regex pattern bypass, prompt injection templates
 - These run in CI on every release; successful bypass = P0 issue = release blocked
 
 **Property-Based Testing:**
+
 ```typescript
 import { fc } from 'fast-check';
 // From Zod schema, generate random inputs:
@@ -1667,12 +1685,14 @@ import { fc } from 'fast-check';
 **Problem 2 — No Provider Health Checks:** If a provider goes down or a model is sunset, the gateway boots but every chat request returns 404. No early detection.
 
 **Resolution — Provider Health Check at Boot:**
+
 - `provider.healthCheck()` called at startup
 - If unreachable → warn (do not fail boot), emit `provider_status` event
 - UI shows "OpenAI unavailable" indicator
 - Automatic fallback activates
 
 **Provider Config Metadata:**
+
 - `deprecated_at` — date when provider/model deprecated
 - `replacement_model_id` — migration target
 - Boot checks these and warns/fails accordingly
@@ -1681,22 +1701,23 @@ import { fc } from 'fast-check';
 
 ### Gap Summary Table
 
-| # | Issue | Severity | Effort | Priority | Status |
-|---|-------|----------|--------|----------|--------|
-| 24.1 | Persistent task queue (job queue layer) | HIGH | High | P1 | **Phase 1+2 done (ADR-001 written; jobs+job_history tables; JobQueueService; JobsRepository FOR UPDATE SKIP LOCKED; workflowRunId/nodeId in payload; persistNodeOutputs/getLogForRecovery in WorkflowsRepository; orphan reconciliation; jobified workflow node execution wired; crash recovery at boot)** |
-| 24.2 | Real sandbox isolation | CRITICAL | High | P0 | **Done (adversarial test suite in place; wasmtime research: not practical for JS — requires QuickJS transpile, adds massive complexity; Worker+vm is correct Node.js approach)** |
-| 24.3 | Drizzle ORM + migration/type safety | MEDIUM | High | P2 | **Partially done (transaction() exists; cleanup methods across 13 tables; RetentionService with nightly job; 032_retention_policies migration; ADR-002 written; Drizzle migration deferred)** |
-| 24.4 | Telemetry-based provider routing | MEDIUM | Medium | P2 | **Done (embedding_model_id; provider_metrics table + ProviderMetricsRepository; IProvider.recordMetric in interface + BaseProvider; recordTelemetry in executeAgentPipeline now calls ProviderMetricsRepository.record() directly (fire-and-forget); getRoutingMetrics/getCheapestRoute/getFastestRoute implemented)** |
-| 24.5 | Bounded maps + orphan cleanup | MEDIUM | Medium | P2 | **Done (P1 portion, BoundedMap added)** |
-| 24.6 | OpenTelemetry tracing + metrics | MEDIUM | Medium | P2 | **Done (metrics foundation)** |
-| 24.7 | API versioning + webhook signature | MEDIUM | Low | P3 | **Done (ADR-003; side-by-side v2 at /api/v2/*; registerV2Routes(); /api/v2 info endpoint; idempotency keys; HMAC verification; IdemKey middleware; webhook timing-safe comparison)** |
-| 24.8 | Boot-time config validation fail-fast | HIGH | Low | P1 | **Done** |
-| 24.9 | Test pyramid + adversarial suite | MEDIUM | Medium | P2 | **Partially done (sandbox adversarial tests done; unit layer solid; Playwright now wired into CI on PRs; integration mock-vs-real gap exists)** |
-| 24.10 | Native provider adapters + health checks | MEDIUM | Medium | P2 | **Done** |
+| #     | Issue                                    | Severity | Effort | Priority | Status                                                                                                                                                                                                                                                                                                                 |
+| ----- | ---------------------------------------- | -------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 24.1  | Persistent task queue (job queue layer)  | HIGH     | High   | P1       | **Phase 1+2 done (ADR-001 written; jobs+job_history tables; JobQueueService; JobsRepository FOR UPDATE SKIP LOCKED; workflowRunId/nodeId in payload; persistNodeOutputs/getLogForRecovery in WorkflowsRepository; orphan reconciliation; jobified workflow node execution wired; crash recovery at boot)**             |
+| 24.2  | Real sandbox isolation                   | CRITICAL | High   | P0       | **Done (adversarial test suite in place; wasmtime research: not practical for JS — requires QuickJS transpile, adds massive complexity; Worker+vm is correct Node.js approach)**                                                                                                                                       |
+| 24.3  | Drizzle ORM + migration/type safety      | MEDIUM   | High   | P2       | **Partially done (transaction() exists; cleanup methods across 13 tables; RetentionService with nightly job; 032_retention_policies migration; ADR-002 written; Drizzle migration deferred)**                                                                                                                          |
+| 24.4  | Telemetry-based provider routing         | MEDIUM   | Medium | P2       | **Done (embedding_model_id; provider_metrics table + ProviderMetricsRepository; IProvider.recordMetric in interface + BaseProvider; recordTelemetry in executeAgentPipeline now calls ProviderMetricsRepository.record() directly (fire-and-forget); getRoutingMetrics/getCheapestRoute/getFastestRoute implemented)** |
+| 24.5  | Bounded maps + orphan cleanup            | MEDIUM   | Medium | P2       | **Done (P1 portion, BoundedMap added)**                                                                                                                                                                                                                                                                                |
+| 24.6  | OpenTelemetry tracing + metrics          | MEDIUM   | Medium | P2       | **Done (metrics foundation)**                                                                                                                                                                                                                                                                                          |
+| 24.7  | API versioning + webhook signature       | MEDIUM   | Low    | P3       | **Done (ADR-003; side-by-side v2 at /api/v2/\*; registerV2Routes(); /api/v2 info endpoint; idempotency keys; HMAC verification; IdemKey middleware; webhook timing-safe comparison)**                                                                                                                                  |
+| 24.8  | Boot-time config validation fail-fast    | HIGH     | Low    | P1       | **Done**                                                                                                                                                                                                                                                                                                               |
+| 24.9  | Test pyramid + adversarial suite         | MEDIUM   | Medium | P2       | **Partially done (sandbox adversarial tests done; unit layer solid; Playwright now wired into CI on PRs; integration mock-vs-real gap exists)**                                                                                                                                                                        |
+| 24.10 | Native provider adapters + health checks | MEDIUM   | Medium | P2       | **Done**                                                                                                                                                                                                                                                                                                               |
 
 **Implemented in this session (2026-05-07):**
 
 **P0 — 24.8 Boot-Time Config Validation:**
+
 - `packages/gateway/src/config/validation.ts` — `validateBootConfig()` + `assertBootConfig()`
 - Checks `MEMORY_SALT` is not the insecure default placeholder
 - Requires `JWT_SECRET` when `AUTH_TYPE=jwt` (min 32 chars)
@@ -1706,12 +1727,14 @@ import { fc } from 'fast-check';
 - Wired into `server.ts` main() before any heavy initialization
 
 **P1 — 24.5 Orphan Reconciliation:**
+
 - `packages/gateway/src/services/orphan-reconciliation.ts` — `reconcileOrphanedSessions()`
 - Finds and marks as aborted all orphaned Claw, Fleet, Subagent, Workflow, and Plan sessions
 - 5-minute heartbeat threshold to avoid false positives on long-running tasks
 - Called at boot, BEFORE any autonomous system starts
 
 Repository methods added:
+
 - `ClawsRepository.getOrphanedSessions()` + `updateSessionStatus()`
 - `SubagentsRepository.getOrphanedSessions()` + `markAborted()`
 - `WorkflowsRepository.getOrphanedRuns()` + `markRunFailed()`
@@ -1719,6 +1742,7 @@ Repository methods added:
 - `FleetRepository.getOrphanedSessions()` + `markSessionStopped()`, `requeueOrphanedTasks('__all__')`
 
 **P0 — 24.2 Sandbox Adversarial Test Suite:**
+
 - `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 tests across 13 groups
 - **Attack vectors covered:**
   - `constructor.constructor` escape (8 variants) — blocked by `/\bprocess\b/` + constructor regex
@@ -1741,6 +1765,7 @@ Repository methods added:
 - CI gate: tests run on every release; any escape that succeeds blocks the release
 
 **P2 — 24.10 Provider Health Checks:**
+
 - `IProvider.healthCheck()` added to interface + `BaseProvider` as abstract method
 - Implementations: `OpenAICompatibleProvider`, `OpenAIProvider`, `AnthropicProvider`, `GoogleProvider`, `FallbackProvider`, `CliChatProvider`
 - `ProviderHealthResult` exported via `@ownpilot/core` agent barrel
@@ -1749,6 +1774,7 @@ Repository methods added:
 - `ProviderStatusEvent` emitted via EventBus for UI "provider unavailable" indicators
 
 **P2 — 24.6 Prometheus Metrics Endpoint:**
+
 - `packages/gateway/src/services/metrics-service.ts` — in-process MetricsService with Prometheus text format
 - `GET /metrics` endpoint with counters, histograms, gauges (no external dependencies)
 - Metrics: `ownpilot_http_requests_total{method,path,status}`, `ownpilot_http_request_duration_ms` histogram (11 latency buckets), `ownpilot_active_agents{type}`, `ownpilot_provider_cost_usd_total{provider}`, `ownpilot_chat_requests_total{provider,model,status}`
@@ -1757,6 +1783,7 @@ Repository methods added:
 - For multi-node: aggregate via Prometheus Pushgateway (documented in comments)
 
 **P2 — 24.5 BoundedMap Utility:**
+
 - `packages/core/src/utils/bounded-map.ts` — `BoundedMap<K, V>(maxSize, evictionPolicy)` with 'lru' and 'fifo' policies
 - `packages/core/src/utils/bounded-map.test.ts` — 20 tests covering basic ops, LRU/FIFO eviction, iteration
 - Monotonic counter approach: lowest counter = oldest mutation (LRU) or oldest insertion (FIFO)
@@ -1764,6 +1791,7 @@ Repository methods added:
 - Addresses: unbounded in-memory collections identified in gap 24.5
 
 **P2 — 24.7 Idempotency Keys:**
+
 - `packages/gateway/src/db/migrations/postgres/030_idempotency_keys.sql` — idempotency_keys table (TEXT PK, JSONB result, expires_at with index)
 - `packages/gateway/src/db/repositories/idempotency-keys.ts` — IdempotencyKeysRepository: getRecord, setRecord, deleteKey, purgeExpired, countActive
 - `packages/gateway/src/db/schema/core.ts` — idempotency_keys table added to CORE_TABLES_SQL (fresh installs); idx_idempotency_expires_at index added to CORE_INDEXES_SQL
@@ -1773,25 +1801,30 @@ Repository methods added:
 - **v2 API implemented (ADR-003):** side-by-side `/api/v2/*` with identical handlers; `register-v2-routes.ts` mirrors all v1 routes at v2 paths; `registerV2Routes()` wired in app.ts; `GET /api/v2` info endpoint returns version + endpoint map; v1 has no EOL date set — deprecation timeline will publish 90 days before removal
 
 **WebSocket Session Fix:**
+
 - `packages/ui/src/hooks/useWebSocket.tsx` — respond to connection:ping with session:pong, unlimited reconnect with exponential backoff (1s→30s cap)
 - `packages/gateway/src/ws/server.ts` — session:pong handler now calls `sessionManager.touch()` to reset WS session TTL (was logging only)
 
 **P2 — 24.4 Token Counting & Embedding Model Versioning:**
+
 - `packages/core/src/agent/providers/openai-compatible.ts` — `countTokens()` uses char/4 approximation as fallback for OpenAI-compatible endpoints that don't return token usage
 - `packages/gateway/src/db/schema/autonomous.ts` — `memories.embedding_model_id` column added for multi-model embedding support; queries can scope to current model: `WHERE embedding_model_id = $currentModel`; partial index `idx_memories_embedding_model` added
 - `packages/gateway/src/db/schema/autonomous.ts` — migration to add `embedding_model_id` column for existing installs
 - `packages/gateway/src/services/agent-runner-utils.ts` — `createConfiguredAgent` now passes real `IProvider` instance via `options.provider` (was passing config object, making `prov.recordMetric` always undefined); `recordTelemetry` now calls `getProviderMetricsRepository().record()` directly (fire-and-forget) for every agent execution
 
 **Remaining P0-P1:**
+
 - (none)
 
 **P0 — 24.2 Sandbox Isolation Research (2026-05-07):**
+
 - wasmtime cannot run JavaScript natively — only WebAssembly bytecode
 - JS→WASM transpile via QuickJS required: massive complexity, QuickJS/V8 semantics differ, no async/WASI stability, no Node.js built-ins in WASM context
 - Worker threads + vm module is the correct approach for Node.js 22
 - 41 adversarial tests in `sandbox-escape.test.ts` verify the sandbox holds
 
 **P2 — 24.1 & 24.7 Tool Executor Idempotency:**
+
 - `packages/gateway/src/services/tool-executor.ts` — executeTool() now checks/updates idempotency keys before execution
   - Key: SHA-256(userId + toolName + JSON.stringify(args))
   - On cache hit: returns cached ToolExecutionResult without re-execution
@@ -1801,6 +1834,7 @@ Repository methods added:
   - Test mock added: `mockIdempotencyRepo` with getRecord/setRecord in tool-executor.test.ts
 
 **P2 — 24.3 Transaction Safety & Retention:**
+
 - `packages/gateway/src/db/repositories/base.ts` — `BaseRepository.transaction()` delegates to adapter.transaction()
 - `packages/gateway/src/db/adapters/postgres-adapter.ts` — `transaction()` with 30s timeout, automatic rollback on error
 - `docs/ADR/ADR-002-database-retention-policy.md` — full ADR for gap 24.3 retention enforcement
@@ -1811,6 +1845,7 @@ Repository methods added:
 - **Remaining**: DB-level partition-based TTL expiry, Drizzle ORM migration
 
 **P1 — 24.1 Persistent Job Queue:**
+
 - `docs/ADR/ADR-001-persistent-job-queue.md` — full architecture decision record
 - pg-boss over Postgres chosen (no extra infra; FOR UPDATE SKIP LOCKED)
 - 4-phase plan: infrastructure → workflows → triggers/plans → fleet/subagent
@@ -1818,6 +1853,7 @@ Repository methods added:
 - **Phase 2 done:** worker pool boot wiring in server.ts; `WorkflowNodeJobHandler` with `enqueueWorkflowLevel()` and `resumeWorkflowFromRecovery()`; `jobifiedExecuteLevel()` in WorkflowService (level-by-level polling, 500ms interval); `listRunningLogs()` + `cleanupOldWorkflowLogs()` in WorkflowsRepository; hybrid sync/jobified node execution (SYNC_ONLY_TYPES: forEach, approval, parallel, subWorkflow, errorHandler, trigger, stickyNote stay inline; all others use job queue); crash recovery wired at boot
 
 **P2 — 24.9 Test Pyramid:**
+
 - Unit layer: 9307 core tests + 16696 gateway tests; `vi.hoisted()` pattern, `Result<T,E>` flows
 - Adversarial sandbox tests: `packages/core/src/sandbox/sandbox-escape.test.ts` — 41 attack vectors (prototype pollution, constructor escape, scope chain, Symbol, async, SAB, RCE, native modules, etc.)
 - Integration: SQL pattern tests exist (`FOR UPDATE SKIP LOCKED` in `crew-tasks.test.ts`); most repo tests use mocked adapters
@@ -1825,4 +1861,5 @@ Repository methods added:
 - **Remaining**: add integration tests against real Postgres connections, property-based testing with fast-check
 
 **Remaining P0-P1:**
+
 - (none)

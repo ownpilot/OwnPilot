@@ -16,6 +16,7 @@ understanding which "type" of sidebar entry it was.
 doesn't. Simple.
 
 This single decision eliminated:
+
 - Dual localStorage stores (pinned vs layout config)
 - The `visible: boolean` field on 28 sections
 - Type confusion between "items" and "sections"
@@ -30,10 +31,10 @@ Section = { id: string, order: number, style?: 'accordion' | 'flat' }
 That's it. Three fields. Every sidebar entry — from Chat to Workflows to AI Models —
 uses the same format. The `style` field controls rendering:
 
-| Style | What Renders | Developer Effort |
-|-------|-------------|-----------------|
+| Style                 | What Renders                       | Developer Effort               |
+| --------------------- | ---------------------------------- | ------------------------------ |
 | `accordion` (default) | Collapsible header + API item list | Needs `fetchItems` in registry |
-| `flat` | Single nav link (icon + label) | Zero — works automatically |
+| `flat`                | Single nav link (icon + label)     | Zero — works automatically     |
 
 If a section has `style: 'accordion'` but no `fetchItems` in the registry, it gracefully
 falls back to flat rendering. No crash, no error — just a link.
@@ -63,14 +64,14 @@ falls back to flat rendering. No crash, no error — just a link.
 
 ### Design Principles
 
-| Principle | Implementation |
-|-----------|---------------|
-| **Config is truth** | `LayoutConfig.sidebar.sections[]` — nothing else determines what's shown |
-| **Add/remove over toggle** | Array presence = visible. No boolean flags. |
+| Principle                   | Implementation                                                           |
+| --------------------------- | ------------------------------------------------------------------------ |
+| **Config is truth**         | `LayoutConfig.sidebar.sections[]` — nothing else determines what's shown |
+| **Add/remove over toggle**  | Array presence = visible. No boolean flags.                              |
 | **Progressive enhancement** | Flat link → accordion → custom UI (Recents-style). Each level is opt-in. |
-| **Deduplication** | Nav item paths matching data section routes resolve to data section ID |
-| **Core protection** | Search + Customize cannot be removed (structural UI) |
-| **Lazy by default** | Accordion fetches data only when expanded. Flat mode = zero API calls. |
+| **Deduplication**           | Nav item paths matching data section routes resolve to data section ID   |
+| **Core protection**         | Search + Customize cannot be removed (structural UI)                     |
+| **Lazy by default**         | Accordion fetches data only when expanded. Flat mode = zero API calls.   |
 
 ---
 
@@ -82,9 +83,9 @@ via the ZoneEditor or Customize panel.
 
 There are two rendering modes:
 
-| Mode | Renders As | When |
-|------|-----------|------|
-| **flat** | Single nav link (icon + label) | Default for pages without item lists |
+| Mode          | Renders As                              | When                                   |
+| ------------- | --------------------------------------- | -------------------------------------- |
+| **flat**      | Single nav link (icon + label)          | Default for pages without item lists   |
 | **accordion** | Collapsible header + item list from API | When developer implements `fetchItems` |
 
 **Default for new sections: `accordion`.** The style toggle is available for ALL non-core sections
@@ -123,14 +124,14 @@ Sidebar.tsx receives visibleSections (sorted by order)
 
 ### Key Files
 
-| File | Role |
-|------|------|
-| `types/layout-config.ts` | Section types, defaults, labels, core IDs |
-| `constants/sidebar-sections.ts` | Data section registry, icon/label/group resolvers |
-| `hooks/useLayoutConfig.tsx` | Section CRUD (add/remove/reorder/style), localStorage persistence |
-| `components/sidebar/SidebarDataSection.tsx` | Generic accordion/flat renderer |
-| `components/Sidebar.tsx` | Section routing (which component renders which section) |
-| `components/ZoneEditor.tsx` | Section management UI (drag, style toggle, add/remove) |
+| File                                        | Role                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| `types/layout-config.ts`                    | Section types, defaults, labels, core IDs                         |
+| `constants/sidebar-sections.ts`             | Data section registry, icon/label/group resolvers                 |
+| `hooks/useLayoutConfig.tsx`                 | Section CRUD (add/remove/reorder/style), localStorage persistence |
+| `components/sidebar/SidebarDataSection.tsx` | Generic accordion/flat renderer                                   |
+| `components/Sidebar.tsx`                    | Section routing (which component renders which section)           |
+| `components/ZoneEditor.tsx`                 | Section management UI (drag, style toggle, add/remove)            |
 
 ---
 
@@ -175,6 +176,7 @@ Add an entry to `SIDEBAR_DATA_SECTIONS`:
 ```
 
 **`fetchItems` contract:**
+
 - Returns `Promise<SidebarItem[]>` where `SidebarItem = { id: string, label: string, route: string }`
 - Called lazily — only when section is visible AND in accordion mode AND expanded
 - Must handle API errors gracefully (SidebarDataSection catches and shows empty)
@@ -191,7 +193,7 @@ export type SidebarSectionId =
   | 'search'
   | 'customize'
   // ...existing...
-  | 'my-section'  // <-- add here
+  | 'my-section'; // <-- add here
 ```
 
 ### Step 3: Add Label
@@ -223,6 +225,7 @@ export const SECTION_DEFAULT_STYLES: Record<string, SidebarSectionStyle> = {
 ### Step 5: Done
 
 That's it. The section will:
+
 - Appear in ZoneEditor "+ Add Section" dropdown under the correct group
 - Render with accordion/flat toggle
 - Lazy-fetch items only when expanded in accordion mode
@@ -242,16 +245,16 @@ similarly complex sections.
 
 ### Why Recents is Special
 
-| Feature | Generic SidebarDataSection | Recents |
-|---------|---------------------------|---------|
-| Data source | `fetchItems()` one-shot | `useSidebarRecents` hook (WebSocket + polling) |
-| Search | No | Yes (inline text filter) |
-| Filtering | No | Platform tabs (All, Web, WhatsApp, Telegram) |
-| Grouping | No | Date groups (Today, Yesterday, This Week, Older) |
-| Inline edit | No | Rename conversation in-place |
-| Delete | No | Confirm dialog + delete API call |
-| Active state | No | Highlights active conversation |
-| Real-time | No | WebSocket updates for new messages |
+| Feature      | Generic SidebarDataSection | Recents                                          |
+| ------------ | -------------------------- | ------------------------------------------------ |
+| Data source  | `fetchItems()` one-shot    | `useSidebarRecents` hook (WebSocket + polling)   |
+| Search       | No                         | Yes (inline text filter)                         |
+| Filtering    | No                         | Platform tabs (All, Web, WhatsApp, Telegram)     |
+| Grouping     | No                         | Date groups (Today, Yesterday, This Week, Older) |
+| Inline edit  | No                         | Rename conversation in-place                     |
+| Delete       | No                         | Confirm dialog + delete API call                 |
+| Active state | No                         | Highlights active conversation                   |
+| Real-time    | No                         | WebSocket updates for new messages               |
 
 ### How to Build a Recents-Style Section
 
@@ -267,15 +270,16 @@ export function useSidebarMySection() {
   // Fetch on mount
   useEffect(() => {
     setIsLoading(true);
-    myApi.list()
+    myApi
+      .list()
       .then(setItems)
       .catch(() => setItems([]))
       .finally(() => setIsLoading(false));
   }, []);
 
   // Filter by search
-  const filtered = useMemo(() =>
-    items.filter(item => item.name.toLowerCase().includes(search.toLowerCase())),
+  const filtered = useMemo(
+    () => items.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())),
     [items, search]
   );
 
@@ -341,14 +345,15 @@ bypass the generic renderer. The registry is for simple accordion sections only.
 
 ### Recents Implementation Reference
 
-| Component | File | Lines |
-|-----------|------|-------|
-| Hook | `hooks/useSidebarRecents.ts` | ~230 lines |
-| Sidebar render | `components/Sidebar.tsx` case 'recents' | ~100 lines |
-| Flat fallback | Same file, `section.style === 'flat'` check | ~10 lines |
-| API | `api/endpoints/chat.ts` | conversations list + delete + rename |
+| Component      | File                                        | Lines                                |
+| -------------- | ------------------------------------------- | ------------------------------------ |
+| Hook           | `hooks/useSidebarRecents.ts`                | ~230 lines                           |
+| Sidebar render | `components/Sidebar.tsx` case 'recents'     | ~100 lines                           |
+| Flat fallback  | Same file, `section.style === 'flat'` check | ~10 lines                            |
+| API            | `api/endpoints/chat.ts`                     | conversations list + delete + rename |
 
 Key patterns from Recents:
+
 - **Lazy loading**: Only fetches when accordion mode + expanded
 - **WebSocket integration**: `useSidebarRecents` subscribes to WS for real-time updates
 - **Date grouping**: Groups conversations by Today/Yesterday/This Week/Older
@@ -393,18 +398,18 @@ style: 'flat' → SidebarDataSection renders as single link (no API call)
 
 ## Before vs After: Architecture Comparison
 
-| Aspect | Before (V5) | After (V7) |
-|--------|------------|------------|
-| **Storage** | 2 keys: `ownpilot-sidebar-pinned` + `ownpilot-layout-config` | 1 key: `ownpilot-layout-config` |
-| **Sidebar items** | "Pinned items" (paths) + "Sections" (IDs) — two types | Sections only — one type |
-| **Visibility** | `visible: boolean` on 28 entries | Array presence — if in array, shown |
-| **Default config** | 28 entries (7 visible + 21 hidden) | 8 entries (only what's shown) |
-| **Adding a section** | Toggle `visible: true` on existing entry | `addSidebarSection(id)` — push to array |
-| **Adding a page to sidebar** | Pin from Customize (writes to separate store) | Pin → resolves to `addSidebarSection` |
-| **New page support** | Touch 5 files: type + label + default + section + component | Zero code — nav items auto-appear in dropdown |
-| **Style control** | Only "data sections" had accordion/flat toggle | All sections have toggle |
-| **Config size** | 28 objects always in localStorage | 5-15 objects (only what user configured) |
-| **Provider tree** | `PinnedItemsProvider > HeaderItemsProvider > LayoutConfigProvider` | `LayoutConfigProvider > HeaderItemsProvider > PinnedItems(no-op)` |
+| Aspect                       | Before (V5)                                                        | After (V7)                                                        |
+| ---------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| **Storage**                  | 2 keys: `ownpilot-sidebar-pinned` + `ownpilot-layout-config`       | 1 key: `ownpilot-layout-config`                                   |
+| **Sidebar items**            | "Pinned items" (paths) + "Sections" (IDs) — two types              | Sections only — one type                                          |
+| **Visibility**               | `visible: boolean` on 28 entries                                   | Array presence — if in array, shown                               |
+| **Default config**           | 28 entries (7 visible + 21 hidden)                                 | 8 entries (only what's shown)                                     |
+| **Adding a section**         | Toggle `visible: true` on existing entry                           | `addSidebarSection(id)` — push to array                           |
+| **Adding a page to sidebar** | Pin from Customize (writes to separate store)                      | Pin → resolves to `addSidebarSection`                             |
+| **New page support**         | Touch 5 files: type + label + default + section + component        | Zero code — nav items auto-appear in dropdown                     |
+| **Style control**            | Only "data sections" had accordion/flat toggle                     | All sections have toggle                                          |
+| **Config size**              | 28 objects always in localStorage                                  | 5-15 objects (only what user configured)                          |
+| **Provider tree**            | `PinnedItemsProvider > HeaderItemsProvider > LayoutConfigProvider` | `LayoutConfigProvider > HeaderItemsProvider > PinnedItems(no-op)` |
 
 ## Future Roadmap
 

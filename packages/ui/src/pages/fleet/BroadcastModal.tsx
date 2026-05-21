@@ -4,13 +4,7 @@ import { fleetApi } from '../../api/endpoints/fleet';
 import type { FleetConfig } from '../../api/endpoints/fleet';
 import { X, Send } from '../../components/icons';
 
-export function BroadcastModal({
-  fleet,
-  onClose,
-}: {
-  fleet: FleetConfig;
-  onClose: () => void;
-}) {
+export function BroadcastModal({ fleet, onClose }: { fleet: FleetConfig; onClose: () => void }) {
   const toast = useToast();
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);

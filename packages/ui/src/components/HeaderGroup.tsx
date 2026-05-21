@@ -14,7 +14,13 @@ import type { HeaderItemDisplayMode } from '../types/layout-config';
 
 type GroupConfig = Extract<HeaderItemConfig, { type: 'group' }>;
 
-export function HeaderGroup({ config, displayMode = 'icon' }: { config: GroupConfig; displayMode?: HeaderItemDisplayMode }) {
+export function HeaderGroup({
+  config,
+  displayMode = 'icon',
+}: {
+  config: GroupConfig;
+  displayMode?: HeaderItemDisplayMode;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -57,12 +63,13 @@ export function HeaderGroup({ config, displayMode = 'icon' }: { config: GroupCon
         }`}
         title={config.label}
       >
-        {displayMode !== 'text' && (() => {
-          const firstItem = NAV_ITEM_MAP.get(config.items[0] ?? '');
-          if (!firstItem) return null;
-          const GroupIcon = firstItem.icon;
-          return <GroupIcon className="w-3.5 h-3.5 shrink-0" />;
-        })()}
+        {displayMode !== 'text' &&
+          (() => {
+            const firstItem = NAV_ITEM_MAP.get(config.items[0] ?? '');
+            if (!firstItem) return null;
+            const GroupIcon = firstItem.icon;
+            return <GroupIcon className="w-3.5 h-3.5 shrink-0" />;
+          })()}
         {displayMode !== 'icon' && <span className="truncate">{config.label}</span>}
         <ChevronDown
           className={`w-3 h-3 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}

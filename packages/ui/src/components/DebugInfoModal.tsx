@@ -47,13 +47,22 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
   const toolCallCount = trace.toolCalls?.length ?? 0;
   const successfulTools = trace.toolCalls.filter((t) => t.success).length;
   const failedTools = toolCallCount - successfulTools;
-  const totalInputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.inputTokens ?? 0), 0);
-  const totalOutputTokens = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.outputTokens ?? 0), 0);
+  const totalInputTokens = (trace.modelCalls ?? []).reduce(
+    (sum, m) => sum + (m.inputTokens ?? 0),
+    0
+  );
+  const totalOutputTokens = (trace.modelCalls ?? []).reduce(
+    (sum, m) => sum + (m.outputTokens ?? 0),
+    0
+  );
   const totalTokens = (trace.modelCalls ?? []).reduce(
     (sum, m) => sum + (m.tokens ?? (m.inputTokens ?? 0) + (m.outputTokens ?? 0)),
     0
   );
-  const totalModelDuration = (trace.modelCalls ?? []).reduce((sum, m) => sum + (m.duration ?? 0), 0);
+  const totalModelDuration = (trace.modelCalls ?? []).reduce(
+    (sum, m) => sum + (m.duration ?? 0),
+    0
+  );
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'overview', label: 'Overview' },

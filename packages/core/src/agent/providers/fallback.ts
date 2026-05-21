@@ -449,7 +449,9 @@ export class FallbackProvider implements IProvider {
     // Return the best result (prefer ok, then lowest latency)
     const okResults = results.filter((r) => r.status === 'ok');
     if (okResults.length > 0) {
-      const sorted = okResults.sort((a, b) => (a.latencyMs ?? Infinity) - (b.latencyMs ?? Infinity));
+      const sorted = okResults.sort(
+        (a, b) => (a.latencyMs ?? Infinity) - (b.latencyMs ?? Infinity)
+      );
       return ok(sorted[0]!);
     }
 

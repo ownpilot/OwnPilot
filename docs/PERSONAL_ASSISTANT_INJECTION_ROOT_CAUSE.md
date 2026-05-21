@@ -32,11 +32,11 @@ When a user sends a message with a new `conversationId`, `chat.ts:313` calls `ag
 
 Three screenshots captured during the session document the inconsistent behavior:
 
-| Screenshot | Provider | Model | Response to "Sen hangi modelsin?" | Path |
-|------------|----------|-------|-----------------------------------|------|
-| **S1** | `minimax` (built-in) | MiniMax-M2.7 | **"Ben Claude AI asistanıyım..."** | `docs/screenshots/inject-bug/s1-minimax-404-error.png` |
-| **S2** | `595f8801-...` (local provider) | MiniMax-M2.7 | **"Ben OwnPilot..."** (with tool awareness) | `docs/screenshots/inject-bug/s2-ownpilot-identity-with-tools.png` |
-| **S3** | `minimax` (built-in) | MiniMax-M2.7 | **"Ben OwnPilot..."** (with today's date) | `docs/screenshots/inject-bug/s3-ownpilot-identity-text.png` |
+| Screenshot | Provider                        | Model        | Response to "Sen hangi modelsin?"           | Path                                                              |
+| ---------- | ------------------------------- | ------------ | ------------------------------------------- | ----------------------------------------------------------------- |
+| **S1**     | `minimax` (built-in)            | MiniMax-M2.7 | **"Ben Claude AI asistanıyım..."**          | `docs/screenshots/inject-bug/s1-minimax-404-error.png`            |
+| **S2**     | `595f8801-...` (local provider) | MiniMax-M2.7 | **"Ben OwnPilot..."** (with tool awareness) | `docs/screenshots/inject-bug/s2-ownpilot-identity-with-tools.png` |
+| **S3**     | `minimax` (built-in)            | MiniMax-M2.7 | **"Ben OwnPilot..."** (with today's date)   | `docs/screenshots/inject-bug/s3-ownpilot-identity-text.png`       |
 
 **Same model, same provider (S1 and S3) → different identity answers.** The only differing variable is which code path created the conversation in the agent's memory.
 
@@ -77,12 +77,12 @@ Conclusion:  Bug is NOT in MiniMax/LLM — it's in OwnPilot's injection pipeline
 
 Each hypothesis was stress-tested:
 
-| # | Hypothesis | Test | Result |
-|---|------------|------|--------|
-| 1 | MiniMax training bias | Direct API call without prompt | Identity-neutral → **eliminated** |
-| 2 | Cache hit bug | Cold container, fresh conversation | Same failure → **eliminated** |
-| 3 | MCP instructions inject overriding identity | Disable MCP, test | Same failure → **eliminated** |
-| 4 | Conversation systemPrompt propagation | Log inspection | `base_prompt:212` confirms → **CONFIRMED** |
+| #   | Hypothesis                                  | Test                               | Result                                     |
+| --- | ------------------------------------------- | ---------------------------------- | ------------------------------------------ |
+| 1   | MiniMax training bias                       | Direct API call without prompt     | Identity-neutral → **eliminated**          |
+| 2   | Cache hit bug                               | Cold container, fresh conversation | Same failure → **eliminated**              |
+| 3   | MCP instructions inject overriding identity | Disable MCP, test                  | Same failure → **eliminated**              |
+| 4   | Conversation systemPrompt propagation       | Log inspection                     | `base_prompt:212` confirms → **CONFIRMED** |
 
 **Rule:** Any hypothesis that cannot be falsified by observation is kept out of the shortlist.
 
@@ -113,27 +113,28 @@ chat.ts: `agent.getMemory().createWithId(id, undefined, ...)` ← FOUND IT
 
 Narrowing from broad to specific:
 
-| Scope | Investigation | Outcome |
-|-------|--------------|---------|
-| Inject pipeline (5 files, 1500+ LOC) | Too broad — start narrowing | — |
-| PromptComposer output | Produces 8796 chars correctly | ✓ Not here |
-| Agent constructor | `this.memory.create(config.systemPrompt)` sets rich prompt | ✓ Not here |
-| chat.ts message handler | `loadConversation` fails → fallback path | ⚠ Suspect |
-| chat.ts:313 (client-ID path) | `createWithId(id, undefined, ...)` | 🎯 **Root** |
-| chat.ts:290 (DB-restore path) | `dbData.conversation.systemPrompt ?? undefined` where DB value is NULL | 🎯 **Root** |
+| Scope                                | Investigation                                                          | Outcome     |
+| ------------------------------------ | ---------------------------------------------------------------------- | ----------- |
+| Inject pipeline (5 files, 1500+ LOC) | Too broad — start narrowing                                            | —           |
+| PromptComposer output                | Produces 8796 chars correctly                                          | ✓ Not here  |
+| Agent constructor                    | `this.memory.create(config.systemPrompt)` sets rich prompt             | ✓ Not here  |
+| chat.ts message handler              | `loadConversation` fails → fallback path                               | ⚠ Suspect   |
+| chat.ts:313 (client-ID path)         | `createWithId(id, undefined, ...)`                                     | 🎯 **Root** |
+| chat.ts:290 (DB-restore path)        | `dbData.conversation.systemPrompt ?? undefined` where DB value is NULL | 🎯 **Root** |
 
 **Rule:** The solution is rarely in the outermost layer. Bugs surface at the edge but originate at the core. Systematically descend.
 
 ### Step 5: Fix Design — 4 Options Evaluated
 
-| Option | Change | Risk | Backwards Compat | Selected |
-|--------|--------|------|------------------|----------|
-| A. Make `createWithId` signature require `systemPrompt` | Core package, 3 files | High (breaking) | ❌ Breaks existing callers | ✗ |
-| B. Add `getSystemPrompt()` method to Agent + call in chat.ts | Core + gateway, 2 files | Medium | ⚠ New API surface | ✗ |
-| C. Capture `agent.getConversation().systemPrompt` in chat.ts before any switching | Gateway, 1 file, 3 lines | **Low** | ✅ **100%** | **✓** |
-| D. Add fallback inside ContextInjection middleware | Gateway, 1 file | Medium | ⚠ Hides other bugs | ✗ |
+| Option                                                                            | Change                   | Risk            | Backwards Compat           | Selected |
+| --------------------------------------------------------------------------------- | ------------------------ | --------------- | -------------------------- | -------- |
+| A. Make `createWithId` signature require `systemPrompt`                           | Core package, 3 files    | High (breaking) | ❌ Breaks existing callers | ✗        |
+| B. Add `getSystemPrompt()` method to Agent + call in chat.ts                      | Core + gateway, 2 files  | Medium          | ⚠ New API surface          | ✗        |
+| C. Capture `agent.getConversation().systemPrompt` in chat.ts before any switching | Gateway, 1 file, 3 lines | **Low**         | ✅ **100%**                | **✓**    |
+| D. Add fallback inside ContextInjection middleware                                | Gateway, 1 file          | Medium          | ⚠ Hides other bugs         | ✗        |
 
 **Rationale for Option C:**
+
 - Smallest diff (3 lines)
 - Single-file, single-package
 - No API surface change
@@ -153,6 +154,7 @@ For Option C, the impact surface was verified:
 - ✓ DB-restored path: `dbData.conversation.systemPrompt || agentInitialPrompt` — existing non-null values take precedence
 
 **Edge cases considered:**
+
 - "What if old DB rows have a different legacy systemPrompt?" → Preserved via `||` short-circuit
 - "What if agent's initial prompt is also undefined?" → Would crash loudly, observable, not silent corruption
 
@@ -161,12 +163,15 @@ For Option C, the impact surface was verified:
 ### Step 7: Testing Strategy — Behavior, Not Implementation
 
 **Wrong test approach:**
+
 ```
 Assert: createWithId called with non-undefined 3rd argument
 ```
+
 This tests implementation detail. Refactor breaks the test falsely.
 
 **Right test approach:**
+
 ```
 Behavioral: New conversation + ask "Who are you?" → response contains "OwnPilot"
 Regression: Different conversationId, same provider → same OwnPilot identity
@@ -209,6 +214,7 @@ Behavioral fix: model identity remains OwnPilot across new conversations
 **Claim:** MiniMax M2.7 was trained on Anthropic-format data and naturally identifies as Claude.
 
 **Test:**
+
 ```bash
 curl https://api.minimax.io/v1/chat/completions \
   -H "Authorization: Bearer $KEY" \
@@ -224,6 +230,7 @@ curl https://api.minimax.io/v1/chat/completions \
 **Claim:** Cached agent instance has stale systemPrompt from previous provider.
 
 **Test:**
+
 ```bash
 docker restart ownpilot-app-*
 # Then send a message — cache is cold
@@ -248,6 +255,7 @@ docker restart ownpilot-app-*
 **Claim:** The rich 8796-char prompt exists in `agent.config.systemPrompt` but never reaches the conversation object.
 
 **Evidence:**
+
 - Log line `[Middleware:ContextInjection] base_prompt:212` proves the middleware sees only 212 chars
 - Code inspection of `chat.ts:290,313` shows `createWithId(id, undefined, ...)` — explicit `undefined`
 - DB inspection shows `conversations.system_prompt = NULL` for all rows
@@ -271,7 +279,7 @@ if (!loaded) {
     // Create conversation in agent memory with the ORIGINAL DB ID
     agent.getMemory().createWithId(
       dbData.conversation.id,
-      dbData.conversation.systemPrompt ?? undefined,  // ← BUG: NULL becomes undefined
+      dbData.conversation.systemPrompt ?? undefined, // ← BUG: NULL becomes undefined
       { restoredFromDb: true, restoredAt: new Date().toISOString() }
     );
     // Replay messages from DB into agent memory
@@ -286,12 +294,10 @@ if (!loaded) {
   }
   if (!loaded) {
     // Accept client-generated conversation IDs (multi-session pattern)
-    const source = body.conversationId.startsWith('sidebar-')
-      ? 'sidebar-chat'
-      : 'client-generated';
+    const source = body.conversationId.startsWith('sidebar-') ? 'sidebar-chat' : 'client-generated';
     agent.getMemory().createWithId(
       body.conversationId,
-      undefined,  // ← BUG: never passes agent's systemPrompt!
+      undefined, // ← BUG: never passes agent's systemPrompt!
       { source, createdAt: new Date().toISOString() }
     );
     loaded = agent.loadConversation(body.conversationId);
@@ -348,6 +354,7 @@ Used for API providers (OpenAI, Anthropic, MiniMax, etc.). No "You are NOT X" gu
 MiniMax M2.7 exposes an **Anthropic-compatible endpoint** (`api.minimax.io/anthropic/v1/messages`) — meaning MiniMax has been fine-tuned to mimic Claude's conversational style, including **identity responses**. When OwnPilot's BASE_SYSTEM_PROMPT fails to reach the model (our conversation propagation bug), MiniMax's "I'm Claude" default activates.
 
 **Upstream did not encounter this** because:
+
 1. The conversation propagation bug only manifests on fresh client-generated IDs (newer UI multi-session pattern)
 2. Upstream probably tested with OpenAI/Anthropic canonical providers, not Anthropic-compatible aggregators
 3. The bug is silent — no error, just degraded behavior
@@ -358,12 +365,12 @@ This is why upstream's `BASE_SYSTEM_PROMPT` doesn't have identity assertions: th
 
 ## Proposed Fix — 4 Options Evaluated
 
-| Option | Description | Files Changed | Risk | Backwards Compat | Status |
-|--------|-------------|---------------|------|-------------------|--------|
-| **A** | Make `createWithId` require `systemPrompt` parameter | `core/memory.ts` + all callers | 🔴 High | ❌ Breaking change | Rejected |
-| **B** | Add `Agent.getSystemPrompt()` method, use in chat.ts | `core/agent.ts` + `chat.ts` | 🟡 Medium | ⚠ New public API | Rejected |
-| **C** | Capture agent systemPrompt in chat.ts before conversation switching | `chat.ts` only, 3 lines | 🟢 Low | ✅ 100% | **SELECTED** |
-| **D** | Add fallback inside ContextInjection middleware | `context-injection.ts` | 🟡 Medium | ⚠ Hides other bugs | Rejected |
+| Option | Description                                                         | Files Changed                  | Risk      | Backwards Compat   | Status       |
+| ------ | ------------------------------------------------------------------- | ------------------------------ | --------- | ------------------ | ------------ |
+| **A**  | Make `createWithId` require `systemPrompt` parameter                | `core/memory.ts` + all callers | 🔴 High   | ❌ Breaking change | Rejected     |
+| **B**  | Add `Agent.getSystemPrompt()` method, use in chat.ts                | `core/agent.ts` + `chat.ts`    | 🟡 Medium | ⚠ New public API   | Rejected     |
+| **C**  | Capture agent systemPrompt in chat.ts before conversation switching | `chat.ts` only, 3 lines        | 🟢 Low    | ✅ 100%            | **SELECTED** |
+| **D**  | Add fallback inside ContextInjection middleware                     | `context-injection.ts`         | 🟡 Medium | ⚠ Hides other bugs | Rejected     |
 
 ### Selected Fix (Option C)
 
@@ -388,15 +395,17 @@ if (body.conversationId) {
       );
       // Replay messages (unchanged)
       for (const msg of dbData.messages) {
-        if (msg.role === 'user') agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
-        else if (msg.role === 'assistant') agent.getMemory().addAssistantMessage(dbData.conversation.id, msg.content);
+        if (msg.role === 'user')
+          agent.getMemory().addUserMessage(dbData.conversation.id, msg.content);
+        else if (msg.role === 'assistant')
+          agent.getMemory().addAssistantMessage(dbData.conversation.id, msg.content);
       }
       loaded = agent.loadConversation(body.conversationId);
     }
     if (!loaded) {
       agent.getMemory().createWithId(
         body.conversationId,
-        agentInitialPrompt,  // ← FIX: use agent's rich init prompt, not undefined
+        agentInitialPrompt, // ← FIX: use agent's rich init prompt, not undefined
         { source, createdAt: new Date().toISOString() }
       );
       loaded = agent.loadConversation(body.conversationId);
@@ -421,6 +430,7 @@ You are NOT Claude, ChatGPT, or Gemini. Regardless of your underlying model's tr
 ```
 
 **Why both fixes together:**
+
 - Fix 1 ensures the prompt reaches the model (delivery)
 - Fix 2 ensures the prompt contains sufficient identity assertion (content)
 - Separately, Fix 2 without Fix 1 is useless (the assertion never arrives)
@@ -431,10 +441,12 @@ You are NOT Claude, ChatGPT, or Gemini. Regardless of your underlying model's tr
 ## Blast Radius & Rollback
 
 ### What Changes
+
 - `chat.ts` — 3 lines (variable capture + 2 parameter replacements)
 - `agent-prompt.ts` — 1 new paragraph in `BASE_SYSTEM_PROMPT`
 
 ### What Doesn't Change
+
 - Core package (`@ownpilot/core`) — untouched
 - Memory class API — untouched
 - Agent class API — untouched
@@ -443,6 +455,7 @@ You are NOT Claude, ChatGPT, or Gemini. Regardless of your underlying model's tr
 - Other providers (Claude, GPT, Gemini) — improved (identity assertion strengthens their already-working behavior)
 
 ### Rollback
+
 ```bash
 git revert <commit-sha>   # Single commit, clean revert
 ```
@@ -508,6 +521,7 @@ done
 ### Identity Drift Regression Monitor
 
 Add to CI:
+
 ```bash
 # Fail CI if any provider returns non-OwnPilot identity on "Who are you?"
 npm run test:identity-assertion
@@ -522,6 +536,7 @@ npm run test:identity-assertion
 **Option:** Ship separately — first the propagation fix, then the identity assertion.
 
 **Rejected because:**
+
 - Fix 1 alone: the prompt now reaches the model, but it still doesn't have strong identity language. MiniMax might still drift.
 - Fix 2 alone: the assertion is in the prompt, but the prompt doesn't reach the model. Completely useless.
 - Bundled: one test pass validates both. Splitting creates a "Fix 1 only" state that is harder to test and still has drift risk.
@@ -531,6 +546,7 @@ npm run test:identity-assertion
 The INJECT_ARCHITECTURE_ANALYSIS.md document proposes model-specific base prompts (Layer 0 adaptation from OpenCode). This is **P2 (architectural)**, not P0. The current fix is P0 (bug fix).
 
 Doing P2 first would:
+
 - Require new directory structure (`packages/gateway/src/prompts/`)
 - Modify build process (copy prompts into Docker image)
 - Add tests for multiple prompt variants
@@ -541,12 +557,14 @@ P0 is "make it work." P2 is "make it better." Follow the order.
 ### Why Not Touch `stripInjectedSections`?
 
 Initial suspicion pointed here because the name suggests stripping content. After analysis:
+
 - `stripInjectedSections` correctly strips ONLY orchestrator-added sections (`## User Context (from memory)`, `## Active Goals`, etc.)
 - These sections are added by `buildEnhancedSystemPrompt` on each request and must be stripped to prevent accumulation
 - PromptComposer's output has different section headers and is NOT affected by `stripInjectedSections`
 - The real issue was upstream: the 8796-char content never reaches the middleware because `agent.getConversation().systemPrompt` is undefined when the conversation was created without it
 
 Modifying `stripInjectedSections` would either:
+
 - Break the accumulation-prevention logic (causes runaway prompt growth over time)
 - Do nothing (it's not the path where content is lost)
 
@@ -557,6 +575,7 @@ Fix must target `chat.ts` where `undefined` is passed.
 ## References
 
 ### Source Code (with line numbers as of commit `ba92372e`)
+
 - `packages/gateway/src/routes/chat.ts:275–322` — The buggy `loadConversation` fallback block
 - `packages/gateway/src/routes/chat.ts:313` — The primary bug (`createWithId(id, undefined, ...)`)
 - `packages/gateway/src/routes/chat.ts:290` — Secondary bug (`dbData.conversation.systemPrompt ?? undefined` when DB is NULL)
@@ -569,24 +588,28 @@ Fix must target `chat.ts` where `undefined` is passed.
 - `packages/core/src/agent/prompt-composer.ts` — PromptComposer that builds the 8796-char prompt
 
 ### DB Evidence
+
 - `conversations` table: all recent rows have `system_prompt = NULL` (queried on 2026-04-14)
 - `agents` table: default Personal Assistant has `system_prompt_length = 0` (empty string)
 
 ### Screenshots (embedded in repo)
+
 - `docs/screenshots/inject-bug/s1-minimax-404-error.png` — Claude identity response with 0 tools ("ext" count = 0)
 - `docs/screenshots/inject-bug/s2-ownpilot-identity-with-tools.png` — OwnPilot identity with tool awareness (via UUID provider path)
 - `docs/screenshots/inject-bug/s3-ownpilot-identity-text.png` — OwnPilot identity with date awareness (API test path)
 
 ### Related Documents
+
 - [AGENT_ECOSYSTEM.md](./AGENT_ECOSYSTEM.md) — Overview of all 6 agent concepts
 - [INJECT_ARCHITECTURE_ANALYSIS.md](./INJECT_ARCHITECTURE_ANALYSIS.md) — Full 9-layer OpenCode comparison and P0/P1/P2 roadmap
 - [AGENTS.md](./AGENTS.md) — Core Agent class reference
 - [AUTONOMOUS_AGENTS.md](./AUTONOMOUS_AGENTS.md) — Soul agent documentation
 
 ### Upstream PR
+
 - [ownpilot/OwnPilot#25](https://github.com/ownpilot/OwnPilot/pull/25) — MiniMax fix + agent ecosystem + inject analysis docs (this fix is follow-up)
 
 ---
 
-*Last updated: 2026-04-14*
-*Next action: Implementation handoff → see `.planning/HANDOFF-SUPER-ASSISTANT-INJECTION-FIX.md`*
+_Last updated: 2026-04-14_
+_Next action: Implementation handoff → see `.planning/HANDOFF-SUPER-ASSISTANT-INJECTION-FIX.md`_

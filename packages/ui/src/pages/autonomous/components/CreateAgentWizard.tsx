@@ -328,7 +328,8 @@ export function CreateAgentWizard({
           {step === 'identity' && (
             <>
               <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                Give your agent a name, role, and personality. This defines who it is and how it communicates.
+                Give your agent a name, role, and personality. This defines who it is and how it
+                communicates.
               </p>
               <div className="space-y-3">
                 <div className="grid grid-cols-4 gap-3">
@@ -461,9 +462,7 @@ export function CreateAgentWizard({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-text-muted dark:text-dark-text-muted">Type</span>
-                  <span className="text-text-primary dark:text-dark-text-primary">
-                    Soul Agent
-                  </span>
+                  <span className="text-text-primary dark:text-dark-text-primary">Soul Agent</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-text-muted dark:text-dark-text-muted">Name</span>
@@ -477,9 +476,7 @@ export function CreateAgentWizard({
                 </div>
                 {personality && (
                   <div>
-                    <span className="text-text-muted dark:text-dark-text-muted">
-                      Personality
-                    </span>
+                    <span className="text-text-muted dark:text-dark-text-muted">Personality</span>
                     <p className="text-text-primary dark:text-dark-text-primary mt-0.5 text-xs line-clamp-2">
                       {personality}
                     </p>
@@ -494,9 +491,7 @@ export function CreateAgentWizard({
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-text-muted dark:text-dark-text-muted">
-                    Provider/Model
-                  </span>
+                  <span className="text-text-muted dark:text-dark-text-muted">Provider/Model</span>
                   <span className="text-text-primary dark:text-dark-text-primary text-xs">
                     {templateProvider || 'default'}/{templateModel || 'default'}
                   </span>
@@ -576,10 +571,7 @@ export function CreateAgentWizard({
                   handleCreateSoul();
                 }
               }}
-              disabled={
-                isCreating ||
-                (step === 'identity' && !name.trim())
-              }
+              disabled={isCreating || (step === 'identity' && !name.trim())}
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors disabled:opacity-50"
             >
               {step === 'review' ? (

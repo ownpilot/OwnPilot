@@ -75,7 +75,9 @@ export function EmptyState({
     return (
       <div className={`flex flex-col items-center justify-center text-center ${sizes.container}`}>
         <Icon className={`${sizes.icon} ${iconColor} mb-3`} />
-        <h3 className={`${sizes.title} font-medium text-text-primary dark:text-dark-text-primary mb-1`}>
+        <h3
+          className={`${sizes.title} font-medium text-text-primary dark:text-dark-text-primary mb-1`}
+        >
           {title}
         </h3>
         {description && (
@@ -93,11 +95,15 @@ export function EmptyState({
         <div className={`${iconBgColor} rounded-2xl p-4 mb-4`}>
           <Icon className={`${sizes.icon} ${iconColor}`} />
         </div>
-        <h3 className={`${sizes.title} font-semibold text-text-primary dark:text-dark-text-primary mb-2 text-center`}>
+        <h3
+          className={`${sizes.title} font-semibold text-text-primary dark:text-dark-text-primary mb-2 text-center`}
+        >
           {title}
         </h3>
         {description && (
-          <p className={`${sizes.description} text-text-muted dark:text-dark-text-muted mb-6 text-center max-w-xs`}>
+          <p
+            className={`${sizes.description} text-text-muted dark:text-dark-text-muted mb-6 text-center max-w-xs`}
+          >
             {description}
           </p>
         )}
@@ -130,11 +136,15 @@ export function EmptyState({
       <div className={`${iconBgColor} rounded-2xl p-5 mb-5`}>
         <Icon className={`${sizes.icon} ${iconColor}`} />
       </div>
-      <h3 className={`${sizes.title} font-semibold text-text-primary dark:text-dark-text-primary mb-2`}>
+      <h3
+        className={`${sizes.title} font-semibold text-text-primary dark:text-dark-text-primary mb-2`}
+      >
         {title}
       </h3>
       {description && (
-        <p className={`${sizes.description} text-text-muted dark:text-dark-text-muted mb-6 max-w-sm`}>
+        <p
+          className={`${sizes.description} text-text-muted dark:text-dark-text-muted mb-6 max-w-sm`}
+        >
           {description}
         </p>
       )}

@@ -32,7 +32,7 @@ describe('claw execution context', () => {
     const ctx = makeCtx({ clawId: 'claw-await' });
     const seen = await runInClawContext(ctx, async () => {
       await Promise.resolve();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       return getClawContext();
     });
     expect(seen?.clawId).toBe('claw-await');
@@ -59,16 +59,12 @@ describe('claw execution context', () => {
   it('concurrent runInClawContext calls keep their own context — no cross-contamination', async () => {
     async function observe(label: string, delayMs: number): Promise<string | undefined> {
       return runInClawContext(makeCtx({ clawId: label }), async () => {
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
         return getClawContext()?.clawId;
       });
     }
 
-    const results = await Promise.all([
-      observe('a', 10),
-      observe('b', 5),
-      observe('c', 1),
-    ]);
+    const results = await Promise.all([observe('a', 10), observe('b', 5), observe('c', 1)]);
 
     expect(results).toEqual(['a', 'b', 'c']);
   });

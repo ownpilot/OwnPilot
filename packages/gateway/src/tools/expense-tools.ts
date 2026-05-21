@@ -38,7 +38,11 @@ export async function executeExpenseTool(
           notes: args.notes as string | undefined,
           source: 'manual',
         });
-        wsGateway.broadcast('data:changed', { entity: 'expense', action: 'created', id: expense.id });
+        wsGateway.broadcast('data:changed', {
+          entity: 'expense',
+          action: 'created',
+          id: expense.id,
+        });
         return { success: true, result: expense };
       }
 
@@ -140,7 +144,11 @@ export async function executeExpenseTool(
           notes: args.notes as string | undefined,
         });
         if (!updated) return { success: false, error: `Expense not found: ${expenseId}` };
-        wsGateway.broadcast('data:changed', { entity: 'expense', action: 'updated', id: expenseId });
+        wsGateway.broadcast('data:changed', {
+          entity: 'expense',
+          action: 'updated',
+          id: expenseId,
+        });
         return { success: true, result: updated };
       }
 
@@ -148,7 +156,11 @@ export async function executeExpenseTool(
         const expenseId = args.expenseId as string;
         const deleted = await repo.delete(expenseId);
         if (!deleted) return { success: false, error: `Expense not found: ${args.expenseId}` };
-        wsGateway.broadcast('data:changed', { entity: 'expense', action: 'deleted', id: expenseId });
+        wsGateway.broadcast('data:changed', {
+          entity: 'expense',
+          action: 'deleted',
+          id: expenseId,
+        });
         return { success: true, result: { message: 'Expense deleted.' } };
       }
 

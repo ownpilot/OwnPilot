@@ -66,9 +66,7 @@ export function AgentCard({ agent, onPause, onResume, onDelete, onTestRun }: Pro
       )}
       <div className="mt-2 flex items-center gap-2">
         <span
-          className={`text-xs px-2 py-0.5 rounded-full ${
-            'bg-primary/10 text-primary'
-          }`}
+          className={`text-xs px-2 py-0.5 rounded-full ${'bg-primary/10 text-primary'}`}
           title="Soul Agent: Has personality, scheduled heartbeats, and can learn from feedback"
         >
           Soul Agent

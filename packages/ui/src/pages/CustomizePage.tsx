@@ -1,13 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Pin,
-  Search,
-  LayoutDashboard,
-  Info,
-  ChevronRight,
-  FolderOpen,
-} from '../components/icons';
+import { Pin, Search, LayoutDashboard, Info, ChevronRight, FolderOpen } from '../components/icons';
 import { LocalFilesTab } from '../components/LocalFilesTab';
 import { navGroups, mainItems, bottomItems } from '../constants/nav-items';
 import type { NavGroup } from '../constants/nav-items';
@@ -38,7 +31,8 @@ const DISPLAY_SECTIONS: NavGroup[] = [
 ];
 
 export function CustomizePage() {
-  const { pinnedItems, setPinnedItems, isGroupPinned, toggleGroup, MAX_PINNED_ITEMS } = usePinnedItems();
+  const { pinnedItems, setPinnedItems, isGroupPinned, toggleGroup, MAX_PINNED_ITEMS } =
+    usePinnedItems();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +49,7 @@ export function CustomizePage() {
       items: section.items.filter(
         (item) =>
           item.label.toLowerCase().includes(normalizedQuery) ||
-          (NAV_DESCRIPTIONS[item.to] ?? '').toLowerCase().includes(normalizedQuery),
+          (NAV_DESCRIPTIONS[item.to] ?? '').toLowerCase().includes(normalizedQuery)
       ),
     })).filter((section) => section.items.length > 0);
   }, [normalizedQuery]);
@@ -67,9 +61,7 @@ export function CustomizePage() {
       toast.warning(`Pin limit reached \u2014 max ${MAX_PINNED_ITEMS} items`);
       return;
     }
-    setPinnedItems((prev) =>
-      isPinned ? prev.filter((p) => p !== path) : [...prev, path],
-    );
+    setPinnedItems((prev) => (isPinned ? prev.filter((p) => p !== path) : [...prev, path]));
   };
 
   return (
@@ -162,7 +154,14 @@ export function CustomizePage() {
                             ? 'opacity-100 text-primary bg-primary/10 border-primary/30'
                             : 'opacity-0 group-hover:opacity-50 hover:!opacity-100 text-text-muted dark:text-dark-text-muted border-transparent hover:border-primary hover:text-primary hover:bg-primary/10'
                         }`}
-                        onClick={(e) => { e.stopPropagation(); toggleGroup(section.id, section.label, section.items.map((i) => i.to)); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleGroup(
+                            section.id,
+                            section.label,
+                            section.items.map((i) => i.to)
+                          );
+                        }}
                         title={isGroupPinned(section.id) ? 'Unpin from sidebar' : 'Pin to sidebar'}
                         aria-label={`${isGroupPinned(section.id) ? 'Unpin' : 'Pin'} ${section.label} to sidebar`}
                       >
@@ -177,7 +176,9 @@ export function CustomizePage() {
                     {groupOpen &&
                       section.items.map((item) => {
                         const isPinned = pinnedItems.includes(item.to);
-                        const isActive = location.pathname === item.to || (item.to === '/' && location.pathname === '/');
+                        const isActive =
+                          location.pathname === item.to ||
+                          (item.to === '/' && location.pathname === '/');
                         const Icon = item.icon;
                         return (
                           <div
@@ -190,8 +191,12 @@ export function CustomizePage() {
                             onClick={() => navigate(item.to)}
                             data-testid={`customize-item-${item.to.replace(/\//g, '-').replace(/^-/, '')}`}
                           >
-                            <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary dark:text-dark-text-secondary'}`} />
-                            <span className={`flex-1 text-base truncate ${isActive ? 'text-primary font-medium' : 'text-text-primary dark:text-dark-text-primary'}`}>
+                            <Icon
+                              className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-primary' : 'text-text-secondary dark:text-dark-text-secondary'}`}
+                            />
+                            <span
+                              className={`flex-1 text-base truncate ${isActive ? 'text-primary font-medium' : 'text-text-primary dark:text-dark-text-primary'}`}
+                            >
                               {item.label}
                             </span>
                             {/* Sidebar pin */}
@@ -223,9 +228,7 @@ export function CustomizePage() {
       )}
 
       {/* Local Files tab */}
-      {activeTab === 'local-files' && (
-        <LocalFilesTab onSelectItem={(path) => navigate(path)} />
-      )}
+      {activeTab === 'local-files' && <LocalFilesTab onSelectItem={(path) => navigate(path)} />}
 
       {/* Pin counter footer */}
       <div
@@ -235,9 +238,7 @@ export function CustomizePage() {
         <Pin className="w-3 h-3 inline-block mr-1 -mt-0.5" />
         <span
           className={
-            pinnedItems.length >= MAX_PINNED_ITEMS
-              ? 'text-error font-semibold'
-              : 'font-semibold'
+            pinnedItems.length >= MAX_PINNED_ITEMS ? 'text-error font-semibold' : 'font-semibold'
           }
         >
           {pinnedItems.length}

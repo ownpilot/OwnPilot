@@ -174,10 +174,14 @@ describe('ChannelSessionsRepository', () => {
       expect(sql).toContain('INSERT INTO channel_sessions');
       expect(sql).toContain('ON CONFLICT');
       expect(sql).toContain('RETURNING *');
-      expect(mockAdapter.queryOne).toHaveBeenCalledWith(
-        expect.any(String),
-        ['generated-uuid', 'cu-1', 'cp-1', 'chat-1', null, '{}']
-      );
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.any(String), [
+        'generated-uuid',
+        'cu-1',
+        'cp-1',
+        'chat-1',
+        null,
+        '{}',
+      ]);
       expect(result.id).toBe('generated-uuid');
       expect(result.channelUserId).toBe('cu-1');
     });

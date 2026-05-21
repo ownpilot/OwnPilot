@@ -39,8 +39,13 @@ export function usePinnedItems() {
   const sections = getSidebarSections();
   // "Pinned" items = nav item path sections + data sections that were added via pin
   const pinnedItems = sections
-    .filter((s) => isNavItemSection(s.id) || ROUTE_TO_DATA_SECTION.has('/' + s.id) || ROUTE_TO_DATA_SECTION.has(s.id))
-    .map((s) => isNavItemSection(s.id) ? s.id : SIDEBAR_DATA_SECTIONS[s.id]?.route ?? s.id);
+    .filter(
+      (s) =>
+        isNavItemSection(s.id) ||
+        ROUTE_TO_DATA_SECTION.has('/' + s.id) ||
+        ROUTE_TO_DATA_SECTION.has(s.id)
+    )
+    .map((s) => (isNavItemSection(s.id) ? s.id : (SIDEBAR_DATA_SECTIONS[s.id]?.route ?? s.id)));
 
   return {
     pinnedConfigs: pinnedItems.map((path) => ({ type: 'item' as const, path })),
@@ -49,14 +54,24 @@ export function usePinnedItems() {
       const current = pinnedItems;
       const next = typeof updater === 'function' ? updater(current) : updater;
       // Remove items no longer in list
-      current.filter((p) => !next.includes(p)).forEach((p) => removeSidebarSection(resolveToSectionId(p)));
+      current
+        .filter((p) => !next.includes(p))
+        .forEach((p) => removeSidebarSection(resolveToSectionId(p)));
       // Add new items — resolve to data section ID if possible
-      next.filter((p) => !current.includes(p)).forEach((p) => addSidebarSection(resolveToSectionId(p)));
+      next
+        .filter((p) => !current.includes(p))
+        .forEach((p) => addSidebarSection(resolveToSectionId(p)));
     },
-    setPinnedConfigs: () => { /* no-op */ },
-    addGroup: (_id: string, _label: string, _items: string[]) => { /* groups deprecated */ },
+    setPinnedConfigs: () => {
+      /* no-op */
+    },
+    addGroup: (_id: string, _label: string, _items: string[]) => {
+      /* groups deprecated */
+    },
     isGroupPinned: (_groupId: string) => false,
-    toggleGroup: (_id: string, _label: string, _items: string[]) => { /* groups deprecated */ },
+    toggleGroup: (_id: string, _label: string, _items: string[]) => {
+      /* groups deprecated */
+    },
     MAX_PINNED_ITEMS: 15,
   };
 }

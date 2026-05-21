@@ -49,7 +49,9 @@ export interface DeviceSeparator {
 
 export type EdgeDeviceEntry = MachineDevice | IoTDevice | DeviceSeparator;
 
-function isSeparator(entry: BookmarkEntry | EdgeDeviceEntry): entry is BookmarkSeparator | DeviceSeparator {
+function isSeparator(
+  entry: BookmarkEntry | EdgeDeviceEntry
+): entry is BookmarkSeparator | DeviceSeparator {
   return 'type' in entry && entry.type === 'separator';
 }
 export { isSeparator };
@@ -71,7 +73,12 @@ const FILE_BOOKMARKS: BookmarkEntry[] = [
   { id: 'pictures', label: 'Pictures', icon: '\uD83D\uDDBC\uFE0F', path: '/home/user/Pictures' },
   { id: 'music', label: 'Music', icon: '\uD83C\uDFB5', path: '/home/user/Music' },
   { id: 'videos', label: 'Videos', icon: '\uD83C\uDFAC', path: '/home/user/Videos' },
-  { id: 'screenshots', label: 'Screenshots', icon: '\uD83D\uDCF8', path: '/home/user/Pictures/Screenshots' },
+  {
+    id: 'screenshots',
+    label: 'Screenshots',
+    icon: '\uD83D\uDCF8',
+    path: '/home/user/Pictures/Screenshots',
+  },
   { id: 'projects', label: 'projects', icon: '\uD83D\uDCBB', path: '/home/user/projects' },
   { id: 'sep-custom', type: 'separator' },
   // Dev/work dirs
@@ -102,7 +109,12 @@ export const EDGE_DEVICES: EdgeDeviceEntry[] = [
     type: 'machine',
     bookmarks: [
       { id: 'linux-home', label: 'Home', icon: '\uD83C\uDFE0', path: '/home/user' },
-      { id: 'linux-projects', label: 'projects', icon: '\uD83D\uDCBB', path: '/home/user/projects' },
+      {
+        id: 'linux-projects',
+        label: 'projects',
+        icon: '\uD83D\uDCBB',
+        path: '/home/user/projects',
+      },
       { id: 'linux-docs', label: 'Documents', icon: '\uD83D\uDCC1', path: '/home/user/Documents' },
     ],
   },
@@ -115,8 +127,18 @@ export const EDGE_DEVICES: EdgeDeviceEntry[] = [
     type: 'machine',
     bookmarks: [
       { id: 'win-home', label: 'Home', icon: '\uD83C\uDFE0', path: 'C:/Users/user' },
-      { id: 'win-downloads', label: 'Downloads', icon: '\uD83D\uDCE5', path: 'C:/Users/user/Downloads' },
-      { id: 'win-desktop', label: 'Desktop', icon: '\uD83D\uDDA5\uFE0F', path: 'C:/Users/user/Desktop' },
+      {
+        id: 'win-downloads',
+        label: 'Downloads',
+        icon: '\uD83D\uDCE5',
+        path: 'C:/Users/user/Downloads',
+      },
+      {
+        id: 'win-desktop',
+        label: 'Desktop',
+        icon: '\uD83D\uDDA5\uFE0F',
+        path: 'C:/Users/user/Desktop',
+      },
     ],
   },
   { id: 'sep-iot', type: 'separator' },

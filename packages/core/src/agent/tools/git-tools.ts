@@ -38,7 +38,9 @@ function validateGitRef(ref: string, name: string): string {
 // them from being interpreted as git flags when passed as positional args.
 function validateGitFile(file: string, name: string): string {
   if (file.startsWith('-')) {
-    throw new Error(`${name} cannot start with '-' (got: ${file}). Use './${file}' to refer to files starting with dash.`);
+    throw new Error(
+      `${name} cannot start with '-' (got: ${file}). Use './${file}' to refer to files starting with dash.`
+    );
   }
   return file;
 }
@@ -615,7 +617,10 @@ export const gitBranchExecutor: ToolExecutor = async (
         if (!name || !newName) {
           return { content: { error: 'Both name and newName required' }, isError: true };
         }
-        await gitExec(['branch', '-m', validateGitRef(name, 'name'), validateGitRef(newName, 'newName')], repoPath);
+        await gitExec(
+          ['branch', '-m', validateGitRef(name, 'name'), validateGitRef(newName, 'newName')],
+          repoPath
+        );
         result = { success: true, renamed: { from: name, to: newName } };
         break;
       }

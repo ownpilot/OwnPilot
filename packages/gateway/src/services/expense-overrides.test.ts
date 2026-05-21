@@ -90,7 +90,10 @@ describe('registerExpenseOverrides', () => {
 
   it('forwards tool name, args, and userId to executeExpenseTool; serializes success', async () => {
     const registry = makeFakeRegistry(['add_expense']);
-    mockExecuteExpenseTool.mockResolvedValue({ success: true, result: { id: 'exp-1', amount: 12 } });
+    mockExecuteExpenseTool.mockResolvedValue({
+      success: true,
+      result: { id: 'exp-1', amount: 12 },
+    });
 
     registerExpenseOverrides(registry as never, 'user-42');
     const handler = registry.handlers.get('add_expense')!;

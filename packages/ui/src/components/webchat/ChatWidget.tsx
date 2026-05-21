@@ -20,7 +20,10 @@ interface ChatMessage {
 }
 
 // Error boundary for widget rendering
-class WidgetErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+class WidgetErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
   state = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error) {
@@ -78,7 +81,9 @@ export function ChatWidget() {
       }
     `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   // Status helper
@@ -153,66 +158,68 @@ export function ChatWidget() {
           }
 
           if (msg.type === 'webchat:typing') {
-          const data = msg.data;
-          if (data.sessionId && data.sessionId !== sessionId.current) return;
-          setIsTyping(data.typing ?? true);
+            const data = msg.data;
+            if (data.sessionId && data.sessionId !== sessionId.current) return;
+            setIsTyping(data.typing ?? true);
+          }
+        } catch {
+          // ignore non-JSON messages
         }
+      };
+
+      ws.onclose = () => {
+        setStatus('disconnected');
+        wsRef.current = null;
+
+        if (reconnectAttempt.current < RECONNECT_DELAYS.length) {
+          const delay = RECONNECT_DELAYS[reconnectAttempt.current];
+          reconnectAttempt.current++;
+          setStatus('reconnecting');
+          reconnectTimer.current = setTimeout(connect, delay);
+        }
+      };
+
+      ws.onerror = () => {
+        // Error triggers onclose, so handle there
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Parse widget tags from message text
+  const parseWidgets = (
+    text: string
+  ): Array<{ id: string; name: string; data: unknown }> | undefined => {
+    const widgetRegex = /<widget\s+name=["']([^"']+)["']\s+data=(["'])(.*?)\2\s*\/>/g;
+    const widgets: Array<{ id: string; name: string; data: unknown }> = [];
+    let match;
+
+    while ((match = widgetRegex.exec(text)) !== null) {
+      const name = match[1];
+      const dataStr = match[3];
+      if (!name || dataStr === undefined) continue;
+
+      try {
+        const data = JSON.parse(dataStr);
+        widgets.push({ id: crypto.randomUUID(), name, data });
       } catch {
-        // ignore non-JSON messages
+        // Skip malformed widget
       }
-    };
+    }
 
-    ws.onclose = () => {
-      setStatus('disconnected');
-      wsRef.current = null;
-
-      if (reconnectAttempt.current < RECONNECT_DELAYS.length) {
-        const delay = RECONNECT_DELAYS[reconnectAttempt.current];
-        reconnectAttempt.current++;
-        setStatus('reconnecting');
-        reconnectTimer.current = setTimeout(connect, delay);
-      }
-    };
-
-    ws.onerror = () => {
-      // Error triggers onclose, so handle there
-    };
+    return widgets.length > 0 ? widgets : undefined;
   };
 
-  connect();
-
-  return () => {
-    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-  };
-}, [isOpen]);
-
-// Parse widget tags from message text
-const parseWidgets = (text: string): Array<{ id: string; name: string; data: unknown }> | undefined => {
-  const widgetRegex = /<widget\s+name=["']([^"']+)["']\s+data=(["'])(.*?)\2\s*\/>/g;
-  const widgets: Array<{ id: string; name: string; data: unknown }> = [];
-  let match;
-
-  while ((match = widgetRegex.exec(text)) !== null) {
-    const name = match[1];
-    const dataStr = match[3];
-    if (!name || dataStr === undefined) continue;
-
-    try {
-      const data = JSON.parse(dataStr);
-      widgets.push({ id: crypto.randomUUID(), name, data });
-    } catch {
-      // Skip malformed widget
-    }
-  }
-
-  return widgets.length > 0 ? widgets : undefined;
-};
-
-const sendMessage = useCallback(() => {
+  const sendMessage = useCallback(() => {
     const text = input.trim();
     if (!text || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
@@ -286,21 +293,26 @@ const sendMessage = useCallback(() => {
   }
 
   // Expanded chat panel
-  const lastUserMessage = messages.filter(m => m.sender === 'user').pop();
-  const waitingForResponse = isTyping || (lastUserMessage && !messages.find(m => m.sender === 'assistant' && m.timestamp > lastUserMessage.timestamp));
+  const lastUserMessage = messages.filter((m) => m.sender === 'user').pop();
+  const waitingForResponse =
+    isTyping ||
+    (lastUserMessage &&
+      !messages.find((m) => m.sender === 'assistant' && m.timestamp > lastUserMessage.timestamp));
 
   return (
     <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden">
       {/* Header */}
-      <div className={`flex items-center justify-between px-4 py-3 rounded-t-2xl transition-colors ${
-        waitingForResponse ? 'bg-amber-500' : 'bg-primary'
-      }`}>
+      <div
+        className={`flex items-center justify-between px-4 py-3 rounded-t-2xl transition-colors ${
+          waitingForResponse ? 'bg-amber-500' : 'bg-primary'
+        }`}
+      >
         <div className="flex items-center gap-2">
           {waitingForResponse ? (
             // Processing animation — Knight Rider / KITT scanner
             <div className="flex items-center gap-1">
               <div className="flex gap-0.5">
-                {[0, 1, 2, 3, 4, 5].map(i => (
+                {[0, 1, 2, 3, 4, 5].map((i) => (
                   <span
                     key={i}
                     className="w-1.5 h-4 bg-black/30 rounded-sm"
@@ -330,12 +342,17 @@ const sendMessage = useCallback(() => {
                 />
               </svg>
               <span className="font-medium text-sm">OwnPilot Chat</span>
-              <span className={`w-2 h-2 rounded-full ${
-                status === 'connected' ? 'bg-green-400' :
-                status === 'reconnecting' ? 'bg-yellow-400 animate-pulse' :
-                status === 'connecting' ? 'bg-yellow-400' :
-                'bg-red-400'
-              }`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  status === 'connected'
+                    ? 'bg-green-400'
+                    : status === 'reconnecting'
+                      ? 'bg-yellow-400 animate-pulse'
+                      : status === 'connecting'
+                        ? 'bg-yellow-400'
+                        : 'bg-red-400'
+                }`}
+              />
               {status === 'reconnecting' && (
                 <span className="text-xs text-white/70">Reconnecting...</span>
               )}
@@ -449,10 +466,13 @@ const sendMessage = useCallback(() => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              status === 'connected' ? 'Type a message...' :
-              status === 'reconnecting' ? 'Reconnecting...' :
-              status === 'connecting' ? 'Connecting...' :
-              'Disconnected'
+              status === 'connected'
+                ? 'Type a message...'
+                : status === 'reconnecting'
+                  ? 'Reconnecting...'
+                  : status === 'connecting'
+                    ? 'Connecting...'
+                    : 'Disconnected'
             }
             disabled={!isConnected}
             className="flex-1 px-3 py-2 text-sm rounded-xl border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary placeholder:text-text-muted dark:placeholder:text-dark-text-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
