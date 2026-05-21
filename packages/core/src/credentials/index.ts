@@ -530,12 +530,24 @@ export class UserCredentialStore {
 
 /**
  * Per-request credential context
- * Provides isolated credential access for a specific user/request
+ * Provides isolated credential access for a specific user/request.
+ *
+ * The cache stores DECRYPTED plaintext, so it must not live forever in
+ * long-lived services (background workers, heartbeats, daemons). Entries
+ * expire after {@link CACHE_TTL_MS}; callers should still invoke {@link clear}
+ * at the end of a request when they can.
  */
+const CACHE_TTL_MS = 5 * 60_000;
+
+interface CacheEntry {
+  credential: Credential;
+  expiresAt: number;
+}
+
 export class CredentialContext {
   private readonly store: UserCredentialStore;
   private readonly userId: string;
-  private readonly cache = new Map<CredentialProvider, Credential>();
+  private readonly cache = new Map<CredentialProvider, CacheEntry>();
 
   constructor(store: UserCredentialStore, userId: string) {
     this.store = store;
@@ -546,15 +558,18 @@ export class CredentialContext {
    * Get a credential (with caching)
    */
   async get(provider: CredentialProvider): Promise<Credential | null> {
-    // Check cache first
-    if (this.cache.has(provider)) {
-      return this.cache.get(provider)!;
+    const entry = this.cache.get(provider);
+    if (entry && entry.expiresAt > Date.now()) {
+      return entry.credential;
+    }
+    if (entry) {
+      // Expired — drop it so a memory dump can't read stale plaintext.
+      this.cache.delete(provider);
     }
 
-    // Fetch from store
     const credential = await this.store.get(this.userId, provider);
     if (credential) {
-      this.cache.set(provider, credential);
+      this.cache.set(provider, { credential, expiresAt: Date.now() + CACHE_TTL_MS });
     }
 
     return credential;
@@ -572,7 +587,9 @@ export class CredentialContext {
    * Check if credential exists
    */
   async has(provider: CredentialProvider): Promise<boolean> {
-    return this.cache.has(provider) || (await this.store.exists(this.userId, provider));
+    const entry = this.cache.get(provider);
+    if (entry && entry.expiresAt > Date.now()) return true;
+    return this.store.exists(this.userId, provider);
   }
 
   /**
@@ -595,11 +612,31 @@ export class CredentialContext {
 // =============================================================================
 
 /**
- * Create a credential store with in-memory backend (development only)
+ * Create a credential store with in-memory backend (development only).
+ *
+ * Encryption-key resolution order:
+ *   1. Explicit `encryptionKey` argument.
+ *   2. `CREDENTIAL_ENCRYPTION_KEY` environment variable.
+ *   3. Random fallback — ONLY in test runs (`NODE_ENV === 'test'`) and only
+ *      after logging a loud warning. In production this would silently
+ *      ditch all persisted credentials on restart, so we refuse instead.
  */
 export function createInMemoryCredentialStore(encryptionKey?: string): UserCredentialStore {
-  const key =
-    encryptionKey ?? process.env.CREDENTIAL_ENCRYPTION_KEY ?? randomBytes(32).toString('hex');
+  let key = encryptionKey ?? process.env.CREDENTIAL_ENCRYPTION_KEY;
+
+  if (!key) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'createInMemoryCredentialStore: no encryption key. Pass `encryptionKey` or set ' +
+          'CREDENTIAL_ENCRYPTION_KEY. A random fallback would discard all credentials on restart.'
+      );
+    }
+    log.warn(
+      'createInMemoryCredentialStore: no encryption key configured; using a random key. ' +
+        'Set CREDENTIAL_ENCRYPTION_KEY to make credentials survive restarts.'
+    );
+    key = randomBytes(32).toString('hex');
+  }
 
   return new UserCredentialStore({
     encryptionKey: key,

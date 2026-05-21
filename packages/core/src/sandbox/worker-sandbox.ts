@@ -123,6 +123,19 @@ export class WorkerSandbox {
   private currentResolve: ((value: ExecutionResult) => void) | null = null;
   private currentReject: ((error: Error) => void) | null = null;
   private executionTimeout: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Synchronous concurrency gate. The worker is single-threaded and
+   * `currentResolve`/`currentReject`/`executionTimeout` are singleton slots,
+   * so two concurrent `execute()` calls used to race past the `state !== 'idle'`
+   * check (both reached it after the lazy-init `await` while state was still
+   * idle) and the second overwrote the first's resolver — hanging the first
+   * caller's promise forever. The flag + queue below serializes contended
+   * calls. An uncontended call runs inline so callers still see the
+   * synchronous `worker.postMessage` side-effect that the rest of the codebase
+   * (and tests) depend on.
+   */
+  private executionPending = false;
+  private readonly executionQueue: Array<() => void> = [];
 
   constructor(config: SandboxConfig) {
     this.config = {
@@ -327,11 +340,33 @@ export class WorkerSandbox {
   }
 
   /**
-   * Execute code in the worker sandbox
+   * Execute code in the worker sandbox.
+   *
+   * Uncontended calls run inline so the synchronous `worker.postMessage`
+   * side-effect inside the inner Promise constructor still fires before
+   * `execute()` returns its Promise to the caller. Contended calls queue
+   * behind the in-flight execution and run after it completes.
    */
   async execute<T = unknown>(
     code: string,
     data?: unknown
+  ): Promise<Result<ExecutionResult<T>, PluginError | ValidationError | TimeoutError>> {
+    if (this.executionPending) {
+      await new Promise<void>((resolve) => this.executionQueue.push(resolve));
+    }
+    this.executionPending = true;
+    try {
+      return await this.executeOnce<T>(code, data);
+    } finally {
+      this.executionPending = false;
+      const next = this.executionQueue.shift();
+      next?.();
+    }
+  }
+
+  private async executeOnce<T>(
+    code: string,
+    data: unknown
   ): Promise<Result<ExecutionResult<T>, PluginError | ValidationError | TimeoutError>> {
     // Validate code
     const validation = validateCode(code);

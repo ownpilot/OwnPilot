@@ -12,6 +12,33 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock DNS resolution for PluginIsolatedNetwork's SSRF check. The real fetch
+// is already mocked via globalThis.fetch in each test; we just need the
+// network module's pre-fetch DNS lookup to return public addresses for the
+// test hostnames so the SSRF guard doesn't fail-closed in offline CI.
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async (hostname: string) => {
+    // Treat anything ending in .example.com or .github.com as a public host.
+    if (
+      hostname.endsWith('.example.com') ||
+      hostname === 'example.com' ||
+      hostname.endsWith('.github.com') ||
+      hostname === 'github.com' ||
+      hostname.endsWith('.public.test')
+    ) {
+      return [{ address: '93.184.216.34', family: 4 }];
+    }
+    if (hostname === '127.0.0.1' || hostname === 'localhost') {
+      return [{ address: '127.0.0.1', family: 4 }];
+    }
+    // Unknown — treat as resolvable to a public address to keep legacy tests
+    // working; the SSRF guard's literal-IP check still catches the obvious
+    // private cases.
+    return [{ address: '8.8.8.8', family: 4 }];
+  }),
+}));
+
 import {
   IsolationEnforcer,
   PluginIsolatedStorage,

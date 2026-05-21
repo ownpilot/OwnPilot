@@ -260,6 +260,7 @@ export class SecurePluginRuntime extends EventEmitter {
   private readonly pendingCalls: Map<
     string,
     {
+      pluginId: string;
       resolve: (value: unknown) => void;
       reject: (error: Error) => void;
       timeout: ReturnType<typeof setTimeout>;
@@ -589,6 +590,7 @@ export class SecurePluginRuntime extends EventEmitter {
       }, timeout);
 
       this.pendingCalls.set(callId, {
+        pluginId,
         resolve: (result) => {
           clearTimeout(timeoutHandle);
           this.pendingCalls.delete(callId);
@@ -829,8 +831,11 @@ export class SecurePluginRuntime extends EventEmitter {
             reason: `Worker exited with code ${code}`,
           });
         }
-        // Reject all pending calls for this plugin so callers don't hang
+        // Reject ONLY pending calls that belong to the exiting plugin's worker.
+        // The original code iterated the whole map and rejected every entry —
+        // so one plugin's exit kicked back every other plugin's in-flight call.
         for (const [callId, pending] of this.pendingCalls.entries()) {
+          if (pending.pluginId !== instance.manifest.id) continue;
           pending.reject(new Error(`Plugin worker exited with code ${code}`));
           this.pendingCalls.delete(callId);
         }

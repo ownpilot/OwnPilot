@@ -3,6 +3,8 @@
  * size limits, and bounded redirect handling.
  */
 
+import { lookup } from 'node:dns/promises';
+
 import type { PluginId } from '../../types/branded.js';
 import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
@@ -79,7 +81,7 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
       return err({ type: 'protocol_not_allowed', protocol: parsedUrl.protocol });
     }
 
-    if (isPrivateHostname(parsedUrl.hostname)) {
+    if (await isPrivateAddressAsync(parsedUrl.hostname)) {
       return err({ type: 'private_address_blocked', host: parsedUrl.hostname });
     }
 
@@ -148,7 +150,7 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
           if (!isHttpProtocol(currentUrl)) {
             return err({ type: 'protocol_not_allowed', protocol: currentUrl.protocol });
           }
-          if (isPrivateHostname(currentUrl.hostname)) {
+          if (await isPrivateAddressAsync(currentUrl.hostname)) {
             return err({ type: 'private_address_blocked', host: currentUrl.hostname });
           }
           if (!this.isDomainAllowed(currentUrl.hostname)) {
@@ -236,6 +238,13 @@ function isHttpProtocol(url: URL): boolean {
   return url.protocol === 'http:' || url.protocol === 'https:';
 }
 
+/**
+ * Synchronous check for hostnames that are obviously private (literal IPs or
+ * known reserved names). This is the fast path; {@link isPrivateAddressAsync}
+ * is the authoritative check because it resolves DNS — without that, a
+ * hostname like `evil.com` whose A record points at `169.254.169.254`
+ * (cloud metadata endpoint) sails right past this function.
+ */
 function isPrivateHostname(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
 
@@ -243,6 +252,14 @@ function isPrivateHostname(hostname: string): boolean {
   if (host === '0.0.0.0' || host === '::' || host === '::1') return true;
   if (host.startsWith('fe80:') || host.startsWith('fc') || host.startsWith('fd')) return true;
 
+  // IPv4-mapped IPv6: `::ffff:a.b.c.d` reaches the same v4 address.
+  const v4mapped = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (v4mapped) return isPrivateIpv4(v4mapped[1]!);
+
+  return isPrivateIpv4(host);
+}
+
+function isPrivateIpv4(host: string): boolean {
   const parts = host.split('.').map((part) => Number(part));
   if (
     parts.length !== 4 ||
@@ -258,6 +275,43 @@ function isPrivateHostname(hostname: string): boolean {
     a === 0 ||
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
+    (a === 192 && b === 168) ||
+    // CGNAT — 100.64.0.0/10
+    (a === 100 && b >= 64 && b <= 127)
   );
+}
+
+/**
+ * Resolve `hostname` to all A/AAAA records and reject if any address is
+ * private. Without this, `evil.com -> 169.254.169.254` would pass the
+ * literal-IP-only static check and reach the cloud metadata endpoint.
+ * Results are cached briefly to keep redirect loops cheap, and DNS
+ * failures fail-closed.
+ */
+const dnsBlockCache = new Map<string, { blocked: boolean; expiresAt: number }>();
+const DNS_CACHE_TTL_MS = 60_000;
+
+async function isPrivateAddressAsync(hostname: string): Promise<boolean> {
+  const host = hostname.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+
+  if (isPrivateHostname(host)) return true;
+
+  const now = Date.now();
+  const cached = dnsBlockCache.get(host);
+  if (cached && cached.expiresAt > now) return cached.blocked;
+
+  try {
+    const addrs = await lookup(host, { all: true });
+    for (const a of addrs) {
+      if (isPrivateHostname(a.address)) {
+        dnsBlockCache.set(host, { blocked: true, expiresAt: now + DNS_CACHE_TTL_MS });
+        return true;
+      }
+    }
+  } catch {
+    return true;
+  }
+
+  dnsBlockCache.set(host, { blocked: false, expiresAt: now + DNS_CACHE_TTL_MS });
+  return false;
 }
