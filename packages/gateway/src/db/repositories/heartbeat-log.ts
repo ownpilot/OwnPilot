@@ -228,6 +228,56 @@ export class HeartbeatLogRepository extends BaseRepository {
   }
 
   /**
+   * Batch-aggregate stats for each agent ID. Single GROUP BY instead of one
+   * SELECT per agent. Agents with no heartbeat rows are absent from the Map;
+   * callers should treat absence as zero stats.
+   */
+  async getStatsByAgentIds(
+    agentIds: string[]
+  ): Promise<
+    Map<
+      string,
+      { totalCycles: number; totalCost: number; avgDurationMs: number; failureRate: number }
+    >
+  > {
+    if (agentIds.length === 0) return new Map();
+    const placeholders = agentIds.map((_, i) => `$${i + 1}`).join(', ');
+    const rows = await this.query<{
+      agent_id: string;
+      total_cycles: string;
+      total_cost: string;
+      avg_duration: string;
+      failure_count: string;
+    }>(
+      `SELECT
+         agent_id,
+         COUNT(*) AS total_cycles,
+         COALESCE(SUM(cost), 0) AS total_cost,
+         COALESCE(AVG(duration_ms), 0) AS avg_duration,
+         COUNT(*) FILTER (WHERE jsonb_array_length(tasks_failed) > 0) AS failure_count
+       FROM heartbeat_log
+       WHERE agent_id IN (${placeholders})
+       GROUP BY agent_id`,
+      agentIds
+    );
+    const result = new Map<
+      string,
+      { totalCycles: number; totalCost: number; avgDurationMs: number; failureRate: number }
+    >();
+    for (const row of rows) {
+      const totalCycles = parseInt(row.total_cycles, 10);
+      const failureCount = parseInt(row.failure_count, 10);
+      result.set(row.agent_id, {
+        totalCycles,
+        totalCost: parseFloat(row.total_cost),
+        avgDurationMs: parseFloat(row.avg_duration),
+        failureRate: totalCycles > 0 ? failureCount / totalCycles : 0,
+      });
+    }
+    return result;
+  }
+
+  /**
    * Delete heartbeat log entries older than maxAgeDays.
    * For gap 24.3 retention enforcement.
    */

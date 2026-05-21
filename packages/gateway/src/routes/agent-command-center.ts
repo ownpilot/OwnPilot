@@ -1013,8 +1013,11 @@ agentCommandCenterRoutes.get('/analytics', async (c) => {
       status: string;
     }[] = [];
 
+    // Batch the per-soul stats into a single GROUP BY query (was N+1).
+    const statsByAgent = await hbRepo.getStatsByAgentIds(souls.map((s) => s.agentId));
+    const zeroStats = { totalCycles: 0, totalCost: 0, avgDurationMs: 0, failureRate: 0 };
     for (const soul of souls) {
-      const stats = await hbRepo.getStats(soul.agentId);
+      const stats = statsByAgent.get(soul.agentId) ?? zeroStats;
       totalCycles += stats.totalCycles;
       totalCost += stats.totalCost;
       totalErrors += Math.round(stats.totalCycles * stats.failureRate);

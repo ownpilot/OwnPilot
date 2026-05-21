@@ -50,6 +50,7 @@ const {
     getLatestByAgentIds: vi.fn().mockResolvedValue(new Map()),
     getRecent: vi.fn(),
     getStats: vi.fn(),
+    getStatsByAgentIds: vi.fn().mockResolvedValue(new Map()),
   };
 
   const mockAgentsRepo = {
@@ -1153,19 +1154,12 @@ describe('Agent Command Center Routes', () => {
       ];
       mockSoulsRepo.list.mockResolvedValue(souls);
       mockCrewsRepo.list.mockResolvedValue([]);
-      mockHbLogRepo.getStats
-        .mockResolvedValueOnce({
-          totalCycles: 10,
-          totalCost: 0.5,
-          avgDurationMs: 300,
-          failureRate: 0.1,
-        })
-        .mockResolvedValueOnce({
-          totalCycles: 5,
-          totalCost: 0.25,
-          avgDurationMs: 200,
-          failureRate: 0.0,
-        });
+      mockHbLogRepo.getStatsByAgentIds.mockResolvedValueOnce(
+        new Map([
+          ['agent-1', { totalCycles: 10, totalCost: 0.5, avgDurationMs: 300, failureRate: 0.1 }],
+          ['agent-2', { totalCycles: 5, totalCost: 0.25, avgDurationMs: 200, failureRate: 0.0 }],
+        ])
+      );
 
       const res = await app.request('/acc/analytics');
 
@@ -1181,19 +1175,12 @@ describe('Agent Command Center Routes', () => {
       const souls = [makeSoul('agent-a'), makeSoul('agent-b')];
       mockSoulsRepo.list.mockResolvedValue(souls);
       mockCrewsRepo.list.mockResolvedValue([]);
-      mockHbLogRepo.getStats
-        .mockResolvedValueOnce({
-          totalCycles: 2,
-          totalCost: 0.1,
-          avgDurationMs: 100,
-          failureRate: 0,
-        })
-        .mockResolvedValueOnce({
-          totalCycles: 20,
-          totalCost: 1.0,
-          avgDurationMs: 200,
-          failureRate: 0,
-        });
+      mockHbLogRepo.getStatsByAgentIds.mockResolvedValueOnce(
+        new Map([
+          ['agent-a', { totalCycles: 2, totalCost: 0.1, avgDurationMs: 100, failureRate: 0 }],
+          ['agent-b', { totalCycles: 20, totalCost: 1.0, avgDurationMs: 200, failureRate: 0 }],
+        ])
+      );
 
       const res = await app.request('/acc/analytics');
 
