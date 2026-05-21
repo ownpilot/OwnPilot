@@ -89,6 +89,14 @@ class SimpleTTLCache<V> {
 // Anti-ban constants
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_CONSECUTIVE_440 = 3;
+/**
+ * Time the connection must remain `open` before we trust it and reset the
+ * consecutive-440 counter. A `conflict:replaced` (440) storm typically fires
+ * within 5–15s of each reconnect, so 2 minutes gives a comfortable margin
+ * for separating "we're actually stable" from "we briefly reconnected before
+ * the next displace event."
+ */
+const STABLE_CONNECTION_MS = 2 * 60_000;
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
 const RATE_LIMIT_MAX_MESSAGES = 20; // max 20 messages per minute (global)
 const RATE_LIMIT_PER_JID_MS = 3_000; // min 3s gap per recipient
@@ -166,6 +174,14 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempt = 0;
   private consecutive440Count = 0;
+  /**
+   * Deferred clear of consecutive440Count. The counter must only be reset
+   * after the connection has been STABLE long enough to indicate the displace-
+   * loop is actually over — otherwise a 440-storm with brief reconnects
+   * between disconnects bypasses MAX_CONSECUTIVE_440 entirely because the
+   * counter resets on every connect.
+   */
+  private stableConnectionTimer: ReturnType<typeof setTimeout> | null = null;
   private currentOperation: Promise<void> | null = null;
   private preventAutoReconnect = false; // Set by logout() to stop auto-reconnect
 
@@ -868,8 +884,32 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
   // Private — Connection Handling
   // ==========================================================================
 
+  /**
+   * Schedule a deferred reset of consecutive440Count. If the connection
+   * stays `open` for STABLE_CONNECTION_MS without another disconnect, we
+   * trust it and clear the counter. Any disconnect within the window
+   * cancels the scheduled reset via clearStableConnectionTimer().
+   */
+  private scheduleStableConnectionReset(): void {
+    this.clearStableConnectionTimer();
+    this.stableConnectionTimer = setTimeout(() => {
+      this.consecutive440Count = 0;
+      this.stableConnectionTimer = null;
+    }, STABLE_CONNECTION_MS);
+    this.stableConnectionTimer.unref?.();
+  }
+
+  private clearStableConnectionTimer(): void {
+    if (this.stableConnectionTimer) {
+      clearTimeout(this.stableConnectionTimer);
+      this.stableConnectionTimer = null;
+    }
+  }
+
   /** Safely close and clean up the current socket, removing all event listeners. */
   private cleanupSocket(): void {
+    // Stable-reset timer is bound to the previous socket's lifetime.
+    this.clearStableConnectionTimer();
     if (this.sock) {
       try {
         // Remove all listeners first to prevent ghost events
@@ -923,8 +963,12 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       this.status = 'connected';
       this.qrCode = null;
       this.reconnectAttempt = 0;
-      this.consecutive440Count = 0;
       this.preventAutoReconnect = false; // Reset on successful connection
+      // Defer the consecutive-440 reset until the connection has been stable
+      // long enough to trust it. Resetting immediately on `open` lets a
+      // displace-storm bypass MAX_CONSECUTIVE_440 by reconnecting briefly
+      // between each conflict:replaced event.
+      this.scheduleStableConnectionReset();
       this.emitConnectionEvent('connected');
 
       // Anti-ban: immediately go offline — only appear online when typing/sending
@@ -963,6 +1007,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     // Disconnected
     if (connection === 'close') {
+      // Cancel any pending stable-connection reset — the connection didn't
+      // last long enough to clear the consecutive440Count.
+      this.clearStableConnectionTimer();
       const error = lastDisconnect?.error;
       const statusCode = (error as Boom)?.output?.statusCode;
       const isLoggedOut = statusCode === DisconnectReason.loggedOut;
