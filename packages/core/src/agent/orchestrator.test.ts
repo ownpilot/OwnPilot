@@ -36,13 +36,6 @@ const { mockEventSystem, mockInjectMemoryIntoPrompt } = vi.hoisted(() => {
 
 vi.mock('../events/index.js', () => ({
   getEventSystem: vi.fn(() => mockEventSystem),
-  getEventBus: vi.fn(() => ({ emit: vi.fn() })),
-  createEvent: vi.fn((...args: unknown[]) => args),
-  EventTypes: {
-    TOOL_REGISTERED: 'tool.registered',
-    TOOL_UNREGISTERED: 'tool.unregistered',
-    TOOL_EXECUTED: 'tool.executed',
-  },
 }));
 
 vi.mock('./memory-injector.js', () => ({

@@ -48,14 +48,7 @@ async function getValidateToolCall() {
 }
 import type { ConfigCenter } from '../services/config-center.js';
 import { getBaseName, qualifyToolName } from './tool-namespace.js';
-import {
-  getEventBus,
-  getEventSystem,
-  createEvent,
-  EventTypes,
-  type ToolRegisteredData,
-  type ToolExecutedData,
-} from '../events/index.js';
+import { getEventSystem, type ToolRegisteredData, type ToolExecutedData } from '../events/index.js';
 
 // Re-export types for consumers
 export type {
@@ -181,13 +174,12 @@ export class ToolRegistry {
     }
 
     // Emit tool registered event
-    getEventBus().emit(
-      createEvent<ToolRegisteredData>(EventTypes.TOOL_REGISTERED, 'tool', 'tool-registry', {
-        name: definition.name,
-        source,
-        pluginId: pluginId ?? undefined,
-      })
-    );
+    const registeredPayload: ToolRegisteredData = {
+      name: definition.name,
+      source,
+      pluginId: pluginId ?? undefined,
+    };
+    getEventSystem().emit('tool.registered', 'tool-registry', registeredPayload);
 
     // Auto-register config requirements (fire-and-forget)
     if (definition.configRequirements?.length && this._onConfigRegistration) {
@@ -471,29 +463,27 @@ export class ToolRegistry {
       result = afterCtx.data.result;
 
       // Emit tool executed event (success)
-      getEventBus().emit(
-        createEvent<ToolExecutedData>(EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry', {
-          name,
-          duration: Date.now() - startTime,
-          success: true,
-          conversationId: context.conversationId,
-        })
-      );
+      const successPayload: ToolExecutedData = {
+        name,
+        duration: Date.now() - startTime,
+        success: true,
+        conversationId: context.conversationId,
+      };
+      getEventSystem().emit('tool.executed', 'tool-registry', successPayload);
 
       return ok(result);
     } catch (error) {
       const message = getErrorMessage(error);
 
       // Emit tool executed event (failure)
-      getEventBus().emit(
-        createEvent<ToolExecutedData>(EventTypes.TOOL_EXECUTED, 'tool', 'tool-registry', {
-          name,
-          duration: Date.now() - startTime,
-          success: false,
-          error: message,
-          conversationId: context.conversationId,
-        })
-      );
+      const failurePayload: ToolExecutedData = {
+        name,
+        duration: Date.now() - startTime,
+        success: false,
+        error: message,
+        conversationId: context.conversationId,
+      };
+      getEventSystem().emit('tool.executed', 'tool-registry', failurePayload);
 
       return err(new PluginError(tool.pluginId ?? 'core', `Tool execution failed: ${message}`));
     }
