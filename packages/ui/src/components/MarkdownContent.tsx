@@ -2,6 +2,7 @@ import { memo, useMemo, useState } from 'react';
 import { CodeBlock } from './CodeBlock';
 import { ChatMessageWidget } from './ChatMessageWidget';
 import { CHAT_WIDGET_TAG_NAMES } from '../utils/chat-content';
+import { isSafeUrl as isSafeUrlShared } from '../utils/safe-url';
 
 export { hideIncompleteStreamingWidgets } from '../utils/chat-content';
 
@@ -9,14 +10,20 @@ export { hideIncompleteStreamingWidgets } from '../utils/chat-content';
 // URL safety
 // =============================================================================
 
-/** Only allow http/https URLs to prevent javascript: XSS */
+/**
+ * Gate for markdown links. Delegates to the shared safe-url helper so we
+ * pick up the same defenses as the rest of the app:
+ *   - control-character smuggling (`java\tscript:`, `java\rscript:`)
+ *   - leading/trailing whitespace bypass (`  javascript:...`)
+ *   - non-string inputs
+ *   - mailto: now allowed (markdown commonly uses `[contact](mailto:...)`)
+ *
+ * The previous hand-rolled helper accepted http/https only and was lenient
+ * with whitespace/control characters; a single inconsistency between local
+ * helpers like this is exactly the class of bug H6 is meant to eliminate.
+ */
 function isSafeUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
+  return isSafeUrlShared(url);
 }
 
 // =============================================================================
