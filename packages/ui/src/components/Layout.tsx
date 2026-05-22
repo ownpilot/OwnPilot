@@ -66,9 +66,10 @@ export function Layout() {
     if (isMobile) setIsMobileSidebarOpen(false);
   }, [location.pathname, isMobile]);
 
-  // Reset badges when navigating to their respective pages
+  // Reset badges when navigating to their respective pages.
+  // /inbox redirects to /history, so the badge reset now keys off /history.
   useEffect(() => {
-    if (location.pathname === '/inbox' || location.pathname.startsWith('/inbox/')) {
+    if (location.pathname === '/history' || location.pathname.startsWith('/history/')) {
       setBadgeCounts((prev) => (prev.inbox === 0 ? prev : { ...prev, inbox: 0 }));
     }
     if (location.pathname === '/tasks' || location.pathname.startsWith('/tasks/')) {

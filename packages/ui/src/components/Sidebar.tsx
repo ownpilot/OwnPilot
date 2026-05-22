@@ -301,7 +301,7 @@ export function Sidebar({
                 onCloseCustomize={onCloseCustomize}
                 isCustomizeOpen={isCustomizeOpen}
                 badge={
-                  section.id === '/inbox'
+                  section.id === '/history'
                     ? badgeCounts.inbox
                     : section.id === '/tasks'
                       ? badgeCounts.tasks

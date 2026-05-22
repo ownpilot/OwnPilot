@@ -156,7 +156,7 @@ export function SkillsWidget({ limit = 6 }: SkillsWidgetProps) {
 
       {extensions.length > limit && (
         <Link
-          to="/extensions"
+          to="/skills?tab=installed&format=ownpilot"
           className="block text-center text-xs text-primary hover:underline mt-3 pt-3 border-t border-border dark:border-dark-border"
         >
           View all ({extensions.length})

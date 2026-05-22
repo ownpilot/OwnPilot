@@ -67,6 +67,7 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/settings/connected-apps': 'Link external apps and services',
   '/settings/workflow-tools': 'Tools available inside workflow nodes',
   '/settings/config-center': 'Global OwnPilot configuration',
+  '/settings/layout': 'Customize sidebar layout and dashboard widgets',
   '/settings/system': 'System info, storage, and diagnostics',
 
   // Bottom items
