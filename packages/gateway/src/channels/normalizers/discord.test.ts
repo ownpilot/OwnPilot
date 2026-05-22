@@ -126,5 +126,15 @@ describe('discordNormalizer', () => {
       expect(result.length).toBeGreaterThan(1);
       result.forEach((chunk) => expect(chunk.length).toBeLessThanOrEqual(2000));
     });
+
+    it('flattens <widget> tags to plain text — never leaks raw XML', () => {
+      const response = `Report:\n<widget name="metric_grid" data='{"items":[{"label":"Total","value":"28"}]}' />\nDone.`;
+      const result = discordNormalizer.normalizeOutgoing(response);
+      expect(result[0]).not.toContain('<widget');
+      expect(result[0]).not.toContain('&quot;');
+      expect(result[0]).toContain('Total');
+      expect(result[0]).toContain('28');
+      expect(result[0]).toContain('Done.');
+    });
   });
 });

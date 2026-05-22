@@ -133,5 +133,15 @@ describe('slackNormalizer', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toBe('Short message.');
     });
+
+    it('flattens <widget> tags to plain text — never leaks raw XML', () => {
+      const response = `Report:\n<widget name="metric_grid" data='{"items":[{"label":"Total","value":"28"}]}' />\nDone.`;
+      const result = slackNormalizer.normalizeOutgoing(response);
+      expect(result[0]).not.toContain('<widget');
+      expect(result[0]).not.toContain('&quot;');
+      expect(result[0]).toContain('Total');
+      expect(result[0]).toContain('*28*'); // Slack-formatted bold
+      expect(result[0]).toContain('Done.');
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeChatWidgets } from './chat-widgets.js';
+import { normalizeChatWidgets, flattenChatWidgetsToText } from './chat-widgets.js';
 
 describe('normalizeChatWidgets', () => {
   it('canonicalizes shorthand list widgets', () => {
@@ -272,5 +272,142 @@ describe('normalizeChatWidgets', () => {
     expect(result).toContain('<widget name="callout"');
     expect(result).toContain('Notice');
     expect(result).toContain('Ready');
+  });
+});
+
+describe('flattenChatWidgetsToText', () => {
+  it('flattens metric_grid to bullet list with labels and values', () => {
+    const result = flattenChatWidgetsToText(
+      `Report:\n<widget name="metric_grid" data='{"items":[{"label":"Total","value":"28","detail":"0 active"},{"label":"Cost","value":"$0.00"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('Total');
+    expect(result).toContain('28');
+    expect(result).toContain('0 active');
+    expect(result).toContain('Cost');
+    expect(result).toContain('$0.00');
+  });
+
+  it('renders table widget as markdown table', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="table" data='{"headers":["Category","Count"],"rows":[["Sport",7],["Health",4]]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('| Category | Count |');
+    expect(result).toContain('| --- | --- |');
+    expect(result).toContain('| Sport | 7 |');
+    expect(result).toContain('| Health | 4 |');
+  });
+
+  it('renders key_value widget as bullet list of Key: Value pairs', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="key_value" data='{"items":[{"key":"Status","value":"Ready"},{"key":"Owner","value":"Chat"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('**Status:** Ready');
+    expect(result).toContain('**Owner:** Chat');
+  });
+
+  it('renders callout as title + body', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="callout" data='{"title":"Notice","body":"Ready to ship"}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('**Notice**');
+    expect(result).toContain('Ready to ship');
+  });
+
+  it('renders steps as numbered list with titles and details', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="steps" data='{"items":[{"title":"Plan","detail":"Outline the work"},{"title":"Ship","detail":"Deploy it"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('1. **Plan** — Outline the work');
+    expect(result).toContain('2. **Ship** — Deploy it');
+  });
+
+  it('renders bar_chart as bullet list of label: value', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="bar_chart" data='{"items":[{"label":"Tasks","value":5},{"label":"Habits","value":3}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('Tasks: 5');
+    expect(result).toContain('Habits: 3');
+  });
+
+  it('renders timeline as time — label: detail lines', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="timeline" data='{"items":[{"time":"09:00","label":"Plan","detail":"Weekly goals"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('09:00');
+    expect(result).toContain('Plan');
+    expect(result).toContain('Weekly goals');
+  });
+
+  it('renders progress as Label: value/max', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="progress" data='{"label":"Onboarding","value":4,"max":10}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('Onboarding: 4/10');
+  });
+
+  it('renders cards as title + description pairs', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="cards" data='{"items":[{"title":"Fast path","description":"Use when clear"},{"title":"Risk","description":"Escalate if unclear"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('**Fast path** — Use when clear');
+    expect(result).toContain('**Risk** — Escalate if unclear');
+  });
+
+  it('strips JSX-style widgets too', () => {
+    const result = flattenChatWidgetsToText(
+      `<metric_grid data='{"items":[{"label":"A","value":"1"}]}' />`
+    );
+    expect(result).not.toContain('<metric_grid');
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('A');
+    expect(result).toContain('1');
+  });
+
+  it('preserves surrounding markdown text', () => {
+    const result = flattenChatWidgetsToText(
+      `Before the widget.\n<widget name="callout" data='{"body":"middle"}' />\nAfter the widget.`
+    );
+    expect(result).toContain('Before the widget.');
+    expect(result).toContain('After the widget.');
+    expect(result).toContain('middle');
+    expect(result).not.toContain('<widget');
+  });
+
+  it('preserves widget-like content inside fenced code blocks', () => {
+    const result = flattenChatWidgetsToText(
+      'Example:\n```\n<widget name="callout" data=\'{"body":"docs"}\' />\n```'
+    );
+    expect(result).toContain('```');
+    expect(result).toContain('<widget name="callout"');
+  });
+
+  it('drops the tag entirely when widget data is unrecoverable', () => {
+    const result = flattenChatWidgetsToText(
+      `Hello.\n<widget name="metric_grid" data='not json at all' />\nWorld.`
+    );
+    // Should not leak raw XML; the parser recovers an invalid-fallback
+    // callout that produces no useful text and gets dropped.
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('Hello.');
+    expect(result).toContain('World.');
+  });
+
+  it('handles multiple widgets in one message', () => {
+    const result = flattenChatWidgetsToText(
+      `<widget name="metric_grid" data='{"items":[{"label":"A","value":"1"}]}' />\nSummary text.\n<widget name="key_value" data='{"items":[{"key":"K","value":"V"}]}' />`
+    );
+    expect(result).not.toContain('<widget');
+    expect(result).toContain('A');
+    expect(result).toContain('Summary text.');
+    expect(result).toContain('**K:** V');
   });
 });

@@ -8,6 +8,7 @@
 
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
+import { flattenChatWidgetsToText } from '../../utils/chat-widgets.js';
 
 /** Internal tags that should never leak to channel users */
 const INTERNAL_TAG_PATTERNS = [
@@ -114,6 +115,9 @@ export const baseNormalizer: ChannelNormalizer = {
 
   normalizeOutgoing(response: string): string[] {
     const cleaned = stripInternalTags(response);
-    return cleaned ? [cleaned] : [];
+    if (!cleaned) return [];
+    // Flatten <widget> tags — only the web UI can render them as visual blocks;
+    // every other channel sees raw XML otherwise.
+    return [flattenChatWidgetsToText(cleaned)];
   },
 };

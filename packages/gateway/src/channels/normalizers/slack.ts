@@ -10,6 +10,7 @@ import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/cor
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
+import { flattenChatWidgetsToText } from '../../utils/chat-widgets.js';
 
 const SLACK_MAX_LENGTH = PLATFORM_MESSAGE_LIMITS.slack ?? 4000;
 
@@ -68,6 +69,11 @@ export const slackNormalizer: ChannelNormalizer = {
   normalizeOutgoing(response: string): string[] {
     let cleaned = stripInternalTags(response);
     if (!cleaned) return [];
+
+    // Flatten <widget> tags to plain-text markdown — Slack can't render
+    // the web UI's visual widgets. Must run before markdownToSlackMrkdwn
+    // so the **bold** markers inside flattened widget output get converted.
+    cleaned = flattenChatWidgetsToText(cleaned);
 
     // Convert Markdown to Slack mrkdwn
     cleaned = markdownToSlackMrkdwn(cleaned);

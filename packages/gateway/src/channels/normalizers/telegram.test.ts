@@ -321,4 +321,14 @@ describe('telegramNormalizer.normalizeOutgoing', () => {
     expect(parts).toHaveLength(1);
     expect(parts[0]).toBe('<b>already bold</b> and **markdown bold**');
   });
+
+  it('flattens <widget> tags to plain text — never leaks raw XML', () => {
+    const response = `Report:\n<widget name="metric_grid" data='{"items":[{"label":"Total","value":"28"}]}' />\nDone.`;
+    const parts = telegramNormalizer.normalizeOutgoing(response);
+    expect(parts[0]).not.toContain('<widget');
+    expect(parts[0]).not.toContain('&quot;');
+    expect(parts[0]).toContain('Total');
+    expect(parts[0]).toContain('28');
+    expect(parts[0]).toContain('Done.');
+  });
 });

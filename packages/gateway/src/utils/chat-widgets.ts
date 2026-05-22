@@ -941,3 +941,286 @@ export function normalizeChatWidgets(content: string): string {
   result += normalizeChatWidgetsInText(content.slice(lastIndex));
   return result;
 }
+
+// ============================================================================
+// Plain-text flattening for non-web channels (Telegram, WhatsApp, Discord, ...)
+// ============================================================================
+
+function asString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value.trim() || undefined;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return undefined;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function pickString(record: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = asString(record[key]);
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function pickNumber(record: Record<string, unknown>, keys: string[]): number | undefined {
+  for (const key of keys) {
+    const raw = record[key];
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+    if (typeof raw === 'string') {
+      const parsed = Number(raw.replace(/%$/, '').trim());
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+function renderMetricGrid(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const label = pickString(raw, ['label', 'name', 'title', 'key']) ?? '';
+    const value = pickString(raw, ['value', 'count', 'total', 'amount']) ?? '';
+    const detail = pickString(raw, ['detail', 'description', 'change', 'status']);
+    if (!label && !value) continue;
+    const headline = label && value ? `${label}: **${value}**` : label || value;
+    lines.push(detail ? `• ${headline} — ${detail}` : `• ${headline}`);
+  }
+  return lines.join('\n');
+}
+
+function renderTable(data: Record<string, unknown>): string {
+  const headers = asArray(data.headers).map((h) => asString(h) ?? '');
+  const rawRows = asArray(data.rows);
+  const rows: string[][] = rawRows
+    .map((row) => {
+      if (Array.isArray(row)) return row.map((cell) => asString(cell) ?? '');
+      if (isRecord(row)) return headers.map((h) => asString(row[h]) ?? '');
+      return [];
+    })
+    .filter((row) => row.length > 0);
+
+  if (headers.length === 0 && rows.length === 0) return '';
+
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  if (headers.length > 0) {
+    lines.push(`| ${headers.join(' | ')} |`);
+    lines.push(`| ${headers.map(() => '---').join(' | ')} |`);
+  }
+  for (const row of rows) lines.push(`| ${row.join(' | ')} |`);
+  return lines.join('\n');
+}
+
+function renderList(data: Record<string, unknown>, ordered: boolean): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  let index = 1;
+  for (const raw of asArray(data.items)) {
+    let text: string | undefined;
+    let done: boolean | undefined;
+    if (isRecord(raw)) {
+      text =
+        pickString(raw, ['text', 'title', 'label', 'name']) ??
+        pickString(raw, ['detail', 'description', 'body']);
+      done = typeof raw.done === 'boolean' ? raw.done : raw.status === 'done' || undefined;
+    } else {
+      text = asString(raw);
+    }
+    if (!text) continue;
+    const marker = ordered ? `${index}.` : '•';
+    const check = done === true ? '[x] ' : done === false ? '[ ] ' : '';
+    lines.push(`${marker} ${check}${text}`);
+    index += 1;
+  }
+  return lines.join('\n');
+}
+
+function renderKeyValue(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const key = pickString(raw, ['key', 'label', 'name', 'title']);
+    const value = pickString(raw, ['value', 'text', 'detail', 'description']);
+    if (key && value) lines.push(`• **${key}:** ${value}`);
+    else if (key) lines.push(`• ${key}`);
+    else if (value) lines.push(`• ${value}`);
+  }
+  return lines.join('\n');
+}
+
+function renderCards(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const cardTitle = pickString(raw, ['title', 'label', 'name']);
+    const body = pickString(raw, ['description', 'detail', 'body', 'text']);
+    if (cardTitle && body) lines.push(`**${cardTitle}** — ${body}`);
+    else if (cardTitle) lines.push(`**${cardTitle}**`);
+    else if (body) lines.push(body);
+  }
+  return lines.join('\n\n');
+}
+
+function renderSteps(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  let index = 1;
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const stepTitle = pickString(raw, ['title', 'label', 'name']);
+    const detail = pickString(raw, ['detail', 'description', 'body', 'text']);
+    if (!stepTitle && !detail) continue;
+    if (stepTitle && detail) lines.push(`${index}. **${stepTitle}** — ${detail}`);
+    else lines.push(`${index}. ${stepTitle ?? detail!}`);
+    index += 1;
+  }
+  return lines.join('\n');
+}
+
+function renderCallout(data: Record<string, unknown>): string {
+  const title = pickString(data, ['title', 'heading']);
+  const body = pickString(data, ['body', 'detail', 'description', 'text', 'message', 'summary']);
+  if (title && body) return `**${title}**\n${body}`;
+  return title ?? body ?? '';
+}
+
+function renderProgress(data: Record<string, unknown>): string {
+  const label = pickString(data, ['label', 'title', 'heading', 'name']) ?? 'Progress';
+  const value = pickNumber(data, ['value', 'percent', 'progress', 'current']) ?? 0;
+  const max = pickNumber(data, ['max', 'total', 'target']) ?? 100;
+  return `${label}: ${value}/${max}`;
+}
+
+function renderBarChart(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const label = pickString(raw, ['label', 'name', 'title']) ?? '';
+    const value =
+      pickString(raw, ['displayValue', 'display']) ??
+      pickNumber(raw, ['value', 'count', 'total', 'amount'])?.toString() ??
+      '';
+    if (!label && !value) continue;
+    lines.push(label && value ? `• ${label}: ${value}` : `• ${label || value}`);
+  }
+  return lines.join('\n');
+}
+
+function renderTimeline(data: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const title = pickString(data, ['title', 'heading']);
+  if (title) lines.push(`**${title}**`);
+  for (const raw of asArray(data.items)) {
+    if (!isRecord(raw)) continue;
+    const time = pickString(raw, ['time', 'date', 'when']);
+    const label = pickString(raw, ['label', 'title', 'name']);
+    const detail = pickString(raw, ['detail', 'description', 'body', 'text']);
+    const head = [time, label].filter(Boolean).join(' — ');
+    if (!head && !detail) continue;
+    lines.push(head && detail ? `• ${head}: ${detail}` : `• ${head || detail!}`);
+  }
+  return lines.join('\n');
+}
+
+function renderWidgetAsText(widget: ParsedWidget): string {
+  if (!isRecord(widget.data)) {
+    const fallback = asString(widget.data);
+    return fallback ?? '';
+  }
+  switch (widget.name) {
+    case 'metric_grid':
+    case 'metrics':
+    case 'metric':
+    case 'stats':
+      return renderMetricGrid(widget.data);
+    case 'table':
+      return renderTable(widget.data);
+    case 'list':
+      return renderList(widget.data, false);
+    case 'checklist':
+      return renderList(widget.data, false);
+    case 'key_value':
+    case 'key_values':
+    case 'facts':
+    case 'details':
+    case 'properties':
+      return renderKeyValue(widget.data);
+    case 'cards':
+    case 'card':
+    case 'card_grid':
+      return renderCards(widget.data);
+    case 'steps':
+    case 'step':
+    case 'plan':
+      return renderSteps(widget.data);
+    case 'callout':
+    case 'note':
+      return renderCallout(widget.data);
+    case 'progress':
+      return renderProgress(widget.data);
+    case 'bar_chart':
+    case 'bar':
+      return renderBarChart(widget.data);
+    case 'timeline':
+      return renderTimeline(widget.data);
+    default:
+      return renderCallout(widget.data);
+  }
+}
+
+function flattenChatWidgetsInText(content: string): string {
+  let index = 0;
+  let result = '';
+  let match: ReturnType<typeof findNextWidgetTag>;
+
+  while ((match = findNextWidgetTag(content, index)) !== null) {
+    result += content.slice(index, match.start);
+    const tag = content.slice(match.start, match.end);
+    const widget = parseWidgetTag(tag);
+    if (widget) {
+      const text = renderWidgetAsText(widget).trim();
+      if (text) result += text;
+    }
+    index = match.end;
+  }
+
+  result += content.slice(index);
+  return result;
+}
+
+/**
+ * Flatten `<widget>` tags to plain-text markdown for non-web channels
+ * (Telegram, WhatsApp, Discord, Slack). Web channels keep the canonical
+ * `<widget>` tags and render them visually in MarkdownContent; this
+ * function exists so chat apps don't get raw XML.
+ *
+ * Content inside fenced code blocks (```) is preserved verbatim.
+ */
+export function flattenChatWidgetsToText(content: string): string {
+  const codeBlockRegex = /```[\s\S]*?```/g;
+  let lastIndex = 0;
+  let result = '';
+  let match: RegExpExecArray | null;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    result += flattenChatWidgetsInText(content.slice(lastIndex, match.index));
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+  }
+
+  result += flattenChatWidgetsInText(content.slice(lastIndex));
+  return result.replace(/\n{3,}/g, '\n\n');
+}

@@ -10,6 +10,7 @@ import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/cor
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { stripInternalTags } from './base.js';
 import { splitMessage, PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
+import { flattenChatWidgetsToText } from '../../utils/chat-widgets.js';
 
 const DISCORD_MAX_LENGTH = PLATFORM_MESSAGE_LIMITS.discord ?? 2000;
 
@@ -52,8 +53,12 @@ export const discordNormalizer: ChannelNormalizer = {
   },
 
   normalizeOutgoing(response: string): string[] {
-    const cleaned = stripInternalTags(response);
+    let cleaned = stripInternalTags(response);
     if (!cleaned) return [];
+
+    // Flatten <widget> tags to plain-text markdown — Discord can't render
+    // the web UI's visual widgets.
+    cleaned = flattenChatWidgetsToText(cleaned);
 
     // Discord supports Markdown natively — no conversion needed
     return splitMessage(cleaned, DISCORD_MAX_LENGTH);

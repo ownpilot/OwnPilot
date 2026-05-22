@@ -147,5 +147,15 @@ describe('whatsappNormalizer', () => {
       const result = whatsappNormalizer.normalizeOutgoing('**bold** and ~~strikethrough~~');
       expect(result[0]).toBe('*bold* and ~strikethrough~');
     });
+
+    it('flattens <widget> tags to plain text — never leaks raw XML', () => {
+      const response = `Report:\n<widget name="metric_grid" data='{"items":[{"label":"Total","value":"28"}]}' />\nDone.`;
+      const result = whatsappNormalizer.normalizeOutgoing(response);
+      expect(result[0]).not.toContain('<widget');
+      expect(result[0]).not.toContain('&quot;');
+      expect(result[0]).toContain('Total');
+      expect(result[0]).toContain('*28*'); // WhatsApp-formatted bold
+      expect(result[0]).toContain('Done.');
+    });
   });
 });
