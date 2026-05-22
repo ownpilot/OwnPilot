@@ -8,6 +8,10 @@ const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(),
   readdirSync: vi.fn(),
   statSync: vi.fn(),
+  // lstatSync added for symlink-defense; default to "regular file" so
+  // existing tests that exercise a normal workspace file path keep
+  // working without per-test setup.
+  lstatSync: vi.fn(() => ({ isSymbolicLink: () => false })),
   unlinkSync: vi.fn(),
   rmSync: vi.fn(),
   mkdirSync: vi.fn(),
@@ -1422,6 +1426,16 @@ describe('readSessionWorkspaceFile', () => {
 
     expect(result).toBe(content);
   });
+
+  it('should refuse to read a symlink (defense against symlink-based escape)', () => {
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.lstatSync.mockReturnValueOnce({ isSymbolicLink: () => true });
+
+    expect(() => readSessionWorkspaceFile('ws-1', 'output/escape.txt')).toThrow(
+      'Symlinks are not permitted in workspace paths'
+    );
+    expect(mockFs.readFileSync).not.toHaveBeenCalled();
+  });
 });
 
 // =========================================================================
@@ -1448,10 +1462,13 @@ describe('writeSessionWorkspaceFile', () => {
   });
 
   it('should create parent directories if they do not exist', () => {
-    // First existsSync call: check if parent dir exists -> false
-    // The code: join(fullPath, '..') -> dir, then existsSync(dir)
+    // existsSync call sequence (updated for symlink-defense pass):
+    //   1. parent dir exists? — false (mkdir)
+    //   2. fullPath exists? — false (skip symlink check, regular new-file write)
+    //   3. meta file exists? — true (updateSessionWorkspaceMeta read path)
     mockFs.existsSync
       .mockReturnValueOnce(false) // parent dir does not exist
+      .mockReturnValueOnce(false) // fullPath does not yet exist
       .mockReturnValueOnce(true); // meta file exists for updateSessionWorkspaceMeta
     mockFs.readFileSync.mockReturnValue(JSON.stringify({ id: 'ws-1', updatedAt: '' }));
 
@@ -1494,6 +1511,17 @@ describe('writeSessionWorkspaceFile', () => {
       '/data/workspace/ws-1/output/image.png',
       buffer
     );
+  });
+
+  it('should refuse to overwrite a symlink (defense against symlink-based escape)', () => {
+    // dir exists (no mkdir), fullPath exists (trigger symlink check)
+    mockFs.existsSync.mockReturnValue(true);
+    mockFs.lstatSync.mockReturnValueOnce({ isSymbolicLink: () => true });
+
+    expect(() => writeSessionWorkspaceFile('ws-1', 'output/escape.txt', 'data')).toThrow(
+      'Symlinks are not permitted in workspace paths'
+    );
+    expect(mockFs.writeFileSync).not.toHaveBeenCalled();
   });
 });
 
@@ -2207,10 +2235,13 @@ describe('Edge cases', () => {
 
   describe('updateSessionWorkspaceMeta edge cases', () => {
     it('should not crash when meta file does not exist during write', () => {
-      // writeSessionWorkspaceFile -> updateSessionWorkspaceMeta
-      // meta file not found -> no-op
+      // existsSync call sequence (updated for symlink-defense pass):
+      //   1. parent dir exists? — true (no mkdir)
+      //   2. fullPath exists? — false (skip symlink check)
+      //   3. meta file exists? — false (no-op meta update)
       mockFs.existsSync
         .mockReturnValueOnce(true) // parent dir exists for writeFileSync
+        .mockReturnValueOnce(false) // fullPath does not yet exist
         .mockReturnValueOnce(false); // meta file does not exist
 
       // Should not throw

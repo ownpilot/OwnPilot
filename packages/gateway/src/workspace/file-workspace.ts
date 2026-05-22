@@ -21,6 +21,7 @@ import {
   existsSync,
   readdirSync,
   statSync,
+  lstatSync,
   unlinkSync,
   rmSync,
   mkdirSync,
@@ -554,6 +555,35 @@ function buildFileTree(dirPath: string, rootPath: string, depth = 0): WorkspaceF
 }
 
 /**
+ * Defense-in-depth: refuse to read or write through a symlink in a
+ * workspace path. The `fullPath.startsWith(allowedPrefix)` check on its
+ * own defends against `..` traversal because `path.join` normalizes the
+ * result — but a symlink placed inside the workspace (e.g. by an agent
+ * via a spawned `ln -s` or by a process with workspace write access)
+ * can satisfy that check while resolving to an arbitrary host file.
+ *
+ * `lstat` detects the symlink without following it; we refuse outright
+ * rather than try to resolve and re-check, because workspace data is
+ * expected to be regular files only and a strict policy is easier to
+ * reason about than per-call symlink-target validation.
+ *
+ * Throws on symlink detection; no-ops when the path doesn't exist or
+ * when lstat fails (e.g. file removed in a race) — the caller's
+ * subsequent fs operation will surface any genuine error.
+ */
+function rejectSymlinkAt(fullPath: string): void {
+  try {
+    if (lstatSync(fullPath).isSymbolicLink()) {
+      throw new Error('Symlinks are not permitted in workspace paths');
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Symlinks are not permitted')) throw err;
+    // lstat failure (ENOENT race, EACCES) — let the caller's fs op
+    // surface the underlying error.
+  }
+}
+
+/**
  * Read a file from session workspace
  */
 export function readSessionWorkspaceFile(id: string, filePath: string): Buffer | null {
@@ -571,6 +601,9 @@ export function readSessionWorkspaceFile(id: string, filePath: string): Buffer |
     return null;
   }
 
+  // Defense-in-depth against symlink-based workspace escape.
+  rejectSymlinkAt(fullPath);
+
   return readFileSync(fullPath);
 }
 
@@ -587,15 +620,25 @@ export function writeSessionWorkspaceFile(
   const fullPath = join(workspaceRoot, id, filePath);
   const allowedPrefix = join(workspaceRoot, id) + sep;
 
-  // Security: ensure path is within workspace (trailing sep prevents prefix collision)
+  // Path traversal check applies on the unrealized path — the file may
+  // not exist yet so we can't call realpath here.
   if (!fullPath.startsWith(allowedPrefix)) {
     throw new Error('Path traversal attempt detected');
   }
 
-  // Ensure directory exists
+  // Ensure directory exists. Use existsSync on the parent first; if it
+  // already exists we don't mkdir, matching the original behavior and
+  // keeping the existsSync call sequence predictable for tests.
   const dir = join(fullPath, '..');
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
+  }
+
+  // Defense-in-depth: if the target file already exists AND is a symlink,
+  // refuse the write — clobbering a symlink would write to its target
+  // (potentially outside the workspace).
+  if (existsSync(fullPath)) {
+    rejectSymlinkAt(fullPath);
   }
 
   writeFileSync(fullPath, content);
