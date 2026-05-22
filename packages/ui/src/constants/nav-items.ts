@@ -20,7 +20,6 @@ import {
   Users,
   Bookmark,
   Database,
-  Table,
   Brain,
   Target,
   Zap,
@@ -45,8 +44,8 @@ import {
   Terminal,
   ShieldCheck,
   Send,
-  MonitorCheck,
   LayoutTemplate,
+  Lock,
   Wifi,
 } from '../components/icons';
 
@@ -125,14 +124,11 @@ export const navGroups: NavGroup[] = [
     icon: Cpu,
     items: [
       { to: '/agents', icon: Bot, label: 'Agents' },
-      { to: '/models', icon: Cpu, label: 'Models' },
       { to: '/wizards', icon: Sparkles, label: 'Wizards' },
       { to: '/workspaces', icon: HardDrive, label: 'Workspaces' },
       { to: '/custom-data', icon: Database, label: 'Custom Data' },
-      { to: '/data-browser', icon: Table, label: 'Data Browser' },
       { to: '/costs', icon: DollarSign, label: 'Costs' },
       { to: '/logs', icon: Activity, label: 'Logs' },
-      { to: '/event-monitor', icon: MonitorCheck, label: 'Event Monitor' },
       { to: '/agent-observability', icon: Activity, label: 'Agent Observability' },
       { to: '/tunnel', icon: Wifi, label: 'Tunnel' },
     ],
@@ -160,8 +156,8 @@ export const navGroups: NavGroup[] = [
       { to: '/settings/ai-models', icon: Cpu, label: 'AI Models' },
       { to: '/settings/model-routing', icon: Sparkles, label: 'Model Routing' },
       // Security & access
-      { to: '/settings/security', icon: Shield, label: 'Security' },
-      { to: '/settings/security-scanner', icon: Activity, label: 'Security Scanner' },
+      { to: '/settings/security', icon: Lock, label: 'Auth & Password' },
+      { to: '/settings/security-scanner', icon: Shield, label: 'Security Scanner' },
       { to: '/settings/tool-groups', icon: Wrench, label: 'Tool Groups' },
       // Tools & integrations
       { to: '/settings/cli-tools', icon: Code, label: 'CLI Tools' },

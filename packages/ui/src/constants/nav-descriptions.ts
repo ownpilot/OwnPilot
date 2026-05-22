@@ -39,14 +39,13 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
 
   // System
   '/agents': 'Configure and manage AI agent profiles',
-  '/models': 'View and test available AI models',
   '/wizards': 'Guided setup flows for new features',
   '/workspaces': 'Manage file and project workspaces',
   '/custom-data': 'Define and query your custom data types',
-  '/data-browser': 'Inspect raw data tables in your database',
   '/costs': 'Track AI usage costs and budgets',
   '/logs': 'View system and agent activity logs',
-  '/event-monitor': 'Monitor real-time system events',
+  '/agent-observability': 'Real-time dashboard for Soul, Crew, and Claw runners',
+  '/tunnel': 'Expose OwnPilot via Cloudflare or ngrok tunnel',
 
   // Experimental
   '/claws': 'Autonomous continuous AI agent runners',
@@ -59,8 +58,8 @@ export const NAV_DESCRIPTIONS: Record<string, string> = {
   '/settings/providers': 'Configure AI provider connections',
   '/settings/ai-models': 'Set default and fallback AI models',
   '/settings/model-routing': 'Route tasks to the best model automatically',
-  '/settings/security': 'Password, auth, and access control',
-  '/settings/security-scanner': 'Scan for security vulnerabilities',
+  '/settings/security': 'Set, change, or remove UI password protection',
+  '/settings/security-scanner': 'Scan platform for security vulnerabilities',
   '/settings/tool-groups': 'Organize tools into permission groups',
   '/settings/cli-tools': 'Register CLI tools for AI use',
   '/settings/coding-agents': 'Configure coding agent environments',

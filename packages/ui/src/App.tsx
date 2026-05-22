@@ -16,9 +16,6 @@ const AgentsPage = lazy(() =>
   import('./pages/AgentsPage').then((m) => ({ default: m.AgentsPage }))
 );
 const ToolsPage = lazy(() => import('./pages/tools').then((m) => ({ default: m.ToolsPage })));
-const ModelsPage = lazy(() =>
-  import('./pages/ModelsPage').then((m) => ({ default: m.ModelsPage }))
-);
 const CostsPage = lazy(() => import('./pages/CostsPage').then((m) => ({ default: m.CostsPage })));
 const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
@@ -285,7 +282,7 @@ export function App() {
         <Route path="skills" element={page(<SkillsHubPage />)} />
         <Route path="skills/:id/edit" element={page(<SkillEditorPage />)} />
         <Route path="workspaces" element={page(<WorkspacesPage />)} />
-        <Route path="models" element={page(<ModelsPage />)} />
+        <Route path="models" element={<Navigate to="/settings/ai-models" replace />} />
         <Route path="costs" element={page(<CostsPage />)} />
         <Route path="logs" element={page(<LogsPage />)} />
         <Route path="settings" element={page(<SettingsPage />)} />
