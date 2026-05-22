@@ -163,12 +163,34 @@ export function validateBootConfig(): ValidationResult {
     }
   }
 
-  // 4. Warn about JWT secret if it looks generated from a template
+  // 4. JWT_SECRET quality checks — fire whenever the secret is set (not
+  //    just when AUTH_TYPE=jwt), because the auth type can be flipped
+  //    later via the DB-backed `gateway_auth_type` setting and a weak
+  //    secret would suddenly start protecting real traffic.
   const jwtSecret = process.env.JWT_SECRET;
-  if (jwtSecret && (jwtSecret.includes(' ') || jwtSecret.includes('template'))) {
-    warnings.push(
-      `[WARN] JWT_SECRET appears to contain placeholder text — this is not secure in production`
-    );
+  if (jwtSecret) {
+    const reportJwtIssue = (message: string): void => {
+      if (isProduction) {
+        errors.push(`[FATAL] ${message}`);
+      } else {
+        warnings.push(`[WARN] ${message}`);
+      }
+    };
+    if (jwtSecret.includes(' ') || /template|placeholder|example|change.?me/i.test(jwtSecret)) {
+      reportJwtIssue(
+        'JWT_SECRET appears to contain placeholder text — this is not secure in production'
+      );
+    }
+    if (jwtSecret.length < MIN_SECRET_LENGTH) {
+      reportJwtIssue(
+        `JWT_SECRET is ${jwtSecret.length} chars — should be at least ${MIN_SECRET_LENGTH}. Generate with: openssl rand -base64 32`
+      );
+    }
+    // Catch obviously weak secrets — single-character repeats, decimal-only
+    // strings, etc. Real random 32+ char secrets won't trip these.
+    if (/^(.)\1+$/.test(jwtSecret) || /^\d+$/.test(jwtSecret)) {
+      reportJwtIssue('JWT_SECRET is a trivial pattern (single repeated char or all digits)');
+    }
   }
 
   // 5. Warn about CORS_ORIGINS in production if it looks like a template

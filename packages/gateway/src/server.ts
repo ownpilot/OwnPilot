@@ -34,7 +34,7 @@ for (const envPath of envPaths) {
 
 import { serve } from '@hono/node-server';
 import type { Server } from 'node:http';
-import { createApp } from './app.js';
+import { createApp, sanitizeCorsOriginsFromEnv } from './app.js';
 import type { GatewayConfig } from './types/index.js';
 import { wsGateway } from './ws/index.js';
 import { initializeAdapter } from './db/adapters/index.js';
@@ -129,7 +129,12 @@ function loadConfig(): Partial<GatewayConfig> {
   return {
     port: parseInt(process.env.PORT ?? '8080', 10) || 8080,
     host: process.env.HOST ?? '127.0.0.1',
-    corsOrigins: process.env.CORS_ORIGINS?.split(',').filter(Boolean),
+    // CORS-001: filter wildcard and non-http(s) origins so loadConfig()
+    // honors the same gate as DEFAULT_CONFIG. Returning `undefined` when
+    // CORS_ORIGINS isn't set keeps DEFAULT_CONFIG's localhost fallback.
+    corsOrigins: process.env.CORS_ORIGINS
+      ? sanitizeCorsOriginsFromEnv(process.env.CORS_ORIGINS)
+      : undefined,
     rateLimit:
       process.env.RATE_LIMIT_DISABLED !== 'true'
         ? {

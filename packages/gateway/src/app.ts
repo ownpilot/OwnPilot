@@ -44,6 +44,39 @@ import {
   STATIC_ASSET_MAX_AGE,
 } from './config/defaults.js';
 
+// =============================================================================
+// CORS origin sanitization (CORS-001)
+// =============================================================================
+
+/**
+ * Parse the CORS_ORIGINS env value and return only entries that look like
+ * a valid http(s) origin. Strips wildcard ('*') — combined with the
+ * `credentials: true` cors() option below, allowing '*' is a confusing
+ * trap (browsers refuse the response, but the operator may think every
+ * origin is whitelisted). Also rejects schemes other than http/https,
+ * unparseable entries, and empty values.
+ *
+ * Exported so both DEFAULT_CONFIG and server.ts loadConfig() apply the
+ * same gate — previously loadConfig() bypassed the filter, so a
+ * CORS_ORIGINS containing '*' would survive into the running app.
+ */
+export function sanitizeCorsOriginsFromEnv(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((origin) => {
+      if (origin === '*') return false;
+      try {
+        const url = new URL(origin);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    });
+}
+
 // Resolve UI dist path relative to this file (works in both dev and Docker)
 const __appDirname = dirname(fileURLToPath(import.meta.url));
 const UI_DIST_PATH = resolve(__appDirname, '../../ui/dist');
@@ -58,31 +91,17 @@ const DEFAULT_CONFIG: GatewayConfig = {
   port: 8080,
   host: '127.0.0.1',
   // Default to localhost only. In production, set the CORS_ORIGINS env var
-  // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com")
-  //
-  // CORS-001: We strip wildcard ('*') and any entry that doesn't parse as
-  // a valid http(s) origin. Combined with credentials:true below, allowing
-  // '*' would be a confusing trap — browsers reject the response, but the
-  // operator may think every origin is whitelisted. Same-origin check
-  // (CSRF middleware) already strips '*'; doing it here too keeps both
-  // gates consistent.
+  // (comma-separated list of allowed origins, e.g. "https://my-domain.com,https://app.my-domain.com").
+  // The filter logic lives in sanitizeCorsOriginsFromEnv() below so it
+  // also applies to the loadConfig() path in server.ts, which previously
+  // bypassed the wildcard/scheme filter when CORS_ORIGINS was set.
   corsOrigins: (() => {
     const uiPort = process.env.UI_PORT || '8199';
-    const fromEnv = process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .filter((origin) => {
-            if (origin === '*') return false; // never allow wildcard with credentials
-            try {
-              const url = new URL(origin);
-              return url.protocol === 'http:' || url.protocol === 'https:';
-            } catch {
-              return false; // unparseable origin — skip silently
-            }
-          })
-      : [];
-    return [`http://localhost:${uiPort}`, `http://127.0.0.1:${uiPort}`, ...fromEnv];
+    return [
+      `http://localhost:${uiPort}`,
+      `http://127.0.0.1:${uiPort}`,
+      ...sanitizeCorsOriginsFromEnv(process.env.CORS_ORIGINS),
+    ];
   })(),
   rateLimit: {
     windowMs: RATE_LIMIT_WINDOW_MS,
