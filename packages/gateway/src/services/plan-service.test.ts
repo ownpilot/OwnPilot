@@ -15,19 +15,7 @@ import type { Plan, PlanStep, PlanHistory } from '../db/repositories/plans.js';
 
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
 }));
 
 const mockRepo = {
@@ -131,12 +119,10 @@ describe('PlanService', () => {
         name: 'Launch MVP',
         goal: 'Ship the first version',
       });
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'plan', id: 'plan-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'plan-service', {
+        resourceType: 'plan',
+        id: 'plan-1',
+      });
     });
 
     it('throws VALIDATION_ERROR when name is empty', async () => {
@@ -233,10 +219,9 @@ describe('PlanService', () => {
 
       expect(result).toBe(updated);
       expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'plan', id: 'plan-1' }),
-        })
+        'resource.updated',
+        'plan-service',
+        expect.objectContaining({ resourceType: 'plan', id: 'plan-1' })
       );
     });
 
@@ -255,12 +240,10 @@ describe('PlanService', () => {
       const result = await service.deletePlan('user-1', 'plan-1');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'plan', id: 'plan-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'plan-service', {
+        resourceType: 'plan',
+        id: 'plan-1',
+      });
     });
 
     it('does not emit when plan not found', async () => {

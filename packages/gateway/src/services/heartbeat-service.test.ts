@@ -22,19 +22,7 @@ const mockEventBus = {
 };
 
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => mockEventBus,
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => mockEventBus,
   getServiceRegistry: () => ({
     get: () => mockTriggerService,
   }),
@@ -232,12 +220,10 @@ describe('HeartbeatService', () => {
         taskDescription: 'Summarize my emails',
       });
 
-      expect(mockEventBus.emit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'heartbeat', id: 'hb-42' },
-        })
-      );
+      expect(mockEventBus.emit).toHaveBeenCalledWith('resource.created', 'heartbeat-service', {
+        resourceType: 'heartbeat',
+        id: 'hb-42',
+      });
     });
 
     it('defaults enabled to true when not specified', async () => {
@@ -452,10 +438,9 @@ describe('HeartbeatService', () => {
 
       expect(result).toBe(updated);
       expect(mockEventBus.emit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'heartbeat', id: 'hb-1' }),
-        })
+        'resource.updated',
+        'heartbeat-service',
+        expect.objectContaining({ resourceType: 'heartbeat', id: 'hb-1' })
       );
     });
 
@@ -647,12 +632,10 @@ describe('HeartbeatService', () => {
 
       await service.deleteHeartbeat('user-1', 'hb-99');
 
-      expect(mockEventBus.emit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'heartbeat', id: 'hb-99' },
-        })
-      );
+      expect(mockEventBus.emit).toHaveBeenCalledWith('resource.deleted', 'heartbeat-service', {
+        resourceType: 'heartbeat',
+        id: 'hb-99',
+      });
     });
 
     it('returns false when heartbeat not found', async () => {

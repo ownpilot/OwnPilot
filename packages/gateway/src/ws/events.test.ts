@@ -389,11 +389,11 @@ describe('events.ts', () => {
         expect(mockScopedBus.emit.mock.calls[1]![0]).toBe('system.notification');
       });
 
-      it('resolves as a Promise (returns void)', async () => {
+      it('returns void synchronously (fire-and-forget)', () => {
         const emitter = new GatewayEventEmitter();
         const result = emitter.emit('connection:ready', { sessionId: 'sess-1' });
 
-        await expect(result).resolves.toBeUndefined();
+        expect(result).toBeUndefined();
       });
 
       it('does not call bus.on or bus.onAll when emitting', async () => {
@@ -758,11 +758,12 @@ describe('events.ts', () => {
       expect(typeof gatewayEvents.emit).toBe('function');
     });
 
-    it('can subscribe and emit without throwing', async () => {
+    it('can subscribe and emit without throwing', () => {
       gatewayEvents.on('system:notification', vi.fn());
-      await expect(
+      // emit is fire-and-forget (void) — must not throw
+      expect(() =>
         gatewayEvents.emit('system:notification', { type: 'info', message: 'hello' })
-      ).resolves.toBeUndefined();
+      ).not.toThrow();
     });
   });
 

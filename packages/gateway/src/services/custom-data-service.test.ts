@@ -19,19 +19,7 @@ import type { CustomTableSchema, CustomDataRecord } from '../db/repositories/cus
 
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
 }));
 
 const mockRepo = {
@@ -121,12 +109,10 @@ describe('CustomDataService', () => {
       );
 
       expect(result).toBe(table);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'custom_table', id: 'tbl-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'custom-data-service', {
+        resourceType: 'custom_table',
+        id: 'tbl-1',
+      });
     });
 
     it('throws VALIDATION_ERROR when name is empty', async () => {
@@ -150,12 +136,10 @@ describe('CustomDataService', () => {
       const result = await service.deleteTable('contacts');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'custom_table', id: 'tbl-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'custom-data-service', {
+        resourceType: 'custom_table',
+        id: 'tbl-1',
+      });
     });
 
     it('throws PROTECTED when table is protected', async () => {
@@ -231,12 +215,10 @@ describe('CustomDataService', () => {
       const result = await service.addRecord('contacts', { name: 'Alice' });
 
       expect(result).toBe(record);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'custom_record', id: 'rec-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'custom-data-service', {
+        resourceType: 'custom_record',
+        id: 'rec-1',
+      });
     });
   });
 
@@ -279,10 +261,9 @@ describe('CustomDataService', () => {
 
       expect(result).toBe(updated);
       expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'custom_record', id: 'rec-1' }),
-        })
+        'resource.updated',
+        'custom-data-service',
+        expect.objectContaining({ resourceType: 'custom_record', id: 'rec-1' })
       );
     });
 
@@ -301,12 +282,10 @@ describe('CustomDataService', () => {
       const result = await service.deleteRecord('rec-1');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'custom_record', id: 'rec-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'custom-data-service', {
+        resourceType: 'custom_record',
+        id: 'rec-1',
+      });
     });
 
     it('does not emit when record not found', async () => {

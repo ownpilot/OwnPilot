@@ -15,19 +15,7 @@ import type { Goal, GoalStep } from '../db/repositories/goals.js';
 
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
 }));
 
 const mockRepo = {
@@ -118,12 +106,10 @@ describe('GoalService', () => {
       expect(result).toBe(goal);
       expect(mockRepo.create).toHaveBeenCalledWith({ title: 'Test Goal' });
       expect(mockEmit).toHaveBeenCalledTimes(1);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'goal', id: 'goal-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'goal-service', {
+        resourceType: 'goal',
+        id: 'goal-1',
+      });
     });
 
     it('throws VALIDATION_ERROR when title is empty', async () => {
@@ -194,10 +180,9 @@ describe('GoalService', () => {
 
       expect(result).toBe(updated);
       expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'goal', id: 'goal-1' }),
-        })
+        'resource.updated',
+        'goal-service',
+        expect.objectContaining({ resourceType: 'goal', id: 'goal-1' })
       );
     });
 
@@ -221,12 +206,10 @@ describe('GoalService', () => {
       const result = await service.deleteGoal('user-1', 'goal-1');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'goal', id: 'goal-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'goal-service', {
+        resourceType: 'goal',
+        id: 'goal-1',
+      });
     });
 
     it('does not emit event when goal not found', async () => {

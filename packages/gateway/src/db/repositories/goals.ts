@@ -8,15 +8,7 @@
 import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement } from './query-helpers.js';
 import type { StandardQuery } from './interfaces.js';
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  generateId,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, generateId } from '@ownpilot/core';
 
 // ============================================================================
 // Types
@@ -178,14 +170,10 @@ export class GoalsRepository extends BaseRepository {
     const goal = await this.get(id);
     if (!goal) throw new Error('Failed to create goal');
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'goals-repository',
-        { resourceType: 'goal', id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'goals-repository', {
+      resourceType: 'goal',
+      id,
+    });
 
     return goal;
   }
@@ -252,14 +240,11 @@ export class GoalsRepository extends BaseRepository {
     const updated = await this.get(id);
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'goals-repository',
-          { resourceType: 'goal', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'goals-repository', {
+        resourceType: 'goal',
+        id,
+        changes: input,
+      });
     }
 
     return updated;
@@ -276,14 +261,10 @@ export class GoalsRepository extends BaseRepository {
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'goals-repository',
-          { resourceType: 'goal', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'goals-repository', {
+        resourceType: 'goal',
+        id,
+      });
     }
 
     return deleted;

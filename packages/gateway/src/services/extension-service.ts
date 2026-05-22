@@ -7,16 +7,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
-import {
-  getEventBus,
-  getEventSystem,
-  createEvent,
-  EventTypes,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-  type IExtensionService,
-} from '@ownpilot/core';
+import { getEventSystem, type IExtensionService } from '@ownpilot/core';
 import { extensionsRepo, type ExtensionRecord } from '../db/repositories/extensions.js';
 import {
   validateManifest,
@@ -257,14 +248,10 @@ export class ExtensionService implements IExtensionService {
       }
     }
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'extension-service',
-        { resourceType: 'extension', id: manifest.id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'extension-service', {
+      resourceType: 'extension',
+      id: manifest.id,
+    });
     getEventSystem().emit('extension.installed', 'extension-service', {
       extensionId: manifest.id,
       userId,
@@ -312,14 +299,10 @@ export class ExtensionService implements IExtensionService {
         log.warn('Failed to remember extension removal', { id, error: String(e) });
       }
 
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'extension-service',
-          { resourceType: 'extension', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'extension-service', {
+        resourceType: 'extension',
+        id,
+      });
       getEventSystem().emit('extension.uninstalled', 'extension-service', {
         extensionId: id,
         userId,
@@ -344,14 +327,11 @@ export class ExtensionService implements IExtensionService {
     const updated = await extensionsRepo.updateStatus(id, 'enabled');
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'extension-service',
-          { resourceType: 'extension', id, changes: { status: 'enabled' } }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'extension-service', {
+        resourceType: 'extension',
+        id,
+        changes: { status: 'enabled' },
+      });
       getEventSystem().emit('extension.enabled', 'extension-service', {
         extensionId: id,
         userId,
@@ -372,14 +352,11 @@ export class ExtensionService implements IExtensionService {
     const updated = await extensionsRepo.updateStatus(id, 'disabled');
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'extension-service',
-          { resourceType: 'extension', id, changes: { status: 'disabled' } }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'extension-service', {
+        resourceType: 'extension',
+        id,
+        changes: { status: 'disabled' },
+      });
       getEventSystem().emit('extension.disabled', 'extension-service', {
         extensionId: id,
         userId,

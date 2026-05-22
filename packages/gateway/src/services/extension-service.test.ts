@@ -12,7 +12,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // =============================================================================
 
 const {
-  mockEmit,
   mockESEmit,
   mockTrigSvc,
   mockRepo,
@@ -27,7 +26,6 @@ const {
   mockValidateManifest,
   mockValidateAgentSkills,
 } = vi.hoisted(() => ({
-  mockEmit: vi.fn(),
   mockESEmit: vi.fn(),
   mockTrigSvc: {
     createTrigger: vi.fn(async (_u: string, i: Record<string, unknown>) => ({
@@ -76,17 +74,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getEventBus: () => ({ emit: mockEmit }),
     getEventSystem: () => ({ emit: mockESEmit }),
-    createEvent: vi.fn((_type: string, _cat: string, _src: string, payload: unknown) => ({
-      type: _type,
-      payload,
-    })),
-    EventTypes: {
-      RESOURCE_CREATED: 'resource.created',
-      RESOURCE_UPDATED: 'resource.updated',
-      RESOURCE_DELETED: 'resource.deleted',
-    },
     getServiceRegistry: () => ({ get: () => mockTrigSvc }),
     Services: { Trigger: 'Trigger' },
   };
@@ -294,7 +282,6 @@ describe('ExtensionService', () => {
       const result = await svc.installFromManifest(manifest);
 
       expect(result).toEqual(record);
-      expect(mockEmit).toHaveBeenCalled();
       expect(mockESEmit).toHaveBeenCalledWith(
         'extension.installed',
         'extension-service',

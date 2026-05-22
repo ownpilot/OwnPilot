@@ -5,16 +5,7 @@
  * Each heartbeat owns one backing trigger (schedule type, chat action).
  */
 
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  getServiceRegistry,
-  Services,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, getServiceRegistry, Services } from '@ownpilot/core';
 import {
   createHeartbeatsRepository,
   type Heartbeat,
@@ -101,14 +92,10 @@ export class HeartbeatService {
       tags: input.tags,
     });
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'heartbeat-service',
-        { resourceType: 'heartbeat', id: heartbeat.id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'heartbeat-service', {
+      resourceType: 'heartbeat',
+      id: heartbeat.id,
+    });
 
     log.info(`Created heartbeat "${name}" with cron ${cron}`, {
       id: heartbeat.id,
@@ -199,14 +186,11 @@ export class HeartbeatService {
     });
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'heartbeat-service',
-          { resourceType: 'heartbeat', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'heartbeat-service', {
+        resourceType: 'heartbeat',
+        id,
+        changes: input,
+      });
     }
 
     return updated;
@@ -229,14 +213,10 @@ export class HeartbeatService {
 
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'heartbeat-service',
-          { resourceType: 'heartbeat', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'heartbeat-service', {
+        resourceType: 'heartbeat',
+        id,
+      });
     }
 
     return deleted;

@@ -15,19 +15,7 @@ import type { Trigger, TriggerHistory } from '../db/repositories/triggers.js';
 
 const mockEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
 }));
 
 const mockRepo = {
@@ -120,12 +108,10 @@ describe('TriggerService', () => {
         type: 'schedule',
         config: { cron: '0 9 * * *' },
       });
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'trigger', id: 'trg-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'trigger-service', {
+        resourceType: 'trigger',
+        id: 'trg-1',
+      });
     });
 
     it('throws VALIDATION_ERROR when name is empty', async () => {
@@ -191,10 +177,9 @@ describe('TriggerService', () => {
 
       expect(result).toBe(updated);
       expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'trigger', id: 'trg-1' }),
-        })
+        'resource.updated',
+        'trigger-service',
+        expect.objectContaining({ resourceType: 'trigger', id: 'trg-1' })
       );
     });
 
@@ -213,12 +198,10 @@ describe('TriggerService', () => {
       const result = await service.deleteTrigger('user-1', 'trg-1');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'trigger', id: 'trg-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'trigger-service', {
+        resourceType: 'trigger',
+        id: 'trg-1',
+      });
     });
 
     it('does not emit when trigger not found', async () => {

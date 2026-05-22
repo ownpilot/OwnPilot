@@ -14,22 +14,8 @@ import type { Memory } from '../db/repositories/memories.js';
 // ---------------------------------------------------------------------------
 
 const mockEmit = vi.fn();
-const mockEventSystemEmit = vi.fn();
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  getEventSystem: () => ({ emit: mockEventSystemEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
   getServiceRegistry: () => ({
     get: (token: { key: string }) => {
       if (token.key === 'embedding')
@@ -146,12 +132,10 @@ describe('MemoryService', () => {
         type: 'fact',
         content: 'User likes TypeScript',
       });
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.created',
-          data: { resourceType: 'memory', id: 'mem-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'memory-service', {
+        resourceType: 'memory',
+        id: 'mem-1',
+      });
     });
 
     it('throws VALIDATION_ERROR when content is empty', async () => {
@@ -273,10 +257,9 @@ describe('MemoryService', () => {
 
       expect(result).toBe(updated);
       expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.updated',
-          data: expect.objectContaining({ resourceType: 'memory', id: 'mem-1' }),
-        })
+        'resource.updated',
+        'memory-service',
+        expect.objectContaining({ resourceType: 'memory', id: 'mem-1' })
       );
     });
 
@@ -295,12 +278,10 @@ describe('MemoryService', () => {
       const result = await service.deleteMemory('user-1', 'mem-1');
 
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'resource.deleted',
-          data: { resourceType: 'memory', id: 'mem-1' },
-        })
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.deleted', 'memory-service', {
+        resourceType: 'memory',
+        id: 'mem-1',
+      });
     });
 
     it('does not emit when memory not found', async () => {
@@ -496,8 +477,11 @@ describe('MemoryService — chunked memory', () => {
     expect(mockRepo.create).toHaveBeenCalledTimes(3);
     // One update: parent with chunk IDs
     expect(mockRepo.update).toHaveBeenCalledOnce();
-    // Embedding events emitted for each chunk + parent
-    expect(mockEventSystemEmit).toHaveBeenCalledTimes(3);
+    // memory.created for 2 chunks + parent + resource.created for parent = 4 emits
+    expect(mockEmit).toHaveBeenCalledTimes(4);
+    // 3 memory.created events (1 per chunk + 1 for parent)
+    const memoryCreatedCalls = mockEmit.mock.calls.filter((c) => c[0] === 'memory.created');
+    expect(memoryCreatedCalls).toHaveLength(3);
   });
 });
 

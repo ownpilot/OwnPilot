@@ -7,14 +7,7 @@
 
 import { BaseRepository, parseJsonField } from './base.js';
 import type { StandardQuery } from './interfaces.js';
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core';
 import { RRF_K } from '../../config/defaults.js';
 
 export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
@@ -189,14 +182,10 @@ export class MemoriesRepository extends BaseRepository {
     const memory = await this.get(id);
     if (!memory) throw new Error('Failed to create memory');
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'memories-repository',
-        { resourceType: 'memory', id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'memories-repository', {
+      resourceType: 'memory',
+      id,
+    });
 
     return memory;
   }
@@ -252,14 +241,11 @@ export class MemoriesRepository extends BaseRepository {
     const updated = await this.get(id, false);
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'memories-repository',
-          { resourceType: 'memory', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'memories-repository', {
+        resourceType: 'memory',
+        id,
+        changes: input,
+      });
     }
 
     return updated;
@@ -276,14 +262,10 @@ export class MemoriesRepository extends BaseRepository {
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'memories-repository',
-          { resourceType: 'memory', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'memories-repository', {
+        resourceType: 'memory',
+        id,
+      });
     }
 
     return deleted;

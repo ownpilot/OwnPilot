@@ -14,24 +14,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // @ownpilot/core mock -- shared by all four services
 // ---------------------------------------------------------------------------
 
+// mockEmit captures getEventSystem().emit(type, source, data) calls
 const mockEmit = vi.fn();
-const mockEventSystemEmit = vi.fn();
 
 vi.mock('@ownpilot/core', () => ({
-  getEventBus: () => ({ emit: mockEmit }),
-  getEventSystem: () => ({ emit: mockEventSystemEmit }),
-  createEvent: vi.fn((type: string, category: string, source: string, data: unknown) => ({
-    type,
-    category,
-    source,
-    data,
-    timestamp: new Date().toISOString(),
-  })),
-  EventTypes: {
-    RESOURCE_CREATED: 'resource.created',
-    RESOURCE_UPDATED: 'resource.updated',
-    RESOURCE_DELETED: 'resource.deleted',
-  },
+  getEventSystem: () => ({ emit: mockEmit }),
   getLog: vi.fn(() => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -146,7 +133,6 @@ vi.mock('../db/repositories/triggers.js', () => ({
 // Service imports (after mocks are registered)
 // ---------------------------------------------------------------------------
 
-import { createEvent } from '@ownpilot/core';
 import { MemoryService, MemoryServiceError } from './memory-service.js';
 import { PlanService, PlanServiceError } from './plan-service.js';
 import { GoalService, GoalServiceError } from './goal-service.js';
@@ -155,9 +141,6 @@ import type { Memory } from '../db/repositories/memories.js';
 import type { Plan, PlanStep, PlanHistory } from '../db/repositories/plans.js';
 import type { Goal, GoalStep } from '../db/repositories/goals.js';
 import type { Trigger, TriggerHistory } from '../db/repositories/triggers.js';
-
-// Alias for assertions -- createEvent is the mocked vi.fn() from vi.mock above
-const mockCreateEvent = vi.mocked(createEvent);
 
 // ---------------------------------------------------------------------------
 // Factory helpers
@@ -349,13 +332,10 @@ describe('MemoryService', () => {
       const mem = fakeMemory({ id: 'mem-99' });
       memoryRepo.create.mockResolvedValue(mem);
       await service.createMemory('user-1', { type: 'fact', content: 'Test' });
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.created',
-        'resource',
-        'memory-service',
-        { resourceType: 'memory', id: 'mem-99' }
-      );
-      expect(mockEmit).toHaveBeenCalledOnce();
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'memory-service', {
+        resourceType: 'memory',
+        id: 'mem-99',
+      });
     });
 
     it('should throw MemoryServiceError with VALIDATION_ERROR code for empty content', async () => {
@@ -528,10 +508,11 @@ describe('MemoryService', () => {
   });
 
   describe('updateMemory', () => {
-    it('should emit event only when update succeeds', async () => {
+    it('should emit events only when update succeeds', async () => {
       memoryRepo.update.mockResolvedValue(fakeMemory({ content: 'New' }));
       await service.updateMemory('user-1', 'mem-1', { content: 'New' });
-      expect(mockEmit).toHaveBeenCalledOnce();
+      // Emits both resource.updated and memory.updated
+      expect(mockEmit).toHaveBeenCalledTimes(2);
     });
 
     it('should not emit event when memory not found', async () => {
@@ -544,12 +525,11 @@ describe('MemoryService', () => {
       memoryRepo.update.mockResolvedValue(fakeMemory());
       const changes = { importance: 0.9, tags: ['new'] };
       await service.updateMemory('user-1', 'mem-1', changes);
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.updated',
-        'resource',
-        'memory-service',
-        { resourceType: 'memory', id: 'mem-1', changes }
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.updated', 'memory-service', {
+        resourceType: 'memory',
+        id: 'mem-1',
+        changes,
+      });
     });
   });
 
@@ -558,7 +538,8 @@ describe('MemoryService', () => {
       memoryRepo.delete.mockResolvedValue(true);
       const result = await service.deleteMemory('user-1', 'mem-1');
       expect(result).toBe(true);
-      expect(mockEmit).toHaveBeenCalledOnce();
+      // Emits both resource.deleted and memory.deleted
+      expect(mockEmit).toHaveBeenCalledTimes(2);
     });
 
     it('should return false and not emit when not found', async () => {
@@ -761,7 +742,7 @@ describe('PlanService', () => {
 
       const result = await service.createPlan('user-1', { name: 'Ship MVP', goal: 'Launch' });
       expect(result).toBe(plan);
-      expect(mockCreateEvent).toHaveBeenCalledWith('resource.created', 'resource', 'plan-service', {
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'plan-service', {
         resourceType: 'plan',
         id: 'plan-1',
       });
@@ -869,7 +850,7 @@ describe('PlanService', () => {
       const updated = fakePlan({ name: 'Renamed' });
       planRepo.update.mockResolvedValue(updated);
       await service.updatePlan('user-1', 'plan-1', { name: 'Renamed' });
-      expect(mockCreateEvent).toHaveBeenCalledWith('resource.updated', 'resource', 'plan-service', {
+      expect(mockEmit).toHaveBeenCalledWith('resource.updated', 'plan-service', {
         resourceType: 'plan',
         id: 'plan-1',
         changes: { name: 'Renamed' },
@@ -1098,7 +1079,7 @@ describe('GoalService', () => {
       goalRepo.create.mockResolvedValue(goal);
       const result = await service.createGoal('user-1', { title: 'Learn Rust' });
       expect(result).toBe(goal);
-      expect(mockCreateEvent).toHaveBeenCalledWith('resource.created', 'resource', 'goal-service', {
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'goal-service', {
         resourceType: 'goal',
         id: 'goal-1',
       });
@@ -1186,7 +1167,7 @@ describe('GoalService', () => {
     it('should emit resource.updated with changes', async () => {
       goalRepo.update.mockResolvedValue(fakeGoal({ priority: 10 }));
       await service.updateGoal('user-1', 'goal-1', { priority: 10 });
-      expect(mockCreateEvent).toHaveBeenCalledWith('resource.updated', 'resource', 'goal-service', {
+      expect(mockEmit).toHaveBeenCalledWith('resource.updated', 'goal-service', {
         resourceType: 'goal',
         id: 'goal-1',
         changes: { priority: 10 },
@@ -1504,12 +1485,10 @@ describe('TriggerService', () => {
       });
 
       expect(result).toBe(trigger);
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.created',
-        'resource',
-        'trigger-service',
-        { resourceType: 'trigger', id: 'trg-1' }
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.created', 'trigger-service', {
+        resourceType: 'trigger',
+        id: 'trg-1',
+      });
     });
 
     it('should throw TriggerServiceError with VALIDATION_ERROR for empty name', async () => {
@@ -1616,12 +1595,11 @@ describe('TriggerService', () => {
       const updated = fakeTrigger({ enabled: false });
       triggerRepo.update.mockResolvedValue(updated);
       await service.updateTrigger('user-1', 'trg-1', { enabled: false });
-      expect(mockCreateEvent).toHaveBeenCalledWith(
-        'resource.updated',
-        'resource',
-        'trigger-service',
-        { resourceType: 'trigger', id: 'trg-1', changes: { enabled: false } }
-      );
+      expect(mockEmit).toHaveBeenCalledWith('resource.updated', 'trigger-service', {
+        resourceType: 'trigger',
+        id: 'trg-1',
+        changes: { enabled: false },
+      });
     });
 
     it('should return null and skip emit for missing trigger', async () => {

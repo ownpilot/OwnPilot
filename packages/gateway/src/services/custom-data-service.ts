@@ -5,16 +5,7 @@
  * Handles protection enforcement and plugin ownership.
  */
 
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type IDatabaseService,
-  type DatabaseTableStats,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, type IDatabaseService, type DatabaseTableStats } from '@ownpilot/core';
 import type { CustomDataRepository } from '../db/repositories/custom-data.js';
 import {
   createCustomDataRepository,
@@ -61,14 +52,10 @@ export class CustomDataService implements IDatabaseService {
     }
     const repo = this.getRepo();
     const table = await repo.createTable(name, displayName, columns, description, options);
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'custom-data-service',
-        { resourceType: 'custom_table', id: table.id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'custom-data-service', {
+      resourceType: 'custom_table',
+      id: table.id,
+    });
     return table;
   }
 
@@ -154,14 +141,10 @@ export class CustomDataService implements IDatabaseService {
 
     const deleted = await repo.deleteTable(nameOrId, options);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'custom-data-service',
-          { resourceType: 'custom_table', id: table.id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'custom-data-service', {
+        resourceType: 'custom_table',
+        id: table.id,
+      });
     }
     return deleted;
   }
@@ -195,14 +178,10 @@ export class CustomDataService implements IDatabaseService {
   async addRecord(tableNameOrId: string, data: Record<string, unknown>): Promise<CustomDataRecord> {
     const repo = this.getRepo();
     const record = await repo.addRecord(tableNameOrId, data);
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'custom-data-service',
-        { resourceType: 'custom_record', id: record.id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'custom-data-service', {
+      resourceType: 'custom_record',
+      id: record.id,
+    });
     return record;
   }
 
@@ -233,14 +212,10 @@ export class CustomDataService implements IDatabaseService {
 
     // Emit events after transaction commits (outside transaction to avoid event ordering issues)
     for (const record of created) {
-      getEventBus().emit(
-        createEvent<ResourceCreatedData>(
-          EventTypes.RESOURCE_CREATED,
-          'resource',
-          'custom-data-service',
-          { resourceType: 'custom_record', id: record.id }
-        )
-      );
+      getEventSystem().emit('resource.created', 'custom-data-service', {
+        resourceType: 'custom_record',
+        id: record.id,
+      });
     }
 
     return created;
@@ -272,14 +247,11 @@ export class CustomDataService implements IDatabaseService {
     const repo = this.getRepo();
     const updated = await repo.updateRecord(recordId, data);
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'custom-data-service',
-          { resourceType: 'custom_record', id: recordId, changes: data }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'custom-data-service', {
+        resourceType: 'custom_record',
+        id: recordId,
+        changes: data,
+      });
     }
     return updated;
   }
@@ -288,14 +260,10 @@ export class CustomDataService implements IDatabaseService {
     const repo = this.getRepo();
     const deleted = await repo.deleteRecord(recordId);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'custom-data-service',
-          { resourceType: 'custom_record', id: recordId }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'custom-data-service', {
+        resourceType: 'custom_record',
+        id: recordId,
+      });
     }
     return deleted;
   }

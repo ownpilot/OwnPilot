@@ -25,16 +25,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getEventBus: () => ({ emit: mockEmit }),
-    createEvent: vi.fn((_type: string, _cat: string, _src: string, data: unknown) => ({
-      type: _type,
-      data,
-    })),
-    EventTypes: {
-      RESOURCE_CREATED: 'resource.created',
-      RESOURCE_UPDATED: 'resource.updated',
-      RESOURCE_DELETED: 'resource.deleted',
-    },
+    getEventSystem: () => ({ emit: mockEmit }),
   };
 });
 

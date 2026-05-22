@@ -6,15 +6,7 @@
  * Complex scheduling/execution logic lives in TriggerEngine.
  */
 
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type ITriggerService,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, type ITriggerService } from '@ownpilot/core';
 import type { TriggersRepository } from '../db/repositories/triggers.js';
 import {
   createTriggersRepository,
@@ -58,12 +50,10 @@ export class TriggerService implements ITriggerService {
     }
     const repo = this.getRepo(userId);
     const trigger = await repo.create(input);
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'trigger-service', {
-        resourceType: 'trigger',
-        id: trigger.id,
-      })
-    );
+    getEventSystem().emit('resource.created', 'trigger-service', {
+      resourceType: 'trigger',
+      id: trigger.id,
+    });
     return trigger;
   }
 
@@ -85,14 +75,11 @@ export class TriggerService implements ITriggerService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'trigger-service',
-          { resourceType: 'trigger', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'trigger-service', {
+        resourceType: 'trigger',
+        id,
+        changes: input,
+      });
     }
     return updated;
   }
@@ -101,14 +88,10 @@ export class TriggerService implements ITriggerService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'trigger-service',
-          { resourceType: 'trigger', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'trigger-service', {
+        resourceType: 'trigger',
+        id,
+      });
     }
     return deleted;
   }

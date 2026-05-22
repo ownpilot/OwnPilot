@@ -7,15 +7,7 @@
  * lives in PlanExecutor.
  */
 
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type IPlanService,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, type IPlanService } from '@ownpilot/core';
 import type { PlansRepository } from '../db/repositories/plans.js';
 import {
   createPlansRepository,
@@ -69,12 +61,10 @@ export class PlanService implements IPlanService {
     }
     const repo = this.getRepo(userId);
     const plan = await repo.create(input);
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'plan-service', {
-        resourceType: 'plan',
-        id: plan.id,
-      })
-    );
+    getEventSystem().emit('resource.created', 'plan-service', {
+      resourceType: 'plan',
+      id: plan.id,
+    });
     return plan;
   }
 
@@ -122,13 +112,11 @@ export class PlanService implements IPlanService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(EventTypes.RESOURCE_UPDATED, 'resource', 'plan-service', {
-          resourceType: 'plan',
-          id,
-          changes: input,
-        })
-      );
+      getEventSystem().emit('resource.updated', 'plan-service', {
+        resourceType: 'plan',
+        id,
+        changes: input,
+      });
     }
     return updated;
   }
@@ -137,12 +125,10 @@ export class PlanService implements IPlanService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(EventTypes.RESOURCE_DELETED, 'resource', 'plan-service', {
-          resourceType: 'plan',
-          id,
-        })
-      );
+      getEventSystem().emit('resource.deleted', 'plan-service', {
+        resourceType: 'plan',
+        id,
+      });
     }
     return deleted;
   }

@@ -5,18 +5,7 @@
  * Both HTTP routes and tool executors delegate here.
  */
 
-import {
-  getEventBus,
-  getEventSystem,
-  createEvent,
-  EventTypes,
-  getServiceRegistry,
-  Services,
-  type IMemoryService,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, getServiceRegistry, Services, type IMemoryService } from '@ownpilot/core';
 import type { MemoriesRepository } from '../db/repositories/memories.js';
 import {
   createMemoriesRepository,
@@ -71,12 +60,10 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const memory = await repo.create(input);
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
-        resourceType: 'memory',
-        id: memory.id,
-      })
-    );
+    getEventSystem().emit('resource.created', 'memory-service', {
+      resourceType: 'memory',
+      id: memory.id,
+    });
 
     // Emit memory.created event — embedding queue subscribes to this
     getEventSystem().emit('memory.created', 'memory-service', {
@@ -155,12 +142,10 @@ export class MemoryService implements IMemoryService {
       needsEmbedding: true,
     });
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'memory-service', {
-        resourceType: 'memory',
-        id: parentMemory.id,
-      })
-    );
+    getEventSystem().emit('resource.created', 'memory-service', {
+      resourceType: 'memory',
+      id: parentMemory.id,
+    });
 
     log.info(`Created chunked memory: ${chunks.length} chunks`, { parentId: parentMemory.id });
     return parentMemory;
@@ -238,14 +223,11 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(id, input);
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'memory-service',
-          { resourceType: 'memory', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'memory-service', {
+        resourceType: 'memory',
+        id,
+        changes: input,
+      });
       // Emit memory.updated — embedding queue re-embeds if content changed
       const hasNewContent = typeof input.content === 'string' && input.content.trim().length > 0;
       getEventSystem().emit('memory.updated', 'memory-service', {
@@ -262,14 +244,10 @@ export class MemoryService implements IMemoryService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(id);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'memory-service',
-          { resourceType: 'memory', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'memory-service', {
+        resourceType: 'memory',
+        id,
+      });
       getEventSystem().emit('memory.deleted', 'memory-service', {
         memoryId: id,
         userId,

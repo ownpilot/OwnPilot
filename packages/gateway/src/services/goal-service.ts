@@ -6,15 +6,7 @@
  * eliminating duplicated validation and logic.
  */
 
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type IGoalService,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem, type IGoalService } from '@ownpilot/core';
 import type { GoalsRepository } from '../db/repositories/goals.js';
 import {
   createGoalsRepository,
@@ -68,12 +60,10 @@ export class GoalService implements IGoalService {
     }
     const repo = this.getRepo(userId);
     const goal = await repo.create(input);
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(EventTypes.RESOURCE_CREATED, 'resource', 'goal-service', {
-        resourceType: 'goal',
-        id: goal.id,
-      })
-    );
+    getEventSystem().emit('resource.created', 'goal-service', {
+      resourceType: 'goal',
+      id: goal.id,
+    });
     return goal;
   }
 
@@ -100,13 +90,11 @@ export class GoalService implements IGoalService {
     const repo = this.getRepo(userId);
     const updated = await repo.update(goalId, input);
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(EventTypes.RESOURCE_UPDATED, 'resource', 'goal-service', {
-          resourceType: 'goal',
-          id: goalId,
-          changes: input,
-        })
-      );
+      getEventSystem().emit('resource.updated', 'goal-service', {
+        resourceType: 'goal',
+        id: goalId,
+        changes: input,
+      });
     }
     return updated;
   }
@@ -115,12 +103,10 @@ export class GoalService implements IGoalService {
     const repo = this.getRepo(userId);
     const deleted = await repo.delete(goalId);
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(EventTypes.RESOURCE_DELETED, 'resource', 'goal-service', {
-          resourceType: 'goal',
-          id: goalId,
-        })
-      );
+      getEventSystem().emit('resource.deleted', 'goal-service', {
+        resourceType: 'goal',
+        id: goalId,
+      });
     }
     return deleted;
   }

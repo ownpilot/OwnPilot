@@ -26,18 +26,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getEventBus: () => ({ emit: mockEmit }),
-    createEvent: (type: string, category: string, source: string, data: unknown) => ({
-      type,
-      category,
-      source,
-      data,
-    }),
-    EventTypes: {
-      RESOURCE_CREATED: 'resource.created',
-      RESOURCE_UPDATED: 'resource.updated',
-      RESOURCE_DELETED: 'resource.deleted',
-    },
+    getEventSystem: () => ({ emit: mockEmit }),
   };
 });
 
@@ -686,12 +675,11 @@ describe('CrudRepository', () => {
       await eventRepo.create({ name: 'Test' });
 
       expect(mockEmit).toHaveBeenCalledOnce();
-      const event = mockEmit.mock.calls[0]![0];
-      expect(event.type).toBe('resource.created');
-      expect(event.category).toBe('resource');
-      expect(event.source).toBe('widgets-repository');
-      expect(event.data.resourceType).toBe('widget');
-      expect(event.data.id).toEqual(expect.any(String));
+      const [type, source, data] = mockEmit.mock.calls[0]!;
+      expect(type).toBe('resource.created');
+      expect(source).toBe('widgets-repository');
+      expect(data.resourceType).toBe('widget');
+      expect(data.id).toEqual(expect.any(String));
     });
 
     it('should emit RESOURCE_UPDATED on update when emitEvents is true', async () => {
@@ -703,13 +691,12 @@ describe('CrudRepository', () => {
       await eventRepo.update('w-1', { name: 'Updated' });
 
       expect(mockEmit).toHaveBeenCalledOnce();
-      const event = mockEmit.mock.calls[0]![0];
-      expect(event.type).toBe('resource.updated');
-      expect(event.category).toBe('resource');
-      expect(event.source).toBe('widgets-repository');
-      expect(event.data.resourceType).toBe('widget');
-      expect(event.data.id).toBe('w-1');
-      expect(event.data.changes).toEqual({ name: 'Updated' });
+      const [type, source, data] = mockEmit.mock.calls[0]!;
+      expect(type).toBe('resource.updated');
+      expect(source).toBe('widgets-repository');
+      expect(data.resourceType).toBe('widget');
+      expect(data.id).toBe('w-1');
+      expect(data.changes).toEqual({ name: 'Updated' });
     });
 
     it('should emit RESOURCE_DELETED on delete when emitEvents is true', async () => {
@@ -719,12 +706,11 @@ describe('CrudRepository', () => {
       await eventRepo.delete('w-1');
 
       expect(mockEmit).toHaveBeenCalledOnce();
-      const event = mockEmit.mock.calls[0]![0];
-      expect(event.type).toBe('resource.deleted');
-      expect(event.category).toBe('resource');
-      expect(event.source).toBe('widgets-repository');
-      expect(event.data.resourceType).toBe('widget');
-      expect(event.data.id).toBe('w-1');
+      const [type, source, data] = mockEmit.mock.calls[0]!;
+      expect(type).toBe('resource.deleted');
+      expect(source).toBe('widgets-repository');
+      expect(data.resourceType).toBe('widget');
+      expect(data.id).toBe('w-1');
     });
 
     // -----------------------------------------------------------------------
@@ -770,8 +756,8 @@ describe('CrudRepository', () => {
       await customRepo.create({ name: 'Test' });
 
       expect(mockEmit).toHaveBeenCalledOnce();
-      const event = mockEmit.mock.calls[0]![0];
-      expect(event.data.resourceType).toBe('gadget');
+      const [, , data] = mockEmit.mock.calls[0]!;
+      expect(data.resourceType).toBe('gadget');
     });
 
     it('should default resourceType to entityName', () => {

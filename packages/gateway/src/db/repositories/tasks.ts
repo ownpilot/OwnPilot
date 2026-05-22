@@ -8,14 +8,7 @@ import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 import type { StandardQuery } from './interfaces.js';
-import {
-  getEventBus,
-  createEvent,
-  EventTypes,
-  type ResourceCreatedData,
-  type ResourceUpdatedData,
-  type ResourceDeletedData,
-} from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core';
 
 export interface Task {
   id: string;
@@ -160,14 +153,10 @@ export class TasksRepository extends BaseRepository {
     const task = await this.get(id);
     if (!task) throw new Error('Failed to create task');
 
-    getEventBus().emit(
-      createEvent<ResourceCreatedData>(
-        EventTypes.RESOURCE_CREATED,
-        'resource',
-        'tasks-repository',
-        { resourceType: 'task', id }
-      )
-    );
+    getEventSystem().emit('resource.created', 'tasks-repository', {
+      resourceType: 'task',
+      id,
+    });
 
     return task;
   }
@@ -231,14 +220,11 @@ export class TasksRepository extends BaseRepository {
     const updated = await this.get(id);
 
     if (updated) {
-      getEventBus().emit(
-        createEvent<ResourceUpdatedData>(
-          EventTypes.RESOURCE_UPDATED,
-          'resource',
-          'tasks-repository',
-          { resourceType: 'task', id, changes: input }
-        )
-      );
+      getEventSystem().emit('resource.updated', 'tasks-repository', {
+        resourceType: 'task',
+        id,
+        changes: input,
+      });
     }
 
     return updated;
@@ -252,14 +238,10 @@ export class TasksRepository extends BaseRepository {
     const deleted = result.changes > 0;
 
     if (deleted) {
-      getEventBus().emit(
-        createEvent<ResourceDeletedData>(
-          EventTypes.RESOURCE_DELETED,
-          'resource',
-          'tasks-repository',
-          { resourceType: 'task', id }
-        )
-      );
+      getEventSystem().emit('resource.deleted', 'tasks-repository', {
+        resourceType: 'task',
+        id,
+      });
     }
 
     return deleted;

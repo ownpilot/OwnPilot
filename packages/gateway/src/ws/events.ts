@@ -45,9 +45,13 @@ export class GatewayEventEmitter {
   }
 
   /**
-   * Emit a server event
+   * Emit a server event.
+   *
+   * Fire-and-forget: returns immediately. Handlers run asynchronously via the
+   * EventBus and their errors are caught/logged inside the bus — they never
+   * propagate here. Do NOT await; the returned void is intentional.
    */
-  async emit<K extends keyof ServerEvents>(event: K, data: ServerEvents[K]): Promise<void> {
+  emit<K extends keyof ServerEvents>(event: K, data: ServerEvents[K]): void {
     this.bus.emit(toDot(event), data);
   }
 }
