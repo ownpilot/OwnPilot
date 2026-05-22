@@ -19,6 +19,8 @@ import { getLog } from '../../services/log.js';
 import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
 import { attachmentDisposition } from '../../utils/file-safety.js';
 import { validateBody } from '../../middleware/validation.js';
+import { getEventSystem } from '@ownpilot/core';
+import { getClientIp } from '../../utils/client-ip.js';
 
 const log = getLog('Database');
 
@@ -160,6 +162,13 @@ backupRoutes.post('/backup', async (c) => {
     output: [],
   });
 
+  // Audit the backup initiation. Backups expose every credential and
+  // setting in the DB once they leave the host, so the operation
+  // needs a forensic record.
+  getEventSystem().emit('audit.database.backupStarted' as never, 'db-backup', {
+    ip: getClientIp(c.req),
+  } as never);
+
   const config = getDatabaseConfig();
 
   // Check PostgreSQL is connected
@@ -300,6 +309,16 @@ backupRoutes.post('/restore', async (c) => {
   }
   const body = parsedRestore.data;
 
+  // Audit the restore initiation. Restoring overwrites the live
+  // database — easiest possible privilege escalation (replace the
+  // password hash, the JWT secret, the API keys, anything) if the
+  // operator's session is hijacked. We log BEFORE doing anything so
+  // even a crash mid-restore leaves a trail.
+  getEventSystem().emit('audit.database.restoreStarted' as never, 'db-backup', {
+    ip: getClientIp(c.req),
+    filename: sanitizeId(basename(body.filename)),
+  } as never);
+
   const config = getDatabaseConfig();
   const backupPath = join(getBackupDir(), basename(body.filename)); // Sanitize path
 
@@ -420,6 +439,12 @@ backupRoutes.delete('/backup/:filename', (c) => {
 
   try {
     unlinkSync(backupPath);
+    // Audit backup deletion — destroys a recovery option, must be
+    // visible in incident response.
+    getEventSystem().emit('audit.database.backupDeleted' as never, 'db-backup', {
+      ip: getClientIp(c.req),
+      filename: sanitizeId(basename(filename)),
+    } as never);
     return apiResponse(c, { message: `Deleted backup: ${sanitizeId(basename(filename))}` });
   } catch (err) {
     return apiError(
