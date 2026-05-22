@@ -203,20 +203,6 @@ export {
   type PlanStep,
 } from './orchestrator.js';
 
-// Orchestra (multi-agent collaboration)
-export {
-  type OrchestraStrategy,
-  type OrchestraState,
-  type AgentTask,
-  type OrchestraPlan,
-  type OrchestraTaskResult,
-  type OrchestraExecution,
-  type IOrchestraService,
-  type DelegateToAgentInput,
-  type DelegationResult,
-  DEFAULT_ORCHESTRA_LIMITS,
-} from './orchestra/index.js';
-
 // Provider Presets
 export { PROVIDER_PRESETS, type ProviderPreset } from './presets.js';
 

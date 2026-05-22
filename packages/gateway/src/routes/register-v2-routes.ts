@@ -40,7 +40,6 @@ import {
   auditRoutes,
   heartbeatsRoutes,
   subagentRoutes,
-  orchestraRoutes,
   fleetRoutes,
   clawRoutes,
   // Data
@@ -143,9 +142,6 @@ export function registerV2Routes(app: Hono): void {
 
   // Subagents
   app.route('/api/v2/subagents', subagentRoutes);
-
-  // Orchestra
-  app.route('/api/v2/orchestra', orchestraRoutes);
 
   // Fleet
   app.route('/api/v2/fleet', fleetRoutes);

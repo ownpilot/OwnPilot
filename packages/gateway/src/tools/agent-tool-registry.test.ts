@@ -150,8 +150,6 @@ vi.mock('./index.js', () => ({
   executeEventTool: vi.fn(),
   SUBAGENT_TOOLS: [],
   executeSubagentTool: vi.fn(),
-  ORCHESTRA_TOOL_DEFINITIONS: [],
-  executeOrchestraTool: vi.fn(),
   ARTIFACT_TOOLS: [],
   executeArtifactTool: vi.fn(),
   SOUL_COMMUNICATION_TOOLS: [],
@@ -1582,27 +1580,6 @@ describe('agent-tools helpers', () => {
       } finally {
         const i = (SUBAGENT_TOOLS as (typeof td)[]).indexOf(td);
         if (i > -1) (SUBAGENT_TOOLS as (typeof td)[]).splice(i, 1);
-      }
-    });
-
-    it('registers and invokes ORCHESTRA_TOOL_DEFINITIONS executor (lines 244-261)', async () => {
-      const { ORCHESTRA_TOOL_DEFINITIONS } = await import('../tools/index.js');
-      const { executeOrchestraTool } = await import('../tools/index.js');
-      const td = { name: 'orchestrate', description: 'Orchestrate', parameters: {} };
-      (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).push(td);
-      try {
-        vi.mocked(executeOrchestraTool).mockResolvedValue({
-          success: true,
-          result: 'orchestrated',
-        });
-        const { captured } = captureGatewayExecutors(true);
-        const fn = captured[captured.length - 1]!;
-        const result = (await fn({}, { conversationId: 'conv-1' })) as { content: string };
-        expect(result.content).toContain('orchestrated');
-        expect(mockTraceToolCallEnd).toHaveBeenCalled();
-      } finally {
-        const i = (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).indexOf(td);
-        if (i > -1) (ORCHESTRA_TOOL_DEFINITIONS as (typeof td)[]).splice(i, 1);
       }
     });
 

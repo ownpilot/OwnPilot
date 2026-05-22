@@ -18,11 +18,6 @@ export { CODING_AGENT_TOOLS, executeCodingAgentTool } from './coding-agent-tools
 export { CLI_TOOL_TOOLS, executeCliToolTool } from './cli-tool-tools.js';
 export { EVENT_TOOLS, executeEventTool } from './event-tools.js';
 export { SUBAGENT_TOOLS, executeSubagentTool } from './subagent-tools.js';
-export {
-  ORCHESTRA_TOOL_DEFINITIONS,
-  ORCHESTRA_TOOL_NAMES,
-  executeOrchestraTool,
-} from './orchestra-tools.js';
 export { ARTIFACT_TOOLS, ARTIFACT_TOOL_NAMES, executeArtifactTool } from './artifact-tools.js';
 export { BROWSER_TOOLS, BROWSER_TOOL_NAMES, executeBrowserTool } from './browser-tools.js';
 export { EDGE_TOOLS, EDGE_TOOL_NAMES, executeEdgeTool } from './edge-tools.js';

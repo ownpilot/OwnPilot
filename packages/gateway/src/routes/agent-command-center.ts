@@ -23,9 +23,7 @@ import { getCrewsRepository } from '../db/repositories/crews.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { SubagentsRepository } from '../db/repositories/subagents.js';
 import { getFleetRepository } from '../db/repositories/fleet.js';
-import { OrchestraRepository } from '../db/repositories/orchestra.js';
 import { agentsRepo } from '../db/repositories/agents.js';
-import { getOrchestraEngine } from '../services/orchestra-engine.js';
 import { getFleetService } from '../services/fleet-service.js';
 import { getClawService } from '../services/claw-service.js';
 import {
@@ -311,7 +309,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     const crewRepo = getCrewsRepository();
     const subagentRepo = new SubagentsRepository();
     const fleetRepo = getFleetRepository();
-    const orchestraRepo = new OrchestraRepository();
     const soulRepo = getSoulsRepository();
     const clawService = getClawService();
 
@@ -320,8 +317,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       subagentHealth,
       fleetStats,
       fleetHealth,
-      orchestraStats,
-      orchestraHealth,
       soulStats,
       soulHealth,
       crewStats,
@@ -411,63 +406,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
             signals: [] as string[],
             recommendations: [] as string[],
             activeFleets: 0,
-          };
-        }
-      })(),
-      orchestraRepo.getStats(userId).catch(() => ({
-        total: 0,
-        active: 0,
-        successRate: 0,
-        avgCost: 0,
-        avgDuration: 0,
-        totalCost: 0,
-        errorRate: 0,
-        byState: {},
-        tasksSucceeded: 0,
-        tasksFailed: 0,
-      })),
-      (async () => {
-        try {
-          const engine = getOrchestraEngine();
-          const executions: Array<{ startedAt?: Date; taskResults: unknown[] }> = [];
-          const execMap = (
-            engine as unknown as {
-              executions?: Map<
-                string,
-                { startedAt?: Date; taskResults: unknown[]; state?: string }
-              >;
-            }
-          ).executions;
-          if (execMap)
-            for (const ex of execMap.values()) if (ex.state === 'running') executions.push(ex);
-          const signals: string[] = [];
-          const recommendations: string[] = [];
-          let score = 80;
-          let status: 'healthy' | 'watch' | 'stuck' | 'failed' = 'healthy';
-          if (executions.length === 0) {
-            score = 60;
-            status = 'watch';
-            signals.push('no running executions');
-          }
-          const stale = executions.filter(
-            (ex) =>
-              ex.startedAt &&
-              Date.now() - ex.startedAt.getTime() > 30 * 60 * 1000 &&
-              ex.taskResults.length === 0
-          );
-          if (stale.length > 0) {
-            signals.push(`${stale.length} executions with no progress`);
-            recommendations.push('Check orchestration strategy and agent availability');
-            score = Math.min(score, 35);
-            status = 'stuck';
-          }
-          return { status, score, signals, recommendations };
-        } catch {
-          return {
-            status: 'healthy' as const,
-            score: 80,
-            signals: [] as string[],
-            recommendations: [] as string[],
           };
         }
       })(),
@@ -654,7 +592,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
     const totalCost =
       (subagentStats.totalCost ?? 0) +
       (fleetStats.totalCost ?? 0) +
-      (orchestraStats.totalCost ?? 0) +
       (soulStats.totalCost ?? 0) +
       (clawStats.totalCost ?? 0);
 
@@ -676,10 +613,6 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
       fleet: {
         stats: fleetStats,
         health: fleetHealth,
-      },
-      orchestra: {
-        stats: orchestraStats,
-        health: orchestraHealth,
       },
       soul: {
         stats: soulStats,

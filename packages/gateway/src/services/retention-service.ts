@@ -12,7 +12,6 @@ import { getJobsRepository } from '../db/repositories/jobs.js';
 import { getClawsRepository } from '../db/repositories/claws.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
 import { createSubagentsRepository } from '../db/repositories/subagents.js';
-import { createOrchestraRepository } from '../db/repositories/orchestra.js';
 import { createTriggersRepository } from '../db/repositories/triggers.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { embeddingCacheRepo } from '../db/repositories/embedding-cache.js';
@@ -34,7 +33,6 @@ const CLEANUP_METHODS: Record<string, () => Promise<number>> = {
   claw_history: () => getClawsRepository().cleanupOldHistory(90),
   claw_audit_log: () => getClawsRepository().cleanupOldAuditLog(30),
   workflow_logs: () => createWorkflowsRepository('default').cleanupOldWorkflowLogs(90),
-  plan_history: () => createOrchestraRepository('default').cleanupOld(90),
   trigger_history: () => createTriggersRepository('default').cleanupHistory(30),
   heartbeat_log: () => getHeartbeatLogRepository().cleanupOld(30),
   subagent_history: () => createSubagentsRepository('default').cleanupOld(90),

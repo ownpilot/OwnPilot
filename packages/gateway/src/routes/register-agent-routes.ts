@@ -18,7 +18,6 @@ import {
   auditRoutes,
   heartbeatsRoutes,
   subagentRoutes,
-  orchestraRoutes,
   fleetRoutes,
   clawRoutes,
 } from './index.js';
@@ -45,9 +44,6 @@ export function registerAgentRoutes(app: Hono): void {
 
   // Subagents (ephemeral, task-oriented child agents)
   app.route('/api/v1/subagents', subagentRoutes);
-
-  // Agent Orchestra (multi-agent collaboration & delegation)
-  app.route('/api/v1/orchestra', orchestraRoutes);
 
   // Fleet (coordinated agent army)
   app.route('/api/v1/fleet', fleetRoutes);

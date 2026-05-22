@@ -44,7 +44,6 @@ export const agentSystemDomain = {
     'agent_messages',
     'heartbeat_log',
     'subagent_history',
-    'orchestra_executions',
     'orchestration_runs',
   ],
 
@@ -53,7 +52,6 @@ export const agentSystemDomain = {
     'agent-registry',
     'soul-heartbeat-service',
     'subagent-service',
-    'orchestra-engine',
     'coding-agent-orchestrator',
   ],
 } as const;
