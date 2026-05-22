@@ -32,7 +32,6 @@ export function GlobalStatusBar({ agents, isRefreshing, isConnected }: Props) {
 
   const runnerCount = overview
     ? [
-        overview.orchestra.stats.total > 0 ? 'orchestra' : null,
         overview.soul.stats.totalCycles > 0 ? 'soul' : null,
         overview.crew.stats.totalCrews > 0 ? 'crew' : null,
         overview.claw.stats.total > 0 ? 'claw' : null,

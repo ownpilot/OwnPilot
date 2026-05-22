@@ -76,22 +76,6 @@ export const autonomyApi = {
 
 // ---- Agent Command Center ----
 
-interface OrchestraStats {
-  total: number;
-  active: number;
-  successRate: number;
-  avgCost: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-}
-interface OrchestraHealth {
-  status: string;
-  score: number;
-  signals: string[];
-  recommendations: string[];
-}
 interface SoulStats {
   totalCycles: number;
   totalCost: number;
@@ -139,7 +123,6 @@ interface ClawHealth {
 }
 
 export interface AgentOverview {
-  orchestra: { stats: OrchestraStats; health: OrchestraHealth };
   soul: { stats: SoulStats; health: SoulHealth };
   crew: { stats: CrewStats; health: CrewHealth };
   claw: { stats: ClawStats; health: ClawHealth };
