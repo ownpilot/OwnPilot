@@ -101,23 +101,12 @@ export {
   createPluginVerifier,
 } from './marketplace.js';
 
-// Runtime system - secure plugin execution
-export {
-  // Types
-  type PluginState,
-  type PluginInstance,
-  type LoadOptions,
-  type RuntimeConfig,
-  type RuntimeEvents,
-  // Classes
-  PluginSecurityBarrier,
-  SecurePluginRuntime,
-  // Factory functions
-  createPluginRuntime,
-  getDefaultRuntime,
-  resetDefaultRuntime,
-} from './runtime.js';
-
+// NOTE: The legacy `SecurePluginRuntime` (in `./runtime.js`) was removed in
+// v0.5.1 — it advertised plugin isolation but its production worker had no
+// sandbox layer, `pluginModule` was never assigned (so every `call()`
+// returned "Method not found"), and it had zero callers in this monorepo.
+// The functional plugin system is `PluginRegistry` (see ./registry.js).
+//
 // API Boundary - definitive access control specification
 export {
   // Types
