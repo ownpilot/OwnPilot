@@ -30,8 +30,6 @@ import {
   Shuffle,
   Layers,
   Shield,
-  Activity,
-  DollarSign,
 } from '../components/icons';
 import { XTerminal } from '../components/XTerminal';
 import {
@@ -48,23 +46,6 @@ import { useSkipHome } from '../hooks/useSkipHome';
 // =============================================================================
 // Stats & Health types
 // =============================================================================
-
-interface OrchestraStats {
-  total: number;
-  active: number;
-  successRate: number;
-  avgCost?: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-}
-interface OrchestraHealth {
-  status: string;
-  score: number;
-  signals: string[];
-  recommendations: string[];
-}
 
 // =============================================================================
 // Status badge
@@ -464,8 +445,6 @@ export function OrchestrationPage() {
   const [continuePrompt, setContinuePrompt] = useState('');
   const [isContinuing, setIsContinuing] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [stats, setStats] = useState<OrchestraStats | null>(null);
-  const [health, setHealth] = useState<OrchestraHealth | null>(null);
 
   const selectedRun = runs.find((r) => r.id === selectedRunId) ?? null;
 
@@ -483,14 +462,8 @@ export function OrchestrationPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [{ runs: data }, statsData, healthData] = await Promise.all([
-        orchestrationApi.list(),
-        orchestrationApi.stats().catch(() => null),
-        orchestrationApi.health().catch(() => null),
-      ]);
+      const { runs: data } = await orchestrationApi.list();
       setRuns(data);
-      setStats(statsData);
-      setHealth(healthData);
     } catch {
       /* ignore */
     } finally {
@@ -777,46 +750,6 @@ export function OrchestrationPage() {
           {showNewForm && (
             <div className="px-6 py-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
               <NewRunForm providers={providers} workspaces={workspaces} onStart={handleStart} />
-            </div>
-          )}
-
-          {/* Stats + Health summary strip */}
-          {(stats || health) && (
-            <div className="flex items-center gap-4 px-6 py-2 border-b border-border dark:border-dark-border bg-bg-tertiary/50">
-              {stats && (
-                <>
-                  <div className="flex items-center gap-1.5 text-xs text-muted">
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>{stats.total} total</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted">
-                    <span className="text-success">
-                      {Math.round(stats.successRate * 100)}% success
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    <span>${stats.totalCost.toFixed(4)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{(stats.avgDuration / 1000).toFixed(1)}s avg</span>
-                  </div>
-                </>
-              )}
-              {health && (
-                <span
-                  className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${
-                    health.status === 'healthy'
-                      ? 'bg-success/20 text-success'
-                      : health.status === 'watch'
-                        ? 'bg-yellow-500/20 text-yellow-500'
-                        : 'bg-error/20 text-error'
-                  }`}
-                >
-                  {health.status} ({health.score})
-                </span>
-              )}
             </div>
           )}
 

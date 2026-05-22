@@ -1,9 +1,9 @@
 /**
  * Agent Lifecycle Abstraction
  *
- * Unified interface for all 6 agent types (regular, coding, background,
- * soul, subagent, orchestra). Provides a common state machine,
- * lifecycle methods, and resource tracking.
+ * Unified interface for all agent types (regular, coding, background,
+ * soul, claw). Provides a common state machine, lifecycle methods,
+ * and resource tracking.
  */
 
 // ============================================================================
@@ -11,7 +11,7 @@
 // ============================================================================
 
 /** All possible agent types in the system. */
-export type AgentType = 'regular' | 'coding' | 'background' | 'soul' | 'subagent' | 'orchestra';
+export type AgentType = 'regular' | 'coding' | 'background' | 'soul' | 'claw';
 
 /**
  * Unified agent state. Each agent type maps its internal states to these.
@@ -20,8 +20,7 @@ export type AgentType = 'regular' | 'coding' | 'background' | 'soul' | 'subagent
  *   Coding:     starting → starting, running/waiting → running, completed → completed, failed → failed, terminated → cancelled
  *   Background: starting → starting, running/waiting → running, paused → paused, completed → completed, failed → failed, stopped → cancelled
  *   Soul:       heartbeat executing → running, idle → idle
- *   Subagent:   pending → starting, running → running, completed → completed, failed → failed, cancelled → cancelled, timeout → failed
- *   Orchestra:  running → running, completed → completed, failed → failed, cancelled → cancelled
+ *   Claw:       running → running, paused → paused, completed → completed, failed → failed, stopped → cancelled
  */
 export type UnifiedAgentState =
   | 'idle'

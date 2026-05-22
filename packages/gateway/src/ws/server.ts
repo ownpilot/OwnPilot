@@ -280,43 +280,6 @@ export class WSGateway {
       })
     );
 
-    // subagent.* → subagent:* (spawned, progress, completed)
-    this.legacyUnsubs.push(
-      eventSystem.onAny('subagent.spawned', (event) => {
-        this.broadcast('subagent:spawned', event.data as ServerEvents['subagent:spawned']);
-      })
-    );
-    this.legacyUnsubs.push(
-      eventSystem.onAny('subagent.progress', (event) => {
-        this.broadcast('subagent:progress', event.data as ServerEvents['subagent:progress']);
-      })
-    );
-    this.legacyUnsubs.push(
-      eventSystem.onAny('subagent.completed', (event) => {
-        this.broadcast('subagent:completed', event.data as ServerEvents['subagent:completed']);
-      })
-    );
-
-    // orchestra.* → orchestra:* (started, task.complete, completed)
-    this.legacyUnsubs.push(
-      eventSystem.onAny('orchestra.started', (event) => {
-        this.broadcast('orchestra:started', event.data as ServerEvents['orchestra:started']);
-      })
-    );
-    this.legacyUnsubs.push(
-      eventSystem.onAny('orchestra.task.complete', (event) => {
-        this.broadcast(
-          'orchestra:task:complete',
-          event.data as ServerEvents['orchestra:task:complete']
-        );
-      })
-    );
-    this.legacyUnsubs.push(
-      eventSystem.onAny('orchestra.completed', (event) => {
-        this.broadcast('orchestra:completed', event.data as ServerEvents['orchestra:completed']);
-      })
-    );
-
     // soul.heartbeat.completed → soul:heartbeat:completed
     this.legacyUnsubs.push(
       eventSystem.onAny('soul.heartbeat.completed', (event) => {

@@ -3,14 +3,12 @@
  *
  * Tab structure:
  * - Home: unified overview of all runners
- * - Orchestra / Soul / Crew / Claw: per-runner drill-down
+ * - Soul / Crew / Claw: per-runner drill-down
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
-  CheckCircle2,
-  XCircle,
   Clock,
   DollarSign,
   Zap,
@@ -25,7 +23,7 @@ import {
 import { apiClient } from '../api';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
-import { orchestrationApi, soulsApi, crewsApi, clawsApi } from '../api';
+import { soulsApi, crewsApi, clawsApi } from '../api';
 import type { HeartbeatLog } from '../api/endpoints/souls';
 import { heartbeatLogsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
@@ -38,20 +36,6 @@ interface RunnerHealth {
   signals: string[];
   recommendations: string[];
 }
-
-interface OrchestraStats {
-  total: number;
-  active: number;
-  successRate: number;
-  avgDuration: number;
-  totalCost: number;
-  errorRate: number;
-  byState: Record<string, number>;
-  tasksSucceeded: number;
-  tasksFailed: number;
-  [key: string]: unknown;
-}
-interface OrchestraHealth extends RunnerHealth {}
 
 interface SoulStats {
   totalCycles: number;
@@ -100,11 +84,10 @@ interface ClawHealth extends RunnerHealth {
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 
-type TabId = 'home' | 'orchestra' | 'soul' | 'crew' | 'claw';
+type TabId = 'home' | 'soul' | 'crew' | 'claw';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'orchestra', label: 'Orchestra', icon: Zap },
   { id: 'soul', label: 'Soul', icon: Heart },
   { id: 'crew', label: 'Crew', icon: Users },
   { id: 'claw', label: 'Claw', icon: Zap },
@@ -244,35 +227,23 @@ function StatsCard({
 // ── Home tab ──────────────────────────────────────────────────────────────────
 
 function HomeTab({
-  orchestra,
   soul,
   crew,
   claw,
   onSelectTab,
 }: {
-  orchestra: { stats: OrchestraStats | null; health: OrchestraHealth | null };
   soul: { stats: SoulStats | null; health: SoulHealth | null };
   crew: { stats: CrewStats | null; health: CrewHealth | null };
   claw: { stats: ClawStats | null; health: ClawHealth | null };
   onSelectTab: (tab: TabId) => void;
 }) {
   const totalCost =
-    (orchestra.stats?.totalCost ?? 0) +
-    (soul.stats?.totalCost ?? 0) +
-    (crew.stats?.totalCost ?? 0) +
-    (claw.stats?.totalCost ?? 0);
+    (soul.stats?.totalCost ?? 0) + (crew.stats?.totalCost ?? 0) + (claw.stats?.totalCost ?? 0);
 
   return (
     <div className="space-y-6">
       {/* Summary strip */}
       <div className="flex items-center gap-6 px-4 py-3 bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 rounded-xl border border-border dark:border-dark-border text-xs">
-        {orchestra.stats && (
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-text-secondary font-medium">{orchestra.stats.total}</span>
-            <span className="text-text-muted">orchestrations</span>
-          </div>
-        )}
         {soul.stats && (
           <div className="flex items-center gap-1.5">
             <Heart className="w-3.5 h-3.5 text-rose-500" />
@@ -307,14 +278,6 @@ function HomeTab({
       {/* Runner cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <RunnerCard
-          title="Orchestration"
-          icon={Zap}
-          iconColor="text-amber-500"
-          stats={orchestra.stats ?? { total: 0, active: 0, tasksSucceeded: 0, totalCost: 0 }}
-          health={orchestra.health}
-          onClick={() => onSelectTab('orchestra')}
-        />
-        <RunnerCard
           title="Soul Agents"
           icon={Heart}
           iconColor="text-rose-500"
@@ -342,42 +305,6 @@ function HomeTab({
 
       {/* Detail panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {orchestra.stats && (
-          <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
-                Orchestration
-              </h3>
-            </div>
-            <div className="space-y-1">
-              <StatRow
-                label="Total Runs"
-                value={orchestra.stats.total.toString()}
-                icon={Zap}
-                color="text-amber-500"
-              />
-              <StatRow
-                label="Tasks Succeeded"
-                value={orchestra.stats.tasksSucceeded.toLocaleString()}
-                icon={CheckCircle2}
-                color="text-emerald-500"
-              />
-              <StatRow
-                label="Success Rate"
-                value={`${(orchestra.stats.successRate * 100).toFixed(1)}%`}
-                icon={CheckCircle2}
-                color="text-emerald-500"
-              />
-              <StatRow
-                label="Total Cost"
-                value={`$${orchestra.stats.totalCost.toFixed(4)}`}
-                icon={DollarSign}
-                color="text-amber-500"
-              />
-            </div>
-          </div>
-        )}
         {soul.stats && (
           <div className="card-elevated p-4 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
             <div className="flex items-center gap-2 mb-3">
@@ -475,95 +402,6 @@ function HomeTab({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Orchestra tab ─────────────────────────────────────────────────────────────
-
-function OrchestraTab({
-  stats,
-  health,
-}: {
-  stats: OrchestraStats | null;
-  health: OrchestraHealth | null;
-}) {
-  return (
-    <div className="space-y-6">
-      {health && (
-        <div
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium w-fit ${
-            health.status === 'healthy'
-              ? 'text-green-500'
-              : health.status === 'watch'
-                ? 'text-yellow-500'
-                : 'text-red-500'
-          } bg-opacity-20`}
-        >
-          {health.status} (score: {health.score})
-          {health.signals.length > 0 && ` · ${health.signals.join(', ')}`}
-        </div>
-      )}
-
-      {stats && (
-        <div className="grid grid-cols-4 gap-4">
-          <StatsCard
-            label="Total Runs"
-            value={stats.total.toString()}
-            icon={Zap}
-            color="text-amber-500"
-          />
-          <StatsCard
-            label="Active"
-            value={stats.active.toString()}
-            icon={Activity}
-            color="text-green-500"
-          />
-          <StatsCard
-            label="Tasks Succeeded"
-            value={stats.tasksSucceeded.toLocaleString()}
-            icon={CheckCircle2}
-            color="text-emerald-500"
-          />
-          <StatsCard
-            label="Tasks Failed"
-            value={stats.tasksFailed.toLocaleString()}
-            icon={XCircle}
-            color="text-red-500"
-          />
-          <StatsCard
-            label="Success Rate"
-            value={`${(stats.successRate * 100).toFixed(1)}%`}
-            icon={CheckCircle2}
-            color="text-emerald-500"
-          />
-          <StatsCard
-            label="Avg Duration"
-            value={`${(stats.avgDuration / 1000).toFixed(1)}s`}
-            icon={Clock}
-            color="text-purple-500"
-          />
-          <StatsCard
-            label="Total Cost"
-            value={`$${stats.totalCost.toFixed(4)}`}
-            icon={DollarSign}
-            color="text-indigo-500"
-          />
-        </div>
-      )}
-
-      {health && health.recommendations.length > 0 && (
-        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-          <h3 className="text-sm font-medium text-yellow-500 mb-2">Recommendations</h3>
-          <ul className="space-y-1">
-            {health.recommendations.map((r, i) => (
-              <li key={i} className="text-xs text-yellow-400">
-                → {r}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -964,10 +802,6 @@ export function AgentsObservabilityPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
-  const [orchestra, setOrchestra] = useState<{
-    stats: OrchestraStats | null;
-    health: OrchestraHealth | null;
-  }>({ stats: null, health: null });
   const [soul, setSoul] = useState<{ stats: SoulStats | null; health: SoulHealth | null }>({
     stats: null,
     health: null,
@@ -986,8 +820,7 @@ export function AgentsObservabilityPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [orc, soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
-        Promise.all([orchestrationApi.stats(), orchestrationApi.health()]),
+      const [soulRes, crewRes, clawStatsResult] = await Promise.allSettled([
         Promise.all([soulsApi.stats(), soulsApi.health()]),
         Promise.all([crewsApi.stats(), crewsApi.health()]),
         clawsApi.stats(),
@@ -1000,7 +833,6 @@ export function AgentsObservabilityPage() {
         /* not available */
       }
 
-      if (orc.status === 'fulfilled') setOrchestra({ stats: orc.value[0], health: orc.value[1] });
       if (soulRes.status === 'fulfilled')
         setSoul({ stats: soulRes.value[0], health: soulRes.value[1] });
       if (crewRes.status === 'fulfilled')
@@ -1021,7 +853,6 @@ export function AgentsObservabilityPage() {
   useEffect(() => {
     const unsubs = [
       subscribe('claw:cycle:complete', loadAll),
-      subscribe('orchestration:step:completed', loadAll),
       subscribe('crew:task:completed', loadAll),
       subscribe('soul:heartbeat:completed', loadAll),
     ];
@@ -1070,16 +901,7 @@ export function AgentsObservabilityPage() {
       {/* Tab content */}
       <div className="flex-1 overflow-auto p-6">
         {activeTab === 'home' && (
-          <HomeTab
-            orchestra={orchestra}
-            soul={soul}
-            crew={crew}
-            claw={claw}
-            onSelectTab={setActiveTab}
-          />
-        )}
-        {activeTab === 'orchestra' && (
-          <OrchestraTab stats={orchestra.stats} health={orchestra.health} />
+          <HomeTab soul={soul} crew={crew} claw={claw} onSelectTab={setActiveTab} />
         )}
         {activeTab === 'soul' && <SoulTab stats={soul.stats} health={soul.health} />}
         {activeTab === 'crew' && <CrewTab stats={crew.stats} health={crew.health} />}

@@ -21,14 +21,13 @@ const PREFIX = 'model_routing:';
 // Types
 // ---------------------------------------------------------------------------
 
-export type RoutingProcess = 'chat' | 'channel' | 'channel_media' | 'pulse' | 'subagent';
+export type RoutingProcess = 'chat' | 'channel' | 'channel_media' | 'pulse';
 
 export const VALID_PROCESSES: readonly RoutingProcess[] = [
   'chat',
   'channel',
   'channel_media',
   'pulse',
-  'subagent',
 ] as const;
 
 export interface ProcessRouting {
@@ -106,7 +105,6 @@ export function getAllRouting(): Record<RoutingProcess, ProcessRouting> {
     channel: getProcessRouting('channel'),
     channel_media: getProcessRouting('channel_media'),
     pulse: getProcessRouting('pulse'),
-    subagent: getProcessRouting('subagent'),
   };
 }
 

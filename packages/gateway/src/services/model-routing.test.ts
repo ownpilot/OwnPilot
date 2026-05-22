@@ -84,7 +84,7 @@ describe('model-routing', () => {
 
   describe('VALID_PROCESSES', () => {
     it('contains exactly 4 processes', () => {
-      expect(VALID_PROCESSES).toEqual(['chat', 'channel', 'channel_media', 'pulse', 'subagent']);
+      expect(VALID_PROCESSES).toEqual(['chat', 'channel', 'channel_media', 'pulse']);
     });
   });
 

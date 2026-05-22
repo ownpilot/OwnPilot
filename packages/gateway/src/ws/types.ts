@@ -408,64 +408,6 @@ export interface ServerEvents {
   'approval:required': { approvalId: string; workflowId: string; nodeId: string };
   'approval:decided': { approvalId: string; status: 'approved' | 'rejected' };
 
-  // Subagent events
-  'subagent:spawned': {
-    subagentId: string;
-    parentId: string;
-    parentType: string;
-    userId: string;
-    name: string;
-    task: string;
-  };
-  'subagent:progress': {
-    subagentId: string;
-    parentId: string;
-    name: string;
-    turnsUsed: number;
-    toolCallsUsed: number;
-    lastToolName?: string;
-  };
-  'subagent:completed': {
-    subagentId: string;
-    parentId: string;
-    userId: string;
-    name: string;
-    state: string;
-    result?: string;
-    error?: string;
-    durationMs: number;
-    turnsUsed: number;
-    toolCallsUsed: number;
-  };
-
-  // Orchestra events
-  'orchestra:started': {
-    executionId: string;
-    parentId: string;
-    userId: string;
-    description: string;
-    strategy: string;
-    taskCount: number;
-  };
-  'orchestra:task:complete': {
-    executionId: string;
-    taskId: string;
-    agentName: string;
-    success: boolean;
-    durationMs: number;
-    tasksCompleted: number;
-    tasksTotal: number;
-  };
-  'orchestra:completed': {
-    executionId: string;
-    parentId: string;
-    userId: string;
-    state: string;
-    totalDurationMs: number;
-    tasksSucceeded: number;
-    tasksFailed: number;
-  };
-
   // WebChat events
   'webchat:response': {
     id: string;

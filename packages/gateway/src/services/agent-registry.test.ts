@@ -57,16 +57,16 @@ describe('AgentRegistry', () => {
 
   it('gets agent by type and id', () => {
     const registry = getAgentRegistry();
-    const summary = createMockSummary({ type: 'subagent', id: 'sub-1' });
+    const summary = createMockSummary({ type: 'claw', id: 'sub-1' });
     const adapter: AgentTypeAdapter = {
-      type: 'subagent',
+      type: 'claw',
       listActive: () => [],
       get: (id, userId) => (id === 'sub-1' && userId === 'user-1' ? summary : null),
       cancel: vi.fn().mockResolvedValue(true),
     };
     registry.registerAdapter(adapter);
-    expect(registry.get('subagent', 'sub-1', 'user-1')).toEqual(summary);
-    expect(registry.get('subagent', 'unknown', 'user-1')).toBeNull();
+    expect(registry.get('claw', 'sub-1', 'user-1')).toEqual(summary);
+    expect(registry.get('claw', 'unknown', 'user-1')).toBeNull();
     expect(registry.get('coding', 'sub-1', 'user-1')).toBeNull();
   });
 

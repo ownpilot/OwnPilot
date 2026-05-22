@@ -114,7 +114,7 @@ export async function registerAllToolSources(
 export async function resolveProviderAndModel(
   explicitProvider: string | undefined,
   explicitModel: string | undefined,
-  process: 'pulse' | 'subagent' | 'chat' = 'pulse',
+  process: 'pulse' | 'chat' = 'pulse',
   errorContext?: string
 ): Promise<{ provider: string; model: string }> {
   if (explicitProvider && explicitModel) {

@@ -29,7 +29,7 @@ export interface ResolvedRouting extends ProcessRouting {
   source: 'process' | 'channel' | 'global' | 'first-configured';
 }
 
-export type RoutingProcess = 'chat' | 'channel' | 'channel_media' | 'pulse' | 'subagent';
+export type RoutingProcess = 'chat' | 'channel' | 'channel_media' | 'pulse';
 
 export type ChannelRoutingKind = 'default' | 'media';
 

@@ -2,7 +2,7 @@
  * Model Routing Settings Page
  *
  * Configure per-process AI provider/model routing with optional fallback.
- * Processes: chat, channels, channel media, pulse, and subagents.
+ * Processes: chat, channels, channel media, and pulse.
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
@@ -64,11 +64,6 @@ const PROCESSES: Array<{
     label: 'Pulse & Triggers',
     description: 'Scheduled tasks, trigger actions, and autonomy engine',
   },
-  {
-    id: 'subagent',
-    label: 'Subagents',
-    description: 'Ephemeral child agents spawned by the chat agent for parallel task delegation',
-  },
 ];
 
 interface ProcessCardState {
@@ -120,7 +115,6 @@ export function ModelRoutingPage() {
       isSaving: false,
     },
     pulse: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
-    subagent: { routing: emptyRouting, resolved: emptyResolved, isDirty: false, isSaving: false },
   });
   const [channelStates, setChannelStates] = useState<Record<string, ChannelCardState>>({});
 
@@ -475,8 +469,7 @@ export function ModelRoutingPage() {
             steps={[
               {
                 title: 'Define routing rules',
-                detail:
-                  'Choose a provider and model for each process — chat, channels, pulse, subagents.',
+                detail: 'Choose a provider and model for each process — chat, channels, and pulse.',
               },
               {
                 title: 'Set model preferences',
