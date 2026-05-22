@@ -9,7 +9,7 @@ import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolExecutor } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
-import { resolveWorkspacePath } from './helpers.js';
+import { resolveWorkspacePath, rejectWorkspaceSymlink } from './helpers.js';
 
 export const FILE_EXECUTORS: Record<string, ToolExecutor> = {
   create_folder: async (args) => {
@@ -57,6 +57,14 @@ export const FILE_EXECUTORS: Record<string, ToolExecutor> = {
         await fsp.mkdir(parentDir, { recursive: true });
       }
 
+      // Defense-in-depth: if the target already exists and is a symlink,
+      // refuse — writing through it would clobber the symlink's target
+      // (potentially a file outside the workspace, planted via
+      // `execute_command` / `ln -s` or similar).
+      if (fs.existsSync(resolvedPath)) {
+        rejectWorkspaceSymlink(resolvedPath);
+      }
+
       await fsp.writeFile(resolvedPath, content, 'utf-8');
       const stats = await fsp.stat(resolvedPath);
       return { content: `File written: ${filePath} (${stats.size} bytes)` };
@@ -83,6 +91,10 @@ export const FILE_EXECUTORS: Record<string, ToolExecutor> = {
       if (!fs.existsSync(resolvedPath)) {
         return { content: `Error: File not found: ${filePath}`, isError: true };
       }
+
+      // Defense-in-depth: refuse to follow a symlink — see
+      // rejectWorkspaceSymlink for full rationale.
+      rejectWorkspaceSymlink(resolvedPath);
 
       const stats = await fsp.stat(resolvedPath);
       if (stats.isDirectory()) {

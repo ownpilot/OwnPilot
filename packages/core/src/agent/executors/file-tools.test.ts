@@ -44,6 +44,10 @@ vi.mock('./helpers.js', () => ({
   resolveWorkspacePath: mockResolveWorkspacePath,
   getWorkspacePath: () => '/workspace',
   WORKSPACE_DIR: 'workspace',
+  // Default to no-op so existing tests (which exercise regular file
+  // paths) pass without per-test setup. The symlink-defense behavior
+  // is exercised in the dedicated tests below.
+  rejectWorkspaceSymlink: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
