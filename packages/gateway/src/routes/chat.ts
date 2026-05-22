@@ -49,7 +49,29 @@ import {
   normalizeChatWidgets,
 } from '../utils/index.js';
 import { getLog } from '../services/log.js';
-import { PUBLIC_BASE_URL } from '../config/defaults.js';
+import { PUBLIC_BASE_URL, MS_PER_MINUTE } from '../config/defaults.js';
+import { createLoginThrottle } from '../utils/login-throttle.js';
+import { getClientIp } from '../utils/client-ip.js';
+
+// RATE-003: per-IP throttle for the chat endpoint. /chat is the single
+// most expensive endpoint — every request hits a paid LLM provider
+// (OpenAI, Anthropic, Groq, etc.) and many requests run multi-turn
+// tool loops that fan out to additional provider calls. A retry-storm
+// from a buggy client or a runaway agent loop could burn the operator's
+// monthly LLM budget in minutes. 60/min per IP allows interactive use
+// (a fast typist sends ~10/min sustained, automation can burst higher)
+// while capping the worst case at roughly $1-2/min cost on commercial
+// frontier models.
+const chatThrottle = createLoginThrottle({
+  maxAttempts: 60,
+  windowMs: MS_PER_MINUTE,
+  lockoutMs: 5 * MS_PER_MINUTE,
+});
+
+const chatThrottleCleanup = setInterval(() => chatThrottle.cleanup(), 2 * MS_PER_MINUTE);
+if (typeof chatThrottleCleanup === 'object' && 'unref' in chatThrottleCleanup) {
+  chatThrottleCleanup.unref();
+}
 
 // Import from split modules
 import {
@@ -182,6 +204,24 @@ async function processNonStreamingViaBus(
  * Send a chat message
  */
 chatRoutes.post('/', async (c) => {
+  // Per-IP throttle — see chatThrottle declaration. Skip in test env so
+  // sequential test runs don't collide on the shared in-memory bucket.
+  if (process.env.NODE_ENV !== 'test') {
+    const ip = getClientIp(c.req);
+    const throttleResult = chatThrottle.check(ip);
+    if (!throttleResult.allowed) {
+      c.header('Retry-After', String(Math.ceil(throttleResult.retryAfterMs / 1000)));
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.ACCESS_DENIED,
+          message: 'Chat rate limit exceeded. Please retry later.',
+        },
+        429
+      );
+    }
+  }
+
   const rawBody = await parseJsonBody(c);
   const { validateBody, chatMessageSchema } = await import('../middleware/validation.js');
   const body = validateBody(chatMessageSchema, rawBody) as ChatRequest & {
