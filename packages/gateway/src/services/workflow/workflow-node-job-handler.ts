@@ -14,7 +14,7 @@
  */
 
 import type { JobRecord } from '../../db/repositories/jobs.js';
-import type { IToolService } from '@ownpilot/core';
+import { getToolService, type IToolService } from '@ownpilot/core';
 import type { NodeResult, WorkflowNode, WorkflowEdge } from '../../db/repositories/workflows.js';
 import { createWorkflowsRepository } from '../../db/repositories/workflows.js';
 import { JobQueueService } from '../job-queue-service.js';
@@ -137,8 +137,6 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
     }
   }
 
-  // Get tool service (lazy to avoid circular deps)
-  const { getToolService } = await import('@ownpilot/core');
   const toolService = getToolService() as IToolService;
 
   // Build the execution context for dispatchNode

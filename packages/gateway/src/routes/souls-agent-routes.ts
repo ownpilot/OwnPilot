@@ -8,7 +8,7 @@
  */
 
 import { Hono } from 'hono';
-import type { SoulFeedback } from '@ownpilot/core';
+import { getMemoryService, getGoalService, type SoulFeedback } from '@ownpilot/core';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
@@ -104,7 +104,6 @@ soulAgentRoutes.get('/:agentId/memories', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Soul not found' }, 404);
     }
 
-    const { getMemoryService } = await import('@ownpilot/core');
     const memories = await getMemoryService().listMemories(agentId, { limit, offset });
 
     return apiResponse(c, {
@@ -140,7 +139,6 @@ soulAgentRoutes.get('/:agentId/goals', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Soul not found' }, 404);
     }
 
-    const { getGoalService } = await import('@ownpilot/core');
     const goals = await getGoalService().listGoals(agentId);
 
     return apiResponse(c, {

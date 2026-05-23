@@ -8,6 +8,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { pricingByExactKey } from '@ownpilot/core';
 import type {
   ChannelIncomingMessage,
   ChannelPluginAPI,
@@ -185,7 +186,6 @@ export async function processViaBus(
     // near the limit. Unknown models stay on a conservative 128K default.
     const inputTokens = result.response.metadata?.tokens?.input ?? 0;
     if (inputTokens > 0) {
-      const { pricingByExactKey } = await import('@ownpilot/core');
       const providerName = resolved.provider ?? 'openai';
       const modelName = resolved.model ?? 'gpt-4o';
       const pricing = pricingByExactKey.get(`${providerName}:${modelName}`);

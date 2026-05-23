@@ -30,6 +30,7 @@ import {
   hasMessageBus,
   getMessageBus,
   getConfigCenter,
+  getLLMRouter,
   type ISessionService,
   type IMessageBus,
 } from '@ownpilot/core';
@@ -895,7 +896,6 @@ export class ChannelServiceImpl implements IChannelService {
         // Create a new conversation in the agent's in-memory ConversationMemory
         // so that loadConversation() can find it later for context continuity
         const { getOrCreateChatAgent } = await import('../routes/agents.js');
-        const { getLLMRouter } = await import('@ownpilot/core');
         const routing = await getLLMRouter().pick({ process: 'channel' });
         const fallback =
           routing.fallbackProvider && routing.fallbackModel

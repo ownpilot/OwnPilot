@@ -11,7 +11,7 @@
  */
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
-import { getConfigCenter } from '@ownpilot/core';
+import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -370,7 +370,6 @@ const sendEmailOverride: ToolExecutor = async (params, _context): Promise<ToolEx
 
     // Attachments
     if (attachments?.length) {
-      const { isPathAllowedAsync } = await import('@ownpilot/core');
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const attachmentList: Array<{ filename: string; path: string }> = [];
@@ -703,7 +702,6 @@ const replyEmailOverride: ToolExecutor = async (params, _context): Promise<ToolE
 
     // Attachments
     if (attachments?.length) {
-      const { isPathAllowedAsync } = await import('@ownpilot/core');
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const attachmentList: Array<{ filename: string; path: string }> = [];

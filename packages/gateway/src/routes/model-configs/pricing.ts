@@ -7,7 +7,12 @@
 
 import { Hono } from 'hono';
 import { modelConfigsRepo } from '../../db/repositories/index.js';
-import { getAllProviderConfigs } from '@ownpilot/core';
+import {
+  getAllProviderConfigs,
+  syncAllProviders,
+  syncProviders,
+  clearConfigCache,
+} from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
 import {
   getUserId,
@@ -141,8 +146,6 @@ pricingRoutes.post('/sync', async (c) => {
 pricingRoutes.post('/sync/apply', async (c) => {
   try {
     // Use the proper sync function from core which applies CANONICAL_CONFIGS
-    const { syncAllProviders, clearConfigCache } = await import('@ownpilot/core');
-
     const result = await syncAllProviders();
 
     // Clear the provider config cache so new configs are loaded
@@ -284,8 +287,6 @@ pricingRoutes.delete('/sync/provider/:id', async (c) => {
 
     // Delete the config file
     fs.unlinkSync(configPath);
-
-    const { clearConfigCache, syncProviders } = await import('@ownpilot/core');
 
     // Optionally resync this provider from models.dev
     let syncResult = null;
