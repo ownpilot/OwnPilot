@@ -115,7 +115,7 @@ const mockGetOrCreateChatAgent = vi.fn();
 const mockGetDefaultProvider = vi.fn(async () => 'openai');
 const mockGetDefaultModel = vi.fn(async () => 'gpt-4o-mini');
 
-vi.mock('../routes/agents.js', () => ({
+vi.mock('./agent-service.js', () => ({
   getOrCreateChatAgent: (...args: unknown[]) => mockGetOrCreateChatAgent(...args),
 }));
 

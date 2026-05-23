@@ -61,7 +61,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 const mockAgentChat = vi.fn(() => ({ ok: true, value: { content: 'AI response' } }));
 const mockGetOrCreateChatAgent = vi.fn(() => ({ chat: mockAgentChat }));
 
-vi.mock('../routes/agents.js', () => ({
+vi.mock('../services/agent-service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
 
@@ -70,7 +70,7 @@ const mockResolveProviderAndModel = vi.fn(() => ({
   model: 'gpt-4o-mini',
 }));
 
-vi.mock('../routes/settings.js', () => ({
+vi.mock('../services/app-settings.js', () => ({
   resolveDefaultProviderAndModel: mockResolveProviderAndModel,
 }));
 

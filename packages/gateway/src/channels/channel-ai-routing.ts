@@ -117,7 +117,7 @@ export async function processViaBus(
     ?.preferredModel as string | undefined;
 
   // Resolve provider/model from agent config (or session override)
-  const { resolveDefaultProviderAndModel } = await import('../routes/settings.js');
+  const { resolveDefaultProviderAndModel } = await import('../services/app-settings.js');
   const resolved = await resolveDefaultProviderAndModel('default', preferredModel ?? 'default');
 
   // Normalize incoming message via channel normalizer

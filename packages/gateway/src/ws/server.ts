@@ -704,7 +704,7 @@ export class WSGateway {
 
       try {
         // Get or create default agent
-        const { getOrCreateDefaultAgent } = await import('../routes/agents.js');
+        const { getOrCreateDefaultAgent } = await import('../services/agent-service.js');
         const agent = await getOrCreateDefaultAgent();
 
         // Generate message ID
@@ -719,7 +719,7 @@ export class WSGateway {
         }
 
         // Check demo mode
-        const { isDemoMode } = await import('../routes/agents.js');
+        const { isDemoMode } = await import('../services/agent-service.js');
         if (await isDemoMode()) {
           // Demo mode: send simulated response
           const safeContent = escapeHtml(String(data.content ?? '').slice(0, 500));

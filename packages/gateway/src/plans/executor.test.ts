@@ -69,7 +69,7 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
 vi.mock('../services/agent-service.js', () => ({
   getOrCreateChatAgent: vi.fn(),
 }));
-vi.mock('../routes/settings.js', () => ({
+vi.mock('../services/app-settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o-mini' })),
 }));
 

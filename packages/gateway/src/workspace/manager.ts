@@ -165,8 +165,8 @@ class WorkspaceInstance implements Workspace {
       this.emit('streamStart', responseId);
 
       // Use the real agent system (dynamic import to avoid circular deps)
-      const { getOrCreateChatAgent } = await import('../routes/agents.js');
-      const { resolveDefaultProviderAndModel } = await import('../routes/settings.js');
+      const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+      const { resolveDefaultProviderAndModel } = await import('../services/app-settings.js');
 
       const agentConfig = this.config.agent;
       const resolved = await resolveDefaultProviderAndModel(

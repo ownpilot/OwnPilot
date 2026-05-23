@@ -66,7 +66,7 @@ export {
 } from '../services/agent-service.js';
 export type { ContextBreakdown } from '../services/agent-service.js';
 export { invalidateAgentCache } from '../services/agent-cache.js';
-export { getDefaultModel } from './settings.js';
+export { getDefaultModel } from '../services/app-settings.js';
 
 // =============================================================================
 // Route handlers

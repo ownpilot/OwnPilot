@@ -107,7 +107,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../routes/agents.js', () => ({
+vi.mock('../services/agent-service.js', () => ({
   getOrCreateDefaultAgent: vi.fn(),
   isDemoMode: vi.fn(),
 }));

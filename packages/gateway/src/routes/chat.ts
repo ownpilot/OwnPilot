@@ -1,14 +1,14 @@
 /**
  * Chat routes
  *
- * Implementation split:
- * - chat-state.ts:       Shared module-level state (breaks circular dep)
- * - chat-streaming.ts:   SSE streaming types, callbacks, processing
- * - chat-prompt.ts:      System prompt init, execution context, demo mode
- * - chat-persistence.ts: DB save, logging, post-chat processing
- * - chat-fetch-url.ts:   URL content extraction endpoint
- * - chat-legacy-send.ts: Legacy direct path (non-MessageBus fallback)
- * - chat.ts:             Route handlers (this file) + backward compat re-exports
+ * Implementation split (Hono handlers live in routes/, pure logic in services/):
+ * - services/chat-state.ts:     Shared module-level state (breaks circular dep)
+ * - services/chat-streaming.ts: SSE streaming types, callbacks, processing
+ * - services/chat-prompt.ts:    System prompt init, execution context, demo mode
+ * - services/conversation-service.ts: DB save, logging, post-chat processing
+ * - routes/chat-fetch-url.ts:   URL content extraction endpoint
+ * - routes/chat-legacy-send.ts: Legacy direct path (non-MessageBus fallback)
+ * - routes/chat.ts:             Route handlers (this file) + backward compat re-exports
  */
 
 import { Hono } from 'hono';

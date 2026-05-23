@@ -225,7 +225,7 @@ vi.mock('../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: vi.fn().mockReturnValue(mockMsgRepo),
 }));
 
-vi.mock('../routes/agents.js', () => ({
+vi.mock('./agent-service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
 
