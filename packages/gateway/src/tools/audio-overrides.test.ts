@@ -58,7 +58,7 @@ vi.mock('@ownpilot/core', () => ({
   }),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../services/log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,
@@ -71,11 +71,11 @@ vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../services/app-settings.js', () => ({
   resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('../services/agent-cache.js', () => ({
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...args),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...args),
 }));

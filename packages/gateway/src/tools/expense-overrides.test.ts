@@ -11,7 +11,7 @@ import { registerExpenseOverrides } from './expense-overrides.js';
 
 const mockExecuteExpenseTool = vi.fn();
 
-vi.mock('../tools/expense-tools.js', () => ({
+vi.mock('./expense-tools.js', () => ({
   executeExpenseTool: (...args: unknown[]) => mockExecuteExpenseTool(...args),
 }));
 

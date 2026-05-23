@@ -46,11 +46,11 @@ vi.mock('../db/repositories/config-services.js', () => ({
   },
 }));
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../services/app-settings.js', () => ({
   resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('../services/agent-cache.js', () => ({
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...args),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...args),
   NATIVE_PROVIDERS: mockNativeProviders,
@@ -65,7 +65,7 @@ vi.mock('@ownpilot/core', () => ({
   }),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../services/log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,

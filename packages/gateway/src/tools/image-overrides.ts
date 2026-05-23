@@ -9,10 +9,14 @@
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
 import { getConfigCenter } from '@ownpilot/core';
-import { resolveDefaultProviderAndModel } from './app-settings.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
+import { resolveDefaultProviderAndModel } from '../services/app-settings.js';
+import {
+  getProviderApiKey,
+  loadProviderConfig,
+  NATIVE_PROVIDERS,
+} from '../services/agent-cache.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
-import { getLog } from './log.js';
+import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../utils/common.js';
 
 const log = getLog('ImageOverrides');

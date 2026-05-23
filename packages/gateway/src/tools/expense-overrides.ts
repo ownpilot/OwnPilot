@@ -8,8 +8,8 @@
  */
 
 import type { ToolRegistry, ToolDefinition } from '@ownpilot/core';
-import { executeExpenseTool } from '../tools/expense-tools.js';
-import { getLog } from './log.js';
+import { executeExpenseTool } from './expense-tools.js';
+import { getLog } from '../services/log.js';
 
 const log = getLog('ExpenseOverrides');
 

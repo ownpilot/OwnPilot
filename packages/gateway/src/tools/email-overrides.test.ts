@@ -74,7 +74,7 @@ vi.mock('../routes/helpers.js', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../services/log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,

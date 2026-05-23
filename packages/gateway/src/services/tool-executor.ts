@@ -36,10 +36,10 @@ import {
 } from './custom-tool-registry.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from './log.js';
-import { registerImageOverrides } from './image-overrides.js';
-import { registerEmailOverrides } from './email-overrides.js';
-import { registerAudioOverrides } from './audio-overrides.js';
-import { registerExpenseOverrides } from './expense-overrides.js';
+import { registerImageOverrides } from '../tools/image-overrides.js';
+import { registerEmailOverrides } from '../tools/email-overrides.js';
+import { registerAudioOverrides } from '../tools/audio-overrides.js';
+import { registerExpenseOverrides } from '../tools/expense-overrides.js';
 import {
   getConfigCenter,
   getPluginService,

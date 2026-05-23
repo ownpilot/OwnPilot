@@ -129,10 +129,10 @@ vi.mock('../db/repositories/custom-tools.js', () => ({
   createCustomToolsRepo: vi.fn(() => mockCustomToolsRepo),
 }));
 
-vi.mock('./image-overrides.js', () => ({ registerImageOverrides: vi.fn(async () => {}) }));
-vi.mock('./email-overrides.js', () => ({ registerEmailOverrides: vi.fn(async () => {}) }));
-vi.mock('./audio-overrides.js', () => ({ registerAudioOverrides: vi.fn(async () => {}) }));
-vi.mock('./expense-overrides.js', () => ({ registerExpenseOverrides: vi.fn() }));
+vi.mock('../tools/image-overrides.js', () => ({ registerImageOverrides: vi.fn(async () => {}) }));
+vi.mock('../tools/email-overrides.js', () => ({ registerEmailOverrides: vi.fn(async () => {}) }));
+vi.mock('../tools/audio-overrides.js', () => ({ registerAudioOverrides: vi.fn(async () => {}) }));
+vi.mock('../tools/expense-overrides.js', () => ({ registerExpenseOverrides: vi.fn() }));
 
 const mockIdempotencyRepo = {
   getRecord: vi.fn(async () => null),
@@ -241,9 +241,9 @@ import {
   getExtensionService,
   hasExtensionService,
 } from '@ownpilot/core';
-import { registerImageOverrides } from './image-overrides.js';
-import { registerEmailOverrides } from './email-overrides.js';
-import { registerAudioOverrides } from './audio-overrides.js';
+import { registerImageOverrides } from '../tools/image-overrides.js';
+import { registerEmailOverrides } from '../tools/email-overrides.js';
+import { registerAudioOverrides } from '../tools/audio-overrides.js';
 
 // ---------------------------------------------------------------------------
 // Tests
