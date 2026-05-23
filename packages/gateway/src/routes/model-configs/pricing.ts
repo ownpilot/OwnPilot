@@ -220,7 +220,6 @@ pricingRoutes.post('/sync/reset', async (c) => {
     }
 
     // 3. Sync fresh from models.dev
-    const { syncAllProviders, clearConfigCache } = await import('@ownpilot/core');
     const syncResult = await syncAllProviders();
 
     // 4. Clear all caches
