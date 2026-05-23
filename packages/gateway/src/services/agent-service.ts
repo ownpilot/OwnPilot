@@ -39,7 +39,7 @@ import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
 import { getLog } from './log.js';
-import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from '../routes/agent-prompt.js';
+import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from './agent-prompt.js';
 import {
   registerGatewayTools,
   registerDynamicTools,

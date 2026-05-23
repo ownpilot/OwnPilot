@@ -161,7 +161,7 @@ vi.mock('./extension-service.js', () => ({
   })),
 }));
 
-vi.mock('../routes/agent-prompt.js', () => ({
+vi.mock('./agent-prompt.js', () => ({
   BASE_SYSTEM_PROMPT: 'Test system prompt',
 }));
 

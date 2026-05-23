@@ -14,7 +14,7 @@ import { channelSessionsRepo } from '../db/repositories/channel-sessions.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from './log.js';
 import { truncate } from '../utils/common.js';
-import type { StreamState } from '../routes/chat-streaming.js';
+import type { StreamState } from './streaming-types.js';
 import type { CreateConversationInput, Conversation } from '../db/repositories/chat.js';
 
 const log = getLog('ConversationService');
