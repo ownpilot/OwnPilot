@@ -88,7 +88,9 @@ vi.mock('@ownpilot/core', async () => {
       tryGet: vi.fn(() => undefined),
     })),
     getPluginService: vi.fn(() => mockPluginService),
+    hasPluginService: vi.fn(() => true),
     getExtensionService: vi.fn(() => mockExtensionService),
+    hasExtensionService: vi.fn(() => true),
     getEventSystem: vi.fn(() => mockEventSystem),
     getAuditService: vi.fn(() => undefined),
     hasAuditService: vi.fn(() => false),
@@ -235,7 +237,9 @@ import {
   getServiceRegistry,
   hasServiceRegistry,
   getPluginService,
+  hasPluginService,
   getExtensionService,
+  hasExtensionService,
 } from '@ownpilot/core';
 import { registerImageOverrides } from './image-overrides.js';
 import { registerEmailOverrides } from './email-overrides.js';
@@ -272,7 +276,9 @@ describe('Tool Executor', () => {
       tryGet: vi.fn(() => undefined),
     } as unknown as ReturnType<typeof getServiceRegistry>);
     vi.mocked(getPluginService).mockReturnValue(mockPluginService as never);
+    vi.mocked(hasPluginService).mockReturnValue(true);
     vi.mocked(getExtensionService).mockReturnValue(mockExtensionService as never);
+    vi.mocked(hasExtensionService).mockReturnValue(true);
   });
 
   // ========================================================================
@@ -1116,9 +1122,10 @@ describe('Tool Executor', () => {
       expect(result.content).toBe('Sandbox crashed');
     });
 
-    it('handles extension service not available (hasServiceRegistry false)', async () => {
-      const { hasServiceRegistry } = await import('@ownpilot/core');
-      vi.mocked(hasServiceRegistry).mockReturnValue(false);
+    it('handles extension service not available (hasExtensionService false)', async () => {
+      const { hasExtensionService, hasPluginService } = await import('@ownpilot/core');
+      vi.mocked(hasExtensionService).mockReturnValue(false);
+      vi.mocked(hasPluginService).mockReturnValue(false);
 
       // Should not throw
       expect(() => getSharedToolRegistry('user-1')).not.toThrow();

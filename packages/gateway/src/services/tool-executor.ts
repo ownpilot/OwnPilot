@@ -41,15 +41,15 @@ import { registerEmailOverrides } from './email-overrides.js';
 import { registerAudioOverrides } from './audio-overrides.js';
 import { registerExpenseOverrides } from './expense-overrides.js';
 import {
-  hasServiceRegistry,
   getConfigCenter,
   getPluginService,
+  hasPluginService,
   getExtensionService,
+  hasExtensionService,
   getEventSystem,
   getAuditService,
   hasAuditService,
 } from '@ownpilot/core';
-import type { IAuditService } from '@ownpilot/core';
 import { checkToolPermission } from './tool-permission-service.js';
 import type { ToolExecContext } from './permission-utils.js';
 import { getExtensionSandbox } from './extension-sandbox.js';
@@ -155,7 +155,7 @@ export function getSharedToolRegistry(userId = 'default'): ToolRegistry {
  * Also listens for plugin enable/disable events to add/remove tools dynamically.
  */
 function initPluginToolsIntoRegistry(registry: ToolRegistry): void {
-  if (!hasServiceRegistry()) return;
+  if (!hasPluginService()) return;
 
   try {
     const pluginService = getPluginService();
@@ -364,7 +364,7 @@ function registerSingleExtensionTool(
  * Also listens for extension install/enable/disable events to stay in sync.
  */
 function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
-  if (!hasServiceRegistry()) return;
+  if (!hasExtensionService()) return;
 
   try {
     const service =
@@ -460,10 +460,9 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
     // Enforced regardless of granted permissions, mirroring custom-tool sandbox.
     if (isCallToolHardBlocked(toolName)) {
       logPermissionDenied(extensionId, toolName, 'network');
-      if (hasServiceRegistry()) {
+      if (hasAuditService()) {
         try {
-          const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
-          audit?.logAudit({
+          getAuditService().logAudit({
             userId: ownerUserId,
             action: 'extension.callTool',
             resource: 'extension',
@@ -491,10 +490,9 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
     if (!allowed) {
       logPermissionDenied(extensionId, toolName, requiredPermission ?? 'network');
       // Emit audit event for denied call
-      if (hasServiceRegistry()) {
+      if (hasAuditService()) {
         try {
-          const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
-          audit?.logAudit({
+          getAuditService().logAudit({
             userId: ownerUserId,
             action: 'extension.callTool',
             resource: 'extension',
@@ -524,10 +522,9 @@ function setupSandboxCallToolHandler(registry: ToolRegistry): void {
     });
 
     // Emit audit event for all calls (both allowed and denied above)
-    if (hasServiceRegistry()) {
+    if (hasAuditService()) {
       try {
-        const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
-        audit?.logAudit({
+        getAuditService().logAudit({
           userId: ownerUserId,
           action: 'extension.callTool',
           resource: 'extension',
@@ -621,10 +618,9 @@ export async function executeTool(
   }
 
   // Fire-and-forget audit log
-  if (hasServiceRegistry()) {
+  if (hasAuditService()) {
     try {
-      const audit: IAuditService | null = hasAuditService() ? getAuditService() : null;
-      audit?.logAudit({
+      getAuditService().logAudit({
         userId,
         action: 'tool_execute',
         resource: 'tool',
