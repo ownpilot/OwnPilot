@@ -7,9 +7,13 @@
  * ChannelPluginAPI for unified channel management.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { SlackChannelAPI } from './slack-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildSlackChannelPlugin() {
   return createChannelPlugin()
@@ -70,19 +74,17 @@ export function buildSlackChannelPlugin() {
     })
     .platform('slack')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
-        bot_token:
-          config.bot_token ??
-          (configServicesRepo.getFieldValue('slack_bot', 'bot_token') as string) ??
-          '',
+        bot_token: config.bot_token ?? (cc.getFieldValue('slack_bot', 'bot_token') as string) ?? '',
         signing_secret:
           (config.signing_secret as string) ??
-          (configServicesRepo.getFieldValue('slack_bot', 'signing_secret') as string) ??
+          (cc.getFieldValue('slack_bot', 'signing_secret') as string) ??
           '',
         app_token:
           (config.app_token as string) ??
-          (configServicesRepo.getFieldValue('slack_bot', 'app_token') as string) ??
+          (cc.getFieldValue('slack_bot', 'app_token') as string) ??
           '',
       };
       return new SlackChannelAPI(resolvedConfig, 'channel.slack');

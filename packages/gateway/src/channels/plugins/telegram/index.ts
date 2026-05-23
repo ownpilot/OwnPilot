@@ -6,9 +6,13 @@
  * exposes ChannelPluginAPI for unified channel management.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { TelegramChannelAPI } from './telegram-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildTelegramChannelPlugin() {
   return createChannelPlugin()
@@ -118,32 +122,30 @@ export function buildTelegramChannelPlugin() {
     })
     .platform('telegram')
     .channelApi((config) => {
-      // Merge config from Config Center
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         bot_token:
-          config.bot_token ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'bot_token') as string) ??
-          '',
+          config.bot_token ?? (cc.getFieldValue('telegram_bot', 'bot_token') as string) ?? '',
         webhook_url:
           (config.webhook_url as string) ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'webhook_url') as string) ??
+          (cc.getFieldValue('telegram_bot', 'webhook_url') as string) ??
           '',
         webhook_secret:
           (config.webhook_secret as string) ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'webhook_secret') as string) ??
+          (cc.getFieldValue('telegram_bot', 'webhook_secret') as string) ??
           '',
         voice_reply_mode:
           (config.voice_reply_mode as string) ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_mode') as string) ??
+          (cc.getFieldValue('telegram_bot', 'voice_reply_mode') as string) ??
           'never',
         voice_reply_voice:
           (config.voice_reply_voice as string) ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_voice') as string) ??
+          (cc.getFieldValue('telegram_bot', 'voice_reply_voice') as string) ??
           '',
         voice_reply_speed:
           (config.voice_reply_speed as number) ??
-          (configServicesRepo.getFieldValue('telegram_bot', 'voice_reply_speed') as number) ??
+          (cc.getFieldValue('telegram_bot', 'voice_reply_speed') as number) ??
           undefined,
       };
       return new TelegramChannelAPI(resolvedConfig, 'channel.telegram');

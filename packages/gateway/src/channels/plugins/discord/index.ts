@@ -6,9 +6,13 @@
  * exposes ChannelPluginAPI for unified channel management.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { DiscordChannelAPI } from './discord-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildDiscordChannelPlugin() {
   return createChannelPlugin()
@@ -67,15 +71,14 @@ export function buildDiscordChannelPlugin() {
     })
     .platform('discord')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         bot_token:
-          config.bot_token ??
-          (configServicesRepo.getFieldValue('discord_bot', 'bot_token') as string) ??
-          '',
+          config.bot_token ?? (cc.getFieldValue('discord_bot', 'bot_token') as string) ?? '',
         application_id:
           (config.application_id as string) ??
-          (configServicesRepo.getFieldValue('discord_bot', 'application_id') as string) ??
+          (cc.getFieldValue('discord_bot', 'application_id') as string) ??
           '',
       };
       return new DiscordChannelAPI(resolvedConfig, 'channel.discord');

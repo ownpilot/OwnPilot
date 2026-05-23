@@ -172,3 +172,65 @@ export interface ConfigCenter {
    */
   getServiceDefinition(serviceName: string): ConfigServiceDefinition | null;
 }
+
+// ============================================================================
+// Singleton access — matches the IChannelService / ILLMRouter pattern
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { Services } from './tokens.js';
+
+let _configCenter: ConfigCenter | null = null;
+
+/**
+ * Register the ConfigCenter implementation. Called once at gateway startup.
+ * Also mirrors into the service registry under Services.Config.
+ */
+export function setConfigCenter(center: ConfigCenter): void {
+  _configCenter = center;
+
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(Services.Config)) {
+        registry.register(Services.Config, center);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+/**
+ * Get the ConfigCenter. Tries the service registry first, falls back to
+ * the direct singleton. Throws if neither is initialized.
+ *
+ * Use `hasConfigCenter()` when you need to handle the uninitialized case
+ * gracefully (e.g. early startup, tests).
+ */
+export function getConfigCenter(): ConfigCenter {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(Services.Config);
+    } catch {
+      // Not registered yet — fall through to direct singleton
+    }
+  }
+
+  if (!_configCenter) {
+    throw new Error('ConfigCenter not initialized. Call setConfigCenter() during gateway startup.');
+  }
+  return _configCenter;
+}
+
+/** Check whether the ConfigCenter has been initialized. */
+export function hasConfigCenter(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(Services.Config);
+    } catch {
+      // fall through
+    }
+  }
+  return _configCenter !== null;
+}

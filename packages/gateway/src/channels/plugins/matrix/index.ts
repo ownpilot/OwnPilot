@@ -7,9 +7,13 @@
  * and exposes ChannelPluginAPI for unified channel management.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { MatrixChannelAPI } from './matrix-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildMatrixChannelPlugin() {
   return createChannelPlugin()
@@ -78,20 +82,17 @@ export function buildMatrixChannelPlugin() {
     })
     .platform('matrix')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         homeserver_url:
           (config.homeserver_url as string) ??
-          (configServicesRepo.getFieldValue('matrix_bot', 'homeserver_url') as string) ??
+          (cc.getFieldValue('matrix_bot', 'homeserver_url') as string) ??
           '',
         access_token:
-          config.access_token ??
-          (configServicesRepo.getFieldValue('matrix_bot', 'access_token') as string) ??
-          '',
+          config.access_token ?? (cc.getFieldValue('matrix_bot', 'access_token') as string) ?? '',
         user_id:
-          (config.user_id as string) ??
-          (configServicesRepo.getFieldValue('matrix_bot', 'user_id') as string) ??
-          '',
+          (config.user_id as string) ?? (cc.getFieldValue('matrix_bot', 'user_id') as string) ?? '',
       };
       return new MatrixChannelAPI(resolvedConfig, 'channel.matrix');
     })

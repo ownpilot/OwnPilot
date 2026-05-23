@@ -6,9 +6,13 @@
  * exposes ChannelPluginAPI for unified channel management.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { SmsChannelAPI } from './sms-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildSmsChannelPlugin() {
   return createChannelPlugin()
@@ -68,19 +72,20 @@ export function buildSmsChannelPlugin() {
     })
     .platform('sms')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         account_sid:
           (config.account_sid as string) ??
-          (configServicesRepo.getFieldValue('twilio_sms', 'account_sid') as string) ??
+          (cc.getFieldValue('twilio_sms', 'account_sid') as string) ??
           '',
         auth_token:
           (config.auth_token as string) ??
-          (configServicesRepo.getFieldValue('twilio_sms', 'auth_token') as string) ??
+          (cc.getFieldValue('twilio_sms', 'auth_token') as string) ??
           '',
         from_number:
           (config.from_number as string) ??
-          (configServicesRepo.getFieldValue('twilio_sms', 'from_number') as string) ??
+          (cc.getFieldValue('twilio_sms', 'from_number') as string) ??
           '',
       };
       return new SmsChannelAPI(resolvedConfig, 'channel.sms');

@@ -60,12 +60,17 @@ const {
   };
 });
 
-// Keep createChannelPlugin real — only override getChannelService.
+// Keep createChannelPlugin real — only override getChannelService and getConfigCenter.
+// getConfigCenter is now the production import for plugin config lookups; the
+// legacy `vi.mock('../../../db/repositories/config-services.js', ...)` below is
+// kept so existing assertions on mockGetFieldValue still pass — both paths
+// resolve to the same mock function.
 vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...actual,
     getChannelService: mockGetChannelService,
+    getConfigCenter: () => ({ getFieldValue: mockGetFieldValue }),
   };
 });
 

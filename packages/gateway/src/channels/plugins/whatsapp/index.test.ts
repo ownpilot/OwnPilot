@@ -41,6 +41,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...actual,
+    getConfigCenter: () => mockConfigServicesRepo,
     createChannelPlugin: vi.fn(() => {
       const b: any = {
         meta: vi.fn((m: any) => {

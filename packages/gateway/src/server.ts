@@ -268,6 +268,10 @@ async function main() {
 
   // 5. Config Center
   registry.register(Services.Config, gatewayConfigCenter);
+  // Also install the direct singleton so callers can use getConfigCenter()
+  // from @ownpilot/core without going through the registry on every call.
+  const { setConfigCenter } = await import('@ownpilot/core');
+  setConfigCenter(gatewayConfigCenter);
 
   // Start embedding queue (background embedding generation for memories)
   const { getEmbeddingQueue } = await import('./services/embedding-queue.js');

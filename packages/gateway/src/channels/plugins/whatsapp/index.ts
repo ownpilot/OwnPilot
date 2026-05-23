@@ -6,9 +6,13 @@
  * No Meta Business account needed — works with personal WhatsApp accounts.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { WhatsAppChannelAPI } from './whatsapp-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildWhatsAppChannelPlugin() {
   return createChannelPlugin()
@@ -44,11 +48,12 @@ export function buildWhatsAppChannelPlugin() {
     })
     .platform('whatsapp')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         my_phone:
           (config.my_phone as string) ??
-          (configServicesRepo.getFieldValue('whatsapp_baileys', 'my_phone') as string) ??
+          (cc.getFieldValue('whatsapp_baileys', 'my_phone') as string) ??
           '',
       };
       return new WhatsAppChannelAPI(resolvedConfig, 'channel.whatsapp');

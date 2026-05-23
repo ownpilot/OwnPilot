@@ -6,9 +6,13 @@
  * Provides IMAP/SMTP credential configuration via Config Center.
  */
 
-import { createChannelPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core';
+import {
+  createChannelPlugin,
+  getConfigCenter,
+  type PluginCapability,
+  type PluginPermission,
+} from '@ownpilot/core';
 import { EmailChannelAPI } from './email-api.js';
-import { configServicesRepo } from '../../../db/repositories/config-services.js';
 
 export function buildEmailChannelPlugin() {
   return createChannelPlugin()
@@ -107,27 +111,28 @@ export function buildEmailChannelPlugin() {
     })
     .platform('email')
     .channelApi((config) => {
+      const cc = getConfigCenter();
       const resolvedConfig = {
         ...config,
         smtp_host:
           (config.smtp_host as string) ??
-          (configServicesRepo.getFieldValue('email_channel', 'smtp_host') as string) ??
+          (cc.getFieldValue('email_channel', 'smtp_host') as string) ??
           '',
         smtp_port:
           (config.smtp_port as number) ??
-          (configServicesRepo.getFieldValue('email_channel', 'smtp_port') as number) ??
+          (cc.getFieldValue('email_channel', 'smtp_port') as number) ??
           587,
         smtp_user:
           (config.smtp_user as string) ??
-          (configServicesRepo.getFieldValue('email_channel', 'smtp_user') as string) ??
+          (cc.getFieldValue('email_channel', 'smtp_user') as string) ??
           '',
         smtp_pass:
           (config.smtp_pass as string) ??
-          (configServicesRepo.getFieldValue('email_channel', 'smtp_pass') as string) ??
+          (cc.getFieldValue('email_channel', 'smtp_pass') as string) ??
           '',
         from_address:
           (config.from_address as string) ??
-          (configServicesRepo.getFieldValue('email_channel', 'from_address') as string) ??
+          (cc.getFieldValue('email_channel', 'from_address') as string) ??
           '',
       };
       return new EmailChannelAPI(resolvedConfig, 'channel.email');
