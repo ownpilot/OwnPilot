@@ -78,6 +78,7 @@ export type {
   LogStats,
   RequestType,
 } from './audit-service.js';
+export { getAuditService, setAuditService, hasAuditService, AuditToken } from './audit-service.js';
 export type {
   IMessageBus,
   MessageMiddleware,

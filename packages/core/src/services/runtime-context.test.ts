@@ -18,6 +18,7 @@ import { setChannelService } from '../channels/service.js';
 import { setConfigCenter } from './config-center.js';
 import { setPermissionGate } from './permission-gate.js';
 import { setMemoryService } from './memory-service-interface.js';
+import { setAuditService } from './audit-service.js';
 import { getRuntimeContext, hasRuntimeContext } from './runtime-context.js';
 
 import type { ILLMRouter } from './llm-router.js';
@@ -25,6 +26,7 @@ import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
 import type { IPermissionGate } from './permission-gate.js';
 import type { IMemoryService } from './memory-service-interface.js';
+import type { IAuditService } from './audit-service.js';
 
 const stubLLMRouter: ILLMRouter = {
   pick: async () => ({ provider: 'p', model: 'm' }),
@@ -54,6 +56,20 @@ const stubMemoryService: Partial<IMemoryService> = {
   listMemories: async () => [],
 };
 
+const stubAuditService: IAuditService = {
+  logRequest: () => undefined,
+  logAudit: () => undefined,
+  queryLogs: async () => [],
+  getStats: async () => ({
+    totalRequests: 0,
+    totalTokens: { input: 0, output: 0 },
+    averageDurationMs: 0,
+    byProvider: {},
+    byType: {},
+    errorCount: 0,
+  }),
+};
+
 describe('RuntimeContext', () => {
   beforeAll(() => {
     setLLMRouter(stubLLMRouter);
@@ -61,9 +77,10 @@ describe('RuntimeContext', () => {
     setConfigCenter(stubConfigCenter as ConfigCenter);
     setPermissionGate(stubPermissionGate);
     setMemoryService(stubMemoryService as IMemoryService);
+    setAuditService(stubAuditService);
   });
 
-  it('hasRuntimeContext() is true once all five explicit capabilities are set', () => {
+  it('hasRuntimeContext() is true once all six explicit capabilities are set', () => {
     expect(hasRuntimeContext()).toBe(true);
   });
 
@@ -87,6 +104,10 @@ describe('RuntimeContext', () => {
     expect(getRuntimeContext().memory).toBe(stubMemoryService);
   });
 
+  it('getRuntimeContext() returns the registered audit service by reference', () => {
+    expect(getRuntimeContext().audit).toBe(stubAuditService);
+  });
+
   it('getRuntimeContext() returns a working event system', () => {
     const ctx = getRuntimeContext();
     // EventSystem is lazy-created on first access; just verify it's
@@ -105,5 +126,6 @@ describe('RuntimeContext', () => {
     expect(a.events).toBe(b.events);
     expect(a.permissions).toBe(b.permissions);
     expect(a.memory).toBe(b.memory);
+    expect(a.audit).toBe(b.audit);
   });
 });

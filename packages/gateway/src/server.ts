@@ -436,8 +436,15 @@ async function main() {
   // 15. Provider Service
   registry.register(Services.Provider, createProviderService());
 
-  // 16. Audit Service
-  registry.register(Services.Audit, createAuditService());
+  // 16. Audit Service — also installed on the core capability singleton so
+  // runtimes can consume it through `ctx.audit.*` (RuntimeContext bundle)
+  // without going through the registry on every call.
+  {
+    const audit = createAuditService();
+    registry.register(Services.Audit, audit);
+    const { setAuditService } = await import('@ownpilot/core');
+    setAuditService(audit);
+  }
 
   // 17. Workspace Service (wraps WorkspaceManager)
   registry.register(Services.Workspace, createWorkspaceServiceImpl());

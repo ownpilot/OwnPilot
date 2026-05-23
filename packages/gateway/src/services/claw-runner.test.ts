@@ -109,6 +109,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       createMemory: vi.fn(),
       searchMemories: vi.fn().mockResolvedValue([]),
     }),
+    getAuditService: () => ({
+      logRequest: vi.fn(),
+      logAudit: vi.fn(),
+      queryLogs: vi.fn().mockResolvedValue([]),
+      getStats: vi.fn(),
+    }),
     getRuntimeContext: () => ({
       llm: mockLLMRouter,
       channels: { send: vi.fn(), listChannels: vi.fn(() => []) },
@@ -119,6 +125,12 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         listMemories: vi.fn().mockResolvedValue([]),
         createMemory: vi.fn(),
         searchMemories: vi.fn().mockResolvedValue([]),
+      },
+      audit: {
+        logRequest: vi.fn(),
+        logAudit: vi.fn(),
+        queryLogs: vi.fn().mockResolvedValue([]),
+        getStats: vi.fn(),
       },
     }),
   };

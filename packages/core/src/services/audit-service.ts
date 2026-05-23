@@ -90,3 +90,72 @@ export interface IAuditService {
    */
   getStats(since?: Date): Promise<LogStats>;
 }
+
+// ============================================================================
+// Singleton access — matches the LLMRouter / ChannelService / ConfigCenter /
+// PermissionGate / MemoryService pattern. Audit is the 7th horizontal
+// capability promoted to core so runtimes can emit audit events through
+// `ctx.audit.*` instead of resolving from the registry per-call.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+/**
+ * Service registry token for the AuditService. The same token instance is
+ * exposed as `Services.Audit` in tokens.ts.
+ */
+export const AuditToken = new ServiceToken<IAuditService>('audit');
+
+let _auditService: IAuditService | null = null;
+
+/**
+ * Register the AuditService implementation. Called once at gateway
+ * startup. Also mirrors into the service registry so legacy callers that
+ * resolve through `Services.Audit` still work.
+ */
+export function setAuditService(service: IAuditService): void {
+  _auditService = service;
+
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(AuditToken)) {
+        registry.register(AuditToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+/**
+ * Get the AuditService. Tries the service registry first, falls back to
+ * the direct singleton. Throws if neither is initialized.
+ */
+export function getAuditService(): IAuditService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(AuditToken);
+    } catch {
+      // Not registered yet — fall through to direct singleton
+    }
+  }
+
+  if (!_auditService) {
+    throw new Error('AuditService not initialized. Call setAuditService() during gateway startup.');
+  }
+  return _auditService;
+}
+
+/** Check whether the AuditService has been initialized. */
+export function hasAuditService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(AuditToken);
+    } catch {
+      // fall through
+    }
+  }
+  return _auditService !== null;
+}
