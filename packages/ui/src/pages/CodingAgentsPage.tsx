@@ -35,6 +35,7 @@ import {
 import { XTerminal } from '../components/XTerminal';
 import { AutoModePanel } from '../components/AutoModePanel';
 import { AcpPanel } from '../components/AcpPanel';
+import { PipelinesTab } from './coding-agents/PipelinesTab';
 import { codingAgentsApi, fileWorkspacesApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
 import type {
@@ -112,11 +113,12 @@ const STATE_LABELS: Record<CodingAgentSessionState, string> = {
 // Main Component
 // =============================================================================
 
-type TabId = 'home' | 'agents';
+type TabId = 'home' | 'agents' | 'pipelines';
 
 const TAB_LABELS: Record<TabId, string> = {
   home: 'Home',
   agents: 'Agents',
+  pipelines: 'Pipelines',
 };
 
 export function CodingAgentsPage() {
@@ -311,7 +313,7 @@ export function CodingAgentsPage() {
 
       {/* Tab bar */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
-        {(['home', 'agents'] as TabId[]).map((tab) => (
+        {(['home', 'agents', 'pipelines'] as TabId[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setTab(tab)}
@@ -586,6 +588,9 @@ export function CodingAgentsPage() {
           </div>
         </div>
       )}
+
+      {/* Pipelines tab */}
+      {activeTab === 'pipelines' && <PipelinesTab />}
 
       {/* New Session Modal */}
       {showNewSession && (

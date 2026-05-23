@@ -137,9 +137,6 @@ const LayoutConfigPage = lazy(() =>
 const CodingAgentsPage = lazy(() =>
   import('./pages/CodingAgentsPage').then((m) => ({ default: m.CodingAgentsPage }))
 );
-const OrchestrationPage = lazy(() =>
-  import('./pages/OrchestrationPage').then((m) => ({ default: m.OrchestrationPage }))
-);
 const CodingAgentSettingsPage = lazy(() =>
   import('./pages/CodingAgentSettingsPage').then((m) => ({ default: m.CodingAgentSettingsPage }))
 );
@@ -253,7 +250,10 @@ export function App() {
         <Route path="custom-data" element={page(<CustomDataPage />)} />
         <Route path="data-browser" element={page(<DataBrowserPage />)} />
         <Route path="coding-agents" element={page(<CodingAgentsPage />)} />
-        <Route path="orchestration" element={page(<OrchestrationPage />)} />
+        <Route
+          path="orchestration"
+          element={<Navigate to="/coding-agents?tab=pipelines" replace />}
+        />
         <Route path="autonomous" element={page(<AutonomousHubPage />)} />
         <Route path="autonomous/agent/:id" element={page(<AgentProfilePage />)} />
         <Route path="artifacts" element={page(<ArtifactsPage />)} />

@@ -142,7 +142,6 @@ export const navGroups: NavGroup[] = [
       { to: '/claws', icon: Zap, label: 'Claws' },
       { to: '/edge-devices', icon: Wifi, label: 'Edge Devices' },
       { to: '/coding-agents', icon: Terminal, label: 'Coding Agents' },
-      { to: '/orchestration', icon: Zap, label: 'Coding Pipelines' },
     ],
   },
   {
