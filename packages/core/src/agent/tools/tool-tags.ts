@@ -369,4 +369,31 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   get_claw_status: ['claw', 'status', 'info', 'details', 'check'],
   message_claw: ['claw', 'message', 'send', 'inbox', 'communicate'],
   get_claw_history: ['claw', 'history', 'results', 'cycles', 'log'],
+
+  // ─────────────────────────────────────────────
+  // CHANNELS (Telegram / Discord / WhatsApp / etc.)
+  // ─────────────────────────────────────────────
+  send_channel_message: [
+    'channel',
+    'message',
+    'send',
+    'reply',
+    'telegram',
+    'discord',
+    'whatsapp',
+    'slack',
+    'sms',
+    'chat',
+    'notify',
+  ],
+  broadcast_channel_message: [
+    'channel',
+    'broadcast',
+    'fanout',
+    'announce',
+    'all channels',
+    'multicast',
+  ],
+  list_channels: ['channels', 'list', 'connected', 'plugins', 'platforms', 'integrations'],
+  get_channel_inbox: ['channel', 'inbox', 'incoming', 'messages', 'received', 'read', 'unread'],
 };

@@ -34,3 +34,4 @@ export {
   executeClawManagementTool,
 } from './claw-management-tools.js';
 export { INTERACTIVE_TOOLS, executeInteractiveTool } from './interactive-tools.js';
+export { CHANNEL_TOOLS, CHANNEL_TOOL_NAMES, executeChannelTool } from './channel-tools.js';

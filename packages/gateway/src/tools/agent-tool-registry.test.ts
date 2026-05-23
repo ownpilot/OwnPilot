@@ -164,6 +164,8 @@ vi.mock('./index.js', () => ({
   executeClawManagementTool: vi.fn(),
   INTERACTIVE_TOOLS: [],
   executeInteractiveTool: vi.fn(),
+  CHANNEL_TOOLS: [],
+  executeChannelTool: vi.fn(),
 }));
 vi.mock('../services/config-tools.js', () => ({
   CONFIG_TOOLS: [],
