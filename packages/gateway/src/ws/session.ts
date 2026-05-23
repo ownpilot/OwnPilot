@@ -19,8 +19,7 @@ import {
 } from '../config/defaults.js';
 
 const log = getLog('SessionManager');
-import { Services, type ISessionService } from '@ownpilot/core';
-import { tryGetService } from '../services/service-helpers.js';
+import { hasSessionService, getSessionService, type ISessionService } from '@ownpilot/core';
 
 /**
  * Token bucket state for per-session rate limiting
@@ -40,9 +39,9 @@ interface ManagedSession extends Session {
   eventSubscriptions: Map<string, () => void>;
 }
 
-/** Try to get ISessionService from the registry (returns null if unavailable). */
+/** Try to get ISessionService via the core capability accessor (returns null if unavailable). */
 function tryGetSessionService(): ISessionService | null {
-  return tryGetService(Services.Session);
+  return hasSessionService() ? getSessionService() : null;
 }
 
 /**
