@@ -166,33 +166,31 @@ function createHeartbeatAgentEngine(): IHeartbeatAgentEngine {
       const { getOrCreateChatAgent } = await import('../routes/agents.js');
 
       // Use provider/model from soul config (passed via context) when available,
-      // otherwise fall back to system model routing.
+      // otherwise resolve via the LLMRouter capability (which encapsulates the
+      // per-process routing waterfall + fallback lookup).
       const ctxProvider = request.context?.provider as string | undefined;
       const ctxModel = request.context?.model as string | undefined;
       const ctxFallbackProvider = request.context?.fallbackProvider as string | undefined;
       const ctxFallbackModel = request.context?.fallbackModel as string | undefined;
 
-      let provider: string;
-      let model: string;
-      let fallback: { provider: string; model: string } | undefined;
+      const { getLLMRouter } = await import('@ownpilot/core');
+      const picked = await getLLMRouter().pick({
+        explicitProvider: ctxProvider,
+        explicitModel: ctxModel,
+        process: 'pulse',
+        errorContext: 'soul heartbeat',
+      });
 
-      if (ctxProvider && ctxModel) {
-        provider = ctxProvider;
-        model = ctxModel;
-        fallback =
-          ctxFallbackProvider && ctxFallbackModel
-            ? { provider: ctxFallbackProvider, model: ctxFallbackModel }
-            : undefined;
-      } else {
-        const { resolveForProcess } = await import('./model-routing.js');
-        const resolved = await resolveForProcess('pulse');
-        provider = ctxProvider ?? resolved.provider ?? 'anthropic';
-        model = ctxModel ?? resolved.model ?? 'claude-sonnet-4-5-20250514';
-        fallback =
-          resolved.fallbackProvider && resolved.fallbackModel
-            ? { provider: resolved.fallbackProvider, model: resolved.fallbackModel }
-            : undefined;
-      }
+      const provider = picked.provider || 'anthropic';
+      const model = picked.model || 'claude-sonnet-4-5-20250514';
+
+      // Context-level fallback overrides routing-level fallback when both supplied.
+      const fallbackProvider = ctxFallbackProvider ?? picked.fallbackProvider;
+      const fallbackModel = ctxFallbackModel ?? picked.fallbackModel;
+      const fallback =
+        fallbackProvider && fallbackModel
+          ? { provider: fallbackProvider, model: fallbackModel }
+          : undefined;
 
       const agent = await getOrCreateChatAgent(provider, model, fallback);
 

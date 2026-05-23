@@ -116,7 +116,12 @@ export async function resolveProviderAndModel(
   explicitModel: string | undefined,
   process: 'pulse' | 'chat' = 'pulse',
   errorContext?: string
-): Promise<{ provider: string; model: string }> {
+): Promise<{
+  provider: string;
+  model: string;
+  fallbackProvider?: string;
+  fallbackModel?: string;
+}> {
   if (explicitProvider && explicitModel) {
     return { provider: explicitProvider, model: explicitModel };
   }
@@ -132,7 +137,12 @@ export async function resolveProviderAndModel(
     );
   }
 
-  return { provider, model };
+  return {
+    provider,
+    model,
+    fallbackProvider: resolved.fallbackProvider ?? undefined,
+    fallbackModel: resolved.fallbackModel ?? undefined,
+  };
 }
 
 // ============================================================================

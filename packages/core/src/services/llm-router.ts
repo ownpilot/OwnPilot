@@ -41,6 +41,14 @@ export interface LLMPickOptions {
 export interface LLMResolvedModel {
   provider: string;
   model: string;
+  /**
+   * Optional fallback provider/model resolved from per-process routing
+   * config. When the primary call fails (provider down, model unavailable),
+   * runtimes can retry with this pair. `undefined` when no fallback is
+   * configured.
+   */
+  fallbackProvider?: string;
+  fallbackModel?: string;
 }
 
 /** Inputs for the memory-budget calculation. */

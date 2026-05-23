@@ -116,6 +116,27 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
     debug: vi.fn(),
     error: vi.fn(),
   }),
+  // The heartbeat engine now resolves provider/model via the unified
+  // LLMRouter capability instead of calling resolveForProcess directly.
+  // Route both back to the same mock so existing assertions still pass.
+  getLLMRouter: () => ({
+    pick: async (opts: { explicitProvider?: string; explicitModel?: string }) => {
+      if (opts.explicitProvider && opts.explicitModel) {
+        return { provider: opts.explicitProvider, model: opts.explicitModel };
+      }
+      const resolved = await mockResolveForProcess('pulse');
+      return {
+        provider: resolved.provider,
+        model: resolved.model,
+        fallbackProvider: resolved.fallbackProvider,
+        fallbackModel: resolved.fallbackModel,
+      };
+    },
+    getContextWindow: vi.fn(),
+    getMaxOutput: vi.fn(),
+    computeMemoryMaxTokens: vi.fn(),
+    calculateCost: vi.fn(),
+  }),
 }));
 
 vi.mock('../db/adapters/index.js', () => ({
