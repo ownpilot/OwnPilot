@@ -100,6 +100,12 @@ export type {
   MemorySearchOptions,
   MemoryStats as MemoryServiceStats,
 } from './memory-service-interface.js';
+export {
+  getMemoryService,
+  setMemoryService,
+  hasMemoryService,
+  MemoryToken,
+} from './memory-service-interface.js';
 
 // Database Service
 export type {

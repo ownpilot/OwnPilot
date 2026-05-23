@@ -28,11 +28,13 @@ import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
 import type { IEventSystem } from '../events/event-system.js';
 import type { IPermissionGate } from './permission-gate.js';
+import type { IMemoryService } from './memory-service-interface.js';
 import { getLLMRouter, hasLLMRouter } from './llm-router.js';
 import { getChannelService, hasChannelService } from '../channels/service.js';
 import { getConfigCenter, hasConfigCenter } from './config-center.js';
 import { getEventSystem } from '../events/event-system.js';
 import { getPermissionGate, hasPermissionGate } from './permission-gate.js';
+import { getMemoryService, hasMemoryService } from './memory-service-interface.js';
 
 /**
  * The horizontal capabilities every runtime gets. Add new capabilities here
@@ -50,6 +52,8 @@ export interface RuntimeContext {
   readonly events: IEventSystem;
   /** Tool-call authorization (allow / deny / require_approval). */
   readonly permissions: IPermissionGate;
+  /** Per-user persistent memory (facts, preferences, conversation, events, skills). */
+  readonly memory: IMemoryService;
 }
 
 /**
@@ -71,6 +75,7 @@ export function getRuntimeContext(): RuntimeContext {
     config: getConfigCenter(),
     events: getEventSystem(),
     permissions: getPermissionGate(),
+    memory: getMemoryService(),
   };
 }
 
@@ -84,5 +89,11 @@ export function getRuntimeContext(): RuntimeContext {
  * checked here.
  */
 export function hasRuntimeContext(): boolean {
-  return hasLLMRouter() && hasChannelService() && hasConfigCenter() && hasPermissionGate();
+  return (
+    hasLLMRouter() &&
+    hasChannelService() &&
+    hasConfigCenter() &&
+    hasPermissionGate() &&
+    hasMemoryService()
+  );
 }

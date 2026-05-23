@@ -17,12 +17,14 @@ import { setLLMRouter } from './llm-router.js';
 import { setChannelService } from '../channels/service.js';
 import { setConfigCenter } from './config-center.js';
 import { setPermissionGate } from './permission-gate.js';
+import { setMemoryService } from './memory-service-interface.js';
 import { getRuntimeContext, hasRuntimeContext } from './runtime-context.js';
 
 import type { ILLMRouter } from './llm-router.js';
 import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
 import type { IPermissionGate } from './permission-gate.js';
+import type { IMemoryService } from './memory-service-interface.js';
 
 const stubLLMRouter: ILLMRouter = {
   pick: async () => ({ provider: 'p', model: 'm' }),
@@ -46,15 +48,22 @@ const stubPermissionGate: IPermissionGate = {
   check: async () => ({ type: 'allow' }),
 };
 
+const stubMemoryService: Partial<IMemoryService> = {
+  // Minimal stub — getRuntimeContext() returns the reference, nothing more.
+  // Functional tests for memory live in the gateway memory-service suite.
+  listMemories: async () => [],
+};
+
 describe('RuntimeContext', () => {
   beforeAll(() => {
     setLLMRouter(stubLLMRouter);
     setChannelService(stubChannelService as IChannelService);
     setConfigCenter(stubConfigCenter as ConfigCenter);
     setPermissionGate(stubPermissionGate);
+    setMemoryService(stubMemoryService as IMemoryService);
   });
 
-  it('hasRuntimeContext() is true once all four explicit capabilities are set', () => {
+  it('hasRuntimeContext() is true once all five explicit capabilities are set', () => {
     expect(hasRuntimeContext()).toBe(true);
   });
 
@@ -74,6 +83,10 @@ describe('RuntimeContext', () => {
     expect(getRuntimeContext().permissions).toBe(stubPermissionGate);
   });
 
+  it('getRuntimeContext() returns the registered memory service by reference', () => {
+    expect(getRuntimeContext().memory).toBe(stubMemoryService);
+  });
+
   it('getRuntimeContext() returns a working event system', () => {
     const ctx = getRuntimeContext();
     // EventSystem is lazy-created on first access; just verify it's
@@ -91,5 +104,6 @@ describe('RuntimeContext', () => {
     expect(a.config).toBe(b.config);
     expect(a.events).toBe(b.events);
     expect(a.permissions).toBe(b.permissions);
+    expect(a.memory).toBe(b.memory);
   });
 });

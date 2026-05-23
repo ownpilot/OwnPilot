@@ -411,8 +411,15 @@ async function main() {
   // 9. Plugin Service (wraps PluginRegistry)
   registry.register(Services.Plugin, await createPluginService());
 
-  // 10. Memory Service
-  registry.register(Services.Memory, getMemoryService());
+  // 10. Memory Service — also installed on the core capability singleton so
+  // runtimes can consume it through `ctx.memory.*` (RuntimeContext bundle)
+  // without going through the registry on every call.
+  {
+    const memory = getMemoryService();
+    registry.register(Services.Memory, memory);
+    const { setMemoryService } = await import('@ownpilot/core');
+    setMemoryService(memory);
+  }
 
   // 11. Goal Service
   registry.register(Services.Goal, getGoalService());

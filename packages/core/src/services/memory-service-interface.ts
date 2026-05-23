@@ -179,3 +179,75 @@ export interface IMemoryService {
     options?: MemorySearchOptions & { minImportance?: number }
   ): Promise<Array<ServiceMemoryEntry & { score: number; matchType: string }>>;
 }
+
+// ============================================================================
+// Singleton access — matches the LLMRouter / ChannelService / ConfigCenter /
+// PermissionGate pattern. Memory is the 6th horizontal capability promoted to
+// core; runtimes consume it through `ctx.memory.*` instead of reaching into
+// the registry directly.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+/**
+ * Service registry token for the MemoryService. The same token is mirrored
+ * from `Services.Memory` in tokens.ts so callers can pick either entry
+ * point.
+ */
+export const MemoryToken = new ServiceToken<IMemoryService>('memory');
+
+let _memoryService: IMemoryService | null = null;
+
+/**
+ * Register the MemoryService implementation. Called once at gateway
+ * startup. Also mirrors into the service registry so legacy callers that
+ * resolve through `Services.Memory` still work.
+ */
+export function setMemoryService(service: IMemoryService): void {
+  _memoryService = service;
+
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(MemoryToken)) {
+        registry.register(MemoryToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+/**
+ * Get the MemoryService. Tries the service registry first, falls back to
+ * the direct singleton. Throws if neither is initialized.
+ */
+export function getMemoryService(): IMemoryService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(MemoryToken);
+    } catch {
+      // Not registered yet — fall through to direct singleton
+    }
+  }
+
+  if (!_memoryService) {
+    throw new Error(
+      'MemoryService not initialized. Call setMemoryService() during gateway startup.'
+    );
+  }
+  return _memoryService;
+}
+
+/** Check whether the MemoryService has been initialized. */
+export function hasMemoryService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(MemoryToken);
+    } catch {
+      // fall through
+    }
+  }
+  return _memoryService !== null;
+}
