@@ -75,7 +75,7 @@ vi.mock('../services/tool-executor.js', () => ({
   }),
 }));
 
-vi.mock('../services/soul-heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: vi.fn(),
 }));
 

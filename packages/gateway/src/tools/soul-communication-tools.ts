@@ -8,7 +8,7 @@
 import { generateId, getErrorMessage, SOUL_COMMUNICATION_TOOLS } from '@ownpilot/core';
 import type { AgentMessage } from '@ownpilot/core';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
-import { getHeartbeatContext } from '../services/heartbeat-context.js';
+import { getHeartbeatContext } from '../services/heartbeat/context.js';
 import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 export { SOUL_COMMUNICATION_TOOLS };

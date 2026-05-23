@@ -18,7 +18,7 @@ const mockService = {
   deleteHeartbeat: vi.fn(),
 };
 
-vi.mock('../services/heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/service.js', () => ({
   getHeartbeatService: () => mockService,
   HeartbeatServiceError: class extends Error {
     code: string;

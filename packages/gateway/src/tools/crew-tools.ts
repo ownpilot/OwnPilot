@@ -23,7 +23,7 @@ import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
 import { getCrewMemoryRepository } from '../db/repositories/crew-memory.js';
 import { getCrewTasksRepository } from '../db/repositories/crew-tasks.js';
-import { getHeartbeatContext } from '../services/heartbeat-context.js';
+import { getHeartbeatContext } from '../services/heartbeat/context.js';
 import type { ToolExecutionResult } from '../services/tool-executor.js';
 
 // ============================================================
@@ -462,7 +462,7 @@ async function handleBroadcastToCrew(
   }
 
   // Dynamically import to avoid circular dependency with soul-heartbeat-service
-  const { getCommunicationBus } = await import('../services/soul-heartbeat-service.js');
+  const { getCommunicationBus } = await import('../services/heartbeat/soul-service.js');
   const bus = getCommunicationBus();
 
   const result = await bus.broadcast(crewId, {
@@ -770,7 +770,7 @@ async function handleCoordinate(
     }
 
     // Broadcast the proposal to all crew members
-    const { getCommunicationBus } = await import('../services/soul-heartbeat-service.js');
+    const { getCommunicationBus } = await import('../services/heartbeat/soul-service.js');
     const bus = getCommunicationBus();
 
     const result = await bus.broadcast(crewId, {

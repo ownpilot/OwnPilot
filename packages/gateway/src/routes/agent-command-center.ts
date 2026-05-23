@@ -73,7 +73,7 @@ agentCommandCenterRoutes.post('/command', async (c) => {
                 result = { status: 'resumed' };
                 break;
               case 'run_once':
-                const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
+                const { runAgentHeartbeat } = await import('../services/heartbeat/soul-service.js');
                 const hbResult = await runAgentHeartbeat(target.id);
                 result = {
                   status: hbResult.success ? 'executed' : 'failed',
@@ -594,7 +594,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
     getUserId(c); // Auth check
     const body = validateBody(agentExecuteSchema, await c.req.json());
 
-    const { runAgentHeartbeat } = await import('../services/soul-heartbeat-service.js');
+    const { runAgentHeartbeat } = await import('../services/heartbeat/soul-service.js');
     const results: { target: { type: string; id: string }; success: boolean; error?: string }[] =
       [];
 

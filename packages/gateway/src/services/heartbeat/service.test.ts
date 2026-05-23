@@ -39,12 +39,12 @@ const mockRepo = {
   count: vi.fn(),
 };
 
-vi.mock('../db/repositories/heartbeats.js', () => ({
+vi.mock('../../db/repositories/heartbeats.js', () => ({
   HeartbeatsRepository: vi.fn(),
   createHeartbeatsRepository: () => mockRepo,
 }));
 
-vi.mock('./heartbeat-parser.js', () => ({
+vi.mock('./parser.js', () => ({
   parseSchedule: vi.fn(),
   parseMarkdown: vi.fn(),
   HeartbeatParseError: class HeartbeatParseError extends Error {
@@ -55,7 +55,7 @@ vi.mock('./heartbeat-parser.js', () => ({
   },
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     debug: vi.fn(),
@@ -68,12 +68,8 @@ vi.mock('./log.js', () => ({
 // Imports (after mocks)
 // ---------------------------------------------------------------------------
 
-import {
-  HeartbeatService,
-  HeartbeatServiceError,
-  getHeartbeatService,
-} from './heartbeat-service.js';
-import { parseSchedule, parseMarkdown, HeartbeatParseError } from './heartbeat-parser.js';
+import { HeartbeatService, HeartbeatServiceError, getHeartbeatService } from './service.js';
+import { parseSchedule, parseMarkdown, HeartbeatParseError } from './parser.js';
 
 const mockParseSchedule = parseSchedule as ReturnType<typeof vi.fn>;
 const mockParseMarkdown = parseMarkdown as ReturnType<typeof vi.fn>;

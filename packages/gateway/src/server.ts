@@ -566,7 +566,7 @@ async function main() {
 
   // 19. Heartbeat Service — also installed on the core capability singleton
   {
-    const { getHeartbeatService } = await import('./services/heartbeat-service.js');
+    const { getHeartbeatService } = await import('./services/heartbeat/service.js');
     const heartbeat = getHeartbeatService();
     registry.register(Services.Heartbeat, heartbeat);
     const { setHeartbeatService } = await import('@ownpilot/core');
@@ -693,7 +693,7 @@ async function main() {
     triggerEngine.registerActionHandler('run_heartbeat', async (payload) => {
       const agentId = payload.agentId as string;
       if (!agentId) return { success: false, error: 'Missing agentId in payload' };
-      const { runAgentHeartbeat } = await import('./services/soul-heartbeat-service.js');
+      const { runAgentHeartbeat } = await import('./services/heartbeat/soul-service.js');
       return await runAgentHeartbeat(agentId);
     });
 
@@ -897,7 +897,7 @@ async function main() {
 
     // 5.4. Stop heartbeat runner
     try {
-      const { resetHeartbeatRunner } = await import('./services/soul-heartbeat-service.js');
+      const { resetHeartbeatRunner } = await import('./services/heartbeat/soul-service.js');
       resetHeartbeatRunner();
     } catch (e) {
       log.warn('Heartbeat runner stop error', { error: String(e) });

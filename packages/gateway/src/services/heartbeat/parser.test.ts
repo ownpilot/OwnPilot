@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseSchedule, parseMarkdown, HeartbeatParseError } from './heartbeat-parser.js';
+import { parseSchedule, parseMarkdown, HeartbeatParseError } from './parser.js';
 
 describe('parseSchedule', () => {
   // ==========================================================================

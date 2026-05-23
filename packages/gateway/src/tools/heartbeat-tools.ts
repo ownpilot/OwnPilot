@@ -5,7 +5,7 @@
  */
 
 import { type ToolDefinition, getErrorMessage } from '@ownpilot/core';
-import { getHeartbeatService } from '../services/heartbeat-service.js';
+import { getHeartbeatService } from '../services/heartbeat/service.js';
 
 // =============================================================================
 // Tool Definitions

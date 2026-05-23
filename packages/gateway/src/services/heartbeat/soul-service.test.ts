@@ -198,11 +198,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn().mockReturnValue(mockAdapter),
 }));
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn().mockReturnValue({
     getByAgentId: vi.fn(),
     update: vi.fn(),
@@ -213,7 +213,7 @@ vi.mock('../db/repositories/souls.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: vi.fn().mockReturnValue({
     getRecent: vi.fn(),
     getLatest: vi.fn(),
@@ -221,19 +221,19 @@ vi.mock('../db/repositories/heartbeat-log.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/agent-messages.js', () => ({
+vi.mock('../../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: vi.fn().mockReturnValue(mockMsgRepo),
 }));
 
-vi.mock('./agent-service.js', () => ({
+vi.mock('../agent-service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
 
-vi.mock('./model-routing.js', () => ({
+vi.mock('../model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 
-vi.mock('../tools/notification-tools.js', () => ({
+vi.mock('../../tools/notification-tools.js', () => ({
   sendTelegramMessage: mockSendTelegramMessage,
 }));
 
@@ -241,11 +241,7 @@ vi.mock('../tools/notification-tools.js', () => ({
 // Service under test (static import — mocks are in place before this runs)
 // ---------------------------------------------------------------------------
 
-import {
-  resetHeartbeatRunner,
-  getHeartbeatRunner,
-  runAgentHeartbeat,
-} from './soul-heartbeat-service.js';
+import { resetHeartbeatRunner, getHeartbeatRunner, runAgentHeartbeat } from './soul-service.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

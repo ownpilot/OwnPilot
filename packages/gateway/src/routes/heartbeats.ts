@@ -10,8 +10,8 @@
 
 import { Hono } from 'hono';
 import { getHeartbeatService, Services } from '@ownpilot/core';
-import { HeartbeatServiceError } from '../services/heartbeat-service.js';
-import type { HeartbeatService } from '../services/heartbeat-service.js';
+import { HeartbeatServiceError } from '../services/heartbeat/service.js';
+import type { HeartbeatService } from '../services/heartbeat/service.js';
 import {
   getUserId,
   apiResponse,

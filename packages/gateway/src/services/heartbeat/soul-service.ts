@@ -37,18 +37,18 @@ import type {
 } from '@ownpilot/core';
 import { buildCrewContextSection } from '@ownpilot/core';
 import type { CrewContextInfo } from '@ownpilot/core';
-import { getAdapterSync } from '../db/adapters/index.js';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
-import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
-import { getCrewsRepository } from '../db/repositories/crews.js';
-import { runInHeartbeatContext } from './heartbeat-context.js';
+import { getAdapterSync } from '../../db/adapters/index.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { getHeartbeatLogRepository } from '../../db/repositories/heartbeat-log.js';
+import { getAgentMessagesRepository } from '../../db/repositories/agent-messages.js';
+import { getCrewsRepository } from '../../db/repositories/crews.js';
+import { runInHeartbeatContext } from './context.js';
 import { getLog } from '@ownpilot/core';
 import { HeartbeatCircuitBreaker } from '@ownpilot/core';
 import { HeartbeatMetricsCollector } from '@ownpilot/core';
 import type { BudgetForecaster } from '@ownpilot/core';
-import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../config/defaults.js';
-import { TTLCache } from '../utils/ttl-cache.js';
+import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../../config/defaults.js';
+import { TTLCache } from '../../utils/ttl-cache.js';
 
 const log = getLog('SoulHeartbeatService');
 
@@ -272,7 +272,7 @@ export class SoulHeartbeatService {
     return {
       async processMessage(request) {
         // Dynamic import to avoid circular dependencies
-        const { getOrCreateChatAgent } = await import('./agent-service.js');
+        const { getOrCreateChatAgent } = await import('../agent-service.js');
 
         // Use provider/model from soul config (passed via context) when available,
         // otherwise resolve via the LLMRouter capability.
@@ -413,7 +413,7 @@ export class SoulHeartbeatService {
       // M8: Use chatId when provided, not always 'default'
       async sendToChannel(channel, message, chatId) {
         try {
-          const { sendTelegramMessage } = await import('../tools/notification-tools.js');
+          const { sendTelegramMessage } = await import('../../tools/notification-tools.js');
           if (channel === 'telegram') {
             await sendTelegramMessage(chatId ?? 'default', message);
           } else {

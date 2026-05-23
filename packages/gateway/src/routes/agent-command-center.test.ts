@@ -105,7 +105,7 @@ vi.mock('../db/repositories/index.js', () => ({
   settingsRepo: mockSettingsRepo,
 }));
 
-vi.mock('../services/soul-heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: mockRunAgentHeartbeat,
 }));
 

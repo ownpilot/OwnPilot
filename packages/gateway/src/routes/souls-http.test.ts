@@ -62,7 +62,7 @@ vi.mock('../services/tool-executor.js', () => ({
   getSharedToolRegistry: mockGetSharedToolRegistry,
 }));
 
-vi.mock('../services/soul-heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: mockRunAgentHeartbeat,
 }));
 

@@ -12,7 +12,7 @@ import { getMemoryService, getGoalService, type SoulFeedback } from '@ownpilot/c
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
-import { runAgentHeartbeat } from '../services/soul-heartbeat-service.js';
+import { runAgentHeartbeat } from '../services/heartbeat/soul-service.js';
 import {
   apiResponse,
   apiError,

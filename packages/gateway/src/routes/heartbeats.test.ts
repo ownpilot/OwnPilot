@@ -67,7 +67,7 @@ class MockHeartbeatServiceError extends Error {
   }
 }
 
-vi.mock('../services/heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/service.js', () => ({
   getHeartbeatService: () => mockService,
   HeartbeatService: vi.fn(),
   HeartbeatServiceError: MockHeartbeatServiceError,

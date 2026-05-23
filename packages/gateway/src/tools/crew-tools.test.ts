@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock heartbeat context
 const mockGetHeartbeatContext = vi.fn();
-vi.mock('../services/heartbeat-context.js', () => ({
+vi.mock('../services/heartbeat/context.js', () => ({
   getHeartbeatContext: mockGetHeartbeatContext,
 }));
 
@@ -56,7 +56,7 @@ const mockGetCommunicationBus = vi.fn().mockReturnValue({
   broadcast: mockBroadcast,
 });
 
-vi.mock('../services/soul-heartbeat-service.js', () => ({
+vi.mock('../services/heartbeat/soul-service.js', () => ({
   getCommunicationBus: mockGetCommunicationBus,
 }));
 

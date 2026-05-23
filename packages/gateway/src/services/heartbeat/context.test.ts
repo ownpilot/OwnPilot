@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { runInHeartbeatContext, getHeartbeatContext } from './heartbeat-context.js';
+import { runInHeartbeatContext, getHeartbeatContext } from './context.js';
 
 describe('HeartbeatContext', () => {
   describe('getHeartbeatContext', () => {
