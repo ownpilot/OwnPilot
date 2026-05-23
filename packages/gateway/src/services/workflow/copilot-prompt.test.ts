@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCopilotSystemPrompt } from './workflow-copilot-prompt.js';
+import { buildCopilotSystemPrompt } from './copilot-prompt.js';
 
 describe('buildCopilotSystemPrompt', () => {
   it('returns static prompt when no args', async () => {

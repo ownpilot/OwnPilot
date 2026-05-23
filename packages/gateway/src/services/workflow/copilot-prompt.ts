@@ -637,7 +637,7 @@ export async function buildCopilotSystemPrompt(
 async function buildWorkflowIdeasSection(): Promise<string> {
   try {
     // Dynamic import to keep template ideas separate
-    const { WORKFLOW_TEMPLATE_IDEAS } = await import('./workflow-template-ideas.js');
+    const { WORKFLOW_TEMPLATE_IDEAS } = await import('./template-ideas.js');
     if (!WORKFLOW_TEMPLATE_IDEAS?.length) return '';
 
     const lines = (

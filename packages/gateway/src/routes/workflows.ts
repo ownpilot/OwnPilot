@@ -21,7 +21,7 @@ import {
 import { ERROR_CODES } from './error-codes.js';
 import { createWorkflowsRepository } from '../db/repositories/workflows.js';
 import { createWorkflowApprovalsRepository } from '../db/repositories/workflow-approvals.js';
-import { topologicalSort, getWorkflowService } from '../services/workflow-service.js';
+import { topologicalSort, getWorkflowService } from '../services/workflow/index.js';
 import {
   detectCycle,
   type ValidationNode,

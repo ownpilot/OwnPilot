@@ -51,8 +51,7 @@ vi.mock('./log.js', () => ({
 // Import under test (dynamic to respect mocks)
 // ---------------------------------------------------------------------------
 
-const { topologicalSort, resolveTemplates, WorkflowService } =
-  await import('./workflow-service.js');
+const { topologicalSort, resolveTemplates, WorkflowService } = await import('./workflow/index.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

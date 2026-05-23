@@ -58,7 +58,7 @@ vi.mock('../db/repositories/workflow-approvals.js', () => ({
   createWorkflowApprovalsRepository: () => mockApprovalsRepo,
 }));
 
-vi.mock('../services/workflow-service.js', () => ({
+vi.mock('../services/workflow/index.js', () => ({
   topologicalSort: vi.fn(), // default: no throw = valid DAG
   getWorkflowService: () => mockService,
 }));
@@ -98,7 +98,7 @@ vi.mock('./workflow-copilot.js', () => ({
 
 // Import after mocks
 const { workflowRoutes } = await import('./workflows.js');
-const { topologicalSort: mockTopologicalSort } = await import('../services/workflow-service.js');
+const { topologicalSort: mockTopologicalSort } = await import('../services/workflow/index.js');
 const { detectCycle: mockDetectCycle } = await import('../services/workflow/dag-utils.js');
 const { validateBody: mockValidateBody } = await import('../middleware/validation.js');
 

@@ -349,7 +349,7 @@ export class TriggerEngine {
       }
 
       // Lazy import to avoid circular dependency (triggers/ → services/)
-      const { getWorkflowService } = await import('../services/workflow-service.js');
+      const { getWorkflowService } = await import('../services/workflow/index.js');
       const service = getWorkflowService();
 
       try {

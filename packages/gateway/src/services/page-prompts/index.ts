@@ -17,7 +17,7 @@ import { buildAutonomousCopilotSection } from './autonomous-copilot-prompt.js';
 import { buildCliToolsCopilotSection } from './cli-tools-copilot-prompt.js';
 import { buildToolGroupsCopilotSection } from './tool-groups-copilot-prompt.js';
 import { buildWorkflowToolsCopilotSection } from './workflow-tools-copilot-prompt.js';
-import { STATIC_PROMPT as WORKFLOW_FULL_PROMPT } from '../workflow-copilot-prompt.js';
+import { STATIC_PROMPT as WORKFLOW_FULL_PROMPT } from '../workflow/copilot-prompt.js';
 
 export function getPageCopilotPrompt(
   pageType: string,

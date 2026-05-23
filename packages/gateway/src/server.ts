@@ -517,7 +517,7 @@ async function main() {
 
   // 18. Workflow Service — also installed on the core capability singleton
   {
-    const { getWorkflowService } = await import('./services/workflow-service.js');
+    const { getWorkflowService } = await import('./services/workflow/index.js');
     const workflow = getWorkflowService();
     registry.register(Services.Workflow, workflow);
     const { setWorkflowService } = await import('@ownpilot/core');
@@ -670,7 +670,7 @@ async function main() {
 
     // Register 'workflow' action handler
     triggerEngine.registerActionHandler('workflow', async (payload) => {
-      const { getWorkflowService } = await import('./services/workflow-service.js');
+      const { getWorkflowService } = await import('./services/workflow/index.js');
       const workflowId = payload.workflowId as string;
       if (!workflowId) return { success: false, error: 'Missing workflowId in payload' };
       const service = getWorkflowService();

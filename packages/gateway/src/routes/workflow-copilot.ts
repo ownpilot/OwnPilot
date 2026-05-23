@@ -17,7 +17,7 @@ import {
 import { resolveDefaultProviderAndModel } from './settings.js';
 import { validateBody, workflowCopilotSchema } from '../middleware/validation.js';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
-import { buildCopilotSystemPrompt } from '../services/workflow-copilot-prompt.js';
+import { buildCopilotSystemPrompt } from '../services/workflow/copilot-prompt.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('WorkflowCopilot');
