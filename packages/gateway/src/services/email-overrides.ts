@@ -11,6 +11,7 @@
  */
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from './log.js';
 import { getErrorMessage } from '../routes/helpers.js';
@@ -146,26 +147,28 @@ interface ImapConfig {
 }
 
 function getSmtpConfig(): SmtpConfig | null {
-  const host = configServicesRepo.getFieldValue('smtp', 'host') as string | undefined;
-  const user = configServicesRepo.getFieldValue('smtp', 'user') as string | undefined;
-  const pass = configServicesRepo.getFieldValue('smtp', 'pass') as string | undefined;
+  const config = getConfigCenter();
+  const host = config.getFieldValue('smtp', 'host') as string | undefined;
+  const user = config.getFieldValue('smtp', 'user') as string | undefined;
+  const pass = config.getFieldValue('smtp', 'pass') as string | undefined;
   if (!host || !user || !pass) return null;
 
-  const port = parseInt(String(configServicesRepo.getFieldValue('smtp', 'port') ?? '587'), 10);
-  const from = (configServicesRepo.getFieldValue('smtp', 'from') as string) || user;
-  const secure = String(configServicesRepo.getFieldValue('smtp', 'secure') ?? 'true') !== 'false';
+  const port = parseInt(String(config.getFieldValue('smtp', 'port') ?? '587'), 10);
+  const from = (config.getFieldValue('smtp', 'from') as string) || user;
+  const secure = String(config.getFieldValue('smtp', 'secure') ?? 'true') !== 'false';
 
   return { host, port, user, pass, from, secure };
 }
 
 function getImapConfig(): ImapConfig | null {
-  const host = configServicesRepo.getFieldValue('imap', 'host') as string | undefined;
-  const user = configServicesRepo.getFieldValue('imap', 'user') as string | undefined;
-  const pass = configServicesRepo.getFieldValue('imap', 'pass') as string | undefined;
+  const config = getConfigCenter();
+  const host = config.getFieldValue('imap', 'host') as string | undefined;
+  const user = config.getFieldValue('imap', 'user') as string | undefined;
+  const pass = config.getFieldValue('imap', 'pass') as string | undefined;
   if (!host || !user || !pass) return null;
 
-  const port = parseInt(String(configServicesRepo.getFieldValue('imap', 'port') ?? '993'), 10);
-  const tls = String(configServicesRepo.getFieldValue('imap', 'tls') ?? 'true') !== 'false';
+  const port = parseInt(String(config.getFieldValue('imap', 'port') ?? '993'), 10);
+  const tls = String(config.getFieldValue('imap', 'tls') ?? 'true') !== 'false';
 
   return { host, port, user, pass, tls };
 }

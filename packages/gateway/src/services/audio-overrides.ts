@@ -11,6 +11,7 @@
  */
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { getProviderApiKey, loadProviderConfig } from '../routes/agent-cache.js';
@@ -114,26 +115,26 @@ export interface AudioDiagnostics {
 }
 
 export async function resolveAudioConfig(): Promise<AudioApiConfig | null> {
+  const configCenter = getConfigCenter();
   // Check dedicated audio service first
   const providerType =
-    (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'provider_type') as string | undefined) ||
-    undefined;
+    (configCenter.getFieldValue(AUDIO_SERVICE, 'provider_type') as string | undefined) || undefined;
   if (providerType === 'local') {
     const baseUrl =
-      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
+      (configCenter.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
       getDefaultAudioBaseUrl(providerType);
     const localTtsCommand =
-      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'local_tts_command') as string) || 'piper';
+      (configCenter.getFieldValue(AUDIO_SERVICE, 'local_tts_command') as string) || 'piper';
     const localTtsModel =
-      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'local_tts_model') as string) || undefined;
+      (configCenter.getFieldValue(AUDIO_SERVICE, 'local_tts_model') as string) || undefined;
     return { baseUrl, providerType, localTtsCommand, localTtsModel };
   }
 
-  const audioKey = configServicesRepo.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
+  const audioKey = configCenter.getFieldValue(AUDIO_SERVICE, 'api_key') as string | undefined;
   if (audioKey) {
     const resolvedProviderType = providerType || 'openai';
     const baseUrl =
-      (configServicesRepo.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
+      (configCenter.getFieldValue(AUDIO_SERVICE, 'base_url') as string) ||
       getDefaultAudioBaseUrl(resolvedProviderType);
     return { apiKey: audioKey, baseUrl, providerType: resolvedProviderType };
   }

@@ -32,6 +32,11 @@ vi.mock('@ownpilot/core', async () => {
         },
       }),
     }),
+    // chatId fallback resolution now goes through ConfigCenter; route to the
+    // same mockGetFieldValue the repo mock already drives.
+    getConfigCenter: () => ({
+      getFieldValue: mockGetFieldValue,
+    }),
   };
 });
 

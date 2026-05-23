@@ -5,9 +5,8 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
+import { getChannelService, getDefaultPluginRegistry, getConfigCenter } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { configServicesRepo } from '../db/repositories/config-services.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
@@ -57,9 +56,10 @@ channelMessagingRoutes.post('/:id/send', async (c) => {
         | undefined;
       if (requiredServices?.length) {
         const svcName = requiredServices[0]!.name;
+        const config = getConfigCenter();
         // Try my_phone first (WhatsApp self-chat), then allowed_users (Telegram)
-        const myPhone = configServicesRepo.getFieldValue(svcName, 'my_phone');
-        const allowedUsers = configServicesRepo.getFieldValue(svcName, 'allowed_users');
+        const myPhone = config.getFieldValue(svcName, 'my_phone');
+        const allowedUsers = config.getFieldValue(svcName, 'allowed_users');
         const resolved = (myPhone as string) || (allowedUsers as string);
         if (typeof resolved === 'string' && resolved.trim()) {
           chatId = resolved.split(',')[0]!.trim();
@@ -145,7 +145,7 @@ channelMessagingRoutes.post('/:id/reply', async (c) => {
         | Array<{ name: string }>
         | undefined;
       if (requiredServices?.length) {
-        const raw = configServicesRepo.getFieldValue(requiredServices[0]!.name, 'allowed_users');
+        const raw = getConfigCenter().getFieldValue(requiredServices[0]!.name, 'allowed_users');
         if (typeof raw === 'string' && raw.trim()) {
           chatId = raw.split(',')[0]!.trim();
         }

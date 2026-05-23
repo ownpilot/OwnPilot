@@ -8,6 +8,7 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
+import { getConfigCenter } from '@ownpilot/core';
 import { resolveDefaultProviderAndModel } from '../routes/settings.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from '../routes/agent-cache.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
@@ -447,18 +448,13 @@ const generateImageOverride: ToolExecutor = async (
 
   try {
     // --- Read config ---
-    const providerType = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'provider_type') as
+    const config = getConfigCenter();
+    const providerType = config.getFieldValue(IMAGE_GEN_SERVICE, 'provider_type') as
       | string
       | undefined;
-    const apiKey = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'api_key') as
-      | string
-      | undefined;
-    const baseUrl = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'base_url') as
-      | string
-      | undefined;
-    const model = configServicesRepo.getFieldValue(IMAGE_GEN_SERVICE, 'model') as
-      | string
-      | undefined;
+    const apiKey = config.getFieldValue(IMAGE_GEN_SERVICE, 'api_key') as string | undefined;
+    const baseUrl = config.getFieldValue(IMAGE_GEN_SERVICE, 'base_url') as string | undefined;
+    const model = config.getFieldValue(IMAGE_GEN_SERVICE, 'model') as string | undefined;
 
     if (!providerType || !apiKey) {
       return {

@@ -78,6 +78,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     ...actual,
     getChannelService: () => mockService,
     getDefaultPluginRegistry: async () => mockRegistry,
+    // chatId fallback resolution now goes through ConfigCenter; route to the
+    // same mockConfigServicesRepo.getFieldValue spy the repo mock already
+    // drives so existing assertions keep working.
+    getConfigCenter: () => ({
+      getFieldValue: (...args: unknown[]) =>
+        (mockConfigServicesRepo.getFieldValue as (...a: unknown[]) => unknown)(...args),
+    }),
   };
 });
 

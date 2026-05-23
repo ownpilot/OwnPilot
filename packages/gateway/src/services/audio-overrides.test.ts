@@ -50,6 +50,14 @@ vi.mock('../db/repositories/config-services.js', () => ({
   },
 }));
 
+vi.mock('@ownpilot/core', () => ({
+  // Audio config now resolves through ConfigCenter; route to the same
+  // mockGetFieldValue the repo mock already drives.
+  getConfigCenter: () => ({
+    getFieldValue: (...args: unknown[]) => mockGetFieldValue(...args),
+  }),
+}));
+
 vi.mock('./log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,

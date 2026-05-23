@@ -97,6 +97,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   return {
     ...actual,
     isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowedAsync(...args),
+    // SMTP/IMAP config now resolves through ConfigCenter; route to the same
+    // mockGetFieldValue that previously hung off the repo mock.
+    getConfigCenter: () => ({
+      getFieldValue: (...args: unknown[]) => mockGetFieldValue(...args),
+    }),
   };
 });
 
