@@ -432,7 +432,13 @@ async function main() {
   }
 
   // 12. Trigger Service
-  registry.register(Services.Trigger, getTriggerService());
+  // Trigger Service — also installed on the core capability singleton
+  {
+    const trigger = getTriggerService();
+    registry.register(Services.Trigger, trigger);
+    const { setTriggerService } = await import('@ownpilot/core');
+    setTriggerService(trigger);
+  }
 
   // 13. Plan Service
   registry.register(Services.Plan, getPlanService());

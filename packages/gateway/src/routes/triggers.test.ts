@@ -52,6 +52,8 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return services[token.name];
       }),
     })),
+    // Trigger now resolves through the capability accessor.
+    getTriggerService: vi.fn(() => mockTriggerService),
     validateCronExpression: vi.fn((cron: string) => {
       if (cron === 'invalid') return { valid: false, error: 'Invalid cron expression' };
       return { valid: true };

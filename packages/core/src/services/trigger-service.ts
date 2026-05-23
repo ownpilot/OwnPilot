@@ -163,3 +163,60 @@ export interface ITriggerService {
   // Stats
   getStats(userId: string): Promise<TriggerStats>;
 }
+
+// ============================================================================
+// Singleton access — matches the MemoryService / GoalService pattern.
+// Trigger is a domain CRUD service with a typed accessor; not added to
+// RuntimeContext because it's used by routes + orchestrators rather than
+// shared runtime infrastructure.
+// ============================================================================
+
+import { hasServiceRegistry, getServiceRegistry } from './registry.js';
+import { ServiceToken } from './registry.js';
+
+export const TriggerToken = new ServiceToken<ITriggerService>('trigger');
+
+let _triggerService: ITriggerService | null = null;
+
+export function setTriggerService(service: ITriggerService): void {
+  _triggerService = service;
+
+  if (hasServiceRegistry()) {
+    try {
+      const registry = getServiceRegistry();
+      if (!registry.has(TriggerToken)) {
+        registry.register(TriggerToken, service);
+      }
+    } catch {
+      // Registry not ready
+    }
+  }
+}
+
+export function getTriggerService(): ITriggerService {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().get(TriggerToken);
+    } catch {
+      // Not registered yet — fall through to direct singleton
+    }
+  }
+
+  if (!_triggerService) {
+    throw new Error(
+      'TriggerService not initialized. Call setTriggerService() during gateway startup.'
+    );
+  }
+  return _triggerService;
+}
+
+export function hasTriggerService(): boolean {
+  if (hasServiceRegistry()) {
+    try {
+      return getServiceRegistry().has(TriggerToken);
+    } catch {
+      // fall through
+    }
+  }
+  return _triggerService !== null;
+}

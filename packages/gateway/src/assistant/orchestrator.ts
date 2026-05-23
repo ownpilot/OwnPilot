@@ -12,11 +12,10 @@
 
 import {
   type ToolCall,
-  getServiceRegistry,
   getEventSystem,
   getMemoryService,
   getGoalService,
-  Services,
+  getTriggerService,
   getBaseName,
 } from '@ownpilot/core';
 import type { CliToolPolicy } from '@ownpilot/core';
@@ -365,7 +364,7 @@ export async function evaluateTriggers(
   message: string,
   response: string
 ): Promise<{ triggered: string[]; pending: string[]; executed: string[] }> {
-  const triggerService = getServiceRegistry().get(Services.Trigger);
+  const triggerService = getTriggerService();
   const triggers = await triggerService.listTriggers(userId, { enabled: true });
   const triggerEngine = getTriggerEngine({ userId });
 
@@ -526,7 +525,7 @@ export async function getOrchestratorStats(userId: string): Promise<{
 }> {
   const memoryService = getMemoryService();
   const goalService = getGoalService();
-  const triggerService = getServiceRegistry().get(Services.Trigger);
+  const triggerService = getTriggerService();
   const approvalManager = getApprovalManager();
 
   const config = approvalManager.getUserConfig(userId);

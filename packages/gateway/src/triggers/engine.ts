@@ -17,11 +17,10 @@ import {
 import { executeTool, hasTool, waitForToolSync } from '../services/tool-executor.js';
 import {
   getNextRunTime,
-  getServiceRegistry,
   getEventSystem,
   getMemoryService,
   getGoalService,
-  Services,
+  getTriggerService,
   type ITriggerService,
   type IGoalService,
   type IMemoryService,
@@ -97,8 +96,7 @@ export class TriggerEngine {
       userId: config.userId ?? 'default',
     };
 
-    const registry = getServiceRegistry();
-    this.triggerService = registry.get(Services.Trigger);
+    this.triggerService = getTriggerService();
     this.goalService = getGoalService();
     this.memoryService = getMemoryService();
 

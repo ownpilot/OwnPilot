@@ -163,6 +163,12 @@ export type {
   CreateTriggerInput,
   UpdateTriggerInput,
 } from './trigger-service.js';
+export {
+  getTriggerService,
+  setTriggerService,
+  hasTriggerService,
+  TriggerToken,
+} from './trigger-service.js';
 
 // Plan Service
 export type {

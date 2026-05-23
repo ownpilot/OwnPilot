@@ -32,6 +32,7 @@ import {
   Services,
   getMemoryService,
   getGoalService,
+  getTriggerService,
   type IDatabaseService,
   type ServiceMemoryEntry,
 } from '@ownpilot/core';
@@ -101,7 +102,7 @@ export class DashboardService {
     const calendarRepo = new CalendarRepository(this.userId);
     const registry = getServiceRegistry();
     const goalService = getGoalService();
-    const triggerService = registry.get(Services.Trigger);
+    const triggerService = getTriggerService();
     const memoryService = getMemoryService();
     const habitsRepo = new HabitsRepository(this.userId);
     const costsRepo = new CostsRepository();

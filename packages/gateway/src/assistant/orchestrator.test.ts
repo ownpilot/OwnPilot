@@ -49,6 +49,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     // directly instead of via the service registry indirection.
     getMemoryService: vi.fn(() => mockMemoryService),
     getGoalService: vi.fn(() => mockGoalService),
+    getTriggerService: vi.fn(() => mockTriggerService),
     Services: { Memory: 'memory', Goal: 'goal', Trigger: 'trigger' },
     getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
   };
