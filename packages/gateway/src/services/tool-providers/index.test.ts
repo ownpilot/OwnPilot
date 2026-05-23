@@ -182,7 +182,7 @@ vi.mock('../../tools/index.js', () => ({
   executeSoulCommunicationTool: vi.fn(),
 }));
 
-vi.mock('../config-tools.js', () => ({
+vi.mock('../../tools/config-tools.js', () => ({
   CONFIG_TOOLS: mocks.CONFIG_TOOLS,
   executeConfigTool: mocks.executeConfigTool,
 }));

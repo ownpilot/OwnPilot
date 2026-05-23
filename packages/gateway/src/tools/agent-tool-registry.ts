@@ -32,7 +32,7 @@ import {
   EVENT_TOOLS,
   SOUL_COMMUNICATION_TOOLS,
 } from './index.js';
-import { CONFIG_TOOLS } from '../services/config-tools.js';
+import { CONFIG_TOOLS } from './config-tools.js';
 
 export { safeStringArray } from './registry/utils.js';
 export { registerGatewayTools, registerDynamicTools } from './registry/core-registration.js';

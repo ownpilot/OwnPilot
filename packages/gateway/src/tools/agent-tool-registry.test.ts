@@ -173,7 +173,7 @@ vi.mock('./index.js', () => ({
   CHANNEL_TOOLS: [],
   executeChannelTool: vi.fn(),
 }));
-vi.mock('../services/config-tools.js', () => ({
+vi.mock('./config-tools.js', () => ({
   CONFIG_TOOLS: [],
   executeConfigTool: vi.fn(),
 }));

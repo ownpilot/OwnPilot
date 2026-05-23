@@ -38,7 +38,7 @@ import {
   SKILL_TOOLS,
   executeSkillTool,
 } from '../../tools/index.js';
-import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
+import { CONFIG_TOOLS, executeConfigTool } from '../../tools/config-tools.js';
 import { getErrorMessage } from '../../utils/common.js';
 
 // ============================================================================

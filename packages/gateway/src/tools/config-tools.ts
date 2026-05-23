@@ -9,7 +9,10 @@
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { maskSecret, getErrorMessage } from '../utils/common.js';
-import { hasConfiguredData, normalizeAndValidateEntryData } from './config-entry-validation.js';
+import {
+  hasConfiguredData,
+  normalizeAndValidateEntryData,
+} from '../services/config-entry-validation.js';
 
 // =============================================================================
 // Tool Definitions

@@ -63,7 +63,7 @@ import {
   CHANNEL_TOOLS,
   executeChannelTool,
 } from '../index.js';
-import { CONFIG_TOOLS, executeConfigTool } from '../../services/config-tools.js';
+import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import {
   traceToolCallStart,
   traceToolCallEnd,
