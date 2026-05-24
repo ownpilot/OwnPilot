@@ -424,8 +424,6 @@ export class ContactsRepository extends BaseRepository {
   }
 }
 
-export const contactsRepo = new ContactsRepository();
-
 // Factory function
 export function createContactsRepository(userId = 'default'): ContactsRepository {
   return new ContactsRepository(userId);

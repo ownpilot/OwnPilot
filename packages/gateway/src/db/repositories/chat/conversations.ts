@@ -104,8 +104,6 @@ export class ConversationsRepository extends BaseRepository {
   }
 }
 
-export const conversationsRepo = new ConversationsRepository();
-
 // Factory function
 export function createConversationsRepository(): ConversationsRepository {
   return new ConversationsRepository();

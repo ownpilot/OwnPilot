@@ -137,8 +137,6 @@ export class MessagesRepository extends BaseRepository {
   }
 }
 
-export const messagesRepo = new MessagesRepository();
-
 // Factory function
 export function createMessagesRepository(): MessagesRepository {
   return new MessagesRepository();

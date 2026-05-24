@@ -349,8 +349,6 @@ export class CalendarRepository extends BaseRepository {
   }
 }
 
-export const calendarRepo = new CalendarRepository();
-
 // Factory function
 export function createCalendarRepository(userId = 'default'): CalendarRepository {
   return new CalendarRepository(userId);

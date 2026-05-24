@@ -901,7 +901,3 @@ export function getClawsRepository(): ClawsRepository {
   }
   return _repo;
 }
-
-export function createClawsRepository(): ClawsRepository {
-  return new ClawsRepository();
-}

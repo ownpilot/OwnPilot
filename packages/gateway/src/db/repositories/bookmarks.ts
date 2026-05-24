@@ -248,8 +248,6 @@ export class BookmarksRepository extends CrudRepository<
   }
 }
 
-export const bookmarksRepo = new BookmarksRepository();
-
 // Factory function
 export function createBookmarksRepository(userId = 'default'): BookmarksRepository {
   return new BookmarksRepository(userId);
