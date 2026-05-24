@@ -11,7 +11,6 @@ import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync }
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16;
-const SALT_LENGTH = 32;
 export const PBKDF2_DEFAULT_ITERATIONS = 600000;
 
 // =============================================================================
@@ -30,16 +29,6 @@ export function deriveKey(
   return pbkdf2Sync(masterKey, salt, iterations, KEY_LENGTH, 'sha512');
 }
 
-/**
- * Generate a secure random salt
- */
-export function _generateSalt(): Buffer {
-  return randomBytes(SALT_LENGTH);
-}
-
-/**
- * Hash user ID (for storage without revealing actual ID)
- */
 export function hashUserId(userId: string, salt: string): string {
   return createHash('sha256')
     .update(userId + salt)

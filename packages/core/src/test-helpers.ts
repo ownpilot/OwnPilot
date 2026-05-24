@@ -13,8 +13,7 @@
 
 import { vi } from 'vitest';
 import type { ILogService } from './services/log-service.js';
-import type { ToolDefinition, ToolExecutor, ToolContext } from './agent/types.js';
-import type { IProvider } from './agent/provider-types.js';
+import type { ToolDefinition, ToolExecutor } from './agent/types.js';
 import type { UserProfile } from './memory/conversation.js';
 
 // ---------------------------------------------------------------------------
@@ -34,7 +33,7 @@ import type { UserProfile } from './memory/conversation.js';
  *     getLog: () => createMockLog(),
  *   }));
  */
-export function createMockLog(): ILogService {
+function createMockLog(): ILogService {
   const log: ILogService = {
     info: vi.fn(),
     warn: vi.fn(),
@@ -94,82 +93,7 @@ export function createMockToolExecutor(result: unknown = 'ok', isError = false):
 }
 
 // ---------------------------------------------------------------------------
-// 4. Mock IProvider — used in fallback/agent tests
-// ---------------------------------------------------------------------------
-
-/**
- * Create a mock IProvider with all methods stubbed.
- *
- * The `complete` method returns an ok result by default.
- * The `stream` method yields one content chunk then a done chunk.
- *
- * Usage:
- *   const provider = createMockProvider('openai');
- *   const provider2 = createMockProvider('anthropic', { isReady: vi.fn(() => false) });
- */
-export function createMockProvider(
-  type: string = 'openai',
-  overrides: Partial<Record<string, unknown>> = {}
-): IProvider & Record<string, unknown> {
-  return {
-    type,
-    isReady: vi.fn().mockReturnValue(true),
-    complete: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { content: `response from ${type}`, usage: {} },
-    }),
-    stream: vi.fn().mockImplementation(function* () {
-      yield { ok: true, value: { content: `chunk-${type}`, done: false } };
-      yield { ok: true, value: { content: '', done: true } };
-    }),
-    countTokens: vi.fn().mockReturnValue(100),
-    getModels: vi.fn().mockResolvedValue({ ok: true, value: [`${type}-model`] }),
-    cancel: vi.fn(),
-    ...overrides,
-  } as unknown as IProvider & Record<string, unknown>;
-}
-
-// ---------------------------------------------------------------------------
-// 5. Mock event system — used in orchestrator and plugins tests
-// ---------------------------------------------------------------------------
-
-/**
- * Create a mock event system object.
- *
- * Usage inside vi.hoisted():
- *   const mockEventSystem = createMockEventSystem();
- *
- *   vi.mock('../events/index.js', () => ({
- *     getEventSystem: vi.fn(() => mockEventSystem),
- *     getEventBus: vi.fn(() => ({ emit: vi.fn() })),
- *     createEvent: vi.fn((...args) => args),
- *     EventTypes: { ... },
- *   }));
- */
-export function createMockEventSystem(): Record<string, unknown> {
-  return {
-    emit: vi.fn(),
-    emitRaw: vi.fn(),
-    on: vi.fn(() => vi.fn()),
-    onAny: vi.fn(() => vi.fn()),
-    once: vi.fn(() => vi.fn()),
-    off: vi.fn(),
-    onCategory: vi.fn(() => vi.fn()),
-    onPattern: vi.fn(() => vi.fn()),
-    clear: vi.fn(),
-    scoped: vi.fn(() => ({
-      emit: vi.fn(),
-      on: vi.fn(() => vi.fn()),
-      off: vi.fn(),
-      clear: vi.fn(),
-    })),
-    waitFor: vi.fn(),
-    hooks: { tap: vi.fn(), call: vi.fn() },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 6. Mock UserProfile — used in prompt-composer and memory tests
+// 4. Mock UserProfile — used in prompt-composer and memory tests
 // ---------------------------------------------------------------------------
 
 /**
@@ -193,25 +117,6 @@ export function createMockUserProfile(overrides: Partial<UserProfile> = {}): Use
     lastInteraction: new Date().toISOString(),
     totalConversations: 0,
     completeness: 0,
-    ...overrides,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 7. Mock tool context — used when calling tool executors in tests
-// ---------------------------------------------------------------------------
-
-/**
- * Create a minimal ToolContext.
- *
- * Usage:
- *   const ctx = createMockToolContext({ userId: 'user-42' });
- *   await executor(args, ctx);
- */
-export function createMockToolContext(overrides: Partial<ToolContext> = {}): ToolContext {
-  return {
-    callId: 'call-1',
-    conversationId: 'conv-1',
     ...overrides,
   };
 }

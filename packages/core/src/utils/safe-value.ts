@@ -4,7 +4,7 @@
  * Guards against NaN, Infinity, negative values in cost/duration calculations.
  */
 
-export function safeNumber(value: unknown, fallback: number): number {
+function safeNumber(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return fallback;
   }
@@ -17,14 +17,6 @@ export function safeCost(cost: unknown): number {
 
 export function safeDuration(durationMs: unknown): number {
   return Math.floor(safeNumber(durationMs, 0));
-}
-
-export function safePositiveInt(value: unknown, fallback = 0, max = Infinity): number {
-  const n = Number(value);
-  if (!Number.isInteger(n) || n < 0 || n > max) {
-    return fallback;
-  }
-  return n;
 }
 
 export interface BackoffOptions {
@@ -52,17 +44,4 @@ export function calculateBackoffDelay(attempt: number, opts: BackoffOptions = {}
   const jitter = (Math.random() * 2 - 1) * jitterRange;
 
   return Math.round(Math.max(0, cappedDelay + jitter));
-}
-
-export const PRIORITY_DELAY_MULTIPLIER: Record<number, number> = {
-  1: 0.5,
-  2: 0.75,
-  3: 1.0,
-  4: 1.5,
-  5: 2.0,
-};
-
-export function applyPriorityMultiplier(baseDelayMs: number, priority: number): number {
-  const multiplier = PRIORITY_DELAY_MULTIPLIER[priority] ?? 1.0;
-  return Math.round(baseDelayMs * multiplier);
 }

@@ -19,7 +19,7 @@ export type {
   MemoryStats,
   MemoryRetentionPolicy,
 } from './conversation-types.js';
-export { DEFAULT_RETENTION_POLICY, IMPORTANCE_WEIGHTS } from './conversation-types.js';
+export { DEFAULT_RETENTION_POLICY } from './conversation-types.js';
 
 // Store class
 export { ConversationMemoryStore } from './conversation-store.js';

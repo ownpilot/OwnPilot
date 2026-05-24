@@ -45,9 +45,6 @@ export type ClawCreator = 'user' | 'ai' | 'claw';
 /** Maximum subclaw nesting depth */
 export const MAX_CLAW_DEPTH = 3;
 
-/** Default scheduling priority (1=highest, 3=normal, 5=lowest) */
-export const DEFAULT_CLAW_PRIORITY = 3;
-
 // ============================================================================
 // Configuration Types
 // ============================================================================

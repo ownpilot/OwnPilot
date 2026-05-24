@@ -28,15 +28,3 @@ export const CORE_TOOLS: readonly ToolDefinition[] = [
   ...STRING_TOOL_DEFS,
   ...RESOURCE_TOOL_DEFS,
 ];
-
-// Re-export category arrays for consumers that need subsets
-export {
-  TIME_TOOL_DEFS,
-  FILE_TOOL_DEFS,
-  TEXT_TOOL_DEFS,
-  CONVERSION_TOOL_DEFS,
-  GENERATOR_TOOL_DEFS,
-  DATA_TOOL_DEFS,
-  STRING_TOOL_DEFS,
-  RESOURCE_TOOL_DEFS,
-};

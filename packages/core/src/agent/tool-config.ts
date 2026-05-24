@@ -394,35 +394,6 @@ export const FAMILIAR_TOOLS = new Set([
   'send_email',
 ]);
 
-// =============================================================================
-// TOOL CATEGORY CAPABILITIES — natural-language summaries for system prompt
-// =============================================================================
-
-/**
- * Capability descriptions for categorical prompt injection.
- * Maps each TOOL_GROUPS key to a concise summary of what those tools do.
- * Used by PromptComposer to generate compact tool descriptions instead of
- * listing every tool name.
- */
-export const TOOL_CATEGORY_CAPABILITIES: Record<string, string> = {
-  core: 'Get current time, perform calculations, statistics, generate UUIDs, system info',
-  filesystem: 'Read, write, list, search, move, and delete files in the workspace',
-  personalData: 'Tasks (CRUD), notes, bookmarks, calendar events, contacts',
-  customData: 'Create custom database tables with any schema; CRUD records; search and query',
-  memory: 'Persistently remember facts about the user; search and manage memories',
-  goals: 'Track long-term objectives, decompose into steps, monitor progress',
-  utilities:
-    'Date math, text transform/compare/regex, JSON format, CSV parse/generate, encoding, hashing, validation, data extraction',
-  customTools: 'Create, list, enable/disable, delete, inspect, and update user-created tools',
-  codeExecution: 'Execute JavaScript, Python, or shell commands (sandboxed)',
-  webFetch: 'HTTP requests, web page fetching, web search, JSON API calls',
-  media:
-    'Analyze images (vision/OCR), generate images, resize, TTS, STT, audio processing, PDF read/create',
-  communication: 'Send/receive/search/read/reply emails, weather conditions and forecasts',
-  devTools: 'Git operations: status, diff, log, commit, branch, checkout',
-  finance: 'Track expenses, parse receipts, budget summaries, export reports',
-};
-
 /**
  * Tool statistics
  */

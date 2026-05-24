@@ -28,15 +28,3 @@ export const CORE_EXECUTORS: Record<string, ToolExecutor> = {
   ...STRING_EXECUTORS,
   ...RESOURCE_EXECUTORS,
 };
-
-// Re-export category objects for consumers that need subsets
-export {
-  TIME_EXECUTORS,
-  FILE_EXECUTORS,
-  TEXT_EXECUTORS,
-  CONVERSION_EXECUTORS,
-  GENERATOR_EXECUTORS,
-  DATA_EXECUTORS,
-  STRING_EXECUTORS,
-  RESOURCE_EXECUTORS,
-};
