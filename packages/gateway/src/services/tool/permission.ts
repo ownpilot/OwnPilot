@@ -16,8 +16,8 @@
 import type { ExecutionPermissions } from '@ownpilot/core';
 import { getGroupForTool, getBaseName as coreGetBaseName } from '@ownpilot/core';
 import { getLog } from '../log.js';
-import type { ToolExecContext } from '../permission-utils.js';
-import { isNonInteractiveContext, downgradePromptToBlocked } from '../permission-utils.js';
+import type { ToolExecContext } from '../permission/utils.js';
+import { isNonInteractiveContext, downgradePromptToBlocked } from '../permission/utils.js';
 
 const log = getLog('ToolPermissionService');
 

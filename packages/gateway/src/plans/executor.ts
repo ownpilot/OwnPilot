@@ -22,7 +22,7 @@ import {
 import { executeTool, hasTool } from '../services/tool/executor.js';
 import { getPlanService, type IPlanService } from '@ownpilot/core';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
-import { downgradePromptToBlocked } from '../services/permission-utils.js';
+import { downgradePromptToBlocked } from '../services/permission/utils.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
 

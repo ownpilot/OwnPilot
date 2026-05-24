@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ExecutionPermissions } from '@ownpilot/core';
-import { downgradePromptToBlocked, isNonInteractiveContext } from './permission-utils.js';
+import { downgradePromptToBlocked, isNonInteractiveContext } from './utils.js';
 
 describe('permission-utils', () => {
   describe('downgradePromptToBlocked', () => {

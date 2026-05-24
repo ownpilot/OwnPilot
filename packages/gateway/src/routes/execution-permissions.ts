@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
-import { resolveApproval } from '../services/execution-approval.js';
+import { resolveApproval } from '../services/permission/execution-approval.js';
 import { apiResponse, apiError, getUserId, ERROR_CODES, notFoundError } from './helpers.js';
 import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
 

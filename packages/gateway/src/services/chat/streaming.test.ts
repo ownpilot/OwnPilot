@@ -36,7 +36,7 @@ vi.mock('../../utils/index.js', () => ({
   normalizeChatWidgets: (content: string) => content,
 }));
 
-vi.mock('../execution-approval.js', () => ({
+vi.mock('../permission/execution-approval.js', () => ({
   generateApprovalId: () => mockGenerateApprovalId(),
   createApprovalRequest: (...args: unknown[]) => mockCreateApprovalRequest(...args),
 }));

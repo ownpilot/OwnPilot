@@ -51,7 +51,7 @@ import {
   hasAuditService,
 } from '@ownpilot/core';
 import { checkToolPermission } from './permission.js';
-import type { ToolExecContext } from '../permission-utils.js';
+import type { ToolExecContext } from '../permission/utils.js';
 import { getExtensionSandbox } from '../extension/sandbox.js';
 import type { SkillPermission } from '../extension/types.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';

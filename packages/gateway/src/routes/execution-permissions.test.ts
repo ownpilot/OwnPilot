@@ -26,7 +26,7 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
 
 const mockResolveApproval = vi.fn();
 
-vi.mock('../services/execution-approval.js', () => ({
+vi.mock('../services/permission/execution-approval.js', () => ({
   resolveApproval: mockResolveApproval,
 }));
 

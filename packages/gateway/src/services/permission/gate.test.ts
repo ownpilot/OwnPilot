@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DefaultPermissionGate } from './permission-gate-impl.js';
+import { DefaultPermissionGate } from './gate.js';
 
 describe('DefaultPermissionGate', () => {
   const gate = new DefaultPermissionGate();

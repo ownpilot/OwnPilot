@@ -25,7 +25,7 @@ import {
   extractMemoriesFromResponse,
   normalizeChatWidgets,
 } from '../../utils/index.js';
-import { generateApprovalId, createApprovalRequest } from '../execution-approval.js';
+import { generateApprovalId, createApprovalRequest } from '../permission/execution-approval.js';
 import type { getAgent } from '../agent/service.js';
 import {
   ConversationService,

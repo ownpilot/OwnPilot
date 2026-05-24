@@ -290,7 +290,7 @@ async function main() {
   // 5c. Permission Gate (unified tool-call authorization — covers the
   // per-call filters previously inlined in soul-heartbeat's onBeforeToolCall;
   // approval middleware + claw autonomy policy migrate in a later phase)
-  const { installPermissionGate } = await import('./services/permission-gate-impl.js');
+  const { installPermissionGate } = await import('./services/permission/gate.js');
   installPermissionGate();
 
   // Start embedding queue (background embedding generation for memories)
