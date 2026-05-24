@@ -8,7 +8,7 @@
 import { Hono } from 'hono';
 import { getBaseName, getMcpClientService } from '@ownpilot/core';
 import { getMcpServersRepo } from '../db/repositories/mcp-servers.js';
-import { handleMcpRequest } from '../services/mcp-server-service.js';
+import { handleMcpRequest } from '../services/mcp/server.js';
 import { getSharedToolRegistry } from '../services/tool-executor.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';

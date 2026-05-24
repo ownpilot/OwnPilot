@@ -23,9 +23,9 @@ import {
   batchUseToolDefinition,
   debugLog,
 } from '@ownpilot/core';
-import { getSharedToolRegistry } from './tool-executor.js';
-import { getLog } from './log.js';
-import { emitMcpToolEvent } from '../mcp/mcp-events.js';
+import { getSharedToolRegistry } from '../tool-executor.js';
+import { getLog } from '../log.js';
+import { emitMcpToolEvent } from '../../mcp/mcp-events.js';
 
 const log = getLog('McpServer');
 
@@ -213,7 +213,7 @@ function createMcpServer(correlationId?: string): Server {
     try {
       // Lazy import to avoid circular deps
       const { executeSearchTools, executeGetToolHelp, executeUseTool, executeBatchUseTool } =
-        await import('../tools/agent-tool-registry.js');
+        await import('../../tools/agent-tool-registry.js');
 
       const registry = getSharedToolRegistry();
       const context = {

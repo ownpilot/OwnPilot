@@ -43,7 +43,7 @@ vi.mock('../db/repositories/mcp-servers.js', () => ({
   getMcpServersRepo: () => mockRepo,
 }));
 
-vi.mock('../services/mcp-server-service.js', () => ({
+vi.mock('../services/mcp/server.js', () => ({
   handleMcpRequest: mockHandleMcpRequest,
 }));
 

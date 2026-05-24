@@ -63,11 +63,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('./tool-executor.js', () => ({
+vi.mock('../tool-executor.js', () => ({
   getSharedToolRegistry: () => ({}),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,
@@ -76,11 +76,11 @@ vi.mock('./log.js', () => ({
   }),
 }));
 
-vi.mock('../mcp/mcp-events.js', () => ({
+vi.mock('../../mcp/mcp-events.js', () => ({
   emitMcpToolEvent: mockEmitMcpToolEvent,
 }));
 
-vi.mock('../tools/agent-tool-registry.js', () => ({
+vi.mock('../../tools/agent-tool-registry.js', () => ({
   executeSearchTools: mockExecuteSearchTools,
   executeGetToolHelp: mockExecuteGetToolHelp,
   executeUseTool: mockExecuteUseTool,
@@ -94,7 +94,7 @@ vi.mock('../tools/agent-tool-registry.js', () => ({
 const { Server } = await import('@modelcontextprotocol/sdk/server/index.js');
 const { WebStandardStreamableHTTPServerTransport } =
   await import('@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js');
-const { handleMcpRequest, invalidateMcpServer } = await import('./mcp-server-service.js');
+const { handleMcpRequest, invalidateMcpServer } = await import('./server.js');
 
 // =============================================================================
 // HELPERS

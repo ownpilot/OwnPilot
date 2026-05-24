@@ -394,7 +394,7 @@ async function main() {
 
   // Initialize MCP Client Service — auto-connect configured external MCP servers
   try {
-    const { mcpClientService } = await import('./services/mcp-client-service.js');
+    const { mcpClientService } = await import('./services/mcp/client.js');
     await mcpClientService.autoConnect();
 
     // 9. MCP Client Service — also installed on the core capability singleton
@@ -825,7 +825,7 @@ async function main() {
 
     // 2.5. Disconnect MCP clients
     try {
-      const { mcpClientService } = await import('./services/mcp-client-service.js');
+      const { mcpClientService } = await import('./services/mcp/client.js');
       await mcpClientService.disconnectAll();
     } catch (e) {
       log.warn('MCP disconnect error', { error: String(e) });
@@ -951,7 +951,7 @@ async function main() {
 
     // 8. Invalidate MCP server (close sessions, stop cleanup timer)
     try {
-      const { invalidateMcpServer } = await import('./services/mcp-server-service.js');
+      const { invalidateMcpServer } = await import('./services/mcp/server.js');
       invalidateMcpServer();
     } catch (e) {
       log.warn('MCP server cleanup error', { error: String(e) });

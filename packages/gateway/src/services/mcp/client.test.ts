@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { McpServerRecord } from '../db/repositories/mcp-servers.js';
+import type { McpServerRecord } from '../../db/repositories/mcp-servers.js';
 
 // =============================================================================
 // MOCKS
@@ -50,11 +50,11 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/mcp-servers.js', () => ({
+vi.mock('../../db/repositories/mcp-servers.js', () => ({
   getMcpServersRepo: () => mockRepo,
 }));
 
-vi.mock('./tool-executor.js', () => ({
+vi.mock('../tool-executor.js', () => ({
   getSharedToolRegistry: () => mockRegistry,
 }));
 
@@ -67,7 +67,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -77,7 +77,7 @@ vi.mock('./log.js', () => ({
 }));
 
 // Dynamic import AFTER vi.mock calls to get a fresh singleton
-const { mcpClientService } = await import('./mcp-client-service.js');
+const { mcpClientService } = await import('./client.js');
 
 // =============================================================================
 // HELPERS
