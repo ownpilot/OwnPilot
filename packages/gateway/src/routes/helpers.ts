@@ -68,7 +68,7 @@ export function getUserId(c: Context): string {
  * page 500 at limit=20). Routes that genuinely need deeper paging should
  * switch to keyset/cursor pagination.
  */
-export const MAX_PAGINATION_OFFSET = 10000;
+const MAX_PAGINATION_OFFSET = 10000;
 
 export function getPaginationParams(
   c: Context,

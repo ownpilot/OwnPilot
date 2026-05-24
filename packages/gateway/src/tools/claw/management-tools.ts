@@ -346,8 +346,6 @@ export const CLAW_MANAGEMENT_TOOLS: ToolDefinition[] = [
   messageClawDef,
 ];
 
-export const CLAW_MANAGEMENT_TOOL_NAMES = CLAW_MANAGEMENT_TOOLS.map((t) => t.name);
-
 // =============================================================================
 // Executor
 // =============================================================================

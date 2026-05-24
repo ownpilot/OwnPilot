@@ -61,8 +61,6 @@ export {
   resolveDefaultProviderAndModel,
   isDemoModeFromSettings,
   getApiKeySource,
-  getAllowedDirs,
-  setAllowedDirs,
   getSandboxSettings,
   setSandboxSetting,
   isSandboxEnabled,

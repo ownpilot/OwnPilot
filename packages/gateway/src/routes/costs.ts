@@ -657,6 +657,3 @@ costRoutes.get('/export', async (c) => {
   }
   return apiResponse(c, parsed);
 });
-
-// usageTracker re-exported from services/usage-tracking.js for legacy callers.
-export { usageTracker };

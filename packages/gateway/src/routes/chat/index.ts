@@ -120,12 +120,6 @@ function toMcpTraceEvent(event: McpToolEvent): {
 }
 
 // =============================================================================
-// Backward compatibility re-export
-// =============================================================================
-// chat-history.ts imports promptInitializedConversations from './index.js'
-export { promptInitializedConversations } from '../../services/chat/state.js';
-
-// =============================================================================
 // Routes
 // =============================================================================
 

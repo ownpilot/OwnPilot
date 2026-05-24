@@ -27,7 +27,7 @@ export function safeStringArray(value: unknown): string[] | undefined {
  * When a plugin provides a real implementation, the corresponding core stubs
  * are unregistered to prevent the LLM from seeing duplicate tools.
  */
-export const PLUGIN_SUPERSEDES_CORE: Record<string, string[]> = {
+const PLUGIN_SUPERSEDES_CORE: Record<string, string[]> = {
   email_send: ['send_email'],
   email_read: ['list_emails', 'read_email'],
   email_search: ['search_emails'],

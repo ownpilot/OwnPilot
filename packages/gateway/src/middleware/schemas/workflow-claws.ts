@@ -21,7 +21,7 @@ import { z } from 'zod';
  * Anything tighter is a cost-runaway vector — a 1-second interval that fires
  * a chat or workflow action burns wallet at provider-rate-limit speed.
  */
-export const TRIGGER_MIN_INTERVAL_MS = 60_000;
+const TRIGGER_MIN_INTERVAL_MS = 60_000;
 
 /**
  * Refine that rejects schedule triggers with sub-minute intervals or

@@ -45,12 +45,6 @@ const httpLatencies: Histogram = {
 /** Active agent sessions by type */
 const activeAgents = new Map<string, number>();
 
-/** Provider cost counter (USD) by provider */
-const providerCosts = new Map<string, number>();
-
-/** Chat requests by provider+model+status */
-const chatRequests = new Map<string, Counter>();
-
 // ============================================================================
 // Instrumentation API
 // ============================================================================
@@ -94,32 +88,8 @@ export function recordHttpRequest(
 /**
  * Record active agent counts by type.
  */
-export function recordActiveAgents(type: string, count: number): void {
+function recordActiveAgents(type: string, count: number): void {
   activeAgents.set(type, count);
-}
-
-/**
- * Record provider cost in USD.
- */
-export function recordProviderCost(provider: string, costUsd: number): void {
-  const existing = providerCosts.get(provider);
-  providerCosts.set(provider, (existing ?? 0) + costUsd);
-}
-
-/**
- * Record a chat request.
- */
-export function recordChatRequest(provider: string, model: string, status: number): void {
-  const key = `${provider}_${model}_${status}`;
-  const existing = chatRequests.get(key);
-  if (existing) {
-    existing.value++;
-  } else {
-    chatRequests.set(key, {
-      value: 1,
-      labels: { provider, model, status: String(status) },
-    });
-  }
 }
 
 /**
@@ -222,27 +192,6 @@ export function renderMetrics(): string {
   // Active agents
   for (const [type, count] of activeAgents) {
     lines.push(formatGauge('ownpilot_active_agents', 'Number of active agents', count, { type }));
-  }
-
-  // Provider costs
-  for (const [provider, cost] of providerCosts) {
-    lines.push(
-      formatCounter('ownpilot_provider_cost_usd_total', 'Total provider cost in USD', cost, {
-        provider,
-      })
-    );
-  }
-
-  // Chat requests
-  for (const [, counter] of chatRequests) {
-    lines.push(
-      formatCounter(
-        'ownpilot_chat_requests_total',
-        'Total chat requests',
-        counter.value,
-        counter.labels
-      )
-    );
   }
 
   return lines.join('\n');

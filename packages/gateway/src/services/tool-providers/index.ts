@@ -23,14 +23,10 @@ import {
   executeHeartbeatTool,
   EXTENSION_TOOLS,
   executeExtensionTool,
-  SOUL_COMMUNICATION_TOOLS,
-  executeSoulCommunicationTool,
   CODING_AGENT_TOOLS,
   executeCodingAgentTool,
   CLI_TOOL_TOOLS,
   executeCliToolTool,
-  ARTIFACT_TOOLS,
-  executeArtifactTool,
   BROWSER_TOOLS,
   executeBrowserTool,
   EDGE_TOOLS,
@@ -279,45 +275,6 @@ export function createCliToolProvider(userId: string): ToolProvider {
 }
 
 /**
- * Create a provider for artifact tools (requires userId).
- * Uses custom wrapper because executeArtifactTool needs conversationId from ToolContext.
- */
-export function createArtifactToolProvider(userId: string): ToolProvider {
-  return {
-    name: 'artifact',
-    getTools: () =>
-      ARTIFACT_TOOLS.map((def) => ({
-        definition: def,
-        executor: async (
-          args: Record<string, unknown>,
-          context: ToolContext
-        ): Promise<ToolExecutionResult> => {
-          try {
-            const effectiveUserId = context?.userId ?? userId;
-            const conversationId = context?.conversationId ?? '';
-            const result = await executeArtifactTool(
-              def.name,
-              args,
-              effectiveUserId,
-              conversationId
-            );
-            if (result.success) {
-              const content =
-                typeof result.result === 'string'
-                  ? result.result
-                  : JSON.stringify(result.result, null, 2);
-              return { content };
-            }
-            return { content: result.error ?? 'Unknown error', isError: true };
-          } catch (err) {
-            return { content: getErrorMessage(err, 'Tool execution failed'), isError: true };
-          }
-        },
-      })),
-  };
-}
-
-/**
  * Create a provider for browser automation tools (requires userId).
  */
 export function createBrowserToolProvider(userId: string): ToolProvider {
@@ -341,20 +298,6 @@ export function createEdgeToolProvider(userId: string): ToolProvider {
       EDGE_TOOLS.map((def) => ({
         definition: def,
         executor: wrapGatewayExecutor(def, executeEdgeTool, userId),
-      })),
-  };
-}
-
-/**
- * Create a provider for soul communication tools (requires userId).
- */
-export function createSoulCommunicationToolProvider(userId: string): ToolProvider {
-  return {
-    name: 'soul-communication',
-    getTools: () =>
-      SOUL_COMMUNICATION_TOOLS.map((def) => ({
-        definition: def,
-        executor: wrapGatewayExecutor(def, executeSoulCommunicationTool, userId),
       })),
   };
 }

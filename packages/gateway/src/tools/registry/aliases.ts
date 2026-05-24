@@ -14,7 +14,7 @@
  * namespaced ("core.get_current_time") forms are resolved by
  * `resolveToolAlias`.
  */
-export const TOOL_ALIASES: Record<string, string> = {
+const TOOL_ALIASES: Record<string, string> = {
   // Time/Date
   get_current_time: 'get_current_datetime',
   get_time: 'get_current_datetime',

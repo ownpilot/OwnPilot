@@ -38,7 +38,7 @@ export interface ProviderEntry {
  * Note: Async registrations (plugins, custom tools, extensions) are handled separately
  * in tool-executor.ts because they have different lifecycle requirements.
  */
-export const GATEWAY_PROVIDER_MANIFEST: ProviderEntry[] = [
+const GATEWAY_PROVIDER_MANIFEST: ProviderEntry[] = [
   { name: 'memory', factory: createMemoryToolProvider },
   { name: 'goal', factory: createGoalToolProvider },
   { name: 'custom-data', factory: (_uid) => createCustomDataToolProvider() },

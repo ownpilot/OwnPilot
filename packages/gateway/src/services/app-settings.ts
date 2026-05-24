@@ -31,8 +31,8 @@ import {
 export const API_KEY_PREFIX = 'api_key:';
 export const DEFAULT_PROVIDER_KEY = 'default_ai_provider';
 export const DEFAULT_MODEL_KEY = 'default_ai_model';
-export const ALLOWED_DIRS_KEY = 'coding_agents:allowed_dirs';
-export const SANDBOX_SETTINGS_PREFIX = 'sandbox:';
+const ALLOWED_DIRS_KEY = 'coding_agents:allowed_dirs';
+const SANDBOX_SETTINGS_PREFIX = 'sandbox:';
 export const TOOL_GROUPS_KEY = 'tool_groups';
 
 // ============================================

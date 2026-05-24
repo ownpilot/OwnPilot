@@ -402,7 +402,7 @@ export interface AgentPipelineResult {
  * The returned `cancel` function detaches the abort listener — call it once
  * the race completes so we do not leak a listener on a long-lived signal.
  */
-export function createCancellationPromise(signal: AbortSignal): {
+function createCancellationPromise(signal: AbortSignal): {
   promise: Promise<never>;
   cancel: () => void;
 } {

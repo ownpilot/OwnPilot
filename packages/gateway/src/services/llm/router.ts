@@ -21,7 +21,7 @@ import { resolveProviderAndModel, calculateExecutionCost } from '../agent/runner
 import { resolveContextWindow, resolveMaxOutput, computeMemoryMaxTokens } from '../agent/cache.js';
 
 /** Gateway-side LLMRouter implementation — thin facade over scattered helpers. */
-export const llmRouter: ILLMRouter = {
+const llmRouter: ILLMRouter = {
   pick: (opts) =>
     resolveProviderAndModel(
       opts.explicitProvider,

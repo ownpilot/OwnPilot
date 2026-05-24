@@ -21,7 +21,7 @@ export const log = getLog('WorkflowService');
 export const MAX_ARRAY_EVAL_SIZE = 10_000;
 
 /** Maximum expression length for VM evaluation (prevent memory exhaustion). */
-export const MAX_EXPRESSION_LENGTH = 10_000;
+const MAX_EXPRESSION_LENGTH = 10_000;
 
 /**
  * Safe VM expression evaluator — hardens against prototype-chain sandbox escapes.

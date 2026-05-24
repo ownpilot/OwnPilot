@@ -76,7 +76,6 @@ export {
 } from './schemas/productivity.js';
 
 export {
-  TRIGGER_MIN_INTERVAL_MS,
   createTriggerSchema,
   pulseDirectivesSchema,
   createCustomToolSchema,
