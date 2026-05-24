@@ -307,13 +307,14 @@ describe('generatePublisherKeys', () => {
     expect(keys.keyId).toMatch(/^[0-9a-f]{16}$/);
   });
 
+  // Two RSA-4096 keypairs on shared-CPU CI runners can exceed vitest's 5s default.
   it('should generate unique key pairs on successive calls', () => {
     const keys1 = generatePublisherKeys();
     const keys2 = generatePublisherKeys();
     expect(keys1.publicKey).not.toBe(keys2.publicKey);
     expect(keys1.privateKey).not.toBe(keys2.privateKey);
     expect(keys1.keyId).not.toBe(keys2.keyId);
-  });
+  }, 15000);
 });
 
 // =============================================================================

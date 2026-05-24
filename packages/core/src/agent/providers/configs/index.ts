@@ -133,6 +133,37 @@ export type ProviderId = (typeof PROVIDER_IDS)[number];
 // Cache for loaded configs
 const configCache = new Map<string, ProviderConfig>();
 
+// Cache for the directory listing (cleared by clearConfigCache)
+let availableIdsCache: string[] | null = null;
+
+/**
+ * List every provider ID that has a JSON config file on disk.
+ *
+ * Replaces the previous hardcoded PROVIDER_IDS lookup for read paths. The
+ * sync from models.dev writes one JSON per provider, so the directory is
+ * the source of truth — a hardcoded list goes stale every time models.dev
+ * adds a provider. The PROVIDER_IDS constant remains for the type union.
+ */
+function listAvailableProviderIds(): string[] {
+  if (availableIdsCache) return availableIdsCache;
+  try {
+    const dir = getProviderDataDir();
+    if (!fs.existsSync(dir)) {
+      availableIdsCache = [];
+      return availableIdsCache;
+    }
+    availableIdsCache = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => f.slice(0, -'.json'.length))
+      .sort();
+    return availableIdsCache;
+  } catch {
+    availableIdsCache = [];
+    return availableIdsCache;
+  }
+}
+
 /**
  * Load a provider config by ID
  */
@@ -172,9 +203,9 @@ export function getDefaultModelForProvider(providerId: string): ModelConfig | nu
  * Load all provider configs
  */
 export function loadAllProviderConfigs(): ProviderConfig[] {
-  return PROVIDER_IDS.map((id) => loadProviderConfig(id)).filter(
-    (c): c is ProviderConfig => c !== null
-  );
+  return listAvailableProviderIds()
+    .map((id) => loadProviderConfig(id))
+    .filter((c): c is ProviderConfig => c !== null);
 }
 
 /**
@@ -188,7 +219,7 @@ export function getAllProviderConfigs(): ProviderConfig[] {
  * Get available provider IDs
  */
 export function getAvailableProviders(): string[] {
-  return [...PROVIDER_IDS];
+  return listAvailableProviderIds();
 }
 
 /**
@@ -196,6 +227,7 @@ export function getAvailableProviders(): string[] {
  */
 export function clearConfigCache(): void {
   configCache.clear();
+  availableIdsCache = null;
 }
 
 /**
@@ -216,9 +248,9 @@ export function resolveProviderConfig(id: string): ResolvedProviderConfig | null
  * Get all providers that have API keys configured
  */
 export function getConfiguredProviders(): ResolvedProviderConfig[] {
-  return PROVIDER_IDS.map((id) => resolveProviderConfig(id)).filter(
-    (c): c is ResolvedProviderConfig => c !== null
-  );
+  return listAvailableProviderIds()
+    .map((id) => resolveProviderConfig(id))
+    .filter((c): c is ResolvedProviderConfig => c !== null);
 }
 
 /**

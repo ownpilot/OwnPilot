@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { loadProviderConfig, PROVIDER_IDS } from '@ownpilot/core';
+import { loadProviderConfig, getAvailableProviders } from '@ownpilot/core';
 import {
   apiResponse,
   apiError,
@@ -213,7 +213,7 @@ const PROVIDER_CATEGORIES: Record<string, string[]> = {
  * Get all available provider IDs (from core PROVIDER_IDS)
  */
 function getProviderIds(): string[] {
-  return [...PROVIDER_IDS];
+  return getAvailableProviders();
 }
 
 /**

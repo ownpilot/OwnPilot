@@ -25,12 +25,18 @@ import type { ProviderConfig, ModelConfig } from './types.js';
 // Hoisted mocks — must be declared before any imports that use them
 // ---------------------------------------------------------------------------
 
-const { mockReadFileSync } = vi.hoisted(() => ({
+const { mockReadFileSync, mockReaddirSync, mockExistsSync } = vi.hoisted(() => ({
   mockReadFileSync: vi.fn(),
+  // Default: pretend every PROVIDER_IDS entry has a JSON on disk. Individual
+  // tests override this for directory-listing-specific assertions.
+  mockReaddirSync: vi.fn<(dir: string) => string[]>(),
+  mockExistsSync: vi.fn<(p: string) => boolean>(() => true),
 }));
 
 vi.mock('fs', () => ({
   readFileSync: mockReadFileSync,
+  readdirSync: mockReaddirSync,
+  existsSync: mockExistsSync,
 }));
 
 vi.mock('url', () => ({
@@ -108,9 +114,13 @@ function makeProviderConfig(overrides: Partial<ProviderConfig> = {}): ProviderCo
 
 /**
  * Configure mockReadFileSync to return JSON for a given provider ID and throw
- * for everything else.
+ * for everything else. Also configure the directory listing so that
+ * listAvailableProviderIds() (which getAllProviderConfigs / getAvailableProviders
+ * now call) returns the same set.
  */
 function setupReadFileMock(configs: Record<string, ProviderConfig>) {
+  const ids = Object.keys(configs);
+  mockReaddirSync.mockReturnValue(ids.map((id) => `${id}.json`));
   mockReadFileSync.mockImplementation((filePath: string) => {
     const match = (filePath as string).match(/([^/\\]+)\.json$/);
     const id = match?.[1];
@@ -588,12 +598,21 @@ describe('getAllProviderConfigs', () => {
 // ===========================================================================
 
 describe('getAvailableProviders', () => {
-  it('returns a copy of PROVIDER_IDS', () => {
+  beforeEach(() => {
+    clearConfigCache();
+  });
+
+  it('returns the IDs listed in the provider data directory', () => {
+    setupReadFileMock({
+      openai: makeProviderConfig({ id: 'openai' }),
+      anthropic: makeProviderConfig({ id: 'anthropic' }),
+    });
     const result = getAvailableProviders();
-    expect(result).toEqual([...PROVIDER_IDS]);
+    expect(result).toEqual(['anthropic', 'openai']); // sorted
   });
 
   it('returns an array of strings', () => {
+    setupReadFileMock({ openai: makeProviderConfig({ id: 'openai' }) });
     const result = getAvailableProviders();
     expect(Array.isArray(result)).toBe(true);
     for (const id of result) {
@@ -601,27 +620,23 @@ describe('getAvailableProviders', () => {
     }
   });
 
-  it('has the same length as PROVIDER_IDS', () => {
-    expect(getAvailableProviders().length).toBe(PROVIDER_IDS.length);
-  });
-
-  it('modifying the returned array does not affect PROVIDER_IDS', () => {
-    const original = PROVIDER_IDS.length;
-    const result = getAvailableProviders();
-    (result as string[]).push('fake-provider-xyz');
-    expect(PROVIDER_IDS.length).toBe(original);
-    expect(PROVIDER_IDS).not.toContain('fake-provider-xyz');
-  });
-
-  it('contains openai in the result', () => {
+  it('contains openai when openai.json is on disk', () => {
+    setupReadFileMock({ openai: makeProviderConfig({ id: 'openai' }) });
     expect(getAvailableProviders()).toContain('openai');
   });
 
-  it('successive calls return independent copies', () => {
-    const a = getAvailableProviders();
-    const b = getAvailableProviders();
-    expect(a).not.toBe(b); // different array references
-    expect(a).toEqual(b); // same content
+  it('returns empty array when the data directory does not exist', () => {
+    mockExistsSync.mockReturnValueOnce(false);
+    expect(getAvailableProviders()).toEqual([]);
+  });
+
+  it('caches the directory listing — successive calls do not re-read disk', () => {
+    setupReadFileMock({ openai: makeProviderConfig({ id: 'openai' }) });
+    getAvailableProviders();
+    const callsAfterFirst = mockReaddirSync.mock.calls.length;
+    getAvailableProviders();
+    getAvailableProviders();
+    expect(mockReaddirSync.mock.calls.length).toBe(callsAfterFirst);
   });
 });
 
