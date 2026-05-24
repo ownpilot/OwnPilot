@@ -308,7 +308,7 @@ export const batchUseToolDefinition: ToolDefinition = {
  * inspect_tool_source — View source code of any tool (built-in or custom).
  * Lets the LLM understand how a tool works before improving or replacing it.
  */
-export const inspectToolSourceDefinition: ToolDefinition = {
+const inspectToolSourceDefinition: ToolDefinition = {
   name: 'inspect_tool_source',
   brief: 'View source code of any tool (built-in or custom)',
   workflowUsable: false,
@@ -331,7 +331,7 @@ export const inspectToolSourceDefinition: ToolDefinition = {
  * update_custom_tool — Update code or config of an existing custom tool.
  * Allows iterative improvement of custom tools without delete/recreate.
  */
-export const updateCustomToolDefinition: ToolDefinition = {
+const updateCustomToolDefinition: ToolDefinition = {
   name: 'update_custom_tool',
   brief: 'Update code or config of an existing custom tool',
   workflowUsable: false,
