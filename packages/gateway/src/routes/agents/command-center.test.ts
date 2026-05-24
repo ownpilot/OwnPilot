@@ -81,31 +81,31 @@ const {
 // Module mocks
 // =============================================================================
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn(() => mockSoulsRepo),
 }));
 
-vi.mock('../db/repositories/crews.js', () => ({
+vi.mock('../../db/repositories/crews.js', () => ({
   getCrewsRepository: vi.fn(() => mockCrewsRepo),
 }));
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: vi.fn(() => mockHbLogRepo),
 }));
 
-vi.mock('../db/repositories/agents.js', () => ({
+vi.mock('../../db/repositories/agents.js', () => ({
   agentsRepo: mockAgentsRepo,
 }));
 
-vi.mock('../db/repositories/agent-messages.js', () => ({
+vi.mock('../../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: vi.fn(() => mockAgentMsgsRepo),
 }));
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   settingsRepo: mockSettingsRepo,
 }));
 
-vi.mock('../services/heartbeat/soul-service.js', () => ({
+vi.mock('../../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: mockRunAgentHeartbeat,
 }));
 
@@ -113,8 +113,8 @@ vi.mock('../services/heartbeat/soul-service.js', () => ({
 // Imports after mocks
 // =============================================================================
 
-import { agentCommandCenterRoutes } from './agent-command-center.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { agentCommandCenterRoutes } from './command-center.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // =============================================================================
 // App factory

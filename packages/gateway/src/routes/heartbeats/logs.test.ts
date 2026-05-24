@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -23,11 +23,11 @@ const { mockRepo } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: vi.fn(() => mockRepo),
 }));
 
-const { heartbeatLogRoutes } = await import('./heartbeat-logs.js');
+const { heartbeatLogRoutes } = await import('./logs.js');
 
 // ---------------------------------------------------------------------------
 // App setup

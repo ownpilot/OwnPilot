@@ -13,7 +13,7 @@
  */
 
 import { Hono } from 'hono';
-import type { CreateAgentRequest, UpdateAgentRequest, AgentInfo } from '../types/index.js';
+import type { CreateAgentRequest, UpdateAgentRequest, AgentInfo } from '../../types/index.js';
 import {
   apiResponse,
   apiError,
@@ -22,18 +22,18 @@ import {
   notFoundError,
   getErrorMessage,
   parseJsonBody,
-} from './helpers.js';
-import { agentsRepo } from '../db/repositories/index.js';
-import { wsGateway } from '../ws/server.js';
+} from '../helpers.js';
+import { agentsRepo } from '../../db/repositories/index.js';
+import { wsGateway } from '../../ws/server.js';
 import {
   AGENT_CREATE_DEFAULT_MAX_TOKENS,
   AGENT_DEFAULT_TEMPERATURE,
   AGENT_DEFAULT_MAX_TURNS,
   AGENT_DEFAULT_MAX_TOOL_CALLS,
-} from '../config/defaults.js';
+} from '../../config/defaults.js';
 
 // Internal imports from split modules
-import { safeStringArray } from '../tools/agent-tool-registry.js';
+import { safeStringArray } from '../../tools/agent-tool-registry.js';
 import {
   resolveToolGroups,
   resolveRecordTools,
@@ -42,13 +42,13 @@ import {
   generateAgentId,
   agentCache,
   getProviderApiKey,
-} from '../services/agent/cache.js';
-import { getOrCreateAgentInstance } from '../services/agent/service.js';
+} from '../../services/agent/cache.js';
+import { getOrCreateAgentInstance } from '../../services/agent/service.js';
 
 // =============================================================================
 // Backward compatibility re-exports
 // =============================================================================
-// These ensure that all existing imports from './agents.js' continue to work
+// These ensure that all existing imports from './index.js' continue to work
 // without any changes to the consuming files.
 
 export {
@@ -63,10 +63,10 @@ export {
   getContextBreakdown,
   compactContext,
   getCliCorrelationId,
-} from '../services/agent/service.js';
-export type { ContextBreakdown } from '../services/agent/service.js';
-export { invalidateAgentCache } from '../services/agent/cache.js';
-export { getDefaultModel } from '../services/app-settings.js';
+} from '../../services/agent/service.js';
+export type { ContextBreakdown } from '../../services/agent/service.js';
+export { invalidateAgentCache } from '../../services/agent/cache.js';
+export { getDefaultModel } from '../../services/app-settings.js';
 
 // =============================================================================
 // Route handlers
@@ -105,7 +105,7 @@ agentRoutes.get('/', async (c) => {
  */
 agentRoutes.post('/', async (c) => {
   const rawBody = await parseJsonBody(c);
-  const { validateBody, createAgentSchema } = await import('../middleware/validation.js');
+  const { validateBody, createAgentSchema } = await import('../../middleware/validation.js');
   const body = validateBody(createAgentSchema, rawBody) as CreateAgentRequest;
 
   // Default to 'default' for provider and model
@@ -203,7 +203,7 @@ agentRoutes.get('/:id', async (c) => {
 agentRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
-  const { validateBody, updateAgentSchema } = await import('../middleware/validation.js');
+  const { validateBody, updateAgentSchema } = await import('../../middleware/validation.js');
   const body = validateBody(updateAgentSchema, rawBody) as UpdateAgentRequest;
 
   const existing = await agentsRepo.getById(id);
@@ -312,7 +312,7 @@ agentRoutes.post('/:id/reset', async (c) => {
  * Updates existing agents with new toolGroups configuration
  */
 agentRoutes.post('/resync', async (c) => {
-  const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
+  const { getDefaultAgents } = await import('../../db/seeds/default-agents.js');
   const defaultAgents = getDefaultAgents();
 
   let synced = 0;

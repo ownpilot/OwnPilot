@@ -4,15 +4,15 @@
 
 import { Hono } from 'hono';
 import type { AgentMessageType } from '@ownpilot/core';
-import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
+import { getAgentMessagesRepository } from '../../db/repositories/agent-messages.js';
 import {
   apiResponse,
   apiError,
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
-} from './helpers.js';
-import { validateBody, sendAgentMessageSchema } from '../middleware/validation.js';
+} from '../helpers.js';
+import { validateBody, sendAgentMessageSchema } from '../../middleware/validation.js';
 
 export const agentMessageRoutes = new Hono();
 

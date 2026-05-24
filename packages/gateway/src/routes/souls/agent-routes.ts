@@ -9,17 +9,17 @@
 
 import { Hono } from 'hono';
 import { getMemoryService, getGoalService, type SoulFeedback } from '@ownpilot/core';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
-import { getSharedToolRegistry } from '../services/tool/executor.js';
-import { runAgentHeartbeat } from '../services/heartbeat/soul-service.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { getHeartbeatLogRepository } from '../../db/repositories/heartbeat-log.js';
+import { getSharedToolRegistry } from '../../services/tool/executor.js';
+import { runAgentHeartbeat } from '../../services/heartbeat/soul-service.js';
 import {
   apiResponse,
   apiError,
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
-} from './helpers.js';
+} from '../helpers.js';
 import {
   validateBody,
   soulGoalSchema,
@@ -27,7 +27,7 @@ import {
   soulToolsSchema,
   soulCommandSchema,
   soulFeedbackSchema,
-} from '../middleware/validation.js';
+} from '../../middleware/validation.js';
 
 export const soulAgentRoutes = new Hono();
 

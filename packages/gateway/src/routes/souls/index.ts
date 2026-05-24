@@ -14,20 +14,20 @@
 
 import { Hono } from 'hono';
 import type { AgentSoul } from '@ownpilot/core';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { getHeartbeatLogRepository } from '../../db/repositories/heartbeat-log.js';
 import {
   apiResponse,
   apiError,
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
-} from './helpers.js';
-import { validateBody, createSoulSchema } from '../middleware/validation.js';
+} from '../helpers.js';
+import { validateBody, createSoulSchema } from '../../middleware/validation.js';
 
 // Import sub-routes
-import { soulDeployRoutes } from './souls-deploy.js';
-import { soulAgentRoutes } from './souls-agent-routes.js';
+import { soulDeployRoutes } from './deploy.js';
+import { soulAgentRoutes } from './agent-routes.js';
 
 export const soulRoutes = new Hono();
 

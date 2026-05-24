@@ -9,7 +9,7 @@ import type { Context } from 'hono';
 import type { ChatRequest } from '../../types/index.js';
 import type { AIProvider } from '@ownpilot/core';
 import { apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
-import { getSessionInfo } from '../agents.js';
+import { getSessionInfo } from '../agents/index.js';
 import { usageTracker } from '../../services/usage-tracking.js';
 import { logChatEvent } from '../../audit/index.js';
 import { LogsRepository } from '../../db/repositories/index.js';
@@ -42,7 +42,7 @@ const log = getLog('ChatLegacySend');
 
 export interface LegacySendParams {
   c: Context;
-  agent: NonNullable<Awaited<ReturnType<typeof import('../agents.js').getAgent>>>;
+  agent: NonNullable<Awaited<ReturnType<typeof import('../agents/index.js').getAgent>>>;
   body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };
   chatMessage: string;
   provider: string;

@@ -68,7 +68,7 @@ const mockAgent = {
   getAllToolDefinitions: vi.fn(() => []),
 };
 
-vi.mock('../agents.js', () => ({
+vi.mock('../agents/index.js', () => ({
   getAgent: vi.fn(),
   getOrCreateDefaultAgent: vi.fn(async () => mockAgent),
   getOrCreateChatAgent: vi.fn(async () => mockAgent),
@@ -418,7 +418,7 @@ import {
   getDefaultModel,
   resetChatAgentContext,
   clearAllChatAgentCaches,
-} from '../agents.js';
+} from '../agents/index.js';
 import { tryGetMessageBus } from '../../services/chat/prompt.js';
 import { promptInitializedConversations } from '../../services/chat/state.js';
 import { resolveForProcess } from '../../services/llm/model-routing.js';

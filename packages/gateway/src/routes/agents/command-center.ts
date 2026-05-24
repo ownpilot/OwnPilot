@@ -15,18 +15,18 @@ import {
   getErrorMessage,
   getUserId,
   getIntParam,
-} from './helpers.js';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getCrewsRepository } from '../db/repositories/crews.js';
-import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
-import { getClawService } from '../services/claw/service.js';
+} from '../helpers.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { getCrewsRepository } from '../../db/repositories/crews.js';
+import { getHeartbeatLogRepository } from '../../db/repositories/heartbeat-log.js';
+import { getClawService } from '../../services/claw/service.js';
 import {
   validateBody,
   agentCommandSchema,
   agentMissionSchema,
   agentExecuteSchema,
   agentToolsBatchUpdateSchema,
-} from '../middleware/validation.js';
+} from '../../middleware/validation.js';
 
 export const agentCommandCenterRoutes = new Hono();
 
@@ -73,7 +73,8 @@ agentCommandCenterRoutes.post('/command', async (c) => {
                 result = { status: 'resumed' };
                 break;
               case 'run_once':
-                const { runAgentHeartbeat } = await import('../services/heartbeat/soul-service.js');
+                const { runAgentHeartbeat } =
+                  await import('../../services/heartbeat/soul-service.js');
                 const hbResult = await runAgentHeartbeat(target.id);
                 result = {
                   status: hbResult.success ? 'executed' : 'failed',
@@ -391,7 +392,7 @@ agentCommandCenterRoutes.get('/status', async (c) => {
     // Aggregate status — batch-fetch latest heartbeat per soul in a single
     // query instead of N round-trips (souls.length can reach 1000).
     const hbRepo = (
-      await import('../db/repositories/heartbeat-log.js')
+      await import('../../db/repositories/heartbeat-log.js')
     ).getHeartbeatLogRepository();
     const latestByAgent = await hbRepo.getLatestByAgentIds(souls.map((s) => s.agentId));
     const soulStatuses = souls.map((soul) => {
@@ -523,7 +524,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 
     const soulRepo = getSoulsRepository();
     const hbRepo = getHeartbeatLogRepository();
-    const { getAgentMessagesRepository } = await import('../db/repositories/agent-messages.js');
+    const { getAgentMessagesRepository } = await import('../../db/repositories/agent-messages.js');
     const msgRepo = getAgentMessagesRepository();
 
     const userId = getUserId(c);
@@ -594,7 +595,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
     getUserId(c); // Auth check
     const body = validateBody(agentExecuteSchema, await c.req.json());
 
-    const { runAgentHeartbeat } = await import('../services/heartbeat/soul-service.js');
+    const { runAgentHeartbeat } = await import('../../services/heartbeat/soul-service.js');
     const results: { target: { type: string; id: string }; success: boolean; error?: string }[] =
       [];
 

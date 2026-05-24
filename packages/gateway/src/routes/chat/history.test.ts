@@ -230,7 +230,7 @@ vi.mock('../settings.js', () => ({
   getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
 }));
 
-vi.mock('../agents.js', () => ({
+vi.mock('../agents/index.js', () => ({
   resetChatAgentContext: (...args: unknown[]) => mockResetChatAgentContext(...args),
   clearAllChatAgentCaches: (...args: unknown[]) => mockClearAllChatAgentCaches(...args),
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),

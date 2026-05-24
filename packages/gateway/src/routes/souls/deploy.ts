@@ -6,12 +6,12 @@
 
 import { Hono } from 'hono';
 import { randomUUID, randomBytes } from 'node:crypto';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { agentsRepo } from '../db/repositories/agents.js';
-import { createTriggersRepository } from '../db/repositories/triggers.js';
-import { getAdapter } from '../db/adapters/index.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
-import { getLog } from '../services/log.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { agentsRepo } from '../../db/repositories/agents.js';
+import { createTriggersRepository } from '../../db/repositories/triggers.js';
+import { getAdapter } from '../../db/adapters/index.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { getLog } from '../../services/log.js';
 
 const log = getLog('SoulDeploy');
 
@@ -90,7 +90,7 @@ soulDeployRoutes.post('/deploy', async (c) => {
     }
 
     // Get default provider/model if not specified
-    const { settingsRepo } = await import('../db/repositories/index.js');
+    const { settingsRepo } = await import('../../db/repositories/index.js');
     const defaultProvider = settingsRepo.get<string>('default_ai_provider');
     const defaultModel = settingsRepo.get<string>('default_ai_model');
 

@@ -1863,7 +1863,7 @@ describe('WSGateway', () => {
     }
 
     it('sends demo response chunks when isDemoMode returns true', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
         chat: vi.fn(),
       });
@@ -1899,7 +1899,7 @@ describe('WSGateway', () => {
     });
 
     it('escapes HTML in demo mode content (covers escapeHtml)', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
         chat: vi.fn(),
       });
@@ -1921,7 +1921,7 @@ describe('WSGateway', () => {
     });
 
     it('does nothing in demo mode when sessionId is undefined', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockResolvedValue({
         chat: vi.fn(),
       });
@@ -1941,7 +1941,7 @@ describe('WSGateway', () => {
     });
 
     it('processes with real agent and sends stream:end with final content', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       const mockAgent = {
         chat: vi.fn().mockResolvedValue({ ok: true, value: { content: 'AI response' } }),
       };
@@ -1970,7 +1970,7 @@ describe('WSGateway', () => {
     });
 
     it('sends stream chunks via onChunk in real agent mode', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       const mockAgent = {
         chat: vi
           .fn()
@@ -1995,7 +1995,7 @@ describe('WSGateway', () => {
     });
 
     it('sends tool:start events when onChunk delivers toolCalls', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       const mockAgent = {
         chat: vi
           .fn()
@@ -2022,7 +2022,7 @@ describe('WSGateway', () => {
     });
 
     it('sends chat:error on exception', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('Agent failure')
       );
@@ -2041,7 +2041,7 @@ describe('WSGateway', () => {
     });
 
     it('does not send chat:error when sessionId is missing on exception', async () => {
-      const agentsMod = await import('../routes/agents.js');
+      const agentsMod = await import('../routes/agents/index.js');
       (agentsMod.getOrCreateDefaultAgent as ReturnType<typeof vi.fn>).mockRejectedValue(
         new Error('boom')
       );

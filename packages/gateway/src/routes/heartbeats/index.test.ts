@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -67,7 +67,7 @@ class MockHeartbeatServiceError extends Error {
   }
 }
 
-vi.mock('../services/heartbeat/service.js', () => ({
+vi.mock('../../services/heartbeat/service.js', () => ({
   getHeartbeatService: () => mockService,
   HeartbeatService: vi.fn(),
   HeartbeatServiceError: MockHeartbeatServiceError,
@@ -89,7 +89,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 // Import after mocks
-const { heartbeatsRoutes } = await import('./heartbeats.js');
+const { heartbeatsRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup

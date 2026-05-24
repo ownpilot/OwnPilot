@@ -18,7 +18,7 @@ const { mockTransaction, mockTriggerCreate } = vi.hoisted(() => {
   return { mockTransaction, mockTriggerCreate };
 });
 
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: () => ({
     transaction: mockTransaction,
   }),
@@ -28,7 +28,7 @@ vi.mock('../db/adapters/index.js', () => ({
     }),
 }));
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: () => ({
     list: vi.fn(),
     count: vi.fn(),
@@ -43,39 +43,39 @@ vi.mock('../db/repositories/souls.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/agents.js', () => ({
+vi.mock('../../db/repositories/agents.js', () => ({
   agentsRepo: {
     create: vi.fn(),
     delete: vi.fn(),
   },
 }));
 
-vi.mock('../db/repositories/triggers.js', () => ({
+vi.mock('../../db/repositories/triggers.js', () => ({
   createTriggersRepository: () => ({
     create: mockTriggerCreate,
   }),
 }));
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: () => ({
     listByAgent: vi.fn(),
     getStats: vi.fn(),
   }),
 }));
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   settingsRepo: {
     get: vi.fn(),
   },
 }));
 
-vi.mock('../services/tool/executor.js', () => ({
+vi.mock('../../services/tool/executor.js', () => ({
   getSharedToolRegistry: () => ({
     getAllTools: vi.fn(),
   }),
 }));
 
-vi.mock('../services/heartbeat/soul-service.js', () => ({
+vi.mock('../../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: vi.fn(),
 }));
 
@@ -95,10 +95,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
 }));
 
 // Import after mocks
-import { agentsRepo } from '../db/repositories/agents.js';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { settingsRepo } from '../db/repositories/index.js';
-import { soulRoutes } from './souls.js';
+import { agentsRepo } from '../../db/repositories/agents.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { settingsRepo } from '../../db/repositories/index.js';
+import { soulRoutes } from './index.js';
 
 // =============================================================================
 // Test Data

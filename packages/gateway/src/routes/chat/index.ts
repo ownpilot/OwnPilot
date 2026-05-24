@@ -34,7 +34,7 @@ import {
   getWorkspaceContext,
   getSessionInfo,
   getCliCorrelationId,
-} from '../agents.js';
+} from '../agents/index.js';
 import { onMcpToolEvents } from '../../mcp/mcp-events.js';
 import { getLLMRouter } from '@ownpilot/core';
 import { ChatRepository } from '../../db/repositories/index.js';

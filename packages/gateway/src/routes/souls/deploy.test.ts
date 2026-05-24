@@ -10,27 +10,27 @@ const mockAgentsRepo = { create: vi.fn(async () => ({ id: 'agent-1' })) };
 const mockTriggerRepo = { create: vi.fn(async () => ({ id: 'trigger-1' })) };
 const mockAdapter = { transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()) };
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn(() => mockSoulRepo),
 }));
-vi.mock('../db/repositories/agents.js', () => ({
+vi.mock('../../db/repositories/agents.js', () => ({
   agentsRepo: mockAgentsRepo,
 }));
-vi.mock('../db/repositories/triggers.js', () => ({
+vi.mock('../../db/repositories/triggers.js', () => ({
   createTriggersRepository: vi.fn(() => mockTriggerRepo),
 }));
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
   getAdapter: vi.fn(() => Promise.resolve(mockAdapter)),
 }));
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   settingsRepo: { get: vi.fn(() => null) },
 }));
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
-const { soulDeployRoutes } = await import('./souls-deploy.js');
+const { soulDeployRoutes } = await import('./deploy.js');
 
 function createApp() {
   const app = new Hono();

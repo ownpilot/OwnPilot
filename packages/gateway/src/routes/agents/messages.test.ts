@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mock: agent-messages repository
@@ -22,7 +22,7 @@ const mockRepo = {
   create: vi.fn(),
 };
 
-vi.mock('../db/repositories/agent-messages.js', () => ({
+vi.mock('../../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: () => mockRepo,
 }));
 
@@ -30,7 +30,7 @@ vi.mock('../db/repositories/agent-messages.js', () => ({
 // Import route after mocks
 // ---------------------------------------------------------------------------
 
-const { agentMessageRoutes } = await import('./agent-messages.js');
+const { agentMessageRoutes } = await import('./messages.js');
 
 // ---------------------------------------------------------------------------
 // App factory

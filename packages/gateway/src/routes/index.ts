@@ -3,7 +3,7 @@
  */
 
 export { healthRoutes } from './health.js';
-export { agentRoutes, getAgent, getOrCreateDefaultAgent } from './agents.js';
+export { agentRoutes, getAgent, getOrCreateDefaultAgent } from './agents/index.js';
 export { chatRoutes } from './chat/index.js';
 export { toolsRoutes } from './tools.js';
 export { settingsRoutes } from './settings.js';
@@ -35,7 +35,7 @@ export { localProvidersRoutes } from './local-providers.js';
 export { channelAuthRoutes } from './channels/auth.js';
 export { debugRoutes } from './debug.js';
 export { executionPermissionsRoutes } from './execution-permissions.js';
-export { heartbeatsRoutes } from './heartbeats.js';
+export { heartbeatsRoutes } from './heartbeats/index.js';
 export { extensionsRoutes } from './extensions.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';
@@ -53,11 +53,11 @@ export { voiceRoutes } from './voice.js';
 export { browserRoutes } from './browser.js';
 export { skillsRoutes } from './skills.js';
 export { edgeRoutes } from './edge.js';
-export { soulRoutes } from './souls.js';
+export { soulRoutes } from './souls/index.js';
 export { crewRoutes } from './crews.js';
-export { agentMessageRoutes } from './agent-messages.js';
-export { heartbeatLogRoutes } from './heartbeat-logs.js';
-export { agentCommandCenterRoutes } from './agent-command-center.js';
+export { agentMessageRoutes } from './agents/messages.js';
+export { heartbeatLogRoutes } from './heartbeats/logs.js';
+export { agentCommandCenterRoutes } from './agents/command-center.js';
 export { cliChatRoutes } from './cli/chat.js';
 export { notificationRoutes } from './notifications.js';
 export { clawRoutes } from './claws.js';

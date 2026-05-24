@@ -15,7 +15,7 @@ import {
   type ToolPermission,
 } from '../../db/repositories/custom-tools.js';
 import { validateToolCode } from '@ownpilot/core';
-import { invalidateAgentCache } from '../agents.js';
+import { invalidateAgentCache } from '../agents/index.js';
 import {
   registerToolConfigRequirements,
   unregisterDependencies,

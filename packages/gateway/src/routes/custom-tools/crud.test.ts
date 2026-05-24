@@ -83,7 +83,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../agents.js', () => ({
+vi.mock('../agents/index.js', () => ({
   invalidateAgentCache: mockInvalidateAgentCache,
 }));
 

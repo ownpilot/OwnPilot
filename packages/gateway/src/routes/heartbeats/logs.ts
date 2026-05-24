@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { getHeartbeatLogRepository } from '../db/repositories/heartbeat-log.js';
+import { getHeartbeatLogRepository } from '../../db/repositories/heartbeat-log.js';
 import {
   apiResponse,
   apiError,
@@ -11,7 +11,7 @@ import {
   getErrorMessage,
   getPaginationParams,
   getUserId,
-} from './helpers.js';
+} from '../helpers.js';
 
 export const heartbeatLogRoutes = new Hono();
 

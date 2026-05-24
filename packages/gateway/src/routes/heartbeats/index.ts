@@ -10,8 +10,8 @@
 
 import { Hono } from 'hono';
 import { getHeartbeatService, Services } from '@ownpilot/core';
-import { HeartbeatServiceError } from '../services/heartbeat/service.js';
-import type { HeartbeatService } from '../services/heartbeat/service.js';
+import { HeartbeatServiceError } from '../../services/heartbeat/service.js';
+import type { HeartbeatService } from '../../services/heartbeat/service.js';
 import {
   getUserId,
   apiResponse,
@@ -21,9 +21,9 @@ import {
   notFoundError,
   getErrorMessage,
   parseJsonBody,
-} from './helpers.js';
-import { wsGateway } from '../ws/server.js';
-import { createCrudRoutes } from './crud-factory.js';
+} from '../helpers.js';
+import { wsGateway } from '../../ws/server.js';
+import { createCrudRoutes } from '../crud-factory.js';
 
 export const heartbeatsRoutes = new Hono();
 

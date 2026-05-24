@@ -90,7 +90,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   agentsRepo: {
     getAll: vi.fn(),
     getPage: vi.fn(),
@@ -107,7 +107,7 @@ vi.mock('../db/repositories/index.js', () => ({
   },
 }));
 
-vi.mock('../services/app-settings.js', () => ({
+vi.mock('../../services/app-settings.js', () => ({
   hasApiKey: vi.fn(() => true),
   getApiKey: vi.fn(() => 'test-api-key'),
   resolveDefaultProviderAndModel: vi.fn(async (p: string, m: string) => ({
@@ -118,28 +118,28 @@ vi.mock('../services/app-settings.js', () => ({
   getDefaultModel: vi.fn(() => 'gpt-4'),
 }));
 
-vi.mock('./memories.js', () => ({
+vi.mock('../../memories.js', () => ({
   executeMemoryTool: vi.fn(),
 }));
 
-vi.mock('./goals.js', () => ({
+vi.mock('../../goals.js', () => ({
   executeGoalTool: vi.fn(),
 }));
 
-vi.mock('./custom-data.js', () => ({
+vi.mock('../../custom-data.js', () => ({
   executeCustomDataTool: vi.fn(),
 }));
 
-vi.mock('../tools/personal-data-tools.js', () => ({
+vi.mock('../../tools/personal-data-tools.js', () => ({
   executePersonalDataTool: vi.fn(),
 }));
 
-vi.mock('./custom-tools.js', () => ({
+vi.mock('../../custom-tools.js', () => ({
   executeCustomToolTool: vi.fn(),
   executeActiveCustomTool: vi.fn(),
   getActiveCustomToolDefinitions: vi.fn(async () => []),
 }));
-vi.mock('../services/custom/tool-registry.js', () => ({
+vi.mock('../../services/custom/tool-registry.js', () => ({
   getCustomToolDynamicRegistry: vi.fn(() => ({
     has: vi.fn(() => false),
     register: vi.fn(),
@@ -149,13 +149,13 @@ vi.mock('../services/custom/tool-registry.js', () => ({
   unregisterToolFromRegistries: vi.fn(),
 }));
 
-vi.mock('../services/tool/executor.js', () => ({
+vi.mock('../../services/tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn(() => ({
     getToolsBySource: vi.fn(() => []),
   })),
 }));
 
-vi.mock('../tools/index.js', () => ({
+vi.mock('../../tools/index.js', () => ({
   TRIGGER_TOOLS: [],
   executeTriggerTool: vi.fn(),
   PLAN_TOOLS: [],
@@ -174,12 +174,12 @@ vi.mock('../tools/index.js', () => ({
   executeSoulCommunicationTool: vi.fn(),
 }));
 
-vi.mock('../tools/config-tools.js', () => ({
+vi.mock('../../tools/config-tools.js', () => ({
   CONFIG_TOOLS: [],
   executeConfigTool: vi.fn(),
 }));
 
-vi.mock('../services/agent/service.js', () => ({
+vi.mock('../../services/agent/service.js', () => ({
   getOrCreateAgentInstance: vi.fn(async () => ({
     reset: vi.fn(() => ({ id: 'new-conversation-id' })),
     getTools: vi.fn(() => []),
@@ -206,7 +206,7 @@ vi.mock('../services/agent/service.js', () => ({
   })),
 }));
 
-vi.mock('../tracing/index.js', () => ({
+vi.mock('../../tracing/index.js', () => ({
   traceToolCallStart: vi.fn(() => Date.now()),
   traceToolCallEnd: vi.fn(),
   traceMemoryOp: vi.fn(),
@@ -214,14 +214,14 @@ vi.mock('../tracing/index.js', () => ({
   traceDbRead: vi.fn(),
 }));
 
-vi.mock('../services/memory-service.js', () => ({
+vi.mock('../../services/memory-service.js', () => ({
   getMemoryService: vi.fn(() => ({
     getImportantMemories: vi.fn(async () => []),
     search: vi.fn(async () => []),
   })),
 }));
 
-vi.mock('../services/goal-service.js', () => ({
+vi.mock('../../services/goal-service.js', () => ({
   getGoalService: vi.fn(() => ({
     getActiveGoals: vi.fn(async () => []),
     getActive: vi.fn(async () => []),
@@ -229,19 +229,19 @@ vi.mock('../services/goal-service.js', () => ({
   })),
 }));
 
-vi.mock('../db/seeds/default-agents.js', () => ({
+vi.mock('../../db/seeds/default-agents.js', () => ({
   getDefaultAgents: vi.fn(() => []),
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
 // ─── Import route + mocked modules ──────────────────────────────
 
-import { agentRoutes } from './agents.js';
-import { agentsRepo } from '../db/repositories/index.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { agentRoutes } from './index.js';
+import { agentsRepo } from '../../db/repositories/index.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -756,7 +756,7 @@ describe('Agent Routes', () => {
 
       // getProviderApiKey checks localProvidersRepo.getProvider first (returns null),
       // then falls back to getApiKey from settings. Mock getApiKey to return undefined once.
-      const { getApiKey } = await import('../services/app-settings.js');
+      const { getApiKey } = await import('../../services/app-settings.js');
       vi.mocked(getApiKey).mockResolvedValueOnce(undefined);
 
       const res = await app.request('/agents/agent-1', {
@@ -963,7 +963,7 @@ describe('Agent Routes', () => {
     });
 
     it('should upsert agents from defaults', async () => {
-      const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
+      const { getDefaultAgents } = await import('../../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
           id: 'default',
@@ -995,7 +995,7 @@ describe('Agent Routes', () => {
     });
 
     it('should sync new agents from defaults', async () => {
-      const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
+      const { getDefaultAgents } = await import('../../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
           id: 'new-agent',
@@ -1025,7 +1025,7 @@ describe('Agent Routes', () => {
     });
 
     it('should handle errors for individual agents', async () => {
-      const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
+      const { getDefaultAgents } = await import('../../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
           id: 'failing-agent',
@@ -1063,7 +1063,7 @@ describe('Agent Routes', () => {
     });
 
     it('should handle multiple agents', async () => {
-      const { getDefaultAgents } = await import('../db/seeds/default-agents.js');
+      const { getDefaultAgents } = await import('../../db/seeds/default-agents.js');
       vi.mocked(getDefaultAgents).mockReturnValue([
         {
           id: 'existing-1',

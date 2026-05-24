@@ -20,8 +20,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // Mock crypto.randomUUID
 Object.defineProperty(globalThis, 'crypto', {
@@ -38,7 +38,7 @@ const mockGetVersions = vi.fn();
 const mockGetVersion = vi.fn();
 const mockCreateVersion = vi.fn();
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn().mockReturnValue({
     getByAgentId: mockGetByAgentId,
     update: mockUpdate,
@@ -52,7 +52,7 @@ vi.mock('../db/repositories/souls.js', () => ({
 const mockListByAgent = vi.fn();
 const mockGetStats = vi.fn();
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: vi.fn().mockReturnValue({
     listByAgent: mockListByAgent,
     getStats: mockGetStats,
@@ -62,7 +62,7 @@ vi.mock('../db/repositories/heartbeat-log.js', () => ({
 // Mock tool executor
 const mockGetAllTools = vi.fn();
 
-vi.mock('../services/tool/executor.js', () => ({
+vi.mock('../../services/tool/executor.js', () => ({
   getSharedToolRegistry: vi.fn().mockReturnValue({
     getAllTools: mockGetAllTools,
   }),
@@ -71,7 +71,7 @@ vi.mock('../services/tool/executor.js', () => ({
 // Mock soul heartbeat service
 const mockRunAgentHeartbeat = vi.fn();
 
-vi.mock('../services/heartbeat/soul-service.js', () => ({
+vi.mock('../../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: mockRunAgentHeartbeat,
 }));
 
@@ -109,7 +109,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 // Import after mocks
-const { soulAgentRoutes } = await import('./souls-agent-routes.js');
+const { soulAgentRoutes } = await import('./agent-routes.js');
 
 function createApp() {
   const app = new Hono();

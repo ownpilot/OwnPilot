@@ -50,35 +50,35 @@ const {
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: () => mockSoulsRepo,
 }));
 
-vi.mock('../db/repositories/heartbeat-log.js', () => ({
+vi.mock('../../db/repositories/heartbeat-log.js', () => ({
   getHeartbeatLogRepository: () => mockHbRepo,
 }));
 
-vi.mock('../services/tool/executor.js', () => ({
+vi.mock('../../services/tool/executor.js', () => ({
   getSharedToolRegistry: mockGetSharedToolRegistry,
 }));
 
-vi.mock('../services/heartbeat/soul-service.js', () => ({
+vi.mock('../../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: mockRunAgentHeartbeat,
 }));
 
-vi.mock('../db/repositories/agents.js', () => ({
+vi.mock('../../db/repositories/agents.js', () => ({
   agentsRepo: { create: vi.fn(), delete: vi.fn() },
 }));
 
-vi.mock('../db/repositories/triggers.js', () => ({
+vi.mock('../../db/repositories/triggers.js', () => ({
   createTriggersRepository: () => ({ create: vi.fn() }),
 }));
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   settingsRepo: { get: vi.fn() },
 }));
 
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: () => ({
     transaction: vi.fn(async (fn: () => Promise<unknown>) => fn()),
   }),
@@ -103,7 +103,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   Services: { Memory: 'Memory', Goal: 'Goal' },
 }));
 
-import { soulRoutes } from './souls.js';
+import { soulRoutes } from './index.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
