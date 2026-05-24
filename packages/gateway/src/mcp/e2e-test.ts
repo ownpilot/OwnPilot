@@ -12,8 +12,8 @@
  */
 
 import { ensureWorkspace } from './workspace.js';
-import { CliChatProvider } from '../services/cli-chat-provider.js';
-import type { CliChatBinary } from '../services/cli-chat-provider.js';
+import { CliChatProvider } from '../services/cli/chat-provider.js';
+import type { CliChatBinary } from '../services/cli/chat-provider.js';
 import { isBinaryInstalled } from '../services/binary-utils.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

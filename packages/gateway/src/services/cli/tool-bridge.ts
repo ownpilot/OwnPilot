@@ -15,7 +15,7 @@
 
 import type { ToolDefinition, ToolResult, ToolCall, Message } from '@ownpilot/core';
 import type { ToolRegistry } from '@ownpilot/core';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 
 const log = getLog('ToolBridge');
 

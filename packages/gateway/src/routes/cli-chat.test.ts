@@ -20,7 +20,7 @@ const mockGetCliBinaryFromProviderId = vi.fn();
 const mockGetCliChatProviderDefinition = vi.fn();
 const mockCreateCliChatProvider = vi.fn();
 
-vi.mock('../services/cli-chat-provider.js', () => ({
+vi.mock('../services/cli/chat-provider.js', () => ({
   detectCliChatProviders: mockDetectCliChatProviders,
   isCliChatProvider: mockIsCliChatProvider,
   getCliBinaryFromProviderId: mockGetCliBinaryFromProviderId,

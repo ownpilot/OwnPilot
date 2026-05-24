@@ -14,7 +14,7 @@ import {
   getCliBinaryFromProviderId,
   getCliChatProviderDefinition,
   createCliChatProvider,
-} from '../services/cli-chat-provider.js';
+} from '../services/cli/chat-provider.js';
 import { isBinaryInstalled, getBinaryVersion } from '../services/binary-utils.js';
 
 const app = new Hono();

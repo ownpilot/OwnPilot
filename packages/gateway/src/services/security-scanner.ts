@@ -15,7 +15,7 @@ import { analyzeToolCode, calculateSecurityScore } from '@ownpilot/core';
 import type { CliToolCatalogEntry, CliToolPolicy } from '@ownpilot/core';
 import { getExtensionService } from './extension-service.js';
 import { auditSkillSecurity } from './skill-security-audit.js';
-import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './cli-tools-catalog.js';
+import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './cli/tools-catalog.js';
 import {
   createCustomToolsRepo,
   createTriggersRepository,

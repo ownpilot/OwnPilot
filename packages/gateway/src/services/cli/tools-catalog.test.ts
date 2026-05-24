@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './cli-tools-catalog.js';
+import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './tools-catalog.js';
 
 describe('CLI_TOOLS_CATALOG', () => {
   it('exports a non-empty array', () => {

@@ -69,31 +69,31 @@ const {
 // vi.mock declarations
 // =============================================================================
 
-vi.mock('./cli-tools-catalog.js', () => ({
+vi.mock('./tools-catalog.js', () => ({
   CLI_TOOLS_CATALOG: [],
   CLI_TOOLS_BY_NAME: mockCLI_TOOLS_BY_NAME,
 }));
 
-vi.mock('./cli-tools-discovery.js', () => ({
+vi.mock('./tools-discovery.js', () => ({
   discoverTools: (...args: unknown[]) => mockDiscoverTools(...args),
   clearDiscoveryCache: (...args: unknown[]) => mockClearDiscoveryCache(...args),
 }));
 
-vi.mock('../db/repositories/cli-tool-policies.js', () => ({
+vi.mock('../../db/repositories/cli-tool-policies.js', () => ({
   cliToolPoliciesRepo: {
     getPolicy: (...args: unknown[]) => mockGetPolicy(...args),
     setPolicy: (...args: unknown[]) => mockSetPolicy(...args),
   },
 }));
 
-vi.mock('../db/repositories/cli-providers.js', () => ({
+vi.mock('../../db/repositories/cli-providers.js', () => ({
   cliProvidersRepo: {
     getByName: (...args: unknown[]) => mockGetByName(...args),
     listActive: vi.fn().mockResolvedValue([]),
   },
 }));
 
-vi.mock('./binary-utils.js', () => ({
+vi.mock('../binary-utils.js', () => ({
   isBinaryInstalled: (...args: unknown[]) => mockIsBinaryInstalled(...args),
   validateCwd: (...args: unknown[]) => mockValidateCwd(...args),
   createSanitizedEnv: (...args: unknown[]) => mockCreateSanitizedEnv(...args),
@@ -101,7 +101,7 @@ vi.mock('./binary-utils.js', () => ({
   MAX_OUTPUT_SIZE: 1_048_576,
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     debug: vi.fn(),
@@ -122,7 +122,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 // Import SUT (after all vi.mock declarations)
 // =============================================================================
 
-import { CliToolService, getCliToolService } from './cli-tool-service.js';
+import { CliToolService, getCliToolService } from './tool-service.js';
 
 // =============================================================================
 // Fixtures

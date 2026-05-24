@@ -13,7 +13,7 @@ import {
   type ActionContext,
   AutonomyLevel,
 } from './types.js';
-import { CLI_TOOLS_BY_NAME } from '../services/cli-tools-catalog.js';
+import { CLI_TOOLS_BY_NAME } from '../services/cli/tools-catalog.js';
 import {
   RISK_THRESHOLD_CRITICAL,
   RISK_THRESHOLD_HIGH,

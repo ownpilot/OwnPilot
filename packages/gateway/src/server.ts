@@ -601,7 +601,7 @@ async function main() {
   // singleton is the canonical access path for cross-package consumers.
   {
     const { getCliToolService: getLocalCliToolService } =
-      await import('./services/cli-tool-service.js');
+      await import('./services/cli/tool-service.js');
     const { setCliToolService } = await import('@ownpilot/core');
     setCliToolService(getLocalCliToolService());
   }

@@ -18,7 +18,7 @@ const { mockService, mockGetCliToolService } = vi.hoisted(() => {
   return { mockService, mockGetCliToolService };
 });
 
-vi.mock('../services/cli-tool-service.js', () => ({
+vi.mock('../services/cli/tool-service.js', () => ({
   getCliToolService: mockGetCliToolService,
 }));
 

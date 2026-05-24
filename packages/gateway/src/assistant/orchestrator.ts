@@ -23,7 +23,7 @@ import { getResourceRegistry } from '../services/resource-registry.js';
 import { getApprovalManager, assessRisk, type ActionCategory } from '../autonomy/index.js';
 import { getTriggerEngine } from '../triggers/engine.js';
 import { getLog } from '../services/log.js';
-import { getCliToolService } from '../services/cli-tool-service.js';
+import { getCliToolService } from '../services/cli/tool-service.js';
 
 const log = getLog('Orchestrator');
 

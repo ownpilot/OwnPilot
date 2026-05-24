@@ -93,7 +93,7 @@ import {
   getCliBinaryFromProviderId,
   createCliChatProvider,
   getCliChatProviderDefinition,
-} from './cli-chat-provider.js';
+} from './cli/chat-provider.js';
 
 const log = getLog('AgentService');
 

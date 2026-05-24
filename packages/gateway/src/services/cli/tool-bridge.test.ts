@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn().mockReturnValue({
     info: vi.fn(),
     warn: vi.fn(),
@@ -20,7 +20,7 @@ import {
   injectToolsIntoMessages,
   appendToolResults,
   runToolBridgeLoop,
-} from './cli-tool-bridge.js';
+} from './tool-bridge.js';
 import type { ToolDefinition, Message, ToolResult } from '@ownpilot/core';
 import { ToolRegistry } from '@ownpilot/core';
 

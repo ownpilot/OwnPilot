@@ -5,7 +5,7 @@ vi.mock('./extension-service.js', () => ({
   getExtensionService: vi.fn(),
 }));
 
-vi.mock('./cli-tools-catalog.js', () => {
+vi.mock('./cli/tools-catalog.js', () => {
   const catalog = [
     {
       name: 'eslint',

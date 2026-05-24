@@ -148,7 +148,7 @@ vi.mock('./app-settings.js', () => ({
   getEnabledToolGroupIds: (...args: unknown[]) => mockGetEnabledToolGroupIds(...args),
 }));
 
-vi.mock('./cli-chat-provider.js', () => ({
+vi.mock('./cli/chat-provider.js', () => ({
   isCliChatProvider: vi.fn(() => false),
   getCliBinaryFromProviderId: vi.fn(() => '/usr/bin/test'),
   createCliChatProvider: vi.fn(() => ({})),

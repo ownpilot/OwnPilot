@@ -5,14 +5,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock binary-utils before importing the module
-vi.mock('./binary-utils.js', () => ({
+vi.mock('../binary-utils.js', () => ({
   isBinaryInstalled: vi.fn().mockReturnValue(true),
   getBinaryVersion: vi.fn().mockReturnValue('1.0.0'),
   createSanitizedEnv: vi.fn().mockReturnValue({ PATH: '/usr/bin' }),
   MAX_OUTPUT_SIZE: 1_048_576,
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn().mockReturnValue({
     info: vi.fn(),
     warn: vi.fn(),
@@ -38,8 +38,8 @@ import {
   getCliBinaryFromProviderId,
   getCliChatProviderDefinition,
   createCliChatProvider,
-} from './cli-chat-provider.js';
-import { isBinaryInstalled } from './binary-utils.js';
+} from './chat-provider.js';
+import { isBinaryInstalled } from '../binary-utils.js';
 import { platform } from 'node:os';
 import { ToolRegistry } from '@ownpilot/core';
 

@@ -19,7 +19,7 @@ import {
 import { hasApiKey, getApiKeySource } from './settings.js';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { detectCliChatProviders } from '../services/cli-chat-provider.js';
+import { detectCliChatProviders } from '../services/cli/chat-provider.js';
 
 const app = new Hono();
 

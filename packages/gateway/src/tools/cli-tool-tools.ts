@@ -11,7 +11,7 @@
 
 import type { ToolDefinition, CliInstallMethod } from '@ownpilot/core';
 import { getErrorMessage } from '@ownpilot/core';
-import { getCliToolService } from '../services/cli-tool-service.js';
+import { getCliToolService } from '../services/cli/tool-service.js';
 
 // =============================================================================
 // Tool Definitions

@@ -18,7 +18,7 @@ import {
 } from '@ownpilot/core';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
-import { detectCliChatProviders } from '../services/cli-chat-provider.js';
+import { detectCliChatProviders } from '../services/cli/chat-provider.js';
 import {
   getUserId,
   apiResponse,

@@ -16,7 +16,7 @@ const { mockListPolicies, mockListActive, mockIsBinaryInstalled, mockGetBinaryVe
     mockGetBinaryVersion: vi.fn(),
   }));
 
-vi.mock('./cli-tools-catalog.js', () => ({
+vi.mock('./tools-catalog.js', () => ({
   CLI_TOOLS_CATALOG: [
     {
       name: 'eslint',
@@ -45,28 +45,28 @@ vi.mock('./cli-tools-catalog.js', () => ({
   ]),
 }));
 
-vi.mock('../db/repositories/cli-tool-policies.js', () => ({
+vi.mock('../../db/repositories/cli-tool-policies.js', () => ({
   cliToolPoliciesRepo: {
     listPolicies: (...args: unknown[]) => mockListPolicies(...args),
   },
 }));
 
-vi.mock('../db/repositories/cli-providers.js', () => ({
+vi.mock('../../db/repositories/cli-providers.js', () => ({
   cliProvidersRepo: {
     listActive: (...args: unknown[]) => mockListActive(...args),
   },
 }));
 
-vi.mock('./binary-utils.js', () => ({
+vi.mock('../binary-utils.js', () => ({
   isBinaryInstalled: (...args: unknown[]) => mockIsBinaryInstalled(...args),
   getBinaryVersion: (...args: unknown[]) => mockGetBinaryVersion(...args),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn(() => ({ debug: vi.fn(), info: vi.fn(), error: vi.fn(), warn: vi.fn() })),
 }));
 
-import { discoverTools, clearDiscoveryCache } from './cli-tools-discovery.js';
+import { discoverTools, clearDiscoveryCache } from './tools-discovery.js';
 
 // ---------------------------------------------------------------------------
 // Tests

@@ -20,18 +20,18 @@ import type {
   CliInstallMethod,
 } from '@ownpilot/core';
 import { getErrorMessage } from '@ownpilot/core';
-import { CLI_TOOLS_BY_NAME } from './cli-tools-catalog.js';
-import { discoverTools, clearDiscoveryCache } from './cli-tools-discovery.js';
-import { cliToolPoliciesRepo } from '../db/repositories/cli-tool-policies.js';
-import { cliProvidersRepo } from '../db/repositories/cli-providers.js';
+import { CLI_TOOLS_BY_NAME } from './tools-catalog.js';
+import { discoverTools, clearDiscoveryCache } from './tools-discovery.js';
+import { cliToolPoliciesRepo } from '../../db/repositories/cli-tool-policies.js';
+import { cliProvidersRepo } from '../../db/repositories/cli-providers.js';
 import {
   isBinaryInstalled,
   validateCwd,
   createSanitizedEnv,
   spawnCliProcess,
   MAX_OUTPUT_SIZE,
-} from './binary-utils.js';
-import { getLog } from './log.js';
+} from '../binary-utils.js';
+import { getLog } from '../log.js';
 
 const log = getLog('CliToolService');
 
@@ -39,7 +39,7 @@ const log = getLog('CliToolService');
 // CONSTANTS
 // =============================================================================
 
-import { CLI_TOOL_DEFAULT_TIMEOUT_MS, CLI_TOOL_MAX_TIMEOUT_MS } from '../config/defaults.js';
+import { CLI_TOOL_DEFAULT_TIMEOUT_MS, CLI_TOOL_MAX_TIMEOUT_MS } from '../../config/defaults.js';
 
 const DEFAULT_TIMEOUT_MS = CLI_TOOL_DEFAULT_TIMEOUT_MS;
 const MAX_TIMEOUT_MS = CLI_TOOL_MAX_TIMEOUT_MS;

@@ -10,7 +10,7 @@ import {
   buildGeminiArgs,
   inlineSystemPrompt,
   OUTPUT_PARSERS,
-} from './cli-chat-parsers.js';
+} from './chat-parsers.js';
 
 describe('messagesToPrompt', () => {
   it('extracts system prompt separately', () => {

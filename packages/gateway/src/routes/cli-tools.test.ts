@@ -23,7 +23,7 @@ const mockCliToolService = {
   refreshDiscovery: vi.fn(),
 };
 
-vi.mock('../services/cli-tool-service.js', () => ({
+vi.mock('../services/cli/tool-service.js', () => ({
   getCliToolService: vi.fn(() => mockCliToolService),
 }));
 
@@ -31,7 +31,7 @@ vi.mock('../services/cli-tool-service.js', () => ({
 // Mock: CLI Tools Catalog — controls collision check for custom tool names
 // ---------------------------------------------------------------------------
 
-vi.mock('../services/cli-tools-catalog.js', () => ({
+vi.mock('../services/cli/tools-catalog.js', () => ({
   CLI_TOOLS_BY_NAME: new Map([
     ['eslint', { name: 'eslint' }],
     ['prettier', { name: 'prettier' }],
@@ -70,7 +70,7 @@ vi.mock('../db/repositories/cli-tool-policies.js', () => ({
 // Mock: clearDiscoveryCache
 // ---------------------------------------------------------------------------
 
-vi.mock('../services/cli-tools-discovery.js', () => ({
+vi.mock('../services/cli/tools-discovery.js', () => ({
   clearDiscoveryCache: vi.fn(),
 }));
 

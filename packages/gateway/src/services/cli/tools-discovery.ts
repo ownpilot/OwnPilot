@@ -7,11 +7,11 @@
  */
 
 import type { CliToolStatus, CliToolCategory, CliToolPolicy } from '@ownpilot/core';
-import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './cli-tools-catalog.js';
-import { cliToolPoliciesRepo } from '../db/repositories/cli-tool-policies.js';
-import { cliProvidersRepo } from '../db/repositories/cli-providers.js';
-import { isBinaryInstalled, getBinaryVersion } from './binary-utils.js';
-import { getLog } from './log.js';
+import { CLI_TOOLS_CATALOG, CLI_TOOLS_BY_NAME } from './tools-catalog.js';
+import { cliToolPoliciesRepo } from '../../db/repositories/cli-tool-policies.js';
+import { cliProvidersRepo } from '../../db/repositories/cli-providers.js';
+import { isBinaryInstalled, getBinaryVersion } from '../binary-utils.js';
+import { getLog } from '../log.js';
 
 const log = getLog('CliToolDiscovery');
 

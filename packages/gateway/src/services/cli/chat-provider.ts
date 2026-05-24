@@ -28,8 +28,8 @@ import type {
 import type { Result } from '@ownpilot/core';
 import { ok, err } from '@ownpilot/core';
 import { InternalError } from '@ownpilot/core';
-import { createSanitizedEnv, isBinaryInstalled, MAX_OUTPUT_SIZE } from './binary-utils.js';
-import { getLog } from './log.js';
+import { createSanitizedEnv, isBinaryInstalled, MAX_OUTPUT_SIZE } from '../binary-utils.js';
+import { getLog } from '../log.js';
 import {
   type CliChatBinary,
   IS_WIN,
@@ -39,13 +39,13 @@ import {
   buildCodexArgs,
   buildGeminiArgs,
   inlineSystemPrompt,
-} from './cli-chat-parsers.js';
-// Static import — was a dynamic `await import('./cli-tool-bridge.js')` inside
+} from './chat-parsers.js';
+// Static import — was a dynamic `await import('./tool-bridge.js')` inside
 // streamWithToolBridge, which under heavy test concurrency could take long
 // enough that the test worker hung (the only documented full-suite flake).
 // No circular dependency between the two modules, so static is safe and
 // faster (loads once at module init instead of first call).
-import { runToolBridgeLoop } from './cli-tool-bridge.js';
+import { runToolBridgeLoop } from './tool-bridge.js';
 
 const log = getLog('CliChatProvider');
 
@@ -53,7 +53,7 @@ const log = getLog('CliChatProvider');
 // Types
 // =============================================================================
 
-export type { CliChatBinary } from './cli-chat-parsers.js';
+export type { CliChatBinary } from './chat-parsers.js';
 
 export interface CliChatProviderConfig {
   /** CLI binary name */
@@ -233,7 +233,7 @@ export class CliChatProvider implements IProvider {
     // When MCP tool context is enabled, inject tool usage guide into the conversation
     let effectiveMessages = messages;
     if (this.config.mcpToolContext) {
-      const { injectToolContext } = await import('../mcp/tool-context.js');
+      const { injectToolContext } = await import('../../mcp/tool-context.js');
       effectiveMessages = injectToolContext(messages) as readonly Message[];
     }
     const { prompt, systemPrompt } = messagesToPrompt(effectiveMessages);
@@ -320,7 +320,7 @@ export class CliChatProvider implements IProvider {
     const bridge = this.config.toolBridge!;
 
     // Import ToolBridge dynamically to avoid circular deps
-    const { runToolBridgeLoop } = await import('./cli-tool-bridge.js');
+    const { runToolBridgeLoop } = await import('./tool-bridge.js');
 
     try {
       const bridgeResult = await runToolBridgeLoop(
