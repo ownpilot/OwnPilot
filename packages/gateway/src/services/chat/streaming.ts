@@ -114,6 +114,29 @@ import type { StreamingConfig, StreamState } from '../streaming-types.js';
 const THINK_TAG_REGEX = /<(?:think|thinking)>[\s\S]*?<\/(?:think|thinking)>\s*/g;
 // Detects unclosed <think> or <thinking> tag
 const UNCLOSED_THINK_REGEX = /<(?:think|thinking)>(?![\s\S]*<\/(?:think|thinking)>)/;
+// Captures the inner text of think blocks. Used to recover an assistant
+// message when the model put its entire answer inside a <think> block
+// (observed with MiniMax-M2 and other reasoning models after tool calls —
+// stripping the tags would otherwise leave us with an empty message and
+// silently drop the model's output).
+const THINK_INNER_REGEX = /<(?:think|thinking)>([\s\S]*?)<\/(?:think|thinking)>/g;
+
+/**
+ * Strip <think> tags. If stripping yields an empty result but the raw text
+ * had think blocks with content, recover by joining the inner think text —
+ * the model bundled its final answer inside the reasoning, so dropping it
+ * would lose the message entirely.
+ */
+export function stripThinkOrRecover(raw: string): string {
+  const stripped = raw.replace(THINK_TAG_REGEX, '').trim();
+  if (stripped) return stripped;
+  const inner: string[] = [];
+  for (const match of raw.matchAll(THINK_INNER_REGEX)) {
+    const part = match[1]?.trim();
+    if (part) inner.push(part);
+  }
+  return inner.join('\n\n').trim();
+}
 
 /**
  * Create shared StreamCallbacks for SSE streaming.
@@ -703,9 +726,7 @@ export async function processStreamingViaBus(
   // Save both messages AND logs here. The persistence middleware is unreliable
   // when resetContext changes the agent's conversationId mid-stream (race condition).
   // The conversation-service dedup check prevents duplicate user messages.
-  const rawAssistantContent = (result.response.content || state.streamedContent)
-    .replace(THINK_TAG_REGEX, '')
-    .trim();
+  const rawAssistantContent = stripThinkOrRecover(result.response.content || state.streamedContent);
   const { content: memStripped } = extractMemoriesFromResponse(rawAssistantContent);
   const { content: suggestionsStripped } = extractSuggestions(memStripped);
   const assistantContent =

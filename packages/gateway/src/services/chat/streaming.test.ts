@@ -74,6 +74,7 @@ const {
   createStreamCallbacks,
   recordStreamUsage,
   processStreamingViaBus,
+  stripThinkOrRecover,
 } = await import('./streaming.js');
 
 // ---------------------------------------------------------------------------
@@ -161,6 +162,44 @@ beforeEach(() => {
     estimatedTokens: 1000,
     maxContextTokens: 128000,
     contextFillPercent: 0.78,
+  });
+});
+
+// =====================================================================
+// stripThinkOrRecover
+// =====================================================================
+
+describe('stripThinkOrRecover', () => {
+  it('returns the post-tag content when both reasoning and final answer are present', () => {
+    expect(stripThinkOrRecover('<think>reasoning here</think>final answer')).toBe('final answer');
+  });
+
+  it('handles <thinking> tags too', () => {
+    expect(stripThinkOrRecover('<thinking>step 1</thinking>\n\nthe answer is 42')).toBe(
+      'the answer is 42'
+    );
+  });
+
+  it('returns recovered inner text when the model put the entire answer inside <think>', () => {
+    expect(stripThinkOrRecover('<think>the answer is 42</think>')).toBe('the answer is 42');
+  });
+
+  it('joins multiple think blocks with a blank line when no outer text exists', () => {
+    expect(stripThinkOrRecover('<think>first</think><think>second</think>')).toBe(
+      'first\n\nsecond'
+    );
+  });
+
+  it('prefers outer text when present, even if think blocks have content', () => {
+    expect(stripThinkOrRecover('<think>noise</think>signal')).toBe('signal');
+  });
+
+  it('returns empty string when raw input is empty', () => {
+    expect(stripThinkOrRecover('')).toBe('');
+  });
+
+  it('returns input as-is when there are no think tags', () => {
+    expect(stripThinkOrRecover('just plain text')).toBe('just plain text');
   });
 });
 
