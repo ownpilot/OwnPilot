@@ -10,8 +10,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // Mock Channel Service
 const { mockGetChannel, mockGetStatus, mockListGroups, mockGetGroup, mockFetchGroupHistory } =
@@ -34,7 +34,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
 const mockGetByChat = vi.fn();
 const mockCountByChat = vi.fn();
 
-vi.mock('../db/repositories/channel-messages.js', () => ({
+vi.mock('../../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn().mockImplementation(function () {
     return {
       getByChat: mockGetByChat,
@@ -44,7 +44,7 @@ vi.mock('../db/repositories/channel-messages.js', () => ({
 }));
 
 // Mock pagination middleware
-vi.mock('../middleware/pagination.js', () => ({
+vi.mock('../../middleware/pagination.js', () => ({
   pagination: vi.fn(() => async (c: unknown, next: () => Promise<unknown>) => {
     (c as { set: (key: string, val: unknown) => void }).set('pagination', { limit: 50, offset: 0 });
     return next();
@@ -52,7 +52,7 @@ vi.mock('../middleware/pagination.js', () => ({
 }));
 
 // Import after mocks
-const { channelGroupsRoutes } = await import('./channels-groups.js');
+const { channelGroupsRoutes } = await import('./groups.js');
 
 function createApp() {
   const app = new Hono();

@@ -8,8 +8,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // Mock Channel Service
 const mockSend = vi.fn();
@@ -43,7 +43,7 @@ vi.mock('@ownpilot/core', async () => {
 // Mock ChannelMessagesRepository
 const mockCreate = vi.fn();
 
-vi.mock('../db/repositories/channel-messages.js', () => ({
+vi.mock('../../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn().mockImplementation(function () {
     return {
       create: mockCreate,
@@ -54,7 +54,7 @@ vi.mock('../db/repositories/channel-messages.js', () => ({
 // Mock config services repo
 const mockGetFieldValue = vi.fn();
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getFieldValue: mockGetFieldValue,
   },
@@ -63,12 +63,12 @@ vi.mock('../db/repositories/config-services.js', () => ({
 // Mock WebSocket gateway
 const mockBroadcast = vi.fn();
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: mockBroadcast },
 }));
 
 // Mock log
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: vi.fn().mockReturnValue({
     error: vi.fn(),
     warn: vi.fn(),
@@ -77,7 +77,7 @@ vi.mock('../services/log.js', () => ({
 }));
 
 // Import after mocks
-const { channelMessagingRoutes } = await import('./channels-messaging.js');
+const { channelMessagingRoutes } = await import('./messaging.js');
 
 function createApp() {
   const app = new Hono();

@@ -6,10 +6,10 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelVerificationService } from '../channels/auth/verification.js';
-import { channelUsersRepo } from '../db/repositories/channel-users.js';
-import { getPaginationParams, apiResponse, apiError, ERROR_CODES, getUserId } from './helpers.js';
-import { wsGateway } from '../ws/server.js';
+import { getChannelVerificationService } from '../../channels/auth/verification.js';
+import { channelUsersRepo } from '../../db/repositories/channel-users.js';
+import { getPaginationParams, apiResponse, apiError, ERROR_CODES, getUserId } from '../helpers.js';
+import { wsGateway } from '../../ws/server.js';
 
 export const channelAuthRoutes = new Hono();
 

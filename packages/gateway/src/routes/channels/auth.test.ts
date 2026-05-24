@@ -32,22 +32,22 @@ const { mockVerificationService, mockChannelUsersRepo, mockWsGateway } = vi.hois
   },
 }));
 
-vi.mock('../channels/auth/verification.js', () => ({
+vi.mock('../../channels/auth/verification.js', () => ({
   getChannelVerificationService: vi.fn(() => mockVerificationService),
 }));
 
-vi.mock('../db/repositories/channel-users.js', () => ({
+vi.mock('../../db/repositories/channel-users.js', () => ({
   channelUsersRepo: mockChannelUsersRepo,
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: mockWsGateway,
 }));
 
 // ─── Import route ───────────────────────────────────────────────
 
-import { channelAuthRoutes } from './channel-auth.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { channelAuthRoutes } from './auth.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ─── Helpers ────────────────────────────────────────────────────
 

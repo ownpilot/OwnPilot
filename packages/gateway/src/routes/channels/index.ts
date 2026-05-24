@@ -5,17 +5,17 @@
  * Uses unified IChannelService for all channel operations.
  *
  * Implementation split:
- * - channels-inbox.ts:     Inbox endpoints (list, mark read, clear)
- * - channels-groups.ts:    WhatsApp group management endpoints
- * - channels-messaging.ts: Send/reply endpoints
+ * - channels/inbox.ts:     Inbox endpoints (list, mark read, clear)
+ * - channels/groups.ts:    WhatsApp group management endpoints
+ * - channels/messaging.ts: Send/reply endpoints
  * - channels.ts:           Channel CRUD, connection, setup (this file)
  */
 
 import { Hono } from 'hono';
 import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
-import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { channelUsersRepo } from '../db/repositories/channel-users.js';
-import { configServicesRepo } from '../db/repositories/config-services.js';
+import { ChannelMessagesRepository } from '../../db/repositories/channel-messages.js';
+import { channelUsersRepo } from '../../db/repositories/channel-users.js';
+import { configServicesRepo } from '../../db/repositories/config-services.js';
 import {
   apiResponse,
   apiError,
@@ -23,20 +23,20 @@ import {
   notFoundError,
   getErrorMessage,
   getPaginationParams,
-} from './helpers.js';
-import { pagination } from '../middleware/pagination.js';
-import { refreshChannelApi } from '../plugins/init.js';
-import { wsGateway } from '../ws/server.js';
-import { getLog } from '../services/log.js';
+} from '../helpers.js';
+import { pagination } from '../../middleware/pagination.js';
+import { refreshChannelApi } from '../../plugins/init.js';
+import { wsGateway } from '../../ws/server.js';
+import { getLog } from '../../services/log.js';
 import {
   normalizeAndValidateEntryData,
   validateRequiredFields,
-} from '../services/config/entry-validation.js';
+} from '../../services/config/entry-validation.js';
 
 // Import sub-routes
-import { channelInboxRoutes } from './channels-inbox.js';
-import { channelGroupsRoutes } from './channels-groups.js';
-import { channelMessagingRoutes } from './channels-messaging.js';
+import { channelInboxRoutes } from './inbox.js';
+import { channelGroupsRoutes } from './groups.js';
+import { channelMessagingRoutes } from './messaging.js';
 
 const log = getLog('ChannelRoutes');
 
@@ -104,7 +104,7 @@ channelRoutes.get('/status', (c) => {
  * GET /pairing - Return per-channel pairing keys and owner status
  */
 channelRoutes.get('/pairing', async (c) => {
-  const { getPairingKey, getOwnerUserId } = await import('../services/pairing-service.js');
+  const { getPairingKey, getOwnerUserId } = await import('../../services/pairing-service.js');
   const service = getChannelService();
   const channelList = service.listChannels();
 
@@ -264,7 +264,7 @@ channelRoutes.post('/:id/reconnect', async (c) => {
  */
 channelRoutes.post('/:id/revoke-owner', async (c) => {
   const pluginId = c.req.param('id');
-  const { revokeOwnership, getPairingKey } = await import('../services/pairing-service.js');
+  const { revokeOwnership, getPairingKey } = await import('../../services/pairing-service.js');
   const service = getChannelService();
   const channel = service.listChannels().find((ch) => ch.pluginId === pluginId);
   if (!channel) {

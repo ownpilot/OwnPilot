@@ -9,8 +9,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // Mock ChannelMessagesRepository
 const mockGetAll = vi.fn();
@@ -18,7 +18,7 @@ const mockCount = vi.fn();
 const mockDeleteByChannel = vi.fn();
 const mockDeleteAll = vi.fn();
 
-vi.mock('../db/repositories/channel-messages.js', () => ({
+vi.mock('../../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn().mockImplementation(function () {
     return {
       getAll: mockGetAll,
@@ -31,12 +31,12 @@ vi.mock('../db/repositories/channel-messages.js', () => ({
 
 // Mock WebSocket gateway
 const mockBroadcast = vi.fn();
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: mockBroadcast },
 }));
 
 // Mock log
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: vi.fn().mockReturnValue({
     error: vi.fn(),
     warn: vi.fn(),
@@ -45,8 +45,7 @@ vi.mock('../services/log.js', () => ({
 }));
 
 // Import after mocks
-const { channelInboxRoutes, addReadMessageId, readMessageIds } =
-  await import('./channels-inbox.js');
+const { channelInboxRoutes, addReadMessageId, readMessageIds } = await import('./inbox.js');
 
 function createApp() {
   const app = new Hono();

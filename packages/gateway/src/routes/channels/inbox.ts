@@ -5,11 +5,11 @@
  */
 
 import { Hono } from 'hono';
-import { ChannelMessagesRepository } from '../db/repositories/channel-messages.js';
-import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
-import { pagination } from '../middleware/pagination.js';
-import { wsGateway } from '../ws/server.js';
-import { getLog } from '../services/log.js';
+import { ChannelMessagesRepository } from '../../db/repositories/channel-messages.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
+import { pagination } from '../../middleware/pagination.js';
+import { wsGateway } from '../../ws/server.js';
+import { getLog } from '../../services/log.js';
 
 const log = getLog('ChannelInbox');
 

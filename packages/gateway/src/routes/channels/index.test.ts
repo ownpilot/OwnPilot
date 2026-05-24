@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mock IChannelService
@@ -97,7 +97,7 @@ const mockChannelMessagesRepo = {
   deleteByChannel: vi.fn(async () => ({ count: 3, ids: [] })),
 };
 
-vi.mock('../db/repositories/channel-messages.js', () => ({
+vi.mock('../../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn(function () {
     return mockChannelMessagesRepo;
   }),
@@ -111,24 +111,24 @@ const mockConfigServicesRepo = {
   getFieldValue: vi.fn(),
 };
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: mockConfigServicesRepo,
 }));
 
 const mockRefreshChannelApi = vi.fn();
 
-vi.mock('../plugins/init.js', () => ({
+vi.mock('../../plugins/init.js', () => ({
   refreshChannelApi: (...args: unknown[]) => mockRefreshChannelApi(...args),
 }));
 
 const mockWsGateway = { broadcast: vi.fn() };
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: mockWsGateway,
 }));
 
 // Import after mocks
-const { channelRoutes } = await import('./channels.js');
+const { channelRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup

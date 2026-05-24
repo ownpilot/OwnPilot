@@ -10,8 +10,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -77,7 +77,7 @@ const mockChannelMessagesRepo = {
   getByChat: vi.fn(async () => ({ messages: [], total: 0 })),
 };
 
-vi.mock('../db/repositories/channel-messages.js', () => ({
+vi.mock('../../db/repositories/channel-messages.js', () => ({
   ChannelMessagesRepository: vi.fn(function () {
     return mockChannelMessagesRepo;
   }),
@@ -87,11 +87,11 @@ const mockChannelUsersRepo = {
   list: vi.fn(async () => []),
 };
 
-vi.mock('../db/repositories/channel-users.js', () => ({
+vi.mock('../../db/repositories/channel-users.js', () => ({
   channelUsersRepo: mockChannelUsersRepo,
 }));
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getDefaultEntry: vi.fn(),
     updateEntry: vi.fn(),
@@ -100,12 +100,12 @@ vi.mock('../db/repositories/config-services.js', () => ({
   },
 }));
 
-vi.mock('../plugins/init.js', () => ({
+vi.mock('../../plugins/init.js', () => ({
   refreshChannelApi: vi.fn(),
 }));
 
 const mockWsGateway = { broadcast: vi.fn() };
-vi.mock('../ws/server.js', () => ({ wsGateway: mockWsGateway }));
+vi.mock('../../ws/server.js', () => ({ wsGateway: mockWsGateway }));
 
 const { mockGetPairingKey, mockGetOwnerUserId, mockRevokeOwnership } = vi.hoisted(() => ({
   mockGetPairingKey: vi.fn(async () => 'PAIRING-KEY-123'),
@@ -113,13 +113,13 @@ const { mockGetPairingKey, mockGetOwnerUserId, mockRevokeOwnership } = vi.hoiste
   mockRevokeOwnership: vi.fn(async () => undefined),
 }));
 
-vi.mock('../services/pairing-service.js', () => ({
+vi.mock('../../services/pairing-service.js', () => ({
   getPairingKey: mockGetPairingKey,
   getOwnerUserId: mockGetOwnerUserId,
   revokeOwnership: mockRevokeOwnership,
 }));
 
-const { channelRoutes } = await import('./channels.js');
+const { channelRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup
