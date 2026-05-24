@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createMockAdapter } from '../../test-helpers.js';
+import { createMockAdapter } from '../../../test-helpers.js';
 
 const mockAdapter = createMockAdapter();
 
-vi.mock('../adapters/index.js', () => ({
+vi.mock('../../adapters/index.js', () => ({
   getAdapter: async () => mockAdapter,
   getAdapterSync: () => mockAdapter,
 }));
 
-import { CliToolPoliciesRepository, createCliToolPoliciesRepository } from './cli/tool-policies.js';
+import {
+  CliToolPoliciesRepository,
+  createCliToolPoliciesRepository,
+} from '../cli/tool-policies.js';
 
 describe('CliToolPoliciesRepository', () => {
   let repo: CliToolPoliciesRepository;
