@@ -229,8 +229,8 @@
     {
       "id": "databricks-gemini-3-pro",
       "name": "Gemini 3 Pro Preview",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
       "inputPrice": 2,
       "outputPrice": 12,
       "capabilities": [

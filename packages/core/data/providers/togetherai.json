@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3.7-Max",
+      "name": "Qwen3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 500000,
+      "inputPrice": 2.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-21"
+    },
+    {
       "id": "Qwen/Qwen3.6-Plus",
       "name": "Qwen3.6 Plus",
       "contextWindow": 1000000,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-30"
     },
     {

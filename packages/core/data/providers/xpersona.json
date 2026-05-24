@@ -20,6 +20,7 @@
       "outputPrice": 6,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",

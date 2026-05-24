@@ -26,12 +26,30 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-05-01"
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "grok-build-0.1",
+      "name": "Grok Build 0.1",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
     },
     {
       "id": "grok-imagine-image-quality",
       "name": "Grok Imagine Image Quality",
-      "contextWindow": 1024,
+      "contextWindow": 8000,
       "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -41,15 +59,15 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04"
+      "releaseDate": "2026-04-03"
     },
     {
       "id": "grok-4.20-0309-non-reasoning",
       "name": "Grok 4.20 (Non-Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -64,8 +82,8 @@
       "name": "Grok 4.20 (Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -81,8 +99,8 @@
       "name": "Grok 4.20 Multi-Agent",
       "contextWindow": 2000000,
       "maxOutput": 30000,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -105,12 +123,12 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03"
+      "releaseDate": "2026-01-28"
     },
     {
       "id": "grok-imagine-image",
       "name": "Grok Imagine Image",
-      "contextWindow": 1024,
+      "contextWindow": 8000,
       "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -120,131 +138,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03"
-    },
-    {
-      "id": "grok-2-1212",
-      "name": "Grok 2 (1212)",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-12"
-    },
-    {
-      "id": "grok-vision-beta",
-      "name": "Grok Vision Beta",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 5,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-01"
-    },
-    {
-      "id": "grok-beta",
-      "name": "Grok Beta",
-      "contextWindow": 131072,
-      "maxOutput": 4096,
-      "inputPrice": 5,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-01"
-    },
-    {
-      "id": "grok-2-vision-1212",
-      "name": "Grok 2 Vision (1212)",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "grok-2",
-      "name": "Grok 2",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "grok-2-vision-latest",
-      "name": "Grok 2 Vision Latest",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "grok-2-vision",
-      "name": "Grok 2 Vision",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
-    },
-    {
-      "id": "grok-2-latest",
-      "name": "Grok 2 Latest",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
+      "releaseDate": "2026-01-28"
     }
   ],
   "baseUrl": "https://api.x.ai/v1",

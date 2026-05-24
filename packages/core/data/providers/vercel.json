@@ -12,6 +12,73 @@
   },
   "models": [
     {
+      "id": "mistral/mistral-medium-3.5",
+      "name": "Mistral Medium Latest",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-21"
+    },
+    {
+      "id": "alibaba/qwen3.7-max",
+      "name": "Qwen 3.7 Max",
+      "contextWindow": 991000,
+      "maxOutput": 64000,
+      "inputPrice": 2.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-21"
+    },
+    {
+      "id": "xai/grok-build-0.1",
+      "name": "Grok Build 0.1",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-20"
+    },
+    {
+      "id": "google/gemini-3.5-flash",
+      "name": "Gemini 3.5 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 1.5,
+      "outputPrice": 9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-19"
+    },
+    {
       "id": "google/gemini-3.1-flash-lite",
       "name": "Gemini 3.1 Flash Lite",
       "contextWindow": 1000000,
@@ -25,7 +92,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-07"
     },
     {
@@ -3019,7 +3086,7 @@
     },
     {
       "id": "google/gemini-2.0-flash-lite",
-      "name": "Gemini 2.0 Flash Lite",
+      "name": "Gemini 2.0 Flash-Lite",
       "contextWindow": 1048576,
       "maxOutput": 8192,
       "inputPrice": 0.075,
@@ -3416,22 +3483,6 @@
       ],
       "default": false,
       "releaseDate": "2024-09"
-    },
-    {
-      "id": "xai/grok-2-vision",
-      "name": "Grok 2 Vision",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 2,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-08-20"
     },
     {
       "id": "morph/morph-v3-fast",

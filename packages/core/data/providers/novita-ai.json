@@ -1412,7 +1412,7 @@
       "releaseDate": "2024-12-07"
     },
     {
-      "id": "Sao10K/L3-8B-Stheno-v3.2",
+      "id": "sao10K/L3-8B-stheno-v3.2",
       "name": "L3 8B Stheno V3.2",
       "contextWindow": 8192,
       "maxOutput": 32000,
@@ -1427,7 +1427,7 @@
       "releaseDate": "2024-11-29"
     },
     {
-      "id": "sao10k/l3-8b-lunaris",
+      "id": "sao10K/l3-8b-lunaris",
       "name": "Sao10k L3 8B Lunaris\t",
       "contextWindow": 8192,
       "maxOutput": 8192,
@@ -1458,7 +1458,7 @@
       "releaseDate": "2024-10-15"
     },
     {
-      "id": "sao10k/l31-70b-euryale-v2.2",
+      "id": "sao10K/l31-70b-euryale-v2.2",
       "name": "L31 70B Euryale V2.2",
       "contextWindow": 8192,
       "maxOutput": 8192,
@@ -1531,7 +1531,7 @@
       "releaseDate": "2024-06-27"
     },
     {
-      "id": "sao10k/l3-70b-euryale-v2.1",
+      "id": "sao10K/l3-70b-euryale-v2.1",
       "name": "L3 70B Euryale V2.1\t",
       "contextWindow": 8192,
       "maxOutput": 8192,

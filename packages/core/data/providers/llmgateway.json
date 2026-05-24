@@ -12,6 +12,41 @@
   },
   "models": [
     {
+      "id": "qwen37-max",
+      "name": "Qwen3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 2.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-21"
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "name": "Gemini 3.5 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-19"
+    },
+    {
       "id": "gemini-3.1-flash-lite",
       "name": "Gemini 3.1 Flash Lite",
       "contextWindow": 1048576,
@@ -27,25 +62,8 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2026-05-07"
-    },
-    {
-      "id": "grok-4-3",
-      "name": "Grok 4.3",
-      "contextWindow": 1000000,
-      "maxOutput": 30000,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
       "default": false,
-      "releaseDate": "2026-05-01"
+      "releaseDate": "2026-05-07"
     },
     {
       "id": "deepseek-v4-pro",
@@ -184,6 +202,23 @@
       ],
       "default": false,
       "releaseDate": "2026-04-20"
+    },
+    {
+      "id": "grok-4-3",
+      "name": "Grok 4.3",
+      "contextWindow": 1000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
     },
     {
       "id": "qwen3.6-35b-a3b",
@@ -362,8 +397,8 @@
       "name": "Grok 4.20 (Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -375,12 +410,45 @@
       "releaseDate": "2026-03-09"
     },
     {
+      "id": "grok-4-20-reasoning",
+      "name": "Grok 4.20 (Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-09"
+    },
+    {
+      "id": "grok-4-20-non-reasoning",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-09"
+    },
+    {
       "id": "grok-4-20-beta-0309-non-reasoning",
       "name": "Grok 4.20 (Non-Reasoning)",
       "contextWindow": 2000000,
       "maxOutput": 30000,
-      "inputPrice": 2,
-      "outputPrice": 6,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -1299,25 +1367,6 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "gemini-2.5-flash-lite-preview-09-2025",
-      "name": "Gemini 2.5 Flash Lite Preview 09-25",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
       "id": "qwen3-vl-plus",
       "name": "Qwen3-VL Plus",
       "contextWindow": 262144,
@@ -1831,20 +1880,6 @@
       "releaseDate": "2025-07-09"
     },
     {
-      "id": "gemma-3n-e2b-it",
-      "name": "Gemma 3n 2B",
-      "contextWindow": 8192,
-      "maxOutput": 2000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-09"
-    },
-    {
       "id": "qwen3-30b-a3b-instruct-2507",
       "name": "Qwen3 30B A3B Instruct (2507)",
       "contextWindow": 131072,
@@ -1946,7 +1981,7 @@
     },
     {
       "id": "gemini-2.5-flash-lite",
-      "name": "Gemini 2.5 Flash Lite",
+      "name": "Gemini 2.5 Flash-Lite",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,
@@ -2011,20 +2046,6 @@
       ],
       "default": false,
       "releaseDate": "2025-05-22"
-    },
-    {
-      "id": "gemma-3n-e4b-it",
-      "name": "Gemma 3n 4B",
-      "contextWindow": 8192,
-      "maxOutput": 2000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-20"
     },
     {
       "id": "qwen3-30b-a3b-fp8",
@@ -2374,37 +2395,6 @@
       "releaseDate": "2025-03-15"
     },
     {
-      "id": "gemma-3-12b-it",
-      "name": "Gemma 3 12B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-13"
-    },
-    {
-      "id": "gemma-3-4b-it",
-      "name": "Gemma 3 4B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-13"
-    },
-    {
       "id": "gemma-3-27b",
       "name": "Gemma 3 27B",
       "contextWindow": 128000,
@@ -2567,7 +2557,7 @@
     },
     {
       "id": "gemini-2.0-flash-lite",
-      "name": "Gemini 2.0 Flash Lite",
+      "name": "Gemini 2.0 Flash-Lite",
       "contextWindow": 1048576,
       "maxOutput": 8192,
       "inputPrice": 0.075,

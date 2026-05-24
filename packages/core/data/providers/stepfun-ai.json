@@ -1,0 +1,49 @@
+{
+  "id": "stepfun-ai",
+  "name": "StepFun",
+  "type": "openai-compatible",
+  "apiKeyEnv": "STEPFUN_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "step-3.5-flash-2603",
+      "name": "Step 3.5 Flash 2603",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "step-3.5-flash",
+      "name": "Step 3.5 Flash",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.096,
+      "outputPrice": 0.288,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-29"
+    }
+  ],
+  "baseUrl": "https://api.stepfun.ai/step_plan/v1",
+  "docsUrl": "https://platform.stepfun.ai/docs/en/step-plan/integrations/open-code"
+}

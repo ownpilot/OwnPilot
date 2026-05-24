@@ -12,23 +12,6 @@
   },
   "models": [
     {
-      "id": "grok/grok-4.3",
-      "name": "Grok 4.3",
-      "contextWindow": 1000000,
-      "maxOutput": 30000,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-05-01"
-    },
-    {
       "id": "deepseek/deepseek-v4-pro",
       "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
@@ -42,7 +25,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": false,
+      "default": true,
       "releaseDate": "2026-04-24"
     },
     {
@@ -117,6 +100,23 @@
       "releaseDate": "2026-04-21"
     },
     {
+      "id": "grok/grok-4.3",
+      "name": "Grok 4.3",
+      "contextWindow": 1000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
       "id": "qwen/qwen3.6-35b-a3b",
       "name": "Qwen3.6 35B-A3B",
       "contextWindow": 262144,
@@ -171,9 +171,9 @@
     },
     {
       "id": "google/gemma-4-26b-a4b-it",
-      "name": "Gemma 4 26B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
+      "name": "Gemma 4 26B A4B IT",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.06,
       "outputPrice": 0.33,
       "capabilities": [
@@ -189,9 +189,9 @@
     },
     {
       "id": "google/gemma-4-31b-it",
-      "name": "Gemma 4 31B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.13,
       "outputPrice": 0.38,
       "capabilities": [
@@ -767,8 +767,8 @@
     {
       "id": "google/gemini-3-pro-preview",
       "name": "Gemini 3 Pro Preview",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
       "inputPrice": 4,
       "outputPrice": 18,
       "capabilities": [
@@ -1134,7 +1134,7 @@
     },
     {
       "id": "google/gemini-2.5-flash-lite",
-      "name": "Gemini 2.5 Flash Lite",
+      "name": "Gemini 2.5 Flash-Lite",
       "contextWindow": 1048576,
       "maxOutput": 65536,
       "inputPrice": 0.1,

@@ -273,8 +273,8 @@
     {
       "id": "moonshotai.kimi-k2.5",
       "name": "Kimi K2.5",
-      "contextWindow": 256000,
-      "maxOutput": 256000,
+      "contextWindow": 262143,
+      "maxOutput": 16000,
       "inputPrice": 0.6,
       "outputPrice": 3,
       "capabilities": [
@@ -482,8 +482,8 @@
     {
       "id": "moonshot.kimi-k2-thinking",
       "name": "Kimi K2 Thinking",
-      "contextWindow": 256000,
-      "maxOutput": 256000,
+      "contextWindow": 262143,
+      "maxOutput": 16000,
       "inputPrice": 0.6,
       "outputPrice": 2.5,
       "capabilities": [

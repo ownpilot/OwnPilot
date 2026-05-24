@@ -1,8 +1,8 @@
 {
-  "id": "wafer.ai",
-  "name": "Wafer",
+  "id": "lilac",
+  "name": "Lilac",
   "type": "openai-compatible",
-  "apiKeyEnv": "WAFER_API_KEY",
+  "apiKeyEnv": "LILAC_API_KEY",
   "features": {
     "streaming": true,
     "toolUse": true,
@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "Kimi-K2.6",
+      "id": "moonshotai/kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 1.1,
-      "outputPrice": 4.8,
+      "maxOutput": 262144,
+      "inputPrice": 0.7,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "vision",
@@ -27,15 +27,15 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-05-13"
+      "releaseDate": "2026-04-21"
     },
     {
-      "id": "Qwen3.6-35B-A3B",
-      "name": "Qwen3.6 35B A3B",
-      "contextWindow": 32768,
-      "maxOutput": 16384,
-      "inputPrice": 0.19,
-      "outputPrice": 1.25,
+      "id": "google/gemma-4-31b-it",
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 262100,
+      "maxOutput": 262100,
+      "inputPrice": 0.11,
+      "outputPrice": 0.35,
       "capabilities": [
         "chat",
         "vision",
@@ -45,15 +45,15 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-05-11"
+      "releaseDate": "2026-04-02"
     },
     {
-      "id": "GLM-5.1",
-      "name": "GLM-5.1",
-      "contextWindow": 202752,
+      "id": "zai-org/glm-5.1",
+      "name": "GLM 5.1",
+      "contextWindow": 202800,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.9,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -62,27 +62,26 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-07"
+      "releaseDate": "2026-03-27"
     },
     {
-      "id": "Qwen3.5-397B-A17B",
-      "name": "Qwen3.5 397B A17B",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "id": "minimaxai/minimax-m2.7",
+      "name": "MiniMax M2.7",
+      "contextWindow": 204800,
+      "maxOutput": 204800,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02-16"
+      "releaseDate": "2026-03-18"
     }
   ],
-  "baseUrl": "https://pass.wafer.ai/v1",
-  "docsUrl": "https://docs.wafer.ai/wafer-pass"
+  "baseUrl": "https://api.getlilac.com/v1",
+  "docsUrl": "https://docs.getlilac.com/inference/models"
 }

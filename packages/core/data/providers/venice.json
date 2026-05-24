@@ -12,6 +12,59 @@
   },
   "models": [
     {
+      "id": "qwen-3-7-max",
+      "name": "Qwen 3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 3.125,
+      "outputPrice": 9.375,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-22"
+    },
+    {
+      "id": "gemini-3-5-flash",
+      "name": "Gemini 3.5 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 1.8,
+      "outputPrice": 11,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-22"
+    },
+    {
+      "id": "grok-build-0-1",
+      "name": "Grok Build 0.1",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-21"
+    },
+    {
       "id": "claude-opus-4-7-fast",
       "name": "Claude Opus 4.7 Fast",
       "contextWindow": 1000000,
@@ -26,7 +79,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-14"
     },
     {
@@ -933,24 +986,6 @@
       ],
       "default": false,
       "releaseDate": "2025-12-04"
-    },
-    {
-      "id": "grok-41-fast",
-      "name": "Grok 4.1 Fast",
-      "contextWindow": 1000000,
-      "maxOutput": 30000,
-      "inputPrice": 0.23,
-      "outputPrice": 0.57,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
     },
     {
       "id": "openai-gpt-oss-120b",

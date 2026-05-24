@@ -116,9 +116,9 @@
     },
     {
       "id": "google/gemma-4-26B-A4B-it",
-      "name": "Gemma 4 26B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
+      "name": "Gemma 4 26B A4B IT",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.07,
       "outputPrice": 0.34,
       "capabilities": [
@@ -134,9 +134,9 @@
     },
     {
       "id": "google/gemma-4-31B-it",
-      "name": "Gemma 4 31B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0.13,
       "outputPrice": 0.38,
       "capabilities": [

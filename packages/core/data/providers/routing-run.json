@@ -1,0 +1,415 @@
+{
+  "id": "routing-run",
+  "name": "routing.run",
+  "type": "openai-compatible",
+  "apiKeyEnv": "ROUTING_RUN_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "route/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/deepseek-v4-pro-6bit",
+      "name": "DeepSeek V4 Pro 6bit",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/deepseek-v4-flash-6bit",
+      "name": "DeepSeek V4 Flash 6bit",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.1,
+      "outputPrice": 3.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "route/mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 262144,
+      "inputPrice": 0.45,
+      "outputPrice": 1.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "route/mimo-v2.5-pro-6bit",
+      "name": "MiMo V2.5 Pro 6bit",
+      "contextWindow": 1000000,
+      "maxOutput": 262144,
+      "inputPrice": 0.45,
+      "outputPrice": 1.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "route/kimi-k2.6-6bit",
+      "name": "Kimi K2.6 6bit",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.462,
+      "outputPrice": 2.42,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "route/kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.462,
+      "outputPrice": 2.42,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "route/gemma-4-31b-it",
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "route/step-3.5-flash-2603",
+      "name": "Step 3.5 Flash 2603",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "route/glm-5.1",
+      "name": "GLM 5.1",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-27"
+    },
+    {
+      "id": "route/glm-5.1-6bit",
+      "name": "GLM 5.1 6bit",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-27"
+    },
+    {
+      "id": "route/minimax-m2.7-highspeed",
+      "name": "MiniMax M2.7 Highspeed",
+      "contextWindow": 100000,
+      "maxOutput": 131072,
+      "inputPrice": 0.33,
+      "outputPrice": 1.32,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "route/minimax-m2.7",
+      "name": "MiniMax M2.7",
+      "contextWindow": 100000,
+      "maxOutput": 131072,
+      "inputPrice": 0.33,
+      "outputPrice": 1.32,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "route/mistral-small-2503",
+      "name": "Mistral Small 2503",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
+    },
+    {
+      "id": "route/minimax-m2.5-highspeed",
+      "name": "MiniMax M2.5 Highspeed",
+      "contextWindow": 100000,
+      "maxOutput": 131072,
+      "inputPrice": 0.193,
+      "outputPrice": 1.238,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-13"
+    },
+    {
+      "id": "route/minimax-m2.5",
+      "name": "MiniMax M2.5",
+      "contextWindow": 100000,
+      "maxOutput": 131072,
+      "inputPrice": 0.193,
+      "outputPrice": 1.238,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "route/stepfun-3.5-flash",
+      "name": "StepFun 3.5 Flash",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.096,
+      "outputPrice": 0.288,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-29"
+    },
+    {
+      "id": "route/step-3.5-flash",
+      "name": "Step 3.5 Flash",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.096,
+      "outputPrice": 0.288,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-29"
+    },
+    {
+      "id": "route/kimi-k2.5",
+      "name": "Kimi K2.5",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.462,
+      "outputPrice": 2.42,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01"
+    },
+    {
+      "id": "route/deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "route/mistral-medium-2505",
+      "name": "Mistral Medium 2505",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-07"
+    },
+    {
+      "id": "route/mistral-large-3",
+      "name": "Mistral Large 3",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    }
+  ],
+  "baseUrl": "https://api.routing.run/v1",
+  "docsUrl": "https://docs.routing.run/api-reference/models"
+}

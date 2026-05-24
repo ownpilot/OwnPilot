@@ -12,6 +12,25 @@
   },
   "models": [
     {
+      "id": "google/gemini-3.5-flash",
+      "name": "Gemini-3.5-Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5152,
+      "outputPrice": 9.0909,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-19"
+    },
+    {
       "id": "empiriolabs/deepseek-v4-flash-el",
       "name": "DeepSeek-V4-Flash-EL",
       "contextWindow": 1000000,
@@ -24,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {

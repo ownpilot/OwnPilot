@@ -95,8 +95,8 @@
       "name": "Qwen3.6 35B Fast",
       "contextWindow": 131056,
       "maxOutput": 131056,
-      "inputPrice": 0.05,
-      "outputPrice": 0.1,
+      "inputPrice": 0.29,
+      "outputPrice": 1.15,
       "capabilities": [
         "chat",
         "vision",
@@ -111,8 +111,8 @@
       "name": "Qwen3.6 35B A3B",
       "contextWindow": 131056,
       "maxOutput": 131056,
-      "inputPrice": 0.05,
-      "outputPrice": 0.1,
+      "inputPrice": 0.29,
+      "outputPrice": 1.15,
       "capabilities": [
         "chat",
         "vision",
