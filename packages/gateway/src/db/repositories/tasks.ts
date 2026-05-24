@@ -386,8 +386,6 @@ export class TasksRepository extends BaseRepository {
   }
 }
 
-export const tasksRepo = new TasksRepository();
-
 // Factory function
 export function createTasksRepository(userId = 'default'): TasksRepository {
   return new TasksRepository(userId);

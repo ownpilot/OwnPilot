@@ -246,8 +246,6 @@ export class NotesRepository extends CrudRepository<
   }
 }
 
-export const notesRepo = new NotesRepository();
-
 // Factory function
 export function createNotesRepository(userId = 'default'): NotesRepository {
   return new NotesRepository(userId);

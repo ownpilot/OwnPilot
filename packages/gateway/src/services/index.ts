@@ -52,13 +52,3 @@ export { PlanService, getPlanService } from './plan-service.js';
 
 // Resource Service
 export { ResourceServiceImpl, createResourceServiceImpl } from './resource/service.js';
-
-// Conversation Service
-export {
-  ConversationService,
-  clearChannelSession,
-  runPostChatProcessing,
-  waitForPendingProcessing,
-  type AttachmentMeta,
-  type SaveChatParams,
-} from './conversation-service.js';
