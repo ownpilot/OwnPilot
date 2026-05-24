@@ -28,14 +28,14 @@ import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
 import type { IEventSystem } from '../events/event-system.js';
 import type { IPermissionGate } from './permission-gate.js';
-import type { IMemoryService } from './memory-service-interface.js';
+import type { IMemoryService } from './memory-service.js';
 import type { IAuditService } from './audit-service.js';
 import { getLLMRouter, hasLLMRouter } from './llm-router.js';
 import { getChannelService, hasChannelService } from '../channels/service.js';
 import { getConfigCenter, hasConfigCenter } from './config-center.js';
 import { getEventSystem } from '../events/event-system.js';
 import { getPermissionGate, hasPermissionGate } from './permission-gate.js';
-import { getMemoryService, hasMemoryService } from './memory-service-interface.js';
+import { getMemoryService, hasMemoryService } from './memory-service.js';
 import { getAuditService, hasAuditService } from './audit-service.js';
 
 /**

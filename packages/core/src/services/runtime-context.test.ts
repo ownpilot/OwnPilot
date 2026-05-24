@@ -17,7 +17,7 @@ import { setLLMRouter } from './llm-router.js';
 import { setChannelService } from '../channels/service.js';
 import { setConfigCenter } from './config-center.js';
 import { setPermissionGate } from './permission-gate.js';
-import { setMemoryService } from './memory-service-interface.js';
+import { setMemoryService } from './memory-service.js';
 import { setAuditService } from './audit-service.js';
 import { getRuntimeContext, hasRuntimeContext } from './runtime-context.js';
 
@@ -25,7 +25,7 @@ import type { ILLMRouter } from './llm-router.js';
 import type { IChannelService } from '../channels/service.js';
 import type { ConfigCenter } from './config-center.js';
 import type { IPermissionGate } from './permission-gate.js';
-import type { IMemoryService } from './memory-service-interface.js';
+import type { IMemoryService } from './memory-service.js';
 import type { IAuditService } from './audit-service.js';
 
 const stubLLMRouter: ILLMRouter = {

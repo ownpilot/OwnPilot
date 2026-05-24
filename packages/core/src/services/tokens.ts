@@ -23,7 +23,7 @@ import type { ConfigCenter } from './config-center.js';
 import type { ILLMRouter } from './llm-router.js';
 import type { IPermissionGate } from './permission-gate.js';
 import type { IPluginService } from './plugin-service.js';
-import type { IMemoryService } from './memory-service-interface.js';
+import type { IMemoryService } from './memory-service.js';
 import type { IDatabaseService } from './database-service.js';
 import type { IWorkspaceService } from './workspace-service.js';
 import type { IGoalService } from './goal-service.js';

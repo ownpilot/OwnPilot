@@ -121,13 +121,13 @@ export type {
   UpdateMemoryInput as MemoryUpdateInput,
   MemorySearchOptions,
   MemoryStats as MemoryServiceStats,
-} from './memory-service-interface.js';
+} from './memory-service.js';
 export {
   getMemoryService,
   setMemoryService,
   hasMemoryService,
   MemoryToken,
-} from './memory-service-interface.js';
+} from './memory-service.js';
 
 // Database Service
 export type {
