@@ -17,22 +17,22 @@ import {
   sanitizeId,
   parseJsonBody,
   safeKeyCompare,
-} from './helpers.js';
-import { ERROR_CODES } from './error-codes.js';
-import { createWorkflowsRepository } from '../db/repositories/workflows.js';
-import { createWorkflowApprovalsRepository } from '../db/repositories/workflow-approvals.js';
-import { topologicalSort, getWorkflowService } from '../services/workflow/index.js';
+} from '../helpers.js';
+import { ERROR_CODES } from '../error-codes.js';
+import { createWorkflowsRepository } from '../../db/repositories/workflows.js';
+import { createWorkflowApprovalsRepository } from '../../db/repositories/workflow-approvals.js';
+import { topologicalSort, getWorkflowService } from '../../services/workflow/index.js';
 import {
   detectCycle,
   type ValidationNode,
   type ValidationEdge,
-} from '../services/workflow/dag-utils.js';
+} from '../../services/workflow/dag-utils.js';
 
-import { wsGateway } from '../ws/server.js';
-import { validateBody } from '../middleware/validation.js';
-import { createWorkflowSchema, updateWorkflowSchema } from '../middleware/validation.js';
-import { workflowCopilotRoute } from './workflow-copilot.js';
-import { pagination } from '../middleware/pagination.js';
+import { wsGateway } from '../../ws/server.js';
+import { validateBody } from '../../middleware/validation.js';
+import { createWorkflowSchema, updateWorkflowSchema } from '../../middleware/validation.js';
+import { workflowCopilotRoute } from './copilot.js';
+import { pagination } from '../../middleware/pagination.js';
 
 const executeWorkflowBodySchema = z.object({
   inputs: z.record(z.string(), z.unknown()).optional(),

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mock values (hoisted to avoid vi.mock factory temporal dead zone)
@@ -26,15 +26,15 @@ let capturedStreamCallback:
 // vi.mock
 // ---------------------------------------------------------------------------
 
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: () => mockLog,
 }));
 
-vi.mock('./settings.js', () => ({
+vi.mock('../settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
-vi.mock('../services/agent/cache.js', () => ({
+vi.mock('../../services/agent/cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'test-api-key'),
   loadProviderConfig: vi.fn(() => null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
@@ -47,7 +47,7 @@ vi.mock('@ownpilot/core', () => ({
   })),
 }));
 
-vi.mock('../services/workflow-copilot-prompt.js', () => ({
+vi.mock('../../services/workflow-copilot-prompt.js', () => ({
   buildCopilotSystemPrompt: vi.fn(() => 'You are a Workflow Copilot.'),
 }));
 
@@ -62,7 +62,7 @@ vi.mock('hono/streaming', () => ({
 }));
 
 // Import after mocks
-const { workflowCopilotRoute } = await import('./workflow-copilot.js');
+const { workflowCopilotRoute } = await import('./copilot.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -154,7 +154,7 @@ describe('Workflow Copilot Route', () => {
 
   describe('Provider resolution', () => {
     it('returns 400 when no provider is configured', async () => {
-      const { resolveDefaultProviderAndModel } = await import('./settings.js');
+      const { resolveDefaultProviderAndModel } = await import('../settings.js');
       vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
 
       const res = await app.request('/copilot', {
@@ -169,7 +169,7 @@ describe('Workflow Copilot Route', () => {
     });
 
     it('returns 400 when API key is not configured', async () => {
-      const { getProviderApiKey } = await import('../services/agent/cache.js');
+      const { getProviderApiKey } = await import('../../services/agent/cache.js');
       vi.mocked(getProviderApiKey).mockResolvedValueOnce(undefined as unknown as string);
 
       const res = await app.request('/copilot', {

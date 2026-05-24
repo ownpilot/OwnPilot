@@ -8,8 +8,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -50,20 +50,20 @@ const mockService = {
   resumeFromApproval: vi.fn().mockResolvedValue(undefined),
 };
 
-vi.mock('../db/repositories/workflows.js', () => ({
+vi.mock('../../db/repositories/workflows.js', () => ({
   createWorkflowsRepository: () => mockRepo,
 }));
 
-vi.mock('../db/repositories/workflow-approvals.js', () => ({
+vi.mock('../../db/repositories/workflow-approvals.js', () => ({
   createWorkflowApprovalsRepository: () => mockApprovalsRepo,
 }));
 
-vi.mock('../services/workflow/index.js', () => ({
+vi.mock('../../services/workflow/index.js', () => ({
   topologicalSort: vi.fn(), // default: no throw = valid DAG
   getWorkflowService: () => mockService,
 }));
 
-vi.mock('../services/workflow/dag-utils.js', () => ({
+vi.mock('../../services/workflow/dag-utils.js', () => ({
   detectCycle: vi.fn(), // default: no cycle detected
 }));
 
@@ -78,29 +78,29 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   getWorkflowService: () => mockService,
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
-vi.mock('../middleware/validation.js', () => ({
+vi.mock('../../middleware/validation.js', () => ({
   validateBody: vi.fn((_schema: unknown, body: unknown) => body),
   createWorkflowSchema: {},
   updateWorkflowSchema: {},
 }));
 
-vi.mock('../config/defaults.js', () => ({
+vi.mock('../../config/defaults.js', () => ({
   MAX_PAGINATION_OFFSET: 10000,
 }));
 
-vi.mock('./workflow-copilot.js', () => ({
+vi.mock('./copilot.js', () => ({
   workflowCopilotRoute: new Hono(),
 }));
 
 // Import after mocks
-const { workflowRoutes } = await import('./workflows.js');
-const { topologicalSort: mockTopologicalSort } = await import('../services/workflow/index.js');
-const { detectCycle: mockDetectCycle } = await import('../services/workflow/dag-utils.js');
-const { validateBody: mockValidateBody } = await import('../middleware/validation.js');
+const { workflowRoutes } = await import('./index.js');
+const { topologicalSort: mockTopologicalSort } = await import('../../services/workflow/index.js');
+const { detectCycle: mockDetectCycle } = await import('../../services/workflow/dag-utils.js');
+const { validateBody: mockValidateBody } = await import('../../middleware/validation.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -1410,8 +1410,8 @@ describe('Workflow Routes', () => {
 
   describe('workflow schema limits', () => {
     beforeEach(async () => {
-      const actual = await vi.importActual<typeof import('../middleware/validation.js')>(
-        '../middleware/validation.js'
+      const actual = await vi.importActual<typeof import('../../middleware/validation.js')>(
+        '../../middleware/validation.js'
       );
       vi.mocked(mockValidateBody).mockImplementation((_schema, body) =>
         actual.validateBody(actual.createWorkflowSchema, body)
@@ -1476,8 +1476,8 @@ describe('Workflow Routes', () => {
   describe('retryCount / timeoutMs validation', () => {
     beforeEach(async () => {
       // Use real validation for these tests
-      const actual = await vi.importActual<typeof import('../middleware/validation.js')>(
-        '../middleware/validation.js'
+      const actual = await vi.importActual<typeof import('../../middleware/validation.js')>(
+        '../../middleware/validation.js'
       );
       vi.mocked(mockValidateBody).mockImplementation((_schema, body) =>
         actual.validateBody(actual.createWorkflowSchema, body)

@@ -39,7 +39,7 @@ export { heartbeatsRoutes } from './heartbeats/index.js';
 export { extensionsRoutes } from './extensions/index.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';
-export { workflowRoutes } from './workflows.js';
+export { workflowRoutes } from './workflow/index.js';
 export { composioRoutes } from './composio.js';
 export { uiAuthRoutes } from './ui-auth.js';
 export { modelRoutingRoutes } from './model-routing.js';
