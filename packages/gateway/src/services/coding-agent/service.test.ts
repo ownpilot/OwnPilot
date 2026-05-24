@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock config-services repo
 const mockGetApiKey = vi.fn<(name: string) => string | undefined>();
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getApiKey: (name: string) => mockGetApiKey(name),
     getByName: vi.fn(),
@@ -59,7 +59,7 @@ vi.mock('node:fs', async (importOriginal) => {
 });
 
 // Mock log
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -104,7 +104,7 @@ function createMockProcess(stdout = '', stderr = '', exitCode = 0) {
 // =============================================================================
 
 describe('CodingAgentService', () => {
-  let CodingAgentService: typeof import('./coding-agent-service.js').CodingAgentService;
+  let CodingAgentService: typeof import('./service.js').CodingAgentService;
 
   // Save/restore API key env vars to prevent leakage from dev environment
   const savedEnv: Record<string, string | undefined> = {};
@@ -121,7 +121,7 @@ describe('CodingAgentService', () => {
 
     // Reset module to get fresh singleton
     vi.resetModules();
-    const mod = await import('./coding-agent-service.js');
+    const mod = await import('./service.js');
     CodingAgentService = mod.CodingAgentService;
   });
 
@@ -461,7 +461,7 @@ describe('CodingAgentService', () => {
 
 describe('Coding Agent Tool Definitions', () => {
   it('exports correct tool definitions', async () => {
-    const { CODING_AGENT_TOOLS } = await import('../tools/coding-agent-tools.js');
+    const { CODING_AGENT_TOOLS } = await import('../../tools/coding-agent-tools.js');
 
     expect(CODING_AGENT_TOOLS).toHaveLength(9);
 
@@ -483,7 +483,7 @@ describe('Coding Agent Tool Definitions', () => {
   });
 
   it('run_coding_task has correct parameter schema', async () => {
-    const { CODING_AGENT_TOOLS } = await import('../tools/coding-agent-tools.js');
+    const { CODING_AGENT_TOOLS } = await import('../../tools/coding-agent-tools.js');
     const runTask = CODING_AGENT_TOOLS.find((t) => t.name === 'run_coding_task')!;
 
     const props = runTask.parameters.properties as Record<
@@ -501,7 +501,7 @@ describe('Coding Agent Tool Definitions', () => {
   });
 
   it('config requirements cover all three providers', async () => {
-    const { CODING_AGENT_TOOLS } = await import('../tools/coding-agent-tools.js');
+    const { CODING_AGENT_TOOLS } = await import('../../tools/coding-agent-tools.js');
     const runTask = CODING_AGENT_TOOLS.find((t) => t.name === 'run_coding_task')!;
 
     const configNames = runTask.configRequirements!.map((r) => r.name);

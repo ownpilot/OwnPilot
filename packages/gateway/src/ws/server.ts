@@ -1152,7 +1152,7 @@ export class WSGateway {
       const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
       try {
         const { getCodingAgentSessionManager } =
-          await import('../services/coding-agent-sessions.js');
+          await import('../services/coding-agent/sessions.js');
         getCodingAgentSessionManager().writeToSession(data.sessionId, userId, data.data);
       } catch (err) {
         log.error('Coding agent input error', { error: String(err) });
@@ -1164,7 +1164,7 @@ export class WSGateway {
       const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
       try {
         const { getCodingAgentSessionManager } =
-          await import('../services/coding-agent-sessions.js');
+          await import('../services/coding-agent/sessions.js');
         getCodingAgentSessionManager().resizeSession(data.sessionId, userId, data.cols, data.rows);
       } catch (err) {
         log.error('Coding agent resize error', { error: String(err) });
@@ -1176,7 +1176,7 @@ export class WSGateway {
       const userId = sessionManager.get(wsSessionId)?.userId ?? 'default';
       try {
         const { getCodingAgentSessionManager } =
-          await import('../services/coding-agent-sessions.js');
+          await import('../services/coding-agent/sessions.js');
         getCodingAgentSessionManager().subscribe(data.sessionId, wsSessionId, userId);
       } catch (err) {
         log.error('Coding agent subscribe error', { error: String(err) });

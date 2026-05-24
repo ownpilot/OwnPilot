@@ -7,7 +7,7 @@
 
 import { Hono } from 'hono';
 import type { CodingAgentProvider } from '@ownpilot/core';
-import { getCodingAgentService } from '../services/coding-agent-service.js';
+import { getCodingAgentService } from '../services/coding-agent/service.js';
 import {
   startOrchestration,
   continueOrchestration,
@@ -15,7 +15,7 @@ import {
   getOrchestration,
   listOrchestrations,
   countOrchestrations,
-} from '../services/coding-agent-orchestrator.js';
+} from '../services/coding-agent/orchestrator.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
 import { orchestrationRunsRepo } from '../db/repositories/orchestration-runs.js';
 import { codingAgentPermissionsRepo } from '../db/repositories/coding-agent-permissions.js';

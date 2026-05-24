@@ -11,7 +11,7 @@
 
 import { spawn as nodeSpawn, type ChildProcess } from 'node:child_process';
 import { tryImport } from '@ownpilot/core';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 
 const log = getLog('CodingAgentPty');
 

@@ -35,7 +35,7 @@ const { mockCodingAgentService, mockResultsRepo } = vi.hoisted(() => {
 
 // ─── Module mocks ──────────────────────────────────────────────────────────────
 
-vi.mock('../services/coding-agent-service.js', () => ({
+vi.mock('../services/coding-agent/service.js', () => ({
   getCodingAgentService: vi.fn(() => mockCodingAgentService),
 }));
 

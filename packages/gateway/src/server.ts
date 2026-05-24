@@ -579,7 +579,7 @@ async function main() {
 
   // 20. Coding Agent Service (external AI coding CLI orchestration) — also installed on the core capability singleton
   {
-    const { getCodingAgentService } = await import('./services/coding-agent-service.js');
+    const { getCodingAgentService } = await import('./services/coding-agent/service.js');
     const codingAgent = getCodingAgentService();
     registry.register(Services.CodingAgent, codingAgent);
     const { setCodingAgentService } = await import('@ownpilot/core');
@@ -913,7 +913,7 @@ async function main() {
 
     // 5.6. Stop coding agent sessions (terminate PTY processes and ACP clients)
     try {
-      const { getCodingAgentSessionManager } = await import('./services/coding-agent-sessions.js');
+      const { getCodingAgentSessionManager } = await import('./services/coding-agent/sessions.js');
       getCodingAgentSessionManager().stop();
     } catch (e) {
       log.warn('Coding agent sessions stop error', { error: String(e) });

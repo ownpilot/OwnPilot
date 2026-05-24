@@ -20,11 +20,11 @@ vi.mock('@ownpilot/core', () => ({
   getLog: vi.fn(() => mockLog),
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: vi.fn(() => mockLog),
 }));
 
-import { runWithPty, spawnStreamingPty } from './coding-agent-pty.js';
+import { runWithPty, spawnStreamingPty } from './pty.js';
 
 // ---------------------------------------------------------------------------
 // PTY Mock Helpers

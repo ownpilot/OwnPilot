@@ -19,11 +19,11 @@ import type {
   CreateCodingSessionInput,
 } from '@ownpilot/core';
 import { isBuiltinProvider } from '@ownpilot/core';
-import type { PtyHandle } from './coding-agent-pty.js';
-import { spawnStreamingPty, spawnStreamingProcess, type PtyOptions } from './coding-agent-pty.js';
-import { sessionManager as wsSessionManager } from '../ws/session.js';
-import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
-import { getLog } from './log.js';
+import type { PtyHandle } from './pty.js';
+import { spawnStreamingPty, spawnStreamingProcess, type PtyOptions } from './pty.js';
+import { sessionManager as wsSessionManager } from '../../ws/session.js';
+import { codingAgentResultsRepo } from '../../db/repositories/coding-agent-results.js';
+import { getLog } from '../log.js';
 
 const log = getLog('CodingAgentSessions');
 
@@ -44,7 +44,7 @@ interface ManagedSession {
   session: CodingAgentSession;
   pty: PtyHandle | null;
   /** ACP client instance (if using ACP mode) */
-  acpClient: import('../acp/acp-client.js').AcpClient | null;
+  acpClient: import('../../acp/acp-client.js').AcpClient | null;
   /** Ring buffer of recent output (last ~100KB) for reconnection replay */
   outputBuffer: string;
   /** WS session IDs subscribed to this coding agent session's output */
@@ -52,9 +52,9 @@ interface ManagedSession {
   /** Callbacks fired when the session completes (exit or error) */
   completionCallbacks: Array<(session: CodingAgentSession) => void>;
   /** Structured tool calls from ACP (empty for non-ACP sessions) */
-  acpToolCalls: import('../acp/types.js').AcpToolCall[];
+  acpToolCalls: import('../../acp/types.js').AcpToolCall[];
   /** Current plan from ACP (null for non-ACP sessions) */
-  acpPlan: import('../acp/types.js').AcpPlan | null;
+  acpPlan: import('../../acp/types.js').AcpPlan | null;
 }
 
 // =============================================================================
@@ -268,7 +268,7 @@ export class CodingAgentSessionManager {
     env: Record<string, string>,
     binary: string,
     acpArgs: string[],
-    mcpServers?: import('../acp/types.js').AcpMcpServerConfig[]
+    mcpServers?: import('../../acp/types.js').AcpMcpServerConfig[]
   ): Promise<CodingAgentSession> {
     // Enforce max sessions per user
     const userSet = this.userSessions.get(userId) ?? new Set<string>();
@@ -312,7 +312,7 @@ export class CodingAgentSessionManager {
     this.userSessions.set(userId, userSet);
 
     try {
-      const { AcpClient } = await import('../acp/acp-client.js');
+      const { AcpClient } = await import('../../acp/acp-client.js');
 
       const acpClient = new AcpClient({
         binary,
@@ -327,11 +327,12 @@ export class CodingAgentSessionManager {
 
           // Update tracked ACP data from streaming events
           if (eventType === 'coding-agent:acp:tool-call') {
-            const tc = (payload as { toolCall?: import('../acp/types.js').AcpToolCall }).toolCall;
+            const tc = (payload as { toolCall?: import('../../acp/types.js').AcpToolCall })
+              .toolCall;
             if (tc) managed.acpToolCalls.push(tc);
           }
           if (eventType === 'coding-agent:acp:plan') {
-            const plan = (payload as { plan?: import('../acp/types.js').AcpPlan }).plan;
+            const plan = (payload as { plan?: import('../../acp/types.js').AcpPlan }).plan;
             if (plan) managed.acpPlan = plan;
           }
         },
@@ -461,8 +462,8 @@ export class CodingAgentSessionManager {
     userId: string
   ):
     | {
-        toolCalls: import('../acp/types.js').AcpToolCall[];
-        plan: import('../acp/types.js').AcpPlan | null;
+        toolCalls: import('../../acp/types.js').AcpToolCall[];
+        plan: import('../../acp/types.js').AcpPlan | null;
         isAcp: boolean;
       }
     | undefined {

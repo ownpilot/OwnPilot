@@ -136,7 +136,7 @@ vi.mock('./event-bridge.js', () => ({
   setEventBusBridge: vi.fn(),
 }));
 
-vi.mock('../services/coding-agent-sessions.js', () => ({
+vi.mock('../services/coding-agent/sessions.js', () => ({
   getCodingAgentSessionManager: vi.fn(() => mockCodingAgentSessions),
 }));
 

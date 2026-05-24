@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock PTY/spawn functions
 const mockSpawnStreamingPty = vi.fn();
 const mockSpawnStreamingProcess = vi.fn();
-vi.mock('./coding-agent-pty.js', () => ({
+vi.mock('./pty.js', () => ({
   spawnStreamingPty: (...args: unknown[]) => mockSpawnStreamingPty(...args),
   spawnStreamingProcess: (...args: unknown[]) => mockSpawnStreamingProcess(...args),
 }));
@@ -15,7 +15,7 @@ vi.mock('./coding-agent-pty.js', () => ({
 // Mock WS session manager
 const mockWsSend = vi.fn();
 const mockWsBroadcast = vi.fn();
-vi.mock('../ws/session.js', () => ({
+vi.mock('../../ws/session.js', () => ({
   sessionManager: {
     send: (...args: unknown[]) => mockWsSend(...args),
     broadcast: (...args: unknown[]) => mockWsBroadcast(...args),
@@ -23,7 +23,7 @@ vi.mock('../ws/session.js', () => ({
 }));
 
 // Mock log
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -63,7 +63,7 @@ const USER_B = 'user-b';
 // =============================================================================
 
 describe('CodingAgentSessionManager', () => {
-  let CodingAgentSessionManager: typeof import('./coding-agent-sessions.js').CodingAgentSessionManager;
+  let CodingAgentSessionManager: typeof import('./sessions.js').CodingAgentSessionManager;
   let manager: InstanceType<typeof CodingAgentSessionManager>;
 
   beforeEach(async () => {
@@ -73,7 +73,7 @@ describe('CodingAgentSessionManager', () => {
     // Default: PTY not available, falls back to process spawn
     mockSpawnStreamingPty.mockRejectedValue(new Error('node-pty not available'));
 
-    const mod = await import('./coding-agent-sessions.js');
+    const mod = await import('./sessions.js');
     CodingAgentSessionManager = mod.CodingAgentSessionManager;
     manager = new CodingAgentSessionManager();
   });

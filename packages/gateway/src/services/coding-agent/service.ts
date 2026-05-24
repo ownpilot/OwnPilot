@@ -31,15 +31,15 @@ import {
   getErrorMessage,
 } from '@ownpilot/core';
 import { tryImport } from '@ownpilot/core';
-import { cliProvidersRepo, type CliProviderRecord } from '../db/repositories/cli-providers.js';
+import { cliProvidersRepo, type CliProviderRecord } from '../../db/repositories/cli-providers.js';
 import {
   isBinaryInstalled,
   getBinaryVersion,
   validateCwd,
   createSanitizedEnv,
-} from './binary-utils.js';
-import { getLog } from './log.js';
-import { getAllowedDirs } from './app-settings.js';
+} from '../binary-utils.js';
+import { getLog } from '../log.js';
+import { getAllowedDirs } from '../app-settings.js';
 import {
   DEFAULT_TIMEOUT_MS,
   MAX_TIMEOUT_MS,
@@ -54,14 +54,14 @@ import {
   runClaudeCode,
   runCodex,
   runGeminiCli,
-} from './coding-agent-providers.js';
+} from './providers.js';
 import {
   isAcpSupported,
   buildAcpArgs,
   getAcpBinary,
   getAcpMode,
-} from '../acp/acp-provider-support.js';
-import type { AcpMcpServerConfig } from '../acp/types.js';
+} from '../../acp/acp-provider-support.js';
+import type { AcpMcpServerConfig } from '../../acp/types.js';
 
 const log = getLog('CodingAgent');
 
@@ -217,9 +217,9 @@ class CodingAgentService implements ICodingAgentService {
   ): Promise<CodingAgentResult> {
     const start = Date.now();
 
-    let runWithPty: typeof import('./coding-agent-pty.js').runWithPty;
+    let runWithPty: typeof import('./pty.js').runWithPty;
     try {
-      const ptyModule = await import('./coding-agent-pty.js');
+      const ptyModule = await import('./pty.js');
       runWithPty = ptyModule.runWithPty;
     } catch {
       return {
@@ -355,7 +355,7 @@ class CodingAgentService implements ICodingAgentService {
     const cwd = input.cwd ? validateCwd(input.cwd, allowedDirs) : process.cwd();
     const env = createSanitizedEnv(provider, apiKey, apiKeyEnvVar);
 
-    const { getCodingAgentSessionManager } = await import('./coding-agent-sessions.js');
+    const { getCodingAgentSessionManager } = await import('./sessions.js');
     const mgr = getCodingAgentSessionManager();
     this.sessionManager = mgr; // Cache for sync methods (listSessions, getSession, etc.)
 
@@ -572,20 +572,17 @@ class CodingAgentService implements ICodingAgentService {
     return args;
   }
 
-  private sessionManager: import('./coding-agent-sessions.js').CodingAgentSessionManager | null =
-    null;
+  private sessionManager: import('./sessions.js').CodingAgentSessionManager | null = null;
   private sessionManagerInitPromise: Promise<void> | null = null;
 
-  private getSessionManager():
-    | import('./coding-agent-sessions.js').CodingAgentSessionManager
-    | null {
+  private getSessionManager(): import('./sessions.js').CodingAgentSessionManager | null {
     return this.sessionManager;
   }
 
   /** Eagerly load the session manager module (async, best-effort). */
   initSessionManager(): void {
     if (this.sessionManagerInitPromise) return;
-    this.sessionManagerInitPromise = import('./coding-agent-sessions.js')
+    this.sessionManagerInitPromise = import('./sessions.js')
       .then(({ getCodingAgentSessionManager }) => {
         this.sessionManager = getCodingAgentSessionManager();
         log.info('CodingAgentSessionManager initialized');

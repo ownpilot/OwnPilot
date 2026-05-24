@@ -38,23 +38,23 @@ const mockService = {
 
 const mockBroadcast = vi.fn();
 
-vi.mock('../db/repositories/orchestration-runs.js', () => ({
+vi.mock('../../db/repositories/orchestration-runs.js', () => ({
   orchestrationRunsRepo: mockRunsRepo,
 }));
 
-vi.mock('../db/repositories/coding-agent-results.js', () => ({
+vi.mock('../../db/repositories/coding-agent-results.js', () => ({
   codingAgentResultsRepo: mockResultsRepo,
 }));
 
-vi.mock('./coding-agent-service.js', () => ({
+vi.mock('./service.js', () => ({
   getCodingAgentService: () => mockService,
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: (...args: unknown[]) => mockBroadcast(...args) },
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -64,11 +64,11 @@ vi.mock('./log.js', () => ({
 }));
 
 // Mock the AI analysis (resolveDefaultProviderAndModel + createProvider)
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('../agent-cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'test-key'),
   loadProviderConfig: vi.fn(() => null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
@@ -103,7 +103,7 @@ const {
   cancelOrchestration,
   getOrchestration,
   listOrchestrations,
-} = await import('./coding-agent-orchestrator.js');
+} = await import('./orchestrator.js');
 
 // ---------------------------------------------------------------------------
 // Helpers

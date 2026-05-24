@@ -33,11 +33,11 @@ const { mockService, mockMgr, mockResultsRepo, mockGetCodingAgentService, mockGe
     };
   });
 
-vi.mock('../services/coding-agent-service.js', () => ({
+vi.mock('../services/coding-agent/service.js', () => ({
   getCodingAgentService: mockGetCodingAgentService,
 }));
 
-vi.mock('../services/coding-agent-sessions.js', () => ({
+vi.mock('../services/coding-agent/sessions.js', () => ({
   getCodingAgentSessionManager: mockGetSessionManager,
 }));
 

@@ -22,7 +22,7 @@ import {
   buildSkillsPreamble,
   buildClaudeCodePermissionArgs,
   resolvePermissions,
-} from './coding-agent-providers.js';
+} from './providers.js';
 
 // Mock dependencies — coding-agent-providers now reads keys via the
 // ConfigCenter capability (read-only) instead of the repo directly.

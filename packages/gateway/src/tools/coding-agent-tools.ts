@@ -10,8 +10,8 @@
  */
 
 import { type ToolDefinition, type CodingAgentProvider, getErrorMessage } from '@ownpilot/core';
-import { getCodingAgentService } from '../services/coding-agent-service.js';
-import { getCodingAgentSessionManager } from '../services/coding-agent-sessions.js';
+import { getCodingAgentService } from '../services/coding-agent/service.js';
+import { getCodingAgentSessionManager } from '../services/coding-agent/sessions.js';
 import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
 import {
   startOrchestration,
@@ -19,7 +19,7 @@ import {
   cancelOrchestration,
   getOrchestration,
   listOrchestrations,
-} from '../services/coding-agent-orchestrator.js';
+} from '../services/coding-agent/orchestrator.js';
 
 // =============================================================================
 // Tool Definitions

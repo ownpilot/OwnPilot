@@ -18,14 +18,14 @@ import {
   type StartOrchestrationInput,
   type OrchestrationRun,
 } from '@ownpilot/core';
-import { getCodingAgentService } from './coding-agent-service.js';
-import { orchestrationRunsRepo } from '../db/repositories/orchestration-runs.js';
-import { codingAgentResultsRepo } from '../db/repositories/coding-agent-results.js';
-import { resolveDefaultProviderAndModel } from './app-settings.js';
-import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from './agent-cache.js';
-import { getLog } from './log.js';
-import { getErrorMessage } from '../utils/common.js';
-import { wsGateway } from '../ws/server.js';
+import { getCodingAgentService } from './service.js';
+import { orchestrationRunsRepo } from '../../db/repositories/orchestration-runs.js';
+import { codingAgentResultsRepo } from '../../db/repositories/coding-agent-results.js';
+import { resolveDefaultProviderAndModel } from '../app-settings.js';
+import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../agent-cache.js';
+import { getLog } from '../log.js';
+import { getErrorMessage } from '../../utils/common.js';
+import { wsGateway } from '../../ws/server.js';
 
 const log = getLog('Orchestrator');
 
@@ -191,9 +191,9 @@ async function analyzeOutput(
 // out — otherwise the CLI keeps spending budget after a user-initiated cancel.
 const activeRuns = new Map<string, { abort: boolean; currentSessionId?: string }>();
 
-function broadcast<K extends keyof import('../ws/types.js').ServerEvents>(
+function broadcast<K extends keyof import('../../ws/types.js').ServerEvents>(
   event: K,
-  data: import('../ws/types.js').ServerEvents[K]
+  data: import('../../ws/types.js').ServerEvents[K]
 ) {
   wsGateway.broadcast(event, data);
 }
@@ -561,7 +561,7 @@ async function finishRun(
 // =============================================================================
 
 function recordToRun(
-  r: import('../db/repositories/orchestration-runs.js').OrchestrationRunRecord
+  r: import('../../db/repositories/orchestration-runs.js').OrchestrationRunRecord
 ): OrchestrationRun {
   return {
     id: r.id,
