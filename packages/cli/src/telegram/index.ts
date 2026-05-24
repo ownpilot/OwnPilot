@@ -1,2 +1,2 @@
-export type { TelegramConfig, IncomingMessage, OutgoingMessage } from './types.js';
-export { TelegramBot, createTelegramBot } from './bot.js';
+export type { TelegramConfig } from './types.js';
+export { createTelegramBot } from './bot.js';

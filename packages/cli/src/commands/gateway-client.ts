@@ -14,7 +14,7 @@
  * `ownpilot server` itself runs fine.
  */
 
-export function getBaseUrl(): string {
+function getBaseUrl(): string {
   return process.env.OWNPILOT_GATEWAY_URL ?? 'http://localhost:8080';
 }
 
