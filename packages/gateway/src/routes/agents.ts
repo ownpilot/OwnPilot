@@ -42,8 +42,8 @@ import {
   generateAgentId,
   agentCache,
   getProviderApiKey,
-} from '../services/agent-cache.js';
-import { getOrCreateAgentInstance } from '../services/agent-service.js';
+} from '../services/agent/cache.js';
+import { getOrCreateAgentInstance } from '../services/agent/service.js';
 
 // =============================================================================
 // Backward compatibility re-exports
@@ -63,9 +63,9 @@ export {
   getContextBreakdown,
   compactContext,
   getCliCorrelationId,
-} from '../services/agent-service.js';
-export type { ContextBreakdown } from '../services/agent-service.js';
-export { invalidateAgentCache } from '../services/agent-cache.js';
+} from '../services/agent/service.js';
+export type { ContextBreakdown } from '../services/agent/service.js';
+export { invalidateAgentCache } from '../services/agent/cache.js';
 export { getDefaultModel } from '../services/app-settings.js';
 
 // =============================================================================

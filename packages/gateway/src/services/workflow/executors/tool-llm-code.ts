@@ -18,7 +18,7 @@ import type {
 } from '../../../db/repositories/workflows.js';
 import { createProvider, type ProviderConfig, type IToolService } from '@ownpilot/core';
 import { getErrorMessage } from '../../../utils/common.js';
-import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../../agent-cache.js';
+import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../../agent/cache.js';
 import { resolveDefaultProviderAndModel } from '../../app-settings.js';
 import { resolveTemplates } from '../template-resolver.js';
 import type { ToolExecutionResult } from '../types.js';

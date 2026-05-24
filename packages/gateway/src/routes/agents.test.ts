@@ -179,7 +179,7 @@ vi.mock('../tools/config-tools.js', () => ({
   executeConfigTool: vi.fn(),
 }));
 
-vi.mock('../services/agent-service.js', () => ({
+vi.mock('../services/agent/service.js', () => ({
   getOrCreateAgentInstance: vi.fn(async () => ({
     reset: vi.fn(() => ({ id: 'new-conversation-id' })),
     getTools: vi.fn(() => []),

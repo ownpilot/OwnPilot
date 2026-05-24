@@ -477,7 +477,7 @@ export class AutonomyEngine implements IPulseService {
     cooledDownActions: Array<{ type: string; remainingMinutes: number }>
   ): Promise<{ responseContent: string; toolCalls: Array<{ name?: string; arguments?: string }> }> {
     try {
-      const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+      const { getOrCreateChatAgent } = await import('../services/agent/service.js');
       const resolved = await getLLMRouter().pick({ process: 'pulse' });
       if (!resolved.provider || !resolved.model) {
         throw new Error(

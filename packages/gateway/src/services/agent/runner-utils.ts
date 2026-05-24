@@ -23,9 +23,9 @@ import {
   type ProviderConfig,
 } from '@ownpilot/core';
 import type { AIProvider, ToolCall, ToolId } from '@ownpilot/core';
-import { getLog } from './log.js';
-import { resolveForProcess } from './model-routing.js';
-import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './agent-cache.js';
+import { getLog } from '../log.js';
+import { resolveForProcess } from '../model-routing.js';
+import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   registerGatewayTools,
@@ -33,11 +33,11 @@ import {
   registerPluginTools,
   registerExtensionTools,
   registerMcpTools,
-} from '../tools/agent-tool-registry.js';
-import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../config/defaults.js';
-import { getLlmSemaphore } from './llm-semaphore.js';
-import type { ExtensionService } from './extension/service.js';
-import { getProviderMetricsRepository } from '../db/repositories/provider-metrics.js';
+} from '../../tools/agent-tool-registry.js';
+import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../../config/defaults.js';
+import { getLlmSemaphore } from '../llm-semaphore.js';
+import type { ExtensionService } from '../extension/service.js';
+import { getProviderMetricsRepository } from '../../db/repositories/provider-metrics.js';
 
 const log = getLog('AgentRunnerUtils');
 

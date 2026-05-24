@@ -41,16 +41,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
 }));
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
 }));
 
-vi.mock('../autonomy/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../autonomy/index.js')>();
+vi.mock('../../autonomy/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../autonomy/index.js')>();
   return {
     ...actual,
     getApprovalManager: (...args: unknown[]) => mockGetApprovalManager(...args),
@@ -58,7 +58,7 @@ vi.mock('../autonomy/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../config/defaults.js', async (importOriginal) => {
+vi.mock('../../config/defaults.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -71,7 +71,7 @@ vi.mock('../config/defaults.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../tools/agent-tool-registry.js', () => ({
+vi.mock('../../tools/agent-tool-registry.js', () => ({
   safeStringArray: (value: unknown) => {
     if (!Array.isArray(value)) return undefined;
     return value.filter((v): v is string => typeof v === 'string');
@@ -79,13 +79,13 @@ vi.mock('../tools/agent-tool-registry.js', () => ({
 }));
 
 const mockToHostPath = vi.fn().mockReturnValue(null);
-vi.mock('../utils/host-path.js', () => ({
+vi.mock('../../utils/host-path.js', () => ({
   toHostPath: (...args: unknown[]) => mockToHostPath(...args),
   isHostFsConfigured: vi.fn().mockReturnValue(false),
   toContainerPath: vi.fn().mockReturnValue(null),
 }));
 
-const mod = await import('./agent-cache.js');
+const mod = await import('./cache.js');
 
 beforeEach(() => {
   vi.clearAllMocks();

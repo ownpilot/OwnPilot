@@ -17,8 +17,8 @@
 
 import type { ILLMRouter } from '@ownpilot/core';
 import { setLLMRouter } from '@ownpilot/core';
-import { resolveProviderAndModel, calculateExecutionCost } from './agent-runner-utils.js';
-import { resolveContextWindow, resolveMaxOutput, computeMemoryMaxTokens } from './agent-cache.js';
+import { resolveProviderAndModel, calculateExecutionCost } from './agent/runner-utils.js';
+import { resolveContextWindow, resolveMaxOutput, computeMemoryMaxTokens } from './agent/cache.js';
 
 /** Gateway-side LLMRouter implementation — thin facade over scattered helpers. */
 export const llmRouter: ILLMRouter = {

@@ -13,7 +13,7 @@ import {
   getProviderApiKey,
   loadProviderConfig,
   NATIVE_PROVIDERS,
-} from '../services/agent-cache.js';
+} from '../services/agent/cache.js';
 import { resolveDefaultProviderAndModel } from './settings.js';
 import { validateBody, workflowCopilotSchema } from '../middleware/validation.js';
 import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';

@@ -137,7 +137,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../agent-cache.js', () => ({
+vi.mock('../agent/cache.js', () => ({
   getProviderApiKey: vi.fn().mockResolvedValue('sk-test-key'),
   loadProviderConfig: vi.fn().mockReturnValue(null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic']),

@@ -91,7 +91,7 @@ const mockLocalProvidersRepo = {
   listProviders: vi.fn(async () => []),
 };
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   agentsRepo: mockAgentsRepo,
 }));
 
@@ -102,7 +102,7 @@ vi.mock('../db/repositories/index.js', () => ({
 const mockChatRepoGetMessages = vi.fn(async () => []);
 const mockChatRepoDeleteMessage = vi.fn(async () => true);
 const mockChatRepoAddMessage = vi.fn(async () => ({ id: 'm-1' }));
-vi.mock('../db/repositories/chat.js', () => ({
+vi.mock('../../db/repositories/chat.js', () => ({
   // Use `function` (not an arrow) — this constructor is invoked with `new`,
   // which arrow functions don't support. See vitest_mock_queue_gotcha note.
   ChatRepository: vi.fn().mockImplementation(function () {
@@ -114,17 +114,17 @@ vi.mock('../db/repositories/chat.js', () => ({
   }),
 }));
 
-vi.mock('../db/repositories/local-providers.js', () => ({
+vi.mock('../../db/repositories/local-providers.js', () => ({
   localProvidersRepo: mockLocalProvidersRepo,
 }));
 
-vi.mock('../db/repositories/souls.js', () => ({
+vi.mock('../../db/repositories/souls.js', () => ({
   getSoulsRepository: vi.fn(() => ({
     getByAgentId: mockGetByAgentId,
   })),
 }));
 
-vi.mock('../db/repositories/agent-messages.js', () => ({
+vi.mock('../../db/repositories/agent-messages.js', () => ({
   getAgentMessagesRepository: vi.fn(() => ({
     countUnread: mockCountUnread,
   })),
@@ -139,7 +139,7 @@ const mockGetDefaultModel = vi.fn();
 const mockGetConfiguredProviderIds = vi.fn(async () => new Set<string>());
 const mockGetEnabledToolGroupIds = vi.fn(() => [] as string[]);
 
-vi.mock('./app-settings.js', () => ({
+vi.mock('../app-settings.js', () => ({
   resolveDefaultProviderAndModel: (...args: unknown[]) =>
     mockResolveProviderAndModel(...(args as [string, string])),
   getDefaultProvider: (...args: unknown[]) => mockGetDefaultProvider(...args),
@@ -148,24 +148,24 @@ vi.mock('./app-settings.js', () => ({
   getEnabledToolGroupIds: (...args: unknown[]) => mockGetEnabledToolGroupIds(...args),
 }));
 
-vi.mock('./cli/chat-provider.js', () => ({
+vi.mock('../cli/chat-provider.js', () => ({
   isCliChatProvider: vi.fn(() => false),
   getCliBinaryFromProviderId: vi.fn(() => '/usr/bin/test'),
   createCliChatProvider: vi.fn(() => ({})),
   getCliChatProviderDefinition: vi.fn(() => null),
 }));
 
-vi.mock('./extension/service.js', () => ({
+vi.mock('../extension/service.js', () => ({
   getExtensionService: vi.fn(() => ({
     getSystemPromptSections: vi.fn(() => []),
   })),
 }));
 
-vi.mock('./agent-prompt.js', () => ({
+vi.mock('./prompt.js', () => ({
   BASE_SYSTEM_PROMPT: 'Test system prompt',
 }));
 
-vi.mock('../tools/agent-tool-registry.js', () => ({
+vi.mock('../../tools/agent-tool-registry.js', () => ({
   registerGatewayTools: vi.fn(),
   registerDynamicTools: vi.fn(async () => []),
   registerPluginTools: vi.fn(() => []),
@@ -205,7 +205,7 @@ const mockResolveToolGroups = vi.fn(() => []);
 const mockEvictAgentFromCache = vi.fn();
 const mockCreateApprovalCallback = vi.fn(() => vi.fn());
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('./cache.js', () => ({
   NATIVE_PROVIDERS: new Set([
     'openai',
     'anthropic',
@@ -256,7 +256,7 @@ vi.mock('./agent-cache.js', () => ({
   MAX_CHAT_AGENT_CACHE_SIZE: 20,
 }));
 
-vi.mock('../config/defaults.js', async (importOriginal) => {
+vi.mock('../../config/defaults.js', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -272,7 +272,7 @@ vi.mock('../config/defaults.js', async (importOriginal) => {
 // Import module under test
 // ---------------------------------------------------------------------------
 
-const mod = await import('./agent-service.js');
+const mod = await import('./service.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -2321,7 +2321,7 @@ describe('extended branch coverage', () => {
   // ── Lines 149, 155: extension/MCP tool logging when non-empty ──
 
   it('logs extension tool registration when tools are non-empty', async () => {
-    const agentTools = await import('../tools/agent-tool-registry.js');
+    const agentTools = await import('../../tools/agent-tool-registry.js');
     vi.mocked(agentTools.registerExtensionTools).mockReturnValueOnce([
       {
         name: 'ext-tool',
@@ -2341,7 +2341,7 @@ describe('extended branch coverage', () => {
   });
 
   it('logs MCP tool registration when tools are non-empty', async () => {
-    const agentTools = await import('../tools/agent-tool-registry.js');
+    const agentTools = await import('../../tools/agent-tool-registry.js');
     vi.mocked(agentTools.registerMcpTools).mockReturnValueOnce([
       {
         name: 'mcp-tool',
@@ -2363,7 +2363,7 @@ describe('extended branch coverage', () => {
   // ── Lines 160, 203: filter callbacks when tool definitions non-empty ──
 
   it('runs tool filter callback for non-empty coreToolDefs in createAgentFromRecord', async () => {
-    const agentTools = await import('../tools/agent-tool-registry.js');
+    const agentTools = await import('../../tools/agent-tool-registry.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
       {
         name: 'calculate',
@@ -2447,7 +2447,7 @@ describe('extended branch coverage', () => {
   // ── Lines 454, 482: filter callbacks in createChatAgentInstance ──
 
   it('runs tool filter callback for non-empty coreToolDefs in createChatAgentInstance', async () => {
-    const agentTools = await import('../tools/agent-tool-registry.js');
+    const agentTools = await import('../../tools/agent-tool-registry.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
       {
         name: 'generate_uuid',
@@ -2525,7 +2525,7 @@ describe('extended branch coverage', () => {
 
   it('runs filter callback for non-empty standardToolDefs when hasAgentConfig=true (line 196)', async () => {
     // Make standardToolDefs non-empty
-    const agentTools = await import('../tools/agent-tool-registry.js');
+    const agentTools = await import('../../tools/agent-tool-registry.js');
     vi.mocked(agentTools.getToolDefinitions).mockReturnValueOnce([
       {
         name: 'calculate',

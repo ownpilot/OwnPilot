@@ -86,7 +86,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('../services/agent-service.js', () => ({
+vi.mock('../services/agent/service.js', () => ({
   getOrCreateChatAgent: vi.fn(() => Promise.resolve(mockAgent)),
 }));
 
@@ -469,7 +469,7 @@ describe('scheduler/index', () => {
 
         await executor(makeTask({ type: 'prompt', payload: { type: 'prompt', prompt: 'Say hi' } }));
 
-        const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+        const { getOrCreateChatAgent } = await import('../services/agent/service.js');
         expect(getOrCreateChatAgent).toHaveBeenCalled();
       });
 
@@ -653,7 +653,7 @@ describe('scheduler/index', () => {
 
       it('returns status "failed" when getOrCreateChatAgent throws', async () => {
         const { executor } = await initFresh();
-        const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+        const { getOrCreateChatAgent } = await import('../services/agent/service.js');
         (getOrCreateChatAgent as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
           new Error('Agent unavailable')
         );

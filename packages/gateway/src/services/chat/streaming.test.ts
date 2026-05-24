@@ -22,7 +22,7 @@ vi.mock('../../assistant/index.js', () => ({
   checkToolCallApproval: (...args: unknown[]) => mockCheckToolCallApproval(...args),
 }));
 
-vi.mock('../agent-service.js', () => ({
+vi.mock('../agent/service.js', () => ({
   getSessionInfo: (...args: unknown[]) => mockGetSessionInfo(...args),
 }));
 

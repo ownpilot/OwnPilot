@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BASE_SYSTEM_PROMPT } from './agent-prompt.js';
+import { BASE_SYSTEM_PROMPT } from './prompt.js';
 
 describe('agent-prompt', () => {
   // ---------------------------------------------------------------------------

@@ -68,7 +68,7 @@ vi.mock('../app-settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
-vi.mock('../agent-cache.js', () => ({
+vi.mock('../agent/cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'test-key'),
   loadProviderConfig: vi.fn(() => null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),

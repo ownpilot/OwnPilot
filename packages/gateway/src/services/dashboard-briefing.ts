@@ -124,7 +124,7 @@ export async function generateAIBriefing(
   const model = options?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 
   try {
-    const { getOrCreateChatAgent } = await import('./agent-service.js');
+    const { getOrCreateChatAgent } = await import('./agent/service.js');
     const agent = await getOrCreateChatAgent(provider, model);
     const result = await agent.chat(prompt, { stream: false });
 
@@ -157,7 +157,7 @@ export async function generateAIBriefingStreaming(
   const model = options.model ?? (await getDefaultModel(options.provider)) ?? 'default';
 
   try {
-    const { getOrCreateChatAgent } = await import('./agent-service.js');
+    const { getOrCreateChatAgent } = await import('./agent/service.js');
     const agent = await getOrCreateChatAgent(options.provider, model);
 
     let fullContent = '';

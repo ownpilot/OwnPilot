@@ -66,7 +66,7 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
 }));
 
 // Mock the dynamic imports used by llm_decision handler
-vi.mock('../services/agent-service.js', () => ({
+vi.mock('../services/agent/service.js', () => ({
   getOrCreateChatAgent: vi.fn(),
 }));
 vi.mock('../services/app-settings.js', () => ({
@@ -1401,7 +1401,7 @@ describe('PlanExecutor', () => {
       // Use real timers — dynamic imports + chained promises don't flush with fake timers
       vi.useRealTimers();
 
-      const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+      const { getOrCreateChatAgent } = await import('../services/agent/service.js');
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: true,
@@ -1465,7 +1465,7 @@ describe('PlanExecutor', () => {
     });
 
     it('returns error when agent result is not ok', async () => {
-      const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+      const { getOrCreateChatAgent } = await import('../services/agent/service.js');
       const mockAgent = {
         chat: vi.fn(async () => ({
           ok: false,

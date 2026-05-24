@@ -624,7 +624,7 @@ async function main() {
     // Routes through the MessageBus pipeline so trigger-initiated chats get
     // context injection, persistence, audit logging, and post-processing.
     triggerEngine.setChatHandler(async (message, _payload) => {
-      const { getOrCreateChatAgent } = await import('./services/agent-service.js');
+      const { getOrCreateChatAgent } = await import('./services/agent/service.js');
       const { getLLMRouter } = await import('@ownpilot/core');
       const resolved = await getLLMRouter().pick({ process: 'pulse' });
       const provider = resolved.provider ?? 'openai';

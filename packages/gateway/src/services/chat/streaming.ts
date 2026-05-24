@@ -18,7 +18,7 @@ import type {
   IMessageBus,
 } from '@ownpilot/core';
 import { checkToolCallApproval } from '../../assistant/index.js';
-import { getSessionInfo } from '../agent-service.js';
+import { getSessionInfo } from '../agent/service.js';
 import { usageTracker } from '../usage-tracking.js';
 import {
   extractSuggestions,
@@ -26,7 +26,7 @@ import {
   normalizeChatWidgets,
 } from '../../utils/index.js';
 import { generateApprovalId, createApprovalRequest } from '../execution-approval.js';
-import type { getAgent } from '../agent-service.js';
+import type { getAgent } from '../agent/service.js';
 import {
   ConversationService,
   runPostChatProcessing,

@@ -9,7 +9,7 @@
  */
 
 import type { streamSSE } from 'hono/streaming';
-import type { getAgent } from './agent-service.js';
+import type { getAgent } from './agent/service.js';
 import type { McpToolEvent } from '../mcp/mcp-events.js';
 
 /** Configuration for creating SSE stream callbacks. */

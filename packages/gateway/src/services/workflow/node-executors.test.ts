@@ -107,7 +107,7 @@ vi.mock('../log.js', () => ({
 }));
 
 // Mock the agent-cache import used by executeLlmNode
-vi.mock('../agent-cache.js', () => ({
+vi.mock('../agent/cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'mock-api-key'),
   loadProviderConfig: vi.fn(() => null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
@@ -924,7 +924,7 @@ describe('executeLlmNode', () => {
   });
 
   it('uses baseUrl from providerCfg when not specified in node', async () => {
-    const { loadProviderConfig } = await import('../agent-cache.js');
+    const { loadProviderConfig } = await import('../agent/cache.js');
     vi.mocked(loadProviderConfig).mockReturnValueOnce({
       baseUrl: 'https://custom-api.example.com',
     } as never);

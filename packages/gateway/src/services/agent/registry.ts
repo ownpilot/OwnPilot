@@ -10,7 +10,7 @@
  */
 
 import type { AgentType, UnifiedAgentState, ResourceMetrics } from '@ownpilot/core';
-import { getLog } from './log.js';
+import { getLog } from '../log.js';
 
 const log = getLog('AgentRegistry');
 

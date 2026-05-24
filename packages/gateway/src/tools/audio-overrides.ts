@@ -14,7 +14,7 @@ import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/
 import { getConfigCenter } from '@ownpilot/core';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { resolveDefaultProviderAndModel } from '../services/app-settings.js';
-import { getProviderApiKey, loadProviderConfig } from '../services/agent-cache.js';
+import { getProviderApiKey, loadProviderConfig } from '../services/agent/cache.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../utils/common.js';
 import { isWithinDirectory } from '../utils/file-safety.js';

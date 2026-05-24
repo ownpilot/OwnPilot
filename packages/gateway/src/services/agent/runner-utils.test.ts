@@ -93,17 +93,17 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   getConfigCenter: () => mockGatewayConfigCenter,
 }));
 
-vi.mock('./model-routing.js', () => ({
+vi.mock('../model-routing.js', () => ({
   resolveForProcess: mockResolveForProcess,
 }));
 
-vi.mock('./agent-cache.js', () => ({
+vi.mock('./cache.js', () => ({
   getProviderApiKey: mockGetProviderApiKey,
   loadProviderConfig: mockLoadProviderConfig,
   NATIVE_PROVIDERS: mockNativeProviders,
 }));
 
-vi.mock('../tools/agent-tool-registry.js', () => ({
+vi.mock('../../tools/agent-tool-registry.js', () => ({
   registerGatewayTools: mockRegisterGatewayTools,
   registerDynamicTools: mockRegisterDynamicTools,
   registerPluginTools: mockRegisterPluginTools,
@@ -111,7 +111,7 @@ vi.mock('../tools/agent-tool-registry.js', () => ({
   registerMcpTools: mockRegisterMcpTools,
 }));
 
-vi.mock('./log.js', () => ({
+vi.mock('../log.js', () => ({
   getLog: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -134,7 +134,7 @@ import {
   calculateExecutionCost,
   registerAllToolSources,
   createConfiguredAgent,
-} from './agent-runner-utils.js';
+} from './runner-utils.js';
 
 // ============================================================================
 // Tests

@@ -24,7 +24,7 @@ import {
 } from '@ownpilot/core';
 import type { NotificationRequest } from '@ownpilot/core';
 import { getChannelService, getLLMRouter } from '@ownpilot/core';
-import { getOrCreateChatAgent } from '../services/agent-service.js';
+import { getOrCreateChatAgent } from '../services/agent/service.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../utils/common.js';

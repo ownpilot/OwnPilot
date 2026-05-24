@@ -34,7 +34,7 @@ vi.mock('./settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4o' })),
 }));
 
-vi.mock('../services/agent-cache.js', () => ({
+vi.mock('../services/agent/cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'test-api-key'),
   loadProviderConfig: vi.fn(() => null),
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
@@ -169,7 +169,7 @@ describe('Workflow Copilot Route', () => {
     });
 
     it('returns 400 when API key is not configured', async () => {
-      const { getProviderApiKey } = await import('../services/agent-cache.js');
+      const { getProviderApiKey } = await import('../services/agent/cache.js');
       vi.mocked(getProviderApiKey).mockResolvedValueOnce(undefined as unknown as string);
 
       const res = await app.request('/copilot', {

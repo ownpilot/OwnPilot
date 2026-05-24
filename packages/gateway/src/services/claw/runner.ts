@@ -26,7 +26,7 @@ import {
   resolveToolFilter,
   executeAgentPipeline,
   buildDateTimeContext,
-} from '../agent-runner-utils.js';
+} from '../agent/runner-utils.js';
 import { runInClawContext } from './context.js';
 import {
   getSessionWorkspaceFiles,

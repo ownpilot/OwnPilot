@@ -272,7 +272,7 @@ export class SoulHeartbeatService {
     return {
       async processMessage(request) {
         // Dynamic import to avoid circular dependencies
-        const { getOrCreateChatAgent } = await import('../agent-service.js');
+        const { getOrCreateChatAgent } = await import('../agent/service.js');
 
         // Use provider/model from soul config (passed via context) when available,
         // otherwise resolve via the LLMRouter capability.

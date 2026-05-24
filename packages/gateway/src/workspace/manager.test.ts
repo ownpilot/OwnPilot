@@ -61,7 +61,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 const mockAgentChat = vi.fn(() => ({ ok: true, value: { content: 'AI response' } }));
 const mockGetOrCreateChatAgent = vi.fn(() => ({ chat: mockAgentChat }));
 
-vi.mock('../services/agent-service.js', () => ({
+vi.mock('../services/agent/service.js', () => ({
   getOrCreateChatAgent: mockGetOrCreateChatAgent,
 }));
 

@@ -24,22 +24,22 @@ import {
   type ProviderConfig,
   buildSoulPrompt,
 } from '@ownpilot/core';
-import type { SessionInfo } from '../types/index.js';
-import { agentsRepo, type AgentRecord } from '../db/repositories/index.js';
-import { ChatRepository } from '../db/repositories/chat.js';
-import { getErrorMessage } from '../utils/common.js';
+import type { SessionInfo } from '../../types/index.js';
+import { agentsRepo, type AgentRecord } from '../../db/repositories/index.js';
+import { ChatRepository } from '../../db/repositories/chat.js';
+import { getErrorMessage } from '../../utils/common.js';
 import {
   resolveDefaultProviderAndModel,
   getDefaultProvider,
   getDefaultModel,
   getConfiguredProviderIds,
   getEnabledToolGroupIds,
-} from './app-settings.js';
-import { localProvidersRepo } from '../db/repositories/local-providers.js';
-import { getSoulsRepository } from '../db/repositories/souls.js';
-import { getAgentMessagesRepository } from '../db/repositories/agent-messages.js';
-import { getLog } from './log.js';
-import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from './agent-prompt.js';
+} from '../app-settings.js';
+import { localProvidersRepo } from '../../db/repositories/local-providers.js';
+import { getSoulsRepository } from '../../db/repositories/souls.js';
+import { getAgentMessagesRepository } from '../../db/repositories/agent-messages.js';
+import { getLog } from '../log.js';
+import { BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT } from './prompt.js';
 import {
   registerGatewayTools,
   registerDynamicTools,
@@ -61,7 +61,7 @@ import {
   EVENT_TOOLS,
   SOUL_COMMUNICATION_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
-} from '../tools/agent-tool-registry.js';
+} from '../../tools/agent-tool-registry.js';
 import {
   NATIVE_PROVIDERS,
   agentCache,
@@ -79,7 +79,7 @@ import {
   evictAgentFromCache,
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
-} from './agent-cache.js';
+} from './cache.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   AGENT_DEFAULT_MAX_TOKENS,
@@ -87,13 +87,13 @@ import {
   AGENT_DEFAULT_MAX_TURNS,
   AGENT_DEFAULT_MAX_TOOL_CALLS,
   AI_META_TOOL_NAMES,
-} from '../config/defaults.js';
+} from '../../config/defaults.js';
 import {
   isCliChatProvider,
   getCliBinaryFromProviderId,
   createCliChatProvider,
   getCliChatProviderDefinition,
-} from './cli/chat-provider.js';
+} from '../cli/chat-provider.js';
 
 const log = getLog('AgentService');
 
@@ -635,9 +635,9 @@ async function createChatAgentInstance(
     // We always rewrite .mcp.json with a fresh session token/correlationId so any
     // workspace MCP discovery is authenticated. Claude uses this as its native path;
     // Gemini/Codex still rely primarily on ToolBridge.
-    const { createTempWorkspace } = await import('../mcp/workspace.js');
+    const { createTempWorkspace } = await import('../../mcp/workspace.js');
     correlationId = crypto.randomUUID();
-    const { createMcpSession } = await import('../services/ui-session.js');
+    const { createMcpSession } = await import('../../services/ui-session.js');
     const mcpSession = await createMcpSession();
     const workspace = await createTempWorkspace({
       ...(gatewayUrl && { gatewayUrl }),

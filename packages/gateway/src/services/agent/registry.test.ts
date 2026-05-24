@@ -4,7 +4,7 @@ import {
   resetAgentRegistry,
   type AgentTypeAdapter,
   type AgentSummary,
-} from './agent-registry.js';
+} from './registry.js';
 
 function createMockSummary(overrides: Partial<AgentSummary> = {}): AgentSummary {
   return {

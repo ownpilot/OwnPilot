@@ -785,7 +785,7 @@ export class PlanExecutor extends EventEmitter {
 
       try {
         // Dynamic import to avoid circular dependencies
-        const { getOrCreateChatAgent } = await import('../services/agent-service.js');
+        const { getOrCreateChatAgent } = await import('../services/agent/service.js');
         const { resolveDefaultProviderAndModel } = await import('../services/app-settings.js');
         const resolved = await resolveDefaultProviderAndModel('default', 'default');
         const agent = await getOrCreateChatAgent(

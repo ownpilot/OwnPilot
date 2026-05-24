@@ -14,7 +14,7 @@ import {
   getProviderApiKey,
   loadProviderConfig,
   NATIVE_PROVIDERS,
-} from '../services/agent-cache.js';
+} from '../services/agent/cache.js';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { getLog } from '../services/log.js';
 import { getErrorMessage } from '../utils/common.js';
