@@ -18,7 +18,7 @@ import {
   diagnoseAudioSetup,
   type WhisperResult,
   type AudioDiagnostics,
-} from '../tools/audio-overrides.js';
+} from '../tools/overrides/audio.js';
 import { getLog } from './log.js';
 
 const log = getLog('VoiceService');

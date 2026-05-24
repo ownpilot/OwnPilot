@@ -7,11 +7,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { registerExpenseOverrides } from './expense-overrides.js';
+import { registerExpenseOverrides } from './expense.js';
 
 const mockExecuteExpenseTool = vi.fn();
 
-vi.mock('./expense-tools.js', () => ({
+vi.mock('../expense-tools.js', () => ({
   executeExpenseTool: (...args: unknown[]) => mockExecuteExpenseTool(...args),
 }));
 

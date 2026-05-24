@@ -12,12 +12,12 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { getConfigCenter } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
-import { resolveDefaultProviderAndModel } from '../services/app-settings.js';
-import { getProviderApiKey, loadProviderConfig } from '../services/agent/cache.js';
-import { getLog } from '../services/log.js';
-import { getErrorMessage } from '../utils/common.js';
-import { isWithinDirectory } from '../utils/file-safety.js';
+import { configServicesRepo } from '../../db/repositories/config-services.js';
+import { resolveDefaultProviderAndModel } from '../../services/app-settings.js';
+import { getProviderApiKey, loadProviderConfig } from '../../services/agent/cache.js';
+import { getLog } from '../../services/log.js';
+import { getErrorMessage } from '../../utils/common.js';
+import { isWithinDirectory } from '../../utils/file-safety.js';
 
 const log = getLog('AudioOverrides');
 
@@ -543,12 +543,12 @@ const speechToTextOverride: ToolExecutor = async (
       // The sync `isBlockedUrl` rejects obvious cases up-front; `safeFetch`
       // then re-checks `isPrivateUrlAsync` on every redirect hop and times
       // out at 30s, so a 302 to a private host can't bypass the check.
-      const { isBlockedUrl } = await import('../utils/ssrf.js');
+      const { isBlockedUrl } = await import('../../utils/ssrf.js');
       if (isBlockedUrl(source)) {
         return { content: { error: 'Invalid or blocked audio URL' }, isError: true };
       }
 
-      const { safeFetch, SafeFetchError } = await import('../utils/safe-fetch.js');
+      const { safeFetch, SafeFetchError } = await import('../../utils/safe-fetch.js');
       let resp: Response;
       try {
         resp = await safeFetch(source);

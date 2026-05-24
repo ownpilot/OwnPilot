@@ -12,9 +12,9 @@
 
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
 import { getConfigCenter, isPathAllowedAsync } from '@ownpilot/core';
-import { configServicesRepo } from '../db/repositories/config-services.js';
-import { getLog } from '../services/log.js';
-import { getErrorMessage } from '../utils/common.js';
+import { configServicesRepo } from '../../db/repositories/config-services.js';
+import { getLog } from '../../services/log.js';
+import { getErrorMessage } from '../../utils/common.js';
 
 const log = getLog('EmailOverrides');
 

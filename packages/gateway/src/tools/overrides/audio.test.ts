@@ -43,7 +43,7 @@ const mockFetch = vi.hoisted(() => vi.fn());
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getFieldValue: (...args: unknown[]) => mockGetFieldValue(...args),
     upsert: (...args: unknown[]) => mockUpsert(...args),
@@ -58,7 +58,7 @@ vi.mock('@ownpilot/core', () => ({
   }),
 }));
 
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,
@@ -67,15 +67,15 @@ vi.mock('../services/log.js', () => ({
   }),
 }));
 
-vi.mock('../routes/helpers.js', () => ({
+vi.mock('../../routes/helpers.js', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
-vi.mock('../services/app-settings.js', () => ({
+vi.mock('../../services/app-settings.js', () => ({
   resolveDefaultProviderAndModel: (...args: unknown[]) => mockResolveProviderAndModel(...args),
 }));
 
-vi.mock('../services/agent/cache.js', () => ({
+vi.mock('../../services/agent/cache.js', () => ({
   getProviderApiKey: (...args: unknown[]) => mockGetProviderApiKey(...args),
   loadProviderConfig: (...args: unknown[]) => mockLoadProviderConfig(...args),
 }));
@@ -115,7 +115,7 @@ vi.mock('node:path', () => ({
   },
 }));
 
-vi.mock('../utils/file-safety.js', () => ({
+vi.mock('../../utils/file-safety.js', () => ({
   isWithinDirectory: (baseDir: string, targetPath: string) => {
     // Simulate: only paths inside /workspace pass the check
     const sep = '/';
@@ -152,7 +152,7 @@ vi.mock('node:util', () => ({
 // Import under test
 // ---------------------------------------------------------------------------
 
-import { diagnoseAudioSetup, registerAudioOverrides } from './audio-overrides.js';
+import { diagnoseAudioSetup, registerAudioOverrides } from './audio.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

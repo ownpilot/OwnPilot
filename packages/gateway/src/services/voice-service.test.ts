@@ -24,7 +24,7 @@ const {
   mockDiagnoseAudioSetup: vi.fn(),
 }));
 
-vi.mock('../tools/audio-overrides.js', () => ({
+vi.mock('../tools/overrides/audio.js', () => ({
   resolveAudioConfig: mockResolveAudioConfig,
   callWhisperTranscribe: mockCallWhisperTranscribe,
   callOpenAITTS: mockCallOpenAITTS,

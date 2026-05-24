@@ -63,18 +63,18 @@ const mockFsAccess = vi.hoisted(() => vi.fn());
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../db/repositories/config-services.js', () => ({
+vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getFieldValue: (...args: unknown[]) => mockGetFieldValue(...args),
     upsert: (...args: unknown[]) => mockUpsert(...args),
   },
 }));
 
-vi.mock('../routes/helpers.js', () => ({
+vi.mock('../../routes/helpers.js', () => ({
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 
-vi.mock('../services/log.js', () => ({
+vi.mock('../../services/log.js', () => ({
   getLog: () => ({
     info: mockLogInfo,
     debug: mockLogDebug,
@@ -129,7 +129,7 @@ vi.mock('node:path', async (importOriginal) => {
 // Import under test
 // ---------------------------------------------------------------------------
 
-import { registerEmailOverrides } from './email-overrides.js';
+import { registerEmailOverrides } from './email.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
