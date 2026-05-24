@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -87,11 +87,11 @@ const mockExecuteCustomToolUnified = vi.fn(async () => ({
 }));
 const mockUnregisterToolFromRegistries = vi.fn();
 
-vi.mock('../db/repositories/custom-tools.js', () => ({
+vi.mock('../../db/repositories/custom-tools.js', () => ({
   createCustomToolsRepo: vi.fn(() => mockRepo),
 }));
 
-vi.mock('../services/custom/tool-registry.js', () => ({
+vi.mock('../../services/custom/tool-registry.js', () => ({
   syncToolToRegistry: (...args: unknown[]) => mockSyncToolToRegistry(...args),
   executeCustomToolUnified: (...args: unknown[]) => mockExecuteCustomToolUnified(...args),
   unregisterToolFromRegistries: (...args: unknown[]) => mockUnregisterToolFromRegistries(...args),
@@ -180,16 +180,16 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('./agents.js', () => ({
+vi.mock('../agents.js', () => ({
   invalidateAgentCache: vi.fn(),
 }));
 
-vi.mock('../services/api-service-registrar.js', () => ({
+vi.mock('../../services/api-service-registrar.js', () => ({
   registerToolConfigRequirements: vi.fn(async () => undefined),
   unregisterDependencies: vi.fn(async () => undefined),
 }));
 
-vi.mock('../middleware/validation.js', () => ({
+vi.mock('../../middleware/validation.js', () => ({
   validateBody: vi.fn((_schema: unknown, body: unknown) => {
     // Minimal validation matching the real Zod schema's name regex
     const b = body as Record<string, unknown>;
@@ -203,7 +203,7 @@ vi.mock('../middleware/validation.js', () => ({
 }));
 
 // Import after mocks
-const { customToolsRoutes } = await import('./custom-tools.js');
+const { customToolsRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup

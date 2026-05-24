@@ -27,7 +27,7 @@ export { productivityRoutes } from './productivity.js';
 
 export { modelConfigsRoutes } from './model-configs.js';
 export { dashboardRoutes } from './dashboard.js';
-export { customToolsRoutes } from './custom-tools.js';
+export { customToolsRoutes } from './custom-tools/index.js';
 export { databaseRoutes } from './database.js';
 export { expensesRoutes } from './expenses.js';
 export { configServicesRoutes } from './config-services.js';
@@ -36,7 +36,7 @@ export { channelAuthRoutes } from './channels/auth.js';
 export { debugRoutes } from './debug.js';
 export { executionPermissionsRoutes } from './execution-permissions.js';
 export { heartbeatsRoutes } from './heartbeats/index.js';
-export { extensionsRoutes } from './extensions.js';
+export { extensionsRoutes } from './extensions/index.js';
 export { mcpRoutes } from './mcp.js';
 export { webhookRoutes } from './webhooks.js';
 export { workflowRoutes } from './workflows.js';

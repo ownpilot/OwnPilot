@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -78,7 +78,7 @@ const mockService = {
 
 const mockComplete = vi.fn();
 
-vi.mock('../services/extension/service.js', () => ({
+vi.mock('../../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
   ExtensionError: class ExtensionError extends Error {
     code: string;
@@ -90,7 +90,7 @@ vi.mock('../services/extension/service.js', () => ({
   },
 }));
 
-vi.mock('../services/extension/types.js', () => ({
+vi.mock('../../services/extension/types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
@@ -116,23 +116,23 @@ vi.mock('@ownpilot/core', () => ({
   getEventSystem: vi.fn(() => ({ emit: vi.fn() })),
 }));
 
-vi.mock('./settings.js', () => ({
+vi.mock('../settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
   getApiKey: vi.fn(async () => 'test-key'),
 }));
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   localProvidersRepo: {
     getProvider: vi.fn(async () => null),
   },
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
 // Import after mocks
-const { extensionsRoutes } = await import('./extensions.js');
+const { extensionsRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -261,7 +261,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 when service throws ExtensionError', async () => {
-      const { ExtensionError } = await import('../services/extension/service.js');
+      const { ExtensionError } = await import('../../services/extension/service.js');
       mockService.installFromManifest.mockRejectedValue(
         new ExtensionError('Invalid', 'VALIDATION_ERROR')
       );
@@ -482,7 +482,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 when no provider configured', async () => {
-      const { resolveDefaultProviderAndModel } = await import('./settings.js');
+      const { resolveDefaultProviderAndModel } = await import('../settings.js');
       vi.mocked(resolveDefaultProviderAndModel).mockResolvedValueOnce({ provider: '', model: '' });
 
       const res = await app.request('/extensions/generate', {
@@ -497,7 +497,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 when API key not configured', async () => {
-      const { getApiKey } = await import('./settings.js');
+      const { getApiKey } = await import('../settings.js');
       vi.mocked(getApiKey).mockResolvedValueOnce(undefined as unknown as string);
 
       const res = await app.request('/extensions/generate', {
@@ -631,7 +631,7 @@ describe('Extensions Routes', () => {
     });
 
     it('returns 400 for ExtensionError', async () => {
-      const { ExtensionError } = await import('../services/extension/service.js');
+      const { ExtensionError } = await import('../../services/extension/service.js');
       mockService.reload.mockRejectedValue(new ExtensionError('No source path', 'IO_ERROR'));
 
       const res = await app.request('/extensions/test-ext/reload', { method: 'POST' });

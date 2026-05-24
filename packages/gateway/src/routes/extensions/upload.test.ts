@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { errorHandler } from '../middleware/error-handler.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -48,7 +48,7 @@ const mockService = {
   scanDirectory: vi.fn(async () => ({ installed: 0, errors: [] })),
 };
 
-vi.mock('../services/extension/service.js', () => ({
+vi.mock('../../services/extension/service.js', () => ({
   getExtensionService: () => mockService,
   ExtensionError: class ExtensionError extends Error {
     code: string;
@@ -60,11 +60,11 @@ vi.mock('../services/extension/service.js', () => ({
   },
 }));
 
-vi.mock('../services/extension/types.js', () => ({
+vi.mock('../../services/extension/types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
-vi.mock('../services/extension/markdown.js', () => ({
+vi.mock('../../services/extension/markdown.js', () => ({
   serializeExtensionMarkdown: vi.fn(() => '# Extension'),
 }));
 
@@ -89,23 +89,23 @@ vi.mock('@ownpilot/core', () => ({
   getEventSystem: vi.fn(() => ({ emit: vi.fn() })),
 }));
 
-vi.mock('./settings.js', () => ({
+vi.mock('../settings.js', () => ({
   resolveDefaultProviderAndModel: vi.fn(async () => ({ provider: 'openai', model: 'gpt-4' })),
   getApiKey: vi.fn(async () => 'test-key'),
 }));
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   localProvidersRepo: {
     getProvider: vi.fn(async () => null),
   },
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
 // Mock paths to use temp dir
-vi.mock('../paths/index.js', () => ({
+vi.mock('../../paths/index.js', () => ({
   getDataDirectoryInfo: vi.fn(() => ({
     root: '/tmp/test-ownpilot',
     database: '/tmp/test-ownpilot/data/gateway.db',
@@ -131,7 +131,7 @@ vi.mock('node:fs', async (importOriginal) => {
 });
 
 // Import after mocks
-const { extensionsRoutes } = await import('./extensions.js');
+const { extensionsRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup
@@ -269,7 +269,7 @@ describe('POST /extensions/upload', () => {
 
   it('handles ExtensionError from service.install', async () => {
     // Import the mock ExtensionError class
-    const { ExtensionError } = await import('../services/extension/service.js');
+    const { ExtensionError } = await import('../../services/extension/service.js');
     mockService.install.mockRejectedValueOnce(
       new ExtensionError('Invalid manifest: missing tools', 'VALIDATION_ERROR')
     );
@@ -302,7 +302,7 @@ describe('POST /extensions/upload', () => {
   });
 
   it('broadcasts data:changed event on successful upload', async () => {
-    const { wsGateway } = await import('../ws/server.js');
+    const { wsGateway } = await import('../../ws/server.js');
     const form = createFormData('extension.json', '{}');
 
     await app.request('/extensions/upload', {
