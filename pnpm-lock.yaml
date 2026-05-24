@@ -153,9 +153,6 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
-      axios:
-        specifier: 1.16.1
-        version: 1.16.1
       discord.js:
         specifier: ^14.25.1
         version: 14.25.1
@@ -189,9 +186,6 @@ importers:
       pino:
         specifier: ^10.3.1
         version: 10.3.1
-      protobufjs:
-        specifier: 8.4.0
-        version: 8.4.0
       puppeteer-core:
         specifier: ^24.39.1
         version: 24.39.1
