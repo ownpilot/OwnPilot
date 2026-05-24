@@ -246,4 +246,4 @@ if (!process.env.VITEST) {
   });
 }
 
-export { createServer, callOwnPilotTool, TOOLS, main };
+export { createServer, callOwnPilotTool, TOOLS };

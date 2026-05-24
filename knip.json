@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "workspaces": {
+    "packages/gateway": {
+      "entry": [
+        "src/index.ts",
+        "src/mcp/cli-mcp-server.ts",
+        "src/mcp/e2e-test.ts",
+        "scripts/migration-smoke-test.ts"
+      ]
+    }
+  }
+}

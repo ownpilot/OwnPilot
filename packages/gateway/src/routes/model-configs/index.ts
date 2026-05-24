@@ -20,4 +20,3 @@ app.route('', providerRoutes);
 app.route('', modelRoutes);
 
 export const modelConfigsRoutes = app;
-export default app;
