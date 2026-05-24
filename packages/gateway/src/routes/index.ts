@@ -20,15 +20,15 @@ export { triggersRoutes } from './triggers.js';
 export { plansRoutes } from './plans.js';
 export { autonomyRoutes } from './autonomy.js';
 export { auditRoutes } from './audit.js';
-export { workspaceRoutes } from './workspaces.js';
+export { workspaceRoutes } from './workspaces/index.js';
 export { fileWorkspaceRoutes } from './file-workspaces.js';
 export { pluginsRoutes } from './plugins.js';
 export { productivityRoutes } from './productivity.js';
 
-export { modelConfigsRoutes } from './model-configs.js';
+export { modelConfigsRoutes } from './model-configs/index.js';
 export { dashboardRoutes } from './dashboard.js';
 export { customToolsRoutes } from './custom-tools/index.js';
-export { databaseRoutes } from './database.js';
+export { databaseRoutes } from './database/index.js';
 export { expensesRoutes } from './expenses.js';
 export { configServicesRoutes } from './config-services.js';
 export { localProvidersRoutes } from './local-providers.js';

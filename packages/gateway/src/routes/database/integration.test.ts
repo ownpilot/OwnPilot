@@ -20,12 +20,12 @@ const mockAdapter = {
 
 // ─── Mock Dependencies ──────────────────────────────────────────
 
-vi.mock('../db/adapters/index.js', () => ({
+vi.mock('../../db/adapters/index.js', () => ({
   getAdapterSync: vi.fn(() => mockAdapter),
   getAdapter: vi.fn(() => Promise.resolve(mockAdapter)),
 }));
 
-vi.mock('../db/adapters/types.js', () => ({
+vi.mock('../../db/adapters/types.js', () => ({
   getDatabaseConfig: vi.fn(() => ({
     postgresHost: 'localhost',
     postgresPort: 5432,
@@ -35,7 +35,7 @@ vi.mock('../db/adapters/types.js', () => ({
   })),
 }));
 
-vi.mock('../paths/index.js', () => ({
+vi.mock('../../paths/index.js', () => ({
   getDatabasePath: vi.fn(() => '/data/ownpilot.sqlite'),
   getDataPaths: vi.fn(() => ({ root: '/data' })),
 }));
@@ -93,7 +93,7 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 // Mock db/schema/index.js for migrate-schema
-vi.mock('../db/schema/index.js', () => ({
+vi.mock('../../db/schema/index.js', () => ({
   initializeSchema: vi.fn(async (exec: (sql: string) => Promise<void>) => {
     await exec('CREATE TABLE IF NOT EXISTS test (id text)');
   }),
@@ -101,8 +101,8 @@ vi.mock('../db/schema/index.js', () => ({
 
 // ─── Import route + error handler ───────────────────────────────
 
-import { databaseRoutes } from './database.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { databaseRoutes } from './index.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ─── Helpers ────────────────────────────────────────────────────
 

@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { requestId } from '../middleware/request-id.js';
-import { errorHandler } from '../middleware/error-handler.js';
+import { requestId } from '../../middleware/request-id.js';
+import { errorHandler } from '../../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -34,7 +34,7 @@ const mockLocalProvidersRepo = {
   listModels: vi.fn(async () => []),
 };
 
-vi.mock('../db/repositories/index.js', () => ({
+vi.mock('../../db/repositories/index.js', () => ({
   modelConfigsRepo: mockModelConfigsRepo,
   localProvidersRepo: mockLocalProvidersRepo,
 }));
@@ -126,18 +126,18 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
 });
 
-vi.mock('./settings.js', () => ({
+vi.mock('../settings.js', () => ({
   hasApiKey: vi.fn(async (providerId: string) => providerId === 'openai'),
   getApiKey: vi.fn(async () => null),
   getConfiguredProviderIds: vi.fn(async () => new Set(['openai'])),
 }));
 
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
 // Import after mocks
-const { modelConfigsRoutes } = await import('./model-configs.js');
+const { modelConfigsRoutes } = await import('./index.js');
 
 // ---------------------------------------------------------------------------
 // App setup

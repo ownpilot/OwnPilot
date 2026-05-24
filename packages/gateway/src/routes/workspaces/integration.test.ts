@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { workspaceRoutes } from './workspaces.js';
+import { workspaceRoutes } from './index.js';
 
 // Mock the core module
 vi.mock('@ownpilot/core', () => ({
@@ -28,12 +28,12 @@ vi.mock('@ownpilot/core', () => ({
 }));
 
 // Mock WebSocket gateway
-vi.mock('../ws/server.js', () => ({
+vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
 // Mock the repository
-vi.mock('../db/repositories/workspaces.js', () => ({
+vi.mock('../../db/repositories/workspaces.js', () => ({
   WorkspacesRepository: vi.fn(),
 }));
 
@@ -43,7 +43,7 @@ import {
   isDockerAvailable,
   StorageSecurityError,
 } from '@ownpilot/core';
-import { WorkspacesRepository } from '../db/repositories/workspaces.js';
+import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 
 describe('Workspaces Routes', () => {
   let app: Hono;
