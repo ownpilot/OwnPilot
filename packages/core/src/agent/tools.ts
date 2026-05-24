@@ -63,6 +63,7 @@ export type {
   ToolProvider,
   ToolMiddleware,
   ToolSource,
+  ToolConfigRequirement,
 };
 
 /**

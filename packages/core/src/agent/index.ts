@@ -24,6 +24,7 @@ export type {
   ToolProvider,
   ToolMiddleware,
   ToolSource,
+  ToolConfigRequirement,
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
