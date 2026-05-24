@@ -2,82 +2,25 @@
  * Autonomy Module
  *
  * Autonomy levels, risk assessment, and approval flow for the AI assistant.
+ *
+ * This barrel exposes only the surface other gateway modules consume. For
+ * the full subsystem surface (constants, pulse engine internals, evaluator
+ * config, etc.) import the submodule files directly — see routes/autonomy.ts
+ * for the pattern.
  */
 
 export {
   AutonomyLevel,
   AUTONOMY_LEVEL_NAMES,
   AUTONOMY_LEVEL_DESCRIPTIONS,
-  DEFAULT_AUTONOMY_CONFIG,
-  type RiskLevel,
-  type RiskAssessment,
-  type RiskFactor,
   type ActionCategory,
-  type PendingAction,
-  type AutonomyConfig,
-  type TimeRestriction,
-  type ApprovalRequest,
-  type AlternativeAction,
   type ApprovalDecision,
-  type AutonomyNotification,
 } from './types.js';
 
-export {
-  assessRisk,
-  riskLevelToNumber,
-  compareRiskLevels,
-  isRiskAtOrAbove,
-  getRiskLevelColor,
-} from './risk.js';
+export { assessRisk } from './risk.js';
 
-export {
-  ApprovalManager,
-  getApprovalManager,
-  type ApprovalManagerConfig,
-  type ApprovalManagerEvents,
-} from './approvals.js';
+export { getApprovalManager } from './approvals.js';
 
-// Pulse System (Autonomy Engine)
-export {
-  AutonomyEngine,
-  getAutonomyEngine,
-  createPulseServiceAdapter,
-  stopAutonomyEngine,
-  DEFAULT_PULSE_DIRECTIVES,
-  type AutonomyEngineConfig,
-  type PulseDirectives,
-} from './engine.js';
+export { getAutonomyEngine } from './engine.js';
 
-export { gatherPulseContext, type PulseContext, type GoalSummary } from './context.js';
-
-export {
-  evaluatePulseContext,
-  calculateNextInterval,
-  RULE_DEFINITIONS,
-  DEFAULT_RULE_THRESHOLDS,
-  type RuleThresholds,
-  type Signal,
-  type SignalSeverity,
-  type EvaluationResult,
-} from './evaluator.js';
-
-export { getPulseSystemPrompt, buildPulseUserMessage } from './prompt.js';
-
-export {
-  executePulseActions,
-  DEFAULT_ACTION_COOLDOWNS,
-  type ActionCooldowns,
-  type PulseAction,
-} from './executor.js';
-
-export { reportPulseResult } from './reporter.js';
-
-// Autonomy Guard (Soul Agent Enforcement)
-export {
-  checkAutonomy,
-  isActionBlocked,
-  getAutonomyLevelDescription,
-  formatAutonomySettings,
-  type AutonomyDecision,
-  type AutonomyGuardContext,
-} from './autonomy-guard.js';
+export { checkAutonomy } from './autonomy-guard.js';

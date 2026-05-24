@@ -8,7 +8,8 @@
 
 import { getErrorMessage, getMemoryService, getGoalService } from '@ownpilot/core';
 import type { PulseActionResult } from '@ownpilot/core';
-import { assessRisk, DEFAULT_AUTONOMY_CONFIG, type AutonomyConfig } from './index.js';
+import { assessRisk } from './risk.js';
+import { DEFAULT_AUTONOMY_CONFIG, type AutonomyConfig } from './types.js';
 import { PULSE_MAX_ACTIONS } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 
