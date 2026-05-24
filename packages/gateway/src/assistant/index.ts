@@ -10,7 +10,4 @@ export {
   evaluateTriggers,
   extractMemories,
   updateGoalProgress,
-  getOrchestratorStats,
-  type OrchestratorOptions,
-  type EnhancedChatResult,
 } from './orchestrator.js';

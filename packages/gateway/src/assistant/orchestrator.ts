@@ -35,7 +35,7 @@ function safeJsonParse(raw: string, fallback: Record<string, unknown>): Record<s
   }
 }
 
-export interface OrchestratorOptions {
+interface OrchestratorOptions {
   userId: string;
   agentId?: string;
   /** Maximum memories to inject into context */
@@ -46,14 +46,6 @@ export interface OrchestratorOptions {
   enableTriggers?: boolean;
   /** Whether to enforce autonomy checks */
   enableAutonomy?: boolean;
-}
-
-export interface EnhancedChatResult {
-  memoriesUsed: number;
-  goalsUsed: number;
-  toolCallsApproved: number;
-  toolCallsBlocked: number;
-  triggersEvaluated: number;
 }
 
 /**
@@ -511,37 +503,4 @@ async function getCliToolPolicyForApproval(
     // Service not ready (startup race) — default to 'prompt' (safe)
     return 'prompt';
   }
-}
-
-/**
- * Get orchestrator stats for a user
- */
-export async function getOrchestratorStats(userId: string): Promise<{
-  totalMemories: number;
-  activeGoals: number;
-  activeTriggers: number;
-  pendingApprovals: number;
-  autonomyLevel: number;
-}> {
-  const memoryService = getMemoryService();
-  const goalService = getGoalService();
-  const triggerService = getTriggerService();
-  const approvalManager = getApprovalManager();
-
-  const config = approvalManager.getUserConfig(userId);
-  const pending = approvalManager.getPendingActions(userId);
-
-  const [memoryStats, activeGoals, activeTriggers] = await Promise.all([
-    memoryService.getStats(userId),
-    goalService.getActive(userId),
-    triggerService.listTriggers(userId, { enabled: true }),
-  ]);
-
-  return {
-    totalMemories: memoryStats.total,
-    activeGoals: activeGoals.length,
-    activeTriggers: activeTriggers.length,
-    pendingApprovals: pending.length,
-    autonomyLevel: config.level,
-  };
 }

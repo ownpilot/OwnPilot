@@ -3,7 +3,7 @@
  *
  * Covers:
  *   buildEnhancedSystemPrompt, checkToolCallApproval, evaluateTriggers,
- *   extractMemories, updateGoalProgress, getOrchestratorStats,
+ *   extractMemories, updateGoalProgress,
  *   and indirectly: safeJsonParse, mapToolToCategory.
  */
 
@@ -104,7 +104,6 @@ import {
   evaluateTriggers,
   extractMemories,
   updateGoalProgress,
-  getOrchestratorStats,
 } from './orchestrator.js';
 
 import { assessRisk } from '../autonomy/index.js';
@@ -1518,136 +1517,5 @@ describe('updateGoalProgress', () => {
     await updateGoalProgress(USER_ID, 'msg', 'Write tests is completed!');
     expect(mockGoalService.completeStep).toHaveBeenCalledTimes(1);
     expect(mockGoalService.completeStep).toHaveBeenCalledWith(USER_ID, stepA.id);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getOrchestratorStats
-// ---------------------------------------------------------------------------
-
-describe('getOrchestratorStats', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockMemoryService.getStats.mockResolvedValue({ total: 0 });
-    mockGoalService.getActive.mockResolvedValue([]);
-    mockTriggerService.listTriggers.mockResolvedValue([]);
-    mockGetUserConfig.mockReturnValue({
-      level: 2,
-      dailyBudget: 10,
-      dailySpend: 0,
-      allowedTools: [],
-      blockedTools: [],
-    });
-    mockGetPendingActions.mockReturnValue([]);
-  });
-
-  it('returns the correct shape', async () => {
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats).toMatchObject({
-      totalMemories: expect.any(Number),
-      activeGoals: expect.any(Number),
-      activeTriggers: expect.any(Number),
-      pendingApprovals: expect.any(Number),
-      autonomyLevel: expect.any(Number),
-    });
-  });
-
-  it('returns totalMemories from memoryStats.total', async () => {
-    mockMemoryService.getStats.mockResolvedValue({ total: 42 });
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.totalMemories).toBe(42);
-  });
-
-  it('returns activeGoals as length of getActive result', async () => {
-    mockGoalService.getActive.mockResolvedValue([
-      { id: 'g1', title: 'Goal 1' },
-      { id: 'g2', title: 'Goal 2' },
-      { id: 'g3', title: 'Goal 3' },
-    ]);
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.activeGoals).toBe(3);
-  });
-
-  it('returns activeTriggers as length of listTriggers result', async () => {
-    mockTriggerService.listTriggers.mockResolvedValue([{ id: 't1' }, { id: 't2' }]);
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.activeTriggers).toBe(2);
-  });
-
-  it('returns pendingApprovals as length of getPendingActions result', async () => {
-    mockGetPendingActions.mockReturnValue([{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }]);
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.pendingApprovals).toBe(3);
-  });
-
-  it('returns autonomyLevel from user config', async () => {
-    mockGetUserConfig.mockReturnValue({
-      level: 3,
-      dailyBudget: 10,
-      dailySpend: 0,
-      allowedTools: [],
-      blockedTools: [],
-    });
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.autonomyLevel).toBe(3);
-  });
-
-  it('calls getStats, getActive, listTriggers in parallel (all called once)', async () => {
-    await getOrchestratorStats(USER_ID);
-    expect(mockMemoryService.getStats).toHaveBeenCalledTimes(1);
-    expect(mockGoalService.getActive).toHaveBeenCalledTimes(1);
-    expect(mockTriggerService.listTriggers).toHaveBeenCalledTimes(1);
-  });
-
-  it('calls getStats with userId', async () => {
-    await getOrchestratorStats(USER_ID);
-    expect(mockMemoryService.getStats).toHaveBeenCalledWith(USER_ID);
-  });
-
-  it('calls getActive with userId', async () => {
-    await getOrchestratorStats(USER_ID);
-    expect(mockGoalService.getActive).toHaveBeenCalledWith(USER_ID);
-  });
-
-  it('calls listTriggers with enabled=true filter', async () => {
-    await getOrchestratorStats(USER_ID);
-    expect(mockTriggerService.listTriggers).toHaveBeenCalledWith(USER_ID, { enabled: true });
-  });
-
-  it('calls getPendingActions with userId', async () => {
-    await getOrchestratorStats(USER_ID);
-    expect(mockGetPendingActions).toHaveBeenCalledWith(USER_ID);
-  });
-
-  it('returns 0 counts when all services return empty', async () => {
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.totalMemories).toBe(0);
-    expect(stats.activeGoals).toBe(0);
-    expect(stats.activeTriggers).toBe(0);
-    expect(stats.pendingApprovals).toBe(0);
-  });
-
-  it('returns autonomyLevel 0 for manual config', async () => {
-    mockGetUserConfig.mockReturnValue({
-      level: 0,
-      dailyBudget: 5,
-      dailySpend: 0,
-      allowedTools: [],
-      blockedTools: [],
-    });
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.autonomyLevel).toBe(0);
-  });
-
-  it('returns autonomyLevel 4 for full autonomy config', async () => {
-    mockGetUserConfig.mockReturnValue({
-      level: 4,
-      dailyBudget: 100,
-      dailySpend: 50,
-      allowedTools: [],
-      blockedTools: [],
-    });
-    const stats = await getOrchestratorStats(USER_ID);
-    expect(stats.autonomyLevel).toBe(4);
   });
 });
