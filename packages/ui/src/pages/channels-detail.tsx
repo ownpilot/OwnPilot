@@ -54,6 +54,8 @@ export function ChannelDetail({
   onBlockUser,
   onUnblockUser,
   onDeleteUser,
+  onDenyUser,
+  channelPlatform,
 }: {
   channel: Channel;
   users: ChannelUser[];
@@ -66,10 +68,12 @@ export function ChannelDetail({
   onReconnect: (id: string) => void;
   onClearMessages: (id: string) => void;
   onSendTest: (id: string, text: string, chatId?: string) => Promise<void>;
-  onApproveUser: (userId: string) => void;
+  onApproveUser: (userId: string, pendingPairingCode?: string, platform?: string) => void;
   onBlockUser: (userId: string) => void;
   onUnblockUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
+  onDenyUser: (userId: string, platformUserId: string) => void;
+  channelPlatform: string; // e.g. 'telegram', 'whatsapp' — used for DM pairing approval
 }) {
   const toast = useToast();
   const [showTestForm, setShowTestForm] = useState(false);
@@ -251,18 +255,38 @@ export function ChannelDetail({
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
-                        {/* Pending: Approve + Block + Delete */}
+                        {/* Pending: show pairing code badge + Approve (code-based) + Block + Delete */}
                         {!user.isVerified && !user.isBlocked && (
-                          <button
-                            onClick={() => onApproveUser(user.id)}
-                            title="Approve"
-                            className="p-1 rounded hover:bg-success/10 text-success transition-colors"
-                          >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                          </button>
+                          <>
+                            {user.pendingPairingCode ? (
+                              <span
+                                className="flex items-center gap-1 px-1.5 py-0.5 bg-warning/10 text-warning rounded text-[10px] font-medium mr-1"
+                                title={`Pairing code: ${user.pendingPairingCode}`}
+                              >
+                                <Key className="w-2.5 h-2.5" />
+                                {user.pendingPairingCode}
+                              </span>
+                            ) : null}
+                            <button
+                              onClick={() =>
+                                onApproveUser(user.id, user.pendingPairingCode, channelPlatform)
+                              }
+                              title="Approve"
+                              className="p-1 rounded hover:bg-success/10 text-success transition-colors"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDenyUser(user.id, user.platformUserId)}
+                              title="Deny"
+                              className="p-1 rounded hover:bg-error/10 text-error transition-colors"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
                         {/* Verified: Block + Delete */}
-                        {!user.isBlocked && (
+                        {!user.isBlocked && user.isVerified && (
                           <button
                             onClick={() => onBlockUser(user.id)}
                             title="Block"

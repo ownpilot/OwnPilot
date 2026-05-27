@@ -24,6 +24,7 @@ export interface ChannelUserEntity {
   verifiedAt?: Date;
   verificationMethod?: 'pin' | 'oauth' | 'whitelist' | 'admin';
   isBlocked: boolean;
+  status: 'active' | 'pending';
   metadata: Record<string, unknown>;
   firstSeenAt: Date;
   lastSeenAt: Date;
@@ -55,6 +56,7 @@ interface ChannelUserRow {
   verified_at: string | null;
   verification_method: string | null;
   is_blocked: boolean;
+  status: string;
   metadata: string | Record<string, unknown>;
   first_seen_at: string;
   last_seen_at: string;
@@ -73,6 +75,7 @@ function rowToEntity(row: ChannelUserRow): ChannelUserEntity {
     verifiedAt: row.verified_at ? new Date(row.verified_at) : undefined,
     verificationMethod: row.verification_method as ChannelUserEntity['verificationMethod'],
     isBlocked: row.is_blocked,
+    status: (row.status as ChannelUserEntity['status']) ?? 'active',
     metadata: parseJsonField(row.metadata, {}),
     firstSeenAt: new Date(row.first_seen_at),
     lastSeenAt: new Date(row.last_seen_at),
@@ -125,8 +128,8 @@ export class ChannelUsersRepository extends BaseRepository {
   async create(input: CreateChannelUserInput): Promise<ChannelUserEntity> {
     const id = randomUUID();
     await this.execute(
-      `INSERT INTO channel_users (id, ownpilot_user_id, platform, platform_user_id, platform_username, display_name, avatar_url, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO channel_users (id, ownpilot_user_id, platform, platform_user_id, platform_username, display_name, avatar_url, status, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8)`,
       [
         id,
         input.ownpilotUserId ?? 'default',
@@ -210,6 +213,13 @@ export class ChannelUsersRepository extends BaseRepository {
    */
   async unblock(id: string): Promise<void> {
     await this.execute(`UPDATE channel_users SET is_blocked = FALSE WHERE id = $1`, [id]);
+  }
+
+  /**
+   * Update the status of a channel user (active | pending).
+   */
+  async updateStatus(id: string, status: 'active' | 'pending'): Promise<void> {
+    await this.execute(`UPDATE channel_users SET status = $1 WHERE id = $2`, [status, id]);
   }
 
   /**

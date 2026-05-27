@@ -65,6 +65,15 @@ const mockConversationsRepo = vi.hoisted(() => ({
   create: vi.fn().mockResolvedValue(undefined),
 }));
 
+const mockDmPairingRequests = vi.hoisted(() => ({
+  listPending: vi.fn().mockResolvedValue([]),
+  create: vi.fn(),
+  findByCode: vi.fn(),
+  findValidToken: vi.fn(),
+  markUsed: vi.fn(),
+  getById: vi.fn(),
+}));
+
 const mockGetOrCreateChatAgent = vi.hoisted(() => vi.fn());
 const mockIsDemoMode = vi.hoisted(() => vi.fn().mockResolvedValue(false));
 
@@ -178,6 +187,11 @@ vi.mock('../db/repositories/channels/messages.js', () => ({
     create = mockMessagesRepo.create;
     linkConversation = mockMessagesRepo.linkConversation;
   },
+}));
+
+vi.mock('../db/repositories/channels/dm-pairing.js', () => ({
+  dmPairingRequestsRepo: mockDmPairingRequests,
+  DmPairingRequestsRepository: vi.fn(),
 }));
 
 vi.mock('../db/repositories/config-services.js', () => ({
@@ -441,6 +455,7 @@ describe('ChannelServiceImpl', () => {
       usersRepo: mockUsersRepo as never,
       sessionsRepo: mockSessionsRepo as never,
       verificationService: mockVerificationService as never,
+      dmPairingRequests: mockDmPairingRequests as never,
     });
   });
 

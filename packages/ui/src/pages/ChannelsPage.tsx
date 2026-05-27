@@ -265,10 +265,16 @@ export function ChannelsPage() {
 
   // ---- User actions ----
   const handleApproveUser = useCallback(
-    async (userId: string) => {
+    async (userId: string, pendingPairingCode?: string, platform?: string) => {
       try {
-        await channelsApi.approveUser(userId);
-        toast.success('User approved');
+        if (pendingPairingCode && platform) {
+          // DM pairing pending user — use code-based approval
+          await channelsApi.approvePairing(platform, pendingPairingCode);
+          toast.success('User approved via pairing code');
+        } else {
+          await channelsApi.approveUser(userId);
+          toast.success('User approved');
+        }
         if (selectedId) loadDetail(selectedId);
       } catch {
         toast.error('Failed to approve user');
@@ -325,6 +331,30 @@ export function ChannelsPage() {
       }
     },
     [toast, selectedId, loadDetail]
+  );
+
+  const handleDenyUser = useCallback(
+    async (_userId: string, platformUserId: string) => {
+      if (!selectedChannel) return;
+      if (
+        !(await confirm({
+          message: 'Deny this user? They will be blocked from messaging the bot.',
+          variant: 'danger',
+        }))
+      )
+        return;
+      try {
+        const platform = selectedChannel.id.includes('.')
+          ? selectedChannel.id.split('.')[1]!
+          : selectedChannel.type;
+        await channelsApi.denyPairing(platform, platformUserId);
+        toast.success('User denied');
+        if (selectedId) loadDetail(selectedId);
+      } catch {
+        toast.error('Failed to deny user');
+      }
+    },
+    [toast, selectedId, loadDetail, selectedChannel]
   );
 
   return (
@@ -571,6 +601,12 @@ export function ChannelsPage() {
                     onBlockUser={handleBlockUser}
                     onUnblockUser={handleUnblockUser}
                     onDeleteUser={handleDeleteUser}
+                    onDenyUser={handleDenyUser}
+                    channelPlatform={
+                      selectedChannel.id.includes('.')
+                        ? selectedChannel.id.split('.')[1]!
+                        : selectedChannel.type
+                    }
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center">

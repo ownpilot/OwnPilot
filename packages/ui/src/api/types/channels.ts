@@ -39,6 +39,10 @@ export interface ChannelUser {
   isVerified: boolean;
   isBlocked: boolean;
   lastSeenAt: string;
+  /** Present when user is in DM pairing flow — shows the code they need to give the owner */
+  pendingPairingCode?: string;
+  /** ISO timestamp of when pendingPairingCode expires */
+  pendingPairingExpiry?: string;
 }
 
 export interface ChannelStats {

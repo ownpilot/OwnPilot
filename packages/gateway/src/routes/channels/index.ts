@@ -128,6 +128,116 @@ channelRoutes.get('/pairing', async (c) => {
 });
 
 /**
+ * POST /dm-pairing/approve - Approve a pending DM sender by code
+ */
+channelRoutes.post('/dm-pairing/approve', async (c) => {
+  const body = await c.req.json<{ code: string; platform: string }>();
+
+  if (!body.code || typeof body.code !== 'string') {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'code is required' }, 400);
+  }
+  if (!body.platform || typeof body.platform !== 'string') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'platform is required' },
+      400
+    );
+  }
+
+  const impl = await import('../../channels/service-impl.js');
+  const instance = impl.getChannelServiceImpl();
+  if (!instance) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
+      503
+    );
+  }
+
+  const result = await instance.approvePendingSender(body.platform, body.code);
+  if (!result.success) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: result.error ?? 'Approval failed' },
+      400
+    );
+  }
+
+  wsGateway.broadcast('data:changed', {
+    entity: 'dm-pairing' as const,
+    action: 'approved' as const,
+  });
+
+  return apiResponse(c, { success: true, message: 'Sender approved.' });
+});
+
+/**
+ * POST /dm-pairing/deny - Deny a pending DM sender
+ */
+channelRoutes.post('/dm-pairing/deny', async (c) => {
+  const body = await c.req.json<{ platform: string; platformUserId: string }>();
+
+  if (!body.platform || typeof body.platform !== 'string') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'platform is required' },
+      400
+    );
+  }
+  if (!body.platformUserId || typeof body.platformUserId !== 'string') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.VALIDATION_ERROR, message: 'platformUserId is required' },
+      400
+    );
+  }
+
+  const impl = await import('../../channels/service-impl.js');
+  const instance = impl.getChannelServiceImpl();
+  if (!instance) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
+      503
+    );
+  }
+
+  const result = await instance.denyPendingSender(body.platform, body.platformUserId);
+  if (!result.success) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.INVALID_REQUEST, message: result.error ?? 'Deny failed' },
+      400
+    );
+  }
+
+  wsGateway.broadcast('data:changed', { entity: 'dm-pairing' as const, action: 'denied' as const });
+
+  return apiResponse(c, { success: true, message: 'Sender denied.' });
+});
+
+/**
+ * GET /dm-pairing/pending/:platform - List pending DM senders
+ */
+channelRoutes.get('/dm-pairing/pending/:platform', async (c) => {
+  const platform = c.req.param('platform');
+
+  const impl = await import('../../channels/service-impl.js');
+  const instance = impl.getChannelServiceImpl();
+  if (!instance) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
+      503
+    );
+  }
+
+  const pending = await instance.listPendingSenders(platform);
+
+  return apiResponse(c, { pending, count: pending.length });
+});
+
+/**
  * GET / - List all channels
  */
 channelRoutes.get('/', (c) => {
@@ -448,10 +558,30 @@ channelRoutes.get('/:id/users', async (c) => {
   const platform = pluginId.split('.')[1] ?? '';
 
   try {
-    const users = await channelUsersRepo.list({ platform, limit: 100, offset: 0 });
+    const channelUsers = await channelUsersRepo.list({ platform, limit: 100, offset: 0 });
+
+    // Get DM pairing pending codes for these users
+    const pendingMap = new Map<string, { code: string; expiresAt: Date }>();
+    if (channelUsers.length > 0) {
+      try {
+        const impl = await import('../../channels/service-impl.js');
+        const instance = impl.getChannelServiceImpl();
+        if (instance) {
+          const pendingSenders = await instance.listPendingSenders(platform);
+          for (const sender of pendingSenders) {
+            pendingMap.set(sender.platformUserId, {
+              code: sender.code,
+              expiresAt: sender.expiresAt,
+            });
+          }
+        }
+      } catch {
+        // Pairing service not available — skip pending codes
+      }
+    }
 
     return apiResponse(c, {
-      users: users.map((u) => ({
+      users: channelUsers.map((u) => ({
         id: u.id,
         platform: u.platform,
         platformUserId: u.platformUserId,
@@ -460,8 +590,14 @@ channelRoutes.get('/:id/users', async (c) => {
         isVerified: u.isVerified,
         isBlocked: u.isBlocked,
         lastSeenAt: u.lastSeenAt.toISOString(),
+        ...(pendingMap.has(u.platformUserId) && !u.isVerified
+          ? {
+              pendingPairingCode: pendingMap.get(u.platformUserId)!.code,
+              pendingPairingExpiry: pendingMap.get(u.platformUserId)!.expiresAt.toISOString(),
+            }
+          : {}),
       })),
-      count: users.length,
+      count: channelUsers.length,
     });
   } catch (error) {
     return apiError(

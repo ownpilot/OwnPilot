@@ -49,6 +49,8 @@ import {
   getChannelVerificationService,
   type ChannelVerificationService,
 } from './auth/verification.js';
+import type { DmPairingRequestsRepository } from '../db/repositories/channels/dm-pairing.js';
+import { dmPairingRequestsRepo } from '../db/repositories/channels/dm-pairing.js';
 import { wsGateway } from '../ws/server.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
@@ -110,6 +112,7 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly sessionsRepo: ChannelSessionsRepository;
   private readonly messagesRepo: ChannelMessagesRepository;
   private readonly verificationService: ChannelVerificationService;
+  private readonly dmPairingRequests: DmPairingRequestsRepository;
   private readonly pluginRegistry: PluginRegistry;
   private unsubscribes: Array<() => void> = [];
   private readonly sessionLocks = new Map<string, Promise<void>>();
@@ -187,6 +190,7 @@ export class ChannelServiceImpl implements IChannelService {
       usersRepo?: ChannelUsersRepository;
       sessionsRepo?: ChannelSessionsRepository;
       verificationService?: ChannelVerificationService;
+      dmPairingRequests?: DmPairingRequestsRepository;
     }
   ) {
     this.pluginRegistry = pluginRegistry;
@@ -194,6 +198,7 @@ export class ChannelServiceImpl implements IChannelService {
     this.sessionsRepo = options?.sessionsRepo ?? channelSessionsRepo;
     this.messagesRepo = new ChannelMessagesRepository();
     this.verificationService = options?.verificationService ?? getChannelVerificationService();
+    this.dmPairingRequests = options?.dmPairingRequests ?? dmPairingRequestsRepo;
 
     // Subscribe to incoming messages from channel plugins
     this.subscribeToEvents();
@@ -635,16 +640,33 @@ export class ChannelServiceImpl implements IChannelService {
       }
 
       // 3b. Owner check — only the claimed owner gets AI responses.
-      //     If no owner is claimed yet on this platform, silently drop all
-      //     non-/connect messages (users should claim via /connect KEY first).
+      //     Non-owners get the DM pairing flow: generate code, notify owner.
       const ownerUserId = await getOwnerUserId(message.platform);
       if (ownerUserId !== null) {
-        // Owner IS claimed — drop if not the owner
+        // Owner IS claimed — check if sender is the owner
         if (message.sender.platformUserId !== ownerUserId) {
-          log.debug('Dropping message from non-owner', {
-            platform: message.platform,
-            sender: message.sender.platformUserId,
-          });
+          // Non-owner: check if pending approval
+          const pendingSenders = await this.getPendingSenders(message.platform);
+          if (pendingSenders.has(message.sender.platformUserId)) {
+            // Pending — generate code, notify owner, store as pending
+            const code = await this.generateDmPairingCode(
+              message.channelPluginId,
+              message.platform,
+              message.sender.platformUserId,
+              ownerUserId
+            );
+            log.info('DM pairing code sent to owner for pending sender', {
+              platform: message.platform,
+              sender: message.sender.platformUserId,
+              code,
+            });
+          } else {
+            // Not pending — drop silently
+            log.debug('Dropping message from non-owner, non-pending sender', {
+              platform: message.platform,
+              sender: message.sender.platformUserId,
+            });
+          }
           return;
         }
       } else {
@@ -1384,6 +1406,136 @@ export class ChannelServiceImpl implements IChannelService {
     this.unsubscribes = [];
     this.sessionLocks.clear();
     log.info('ChannelService disposed');
+  }
+  // ============================================================================
+  // DM Pairing Security
+  // ============================================================================
+
+  /**
+   * Get the set of platformUserIds that are pending approval for a platform.
+   * Used to determine whether a non-owner DM gets the pairing flow.
+   */
+  private async getPendingSenders(platform: string): Promise<Set<string>> {
+    const tokens = await this.dmPairingRequests.listPending(platform);
+    return new Set(tokens.map((t) => t.platformUserId));
+  }
+
+  /**
+   * Generate a 6-digit pairing code for a non-owner DM.
+   * Stores the code in verification_tokens and notifies the owner via WS.
+   */
+  private async generateDmPairingCode(
+    _pluginId: string,
+    platform: string,
+    senderUserId: string,
+    _ownerUserId: string
+  ): Promise<string> {
+    // Generate 6-digit code
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+
+    // Store in verification_tokens
+    await this.dmPairingRequests.create({
+      platform,
+      platformUserId: senderUserId,
+      code,
+      expiresInMinutes: 10,
+    });
+
+    // Mark sender as pending
+    const channelUser = await this.usersRepo.findByPlatform(platform, senderUserId);
+    if (channelUser) {
+      await this.usersRepo.updateStatus(channelUser.id, 'pending');
+    }
+
+    // Notify owner via WS
+    wsGateway.broadcast('data:changed', {
+      entity: 'dm-pairing' as const,
+      action: 'pending' as const,
+    });
+
+    return code;
+  }
+
+  /**
+   * Approve a pending DM sender by code.
+   * Called via REST API from the owner's dashboard.
+   */
+  async approvePendingSender(
+    platform: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const token = await this.dmPairingRequests.findByCode(code, platform);
+    if (!token) {
+      return { success: false, error: 'Invalid or expired code.' };
+    }
+
+    // Mark token as used
+    await this.dmPairingRequests.markUsed(token.id);
+
+    // Update channel user status to active
+    const channelUser = await this.usersRepo.findByPlatform(platform, token.platformUserId);
+    if (channelUser) {
+      await this.usersRepo.updateStatus(channelUser.id, 'active');
+    }
+
+    // Verify the user
+    if (channelUser) {
+      await this.usersRepo.markVerified(channelUser.id, 'default', 'admin');
+    }
+
+    log.info('Pending sender approved via DM pairing code', {
+      platform,
+      senderUserId: token.platformUserId,
+      code,
+    });
+
+    return { success: true };
+  }
+
+  /**
+   * Deny a pending DM sender by platform+userId.
+   */
+  async denyPendingSender(
+    platform: string,
+    platformUserId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const token = await this.dmPairingRequests.findValidToken(platform, platformUserId);
+    if (token) {
+      await this.dmPairingRequests.markUsed(token.id);
+    }
+
+    const channelUser = await this.usersRepo.findByPlatform(platform, platformUserId);
+    if (channelUser) {
+      await this.usersRepo.block(channelUser.id);
+    }
+
+    log.info('Pending sender denied', { platform, platformUserId });
+    return { success: true };
+  }
+
+  /**
+   * List all pending DM pairing requests for a platform.
+   */
+  async listPendingSenders(platform: string): Promise<
+    Array<{
+      platformUserId: string;
+      displayName?: string;
+      code: string;
+      expiresAt: Date;
+    }>
+  > {
+    const tokens = await this.dmPairingRequests.listPending(platform);
+    const result = [];
+    for (const token of tokens) {
+      const channelUser = await this.usersRepo.findByPlatform(platform, token.platformUserId);
+      result.push({
+        platformUserId: token.platformUserId,
+        displayName: channelUser?.displayName,
+        code: token.code,
+        expiresAt: token.expiresAt,
+      });
+    }
+    return result;
   }
 }
 
