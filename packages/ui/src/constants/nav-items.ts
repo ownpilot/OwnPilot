@@ -105,6 +105,7 @@ export const navGroups: NavGroup[] = [
       { to: '/claws', icon: Zap, label: 'Claw Runners' },
       { to: '/coding-agents', icon: Terminal, label: 'Code Runners (CLI)' },
       { to: '/artifacts', icon: LayoutTemplate, label: 'Artifacts' },
+      { to: '/canvas', icon: LayoutTemplate, label: 'Live Canvas' },
       { to: '/approvals', icon: ShieldCheck, label: 'Approvals' },
       { to: '/autonomy', icon: Shield, label: 'Autonomy' },
     ],

@@ -4,6 +4,8 @@
  * Central control plane for real-time communication
  */
 
+import type { CanvasElement } from '@ownpilot/core';
+
 /**
  * Session representing a connected client
  */
@@ -253,8 +255,9 @@ export interface ServerEvents {
       | 'mcp_server'
       | 'workflow'
       | 'artifact'
-      | 'edge-device';
-    action: 'created' | 'updated' | 'deleted';
+      | 'edge-device'
+      | 'dm-pairing';
+    action: 'created' | 'updated' | 'deleted' | 'pending' | 'approved' | 'denied';
     id?: string;
     count?: number;
   };
@@ -493,6 +496,14 @@ export interface ServerEvents {
     taskId: string;
     taskName: string;
     submittedBy: string;
+  };
+
+  // Live Canvas operations (agent-driven spatial workspace)
+  'canvas:op': {
+    canvasId: string;
+    action: 'add' | 'update' | 'move' | 'remove' | 'clear';
+    element?: CanvasElement;
+    id?: string;
   };
 }
 

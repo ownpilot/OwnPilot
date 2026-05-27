@@ -14,6 +14,7 @@ import {
   expensesRoutes,
   costRoutes,
   artifactsRoutes,
+  canvasRoutes,
   productivityRoutes,
 } from '../index.js';
 
@@ -38,6 +39,9 @@ export function registerDataRoutes(app: Hono): void {
 
   // Artifacts (AI-generated interactive content)
   app.route('/api/v1/artifacts', artifactsRoutes);
+
+  // Canvas (Live Canvas — agent-driven spatial workspace)
+  app.route('/api/v1/canvas', canvasRoutes);
 
   // Productivity (Pomodoro, Habits, Captures)
   app.route('/api/v1', productivityRoutes);

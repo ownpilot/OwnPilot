@@ -170,6 +170,9 @@ const EventMonitorPage = lazy(() =>
 const ArtifactsPage = lazy(() =>
   import('./pages/ArtifactsPage').then((m) => ({ default: m.ArtifactsPage }))
 );
+const CanvasPage = lazy(() =>
+  import('./pages/CanvasPage').then((m) => ({ default: m.CanvasPage }))
+);
 const EdgeDevicesPage = lazy(() =>
   import('./pages/EdgeDevicesPage').then((m) => ({ default: m.EdgeDevicesPage }))
 );
@@ -257,6 +260,7 @@ export function App() {
         <Route path="autonomous" element={page(<AutonomousHubPage />)} />
         <Route path="autonomous/agent/:id" element={page(<AgentProfilePage />)} />
         <Route path="artifacts" element={page(<ArtifactsPage />)} />
+        <Route path="canvas" element={page(<CanvasPage />)} />
         <Route path="edge-devices" element={page(<EdgeDevicesPage />)} />
         <Route path="claws" element={page(<ClawsPage />)} />
         <Route path="agent-observability" element={page(<AgentsObservabilityPage />)} />

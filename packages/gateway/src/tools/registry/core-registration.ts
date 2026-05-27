@@ -62,6 +62,8 @@ import {
   executeInteractiveTool,
   CHANNEL_TOOLS,
   executeChannelTool,
+  CANVAS_TOOLS,
+  executeCanvasTool,
 } from '../index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import {
@@ -141,6 +143,11 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     {
       definitions: CHANNEL_TOOLS,
       executor: executeChannelTool,
+      needsUserId: true,
+    },
+    {
+      definitions: CANVAS_TOOLS,
+      executor: executeCanvasTool,
       needsUserId: true,
     },
   ];

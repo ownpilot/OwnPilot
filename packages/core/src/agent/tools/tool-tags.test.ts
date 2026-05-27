@@ -1072,9 +1072,9 @@ describe('TOOL_SEARCH_TAGS — aggregate statistics', () => {
     }
   });
 
-  it('the exact tool count matches the source (184 tools)', () => {
+  it('the exact tool count matches the source (190 tools)', () => {
     // Total entry count is asserted; specific category breakdowns change as
     // tools are added/removed. Keep this assertion in sync with TOOL_SEARCH_TAGS.
-    expect(Object.keys(TOOL_SEARCH_TAGS).length).toBe(184);
+    expect(Object.keys(TOOL_SEARCH_TAGS).length).toBe(190);
   });
 });

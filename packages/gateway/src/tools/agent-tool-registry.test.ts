@@ -172,6 +172,8 @@ vi.mock('./index.js', () => ({
   executeInteractiveTool: vi.fn(),
   CHANNEL_TOOLS: [],
   executeChannelTool: vi.fn(),
+  CANVAS_TOOLS: [],
+  executeCanvasTool: vi.fn(),
 }));
 vi.mock('./config-tools.js', () => ({
   CONFIG_TOOLS: [],

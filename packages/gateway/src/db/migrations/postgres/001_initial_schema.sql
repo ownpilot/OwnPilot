@@ -1155,3 +1155,22 @@ CREATE TABLE IF NOT EXISTS ui_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_ui_sessions_expires_at ON ui_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_ui_sessions_kind ON ui_sessions(kind);
+
+-- Live Canvas elements (agent-driven spatial visual workspace)
+CREATE TABLE IF NOT EXISTS canvas_elements (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  canvas_id TEXT NOT NULL DEFAULT 'main',
+  type TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  x DOUBLE PRECISION NOT NULL DEFAULT 0,
+  y DOUBLE PRECISION NOT NULL DEFAULT 0,
+  w DOUBLE PRECISION NOT NULL DEFAULT 200,
+  h DOUBLE PRECISION NOT NULL DEFAULT 120,
+  z INTEGER NOT NULL DEFAULT 0,
+  style TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_canvas_elements_user_canvas
+  ON canvas_elements(user_id, canvas_id, z);

@@ -396,4 +396,30 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   ],
   list_channels: ['channels', 'list', 'connected', 'plugins', 'platforms', 'integrations'],
   get_channel_inbox: ['channel', 'inbox', 'incoming', 'messages', 'received', 'read', 'unread'],
+
+  // ─────────────────────────────────────────────
+  // LIVE CANVAS (agent-driven spatial visual workspace)
+  // ─────────────────────────────────────────────
+  canvas_add_element: [
+    'canvas',
+    'whiteboard',
+    'board',
+    'sticky note',
+    'note',
+    'draw',
+    'place',
+    'add',
+    'diagram',
+    'visual',
+    'layout',
+    'workspace',
+    'heading',
+    'shape',
+    'image',
+  ],
+  canvas_update_element: ['canvas', 'update', 'edit', 'change', 'element', 'board', 'whiteboard'],
+  canvas_move_element: ['canvas', 'move', 'reposition', 'drag', 'element', 'board', 'layout'],
+  canvas_remove_element: ['canvas', 'remove', 'delete', 'element', 'board', 'whiteboard'],
+  canvas_list_elements: ['canvas', 'list', 'elements', 'board', 'whiteboard', 'show', 'what'],
+  canvas_clear: ['canvas', 'clear', 'reset', 'empty', 'wipe', 'board', 'whiteboard'],
 };

@@ -415,6 +415,22 @@ export {
   ArtifactToken,
 } from './artifact-service.js';
 
+// Canvas Service (Live Canvas)
+export type {
+  ICanvasService,
+  CanvasElement,
+  CanvasElementType,
+  CanvasOpAction,
+  AddCanvasElementInput,
+  UpdateCanvasElementInput,
+} from './canvas-service.js';
+export {
+  getCanvasService,
+  setCanvasService,
+  hasCanvasService,
+  CanvasToken,
+} from './canvas-service.js';
+
 // Edge Service
 export type { IEdgeService } from './edge-service.js';
 export type {

@@ -166,6 +166,23 @@ CREATE TABLE IF NOT EXISTS artifact_versions (
   data_bindings JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- CANVAS_ELEMENTS: Live Canvas — agent-driven spatial visual workspace
+CREATE TABLE IF NOT EXISTS canvas_elements (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  canvas_id TEXT NOT NULL DEFAULT 'main',
+  type TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  x DOUBLE PRECISION NOT NULL DEFAULT 0,
+  y DOUBLE PRECISION NOT NULL DEFAULT 0,
+  w DOUBLE PRECISION NOT NULL DEFAULT 200,
+  h DOUBLE PRECISION NOT NULL DEFAULT 120,
+  z INTEGER NOT NULL DEFAULT 0,
+  style TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 `;
 
 export const CODING_AGENTS_MIGRATIONS_SQL = `
@@ -207,6 +224,9 @@ CREATE INDEX IF NOT EXISTS idx_coding_agent_subs_provider ON coding_agent_subscr
 -- Orchestration runs indexes
 CREATE INDEX IF NOT EXISTS idx_orchestration_runs_user ON orchestration_runs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orchestration_runs_status ON orchestration_runs(user_id, status);
+
+-- Canvas elements index
+CREATE INDEX IF NOT EXISTS idx_canvas_elements_user_canvas ON canvas_elements(user_id, canvas_id, z);
 
 -- Artifact indexes
 CREATE INDEX IF NOT EXISTS idx_artifacts_user ON artifacts(user_id, created_at DESC);
