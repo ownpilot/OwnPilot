@@ -1106,6 +1106,41 @@ describe('ToolRegistry - execute with ConfigCenter', () => {
     await registry.execute('tool1', {}, { conversationId: 'c1', workspaceDir: '/override' });
     expect(capturedDir).toBe('/override');
   });
+
+  it('falls back to ExecContext workspaceDir when neither call-site nor registry sets it', async () => {
+    const { runInExecContext } = await import('./exec-context.js');
+    const registry = new ToolRegistry();
+
+    let capturedDir: string | undefined;
+    registry.register(makeDef('tool1'), async (_args, ctx) => {
+      capturedDir = ctx.workspaceDir;
+      return { content: 'ok' };
+    });
+
+    await runInExecContext({ workspaceDir: '/exec-ctx' }, async () => {
+      await registry.execute('tool1', {}, { conversationId: 'c1' });
+    });
+
+    expect(capturedDir).toBe('/exec-ctx');
+  });
+
+  it('registry default still wins over ExecContext (ExecContext is third tier)', async () => {
+    const { runInExecContext } = await import('./exec-context.js');
+    const registry = new ToolRegistry();
+    registry.setWorkspaceDir('/registry');
+
+    let capturedDir: string | undefined;
+    registry.register(makeDef('tool1'), async (_args, ctx) => {
+      capturedDir = ctx.workspaceDir;
+      return { content: 'ok' };
+    });
+
+    await runInExecContext({ workspaceDir: '/exec-ctx' }, async () => {
+      await registry.execute('tool1', {}, { conversationId: 'c1' });
+    });
+
+    expect(capturedDir).toBe('/registry');
+  });
 });
 
 describe('ToolRegistry - unregisterPlugin', () => {

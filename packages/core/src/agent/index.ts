@@ -157,6 +157,11 @@ export { createPluginSecurityMiddleware } from './middleware/plugin-security.js'
 // Memory
 export { ConversationMemory, createMemory } from './memory.js';
 
+// Per-call execution context (AsyncLocalStorage) — lets callers thread
+// transient fields (currently workspaceDir) through ToolRegistry.executeToolCall
+// without mutating the shared registry.
+export { runInExecContext, getExecContext, type ExecContext } from './exec-context.js';
+
 // Prompt Composer (Dynamic System Prompts)
 export {
   PromptComposer,

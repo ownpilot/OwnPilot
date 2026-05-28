@@ -237,6 +237,13 @@ vi.mock('../../tools/notification-tools.js', () => ({
   sendTelegramMessage: mockSendTelegramMessage,
 }));
 
+const mockGetSessionWorkspacePath = vi.hoisted(() =>
+  vi.fn((id: string) => `/srv/data/workspaces/${id}`)
+);
+vi.mock('../../workspace/file-workspace.js', () => ({
+  getSessionWorkspacePath: mockGetSessionWorkspacePath,
+}));
+
 // ---------------------------------------------------------------------------
 // Service under test (static import — mocks are in place before this runs)
 // ---------------------------------------------------------------------------
@@ -250,7 +257,7 @@ import { resetHeartbeatRunner, getHeartbeatRunner, runAgentHeartbeat } from './s
 type Engine = {
   processMessage: (req: {
     message: string;
-    context?: { allowedTools?: string[] };
+    context?: { allowedTools?: string[]; workspaceId?: string };
   }) => Promise<unknown>;
   saveMemory: (agentId: string, content: string, source: string) => Promise<void>;
   createNote: (note: { content: string; source: string; category: string }) => Promise<void>;
@@ -546,6 +553,64 @@ describe('heartbeat engine — processMessage()', () => {
     initRunner();
     mockChat.mockResolvedValue({ ok: false, error: new Error('model error') });
     await expect(getEngine().processMessage({ message: 'fail' })).rejects.toThrow('model error');
+  });
+
+  it('wraps agent.chat in ExecContext when context.workspaceId is set', async () => {
+    initRunner();
+    mockGetSessionWorkspacePath.mockClear();
+
+    const { getExecContext } = await import('@ownpilot/core');
+    let observedWorkspaceDir: string | undefined;
+    mockChat.mockImplementation(async () => {
+      observedWorkspaceDir = getExecContext()?.workspaceDir;
+      return { ok: true, value: { content: 'ok', usage: null } };
+    });
+
+    await getEngine().processMessage({ message: 'do work', context: { workspaceId: 'ws-soul-7' } });
+
+    expect(mockGetSessionWorkspacePath).toHaveBeenCalledWith('ws-soul-7');
+    expect(observedWorkspaceDir).toBe('/srv/data/workspaces/ws-soul-7');
+  });
+
+  it('does NOT enter an ExecContext when no workspaceId is supplied', async () => {
+    initRunner();
+    mockGetSessionWorkspacePath.mockClear();
+
+    const { getExecContext } = await import('@ownpilot/core');
+    let observedWorkspaceDir: string | undefined;
+    mockChat.mockImplementation(async () => {
+      observedWorkspaceDir = getExecContext()?.workspaceDir;
+      return { ok: true, value: { content: 'ok', usage: null } };
+    });
+
+    await getEngine().processMessage({ message: 'do work' });
+
+    expect(mockGetSessionWorkspacePath).not.toHaveBeenCalled();
+    expect(observedWorkspaceDir).toBeUndefined();
+  });
+
+  it('falls back gracefully when workspace path resolution throws', async () => {
+    initRunner();
+    mockGetSessionWorkspacePath.mockClear();
+    mockGetSessionWorkspacePath.mockImplementationOnce(() => {
+      throw new Error('invalid workspace id');
+    });
+
+    const { getExecContext } = await import('@ownpilot/core');
+    let observedWorkspaceDir: string | undefined;
+    mockChat.mockImplementation(async () => {
+      observedWorkspaceDir = getExecContext()?.workspaceDir;
+      return { ok: true, value: { content: 'ok', usage: null } };
+    });
+
+    const result = await getEngine().processMessage({
+      message: 'do work',
+      context: { workspaceId: 'ws-bogus' },
+    });
+
+    // Resolution failed → no ExecContext → chat still ran, returning normal result.
+    expect(observedWorkspaceDir).toBeUndefined();
+    expect((result as { content: string }).content).toBe('ok');
   });
 });
 

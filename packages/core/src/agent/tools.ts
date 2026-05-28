@@ -11,6 +11,7 @@ import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
 import { CORE_TOOLS } from './tool-defs/index.js';
 import { CORE_EXECUTORS } from './executors/index.js';
+import { getExecContext } from './exec-context.js';
 
 const log = getLog('ToolRegistry');
 
@@ -379,7 +380,11 @@ export class ToolRegistry {
       ...context,
       callId: randomUUID(),
       pluginId: tool.pluginId,
-      workspaceDir: context.workspaceDir ?? this._workspaceDir,
+      // Precedence: explicit call-site → registry default → ExecContext
+      // (per-call AsyncLocalStorage). Lets a shared registry serve multiple
+      // concurrent owners with different workspace roots, e.g. heartbeats
+      // for several souls reusing the same chat agent.
+      workspaceDir: context.workspaceDir ?? this._workspaceDir ?? getExecContext()?.workspaceDir,
       source: tool.source,
       trustLevel: tool.trustLevel,
       // Config Center accessors - scoped for plugin/custom tools

@@ -448,6 +448,10 @@ Be concise and focused. Report your findings clearly.`.trim();
           // Pass crew ID so the service layer can inject crew context and communication
           // tools can resolve the correct soul identity via AsyncLocalStorage
           crewId: soul.relationships?.crewId,
+          // Pass soul's workspace ID so the service layer can scope file-system
+          // tool access to the soul's session workspace via ExecContext.
+          // Without this, heartbeats inherit the chat agent's process.cwd().
+          workspaceId: soul.workspaceId,
           // Claw mode flags
           clawMode: isClawMode,
           clawCanManageAgents: soul.autonomy.clawMode?.canManageAgents,

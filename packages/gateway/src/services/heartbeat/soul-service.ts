@@ -26,6 +26,7 @@ import {
   BudgetTracker,
   calculateCost,
   getRuntimeContext,
+  runInExecContext,
 } from '@ownpilot/core';
 import type {
   AIProvider,
@@ -43,6 +44,7 @@ import { getHeartbeatLogRepository } from '../../db/repositories/heartbeats/log.
 import { getAgentMessagesRepository } from '../../db/repositories/agents/messages.js';
 import { getCrewsRepository } from '../../db/repositories/crew/index.js';
 import { runInHeartbeatContext } from './context.js';
+import { getSessionWorkspacePath } from '../../workspace/file-workspace.js';
 import { getLog } from '@ownpilot/core';
 import { HeartbeatCircuitBreaker } from '@ownpilot/core';
 import { HeartbeatMetricsCollector } from '@ownpilot/core';
@@ -326,37 +328,61 @@ export class SoulHeartbeatService {
         // Tool authorization is delegated to the unified PermissionGate so
         // every runtime applies the same allow / deny logic.
         const gate = hasToolFilter ? runtime.permissions : null;
-        const result = await runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
-          agent.chat(taskMessage, {
-            onBeforeToolCall: gate
-              ? async (toolCall) => {
-                  let parsedArgs: Record<string, unknown> | undefined;
-                  if (toolCall.arguments) {
-                    try {
-                      parsedArgs = JSON.parse(toolCall.arguments) as Record<string, unknown>;
-                    } catch {
-                      parsedArgs = undefined;
+
+        // Per-call workspace scoping. Heartbeats share the cached chat agent
+        // across souls, so we cannot setWorkspaceDir on its registry without
+        // racing across concurrent souls. Instead we wrap each chat() call in
+        // an ExecContext — ToolRegistry consults that AsyncLocalStorage as a
+        // third-tier fallback for `context.workspaceDir`, so file-system
+        // tools spawned by this heartbeat only see this soul's session dir.
+        const taskWorkspaceId = request.context?.workspaceId as string | undefined;
+        let workspaceDir: string | undefined;
+        if (taskWorkspaceId) {
+          try {
+            workspaceDir = getSessionWorkspacePath(taskWorkspaceId);
+          } catch (err) {
+            log.warn(
+              `[Heartbeat ${request.agentId}] Could not resolve workspaceId="${taskWorkspaceId}"; file tools will use process.cwd(): ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+
+        const runChat = () =>
+          runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
+            agent.chat(taskMessage, {
+              onBeforeToolCall: gate
+                ? async (toolCall) => {
+                    let parsedArgs: Record<string, unknown> | undefined;
+                    if (toolCall.arguments) {
+                      try {
+                        parsedArgs = JSON.parse(toolCall.arguments) as Record<string, unknown>;
+                      } catch {
+                        parsedArgs = undefined;
+                      }
                     }
+                    const decision = await gate.check({
+                      actorId: request.agentId,
+                      tool: toolCall.name,
+                      context: {
+                        actorType: 'soul-heartbeat',
+                        allowedTools,
+                        skillAccessAllowed,
+                        skillAccessBlocked,
+                        args: parsedArgs,
+                      },
+                    });
+                    if (decision.type === 'allow') {
+                      return { approved: true };
+                    }
+                    return { approved: false, reason: decision.reason };
                   }
-                  const decision = await gate.check({
-                    actorId: request.agentId,
-                    tool: toolCall.name,
-                    context: {
-                      actorType: 'soul-heartbeat',
-                      allowedTools,
-                      skillAccessAllowed,
-                      skillAccessBlocked,
-                      args: parsedArgs,
-                    },
-                  });
-                  if (decision.type === 'allow') {
-                    return { approved: true };
-                  }
-                  return { approved: false, reason: decision.reason };
-                }
-              : undefined,
-          })
-        );
+                : undefined,
+            })
+          );
+
+        const result = workspaceDir
+          ? await runInExecContext({ workspaceDir }, runChat)
+          : await runChat();
 
         if (!result.ok) {
           throw result.error;
