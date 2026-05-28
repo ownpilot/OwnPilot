@@ -422,4 +422,45 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   canvas_remove_element: ['canvas', 'remove', 'delete', 'element', 'board', 'whiteboard'],
   canvas_list_elements: ['canvas', 'list', 'elements', 'board', 'whiteboard', 'show', 'what'],
   canvas_clear: ['canvas', 'clear', 'reset', 'empty', 'wipe', 'board', 'whiteboard'],
+
+  // ─────────────────────────────────────────────
+  // BROWSER AUTOMATION (puppeteer-driven)
+  // ─────────────────────────────────────────────
+  browse_web: [
+    'browser',
+    'browse',
+    'web',
+    'website',
+    'page',
+    'navigate',
+    'open url',
+    'visit',
+    'load page',
+    'scrape',
+  ],
+  browser_click: ['browser', 'click', 'button', 'link', 'web', 'page', 'tap', 'press'],
+  browser_type: ['browser', 'type', 'input', 'text', 'enter', 'fill', 'web', 'form field'],
+  browser_fill_form: [
+    'browser',
+    'form',
+    'fill form',
+    'submit form',
+    'sign up',
+    'login',
+    'register',
+    'fill out',
+    'web form',
+  ],
+  browser_screenshot: ['browser', 'screenshot', 'capture', 'image', 'page', 'snap', 'web'],
+  browser_extract: [
+    'browser',
+    'extract',
+    'scrape',
+    'read page',
+    'get content',
+    'web',
+    'page content',
+    'text',
+    'html',
+  ],
 };

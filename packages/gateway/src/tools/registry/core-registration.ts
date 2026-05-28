@@ -64,6 +64,8 @@ import {
   executeChannelTool,
   CANVAS_TOOLS,
   executeCanvasTool,
+  BROWSER_TOOLS,
+  executeBrowserTool,
 } from '../index.js';
 import { CONFIG_TOOLS, executeConfigTool } from '../config-tools.js';
 import {
@@ -148,6 +150,16 @@ export function registerGatewayTools(tools: ToolRegistry, userId: string, trace:
     {
       definitions: CANVAS_TOOLS,
       executor: executeCanvasTool,
+      needsUserId: true,
+    },
+    {
+      // Browser automation (puppeteer-core). Previously only registered on the
+      // chat path via tool-providers/index.ts, so autonomous agents (claws,
+      // heartbeats, channels) could not drive the browser at all. Exposing it
+      // here gives them the full toolkit: browse_web, click, type, fill_form,
+      // screenshot, extract.
+      definitions: BROWSER_TOOLS,
+      executor: executeBrowserTool,
       needsUserId: true,
     },
   ];
