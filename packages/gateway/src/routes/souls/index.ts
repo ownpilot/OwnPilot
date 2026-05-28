@@ -173,6 +173,7 @@ soulRoutes.post('/', async (c) => {
       bootSequence: body.bootSequence ?? {},
       provider: rawBody.provider,
       skillAccess: rawBody.skillAccess,
+      workspaceId: body.workspaceId,
     } as unknown as Parameters<ReturnType<typeof getSoulsRepository>['create']>[0];
     const soul = await getSoulsRepository().create(soulData);
     return apiResponse(c, soul, 201);
@@ -241,6 +242,7 @@ soulRoutes.put('/:agentId', async (c) => {
     if (body.bootSequence !== undefined) allowedUpdates.bootSequence = body.bootSequence;
     if (body.provider !== undefined) allowedUpdates.provider = body.provider;
     if (body.skillAccess !== undefined) allowedUpdates.skillAccess = body.skillAccess;
+    if (body.workspaceId !== undefined) allowedUpdates.workspaceId = body.workspaceId;
 
     const updated = {
       ...existing,

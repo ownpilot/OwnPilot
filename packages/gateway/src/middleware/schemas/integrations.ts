@@ -376,6 +376,10 @@ export const createSoulSchema = z.object({
   evolution: z.record(z.string(), z.unknown()),
   relationships: z.record(z.string(), z.unknown()).optional(),
   bootSequence: z.record(z.string(), z.unknown()).optional(),
+  // Optional session workspace id. When set, heartbeats for this soul
+  // run with file-system tools scoped to getSessionWorkspacePath(workspaceId)
+  // via ExecContext (see soul-service.ts).
+  workspaceId: z.string().min(1).max(200).optional(),
 });
 
 export const soulGoalSchema = z.object({

@@ -28,19 +28,24 @@ vi.mock('../../db/adapters/index.js', () => ({
     }),
 }));
 
+const mockSoulsRepo = vi.hoisted(() => ({
+  list: vi.fn(),
+  count: vi.fn(),
+  create: vi.fn(),
+  getByAgentId: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  getVersions: vi.fn(),
+  getVersion: vi.fn(),
+  createVersion: vi.fn(),
+  setHeartbeatEnabled: vi.fn(),
+}));
 vi.mock('../../db/repositories/souls.js', () => ({
-  getSoulsRepository: () => ({
-    list: vi.fn(),
-    count: vi.fn(),
-    create: vi.fn(),
-    getByAgentId: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    getVersions: vi.fn(),
-    getVersion: vi.fn(),
-    createVersion: vi.fn(),
-    setHeartbeatEnabled: vi.fn(),
-  }),
+  // Stable singleton so route-internal calls and test assertions land on the
+  // same spy. (Returning a fresh object per call worked for older
+  // assertions-on-captured-reference style tests but breaks any HTTP test
+  // that actually drives the route.)
+  getSoulsRepository: () => mockSoulsRepo,
 }));
 
 vi.mock('../../db/repositories/agents/index.js', () => ({
@@ -267,6 +272,64 @@ describe('Soul Routes', () => {
       expect(requiredFields).toContain('autonomy');
       expect(requiredFields).toContain('heartbeat');
       expect(requiredFields).toContain('evolution');
+    });
+
+    // HTTP-level coverage: workspaceId now flows from the request body into the
+    // repository. Without these tests the schema or route can quietly drop it
+    // and heartbeat workspace scoping silently does nothing.
+    describe('workspaceId plumbing (HTTP)', () => {
+      let app: Hono;
+
+      const validBody = {
+        agentId: 'agent-ws-1',
+        identity: { name: 'WS Soul' },
+        purpose: { mission: 'test' },
+        autonomy: {},
+        heartbeat: { enabled: true, interval: '0 */6 * * *', checklist: [] },
+        evolution: {},
+      };
+
+      beforeEach(() => {
+        app = new Hono();
+        app.route('/souls', soulRoutes);
+        vi.clearAllMocks();
+        soulsRepo.create.mockResolvedValue(mockSoul);
+      });
+
+      it('forwards workspaceId from create body to the repository', async () => {
+        await app.request('/souls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...validBody, workspaceId: 'ws-soul-1' }),
+        });
+
+        expect(soulsRepo.create).toHaveBeenCalledTimes(1);
+        const arg = soulsRepo.create.mock.calls[0]![0] as { workspaceId?: string };
+        expect(arg.workspaceId).toBe('ws-soul-1');
+      });
+
+      it('leaves workspaceId undefined when not provided', async () => {
+        await app.request('/souls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(validBody),
+        });
+
+        expect(soulsRepo.create).toHaveBeenCalledTimes(1);
+        const arg = soulsRepo.create.mock.calls[0]![0] as { workspaceId?: string };
+        expect(arg.workspaceId).toBeUndefined();
+      });
+
+      it('rejects an empty-string workspaceId via schema validation', async () => {
+        const res = await app.request('/souls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...validBody, workspaceId: '' }),
+        });
+
+        expect(res.status).toBe(400);
+        expect(soulsRepo.create).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -646,6 +709,45 @@ describe('Soul Routes', () => {
       const existing = await soulsRepo.getByAgentId('nonexistent');
 
       expect(existing).toBeNull();
+    });
+
+    describe('workspaceId allowlist (HTTP)', () => {
+      let app: Hono;
+
+      beforeEach(() => {
+        app = new Hono();
+        app.route('/souls', soulRoutes);
+        vi.clearAllMocks();
+        soulsRepo.getByAgentId.mockResolvedValue(mockSoul);
+        soulsRepo.update.mockResolvedValue(undefined);
+      });
+
+      it('updates workspaceId when present in the body', async () => {
+        await app.request('/souls/agent-123', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspaceId: 'ws-updated' }),
+        });
+
+        expect(soulsRepo.update).toHaveBeenCalledTimes(1);
+        const arg = soulsRepo.update.mock.calls[0]![0] as { workspaceId?: string };
+        expect(arg.workspaceId).toBe('ws-updated');
+      });
+
+      it('clears workspaceId only when explicitly passed (undefined drops via allowlist)', async () => {
+        // No workspaceId key at all → allowlist skips it, repo gets existing value.
+        await app.request('/souls/agent-123', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: { name: 'Renamed' } }),
+        });
+
+        const arg = soulsRepo.update.mock.calls[0]![0] as Record<string, unknown>;
+        // workspaceId on mockSoul is undefined; passing through inherits that.
+        expect(arg.workspaceId).toBeUndefined();
+        // But identity change was applied.
+        expect(arg.identity).toMatchObject({ name: 'Renamed' });
+      });
     });
   });
 
