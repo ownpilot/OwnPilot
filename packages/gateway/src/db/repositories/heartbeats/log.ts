@@ -17,12 +17,14 @@ interface HeartbeatLogRow {
   duration_ms: number | null;
   token_usage: string;
   cost: string;
+  tool_calls: string | null;
   created_at: string;
 }
 
 // ── Row → Record Mapper ────────────────────────────
 
 function rowToEntry(row: HeartbeatLogRow): HeartbeatLogEntry {
+  const toolCalls = parseJsonField<HeartbeatLogEntry['toolCalls']>(row.tool_calls ?? '[]', []);
   return {
     id: row.id,
     agentId: row.agent_id,
@@ -33,6 +35,7 @@ function rowToEntry(row: HeartbeatLogRow): HeartbeatLogEntry {
     durationMs: row.duration_ms ?? 0,
     tokenUsage: parseJsonField(row.token_usage, { input: 0, output: 0 }),
     cost: parseFloat(row.cost ?? '0'),
+    toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
     createdAt: new Date(row.created_at),
   };
 }
@@ -44,8 +47,8 @@ export class HeartbeatLogRepository extends BaseRepository {
     await this.execute(
       `INSERT INTO heartbeat_log
        (agent_id, soul_version, tasks_run, tasks_skipped, tasks_failed,
-        duration_ms, token_usage, cost)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        duration_ms, token_usage, cost, tool_calls)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         data.agentId,
         data.soulVersion,
@@ -55,6 +58,7 @@ export class HeartbeatLogRepository extends BaseRepository {
         data.durationMs,
         JSON.stringify(data.tokenUsage),
         data.cost,
+        JSON.stringify(data.toolCalls ?? []),
       ]
     );
   }

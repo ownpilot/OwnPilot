@@ -429,6 +429,76 @@ describe('HeartbeatRunner.runHeartbeat() — happy path', () => {
     expect(logRepo.create).toHaveBeenCalledOnce();
   });
 
+  it('aggregates per-task tool calls into the persisted log entry', async () => {
+    const soul = makeSoul();
+    soul.heartbeat.checklist = [
+      makeTask({ id: 'task-1', name: 'T1' }),
+      makeTask({ id: 'task-2', name: 'T2' }),
+    ];
+    const engine = makeEngine({
+      processMessage: vi
+        .fn()
+        .mockResolvedValueOnce({
+          content: 'one',
+          tokenUsage: { input: 1, output: 1 },
+          cost: 0,
+          toolCalls: [{ tool: 'create_memory', durationMs: 5, success: true }],
+        })
+        .mockResolvedValueOnce({
+          content: 'two',
+          tokenUsage: { input: 1, output: 1 },
+          cost: 0,
+          toolCalls: [
+            { tool: 'list_files', durationMs: 8, success: true },
+            {
+              tool: 'fetch_url',
+              durationMs: 30,
+              success: false,
+              errorPreview: 'ENOTFOUND',
+            },
+          ],
+        }),
+    });
+    const logRepo = makeLogRepo();
+    const runner = new HeartbeatRunner(
+      engine,
+      makeSoulRepo(soul),
+      makeBus(),
+      logRepo,
+      makeBudget()
+    );
+
+    await runner.runHeartbeat('agent-1');
+
+    expect(logRepo.create).toHaveBeenCalledOnce();
+    const entry = logRepo.create.mock.calls[0]![0];
+    expect(entry.toolCalls).toEqual([
+      { taskId: 'task-1', tool: 'create_memory', durationMs: 5, success: true },
+      { taskId: 'task-2', tool: 'list_files', durationMs: 8, success: true },
+      {
+        taskId: 'task-2',
+        tool: 'fetch_url',
+        durationMs: 30,
+        success: false,
+        errorPreview: 'ENOTFOUND',
+      },
+    ]);
+  });
+
+  it('omits toolCalls on the log entry when no tools were invoked', async () => {
+    const logRepo = makeLogRepo();
+    const runner = new HeartbeatRunner(
+      makeEngine(), // default engine returns no toolCalls
+      makeSoulRepo(),
+      makeBus(),
+      logRepo,
+      makeBudget()
+    );
+    await runner.runHeartbeat('agent-1');
+    const entry = logRepo.create.mock.calls[0]![0];
+    expect(entry.toolCalls).toBeUndefined();
+  });
+
   it('emits soul.heartbeat.completed event', async () => {
     const eventBus = makeEventBus();
     const runner = new HeartbeatRunner(

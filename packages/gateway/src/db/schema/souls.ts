@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS heartbeat_log (
   duration_ms INTEGER,
   token_usage JSONB DEFAULT '{"input":0,"output":0}',
   cost DECIMAL(10, 6) DEFAULT 0,
+  tool_calls JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -126,6 +127,14 @@ END $$;
 
 --- Create index for skill_access queries
 CREATE INDEX IF NOT EXISTS idx_agent_souls_skill_access ON agent_souls USING GIN (skill_access);
+
+--- HEARTBEAT_LOG: Add tool_calls column for per-cycle tool-call audit trail.
+--- Operators use this to debug which tools a soul invoked during a heartbeat.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'heartbeat_log' AND column_name = 'tool_calls') THEN
+    ALTER TABLE heartbeat_log ADD COLUMN tool_calls JSONB DEFAULT '[]';
+  END IF;
+END $$;
 `;
 
 export const SOULS_INDEXES_SQL = `

@@ -612,6 +612,84 @@ describe('heartbeat engine — processMessage()', () => {
     expect(observedWorkspaceDir).toBeUndefined();
     expect((result as { content: string }).content).toBe('ok');
   });
+
+  it('captures onToolEnd events and returns lean tool call records', async () => {
+    initRunner();
+
+    type OnToolEndCb = (
+      tc: { name: string; arguments: string },
+      result: { content: string; isError: boolean; durationMs: number }
+    ) => void;
+    // Simulate two tool calls inside the mocked chat() implementation so the
+    // collector observes them before chat() resolves — avoids awaiting the
+    // full processMessage chain just to register the callback.
+    mockChat.mockImplementation(async (_msg: string, opts: { onToolEnd?: OnToolEndCb }) => {
+      opts.onToolEnd?.(
+        { name: 'create_memory', arguments: '{"content":"hello world"}' },
+        { content: 'memory-id', isError: false, durationMs: 12 }
+      );
+      opts.onToolEnd?.(
+        { name: 'fetch_url', arguments: '{"url":"x"}' },
+        { content: 'ENOTFOUND', isError: true, durationMs: 30 }
+      );
+      return { ok: true, value: { content: 'ok', usage: null } };
+    });
+
+    const result = (await getEngine().processMessage({ message: 'run' })) as {
+      toolCalls?: unknown[];
+    };
+    expect(result.toolCalls).toEqual([
+      {
+        tool: 'create_memory',
+        durationMs: 12,
+        success: true,
+        argsPreview: '{"content":"hello world"}',
+      },
+      {
+        tool: 'fetch_url',
+        durationMs: 30,
+        success: false,
+        argsPreview: '{"url":"x"}',
+        errorPreview: 'ENOTFOUND',
+      },
+    ]);
+  });
+
+  it('truncates long tool argument previews to ~500 chars', async () => {
+    initRunner();
+
+    type OnToolEndCb = (
+      tc: { name: string; arguments: string },
+      result: { content: string; isError: boolean; durationMs: number }
+    ) => void;
+    const longArgs = 'x'.repeat(2000);
+    mockChat.mockImplementation(async (_msg: string, opts: { onToolEnd?: OnToolEndCb }) => {
+      opts.onToolEnd?.(
+        { name: 't', arguments: longArgs },
+        { content: '', isError: false, durationMs: 1 }
+      );
+      return { ok: true, value: { content: 'ok', usage: null } };
+    });
+
+    const result = (await getEngine().processMessage({ message: 'run' })) as {
+      toolCalls?: { argsPreview?: string }[];
+    };
+    expect(result.toolCalls).toHaveLength(1);
+    // Preview is truncated to 500 chars + the ellipsis sentinel
+    expect(result.toolCalls![0]!.argsPreview!.length).toBe(501);
+    expect(result.toolCalls![0]!.argsPreview!.endsWith('…')).toBe(true);
+  });
+
+  it('omits toolCalls in result when no tools were called', async () => {
+    initRunner();
+    mockChat.mockResolvedValue({ ok: true, value: { content: 'ok', usage: null } });
+
+    const result = (await getEngine().processMessage({ message: 'no tools needed' })) as {
+      toolCalls?: unknown;
+    };
+
+    expect(result.toolCalls).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

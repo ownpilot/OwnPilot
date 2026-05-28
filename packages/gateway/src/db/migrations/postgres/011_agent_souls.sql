@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS heartbeat_log (
   duration_ms INTEGER,
   token_usage JSONB DEFAULT '{"input":0,"output":0}',
   cost DECIMAL(10, 6) DEFAULT 0,
+  tool_calls JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

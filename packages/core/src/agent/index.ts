@@ -386,6 +386,7 @@ export type {
   SoulBootSequence,
   HeartbeatResult,
   HeartbeatTaskResult,
+  HeartbeatToolCallRecord,
   AgentCrew,
   CrewCoordinationPattern,
   CrewStatus,

@@ -353,6 +353,30 @@ export interface HeartbeatTaskResult {
   attemptNumber: number;
   /** Delay ms before next retry (only populated when status === 'failure' and retries remain) */
   nextRetryDelayMs?: number;
+  /**
+   * Tools the engine called while executing this task. Populated by the runtime
+   * via onToolEnd. Args + errors are truncated previews (not full payloads) so
+   * heartbeat_log rows stay small even when an agent makes many tool calls.
+   */
+  toolCalls?: HeartbeatToolCallRecord[];
+}
+
+/**
+ * Lean per-tool-call record persisted with heartbeat logs. Operators use this
+ * to debug what a soul actually did inside a cycle. The full tool result is
+ * intentionally omitted — store previews only.
+ */
+export interface HeartbeatToolCallRecord {
+  /** Tool name (e.g. "create_memory") */
+  tool: string;
+  /** Truncated JSON of arguments (max ~500 chars) */
+  argsPreview?: string;
+  /** Tool execution duration in ms */
+  durationMs: number;
+  /** Whether the tool returned an error */
+  success: boolean;
+  /** Truncated error message when success is false */
+  errorPreview?: string;
 }
 
 // ============================================================

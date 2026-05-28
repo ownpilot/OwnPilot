@@ -5,7 +5,7 @@
  * Version history is stored for rollback support.
  */
 
-import type { AgentSoul, SoulFeedback } from './types.js';
+import type { AgentSoul, HeartbeatToolCallRecord, SoulFeedback } from './types.js';
 
 // ============================================================
 // Repository interfaces (implemented by gateway)
@@ -53,6 +53,12 @@ export interface HeartbeatLogEntry {
   durationMs: number;
   tokenUsage: { input: number; output: number };
   cost: number;
+  /**
+   * Per-tool-call audit trail aggregated from every task run this cycle.
+   * Each record is tagged with `taskId` so callers can group calls by task.
+   * Omitted (or `[]`) for cycles where no tools were invoked.
+   */
+  toolCalls?: (HeartbeatToolCallRecord & { taskId: string })[];
   createdAt: Date;
 }
 

@@ -30,6 +30,7 @@ import {
 } from '@ownpilot/core';
 import type {
   AIProvider,
+  HeartbeatToolCallRecord,
   IHeartbeatAgentEngine,
   IHeartbeatEventBus,
   ISoulRepository,
@@ -57,6 +58,38 @@ const log = getLog('SoulHeartbeatService');
 const CREW_CONTEXT_CACHE_TTL_MS =
   parseInt(process.env.SOUL_CREW_CONTEXT_CACHE_TTL_MS ?? '', 10) ||
   HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS;
+
+/** Bound the size of stored tool-call previews so heartbeat_log rows stay small. */
+const TOOL_CALL_PREVIEW_MAX_CHARS = 500;
+
+function truncate(value: string, max: number): string {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max)}…`;
+}
+
+/**
+ * Build a lean record from a raw tool call + result for persistence on the
+ * heartbeat log. Args are truncated; tool output bodies are intentionally
+ * dropped (only the error preview is kept when the call failed) so storage
+ * stays bounded even when an agent makes many large tool calls.
+ */
+function buildToolCallRecord(
+  toolCall: { name: string; arguments: string },
+  toolResult: { content: string; isError: boolean; durationMs: number }
+): HeartbeatToolCallRecord {
+  const record: HeartbeatToolCallRecord = {
+    tool: toolCall.name,
+    durationMs: toolResult.durationMs,
+    success: !toolResult.isError,
+  };
+  if (toolCall.arguments) {
+    record.argsPreview = truncate(toolCall.arguments, TOOL_CALL_PREVIEW_MAX_CHARS);
+  }
+  if (toolResult.isError && toolResult.content) {
+    record.errorPreview = truncate(toolResult.content, TOOL_CALL_PREVIEW_MAX_CHARS);
+  }
+  return record;
+}
 
 // ============================================================================
 // Gateway repository adapters
@@ -347,6 +380,12 @@ export class SoulHeartbeatService {
           }
         }
 
+        // Per-task tool-call audit trail. Heartbeat operators have no other
+        // way to see which tools a soul actually invoked, so we record a
+        // bounded preview per call and return it for persistence with the
+        // heartbeat_log row.
+        const toolCalls: HeartbeatToolCallRecord[] = [];
+
         const runChat = () =>
           runInHeartbeatContext({ agentId: request.agentId, crewId }, () =>
             agent.chat(taskMessage, {
@@ -377,6 +416,9 @@ export class SoulHeartbeatService {
                     return { approved: false, reason: decision.reason };
                   }
                 : undefined,
+              onToolEnd: (toolCall, toolResult) => {
+                toolCalls.push(buildToolCallRecord(toolCall, toolResult));
+              },
             })
           );
 
@@ -404,6 +446,7 @@ export class SoulHeartbeatService {
             ? { input: usage.promptTokens, output: usage.completionTokens }
             : undefined,
           cost,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         };
       },
 

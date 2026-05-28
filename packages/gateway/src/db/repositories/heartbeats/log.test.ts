@@ -57,6 +57,7 @@ function makeHeartbeatRow(overrides: Record<string, unknown> = {}) {
     duration_ms: 1200,
     token_usage: '{"input":100,"output":200}',
     cost: '0.05',
+    tool_calls: '[]',
     created_at: '2024-06-01T12:00:00Z',
     ...overrides,
   };
@@ -103,6 +104,7 @@ describe('HeartbeatLogRepository', () => {
       expect(sql).toContain('duration_ms');
       expect(sql).toContain('token_usage');
       expect(sql).toContain('cost');
+      expect(sql).toContain('tool_calls');
 
       const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
       expect(params[0]).toBe('agent-1'); // agent_id
@@ -113,6 +115,36 @@ describe('HeartbeatLogRepository', () => {
       expect(params[5]).toBe(1200); // duration_ms
       expect(params[6]).toBe('{"input":100,"output":200}'); // token_usage JSON
       expect(params[7]).toBe(0.05); // cost
+      expect(params[8]).toBe('[]'); // tool_calls JSON (empty by default)
+    });
+
+    it('should serialize tool_calls when provided', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.create({
+        agentId: 'agent-tc',
+        soulVersion: 5,
+        tasksRun: [{ id: 't1', name: 'reflect' }],
+        tasksSkipped: [],
+        tasksFailed: [],
+        durationMs: 800,
+        tokenUsage: { input: 10, output: 20 },
+        cost: 0.01,
+        toolCalls: [
+          {
+            taskId: 't1',
+            tool: 'create_memory',
+            argsPreview: '{"content":"hi"}',
+            durationMs: 12,
+            success: true,
+          },
+        ],
+      });
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect(params[8]).toBe(
+        '[{"taskId":"t1","tool":"create_memory","argsPreview":"{\\"content\\":\\"hi\\"}","durationMs":12,"success":true}]'
+      );
     });
 
     it('should serialize empty arrays correctly', async () => {
@@ -213,6 +245,36 @@ describe('HeartbeatLogRepository', () => {
       expect(result[0]!.soulVersion).toBe(5);
       expect(result[0]!.durationMs).toBe(3500);
       expect(result[0]!.createdAt).toBeInstanceOf(Date);
+      expect(result[0]!.toolCalls).toBeUndefined(); // empty tool_calls -> undefined
+    });
+
+    it('should map tool_calls JSON when present', async () => {
+      const row = makeHeartbeatRow({
+        tool_calls:
+          '[{"taskId":"t1","tool":"create_memory","durationMs":12,"success":true,"argsPreview":"{\\"content\\":\\"hi\\"}"}]',
+      });
+      mockAdapter.query.mockResolvedValueOnce([row]);
+
+      const result = await repo.getRecent('agent-1', 1);
+
+      expect(result[0]!.toolCalls).toEqual([
+        {
+          taskId: 't1',
+          tool: 'create_memory',
+          durationMs: 12,
+          success: true,
+          argsPreview: '{"content":"hi"}',
+        },
+      ]);
+    });
+
+    it('should handle null tool_calls column by defaulting to undefined', async () => {
+      const row = makeHeartbeatRow({ tool_calls: null });
+      mockAdapter.query.mockResolvedValueOnce([row]);
+
+      const result = await repo.getRecent('agent-1', 1);
+
+      expect(result[0]!.toolCalls).toBeUndefined();
     });
   });
 

@@ -39,6 +39,12 @@ export interface IHeartbeatAgentEngine {
     content: string;
     tokenUsage?: { input: number; output: number };
     cost?: number;
+    /**
+     * Lean records of every tool the engine called while executing this
+     * message. Used to populate HeartbeatLogEntry.toolCalls for operator
+     * debugging. Each record is bounded in size (truncated args/errors).
+     */
+    toolCalls?: import('./types.js').HeartbeatToolCallRecord[];
   }>;
 
   saveMemory?(agentId: string, content: string, source: string): Promise<void>;
@@ -283,6 +289,12 @@ export class HeartbeatRunner {
       tokens: result.totalTokens,
     });
 
+    // Flatten per-task tool calls into a single audit list tagged with taskId
+    // so operators can group by task or query across the whole cycle.
+    const aggregatedToolCalls = result.tasks.flatMap((t) =>
+      (t.toolCalls ?? []).map((c) => ({ ...c, taskId: t.taskId }))
+    );
+
     // Log to DB
     await this.heartbeatLogRepo.create({
       agentId,
@@ -299,6 +311,7 @@ export class HeartbeatRunner {
       durationMs: result.durationMs,
       tokenUsage: result.totalTokens,
       cost: result.totalCost,
+      toolCalls: aggregatedToolCalls.length > 0 ? aggregatedToolCalls : undefined,
     });
 
     // AGENT-HIGH-003: Cost is recorded in heartbeat_log above.
@@ -495,6 +508,7 @@ Be concise and focused. Report your findings clearly.`.trim();
         cost: response.cost || 0,
         durationMs: Date.now() - startTime,
         attemptNumber: 0,
+        toolCalls: response.toolCalls,
       };
     } catch (error) {
       return {
