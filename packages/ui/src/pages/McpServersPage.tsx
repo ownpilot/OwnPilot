@@ -41,6 +41,8 @@ import type {
   McpServerTool,
   McpServerInfo,
   CreateMcpServerInput,
+  McpPreset,
+  InstallMcpPresetInput,
 } from '../api/endpoints/mcp';
 
 // =============================================================================
@@ -455,131 +457,23 @@ const EMPTY_FORM: ServerFormData = {
 // Popular MCP Server Presets
 // =============================================================================
 
-interface McpPreset {
-  name: string;
-  displayName: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  npmPackage: string;
-  form: ServerFormData;
-}
+// Preset list itself is fetched from GET /mcp/presets (server-side catalog).
+// Local map only assigns an icon per category for the card visualization.
+const PRESET_CATEGORY_ICON: Record<
+  McpPreset['category'],
+  React.ComponentType<{ className?: string }>
+> = {
+  browser: Globe,
+  filesystem: Folder,
+  web: Download,
+  memory: Database,
+  devtools: Code,
+  reasoning: FileText,
+};
 
-const MCP_PRESETS: McpPreset[] = [
-  {
-    name: 'filesystem',
-    displayName: 'Filesystem',
-    description: 'Read, write, and manage local files and directories',
-    icon: Folder,
-    npmPackage: '@modelcontextprotocol/server-filesystem',
-    form: {
-      name: 'filesystem',
-      displayName: 'Filesystem',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-filesystem\n.',
-      env: '',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: true,
-    },
-  },
-  {
-    name: 'github',
-    displayName: 'GitHub',
-    description: 'Manage repos, issues, PRs, and branches on GitHub',
-    icon: Code,
-    npmPackage: '@modelcontextprotocol/server-github',
-    form: {
-      name: 'github',
-      displayName: 'GitHub',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-github',
-      env: '{"GITHUB_PERSONAL_ACCESS_TOKEN": "your-token-here"}',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: false,
-    },
-  },
-  {
-    name: 'brave-search',
-    displayName: 'Brave Search',
-    description: 'Web and local search via Brave Search API',
-    icon: Search,
-    npmPackage: '@modelcontextprotocol/server-brave-search',
-    form: {
-      name: 'brave-search',
-      displayName: 'Brave Search',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-brave-search',
-      env: '{"BRAVE_API_KEY": "your-api-key-here"}',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: false,
-    },
-  },
-  {
-    name: 'fetch',
-    displayName: 'Fetch',
-    description: 'Fetch and extract content from web pages and URLs',
-    icon: Download,
-    npmPackage: '@modelcontextprotocol/server-fetch',
-    form: {
-      name: 'fetch',
-      displayName: 'Fetch',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-fetch',
-      env: '',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: true,
-    },
-  },
-  {
-    name: 'memory',
-    displayName: 'Memory',
-    description: 'Persistent knowledge graph for long-term AI memory',
-    icon: Database,
-    npmPackage: '@modelcontextprotocol/server-memory',
-    form: {
-      name: 'memory',
-      displayName: 'Memory',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-memory',
-      env: '',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: true,
-    },
-  },
-  {
-    name: 'sequential-thinking',
-    displayName: 'Sequential Thinking',
-    description: 'Dynamic problem-solving through structured thought sequences',
-    icon: FileText,
-    npmPackage: '@modelcontextprotocol/server-sequential-thinking',
-    form: {
-      name: 'sequential-thinking',
-      displayName: 'Sequential Thinking',
-      transport: 'stdio',
-      command: 'npx',
-      args: '-y\n@modelcontextprotocol/server-sequential-thinking',
-      env: '',
-      url: '',
-      headers: '',
-      enabled: true,
-      autoConnect: true,
-    },
-  },
-];
+function presetIcon(preset: McpPreset): React.ComponentType<{ className?: string }> {
+  return PRESET_CATEGORY_ICON[preset.category] ?? Server;
+}
 
 function ServerFormDialog({
   initial,
@@ -808,7 +702,8 @@ function PresetCard({
   alreadyAdded: boolean;
   onAdd: () => void;
 }) {
-  const Icon = preset.icon;
+  const Icon = presetIcon(preset);
+  const commandLine = `${preset.command} ${preset.args.join(' ')}`;
   return (
     <button
       onClick={onAdd}
@@ -831,13 +726,185 @@ function PresetCard({
           {preset.description}
         </p>
         <p className="text-[10px] text-text-muted/60 dark:text-dark-text-muted/60 mt-1 font-mono truncate">
-          {preset.npmPackage}
+          {commandLine}
         </p>
       </div>
       {!alreadyAdded && (
         <Plus className="w-4 h-4 text-text-muted dark:text-dark-text-muted shrink-0 mt-1" />
       )}
     </button>
+  );
+}
+
+// =============================================================================
+// Preset Install Dialog
+// =============================================================================
+
+function PresetInstallDialog({
+  preset,
+  onInstall,
+  onCancel,
+  submitting,
+}: {
+  preset: McpPreset;
+  onInstall: (input: InstallMcpPresetInput) => void;
+  onCancel: () => void;
+  submitting: boolean;
+}) {
+  const [name, setName] = useState(preset.defaultName);
+  const [extraArgs, setExtraArgs] = useState('');
+  const [envValues, setEnvValues] = useState<Record<string, string>>({});
+  const [autoConnect, setAutoConnect] = useState(true);
+
+  const missingRequired = preset.env
+    .filter((e) => e.required)
+    .filter((e) => !envValues[e.name]?.trim())
+    .map((e) => e.name);
+
+  const handleSubmit = () => {
+    if (missingRequired.length > 0) return;
+    const parsedExtra = extraArgs
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    onInstall({
+      name: name.trim() || undefined,
+      extraArgs: parsedExtra.length > 0 ? parsedExtra : undefined,
+      env: Object.fromEntries(
+        Object.entries(envValues).filter(([, v]) => typeof v === 'string' && v.length > 0)
+      ),
+      autoConnect,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-xl shadow-xl border border-border dark:border-dark-border w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary dark:text-dark-text-primary">
+              Install {preset.displayName}
+            </h2>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted mt-1">
+              {preset.description}
+            </p>
+          </div>
+          <a
+            href={preset.homepage}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-primary hover:underline shrink-0 mt-1"
+          >
+            docs ↗
+          </a>
+        </div>
+
+        <div className="text-xs px-3 py-2 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+          <p className="text-text-muted dark:text-dark-text-muted">{preset.installHint}</p>
+        </div>
+
+        {preset.warning && (
+          <div className="text-xs px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-amber-900 dark:text-amber-200">
+            <div className="flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>{preset.warning}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+            Server name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-1.5 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary"
+            placeholder={preset.defaultName}
+          />
+        </div>
+
+        {preset.env.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+              Environment variables
+            </div>
+            {preset.env.map((envVar) => (
+              <div key={envVar.name} className="space-y-1">
+                <label className="text-xs text-text-primary dark:text-dark-text-primary flex items-center gap-1.5">
+                  <span className="font-mono">{envVar.name}</span>
+                  {envVar.required && <span className="text-red-500">*</span>}
+                  {envVar.kind === 'secret' && (
+                    <span className="text-[10px] uppercase tracking-wide text-text-muted dark:text-dark-text-muted">
+                      secret
+                    </span>
+                  )}
+                </label>
+                <input
+                  type={envVar.kind === 'secret' ? 'password' : 'text'}
+                  value={envValues[envVar.name] ?? ''}
+                  onChange={(e) =>
+                    setEnvValues((prev) => ({ ...prev, [envVar.name]: e.target.value }))
+                  }
+                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary font-mono"
+                  placeholder={envVar.required ? 'required' : 'optional'}
+                />
+                <p className="text-[11px] text-text-muted dark:text-dark-text-muted">
+                  {envVar.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+            Extra args (one per line, appended to baseline)
+          </label>
+          <textarea
+            value={extraArgs}
+            onChange={(e) => setExtraArgs(e.target.value)}
+            className="w-full px-3 py-2 text-xs rounded-lg border border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary text-text-primary dark:text-dark-text-primary font-mono"
+            placeholder="/Users/me/projects"
+            rows={3}
+          />
+          <p className="text-[11px] text-text-muted dark:text-dark-text-muted font-mono">
+            base: {preset.command} {preset.args.join(' ')}
+          </p>
+        </div>
+
+        <label className="flex items-center gap-2 text-xs text-text-primary dark:text-dark-text-primary">
+          <input
+            type="checkbox"
+            checked={autoConnect}
+            onChange={(e) => setAutoConnect(e.target.checked)}
+          />
+          Connect automatically on server start
+        </label>
+
+        {missingRequired.length > 0 && (
+          <p className="text-xs text-red-500">Missing required: {missingRequired.join(', ')}</p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            className="px-3 py-1.5 text-sm rounded-lg border border-border dark:border-dark-border text-text-primary dark:text-dark-text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || missingRequired.length > 0}
+            className="px-3 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? 'Installing…' : 'Install'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -990,6 +1057,9 @@ export function McpServersPage() {
     preset?: ServerFormData;
   } | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [presets, setPresets] = useState<McpPreset[]>([]);
+  const [presetInstall, setPresetInstall] = useState<McpPreset | null>(null);
+  const [installing, setInstalling] = useState(false);
   const { confirm } = useDialog();
   const toast = useToast();
 
@@ -1007,6 +1077,35 @@ export function McpServersPage() {
   useEffect(() => {
     fetchServers();
   }, [fetchServers]);
+
+  useEffect(() => {
+    // Preset catalog is auxiliary — failure leaves the section empty but
+    // doesn't block manual server config.
+    mcpApi
+      .presets()
+      .then((result) => setPresets(result.presets))
+      .catch((err: unknown) => {
+        console.warn(
+          '[mcp-presets] catalog fetch failed:',
+          err instanceof Error ? err.message : err
+        );
+      });
+  }, []);
+
+  const handleInstallPreset = async (preset: McpPreset, input: InstallMcpPresetInput) => {
+    setInstalling(true);
+    try {
+      const result = await mcpApi.installPreset(preset.id, input);
+      toast.success(`Installed ${result.preset.displayName}`);
+      setPresetInstall(null);
+      fetchServers();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to install preset';
+      toast.error(msg);
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   const handleConnect = async (server: McpServer) => {
     setConnectingId(server.id);
@@ -1278,22 +1377,24 @@ export function McpServersPage() {
               </div>
             )}
 
-            {/* Quick Add — Popular MCP Servers */}
-            <div className="space-y-3 pt-2">
-              <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                Quick Add — Popular MCP Servers
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {MCP_PRESETS.map((preset) => (
-                  <PresetCard
-                    key={preset.name}
-                    preset={preset}
-                    alreadyAdded={servers.some((s) => s.name === preset.name)}
-                    onAdd={() => setShowForm({ mode: 'add', preset: preset.form })}
-                  />
-                ))}
+            {/* Quick Add — Popular MCP Servers (server-side catalog) */}
+            {presets.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+                  Quick Add — Popular MCP Servers
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {presets.map((preset) => (
+                    <PresetCard
+                      key={preset.id}
+                      preset={preset}
+                      alreadyAdded={servers.some((s) => s.name === preset.defaultName)}
+                      onAdd={() => setPresetInstall(preset)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Add/Edit Dialog */}
@@ -1305,6 +1406,16 @@ export function McpServersPage() {
               }
               onSubmit={handleSubmit}
               onCancel={() => setShowForm(null)}
+            />
+          )}
+
+          {/* Preset Install Dialog */}
+          {presetInstall && (
+            <PresetInstallDialog
+              preset={presetInstall}
+              submitting={installing}
+              onInstall={(input) => handleInstallPreset(presetInstall, input)}
+              onCancel={() => (installing ? undefined : setPresetInstall(null))}
             />
           )}
         </div>

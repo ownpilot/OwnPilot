@@ -74,6 +74,39 @@ export interface McpServerInfo {
   >;
 }
 
+export type McpPresetEnvKind = 'secret' | 'plain';
+
+export interface McpPresetEnvVar {
+  name: string;
+  description: string;
+  kind: McpPresetEnvKind;
+  required: boolean;
+}
+
+export interface McpPreset {
+  id: string;
+  defaultName: string;
+  displayName: string;
+  description: string;
+  category: 'browser' | 'filesystem' | 'web' | 'memory' | 'devtools' | 'reasoning';
+  homepage: string;
+  installHint: string;
+  transport: 'stdio';
+  command: string;
+  args: string[];
+  env: McpPresetEnvVar[];
+  warning?: string;
+}
+
+export interface InstallMcpPresetInput {
+  name?: string;
+  displayName?: string;
+  extraArgs?: string[];
+  env?: Record<string, string>;
+  enabled?: boolean;
+  autoConnect?: boolean;
+}
+
 export interface UpdateMcpServerInput {
   name?: string;
   displayName?: string;
@@ -124,5 +157,15 @@ export const mcpApi = {
     apiClient.patch<{ toolName: string; workflowUsable: boolean }>(
       `/mcp/${serverId}/tool-settings`,
       { toolName, workflowUsable }
+    ),
+
+  /** Get the curated catalog of recommended external MCP servers */
+  presets: () => apiClient.get<{ presets: McpPreset[]; count: number }>('/mcp/presets'),
+
+  /** Install a preset as a new MCP server row (server-side resolves env + extraArgs) */
+  installPreset: (id: string, data: InstallMcpPresetInput = {}) =>
+    apiClient.post<{ server: McpServer; preset: { id: string; displayName: string } }>(
+      `/mcp/presets/${id}/install`,
+      data
     ),
 };
