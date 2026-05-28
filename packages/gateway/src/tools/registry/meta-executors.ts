@@ -12,7 +12,7 @@
  *  - executeGetToolHelp      — one-or-many tool parameter help
  */
 
-import type { ToolRegistry } from '@ownpilot/core';
+import type { ToolDefinition, ToolRegistry } from '@ownpilot/core';
 import {
   applyToolLimits,
   formatFullToolHelp,
@@ -23,6 +23,7 @@ import {
   type ToolExecutionResult as CoreToolResult,
   type ToolContext,
 } from '@ownpilot/core';
+import { semanticSearchTools } from './semantic-search.js';
 import { createCustomToolsRepo } from '../../db/repositories/custom/tools.js';
 import { getToolSource } from '../../services/tool/source.js';
 import { getErrorMessage, truncate } from '../../utils/common.js';
@@ -220,7 +221,19 @@ export async function executeBatchUseTool(
 
 /**
  * Shared handler for search_tools meta-tool
+ *
+ * Three modes:
+ *  - keyword (default): AND match against name + description + tags + category.
+ *  - semantic: embedding cosine similarity of query vs per-tool search text.
+ *  - hybrid:  union of keyword hits + top semantic hits, semantic re-ranks
+ *             everything (best when caller is unsure which phrasing fits).
+ *
+ * Semantic + hybrid silently fall back to keyword if the embedding service
+ * isn't registered or the query embedding call fails — never block discovery
+ * because a side-channel is down.
  */
+type SearchMode = 'keyword' | 'semantic' | 'hybrid';
+
 export async function executeSearchTools(
   tools: ToolRegistry,
   args: Record<string, unknown>
@@ -229,18 +242,31 @@ export async function executeSearchTools(
     query,
     category: filterCategory,
     include_params,
-  } = args as { query: string; category?: string; include_params?: boolean };
+    mode: rawMode,
+    limit: rawLimit,
+  } = args as {
+    query: string;
+    category?: string;
+    include_params?: boolean;
+    mode?: string;
+    limit?: number;
+  };
+
+  const mode: SearchMode = rawMode === 'semantic' || rawMode === 'hybrid' ? rawMode : 'keyword';
+
   const allDefs = tools.getDefinitions();
   const q = query.trim().toLowerCase();
-
   const showAll = q === 'all' || q === '*';
   const queryWords = q.split(/\s+/).filter(Boolean);
 
-  const matches = allDefs.filter((d) => {
+  const candidates = allDefs.filter((d) => {
     if (AI_META_TOOL_NAMES.includes(d.name as (typeof AI_META_TOOL_NAMES)[number])) return false;
     if (filterCategory && d.category?.toLowerCase() !== filterCategory.toLowerCase()) return false;
-    if (showAll) return true;
+    return true;
+  });
 
+  const keywordMatches = candidates.filter((d) => {
+    if (showAll) return true;
     const baseName = getBaseName(d.name);
     const tags = TOOL_SEARCH_TAGS[baseName] ?? d.tags ?? [];
     const searchBlob = [
@@ -254,17 +280,67 @@ export async function executeSearchTools(
     return queryWords.every((word) => searchBlob.includes(word));
   });
 
+  let matches = keywordMatches;
+  let usedMode: SearchMode = 'keyword';
+  const defaultSemanticLimit = 20;
+  const limit =
+    typeof rawLimit === 'number' && Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(rawLimit, 100)
+      : undefined;
+
+  if (!showAll && (mode === 'semantic' || mode === 'hybrid')) {
+    const semantic = await semanticSearchTools(query, candidates);
+    if (semantic) {
+      const semCap = limit ?? defaultSemanticLimit;
+      const topSemantic = semantic.matches.slice(0, semCap);
+      if (mode === 'semantic') {
+        matches = topSemantic.map((m) => m.def);
+        usedMode = 'semantic';
+      } else {
+        // hybrid: union, with semantic order driving ranking; keyword hits not
+        // surfaced by the top semantic slice are appended at the end so they
+        // are not lost when the model intent is well-phrased.
+        const seenNames = new Set<string>();
+        const merged: ToolDefinition[] = [];
+        for (const m of topSemantic) {
+          if (!seenNames.has(m.def.name)) {
+            seenNames.add(m.def.name);
+            merged.push(m.def);
+          }
+        }
+        for (const d of keywordMatches) {
+          if (!seenNames.has(d.name)) {
+            seenNames.add(d.name);
+            merged.push(d);
+          }
+        }
+        matches = merged;
+        usedMode = 'hybrid';
+      }
+    } else {
+      log.warn(
+        `Semantic search requested but embedding service unavailable; falling back to keyword`
+      );
+    }
+  }
+
   if (matches.length === 0) {
     return {
-      content: `No tools found for "${query}". Tips:\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"`,
+      content: `No tools found for "${query}". Tips:\n- Try mode:"semantic" with a natural-language intent ("I need to remind a teammate")\n- Search by individual keywords: "email" or "send"\n- Use multiple words for AND search: "email send" finds send_email\n- Use "all" to list every available tool\n- Try broad keywords: "task", "file", "web", "memory", "note", "calendar"`,
     };
   }
+
+  if (limit !== undefined && matches.length > limit) {
+    matches = matches.slice(0, limit);
+  }
+
+  const headerMode = usedMode === 'keyword' ? '' : ` [mode=${usedMode}]`;
 
   if (include_params !== false) {
     const sections = matches.map((d) => formatFullToolHelp(tools, d.name));
     return {
       content: [
-        `Found ${matches.length} tool(s) for "${query}" (with parameters):`,
+        `Found ${matches.length} tool(s) for "${query}"${headerMode} (with parameters):`,
         '',
         ...sections.join('\n\n---\n\n').split('\n'),
       ].join('\n'),
@@ -272,7 +348,11 @@ export async function executeSearchTools(
   }
 
   const lines = matches.map((d) => `- **${d.name}**: ${truncate(d.description, 100)}`);
-  return { content: [`Found ${matches.length} tool(s) for "${query}":`, '', ...lines].join('\n') };
+  return {
+    content: [`Found ${matches.length} tool(s) for "${query}"${headerMode}:`, '', ...lines].join(
+      '\n'
+    ),
+  };
 }
 
 /**

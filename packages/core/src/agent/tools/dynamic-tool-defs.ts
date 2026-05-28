@@ -186,25 +186,36 @@ export const toggleToolDefinition: ToolDefinition = {
  */
 export const searchToolsDefinition: ToolDefinition = {
   name: 'search_tools',
-  brief: 'Find tools by keyword and get their parameter docs',
+  brief: 'Find tools by keyword (or natural-language intent) and get their parameter docs',
   workflowUsable: false,
   description:
-    'Search for tools by keyword or intent. AND matching: "email send" finds send_email. Use "all" to list every tool. Returns parameter docs by default.',
+    'Search for tools. Three modes: keyword (default, AND-match on name/description/tags — "email send" finds send_email), semantic (embedding similarity over a natural-language description — "I want to remind a teammate" finds notification + channel tools), hybrid (run both and union results, semantic re-ranks the keyword hits). Use "all" / "*" to list every tool. Returns parameter docs by default.',
   parameters: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
         description:
-          'Search keywords (e.g. "email", "send email", "task add"). Multiple words use AND logic. Use "all" to list everything.',
+          'Keywords for keyword mode (AND logic) OR a natural-language intent for semantic/hybrid. Use "all" to list everything.',
+      },
+      mode: {
+        type: 'string',
+        enum: ['keyword', 'semantic', 'hybrid'],
+        description:
+          'keyword: AND-match (default). semantic: embedding cosine similarity (best for intent phrasing). hybrid: union of both (best when unsure). Falls back to keyword if the embedding service is unavailable.',
       },
       category: {
         type: 'string',
-        description: 'Optional: filter by category name',
+        description: 'Optional: filter by category name (applied to both modes)',
       },
       include_params: {
         type: 'boolean',
         description: 'Include full parameter docs for matched tools. Default: true.',
+      },
+      limit: {
+        type: 'number',
+        description:
+          'Max results to return (default 20 for semantic/hybrid, all matches for keyword)',
       },
     },
     required: ['query'],

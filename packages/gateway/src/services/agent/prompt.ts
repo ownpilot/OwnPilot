@@ -110,7 +110,7 @@ Be the interface. When the user asks for something, do it immediately with tools
 
 ## Tool Calling
 Use these 4 MCP tools to fulfill any request:
-- \`search_tools({"query": "keyword"})\` — find tools
+- \`search_tools({"query": "keyword"})\` — keyword find (AND-match across name + desc + tags). For natural-language intent ("I want to remind a teammate"), pass \`"mode": "semantic"\` or \`"mode": "hybrid"\` — semantic uses embedding similarity, hybrid runs both and merges.
 - \`get_tool_help({"tool_name": "core.add_task"})\` — get parameters
 - \`use_tool({"tool_name": "core.list_tasks", "arguments": {}})\` — execute one
 - \`batch_use_tool({"calls": [...]})\) — execute multiple in parallel
