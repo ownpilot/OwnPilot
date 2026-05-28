@@ -386,6 +386,7 @@ export const soulsApi = {
         cost: number;
         tasksRun: number;
         tasksFailed: number;
+        toolCallsCount: number;
       }>;
       stats: {
         totalCycles: number;
@@ -394,6 +395,28 @@ export const soulsApi = {
         avgDurationMs: number;
       };
     }>(`/souls/${agentId}/logs?limit=${limit}&offset=${offset}`),
+  /** Drill into a single heartbeat cycle for operator debugging */
+  getLogDetail: (agentId: string, logId: string) =>
+    apiClient.get<{
+      id: string;
+      agentId: string;
+      soulVersion: number;
+      timestamp: string;
+      durationMs: number;
+      cost: number;
+      tokenUsage: { input: number; output: number };
+      tasksRun: Array<{ id: string; name: string }>;
+      tasksSkipped: Array<{ id: string; reason?: string }>;
+      tasksFailed: Array<{ id: string; error?: string }>;
+      toolCalls: Array<{
+        taskId: string;
+        tool: string;
+        argsPreview?: string;
+        durationMs: number;
+        success: boolean;
+        errorPreview?: string;
+      }>;
+    }>(`/souls/${agentId}/logs/${logId}`),
   stats: () =>
     apiClient.get<{
       totalCycles: number;

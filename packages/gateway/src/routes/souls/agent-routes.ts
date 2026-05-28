@@ -74,6 +74,7 @@ soulAgentRoutes.get('/:agentId/logs', async (c) => {
         cost: log.cost,
         tasksRun: log.tasksRun.length,
         tasksFailed: log.tasksFailed.length,
+        toolCallsCount: log.toolCalls?.length ?? 0,
       })),
       stats: {
         totalCycles: stats?.totalCycles ?? 0,
@@ -81,6 +82,39 @@ soulAgentRoutes.get('/:agentId/logs', async (c) => {
         avgCost: stats?.totalCost ? stats.totalCost / stats.totalCycles : 0,
         avgDurationMs: stats?.avgDurationMs ?? 0,
       },
+    });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// ── GET /:agentId/logs/:logId — drill-down into a single heartbeat cycle ──
+
+soulAgentRoutes.get('/:agentId/logs/:logId', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    if (RESERVED_KEYWORDS.includes(agentId)) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
+    }
+    const logId = c.req.param('logId');
+    const hbRepo = getHeartbeatLogRepository();
+    const entry = await hbRepo.getById(logId);
+    // Defence in depth — never let a guessed log id leak across agents
+    if (!entry || entry.agentId !== agentId) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Heartbeat log not found' }, 404);
+    }
+    return apiResponse(c, {
+      id: entry.id,
+      agentId: entry.agentId,
+      soulVersion: entry.soulVersion,
+      timestamp: entry.createdAt,
+      durationMs: entry.durationMs,
+      cost: entry.cost,
+      tokenUsage: entry.tokenUsage,
+      tasksRun: entry.tasksRun,
+      tasksSkipped: entry.tasksSkipped,
+      tasksFailed: entry.tasksFailed,
+      toolCalls: entry.toolCalls ?? [],
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);

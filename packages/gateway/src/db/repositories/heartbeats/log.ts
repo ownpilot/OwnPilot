@@ -81,6 +81,13 @@ export class HeartbeatLogRepository extends BaseRepository {
     return row ? rowToEntry(row) : null;
   }
 
+  async getById(id: string): Promise<HeartbeatLogEntry | null> {
+    const row = await this.queryOne<HeartbeatLogRow>(`SELECT * FROM heartbeat_log WHERE id = $1`, [
+      id,
+    ]);
+    return row ? rowToEntry(row) : null;
+  }
+
   async list(limit: number, offset: number): Promise<HeartbeatLogEntry[]> {
     const rows = await this.query<HeartbeatLogRow>(
       `SELECT * FROM heartbeat_log ORDER BY created_at DESC LIMIT $1 OFFSET $2`,

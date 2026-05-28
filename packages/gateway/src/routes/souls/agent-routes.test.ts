@@ -51,11 +51,13 @@ vi.mock('../../db/repositories/souls.js', () => ({
 
 const mockListByAgent = vi.fn();
 const mockGetStats = vi.fn();
+const mockGetById = vi.fn();
 
 vi.mock('../../db/repositories/heartbeats/log.js', () => ({
   getHeartbeatLogRepository: vi.fn().mockReturnValue({
     listByAgent: mockListByAgent,
     getStats: mockGetStats,
+    getById: mockGetById,
   }),
 }));
 
@@ -193,6 +195,10 @@ describe('soulAgentRoutes', () => {
           cost: 0.5,
           tasksRun: ['task1', 'task2'],
           tasksFailed: [],
+          toolCalls: [
+            { taskId: 't1', tool: 'create_memory', durationMs: 12, success: true },
+            { taskId: 't1', tool: 'list_files', durationMs: 8, success: true },
+          ],
         },
       ]);
       mockGetStats.mockResolvedValue({
@@ -213,6 +219,7 @@ describe('soulAgentRoutes', () => {
         id: 'log-1',
         tasksRun: 2,
         tasksFailed: 0,
+        toolCallsCount: 2,
       });
       expect(body.data.stats).toMatchObject({
         totalCycles: 10,
@@ -221,11 +228,119 @@ describe('soulAgentRoutes', () => {
       });
     });
 
+    it('reports toolCallsCount=0 for cycles with no tool calls', async () => {
+      mockListByAgent.mockResolvedValue([
+        {
+          id: 'log-empty',
+          createdAt: new Date('2026-03-11T10:00:00Z'),
+          durationMs: 500,
+          cost: 0.01,
+          tasksRun: [{ id: 't1', name: 'noop' }],
+          tasksFailed: [],
+          // toolCalls intentionally undefined — runner omits it when no tools fired
+        },
+      ]);
+      mockGetStats.mockResolvedValue({
+        totalCycles: 1,
+        failureRate: 0,
+        totalCost: 0.01,
+        avgDurationMs: 500,
+      });
+
+      const app = createApp();
+      const res = await app.request('/agent-test/logs');
+      const body = await res.json();
+      expect(body.data.logs[0].toolCallsCount).toBe(0);
+    });
+
     it('returns 404 when soul not found', async () => {
       mockGetByAgentId.mockResolvedValue(null);
 
       const app = createApp();
       const res = await app.request('/unknown/logs');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('GET /:agentId/logs/:logId', () => {
+    it('returns full cycle detail including tool calls', async () => {
+      mockGetById.mockResolvedValue({
+        id: 'log-abc',
+        agentId: 'agent-test',
+        soulVersion: 3,
+        createdAt: new Date('2026-03-12T12:00:00Z'),
+        durationMs: 4200,
+        cost: 0.07,
+        tokenUsage: { input: 100, output: 200 },
+        tasksRun: [{ id: 't1', name: 'reflect' }],
+        tasksSkipped: [],
+        tasksFailed: [],
+        toolCalls: [
+          {
+            taskId: 't1',
+            tool: 'create_memory',
+            durationMs: 12,
+            success: true,
+            argsPreview: '{"content":"x"}',
+          },
+        ],
+      });
+
+      const app = createApp();
+      const res = await app.request('/agent-test/logs/log-abc');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.id).toBe('log-abc');
+      expect(body.data.toolCalls).toHaveLength(1);
+      expect(body.data.toolCalls[0]).toMatchObject({
+        taskId: 't1',
+        tool: 'create_memory',
+        success: true,
+      });
+    });
+
+    it('returns empty array when cycle has no tool calls', async () => {
+      mockGetById.mockResolvedValue({
+        id: 'log-quiet',
+        agentId: 'agent-test',
+        soulVersion: 1,
+        createdAt: new Date(),
+        durationMs: 100,
+        cost: 0,
+        tokenUsage: { input: 0, output: 0 },
+        tasksRun: [],
+        tasksSkipped: [],
+        tasksFailed: [],
+      });
+      const app = createApp();
+      const res = await app.request('/agent-test/logs/log-quiet');
+      const body = await res.json();
+      expect(body.data.toolCalls).toEqual([]);
+    });
+
+    it('returns 404 when log id does not exist', async () => {
+      mockGetById.mockResolvedValue(null);
+      const app = createApp();
+      const res = await app.request('/agent-test/logs/missing');
+      expect(res.status).toBe(404);
+    });
+
+    it('refuses to surface a log entry from a different agent', async () => {
+      // Defence in depth — wrong-agent guess must not leak.
+      mockGetById.mockResolvedValue({
+        id: 'log-other',
+        agentId: 'someone-else',
+        soulVersion: 1,
+        createdAt: new Date(),
+        durationMs: 100,
+        cost: 0,
+        tokenUsage: { input: 0, output: 0 },
+        tasksRun: [],
+        tasksSkipped: [],
+        tasksFailed: [],
+      });
+      const app = createApp();
+      const res = await app.request('/agent-test/logs/log-other');
       expect(res.status).toBe(404);
     });
   });

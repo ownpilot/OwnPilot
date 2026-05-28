@@ -282,6 +282,27 @@ describe('HeartbeatLogRepository', () => {
   // getLatest
   // =========================================================================
 
+  describe('getById', () => {
+    it('returns the entry matching the given id', async () => {
+      const row = makeHeartbeatRow({ id: 'log-target' });
+      mockAdapter.queryOne.mockResolvedValueOnce(row);
+
+      const result = await repo.getById('log-target');
+
+      expect(result).not.toBeNull();
+      expect(result!.id).toBe('log-target');
+      const sql = mockAdapter.queryOne.mock.calls[0]![0] as string;
+      expect(sql).toContain('SELECT * FROM heartbeat_log WHERE id = $1');
+      expect(mockAdapter.queryOne.mock.calls[0]![1]).toEqual(['log-target']);
+    });
+
+    it('returns null when no row matches', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
+      const result = await repo.getById('missing');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('getLatest', () => {
     it('should return the most recent entry for an agent', async () => {
       const row = makeHeartbeatRow({ id: 'hb-log-latest', created_at: '2024-06-15T10:00:00Z' });
