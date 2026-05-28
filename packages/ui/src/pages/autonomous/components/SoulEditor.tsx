@@ -15,6 +15,7 @@ import type { AgentSoul, SoulVersion } from '../../../api/endpoints/souls';
 import { Save, X, History, Star } from '../../../components/icons';
 import { useToast } from '../../../components/ToastProvider';
 import { SkillSelector } from './SkillSelector';
+import { CyclesTab } from './CyclesTab';
 
 interface Props {
   agentId: string;
@@ -27,7 +28,8 @@ type TabId =
   | 'heartbeat'
   | 'relationships'
   | 'evolution'
-  | 'skills';
+  | 'skills'
+  | 'cycles';
 
 const soulTabs: { id: TabId; label: string }[] = [
   { id: 'identity', label: 'Identity' },
@@ -37,6 +39,7 @@ const soulTabs: { id: TabId; label: string }[] = [
   { id: 'relationships', label: 'Relationships' },
   { id: 'evolution', label: 'Evolution' },
   { id: 'skills', label: 'Skills' },
+  { id: 'cycles', label: 'Cycles' },
 ];
 
 const inputClass =
@@ -682,6 +685,8 @@ export function SoulEditor({ agentId }: Props) {
           )}
         </div>
       )}
+
+      {activeTab === 'cycles' && <CyclesTab agentId={agentId} />}
     </div>
   );
 }
