@@ -264,7 +264,9 @@ export const executeJavaScriptTool: ToolDefinition = {
   name: 'execute_javascript',
   brief: 'Run JavaScript/Node.js code',
   description:
-    'Execute JavaScript/Node.js code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
+    'Execute JavaScript/Node.js code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows. ' +
+    'In the Docker sandbox the code is ISOLATED from the workspace filesystem — files written with write_file are NOT visible (you will get ENOENT). ' +
+    'Pass any input data inline in the code, or use the read_file/write_file tools for workspace files instead of fs calls.',
   parameters: {
     type: 'object',
     properties: {
@@ -387,7 +389,9 @@ export const executePythonTool: ToolDefinition = {
   name: 'execute_python',
   brief: 'Run Python code',
   description:
-    'Execute Python code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows.',
+    'Execute Python code. Uses Docker sandbox when available, or runs locally with user approval if EXECUTION_MODE allows. ' +
+    'In the Docker sandbox the code is ISOLATED from the workspace filesystem — files written with write_file are NOT visible (you will get FileNotFoundError). ' +
+    'Pass any input data inline in the code, or use the read_file/write_file tools for workspace files instead of open().',
   parameters: {
     type: 'object',
     properties: {
