@@ -188,7 +188,12 @@ export abstract class BaseProvider implements IProvider {
         return msg.toolResults.map(
           (result): OpenAIMsg => ({
             role: 'tool',
-            content: result.content,
+            // A tool that succeeds with no output yields content "". Strict
+            // providers (MiniMax code 2013 "chat content is empty", GLM/ZAI
+            // code 1213) reject empty tool content — the single most common
+            // way an agentic/tool-heavy run (e.g. Claw) trips them. Fall back
+            // to a space so the turn is structurally valid.
+            content: result.content === '' ? ' ' : result.content,
             tool_call_id: result.toolCallId,
           })
         );

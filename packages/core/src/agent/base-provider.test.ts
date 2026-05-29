@@ -492,6 +492,28 @@ describe('BaseProvider', () => {
       });
     });
 
+    it('substitutes a space for empty tool-result content (MiniMax 2013 / GLM 1213)', () => {
+      // Regression: a tool that succeeds with no output produces content "".
+      // Strict providers reject empty tool content — the most common way a
+      // tool-heavy Claw run trips "chat content is empty (2013)".
+      const messages: Message[] = [
+        {
+          role: 'tool',
+          content: '',
+          toolResults: [
+            { toolCallId: 'call_1', content: '' },
+            { toolCallId: 'call_2', content: 'real output' },
+          ],
+        },
+      ];
+
+      const result = provider.testBuildMessages(messages);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].content).toBe(' ');
+      expect(result[1].content).toBe('real output');
+    });
+
     it('includes tool_calls for assistant messages with tool calls', () => {
       const messages: Message[] = [
         {
