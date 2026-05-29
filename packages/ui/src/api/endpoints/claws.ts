@@ -208,6 +208,23 @@ export interface ClawRunEval {
   reliabilityScore: number | null;
 }
 
+/** Fleet-wide reliability aggregated across all of a user's claws. */
+export interface FleetEval {
+  clawsEvaluated: number;
+  totals: { cycles: number; toolCalls: number; toolsFailed: number; wastedCalls: number };
+  fleetToolSuccessRate: number;
+  fleetReliabilityScore: number | null;
+  perClaw: Array<{
+    clawId: string;
+    name: string;
+    reliabilityScore: number | null;
+    toolSuccessRate: number;
+    cycles: number;
+    wastedCalls: number;
+  }>;
+  topRepeatedFailures: Array<{ tool: string; signature: string; count: number; claws: number }>;
+}
+
 export interface CreateClawInput {
   name: string;
   mission: string;
@@ -430,6 +447,9 @@ export const clawsApi = {
    *  failures, composite reliabilityScore). */
   evaluate: (id: string, limit = 200, offset = 0) =>
     apiClient.get<ClawRunEval>(`/claws/${id}/eval?limit=${limit}&offset=${offset}`),
+
+  /** Fleet-wide reliability: one army-health score + systemic repeated failures. */
+  fleetEval: (limit = 200) => apiClient.get<FleetEval>(`/claws/fleet/eval?limit=${limit}`),
 
   stats: () =>
     apiClient.get<{

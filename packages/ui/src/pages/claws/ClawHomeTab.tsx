@@ -18,10 +18,12 @@ import {
   Play,
   Plus,
   TrendingUp,
+  ShieldAlert,
 } from '../../components/icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import type { ClawConfig } from '../../api/endpoints/claws';
+import type { ClawConfig, FleetEval } from '../../api/endpoints/claws';
 import { clawsApi } from '../../api/endpoints/claws';
+import { ignoreError } from '../../utils/ignore-error';
 import { useNavigate } from 'react-router-dom';
 
 // Mirrors backend constants — keep in sync with claw-types.ts.
@@ -233,6 +235,26 @@ export function ClawHomeTab({
     [claws]
   );
 
+  // Fleet-wide reliability — one army-health number + the repeated failures
+  // that span the most claws (systemic, highest-leverage to fix).
+  const [fleet, setFleet] = useState<FleetEval | null>(null);
+  useEffect(() => {
+    if (claws.length === 0) {
+      setFleet(null);
+      return;
+    }
+    let cancelled = false;
+    ignoreError(
+      clawsApi.fleetEval().then((f) => {
+        if (!cancelled) setFleet(f);
+      }),
+      'claw.home.fleetEval'
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [claws.length]);
+
   // Recent activity timeline — fetched from each running claw's history
   // and merged. Capped so we don't slam the API on huge fleets.
   const [recent, setRecent] = useState<RecentActivity[]>([]);
@@ -318,6 +340,84 @@ export function ClawHomeTab({
           onClick={attentionTotal > 0 ? onViewClaws : undefined}
         />
       </div>
+
+      {/* === Fleet reliability — one army-health number + the failures that
+          span the most claws (systemic, fix-once-lift-all). === */}
+      {fleet && fleet.fleetReliabilityScore !== null && (
+        <div className="p-4 rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-text-muted" />
+              <span className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+                Fleet Reliability
+              </span>
+            </div>
+            <span className="text-[11px] text-text-muted">
+              {fleet.clawsEvaluated} claw{fleet.clawsEvaluated === 1 ? '' : 's'} ·{' '}
+              {fleet.totals.toolCalls.toLocaleString()} tool calls
+            </span>
+          </div>
+          <div className="flex items-center gap-5">
+            {(() => {
+              const score = fleet.fleetReliabilityScore ?? 0;
+              const color = score >= 85 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+              return (
+                <div className="shrink-0 text-center">
+                  <p className="text-4xl font-bold font-mono leading-none" style={{ color }}>
+                    {score}
+                  </p>
+                  <p className="text-[10px] text-text-muted mt-1">fleet score</p>
+                </div>
+              );
+            })()}
+            <div className="flex-1 grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-base font-bold text-text-primary dark:text-dark-text-primary">
+                  {Math.round(fleet.fleetToolSuccessRate * 100)}%
+                </p>
+                <p className="text-[10px] text-text-muted">tool success</p>
+              </div>
+              <div>
+                <p className="text-base font-bold text-text-primary dark:text-dark-text-primary">
+                  {fleet.totals.cycles.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-text-muted">cycles</p>
+              </div>
+              <div>
+                <p
+                  className={`text-base font-bold ${fleet.totals.wastedCalls > 0 ? 'text-rose-500' : 'text-text-primary dark:text-dark-text-primary'}`}
+                >
+                  {fleet.totals.wastedCalls}
+                </p>
+                <p className="text-[10px] text-text-muted">wasted calls</p>
+              </div>
+            </div>
+          </div>
+
+          {fleet.topRepeatedFailures.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border dark:border-dark-border space-y-1">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                <p className="text-[10px] uppercase tracking-wider text-rose-500">
+                  Fix first — failures across the fleet
+                </p>
+              </div>
+              {fleet.topRepeatedFailures.slice(0, 4).map((r, i) => (
+                <div key={i} className="flex items-center gap-2 text-[11px]">
+                  <span className="font-mono text-rose-400 shrink-0">×{r.count}</span>
+                  <span className="font-mono text-text-primary dark:text-dark-text-primary shrink-0">
+                    {r.tool}
+                  </span>
+                  {r.claws > 1 && (
+                    <span className="text-[10px] text-rose-400 shrink-0">({r.claws} claws)</span>
+                  )}
+                  <span className="text-text-muted truncate">{r.signature}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* === Attention chips bar (only when attention > 0) === */}
       {attentionTotal > 0 && (
