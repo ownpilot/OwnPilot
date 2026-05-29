@@ -327,6 +327,82 @@ describe('ClawsRepository', () => {
     });
   });
 
+  describe('saveHistory', () => {
+    const baseResult = {
+      success: true,
+      output: '',
+      outputMessage: 'done',
+      turns: 1,
+      durationMs: 100,
+      costUsd: 0,
+      tokensUsed: { prompt: 10, completion: 5 },
+    };
+
+    // tool_calls is a jsonb column; the stored value MUST be valid JSON.
+    function toolCallsParam(): string {
+      // INSERT INTO claw_history params: [id, clawId, cycle, type, success, tool_calls, ...]
+      const params = mockAdapter.execute.mock.calls[0][1] as unknown[];
+      return params[5] as string;
+    }
+
+    it('stores valid JSON for tool_calls in the normal case', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      await repo.saveHistory('claw-1', 1, {
+        ...baseResult,
+        toolCalls: [
+          { tool: 'read_file', args: { path: 'a.ts' }, result: 'ok', success: true, durationMs: 5 },
+        ],
+      } as never);
+      expect(() => JSON.parse(toolCallsParam())).not.toThrow();
+      expect(JSON.parse(toolCallsParam())[0].tool).toBe('read_file');
+    });
+
+    it('keeps tool_calls valid JSON even when a single result exceeds the 64KB cap', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      // A 2MB tool result — the exact shape that produced
+      // "invalid input syntax for type json" before the fix.
+      const huge = 'x'.repeat(2_000_000);
+      await repo.saveHistory('claw-1', 1, {
+        ...baseResult,
+        toolCalls: [
+          {
+            tool: 'read_file',
+            args: { path: 'big.json' },
+            result: huge,
+            success: true,
+            durationMs: 5,
+          },
+        ],
+      } as never);
+
+      const stored = toolCallsParam();
+      expect(Buffer.byteLength(stored, 'utf-8')).toBeLessThanOrEqual(64 * 1024);
+      const parsed = JSON.parse(stored); // must not throw
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed[0].tool).toBe('read_file');
+      expect(String(parsed[0].result)).toContain('truncated for history');
+    });
+
+    it('keeps tool_calls valid JSON when there are too many calls to fit', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      const many = Array.from({ length: 500 }, (_, i) => ({
+        tool: `tool_${i}`,
+        args: { i },
+        result: 'r'.repeat(1000),
+        success: true,
+        durationMs: 1,
+      }));
+      await repo.saveHistory('claw-1', 1, { ...baseResult, toolCalls: many } as never);
+
+      const stored = toolCallsParam();
+      expect(Buffer.byteLength(stored, 'utf-8')).toBeLessThanOrEqual(64 * 1024);
+      const parsed = JSON.parse(stored); // must not throw
+      expect(Array.isArray(parsed)).toBe(true);
+      // A marker element records what was dropped.
+      expect(parsed.some((c: { tool: string }) => c.tool === '_truncated')).toBe(true);
+    });
+  });
+
   describe('loadSession', () => {
     it('should load and map session data', async () => {
       mockAdapter.queryOne.mockResolvedValueOnce(makeSessionRow());

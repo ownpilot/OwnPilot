@@ -634,12 +634,65 @@ export class ClawsRepository extends BaseRepository {
     return value.slice(0, maxBytes - 64) + `\n... [truncated to ${maxBytes} bytes]`;
   }
 
+  /**
+   * Serialize tool calls for the jsonb `tool_calls` column under a byte budget,
+   * ALWAYS producing valid JSON. A naive string truncation of the serialized
+   * array (as truncateHistoryField does for TEXT columns) chops it mid-token,
+   * and Postgres then rejects the insert with "invalid input syntax for type
+   * json". Instead cap the large per-call fields (args, result) and, if still
+   * over budget, keep a valid prefix of the array plus a marker element.
+   */
+  private static truncateToolCallsJson(toolCalls: ClawToolCall[], maxBytes: number): string {
+    const fits = (s: string): boolean => Buffer.byteLength(s, 'utf-8') <= maxBytes;
+
+    let json = JSON.stringify(toolCalls);
+    if (fits(json)) return json;
+
+    // 1. Cap the two fields that can carry multi-KB payloads (a giant file read
+    //    result, a huge args blob) while keeping every call structurally valid.
+    const FIELD_CAP = 2000;
+    const capValue = (v: unknown): unknown => {
+      const s = typeof v === 'string' ? v : (JSON.stringify(v) ?? '');
+      if (s.length <= FIELD_CAP) return v;
+      return `${s.slice(0, FIELD_CAP)}… [+${s.length - FIELD_CAP} chars, truncated for history]`;
+    };
+    const trimmed = toolCalls.map((tc) => ({
+      ...tc,
+      args: capValue(tc.args),
+      result: capValue(tc.result),
+    }));
+    json = JSON.stringify(trimmed);
+    if (fits(json)) return json;
+
+    // 2. Still over budget (very many calls): binary-search the largest prefix
+    //    that fits once a "_truncated" marker element is appended.
+    const marker = (omitted: number): ClawToolCall => ({
+      tool: '_truncated',
+      args: {},
+      result: `${omitted} more tool call(s) omitted to fit ${maxBytes} bytes`,
+      success: true,
+      durationMs: 0,
+    });
+    let lo = 0;
+    let hi = trimmed.length;
+    let best = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const candidate = [...trimmed.slice(0, mid), marker(trimmed.length - mid)];
+      if (fits(JSON.stringify(candidate))) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return JSON.stringify([...trimmed.slice(0, best), marker(trimmed.length - best)]);
+  }
+
   async saveHistory(clawId: string, cycleNumber: number, result: ClawCycleResult): Promise<void> {
     const HISTORY_OUTPUT_MAX = 64 * 1024; // 64KB final assistant message
     const HISTORY_ERROR_MAX = 4 * 1024; // 4KB error/stack trace
     const HISTORY_TOOLS_MAX = 64 * 1024; // 64KB tool-call JSON blob
-
-    const toolsJson = JSON.stringify(result.toolCalls);
 
     await this.execute(
       `INSERT INTO claw_history
@@ -651,7 +704,8 @@ export class ClawsRepository extends BaseRepository {
         cycleNumber,
         'cycle',
         result.success,
-        ClawsRepository.truncateHistoryField(toolsJson, HISTORY_TOOLS_MAX),
+        // tool_calls is jsonb — must stay valid JSON under the byte cap.
+        ClawsRepository.truncateToolCallsJson(result.toolCalls, HISTORY_TOOLS_MAX),
         ClawsRepository.truncateHistoryField(result.outputMessage, HISTORY_OUTPUT_MAX),
         result.tokensUsed ? JSON.stringify(result.tokensUsed) : null,
         result.costUsd ?? null,
