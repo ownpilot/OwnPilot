@@ -9,6 +9,9 @@ import {
   jsonApiTool,
   jsonApiExecutor,
   readResponseBodySafely,
+  describeHttpStatus,
+  describeNetworkError,
+  parseRetryAfter,
   WEB_FETCH_TOOLS,
 } from './web-fetch.js';
 
@@ -1389,5 +1392,142 @@ describe('readResponseBodySafely', () => {
       'GET'
     );
     expect(out).toBe('hello');
+  });
+});
+
+// =============================================================================
+// Self-correction hints: describeHttpStatus / describeNetworkError / parseRetryAfter
+// =============================================================================
+
+describe('describeHttpStatus', () => {
+  it('gives an auth cue for 401/403', () => {
+    expect(describeHttpStatus(401)).toMatch(/bearerToken|Authorization/i);
+    expect(describeHttpStatus(403)).toMatch(/scope|permission|restricted/i);
+  });
+
+  it('gives a path cue for 404', () => {
+    expect(describeHttpStatus(404)).toMatch(/verify the URL path/i);
+  });
+
+  it('gives a backoff cue for 429 and 5xx', () => {
+    expect(describeHttpStatus(429)).toMatch(/Rate limited|Retry-After/i);
+    expect(describeHttpStatus(503)).toMatch(/Server error|transient|backoff/i);
+  });
+
+  it('returns empty string for success statuses', () => {
+    expect(describeHttpStatus(200)).toBe('');
+    expect(describeHttpStatus(301)).toBe('');
+  });
+
+  it('falls back to a generic client-error cue for other 4xx', () => {
+    expect(describeHttpStatus(418)).toMatch(/Client error/i);
+  });
+});
+
+describe('describeNetworkError', () => {
+  it('classifies DNS failures', () => {
+    expect(describeNetworkError('getaddrinfo ENOTFOUND nope.invalid')).toMatch(/DNS/i);
+    expect(describeNetworkError('net::ERR_NAME_NOT_RESOLVED')).toMatch(/DNS/i);
+  });
+
+  it('classifies connection refused and reset', () => {
+    expect(describeNetworkError('connect ECONNREFUSED 1.2.3.4:443')).toMatch(/refused/i);
+    expect(describeNetworkError('socket hang up')).toMatch(/reset|transient/i);
+  });
+
+  it('classifies TLS/certificate errors', () => {
+    expect(describeNetworkError('self-signed certificate in chain')).toMatch(/TLS|certificate/i);
+  });
+
+  it('returns empty string for an unrecognized message', () => {
+    expect(describeNetworkError('something totally unexpected')).toBe('');
+  });
+});
+
+describe('parseRetryAfter', () => {
+  it('parses delta-seconds', () => {
+    expect(parseRetryAfter('30')).toBe(30);
+    expect(parseRetryAfter('  120 ')).toBe(120);
+  });
+
+  it('returns undefined for missing or non-numeric values', () => {
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter('Wed, 21 Oct 2026 07:28:00 GMT')).toBeUndefined();
+  });
+});
+
+describe('jsonApiExecutor error self-correction', () => {
+  it('attaches a hint and Retry-After on a 429', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        ok: false,
+        status: 429,
+        headers: { 'content-type': 'application/json', 'retry-after': '42' },
+        json: { error: 'slow down' },
+      })
+    );
+
+    const result = await jsonApiExecutor({ url: 'https://api.example.com/x' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.status).toBe(429);
+    expect(String(content.hint)).toMatch(/Rate limited/i);
+    expect(content.retryAfter).toBe(42);
+  });
+
+  it('attaches an auth hint on a 401', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({ ok: false, status: 401, headers: { 'content-type': 'application/json' } })
+    );
+
+    const result = await jsonApiExecutor({ url: 'https://api.example.com/x' }, ctx);
+    const content = result.content as Record<string, unknown>;
+    expect(String(content.hint)).toMatch(/Unauthorized|bearerToken/i);
+    expect(content.retryAfter).toBeUndefined();
+  });
+
+  it('adds no hint on a 2xx', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        json: { ok: 1 },
+      })
+    );
+
+    const result = await jsonApiExecutor({ url: 'https://api.example.com/x' }, ctx);
+    expect(result.isError).toBe(false);
+    const content = result.content as Record<string, unknown>;
+    expect(content.hint).toBeUndefined();
+  });
+
+  it('attaches a network hint when fetch itself fails', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('getaddrinfo ENOTFOUND nope.invalid'));
+
+    const result = await jsonApiExecutor({ url: 'https://nope.invalid/x' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(String(content.hint)).toMatch(/DNS/i);
+  });
+});
+
+describe('httpRequestExecutor error self-correction', () => {
+  it('attaches a hint and Retry-After on a 503', async () => {
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'content-type': 'text/plain', 'retry-after': '10' },
+        body: 'down for maintenance',
+      })
+    );
+
+    const result = await httpRequestExecutor({ url: 'https://example.com/x' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.status).toBe(503);
+    expect(String(content.hint)).toMatch(/Server error|backoff/i);
+    expect(content.retryAfter).toBe(10);
   });
 });

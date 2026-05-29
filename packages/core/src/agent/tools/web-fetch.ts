@@ -55,6 +55,67 @@ export async function readResponseBodySafely(response: Response, method: string)
   return text;
 }
 
+/**
+ * Turn an HTTP error status into a short, actionable cue so the agent corrects
+ * its next attempt instead of blindly re-issuing the same failing request. A
+ * bare `{status: 401}` tells the model nothing it can act on; "supply a token"
+ * does. Empty string for 2xx/3xx (no hint needed). Exported for unit testing.
+ */
+export function describeHttpStatus(status: number): string {
+  switch (status) {
+    case 401:
+      return 'Unauthorized — supply a valid bearerToken or Authorization header; existing credentials may be missing or expired.';
+    case 403:
+      return 'Forbidden — the credential may lack the required scope/permission, or the resource is access-restricted.';
+    case 404:
+      return 'Not found — verify the URL path and any path/query parameters before retrying.';
+    case 405:
+      return 'Method not allowed — this endpoint rejects the HTTP method used; try a different method.';
+    case 408:
+      return 'Request timeout — the server gave up waiting; retry the request.';
+    case 409:
+      return 'Conflict — the resource state prevents this operation; re-read it before retrying.';
+    case 410:
+      return 'Gone — the resource was permanently removed; do not retry this URL.';
+    case 422:
+      return 'Unprocessable entity — the request body failed validation; check required fields and value types.';
+    case 429:
+      return 'Rate limited — back off before retrying and honor the Retry-After header if present.';
+    default:
+      if (status >= 500)
+        return 'Server error (upstream) — typically transient; retry with backoff. This is not caused by your request shape.';
+      if (status >= 400)
+        return 'Client error — re-check the URL, method, headers, and request body.';
+      return '';
+  }
+}
+
+/**
+ * Classify a low-level fetch failure (no HTTP response was produced) into an
+ * actionable cue. Returns '' when the message is unrecognized. Exported for
+ * unit testing.
+ */
+export function describeNetworkError(message: string): string {
+  if (/ENOTFOUND|getaddrinfo|EAI_AGAIN|ERR_NAME_NOT_RESOLVED/i.test(message))
+    return 'DNS lookup failed — verify the hostname is spelled correctly and is reachable.';
+  if (/ECONNREFUSED/i.test(message))
+    return 'Connection refused — the server may be down or the port/scheme wrong.';
+  if (/ECONNRESET|socket hang up/i.test(message))
+    return 'Connection reset — transient; retry the request.';
+  if (/certificate|self-signed|\bTLS\b|\bSSL\b|ERR_CERT/i.test(message))
+    return 'TLS/certificate error — the endpoint presented an invalid or untrusted certificate.';
+  if (/fetch failed|network|ECONNABORTED/i.test(message))
+    return 'Network request failed — check connectivity and the URL.';
+  return '';
+}
+
+/** Parse a Retry-After header (delta-seconds form) into a number, or undefined. */
+export function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const n = parseInt(value.trim(), 10);
+  return Number.isNaN(n) ? undefined : n;
+}
+
 // Security: Blocked domains (internal/dangerous)
 const BLOCKED_DOMAINS = [
   'localhost',
@@ -335,14 +396,20 @@ export const httpRequestExecutor: ToolExecutor = async (
       responseBody = responseBody.slice(0, MAX_RESPONSE_SIZE) + '\n\n... [Truncated]';
     }
 
+    const errored = !response.ok;
+    const hint = errored ? describeHttpStatus(response.status) : '';
+    const retryAfter = errored ? parseRetryAfter(response.headers.get('retry-after')) : undefined;
+
     return {
       content: {
         status: response.status,
         statusText: response.statusText,
         headers: responseHeaders,
         body: responseBody,
+        ...(hint ? { hint } : {}),
+        ...(retryAfter !== undefined ? { retryAfter } : {}),
       },
-      isError: !response.ok,
+      isError: errored,
     };
   } catch (error: unknown) {
     const err = error as Error;
@@ -352,8 +419,9 @@ export const httpRequestExecutor: ToolExecutor = async (
         isError: true,
       };
     }
+    const netHint = describeNetworkError(err.message);
     return {
-      content: { error: err.message },
+      content: { error: err.message, ...(netHint ? { hint: netHint } : {}) },
       isError: true,
     };
   }
@@ -694,14 +762,21 @@ export const jsonApiExecutor: ToolExecutor = async (
     // copy is still valid", not a failure. Flag it explicitly so the agent knows
     // to reuse its cache instead of treating the empty body as an error.
     const notModified = response.status === 304;
+    const errored = !response.ok && !notModified;
+
+    // Self-correction cue + Retry-After surfacing for error statuses.
+    const hint = errored ? describeHttpStatus(response.status) : '';
+    const retryAfter = errored ? parseRetryAfter(response.headers.get('retry-after')) : undefined;
 
     return {
       content: {
         status: response.status,
         ...(notModified ? { notModified: true } : {}),
+        ...(hint ? { hint } : {}),
+        ...(retryAfter !== undefined ? { retryAfter } : {}),
         data: responseData,
       },
-      isError: !response.ok && !notModified,
+      isError: errored,
     };
   } catch (error: unknown) {
     const err = error as Error;
@@ -711,8 +786,9 @@ export const jsonApiExecutor: ToolExecutor = async (
         isError: true,
       };
     }
+    const netHint = describeNetworkError(err.message);
     return {
-      content: { error: err.message },
+      content: { error: err.message, ...(netHint ? { hint: netHint } : {}) },
       isError: true,
     };
   }
