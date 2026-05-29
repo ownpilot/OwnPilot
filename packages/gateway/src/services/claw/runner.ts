@@ -477,7 +477,23 @@ export class ClawRunner {
     parts.push('');
 
     if (this.config.workspaceId) {
+      let workspacePath: string | undefined;
+      try {
+        workspacePath = getSessionWorkspacePath(this.config.workspaceId);
+      } catch {
+        workspacePath = undefined;
+      }
       parts.push(`## Workspace: ${this.config.workspaceId}`);
+      if (workspacePath) {
+        parts.push(`Your workspace directory is: \`${workspacePath}\``);
+      }
+      parts.push(
+        'IMPORTANT — file paths: use **workspace-relative** paths for every file ' +
+          'tool (e.g. `.claw/MEMORY.md`, `data/providers.json`, `scripts/sync.py`). ' +
+          'Relative paths resolve against your workspace directory. Do NOT invent ' +
+          'absolute paths like `/workspace/...` — file operations outside your ' +
+          'workspace are blocked by the filesystem guardrail.'
+      );
       parts.push('File tree and directives are injected each cycle below.');
       parts.push('');
     }
