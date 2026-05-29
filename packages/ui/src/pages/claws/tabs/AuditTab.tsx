@@ -81,7 +81,13 @@ export function AuditTab({
     return counts;
   }, [auditEntries]);
 
-  const uniqueCats = Object.keys(catCounts);
+  // 'blocked' (guardrail denials) is always offered as a filter even when no
+  // blocked entry is in the currently-loaded page — changing the category
+  // triggers a server-side reload, so this is the only way to reach old blocks.
+  const uniqueCats = useMemo(() => {
+    const cats = Object.keys(catCounts);
+    return cats.includes('blocked') ? cats : ['blocked', ...cats];
+  }, [catCounts]);
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => {
@@ -145,7 +151,7 @@ export function AuditTab({
           <option value="">All categories</option>
           {uniqueCats.map((c) => (
             <option key={c} value={c}>
-              {c} ({catCounts[c]})
+              {catCounts[c] != null ? `${c} (${catCounts[c]})` : c}
             </option>
           ))}
         </select>
@@ -177,7 +183,7 @@ export function AuditTab({
                   : 'text-gray-500 border-gray-700 hover:border-gray-500'
               }`}
             >
-              {c}: {catCounts[c]}
+              {catCounts[c] != null ? `${c}: ${catCounts[c]}` : c}
             </button>
           ))}
         </div>
