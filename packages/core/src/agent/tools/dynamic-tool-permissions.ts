@@ -24,15 +24,21 @@ const BLOCKED_CALLABLE_TOOLS = new Set([
   'compile_code',
   'package_manager',
   'write_file',
+  'edit_file',
   'delete_file',
   'copy_file',
   'move_file',
+  'create_directory',
   'send_email',
   'git_commit',
   'git_checkout',
   'git_add',
   'git_push',
   'git_reset',
+  // git_stash mutates working-tree state (save can lose untracked work, pop
+  // can produce merge conflicts). Read-only git_show / git_blame stay
+  // outside the block list — they belong with status/diff/log.
+  'git_stash',
   // H-S11: git_branch supports create/delete/rename actions — it's a mutation
   // tool and was missed in the original block list. Read-only git tools
   // (git_status, git_diff, git_log) are intentionally left allowed since

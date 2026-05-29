@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { ClawHistoryEntry } from '../../../api/endpoints/claws';
+import { clawsApi, type ClawHistoryEntry } from '../../../api/endpoints/claws';
 import type { AuditEntry } from './AuditTab';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { CheckCircle2, XCircle } from '../../../components/icons';
@@ -30,6 +30,7 @@ const AUDIT_CAT_COLORS: Record<string, string> = {
 };
 
 export function RunsTab({
+  clawId,
   history,
   historyTotal,
   isLoadingHistory,
@@ -41,6 +42,7 @@ export function RunsTab({
   isLoadingAudit,
   loadAudit,
 }: {
+  clawId: string;
   history: ClawHistoryEntry[];
   historyTotal: number;
   isLoadingHistory: boolean;
@@ -121,6 +123,23 @@ export function RunsTab({
     a.download = `claw-audit-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const [isExportingTrajectory, setIsExportingTrajectory] = useState(false);
+  const exportTrajectory = async () => {
+    setIsExportingTrajectory(true);
+    try {
+      const { trajectory } = await clawsApi.exportTrajectory(clawId);
+      const blob = new Blob([JSON.stringify(trajectory, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `claw-trajectory-${clawId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExportingTrajectory(false);
+    }
   };
 
   const copyEntry = (entry: AuditEntry) => {
@@ -209,6 +228,14 @@ export function RunsTab({
               {filteredHistory.length}
               {historySearch || historyFilter !== 'all' ? `/${history.length}` : ''}
             </span>
+            <button
+              onClick={exportTrajectory}
+              disabled={isExportingTrajectory || history.length === 0}
+              title="Export run history as a ShareGPT-format trajectory (for eval / fine-tuning)"
+              className="px-2 py-1 text-xs rounded border border-gray-700 bg-[#1a1a1a] text-gray-400 font-mono hover:border-gray-500 disabled:opacity-50"
+            >
+              {isExportingTrajectory ? 'Exporting…' : 'Export ShareGPT'}
+            </button>
           </div>
           {isLoadingHistory ? (
             <LoadingSpinner message="Loading history..." />

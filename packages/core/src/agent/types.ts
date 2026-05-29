@@ -8,6 +8,7 @@ import type {
   ConfigEntry,
   ConfigFieldDefinition,
 } from '../services/config-center.js';
+import type { ResolvedAuth } from './providers/configs/types.js';
 
 /**
  * Permission mode for execution categories
@@ -421,8 +422,21 @@ export interface ProviderConfig {
   readonly id?: string;
   /** Provider type */
   readonly provider: AIProvider;
-  /** API key (should be stored securely) */
+  /**
+   * Bearer value for the `Authorization` header. Historically the API
+   * key; now also used for session tokens and OAuth access tokens — the
+   * provider doesn't care which method produced it, only the value goes
+   * into the header. New code populating this from a non-api-key source
+   * should ALSO set {@link resolvedAuth} so the rest of the stack can
+   * tell the methods apart.
+   */
   readonly apiKey?: string;
+  /**
+   * Full resolved auth carrying method + refresh metadata. When set,
+   * `apiKey` mirrors `resolvedAuth.value` for backward compatibility.
+   * Optional today because every existing call site only sets `apiKey`.
+   */
+  readonly resolvedAuth?: ResolvedAuth;
   /** API base URL (for custom endpoints) */
   readonly baseUrl?: string;
   /** Organization ID (OpenAI) */

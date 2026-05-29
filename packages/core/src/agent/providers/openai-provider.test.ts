@@ -820,4 +820,65 @@ describe('OpenAIProvider', () => {
       expect(provider.countTokens(messages)).toBe(2); // ceil(8/4) = 2
     });
   });
+
+  // ==================== Authorization header from ResolvedAuth ====================
+
+  describe('Authorization header', () => {
+    it('uses resolvedAuth.value when present (oauth2 access token)', async () => {
+      const p = new OpenAIProvider({
+        provider: 'openai',
+        apiKey: 'legacy-key-should-be-ignored',
+        resolvedAuth: {
+          method: 'oauth2_device_code',
+          value: 'oauth-access-xyz',
+          refreshToken: 'refresh-xyz',
+          expiresAt: Date.now() + 60_000,
+        },
+      });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+
+      await p.getModels();
+
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer oauth-access-xyz');
+    });
+
+    it('uses resolvedAuth.value for session_token method', async () => {
+      const p = new OpenAIProvider({
+        provider: 'openai',
+        apiKey: 'fallback',
+        resolvedAuth: { method: 'session_token', value: 'grok-session-abc' },
+      });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+
+      await p.getModels();
+
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer grok-session-abc');
+    });
+
+    it('falls back to apiKey when resolvedAuth is absent (legacy callers)', async () => {
+      // Already exercised by the `getModels` happy path above which constructs
+      // the provider with only apiKey set and asserts `Bearer sk-test-key`.
+      // This explicit case pins the contract.
+      const p = new OpenAIProvider({ provider: 'openai', apiKey: 'sk-legacy-only' });
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: [] }),
+      });
+
+      await p.getModels();
+
+      expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer sk-legacy-only');
+    });
+  });
 });

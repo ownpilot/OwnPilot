@@ -19,6 +19,7 @@ import {
   Puzzle,
   Zap,
   RefreshCw,
+  Activity,
 } from '../components/icons';
 import { AIBriefingCard } from '../components/AIBriefingCard';
 import { TimelineView } from '../components/TimelineView';
@@ -255,6 +256,36 @@ export function DashboardPage() {
   // Render Overview Tab (original content)
   const renderOverviewTab = () => (
     <>
+      {/* Mission Control entry-point banner — surfaces the new single-pane
+          operator dashboard so users notice the new top-level page even
+          when they land on the legacy Dashboard. Same pattern as VS Code's
+          "Welcome" tile pointing to changelog. */}
+      <Link
+        to="/mission-control"
+        className="block p-4 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 to-purple-500/10 hover:border-primary/60 transition-colors group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+            <Activity className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-text-primary dark:text-dark-text-primary">
+              Mission Control{' '}
+              <span className="ml-1 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
+                NEW
+              </span>
+            </p>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted">
+              Single-pane operator view of every autonomous Claw — live state, escalation queue,
+              plan activity feed, inline controls.
+            </p>
+          </div>
+          <span className="text-primary text-sm group-hover:translate-x-0.5 transition-transform shrink-0">
+            →
+          </span>
+        </div>
+      </Link>
+
       {/* AI Briefing Card */}
       <AIBriefingCard />
 

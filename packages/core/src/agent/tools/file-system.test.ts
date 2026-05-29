@@ -33,14 +33,16 @@ vi.mock('../../security/self-protection.js', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Mock node:dns/promises to prevent real DNS lookups in SSRF protection
+// Mock node:dns/promises to prevent real DNS lookups in SSRF protection.
+// The fn is hoisted to a referenceable handle so the global beforeEach can
+// re-apply its implementation after vi.resetAllMocks() (which would otherwise
+// wipe it, making lookup() return undefined -> SSRF check throws -> URL blocked).
 // ---------------------------------------------------------------------------
-vi.mock('node:dns/promises', () => ({
-  lookup: vi.fn(async () => {
-    // Return a public IP for any hostname in tests
-    return [{ address: '93.184.216.34', family: 4 }];
-  }),
-}));
+const dnsLookupMock = vi.hoisted(() => vi.fn());
+vi.mock('node:dns/promises', () => ({ lookup: dnsLookupMock }));
+
+/** Public IP so isPrivateUrlAsync() treats test hosts as external (not blocked). */
+const PUBLIC_DNS_RESULT = [{ address: '93.184.216.34', family: 4 }];
 
 // ---------------------------------------------------------------------------
 // Import SUT after mocks are registered
@@ -56,6 +58,9 @@ import {
   fileInfoExecutor,
   deleteFileExecutor,
   copyFileExecutor,
+  createDirectoryExecutor,
+  moveFileExecutor,
+  editFileExecutor,
   FILE_SYSTEM_TOOLS,
 } from './file-system.js';
 
@@ -101,6 +106,9 @@ beforeEach(() => {
   fsMock.realpath.mockImplementation(async (p: string) => p);
   // Default: self-protection is off (not an OwnPilot path)
   mockIsOwnPilotPath.mockReturnValue(false);
+  // Re-apply the dns resolver impl wiped by resetAllMocks so SSRF checks
+  // resolve test hostnames to a public IP instead of throwing.
+  dnsLookupMock.mockResolvedValue(PUBLIC_DNS_RESULT);
 });
 
 // ===========================================================================
@@ -673,8 +681,8 @@ describe('writeFileExecutor', () => {
 // 10. Tool definitions exist with correct names and required params
 // ===========================================================================
 describe('Tool definitions', () => {
-  it('FILE_SYSTEM_TOOLS contains all 8 tools', () => {
-    expect(FILE_SYSTEM_TOOLS).toHaveLength(8);
+  it('FILE_SYSTEM_TOOLS contains all 11 tools', () => {
+    expect(FILE_SYSTEM_TOOLS).toHaveLength(11);
     const names = FILE_SYSTEM_TOOLS.map((t) => t.definition.name);
     expect(names).toEqual([
       'read_file',
@@ -685,6 +693,9 @@ describe('Tool definitions', () => {
       'get_file_info',
       'delete_file',
       'copy_file',
+      'create_directory',
+      'move_file',
+      'edit_file',
     ]);
   });
 
@@ -719,6 +730,9 @@ describe('Tool definitions', () => {
       get_file_info: ['path'],
       delete_file: ['path'],
       copy_file: ['source', 'destination'],
+      create_directory: ['path'],
+      move_file: ['source', 'destination'],
+      edit_file: ['path', 'oldText', 'newText'],
     };
 
     for (const tool of FILE_SYSTEM_TOOLS) {
@@ -1028,5 +1042,165 @@ describe('fileInfoExecutor', () => {
     const result = await fileInfoExecutor({ path: 'missing.txt' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('ENOENT');
+  });
+});
+
+// ===========================================================================
+// createDirectoryExecutor — explicit mkdir
+// ===========================================================================
+describe('createDirectoryExecutor', () => {
+  it('creates a directory with recursive: true', async () => {
+    fsMock.mkdir.mockResolvedValue(undefined);
+
+    const result = await createDirectoryExecutor({ path: 'new-dir/sub' }, ctx());
+    const data = parse(result);
+    expect(data.success).toBe(true);
+    expect(data.created).toBe(true);
+    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.any(String), { recursive: true });
+  });
+
+  it('blocks paths outside workspace', async () => {
+    const result = await createDirectoryExecutor({ path: '/etc/evil' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Access denied');
+  });
+
+  it('returns error when mkdir fails', async () => {
+    fsMock.mkdir.mockRejectedValue(new Error('EACCES: permission denied'));
+
+    const result = await createDirectoryExecutor({ path: 'forbidden' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('EACCES');
+  });
+});
+
+// ===========================================================================
+// moveFileExecutor — delegates to copyFileExecutor with move:true
+// ===========================================================================
+describe('moveFileExecutor', () => {
+  it('moves a file (action: moved)', async () => {
+    fsMock.access.mockRejectedValue(new Error('ENOENT'));
+    fsMock.rename.mockResolvedValue(undefined);
+
+    const result = await moveFileExecutor({ source: 'old.txt', destination: 'new.txt' }, ctx());
+    const data = parse(result);
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('moved');
+    expect(fsMock.rename).toHaveBeenCalled();
+    expect(fsMock.copyFile).not.toHaveBeenCalled();
+  });
+
+  it('forwards overwrite flag to underlying copy/rename', async () => {
+    fsMock.access.mockResolvedValue(undefined); // Destination exists
+    fsMock.rename.mockResolvedValue(undefined);
+
+    const result = await moveFileExecutor(
+      { source: 'old.txt', destination: 'existing.txt', overwrite: true },
+      ctx()
+    );
+    expect(result.isError).toBeFalsy();
+    expect(fsMock.rename).toHaveBeenCalled();
+  });
+
+  it('refuses when destination exists and overwrite is false', async () => {
+    fsMock.access.mockResolvedValue(undefined);
+
+    const result = await moveFileExecutor(
+      { source: 'old.txt', destination: 'existing.txt' },
+      ctx()
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('exists');
+  });
+});
+
+// ===========================================================================
+// editFileExecutor — in-place find/replace
+// ===========================================================================
+describe('editFileExecutor', () => {
+  beforeEach(() => {
+    fsMock.stat.mockResolvedValue(makeStat({ size: 100 }));
+  });
+
+  it('replaces a unique substring in-place', async () => {
+    fsMock.readFile.mockResolvedValue('hello world\nfoo bar');
+    fsMock.writeFile.mockResolvedValue(undefined);
+
+    const result = await editFileExecutor(
+      { path: 'a.txt', oldText: 'world', newText: 'planet' },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.success).toBe(true);
+    expect(data.replacements).toBe(1);
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      expect.any(String),
+      'hello planet\nfoo bar',
+      'utf-8'
+    );
+  });
+
+  it('refuses when oldText is not found (file is not modified)', async () => {
+    fsMock.readFile.mockResolvedValue('hello world');
+
+    const result = await editFileExecutor({ path: 'a.txt', oldText: 'nope', newText: 'x' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('not found');
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
+  it('refuses when oldText occurs multiple times without replaceAll', async () => {
+    fsMock.readFile.mockResolvedValue('a a a');
+
+    const result = await editFileExecutor({ path: 'a.txt', oldText: 'a', newText: 'b' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('3 times');
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
+  it('replaces all occurrences when replaceAll is true', async () => {
+    fsMock.readFile.mockResolvedValue('a a a');
+    fsMock.writeFile.mockResolvedValue(undefined);
+
+    const result = await editFileExecutor(
+      { path: 'a.txt', oldText: 'a', newText: 'b', replaceAll: true },
+      ctx()
+    );
+    const data = parse(result);
+    expect(data.success).toBe(true);
+    expect(data.replacements).toBe(3);
+    expect(fsMock.writeFile).toHaveBeenCalledWith(expect.any(String), 'b b b', 'utf-8');
+  });
+
+  it('rejects empty oldText (would match every position)', async () => {
+    const result = await editFileExecutor({ path: 'a.txt', oldText: '', newText: 'x' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('non-empty');
+  });
+
+  it('rejects non-string newText', async () => {
+    const result = await editFileExecutor(
+      { path: 'a.txt', oldText: 'x', newText: 42 as unknown as string },
+      ctx()
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('string');
+  });
+
+  it('blocks paths outside workspace', async () => {
+    const result = await editFileExecutor(
+      { path: '/etc/passwd', oldText: 'root', newText: 'admin' },
+      ctx()
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Access denied');
+  });
+
+  it('refuses files over MAX_FILE_SIZE', async () => {
+    fsMock.stat.mockResolvedValue(makeStat({ size: 11 * 1024 * 1024 }));
+
+    const result = await editFileExecutor({ path: 'huge.txt', oldText: 'x', newText: 'y' }, ctx());
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('too large');
   });
 });

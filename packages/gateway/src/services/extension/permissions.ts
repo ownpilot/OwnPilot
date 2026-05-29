@@ -83,6 +83,11 @@ const PERMISSION_TOOL_MAP: Record<SkillPermission, string[]> = {
     'browser_fill_form',
     'browser_screenshot',
     'browser_extract',
+    'browser_wait_for',
+    'browser_scroll',
+    'browser_select',
+    'browser_press_key',
+    'browser_get_state',
   ],
   config: ['get_config', 'set_config', 'list_config'],
   expenses: [

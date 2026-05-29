@@ -114,6 +114,7 @@ export class ClawServiceImpl implements IClawService {
       preset: input.preset,
       missionContract: input.missionContract,
       autonomyPolicy: input.autonomyPolicy,
+      learnSkills: input.learnSkills,
       createdBy: input.createdBy ?? 'user',
     });
   }
@@ -268,6 +269,77 @@ export class ClawServiceImpl implements IClawService {
     if (!claw) throw new Error('Claw not found');
     const steered = await getClawManager().steerClaw(clawId, userId, message);
     if (!steered) throw new Error('Claw not running');
+  }
+
+  /**
+   * Operator recovery: clear `consecutiveErrors` + `recentFailures` on a
+   * running claw without restarting it. See ClawManager.resetFailures.
+   */
+  async resetFailures(clawId: string, userId: string): Promise<void> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
+    const ok = await getClawManager().resetFailures(clawId);
+    if (!ok) throw new Error('Claw not running');
+  }
+
+  /**
+   * Operator-side next-cycle directive — queues an intent rendered with
+   * `[OPERATOR]` framing at the top of the next cycle prompt without
+   * interrupting any in-flight cycle. See ClawManager.setNextIntent.
+   */
+  async setNextIntent(clawId: string, userId: string, intent: string): Promise<void> {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
+    const ok = await getClawManager().setNextIntent(clawId, intent, 'operator');
+    if (!ok) throw new Error('Claw not running');
+  }
+
+  // ---- Plan editing (operator path) ----
+
+  /**
+   * Replace the structured task plan. Validates with the same helper the
+   * tool path uses so error messages are identical. Throws if the claw is
+   * not running (the plan lives on the in-memory session) — operators
+   * must start the claw first if they want to set up its plan from the UI.
+   */
+  async replacePlan(clawId: string, userId: string, rawTasks: unknown) {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
+    const { buildValidatedTasks } = await import('../../tools/claw/plan-executors.js');
+    const tasks = buildValidatedTasks(rawTasks);
+    const updated = await getClawManager().replacePlan(clawId, tasks);
+    if (!updated) throw new Error('Claw not running');
+    return updated;
+  }
+
+  /**
+   * Update a single task. Validation is shared with the tool path. Throws
+   * for not-found / focus-discipline violations so the route can surface
+   * the message to the operator.
+   */
+  async updateTask(clawId: string, userId: string, args: Record<string, unknown>) {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
+    const { validateTaskUpdateArgs } = await import('../../tools/claw/plan-executors.js');
+    const update = validateTaskUpdateArgs(args);
+    const result = await getClawManager().updateTaskOnSession(clawId, update);
+    if (!result) throw new Error('Claw not running');
+    return result;
+  }
+
+  /**
+   * Atomically split a task into subtasks. Operator-side counterpart to
+   * the agent's `claw_split_task` tool — shares the same validator +
+   * mutator so behaviour is identical regardless of who triggers it.
+   */
+  async splitTask(clawId: string, userId: string, args: Record<string, unknown>) {
+    const claw = await getClawsRepository().getById(clawId, userId);
+    if (!claw) throw new Error('Claw not found');
+    const { validateSplitArgs } = await import('../../tools/claw/plan-executors.js');
+    const split = validateSplitArgs(args);
+    const result = await getClawManager().splitTaskOnSession(clawId, split);
+    if (!result) throw new Error('Claw not running');
+    return result;
   }
 
   // ---- Escalation ----

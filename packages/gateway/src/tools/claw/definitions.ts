@@ -421,6 +421,276 @@ const clawStopSubclawDef: ToolDefinition = {
   tags: ['claw', 'subclaw', 'stop', 'terminate'],
 };
 
+const clawPlanDef: ToolDefinition = {
+  name: 'claw_plan',
+  description: `Set or replace the structured task plan for your mission.
+Use this at the start of work and whenever the plan changes substantially —
+do NOT call it every cycle just to mark progress (use claw_update_task for that).
+The plan is rendered into every cycle prompt so you always see current state.
+Each task needs a stable id ("t1", "t2", …) so updates target the right row.
+
+FOCUS DISCIPLINE: at most one task may have status="in_progress" at a time.
+Set the rest to "pending" or "blocked"; you can only work on one thing.
+
+Capped at 50 tasks per claw.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      tasks: {
+        type: 'array',
+        description: 'Ordered list of tasks that make up the plan.',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'Stable id, e.g. "t1"' },
+            title: { type: 'string', description: 'Short imperative description' },
+            status: {
+              type: 'string',
+              enum: ['pending', 'in_progress', 'completed', 'blocked'],
+              description: 'Initial status — usually "pending" for new tasks',
+            },
+            notes: { type: 'string', description: 'Optional context, blockers, sub-steps' },
+            successCriteria: {
+              type: 'string',
+              description:
+                'Concrete, falsifiable bar for "done" (e.g. "tests pass", "endpoint returns 200 with field X"). Commit to this BEFORE working.',
+            },
+          },
+          required: ['id', 'title'],
+        },
+      },
+    },
+    required: ['tasks'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'plan', 'tasks', 'todo', 'organize', 'roadmap'],
+};
+
+const clawUpdateTaskDef: ToolDefinition = {
+  name: 'claw_update_task',
+  description: `Update a single task's status or notes without rewriting the whole plan.
+Use this in the cycle that completes/blocks/starts a task so the prompt-rendered
+plan stays current. If the id does not exist, the call returns an error.
+
+FOCUS DISCIPLINE: starting a task (status="in_progress") fails if another task
+is already in_progress. Mark the current one completed or blocked first.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'Existing task id to update' },
+      status: {
+        type: 'string',
+        enum: ['pending', 'in_progress', 'completed', 'blocked'],
+        description: 'New status (optional)',
+      },
+      notes: { type: 'string', description: 'New notes — replaces any existing notes' },
+      evidence: {
+        type: 'string',
+        description:
+          'Required when marking completed: short record of what changed and how you know the successCriteria was met (e.g. "test suite green: 412/412", "POST /x returns 201 with id field"). Omitting yields a soft warning.',
+      },
+    },
+    required: ['id'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'task', 'update', 'progress', 'mark', 'plan'],
+};
+
+const clawListTasksDef: ToolDefinition = {
+  name: 'claw_list_tasks',
+  description: `Return the current structured task plan. Useful as a confirmation
+read after edits or when you need the raw list before deciding the next move.`,
+  parameters: { type: 'object', properties: {} },
+  category: 'Claw',
+  tags: ['claw', 'tasks', 'list', 'plan', 'read'],
+};
+
+const clawSplitTaskDef: ToolDefinition = {
+  name: 'claw_split_task',
+  description: `Atomically split a stalled or too-big task into smaller subtasks.
+
+Use this when a task is too coarse to make progress on — typically after the
+runner has shown a STALL warning ("you've been on t3 for 6 cycles"). Instead
+of rewriting the whole plan with claw_plan, this:
+
+1. Marks the parent task "blocked" with auto-evidence "Split into: t3.1, t3.2, ..."
+2. Inserts the new subtasks as t<parentId>.<N>, immediately after the parent
+3. Validates atomically — if any subtask is invalid, the plan is untouched
+
+If the parent was the focus task, you'll need to call claw_update_task with
+status="in_progress" on the subtask you want to work on next (focus discipline
+still applies — only one task may be in_progress at a time).`,
+  parameters: {
+    type: 'object',
+    properties: {
+      task_id: {
+        type: 'string',
+        description: 'Existing task id to split (e.g., "t3")',
+      },
+      subtasks: {
+        type: 'array',
+        description: 'Ordered list of subtasks (2-10 recommended).',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: 'Short imperative description' },
+            successCriteria: {
+              type: 'string',
+              description: 'Concrete bar for "done" (optional but recommended)',
+            },
+          },
+          required: ['title'],
+        },
+      },
+    },
+    required: ['task_id', 'subtasks'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'split', 'decompose', 'breakdown', 'subtask', 'plan'],
+};
+
+const clawSetNextIntentDef: ToolDefinition = {
+  name: 'claw_set_next_intent',
+  description: `Record what you will do in the NEXT cycle. Surfaced prominently in
+the next cycle's prompt so you don't lose your train of thought between cycles.
+
+Use this at the end of a cycle when:
+- You made partial progress and want to continue exactly where you left off
+- You started something but ran out of time/cycles and need to resume it cleanly
+- You're about to do something risky and want the next cycle to know the plan
+
+This is a one-liner (max 500 chars) — not a place for a full plan. Use claw_plan
+for plans, .claw/MEMORY.md for long-term context, and this for "I will do X next".
+Auto-clears after the next cycle renders it, so it can't go stale.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      intent: {
+        type: 'string',
+        description:
+          'One concrete sentence: what you will do first in the next cycle. e.g. "Run the failing test in isolation to confirm the race condition is in retry logic, not transport."',
+      },
+    },
+    required: ['intent'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'intent', 'next', 'handoff', 'continuity', 'cycle'],
+};
+
+const clawThinkDef: ToolDefinition = {
+  name: 'claw_think',
+  description: `Record an explicit reasoning step without taking any side-effecting action.
+Use this when you need to deliberate before committing to a tool call — especially
+when a previous cycle failed, the plan needs revisiting, or you're choosing between
+multiple approaches. The thought is appended to .claw/LOG.md so future cycles can
+audit your reasoning.
+
+This is NOT a substitute for action. Use it as a brief pause, not as the only thing
+you do in a cycle. A cycle whose only tool call is claw_think is wasted unless it
+unblocks a clear next action you take immediately.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      thought: {
+        type: 'string',
+        description:
+          'Your reasoning — what you observed, what options you considered, what you concluded.',
+      },
+    },
+    required: ['thought'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'think', 'reason', 'reflect', 'deliberate', 'scratchpad'],
+};
+
+const clawSaveSkillDef: ToolDefinition = {
+  name: 'claw_save_skill',
+  description: `Capture a reusable skill from what you just accomplished, so future
+claws (including you, on later runs) can follow it instead of reasoning from scratch.
+This is the deliberate counterpart to automatic skill distillation: call it when you
+discover a procedure worth keeping.
+
+Provide a short title and, optionally, the procedure body. If you omit the procedure,
+the skill is distilled automatically from this run's trajectory and report. Saved
+skills are stored in the AgentSkills format and become retrievable via
+claw_recall_skill and auto-injection on similar missions.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+        description: 'A short title describing the task this skill accomplishes.',
+      },
+      procedure: {
+        type: 'string',
+        description:
+          'Optional markdown body: the reusable steps, pitfalls, and verification. If omitted, it is distilled automatically.',
+      },
+    },
+    required: ['title'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'skill', 'learn', 'save', 'procedure', 'memory'],
+};
+
+const clawRecallSkillDef: ToolDefinition = {
+  name: 'claw_recall_skill',
+  description: `Search previously learned skills for ones relevant to your current task
+and load their procedures. Use this at the start of a task to check whether a reliable
+procedure already exists before improvising. Returns the most relevant learned skills
+(title + procedure) ranked by relevance to your query.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'What you are trying to do — used to find relevant learned skills.',
+      },
+      limit: {
+        type: 'number',
+        description: 'Max skills to return (default 3, max 5).',
+      },
+    },
+    required: ['query'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'skill', 'recall', 'retrieve', 'learn', 'memory'],
+};
+
+const clawExecuteDef: ToolDefinition = {
+  name: 'claw_execute',
+  description: `Run JavaScript that calls multiple tools programmatically in ONE step, instead of
+one tool call per cycle. Ideal for collapsing a read/query pipeline (e.g. fetch tasks + goals +
+events, then filter and aggregate) into a single inference — faster and cheaper than separate calls.
+
+Export an async function:
+  module.exports = async (args, utils) => {
+    const tasks = await utils.callTool('list_tasks', { status: 'pending' });
+    const goals = await utils.callTool('list_goals', { status: 'active' });
+    return { taskCount: tasks.length, goals };
+  };
+
+Use utils.callTool(name, args) to invoke tools and utils.listTools() to discover them. Whatever your
+function returns becomes the result. SECURITY: dangerous tools (shell, file mutation, email, git, code
+execution) are blocked inside this sandbox — use claw_run_script for OS-level work.`,
+  parameters: {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        description: 'JavaScript that sets module.exports = async (args, utils) => {...}',
+      },
+      args: {
+        type: 'object',
+        description: 'Optional arguments object passed as the first parameter to your function.',
+      },
+    },
+    required: ['code'],
+  },
+  category: 'Claw',
+  tags: ['claw', 'execute', 'code', 'programmatic', 'pipeline', 'batch', 'tools'],
+};
+
 export const CLAW_TOOLS: ToolDefinition[] = [
   clawInstallPackageDef,
   clawRunScriptDef,
@@ -438,6 +708,15 @@ export const CLAW_TOOLS: ToolDefinition[] = [
   clawStopSubclawDef,
   clawSetContextDef,
   clawGetContextDef,
+  clawPlanDef,
+  clawUpdateTaskDef,
+  clawListTasksDef,
+  clawThinkDef,
+  clawSetNextIntentDef,
+  clawSplitTaskDef,
+  clawSaveSkillDef,
+  clawRecallSkillDef,
+  clawExecuteDef,
 ];
 
 export const CLAW_TOOL_NAMES = CLAW_TOOLS.map((t) => t.name);

@@ -65,8 +65,14 @@ function createMockService() {
     listSessions: vi.fn().mockReturnValue([]),
     getHistory: vi.fn(),
     sendMessage: vi.fn(),
+    steerClaw: vi.fn(),
+    resetFailures: vi.fn(),
+    setNextIntent: vi.fn(),
     approveEscalation: vi.fn(),
     denyEscalation: vi.fn(),
+    replacePlan: vi.fn(),
+    updateTask: vi.fn(),
+    splitTask: vi.fn(),
   };
 }
 
@@ -700,6 +706,258 @@ describe('Claws Routes', () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
+    });
+  });
+
+  // ---- Next intent ----
+
+  describe('POST /claws/:id/next-intent', () => {
+    it('queues an operator directive on a running claw', async () => {
+      service.setNextIntent.mockResolvedValue(undefined);
+      const res = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'switch to debugging the auth bug' }),
+      });
+      expect(res.status).toBe(200);
+      expect(service.setNextIntent).toHaveBeenCalledWith(
+        'claw-1',
+        'user-1',
+        'switch to debugging the auth bug'
+      );
+    });
+
+    it('returns 400 on missing or empty intent', async () => {
+      const r1 = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(r1.status).toBe(400);
+
+      const r2 = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: '   ' }),
+      });
+      expect(r2.status).toBe(400);
+    });
+
+    it('returns 400 when service rejects on length', async () => {
+      service.setNextIntent.mockRejectedValue(new Error('intent exceeds 500 chars — use foo'));
+      const res = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'x'.repeat(600) }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when the claw is not found', async () => {
+      service.setNextIntent.mockRejectedValue(new Error('Claw not found'));
+      const res = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'do the thing' }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 409 when the claw is not running', async () => {
+      service.setNextIntent.mockRejectedValue(new Error('Claw not running'));
+      const res = await app.request('/claws/claw-1/next-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: 'do the thing' }),
+      });
+      expect(res.status).toBe(409);
+    });
+  });
+
+  // ---- Reset failures ----
+
+  describe('POST /claws/:id/reset-failures', () => {
+    it('clears failures on a running claw', async () => {
+      service.resetFailures.mockResolvedValue(undefined);
+      const res = await app.request('/claws/claw-1/reset-failures', { method: 'POST' });
+      expect(res.status).toBe(200);
+      expect(service.resetFailures).toHaveBeenCalledWith('claw-1', 'user-1');
+      const body = (await res.json()) as { data: { reset: boolean } };
+      expect(body.data).toEqual({ reset: true });
+    });
+
+    it('returns 404 when the claw is not found', async () => {
+      service.resetFailures.mockRejectedValue(new Error('Claw not found'));
+      const res = await app.request('/claws/claw-1/reset-failures', { method: 'POST' });
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 409 when the claw is not running', async () => {
+      service.resetFailures.mockRejectedValue(new Error('Claw not running'));
+      const res = await app.request('/claws/claw-1/reset-failures', { method: 'POST' });
+      expect(res.status).toBe(409);
+    });
+  });
+
+  // ---- Plan editing ----
+
+  describe('PUT /claws/:id/plan', () => {
+    it('replaces the plan with a valid task list', async () => {
+      service.replacePlan.mockResolvedValue([
+        {
+          id: 't1',
+          title: 'Survey',
+          status: 'pending',
+          createdAt: 'x',
+          updatedAt: 'x',
+          cyclesInProgress: 0,
+        },
+      ]);
+      const res = await app.request('/claws/claw-1/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: [{ id: 't1', title: 'Survey' }] }),
+      });
+      expect(res.status).toBe(200);
+      expect(service.replacePlan).toHaveBeenCalledWith('claw-1', 'user-1', [
+        { id: 't1', title: 'Survey' },
+      ]);
+    });
+
+    it('returns 400 when the service throws a validation error', async () => {
+      service.replacePlan.mockRejectedValue(new Error('tasks[0].id must match /.../'));
+      const res = await app.request('/claws/claw-1/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: [{ id: 'bad id', title: 'x' }] }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 409 when the claw is not running', async () => {
+      service.replacePlan.mockRejectedValue(new Error('Claw not running'));
+      const res = await app.request('/claws/claw-1/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: [] }),
+      });
+      expect(res.status).toBe(409);
+    });
+
+    it('returns 404 when the claw is not found', async () => {
+      service.replacePlan.mockRejectedValue(new Error('Claw not found'));
+      const res = await app.request('/claws/claw-99/plan', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: [] }),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('PATCH /claws/:id/tasks/:taskId', () => {
+    it('updates a single task', async () => {
+      service.updateTask.mockResolvedValue({
+        task: {
+          id: 't1',
+          title: 'A',
+          status: 'completed',
+          createdAt: 'x',
+          updatedAt: 'y',
+        },
+        warnings: [],
+      });
+      const res = await app.request('/claws/claw-1/tasks/t1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed', evidence: 'tests green' }),
+      });
+      expect(res.status).toBe(200);
+      // The route merges the URL taskId into the args under `id`.
+      expect(service.updateTask).toHaveBeenCalledWith('claw-1', 'user-1', {
+        id: 't1',
+        status: 'completed',
+        evidence: 'tests green',
+      });
+    });
+
+    it('returns 404 when the task id is unknown', async () => {
+      service.updateTask.mockRejectedValue(new Error('Task "tX" not found.'));
+      const res = await app.request('/claws/claw-1/tasks/tX', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 400 on focus-discipline violation', async () => {
+      service.updateTask.mockRejectedValue(
+        new Error('Cannot start "t2": task "t1" is already in_progress. ...')
+      );
+      const res = await app.request('/claws/claw-1/tasks/t2', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress' }),
+      });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /claws/:id/tasks/:taskId/split', () => {
+    it('atomically splits a task into subtasks', async () => {
+      service.splitTask.mockResolvedValue({
+        parent: { id: 't1', title: 'A', status: 'blocked' },
+        subtasks: [
+          { id: 't1.1', title: 'sub1' },
+          { id: 't1.2', title: 'sub2' },
+        ],
+      });
+      const res = await app.request('/claws/claw-1/tasks/t1/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subtasks: [{ title: 'sub1' }, { title: 'sub2' }],
+        }),
+      });
+      expect(res.status).toBe(200);
+      // The route folds the URL taskId into args.task_id so the service
+      // gets the same shape regardless of whether the call came from REST
+      // or from the tool dispatcher.
+      expect(service.splitTask).toHaveBeenCalledWith('claw-1', 'user-1', {
+        task_id: 't1',
+        subtasks: [{ title: 'sub1' }, { title: 'sub2' }],
+      });
+    });
+
+    it('returns 400 when fewer than 2 subtasks are provided', async () => {
+      service.splitTask.mockRejectedValue(new Error('subtasks must have at least 2 entries'));
+      const res = await app.request('/claws/claw-1/tasks/t1/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtasks: [{ title: 'only' }] }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when the parent task does not exist', async () => {
+      service.splitTask.mockRejectedValue(new Error('Task "tX" not found.'));
+      const res = await app.request('/claws/claw-1/tasks/tX/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtasks: [{ title: 'a' }, { title: 'b' }] }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it('returns 409 when the claw is not running', async () => {
+      service.splitTask.mockRejectedValue(new Error('Claw not running'));
+      const res = await app.request('/claws/claw-1/tasks/t1/split', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtasks: [{ title: 'a' }, { title: 'b' }] }),
+      });
+      expect(res.status).toBe(409);
     });
   });
 

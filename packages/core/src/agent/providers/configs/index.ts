@@ -30,7 +30,12 @@ export type {
   ProviderConfig,
   ResolvedProviderConfig,
   ProviderSelectionCriteria,
+  AuthMethod,
+  ProviderAuthSupport,
+  ProviderOAuthConfig,
+  ResolvedAuth,
 } from './types.js';
+export { getAuthHeader, isAuthExpired } from './types.js';
 
 import type {
   ModelCapability,

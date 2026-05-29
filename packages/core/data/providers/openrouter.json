@@ -16,8 +16,8 @@
       "name": "Qwen3.7 Max",
       "contextWindow": 1000000,
       "maxOutput": 65536,
-      "inputPrice": 2.5,
-      "outputPrice": 7.5,
+      "inputPrice": 1.25,
+      "outputPrice": 3.75,
       "capabilities": [
         "chat",
         "function_calling",
@@ -118,22 +118,6 @@
       "releaseDate": "2026-05-07"
     },
     {
-      "id": "baidu/cobuddy:free",
-      "name": "CoBuddy (free)",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-06"
-    },
-    {
       "id": "openai/gpt-chat-latest",
       "name": "GPT Chat Latest",
       "contextWindow": 400000,
@@ -221,8 +205,8 @@
     {
       "id": "poolside/laguna-xs.2:free",
       "name": "Laguna XS.2 (free)",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -237,8 +221,8 @@
     {
       "id": "poolside/laguna-m.1:free",
       "name": "Laguna M.1 (free)",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
+      "contextWindow": 262144,
+      "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -343,9 +327,9 @@
     {
       "id": "qwen/qwen3.6-27b",
       "name": "Qwen3.6 27B",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.3,
+      "contextWindow": 262140,
+      "maxOutput": 262140,
+      "inputPrice": 0.29,
       "outputPrice": 3.2,
       "capabilities": [
         "chat",
@@ -363,7 +347,7 @@
       "name": "Qwen3.6 35B A3B",
       "contextWindow": 262140,
       "maxOutput": 262140,
-      "inputPrice": 0.15,
+      "inputPrice": 0.14,
       "outputPrice": 1,
       "capabilities": [
         "chat",
@@ -589,9 +573,9 @@
       "id": "xiaomi/mimo-v2.5-pro",
       "name": "MiMo-V2.5-Pro",
       "contextWindow": 1048576,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
+      "maxOutput": 131072,
+      "inputPrice": 0.435,
+      "outputPrice": 0.87,
       "capabilities": [
         "chat",
         "function_calling",
@@ -607,8 +591,8 @@
       "name": "MiMo-V2.5",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "vision",
@@ -878,22 +862,6 @@
       ],
       "default": false,
       "releaseDate": "2026-04-02"
-    },
-    {
-      "id": "arcee-ai/trinity-large-thinking:free",
-      "name": "Trinity Large Thinking (free)",
-      "contextWindow": 262144,
-      "maxOutput": 80000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-01"
     },
     {
       "id": "arcee-ai/trinity-large-thinking",
@@ -2042,7 +2010,7 @@
       "id": "openai/gpt-5.2-chat",
       "name": "GPT-5.2 Chat",
       "contextWindow": 128000,
-      "maxOutput": 32000,
+      "maxOutput": 16384,
       "inputPrice": 1.75,
       "outputPrice": 14,
       "capabilities": [
@@ -2371,7 +2339,7 @@
       "id": "openai/gpt-5.1-chat",
       "name": "GPT-5.1 Chat",
       "contextWindow": 128000,
-      "maxOutput": 16384,
+      "maxOutput": 32000,
       "inputPrice": 1.25,
       "outputPrice": 10,
       "capabilities": [
@@ -2388,7 +2356,7 @@
       "id": "openai/gpt-5.1-codex-mini",
       "name": "GPT-5.1 Codex mini",
       "contextWindow": 400000,
-      "maxOutput": 128000,
+      "maxOutput": 100000,
       "inputPrice": 0.25,
       "outputPrice": 2,
       "capabilities": [
@@ -3517,10 +3485,10 @@
     {
       "id": "z-ai/glm-4.5-air",
       "name": "GLM-4.5-Air",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
-      "inputPrice": 0.13,
-      "outputPrice": 0.85,
+      "contextWindow": 131070,
+      "maxOutput": 131070,
+      "inputPrice": 0.125,
+      "outputPrice": 0.84,
       "capabilities": [
         "chat",
         "function_calling",

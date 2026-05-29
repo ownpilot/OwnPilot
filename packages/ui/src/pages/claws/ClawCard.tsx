@@ -1,6 +1,53 @@
-import type { ClawConfig } from '../../api/endpoints/claws';
-import { Play, Pause, Square, Copy, Trash2, Wrench } from '../../components/icons';
+import type { ClawConfig, ClawTask } from '../../api/endpoints/claws';
+import { Play, Pause, Square, Copy, Trash2, Wrench, Target } from '../../components/icons';
 import { getStateBadge, formatCost } from './utils';
+
+// Mirrors CLAW_TASK_STALL_THRESHOLD on the backend. Kept local so the card
+// can highlight stalled focus without an extra DTO field.
+const CARD_STALL_THRESHOLD = 5;
+
+function PlanSummary({ tasks }: { tasks: ClawTask[] }) {
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.status === 'completed').length;
+  const blocked = tasks.filter((t) => t.status === 'blocked').length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const focus = tasks.find((t) => t.status === 'in_progress');
+  const stalled = focus ? (focus.cyclesInProgress ?? 0) >= CARD_STALL_THRESHOLD : false;
+
+  return (
+    <div className="mb-3 p-2 rounded-md bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
+      <div className="flex items-center justify-between mb-1 text-[11px]">
+        <span className="text-text-muted">Plan</span>
+        <span className="font-mono text-text-secondary dark:text-dark-text-secondary">
+          {completed}/{total}
+          {blocked > 0 && <span className="text-amber-500"> · {blocked} blocked</span>}
+        </span>
+      </div>
+      <div className="w-full bg-[#1a1a1a] rounded-full h-1.5 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-green-500 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      {focus && (
+        <div className="flex items-center gap-1.5 mt-1.5 text-[11px] min-w-0">
+          <Target className={`w-3 h-3 shrink-0 ${stalled ? 'text-red-500' : 'text-blue-500'}`} />
+          <span
+            className={`truncate ${stalled ? 'text-red-500' : 'text-text-primary dark:text-dark-text-primary'}`}
+            title={focus.title}
+          >
+            {focus.title}
+          </span>
+          {stalled && (
+            <span className="text-[10px] text-red-500 shrink-0">
+              ⚠ {focus.cyclesInProgress ?? 0}c
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ClawCard({
   claw,
@@ -48,12 +95,38 @@ export function ClawCard({
   return (
     <div
       onClick={onSelect}
-      className={`bg-bg-primary dark:bg-dark-bg-primary border rounded-xl p-4 hover:shadow-sm transition-all cursor-pointer ${
+      className={`relative bg-bg-primary dark:bg-dark-bg-primary border rounded-xl p-4 pl-5 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer overflow-hidden ${
         isSelected
           ? 'border-primary ring-1 ring-primary/30'
-          : 'border-border dark:border-dark-border'
+          : state === 'escalation_pending'
+            ? 'border-purple-500/40 shadow-[0_0_0_1px_rgba(168,85,247,0.15)]'
+            : (claw.session?.consecutiveErrors ?? 0) >= 2
+              ? 'border-purple-500/30'
+              : state === 'failed'
+                ? 'border-amber-500/30'
+                : 'border-border dark:border-dark-border'
       }`}
     >
+      {/* Left-edge state accent — colored vertical bar that pulses on
+          attention states. Makes the card grid scannable at a glance
+          without reading the badge — operator's eye snaps to the bright
+          colors first. */}
+      <span
+        className={`absolute left-0 top-0 bottom-0 w-1 ${
+          state === 'escalation_pending'
+            ? 'bg-purple-500 animate-pulse'
+            : (claw.session?.consecutiveErrors ?? 0) >= 2
+              ? 'bg-purple-500 animate-pulse'
+              : isRunning
+                ? 'bg-green-500'
+                : isPaused
+                  ? 'bg-amber-500'
+                  : state === 'failed'
+                    ? 'bg-amber-500'
+                    : 'bg-transparent'
+        }`}
+        aria-hidden="true"
+      />
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         {onToggleCheck && (
@@ -114,14 +187,44 @@ export function ClawCard({
         )}
       </div>
 
-      {/* Stats */}
+      {/* Stats — three iconified mini-tiles. More visual weight than a
+          plain text row, easier to scan at a distance. The failure tile
+          replaces the cost tile when reflection is active so the most
+          important number is biggest. */}
       {claw.session && (
-        <div className="flex items-center gap-3 text-xs text-text-muted dark:text-dark-text-muted mb-3">
-          <span title="Cycles">{claw.session.cyclesCompleted} cycles</span>
-          <span title="Tool calls">{claw.session.totalToolCalls} calls</span>
-          <span title="Cost">{formatCost(claw.session.totalCostUsd)}</span>
+        <div className="grid grid-cols-3 gap-1.5 mb-3">
+          <StatTile
+            label="cycles"
+            value={claw.session.cyclesCompleted}
+            tone="blue"
+            title={`${claw.session.cyclesCompleted} cycles completed`}
+          />
+          <StatTile
+            label="calls"
+            value={claw.session.totalToolCalls}
+            tone="cyan"
+            title={`${claw.session.totalToolCalls} tool calls`}
+          />
+          {claw.session.consecutiveErrors >= 2 ? (
+            <StatTile
+              label="errors"
+              value={`⚠ ${claw.session.consecutiveErrors}`}
+              tone="red"
+              title={`${claw.session.consecutiveErrors} consecutive failed cycles`}
+            />
+          ) : (
+            <StatTile
+              label="cost"
+              value={formatCost(claw.session.totalCostUsd)}
+              tone="emerald"
+              title={`Total spend: ${formatCost(claw.session.totalCostUsd)}`}
+            />
+          )}
         </div>
       )}
+
+      {/* Plan progress + focus */}
+      {claw.session && claw.session.tasks.length > 0 && <PlanSummary tasks={claw.session.tasks} />}
 
       {/* Escalation Banner */}
       {isEscalation && claw.session?.pendingEscalation && (
@@ -235,6 +338,38 @@ export function ClawCard({
           <Trash2 className="w-3.5 h-3.5 text-text-muted dark:text-dark-text-muted" />
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Compact stat tile used in the card stats row. Each tile is a one-glance
+ * unit — colored top stripe + big tabular number + small label.
+ */
+function StatTile({
+  label,
+  value,
+  tone,
+  title,
+}: {
+  label: string;
+  value: string | number;
+  tone: 'blue' | 'cyan' | 'emerald' | 'red';
+  title?: string;
+}) {
+  const toneCls: Record<typeof tone, string> = {
+    blue: 'bg-blue-500/8 text-blue-500',
+    cyan: 'bg-cyan-500/8 text-cyan-500',
+    emerald: 'bg-emerald-500/8 text-emerald-500',
+    red: 'bg-red-500/10 text-red-500',
+  };
+  return (
+    <div
+      title={title}
+      className={`px-2 py-1.5 rounded-md flex flex-col items-center ${toneCls[tone]}`}
+    >
+      <span className="text-sm font-bold tabular-nums leading-tight">{value}</span>
+      <span className="text-[9px] uppercase tracking-wider opacity-75 leading-tight">{label}</span>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import {
   executeInstallPackage,
   executeRunScript,
   executeCreateTool,
+  executeProgrammaticCode,
 } from './lifecycle-executors.js';
 import {
   executeSpawnSubclaw,
@@ -46,6 +47,15 @@ import {
   executeReflect,
   executeUpdateConfig,
 } from './context-executors.js';
+import {
+  executePlan,
+  executeUpdateTask,
+  executeListTasks,
+  executeThink,
+  executeSetNextIntent,
+  executeSplitTask,
+} from './plan-executors.js';
+import { executeSaveSkill, executeRecallSkill } from './skill-executors.js';
 
 // Public interface — re-exported so existing importers
 // (`@ownpilot/gateway` → tools/index.ts, agent-tool-registry.ts) keep working.
@@ -105,6 +115,33 @@ export async function executeClawTool(
 
       case 'claw_get_context':
         return await executeGetContext();
+
+      case 'claw_plan':
+        return await executePlan(args);
+
+      case 'claw_update_task':
+        return await executeUpdateTask(args);
+
+      case 'claw_list_tasks':
+        return await executeListTasks();
+
+      case 'claw_think':
+        return await executeThink(args);
+
+      case 'claw_set_next_intent':
+        return await executeSetNextIntent(args);
+
+      case 'claw_split_task':
+        return await executeSplitTask(args);
+
+      case 'claw_save_skill':
+        return await executeSaveSkill(args, userId);
+
+      case 'claw_recall_skill':
+        return await executeRecallSkill(args, userId);
+
+      case 'claw_execute':
+        return await executeProgrammaticCode(args, userId);
 
       default:
         return { success: false, error: `Unknown claw tool: ${toolName}` };

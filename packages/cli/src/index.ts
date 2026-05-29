@@ -77,6 +77,26 @@ import {
   heartbeatStats,
   heartbeatAgent,
 } from './commands/soul.js';
+import { startAcpServe } from './commands/acp.js';
+import {
+  clawList,
+  clawGet,
+  clawStats,
+  clawPresets,
+  clawStart,
+  clawPause,
+  clawResume,
+  clawStop,
+  clawDelete,
+  clawSendMessage,
+  clawNextIntent,
+  clawSteer,
+  clawResetFailures,
+  clawApproveEscalation,
+  clawDenyEscalation,
+  clawHistory,
+  clawWatch,
+} from './commands/claw.js';
 
 // Load environment variables from .env (fallback)
 loadEnv({ quiet: true });
@@ -130,6 +150,20 @@ program
     await initializeAll();
     await loadCredentialsToEnv();
     await startAll(options);
+  });
+
+// ACP server — exposes OwnPilot as an Agent Client Protocol agent over
+// stdio. IDEs (Zed) and other ACP-compliant tools spawn this and talk
+// JSON-RPC on stdin/stdout. Diagnostics MUST go to stderr only.
+program
+  .command('acp-serve')
+  .description('Run OwnPilot as an ACP agent over stdio (for IDE integrations)')
+  .action(async () => {
+    await startAcpServe(async () => {
+      await initializeAll();
+      await loadCredentialsToEnv();
+    });
+    process.exit(0);
   });
 
 // Config commands for secure credential management
@@ -307,6 +341,68 @@ heartbeatCmd
   .command('agent <agentId>')
   .description('Show heartbeat logs for a specific agent')
   .action(heartbeatAgent);
+
+// Claw commands — drive the unified autonomous agent runtime
+const clawCmd = program
+  .command('claw')
+  .description('Manage Claw autonomous agent runtimes (start/pause/steer/inspect)');
+
+clawCmd
+  .command('list')
+  .description('List all claws with state, cycles, cost, focus')
+  .action(clawList);
+clawCmd.command('get <id>').description('Show claw config + session (JSON)').action(clawGet);
+clawCmd.command('stats').description('Aggregate stats across all claws').action(clawStats);
+clawCmd.command('presets').description('List available claw presets').action(clawPresets);
+
+clawCmd.command('start <id>').description('Start a claw').action(clawStart);
+clawCmd.command('pause <id>').description('Pause a running claw').action(clawPause);
+clawCmd.command('resume <id>').description('Resume a paused claw').action(clawResume);
+clawCmd.command('stop <id>').description('Stop a claw').action(clawStop);
+clawCmd.command('delete <id>').description('Delete a claw permanently').action(clawDelete);
+
+clawCmd
+  .command('send-message <id> <message...>')
+  .description('Queue inbox message (read on next cycle)')
+  .action(clawSendMessage);
+
+clawCmd
+  .command('next-intent <id> <directive...>')
+  .description('Queue [OPERATOR] directive for next cycle (no interrupt)')
+  .action(clawNextIntent);
+
+clawCmd
+  .command('steer <id> <directive...>')
+  .description('Interrupt the current cycle and restart with this directive now')
+  .action(clawSteer);
+
+clawCmd
+  .command('reset-failures <id>')
+  .description('Clear consecutiveErrors + recentFailures (lifts reflection mode)')
+  .action(clawResetFailures);
+
+clawCmd
+  .command('approve-escalation <id>')
+  .description('Approve a pending escalation request')
+  .action(clawApproveEscalation);
+
+clawCmd
+  .command('deny-escalation <id> [reason...]')
+  .description('Deny a pending escalation request')
+  .action(clawDenyEscalation);
+
+clawCmd
+  .command('history <id> [limit]')
+  .description('Show recent execution history (default 20)')
+  .action(clawHistory);
+
+clawCmd
+  .command('watch [id]')
+  .description('Live-tail WebSocket claw events (id or "all"; --verbose for full payloads)')
+  .option('-v, --verbose', 'print full JSON payloads instead of summary lines')
+  .option('-l, --limit <n>', 'exit after N events', (v) => Number(v))
+  .option('--token <token>', 'API token (overrides OWNPILOT_API_KEY env)')
+  .action((id, opts) => clawWatch(id, opts));
 
 // Parse arguments
 program.parse();

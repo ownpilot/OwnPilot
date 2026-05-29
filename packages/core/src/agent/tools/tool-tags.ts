@@ -40,6 +40,9 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   git_add: ['git', 'stage', 'add files', 'prepare'],
   git_branch: ['git', 'branch', 'branching'],
   git_checkout: ['git', 'switch', 'checkout', 'change branch'],
+  git_show: ['git', 'show', 'inspect commit', 'reveal', 'past file'],
+  git_blame: ['git', 'blame', 'author', 'attribution', 'who changed', 'annotate'],
+  git_stash: ['git', 'stash', 'save wip', 'shelve', 'pop', 'set aside'],
 
   // ─────────────────────────────────────────────
   // MEMORY
@@ -169,7 +172,10 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   download_file: ['download', 'fetch', 'get file'],
   get_file_info: ['file info', 'size', 'detail', 'metadata'],
   delete_file: ['file delete', 'remove file'],
-  copy_file: ['file copy', 'duplicate', 'move'],
+  copy_file: ['file copy', 'duplicate'],
+  create_directory: ['mkdir', 'folder', 'directory create'],
+  move_file: ['rename', 'move', 'mv'],
+  edit_file: ['file edit', 'replace', 'find replace', 'patch'],
 
   // ─────────────────────────────────────────────
   // WEB / API
@@ -362,6 +368,15 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
   claw_reflect: ['claw', 'reflect', 'evaluate', 'introspect', 'performance', 'progress'],
   claw_set_context: ['claw', 'context', 'set', 'memory', 'persistent', 'working memory', 'state'],
   claw_get_context: ['claw', 'context', 'get', 'memory', 'retrieve', 'working memory', 'state'],
+  claw_plan: ['claw', 'plan', 'tasks', 'todo', 'organize', 'roadmap', 'breakdown', 'steps'],
+  claw_update_task: ['claw', 'task', 'update', 'progress', 'mark', 'plan', 'status'],
+  claw_list_tasks: ['claw', 'tasks', 'list', 'plan', 'read', 'todo'],
+  claw_think: ['claw', 'think', 'reason', 'reflect', 'deliberate', 'scratchpad', 'cot'],
+  claw_set_next_intent: ['claw', 'intent', 'next', 'handoff', 'continuity', 'cycle', 'resume'],
+  claw_split_task: ['claw', 'split', 'decompose', 'breakdown', 'subtask', 'plan', 'divide'],
+  claw_save_skill: ['claw', 'skill', 'learn', 'save', 'procedure', 'capture', 'memory'],
+  claw_recall_skill: ['claw', 'skill', 'recall', 'retrieve', 'learn', 'reuse', 'memory'],
+  claw_execute: ['claw', 'execute', 'code', 'programmatic', 'pipeline', 'batch', 'tools', 'call'],
   create_claw: ['claw', 'create', 'agent', 'autonomous', 'spawn', 'new'],
   list_claws: ['claw', 'list', 'status', 'agents', 'running'],
   start_claw: ['claw', 'start', 'run', 'begin', 'launch'],
@@ -462,6 +477,17 @@ export const TOOL_SEARCH_TAGS: Record<string, readonly string[]> = {
     'page content',
     'text',
     'html',
+  ],
+  browser_accessibility_tree: [
+    'browser',
+    'accessibility',
+    'a11y',
+    'tree',
+    'structure',
+    'roles',
+    'navigate',
+    'inspect',
+    'page structure',
   ],
   run_cli_tool: [
     'cli',

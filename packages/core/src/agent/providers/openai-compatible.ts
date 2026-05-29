@@ -35,6 +35,18 @@ import {
   type ProviderConfig,
   type ResolvedProviderConfig,
 } from './configs/index.js';
+import { getAuthHeader, type ResolvedAuth } from './configs/types.js';
+
+/**
+ * Build the Authorization header from either the new `resolvedAuth`
+ * discriminated union or the legacy `apiKey` field. All supported auth
+ * methods today reduce to `Bearer <value>`; centralising the resolution
+ * means callsites do not have to know about the auth method.
+ */
+function authHeader(config: { resolvedAuth?: ResolvedAuth; apiKey?: string }): string {
+  if (config.resolvedAuth) return getAuthHeader(config.resolvedAuth);
+  return `Bearer ${config.apiKey ?? ''}`;
+}
 
 /**
  * OpenAI API response types
@@ -162,7 +174,7 @@ export class OpenAICompatibleProvider {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
+          Authorization: authHeader(this.config),
         },
         signal: controller.signal,
       });
@@ -453,7 +465,7 @@ export class OpenAICompatibleProvider {
     try {
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
+          Authorization: authHeader(this.config),
           ...this.config.headers,
         },
       });
@@ -662,7 +674,7 @@ export class OpenAICompatibleProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.apiKey}`,
+        Authorization: authHeader(this.config),
         ...this.config.headers,
       },
       body: JSON.stringify(body),

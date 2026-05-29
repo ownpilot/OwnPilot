@@ -460,6 +460,36 @@ export interface ServerEvents {
   'claw:stopped': { clawId: string; reason: string };
   'claw:update': { clawId: string; state: string };
   'claw:output': { clawId: string; message: string; urgency: string; timestamp: string };
+  /**
+   * Structured plan changed (operator or agent edit). Carries the full
+   * task snapshot + counts so subscribers can update their views without
+   * a re-fetch. `source` distinguishes a full plan rewrite ('replace')
+   * from a single-task patch ('task'); `taskId` is present only for the
+   * latter so the UI can highlight the changed row.
+   */
+  'claw:plan:updated': {
+    clawId: string;
+    source: 'replace' | 'task';
+    taskId?: string;
+    tasks: Array<{
+      id: string;
+      title: string;
+      status: 'pending' | 'in_progress' | 'completed' | 'blocked';
+      notes?: string;
+      successCriteria?: string;
+      evidence?: string;
+      cyclesInProgress?: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    counts: {
+      total: number;
+      pending: number;
+      in_progress: number;
+      completed: number;
+      blocked: number;
+    };
+  };
 
   // Tunnel events
   'tunnel:status': {

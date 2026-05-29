@@ -15,7 +15,7 @@
  *   - If in config array → shown. If not → hidden.
  */
 
-export const LAYOUT_CONFIG_VERSION = 7;
+export const LAYOUT_CONFIG_VERSION = 9;
 
 /** How pinned header items render */
 export type HeaderItemDisplayMode = 'icon' | 'icon-text' | 'text';
@@ -121,14 +121,27 @@ export const DEFAULT_SIDEBAR_SECTIONS: SidebarSectionConfig[] = [
   // Nav items (individual page links — was "pinned" section)
   { id: '/', order: 0 },
   { id: '/dashboard', order: 1 },
+  // Mission Control — single-pane operator view of the entire autonomous
+  // fleet (claw cards + inline controls + escalation queue + activity feed).
+  // Pinned right after Dashboard so it's the headline operator surface.
+  { id: '/mission-control', order: 2 },
   // Core UI controls
-  { id: 'search', order: 2 },
-  { id: 'scheduled', order: 3 },
-  { id: 'customize', order: 4 },
+  { id: 'search', order: 3 },
+  { id: 'scheduled', order: 4 },
+  { id: 'customize', order: 5 },
+  // Headline autonomous-agent runtime — pinned by default so the Claw
+  // operator surface (plan, queue intent, reset failures, live events) is
+  // one click away without an enable-via-customize step. Was previously
+  // only reachable through the "AI & Automation" nav group, which itself
+  // had to be enabled, making the entire claw stack invisible by default.
+  { id: '/claws', order: 6 },
   // Data (shown by default, user can remove)
-  { id: 'workspaces', order: 5, style: 'accordion' },
-  { id: 'workflows', order: 6, style: 'accordion' },
-  { id: 'recents', order: 7, style: 'accordion' },
+  { id: 'workspaces', order: 7, style: 'accordion' },
+  { id: 'workflows', order: 8, style: 'accordion' },
+  // Live claw list (top 5) right alongside workspaces/workflows so the
+  // running runtimes are visible at a glance.
+  { id: 'claws', order: 9, style: 'accordion' },
+  { id: 'recents', order: 10, style: 'accordion' },
 ];
 
 /** Human-readable labels for built-in sidebar sections */

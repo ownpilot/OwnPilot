@@ -1,6 +1,6 @@
 # OwnPilot Architecture
 
-**Version:** 1.2 | **Date:** 2026-05-25 | **Stack:** TypeScript Monorepo · pnpm · Turborepo
+**Version:** 1.3 | **Date:** 2026-05-28 | **Stack:** TypeScript Monorepo · pnpm · Turborepo
 
 ---
 
@@ -1005,6 +1005,13 @@ skill.{id}.*     — Extension tools (agentskills format)
 
 Meta tools (unprefixed):
   search_tools, get_tool_help, use_tool, batch_use_tool
+
+#### Tool Discovery & Search Modes
+
+The `search_tools` utility supports discoverability of the 214+ tool surface by tags, keywords, and description intent through three modes:
+- `keyword`: Traditional keyword-based prefix or AND-tag filtering.
+- `semantic`: Embedding-powered semantic matching via `EmbeddingService`. Embeds the query and ranks tools by cosine similarity. Content-based hash caching prevents redundant embedding generation and manages API costs.
+- `hybrid`: Combines both keyword and semantic hits, ordering results by semantic ranking.
 ```
 
 ### ToolRegistry Architecture
@@ -1151,6 +1158,14 @@ idle:N           — Stop after N idle cycles
 claw_set_context(key, value)  — Store cross-cycle state
 claw_get_context(key)        — Retrieve cross-cycle state
 ```
+
+### Security & Workspace Isolation
+
+Autonomous Claws are strictly scoped to isolated directory contexts.
+
+- Each Claw resolves its `workspaceId` to a local directory via `getSessionWorkspacePath()`.
+- During agent initialization, the runner passes this directory to `tools.setWorkspaceDir(workspaceDir)`.
+- This ensures all standard file-system tools (`file_read`, `file_write`, `list_files`, etc.) and dynamic tools are bound to the Claw's directory sandbox, preventing unauthorized access to other directories.
 
 ### Claw Tools (16 + 7 management)
 
@@ -1343,6 +1358,22 @@ SoulHeartbeatService
   │
   └── Prepends crew context section when crewId present
 ```
+
+#### Heartbeat Audit Trail & Tool Call Tracking
+
+To facilitate debugging, each heartbeat execution records a detailed run log persisted in `heartbeat_log`:
+
+- **Tool-Call Audit Trail:** Logs individual tool executions (`HeartbeatToolCallRecord`) containing the tool name, execution duration, success status, and a bounded 500-character preview of the arguments and any errors (preventing unbounded database bloat).
+- **Tool-Call Count Summary:** Summarizes tool counts via `toolCallsCount` on lists to quickly audit external API consumption or slow cycles.
+- **Drill-down API:** A dedicated endpoint `GET /api/v1/souls/:agentId/logs/:logId` allows developers to inspect detailed cycle logs, including the full list of tool calls made during that cycle.
+
+#### Per-Soul Workspace Scoping
+
+Agent souls can be assigned a `workspaceId` which resolves to a dedicated folder under session workspace paths. Scoping is handled by `@ownpilot/core` using the `ExecContext` helper (built on `AsyncLocalStorage`):
+
+- Wraps concurrent `agent.chat()` invocations inside independent execution contexts.
+- Dynamically resolves workspace precedence in `ToolRegistry` (Explicit Call-Site ➔ Registry Default ➔ ExecContext ➔ process.cwd()).
+- Prevents race conditions and safely isolates concurrent file tools across multiple running souls.
 
 ### Crew Orchestration
 
@@ -1618,13 +1649,13 @@ registerV2Routes()
 
 ### Key REST Endpoint Families
 
-| Domain        | Base Path           | Key Endpoints                                               |
-| ------------- | ------------------- | ----------------------------------------------------------- |
-| **Claws**     | `/api/v1/claws`     | 16 endpoints: CRUD + `/stats`, `/audit`, `/deny-escalation` |
-| **Workflows** | `/api/v1/workflows` | CRUD + DAG validation + execution                           |
-| **Souls**     | `/api/v1/souls`     | Soul agent CRUD                                             |
-| **Crews**     | `/api/v1/crews`     | Crew orchestration                                          |
-| **Habits**    | `/api/v1/habits`    | Habit CRUD + logging + stats                                |
+| Domain        | Base Path           | Key Endpoints                                                                             |
+| ------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| **Claws**     | `/api/v1/claws`     | 16 endpoints: CRUD + `/stats`, `/audit`, `/deny-escalation`                               |
+| **Workflows** | `/api/v1/workflows` | CRUD + DAG validation + execution                                                         |
+| **Souls**     | `/api/v1/souls`     | Soul agent CRUD + `/logs` (with `toolCallsCount`) + `/logs/:logId` (drill-down tool logs) |
+| **Crews**     | `/api/v1/crews`     | Crew orchestration                                                                        |
+| **Habits**    | `/api/v1/habits`    | Habit CRUD + logging + stats                                                              |
 
 ---
 
@@ -1749,12 +1780,21 @@ section. Each is listed here with file pointers.
 mcp-client-service.ts    — Connects to external MCP servers (stdio / SSE / HTTP)
 mcp-server-service.ts    — Exposes OwnPilot tools AS an MCP server to other clients
 mcp_servers table        — Configured MCP server records (workflows.ts schema)
-/api/v1/mcp routes       — CRUD + connect/disconnect + tool discovery
+/api/v1/mcp routes       — CRUD + connect/disconnect + tool discovery + presets
 ```
 
 Bridges OwnPilot's 250+ tools to any MCP-compatible client (Claude Desktop, Cursor,
 Claude Code) and consumes tools from external MCP servers as virtual `plugin.mcp.*`
 tools.
+
+#### Curated Preset Catalog & Quick-Add
+
+Provides a static database-independent catalog of recommended MCP servers (`MCP_SERVER_PRESETS` in `packages/gateway/src/mcp/presets.ts`), including `browser-use`, `playwright-mcp`, `filesystem`, `fetch`, `sequential-thinking`, `memory`, `git`, and `sqlite`.
+
+- **API Endpoints:**
+  - `GET /api/v1/mcp/presets` returns the catalog presets, their environment variable declarations (secret vs. plain text), warnings, and installation hints.
+  - `POST /api/v1/mcp/presets/:id/install` automates installation by mapping environment variables, resolving paths, and inserting a configured row in `mcp_servers`.
+- **UI Quick-Add Dialog:** `PresetInstallDialog` dynamically generates form fields for required environment variables (e.g. API keys, workspace directories) and displays preset warnings, enabling one-click installs.
 
 ### Coding Agents (Multi-Provider CLI Orchestration)
 
@@ -1773,6 +1813,11 @@ Routes                        — /api/v1/coding-agents, /api/v1/cli-providers,
                                 /api/v1/cli-tools, /api/v1/artifacts
 ```
 
+#### Autonomous CLI Access & Named Wrappers
+
+- **Autonomous Path Integration:** CLI management and execution tools (`run_cli_tool`, `list_cli_tools`, `install_cli_tool`) are registered in `core-registration.ts`, allowing autonomous agents (Claws, Heartbeats, Channels) to invoke workspace-approved CLI binaries.
+- **CLI Wrappers:** Exposes 15 highly structured wrappers (`CLI_WRAPPER_TOOLS`) that delegate to the CLI tool execution pipeline with pre-configured command mappings and typed parameters (e.g. `gh_pr_list`, `docker_ps`, `npm_install`), enhancing discoverability and eliminating dangerous raw shell execution.
+
 ### Browser Automation
 
 ```
@@ -1780,6 +1825,8 @@ browser-service.ts            — Playwright-based browser session manager
 SSRF guard                    — Reuses isBlockedUrl / isPrivateUrlAsync
 Routes                        — /api/v1/browser (navigate, screenshot, extract)
 ```
+
+Provides full web automation capabilities (Playwright / Puppeteer). Browser tools (`BROWSER_TOOLS` + `executeBrowserTool`) are registered globally in `core-registration.ts`, allowing both chat-path agents and autonomous agents (Claws, Heartbeats, Channels) to navigate, fill forms, click elements, capture screenshots, and extract content autonomously.
 
 ### Voice
 

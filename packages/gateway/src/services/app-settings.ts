@@ -22,13 +22,25 @@ import {
   DEFAULT_SANDBOX_SETTINGS,
   type SandboxSettings,
   DEFAULT_ENABLED_GROUPS,
+  type ResolvedAuth,
 } from '@ownpilot/core';
+import { getLog } from './log.js';
+
+const settingsLog = getLog('AppSettings');
 
 // ============================================
 // Storage keys
 // ============================================
 
 export const API_KEY_PREFIX = 'api_key:';
+/**
+ * Per-provider auth blob storage key prefix. Holds the full {@link ResolvedAuth}
+ * (method + token + optional refresh + expiry) for providers that authenticate
+ * with anything other than a static API key — session_token (xAI Grok),
+ * oauth2_device_code (Codex CLI), oauth2_pkce (browser sign-in). When this
+ * key exists for a provider it overrides the legacy `api_key:<provider>` value.
+ */
+export const AUTH_PREFIX = 'provider_auth:';
 export const DEFAULT_PROVIDER_KEY = 'default_ai_provider';
 export const DEFAULT_MODEL_KEY = 'default_ai_model';
 const ALLOWED_DIRS_KEY = 'coding_agents:allowed_dirs';
@@ -84,6 +96,116 @@ export async function loadApiKeysToEnvironment(): Promise<void> {
 export async function getApiKeySource(provider: string): Promise<'database' | null> {
   const key = `${API_KEY_PREFIX}${provider}`;
   return (await settingsRepo.has(key)) ? 'database' : null;
+}
+
+/**
+ * Read the full {@link ResolvedAuth} for a provider, preferring the new
+ * `provider_auth:<id>` blob (session_token / oauth) over the legacy
+ * `api_key:<id>` string. Returns `undefined` when no credential is stored —
+ * call sites should treat that the same way they treat a missing API key.
+ *
+ * Stored shape for the blob (JSON-encoded {@link ResolvedAuth}):
+ * - `{ method: 'session_token', value, expiresAt? }`
+ * - `{ method: 'oauth2_device_code' | 'oauth2_pkce', value, refreshToken?, expiresAt?, scopes? }`
+ * - `{ method: 'api_key', value }` (only if a caller wrote it explicitly)
+ */
+export async function getResolvedAuth(provider: string): Promise<ResolvedAuth | undefined> {
+  const blob = await settingsRepo.get<string>(`${AUTH_PREFIX}${provider}`);
+  if (blob) {
+    try {
+      const parsed = JSON.parse(blob) as ResolvedAuth;
+      if (parsed && typeof parsed.value === 'string' && parsed.value.length > 0) {
+        return parsed;
+      }
+      settingsLog.warn(`Stored auth blob for ${provider} is malformed; falling back to API key`);
+    } catch (e) {
+      settingsLog.warn(
+        `Failed to parse auth blob for ${provider}: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+
+  const apiKey = await getApiKey(provider);
+  if (!apiKey) return undefined;
+  return { method: 'api_key', value: apiKey };
+}
+
+/**
+ * Persist a {@link ResolvedAuth} blob for a provider. Used by OAuth callbacks
+ * and the session-token paste flow. For API-key-only providers, prefer the
+ * existing `setApiKey` path so legacy readers continue to work.
+ */
+export async function setResolvedAuth(provider: string, auth: ResolvedAuth): Promise<void> {
+  await settingsRepo.set(`${AUTH_PREFIX}${provider}`, JSON.stringify(auth));
+}
+
+/** Delete the stored auth blob for a provider (does NOT touch the legacy API key). */
+export async function deleteResolvedAuth(provider: string): Promise<void> {
+  await settingsRepo.delete(`${AUTH_PREFIX}${provider}`);
+}
+
+/**
+ * Per-provider OAuth app config stored at runtime. Lets users bring
+ * their own OAuth app (their own client_id / scopes / endpoints) for
+ * any provider that supports the device-code flow without us having
+ * to commit fabricated client IDs into the static JSON catalog.
+ *
+ * Resolved order (see {@link getProviderOAuthConfig}):
+ *   1. user override at `provider_oauth_config:<id>` (this key)
+ *   2. static catalog entry (`ProviderConfig.auth.oauth`)
+ *
+ * The override stores the same shape as {@link ProviderOAuthConfig}
+ * from `@ownpilot/core`.
+ */
+export const PROVIDER_OAUTH_CONFIG_PREFIX = 'provider_oauth_config:';
+
+export interface ProviderOAuthConfigOverride {
+  deviceCodeUrl?: string;
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  clientId?: string;
+  scopes?: string[];
+}
+
+/**
+ * Read the user-supplied OAuth app config override for a provider.
+ * Returns `undefined` when no override exists — call sites should fall
+ * back to the static catalog (the resolver in oauth-flow does this).
+ */
+export async function getProviderOAuthOverride(
+  provider: string
+): Promise<ProviderOAuthConfigOverride | undefined> {
+  const blob = await settingsRepo.get<string>(`${PROVIDER_OAUTH_CONFIG_PREFIX}${provider}`);
+  if (!blob) return undefined;
+  try {
+    const parsed = JSON.parse(blob) as ProviderOAuthConfigOverride;
+    if (parsed && typeof parsed === 'object') return parsed;
+    return undefined;
+  } catch (e) {
+    settingsLog.warn(
+      `Stored OAuth override for ${provider} is malformed: ${e instanceof Error ? e.message : String(e)}`
+    );
+    return undefined;
+  }
+}
+
+/**
+ * Persist (or replace) the OAuth app config override for a provider.
+ * Empty / undefined fields are stored verbatim — the merge in
+ * getProviderOAuthConfig treats `null`/`undefined` as "fall back to
+ * catalog for that one field", so callers can partially override (e.g.
+ * just swap the clientId while keeping the catalog endpoints).
+ */
+export async function setProviderOAuthOverride(
+  provider: string,
+  config: ProviderOAuthConfigOverride
+): Promise<void> {
+  await settingsRepo.set(`${PROVIDER_OAUTH_CONFIG_PREFIX}${provider}`, JSON.stringify(config));
+}
+
+/** Remove the OAuth override for a provider (catalog config is unchanged). */
+export async function deleteProviderOAuthOverride(provider: string): Promise<void> {
+  await settingsRepo.delete(`${PROVIDER_OAUTH_CONFIG_PREFIX}${provider}`);
 }
 
 // ============================================

@@ -12,8 +12,24 @@
  * Actual cycle execution is delegated to ClawRunner.
  */
 
-import { getEventSystem, getErrorMessage, generateId } from '@ownpilot/core';
-import type { ClawSession, ClawCycleResult, ClawEscalation, EventHandler } from '@ownpilot/core';
+import {
+  getEventSystem,
+  getErrorMessage,
+  generateId,
+  CLAW_RECENT_FAILURES_MAX,
+  CLAW_PLAN_HISTORY_MAX,
+  CLAW_NEXT_INTENT_MAX,
+  CLAW_TASK_STALL_AUTO_ESCALATE,
+  CLAW_TASK_STALL_FORCE_BLOCK,
+} from '@ownpilot/core';
+import type {
+  ClawSession,
+  ClawCycleResult,
+  ClawEscalation,
+  ClawTask,
+  ClawPlanHistoryEntry,
+  EventHandler,
+} from '@ownpilot/core';
 import { ClawRunner } from './runner.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import {
@@ -43,6 +59,77 @@ const MAX_INBOX_BYTES = 50_000;
 const CONTINUOUS_MIN_DELAY_MS = 500; // Active: fast loop
 const CONTINUOUS_MAX_DELAY_MS = 10_000; // Error: backoff
 const CONTINUOUS_IDLE_DELAY_MS = 5_000; // No tool calls: slow down
+
+// ============================================================================
+// Failure-log helpers
+// ============================================================================
+
+// Tool-result payloads can be enormous (full file contents, MCP responses, ...);
+// truncate aggressively before we stuff them into the reflection prompt or the
+// session row, otherwise the next cycle's prompt explodes in tokens.
+const FAILURE_LOG_MAX_CHARS = 300;
+
+function stringifyToolResult(result: unknown): string {
+  if (typeof result === 'string') return result;
+  try {
+    return JSON.stringify(result);
+  } catch {
+    return String(result);
+  }
+}
+
+function truncateForFailureLog(s: string, max = FAILURE_LOG_MAX_CHARS): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max)}… [truncated]`;
+}
+
+// ============================================================================
+// Task-plan persistence helpers
+// ============================================================================
+
+/**
+ * Reserved keys inside persistentContext where typed session state rides
+ * across restarts without a DB schema migration. The underscore prefix
+ * keeps them out of collision with the agent's own context entries.
+ */
+const SAVED_TASKS_KEY = '__claw_tasks';
+const SAVED_PLAN_HISTORY_KEY = '__claw_plan_history';
+
+function extractSavedTasks(ctx: Record<string, unknown> | undefined): ClawTask[] {
+  const raw = ctx?.[SAVED_TASKS_KEY];
+  if (!Array.isArray(raw)) return [];
+  // Loose runtime validation so a malformed row can't blow up the manager on
+  // boot — we'd rather drop a bad task than refuse to resume the claw.
+  return raw.filter(
+    (t): t is ClawTask =>
+      typeof t === 'object' &&
+      t !== null &&
+      typeof (t as ClawTask).id === 'string' &&
+      typeof (t as ClawTask).title === 'string' &&
+      typeof (t as ClawTask).status === 'string'
+  );
+}
+
+function extractSavedPlanHistory(ctx: Record<string, unknown> | undefined): ClawPlanHistoryEntry[] {
+  const raw = ctx?.[SAVED_PLAN_HISTORY_KEY];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (e): e is ClawPlanHistoryEntry =>
+      typeof e === 'object' &&
+      e !== null &&
+      typeof (e as ClawPlanHistoryEntry).at === 'string' &&
+      typeof (e as ClawPlanHistoryEntry).actor === 'string' &&
+      typeof (e as ClawPlanHistoryEntry).kind === 'string'
+  );
+}
+
+function stripSavedTasks(ctx: Record<string, unknown>): Record<string, unknown> {
+  if (!(SAVED_TASKS_KEY in ctx) && !(SAVED_PLAN_HISTORY_KEY in ctx)) return ctx;
+  const next: Record<string, unknown> = { ...ctx };
+  delete next[SAVED_TASKS_KEY];
+  delete next[SAVED_PLAN_HISTORY_KEY];
+  return next;
+}
 
 // Priority multipliers applied to adaptive delays.
 // Priority 1 (highest): multiply by 0.5  → 250ms / 5000ms / 2500ms
@@ -274,6 +361,14 @@ export class ClawManager {
     // Load or create session
     const savedSession = await repo.loadSession(clawId);
 
+    // Extract the structured task plan from persistentContext (where it
+    // was tucked under a reserved key by persistSession) so the new typed
+    // session field stays in sync across restarts. Plan survives restart
+    // because the agent's task list is genuine state, unlike the reflection
+    // state which resets per-process for a clean retry.
+    const savedTasks = extractSavedTasks(savedSession?.persistentContext);
+    const savedPlanHistory = extractSavedPlanHistory(savedSession?.persistentContext);
+
     const session: ClawSession = savedSession
       ? {
           config,
@@ -286,10 +381,18 @@ export class ClawManager {
           lastCycleError: savedSession.lastCycleError,
           startedAt: savedSession.startedAt,
           stoppedAt: null,
-          persistentContext: savedSession.persistentContext,
+          persistentContext: stripSavedTasks(savedSession.persistentContext),
           inbox: savedSession.inbox,
           artifacts: savedSession.artifacts,
           pendingEscalation: savedSession.pendingEscalation,
+          // Reflection state is not persisted across restart: a freshly
+          // resumed claw deserves a clean shot at retrying. Setting both
+          // to zero means the reflection prompt only fires after the
+          // claw has actually accumulated failures in *this* session.
+          consecutiveErrors: 0,
+          recentFailures: [],
+          tasks: savedTasks,
+          planHistory: savedPlanHistory,
         }
       : {
           config,
@@ -306,6 +409,10 @@ export class ClawManager {
           inbox: [],
           artifacts: [],
           pendingEscalation: null,
+          consecutiveErrors: 0,
+          recentFailures: [],
+          tasks: [],
+          planHistory: [],
         };
 
     const runner = new ClawRunner(config);
@@ -369,6 +476,159 @@ export class ClawManager {
     return session;
   }
 
+  /**
+   * Operator-side plan mutations. Mirror the tool path so the UI can
+   * replace the plan or tweak a single task without going through the
+   * agent. Returns the updated tasks (or throws on validation failure) so
+   * the route layer can surface errors to the user.
+   *
+   * Both methods flush the session immediately because plan edits are
+   * intentful operator actions — losing them in a crash before the 30s
+   * persist tick would be surprising.
+   */
+  async replacePlan(
+    clawId: string,
+    tasks: ClawTask[],
+    actor: 'agent' | 'operator' = 'operator'
+  ): Promise<ClawTask[] | null> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return null;
+    managed.session.tasks = tasks;
+    this.recordPlanHistory(managed, {
+      at: new Date().toISOString(),
+      actor,
+      kind: 'replace',
+      newTaskCount: tasks.length,
+    });
+    this.markDirty(managed);
+    await this.persistSession(clawId, managed);
+    this.emitPlanUpdated(clawId, managed, 'replace');
+    return managed.session.tasks;
+  }
+
+  async updateTaskOnSession(
+    clawId: string,
+    update: import('../../tools/claw/plan-executors.js').ValidatedTaskUpdate,
+    actor: 'agent' | 'operator' = 'operator'
+  ): Promise<{ task: ClawTask; warnings: string[] } | null> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return null;
+    // Import lazily to avoid a circular import (plan-executors imports manager).
+    const { applyTaskUpdate } = await import('../../tools/claw/plan-executors.js');
+    // Snapshot prior status BEFORE mutation so the history entry can render
+    // the "pending → in_progress" arrow without a separate diff pass.
+    const prevTask = managed.session.tasks.find((t) => t.id === update.id);
+    const prevStatus = prevTask?.status;
+    const result = applyTaskUpdate(managed.session.tasks, update);
+    if (update.status !== undefined && update.status !== prevStatus) {
+      this.recordPlanHistory(managed, {
+        at: new Date().toISOString(),
+        actor,
+        kind: 'task_update',
+        taskId: result.task.id,
+        title: result.task.title,
+        prevStatus,
+        newStatus: result.task.status,
+      });
+    }
+    this.markDirty(managed);
+    await this.persistSession(clawId, managed);
+    this.emitPlanUpdated(clawId, managed, 'task', result.task.id);
+    return result;
+  }
+
+  /**
+   * Atomic split: marks the parent task blocked and inserts subtasks
+   * immediately after it in the plan. Records one task_update entry for
+   * the parent + one task_added entry per subtask in the plan history so
+   * the change is fully auditable.
+   */
+  async splitTaskOnSession(
+    clawId: string,
+    split: import('../../tools/claw/plan-executors.js').ValidatedSplit,
+    actor: 'agent' | 'operator' = 'operator'
+  ): Promise<{ parent: ClawTask; subtasks: ClawTask[] } | null> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return null;
+    const { applySplit } = await import('../../tools/claw/plan-executors.js');
+    const prevTask = managed.session.tasks.find((t) => t.id === split.parentId);
+    const prevStatus = prevTask?.status;
+    const result = applySplit(managed.session.tasks, split);
+
+    const at = new Date().toISOString();
+    this.recordPlanHistory(managed, {
+      at,
+      actor,
+      kind: 'task_update',
+      taskId: result.parent.id,
+      title: result.parent.title,
+      prevStatus,
+      newStatus: result.parent.status,
+    });
+    for (const sub of result.subtasks) {
+      this.recordPlanHistory(managed, {
+        at,
+        actor,
+        kind: 'task_added',
+        taskId: sub.id,
+        title: sub.title,
+      });
+    }
+
+    this.markDirty(managed);
+    await this.persistSession(clawId, managed);
+    // Broadcast as a replace event since multiple rows changed at once —
+    // subscribers re-fetch and see all the changes together.
+    this.emitPlanUpdated(clawId, managed, 'replace');
+    return { parent: result.parent, subtasks: result.subtasks };
+  }
+
+  private recordPlanHistory(managed: ManagedClaw, entry: ClawPlanHistoryEntry): void {
+    if (!managed.session.planHistory) managed.session.planHistory = [];
+    managed.session.planHistory.push(entry);
+    if (managed.session.planHistory.length > CLAW_PLAN_HISTORY_MAX) {
+      managed.session.planHistory.splice(
+        0,
+        managed.session.planHistory.length - CLAW_PLAN_HISTORY_MAX
+      );
+    }
+  }
+
+  /**
+   * Notify subscribers (WS broadcaster, dashboards) that the plan changed.
+   * Fires for both operator-side and agent-side mutations so the UI can
+   * stream live updates without polling. Includes a snapshot of the plan
+   * + counts so subscribers don't have to round-trip a re-fetch.
+   */
+  notifyPlanUpdated(clawId: string, source: 'replace' | 'task', taskId?: string): void {
+    const managed = this.claws.get(clawId);
+    if (!managed) return;
+    this.emitPlanUpdated(clawId, managed, source, taskId);
+  }
+
+  private emitPlanUpdated(
+    clawId: string,
+    managed: ManagedClaw,
+    source: 'replace' | 'task',
+    taskId?: string
+  ): void {
+    const tasks = managed.session.tasks;
+    const counts = {
+      total: tasks.length,
+      pending: tasks.filter((t) => t.status === 'pending').length,
+      in_progress: tasks.filter((t) => t.status === 'in_progress').length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
+      blocked: tasks.filter((t) => t.status === 'blocked').length,
+    };
+    this.emitEvent('claw.plan.updated', {
+      clawId,
+      source,
+      ...(taskId ? { taskId } : {}),
+      tasks,
+      counts,
+    });
+  }
+
   async pauseClaw(clawId: string, _userId: string): Promise<boolean> {
     const managed = this.claws.get(clawId);
     if (!managed) return false;
@@ -424,6 +684,69 @@ export class ClawManager {
     await repo.appendToInbox(clawId, message);
 
     this.emitEvent('claw.progress', { clawId, message: 'New message received' });
+    return true;
+  }
+
+  /**
+   * Queue a directive for the next cycle without interrupting the in-flight
+   * one. The runner renders this prominently at the top of the next prompt
+   * (with operator vs agent framing) and then auto-clears it so stale intent
+   * can never leak past one cycle.
+   *
+   * - `actor: 'agent'` is what the `claw_set_next_intent` tool calls — the
+   *   agent telling itself what to do next.
+   * - `actor: 'operator'` is what the operator REST path calls — gets the
+   *   `[OPERATOR] ` marker so the runner can render it differently.
+   *
+   * Returns `false` if the claw is not loaded (not running). Throws on
+   * length violations so the caller can map to a 400.
+   */
+  async setNextIntent(
+    clawId: string,
+    intent: string,
+    actor: 'agent' | 'operator' = 'agent'
+  ): Promise<boolean> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return false;
+    const trimmed = intent.trim();
+    if (!trimmed) throw new Error('intent must not be empty');
+    if (trimmed.length > CLAW_NEXT_INTENT_MAX) {
+      throw new Error(
+        `intent exceeds ${CLAW_NEXT_INTENT_MAX} chars — use .claw/MEMORY.md for longer context`
+      );
+    }
+    managed.session.nextIntent = actor === 'operator' ? `[OPERATOR] ${trimmed}` : trimmed;
+    await this.persistSession(clawId, managed);
+    this.emitEvent('claw.progress', {
+      clawId,
+      message:
+        actor === 'operator'
+          ? 'Operator queued next-cycle directive'
+          : 'Next-cycle intent recorded',
+    });
+    return true;
+  }
+
+  /**
+   * Operator-facing recovery: clear `consecutiveErrors` and `recentFailures`
+   * without restarting the claw. Useful when reflection mode keeps firing
+   * because the failure ring still holds stale errors from a tool that has
+   * since been fixed (config change, network restored, etc.). After this the
+   * next cycle is treated as a clean attempt and the REFLECTION banner clears.
+   */
+  async resetFailures(clawId: string): Promise<boolean> {
+    const managed = this.claws.get(clawId);
+    if (!managed) return false;
+    if (managed.consecutiveErrors === 0 && managed.session.recentFailures.length === 0) {
+      // Nothing to reset — surface as success so the UI doesn't show an error
+      // for a no-op, but skip the persist/broadcast roundtrip.
+      return true;
+    }
+    managed.consecutiveErrors = 0;
+    managed.session.consecutiveErrors = 0;
+    managed.session.recentFailures = [];
+    await this.persistSession(clawId, managed);
+    this.emitEvent('claw.progress', { clawId, message: 'Failures reset by operator' });
     return true;
   }
 
@@ -527,14 +850,54 @@ export class ClawManager {
 
   /**
    * Approve pending escalation and resume execution.
+   *
+   * For `task_stalled` the manager injects an inbox nudge so the agent
+   * acts decisively on the focus task instead of resuming on the same
+   * stuck cycle the auto-escalation fired on. For other types the
+   * approval just clears the pending state — the meaning ("budget bumped")
+   * is implicit in whatever follow-on action the operator took.
    */
   async approveEscalation(clawId: string): Promise<boolean> {
     const managed = this.claws.get(clawId);
     if (!managed) return false;
     if (managed.session.state !== 'escalation_pending') return false;
 
+    const escalation = managed.session.pendingEscalation;
     managed.session.pendingEscalation = null;
     managed.session.state = managed.session.config.mode === 'event' ? 'waiting' : 'running';
+
+    if (escalation?.type === 'task_stalled') {
+      const taskId = escalation.details?.taskId;
+      const taskTitle = escalation.details?.taskTitle;
+      const cycles = escalation.details?.cyclesInProgress;
+      const nudge =
+        `[ESCALATION_APPROVED] Operator confirmed your "${taskId ?? 'focus'}" task ("${taskTitle ?? 'current focus'}") ` +
+        `has stalled at ${cycles ?? 'many'} cycles. On THIS cycle you must take one of: ` +
+        `(1) claw_split_task to break it into smaller subtasks, ` +
+        `(2) claw_update_task with status="blocked" and a note explaining what is blocking you, ` +
+        `(3) claw_request_escalation with a concrete, actionable ask for the operator. ` +
+        `Do not run another attempt at the same task with the same approach.`;
+      managed.session.inbox.push(nudge);
+      const repo = getClawsRepository();
+      await repo.appendToInbox(clawId, nudge);
+    } else if (escalation?.type === 'task_force_blocked') {
+      // Force-block already happened — approval means "agent, you decide
+      // how to recover the mission". Reaffirm the three required actions
+      // from the original force-block nudge so the agent doesn't drift
+      // back to a doomed retry.
+      const taskId = escalation.details?.taskId;
+      const taskTitle = escalation.details?.taskTitle;
+      const nudge =
+        `[ESCALATION_APPROVED] Operator approved your task_force_blocked escalation for "${taskId ?? 'focus'}" ("${taskTitle ?? 'force-blocked task'}"). ` +
+        `The task remains blocked. Choose ONE of: ` +
+        `(A) claw_split_task into one-hypothesis-per-subtask and try the FIRST subtask with a different approach, ` +
+        `(B) claw_complete_report status="failed" if no path forward exists (dependent tasks WILL fail too), ` +
+        `(C) claw_update_task to unblock the task ONLY if you have a concretely different strategy — explain it in the notes field.`;
+      managed.session.inbox.push(nudge);
+      const repo = getClawsRepository();
+      await repo.appendToInbox(clawId, nudge);
+    }
+
     await this.persistSession(clawId, managed);
 
     this.emitEvent('claw.resumed', { clawId });
@@ -554,8 +917,15 @@ export class ClawManager {
     managed.session.pendingEscalation = null;
     managed.session.state = managed.session.config.mode === 'event' ? 'waiting' : 'running';
 
-    // Inject denial notice into inbox so the claw knows on next cycle
-    const denialMsg = `[ESCALATION_DENIED] Your escalation request "${escalation?.type}" was denied.${reason ? ` Reason: ${reason}` : ''} Continue with your current capabilities.`;
+    // Inject denial notice into inbox so the claw knows on next cycle.
+    // For force-block denials the implicit message "continue with your
+    // current capabilities" is dangerously misleading — the task IS still
+    // blocked and the operator just refused to look at it, so the agent
+    // should mark the mission failed rather than keep retrying.
+    const denialMsg =
+      escalation?.type === 'task_force_blocked'
+        ? `[ESCALATION_DENIED] Operator denied your task_force_blocked escalation.${reason ? ` Reason: ${reason}` : ''} The task remains blocked. Do not unblock it without a fundamentally different strategy. If the rest of the mission depends on this task, call claw_complete_report with status="failed" so the operator sees the outcome instead of grinding through downstream tasks that cannot succeed.`
+        : `[ESCALATION_DENIED] Your escalation request "${escalation?.type}" was denied.${reason ? ` Reason: ${reason}` : ''} Continue with your current capabilities.`;
     managed.session.inbox.push(denialMsg);
 
     const repo = getClawsRepository();
@@ -768,12 +1138,46 @@ export class ClawManager {
       managed.session.lastCycleError = result.error ?? null;
       managed.lastCycleToolCalls = result.toolCalls.length;
       managed.cyclesThisHour++;
+      // Tick the in-progress task's stall counter. There is at most one
+      // such task by invariant (enforced in claw_plan / claw_update_task),
+      // so we don't need to worry about parallel focus here.
+      for (const t of managed.session.tasks) {
+        if (t.status === 'in_progress') {
+          t.cyclesInProgress = (t.cyclesInProgress ?? 0) + 1;
+        }
+      }
       this.markDirty(managed);
 
       if (result.success) {
         managed.consecutiveErrors = 0;
+        managed.session.consecutiveErrors = 0;
       } else {
         managed.consecutiveErrors++;
+        managed.session.consecutiveErrors = managed.consecutiveErrors;
+      }
+      // Record cycle/tool failures into the bounded recentFailures ring.
+      // The runner reads this on the next cycle to construct the
+      // REFLECTION REQUIRED block.
+      const toolErrors = result.toolCalls
+        .filter((tc) => !tc.success)
+        .map((tc) => ({
+          tool: tc.tool,
+          // Tool result content can be huge — truncate aggressively.
+          error: truncateForFailureLog(stringifyToolResult(tc.result)),
+        }));
+      if (!result.success || toolErrors.length > 0) {
+        managed.session.recentFailures.push({
+          cycleNumber,
+          at: new Date().toISOString(),
+          error: result.error ?? null,
+          ...(toolErrors.length > 0 ? { toolErrors } : {}),
+        });
+        if (managed.session.recentFailures.length > CLAW_RECENT_FAILURES_MAX) {
+          managed.session.recentFailures.splice(
+            0,
+            managed.session.recentFailures.length - CLAW_RECENT_FAILURES_MAX
+          );
+        }
       }
 
       // Save history
@@ -847,6 +1251,156 @@ export class ClawManager {
           );
         }
         return result;
+      }
+
+      // Hard fail-safe: a single task at or past CLAW_TASK_STALL_FORCE_BLOCK
+      // cycles is force-flipped to `blocked` regardless of the agent's
+      // behavior. Sits above the auto-escalate threshold to give the
+      // escalation/approval loop a chance to recover first — only fires when
+      // that loop didn't unstick the task. Edits the plan directly so the
+      // agent picks something else on the next cycle. Operator can edit it
+      // back to in_progress later from the Plan tab.
+      const forceBlocked = managed.session.tasks.find(
+        (t) =>
+          t.status === 'in_progress' && (t.cyclesInProgress ?? 0) >= CLAW_TASK_STALL_FORCE_BLOCK
+      );
+      if (forceBlocked) {
+        const heat = forceBlocked.cyclesInProgress ?? 0;
+        log.warn(
+          `[${clawId}] task "${forceBlocked.title}" (${forceBlocked.id}) force-blocked at ${heat} cycles ≥ ${CLAW_TASK_STALL_FORCE_BLOCK}; operator escalation fired`
+        );
+        const priorStatus = forceBlocked.status;
+        forceBlocked.status = 'blocked';
+        forceBlocked.notes =
+          `[AUTO-BLOCKED] Force-blocked by the runtime after ${heat} cycles without status change. ` +
+          (forceBlocked.notes ? `Prior notes: ${forceBlocked.notes}` : '');
+        forceBlocked.cyclesInProgress = 0;
+        delete forceBlocked.autoEscalatedAt;
+        forceBlocked.updatedAt = new Date().toISOString();
+        this.recordPlanHistory(managed, {
+          at: forceBlocked.updatedAt,
+          actor: 'operator',
+          kind: 'task_update',
+          taskId: forceBlocked.id,
+          title: forceBlocked.title,
+          prevStatus: priorStatus,
+          newStatus: 'blocked',
+        });
+
+        // Pull the most recent failure errors into the agent's inbox so its
+        // next cycle has actual error context to diagnose against — without
+        // this it has to re-derive what went wrong from scratch. Truncated
+        // to keep the prompt budget reasonable.
+        const recentFails = managed.session.recentFailures.slice(-3);
+        const failureContext = recentFails.length
+          ? `\nRecent failure context (last ${recentFails.length} cycle${recentFails.length === 1 ? '' : 's'}):\n` +
+            recentFails
+              .map((f, i) => {
+                const toolErr = f.toolErrors?.[0];
+                const detail = toolErr
+                  ? `${toolErr.tool}: ${toolErr.error.slice(0, 200)}`
+                  : (f.error ?? 'no error message').slice(0, 200);
+                return `  ${i + 1}. cycle ${f.cycleNumber} — ${detail}`;
+              })
+              .join('\n')
+          : '';
+
+        // Nudge the agent so it doesn't get confused next cycle about why the
+        // task it was focused on flipped status under it. The directive is
+        // about diagnosing the root cause, not just moving on — if this is a
+        // load-bearing task (downstream work depends on it), moving on is
+        // exactly the wrong move.
+        const nudge =
+          `[TASK_FORCE_BLOCKED] The runtime auto-blocked task "${forceBlocked.id}" ("${forceBlocked.title}") after ${heat} cycles without progress.\n\n` +
+          `If downstream tasks depend on this one's output, picking a different task will NOT unblock the mission — diagnose first.\n\n` +
+          `Required next-cycle action (pick ONE):\n` +
+          `  A. ROOT-CAUSE THIS: write your diagnosis (env / perms / wrong tool / wrong args) to .claw/MEMORY.md, then claw_split_task on this one with subtasks that test ONE hypothesis each. Do NOT retry the same approach.\n` +
+          `  B. ESCALATE: call claw_request_escalation with a concrete, actionable ask if the failure is outside your control (missing creds, missing tool, external service down).\n` +
+          `  C. MARK MISSION BLOCKED: if there is no path forward, claw_complete_report with status="failed" and an explanation — do not silently move to dependent tasks that cannot succeed.${failureContext}`;
+        managed.session.inbox.push(nudge);
+        const repo = getClawsRepository();
+        await repo.appendToInbox(clawId, nudge);
+        this.markDirty(managed);
+        this.emitPlanUpdated(clawId, managed, 'task', forceBlocked.id);
+
+        // Also fire an operator-facing escalation. The auto-block alone is
+        // not enough when the task is load-bearing — silently moving to a
+        // dependent task that cannot succeed wastes more cycles. The
+        // operator decides whether the mission can recover.
+        try {
+          await this.requestEscalation(clawId, {
+            id: generateId('esc'),
+            type: 'task_force_blocked',
+            reason: `Task "${forceBlocked.title}" auto-blocked after ${heat} cycles without progress. Downstream work may depend on this — operator intervention needed.`,
+            details: {
+              taskId: forceBlocked.id,
+              taskTitle: forceBlocked.title,
+              cyclesInProgress: heat,
+              forceBlockThreshold: CLAW_TASK_STALL_FORCE_BLOCK,
+              successCriteria: forceBlocked.successCriteria,
+              recentFailures: recentFails.map((f) => ({
+                cycleNumber: f.cycleNumber,
+                error: f.error,
+                toolError: f.toolErrors?.[0],
+              })),
+              autoTriggered: true,
+            },
+            requestedAt: new Date(),
+          });
+        } catch (err) {
+          log.warn(
+            `[${clawId}] Failed to fire task_force_blocked escalation: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+        // The escalation set state to escalation_pending — return early so
+        // the rest of the cycle's stop / consecutive-error logic doesn't run.
+        return result;
+      }
+
+      // Task-stall auto-escalation. The runner already injects a "⚠ STALLED
+      // — split, mark blocked, or escalate" warning into the prompt at
+      // CLAW_TASK_STALL_THRESHOLD (5 cycles), but the agent can ignore it
+      // indefinitely. Past CLAW_TASK_STALL_AUTO_ESCALATE (10 cycles) the
+      // manager takes the decision out of the agent's hands and requests an
+      // escalation so a human (or higher-level orchestrator) decides whether
+      // to split / unstick / abort. Fires once per task via the per-task
+      // `autoEscalatedAt` marker — the operator denying the escalation does
+      // not re-trigger it for the same task.
+      if (managed.session.state !== 'escalation_pending' && !managed.session.pendingEscalation) {
+        const stalled = managed.session.tasks.find(
+          (t) =>
+            t.status === 'in_progress' &&
+            !t.autoEscalatedAt &&
+            (t.cyclesInProgress ?? 0) >= CLAW_TASK_STALL_AUTO_ESCALATE
+        );
+        if (stalled) {
+          log.warn(
+            `[${clawId}] task "${stalled.title}" (${stalled.id}) stalled at ${stalled.cyclesInProgress} cycles ≥ ${CLAW_TASK_STALL_AUTO_ESCALATE}; requesting task_stalled escalation`
+          );
+          stalled.autoEscalatedAt = new Date().toISOString();
+          this.markDirty(managed);
+          try {
+            await this.requestEscalation(clawId, {
+              id: generateId('esc'),
+              type: 'task_stalled',
+              reason: `Task "${stalled.title}" has been in_progress for ${stalled.cyclesInProgress} cycles without status change. The agent did not split, block, or self-escalate after the stall warning.`,
+              details: {
+                taskId: stalled.id,
+                taskTitle: stalled.title,
+                cyclesInProgress: stalled.cyclesInProgress,
+                stallAutoEscalateThreshold: CLAW_TASK_STALL_AUTO_ESCALATE,
+                successCriteria: stalled.successCriteria,
+                autoTriggered: true,
+              },
+              requestedAt: new Date(),
+            });
+          } catch (err) {
+            log.warn(
+              `[${clawId}] Failed to auto-request task_stalled escalation: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+          return result;
+        }
       }
 
       // Check consecutive errors — set 'failed' state to distinguish from manual pause
@@ -1000,6 +1554,23 @@ export class ClawManager {
           if (managed.idleCycles >= idleLimit) return true;
         } else {
           managed.idleCycles = 0;
+        }
+      }
+
+      // plan_complete — stop when every structured task is in a terminal
+      // state (completed or blocked) AND at least one is completed. The
+      // "at least one completed" guard prevents two degenerate exits: an
+      // empty plan immediately tripping the stop on cycle 1, and a plan
+      // where everything is blocked from being mistaken for success — that
+      // is stuck, not done.
+      if (stopCondition === 'plan_complete') {
+        const tasks = managed.session.tasks;
+        if (tasks.length > 0) {
+          const everyTerminal = tasks.every(
+            (t) => t.status === 'completed' || t.status === 'blocked'
+          );
+          const anyCompleted = tasks.some((t) => t.status === 'completed');
+          if (everyTerminal && anyCompleted) return true;
         }
       }
     }
@@ -1189,7 +1760,16 @@ export class ClawManager {
       lastCycleError: managed.session.lastCycleError,
       startedAt: managed.session.startedAt,
       stoppedAt: managed.session.stoppedAt,
-      persistentContext: managed.session.persistentContext,
+      // tasks + planHistory ride inside persistentContext under reserved
+      // keys so the existing repo schema doesn't need new columns — keeps
+      // both durable across restarts without a migration.
+      persistentContext: {
+        ...managed.session.persistentContext,
+        __claw_tasks: managed.session.tasks,
+        ...(managed.session.planHistory && managed.session.planHistory.length > 0
+          ? { __claw_plan_history: managed.session.planHistory }
+          : {}),
+      },
       inbox: managed.session.inbox,
       artifacts: managed.session.artifacts,
       pendingEscalation: managed.session.pendingEscalation,

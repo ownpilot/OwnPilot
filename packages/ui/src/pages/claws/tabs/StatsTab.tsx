@@ -141,35 +141,132 @@ export function StatsTab({ claw }: { claw: ClawConfig }) {
         </div>
       </div>
 
-      {/* Cycle history chart */}
+      {/* Cycle history: duration + cost sparklines + success ring. Two
+          parallel strips so operators can spot a cycle that ran long AND
+          cost a lot — usually the canary for a model getting stuck in a
+          retry loop. */}
       {history.length > 0 && (
-        <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
-          <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary mb-2">
-            Cycle Duration (last {history.length})
-          </p>
-          <div className="flex items-end gap-0.5 h-16">
-            {history.map((h, i) => {
-              const maxMs = Math.max(...history.map((x) => x.durationMs), 1);
-              const barHeight = Math.max((h.durationMs / maxMs) * 64, 2);
-              const color = h.error || !h.success ? 'bg-red-400' : 'bg-green-400';
-              return (
-                <div
-                  key={i}
-                  className="flex-1 group relative"
-                  title={`Cycle ${h.cycleNumber}: ${formatDuration(h.durationMs)}${h.costUsd != null ? ` · ${formatCost(h.costUsd)}` : ''}${h.error ? ` · ${h.error}` : ''}`}
-                >
-                  <div
-                    className={`w-full rounded-sm ${color} opacity-80 group-hover:opacity-100 transition-opacity`}
-                    style={{ height: `${barHeight}px` }}
-                  />
+        <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border space-y-3">
+          {(() => {
+            const successCount = history.filter((h) => h.success && !h.error).length;
+            const successPct = Math.round((successCount / history.length) * 100);
+            const ringColor =
+              successPct >= 90 ? '#22c55e' : successPct >= 70 ? '#f59e0b' : '#ef4444';
+            const ringRadius = 18;
+            const ringCirc = 2 * Math.PI * ringRadius;
+            const ringDash = (successPct / 100) * ringCirc;
+            const maxMs = Math.max(...history.map((x) => x.durationMs), 1);
+            const costValues = history.map((x) => x.costUsd ?? 0);
+            const maxCost = Math.max(...costValues, 0.0001);
+            const hasCost = costValues.some((c) => c > 0);
+            return (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary">
+                      Last {history.length} cycle{history.length === 1 ? '' : 's'}
+                    </p>
+                    <p className="text-[10px] text-text-muted">
+                      duration top · cost bottom · failures in red
+                    </p>
+                  </div>
+                  <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                    <svg width="48" height="48" className="transform -rotate-90">
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r={ringRadius}
+                        fill="none"
+                        stroke="#1a1a1a"
+                        strokeWidth="4"
+                      />
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r={ringRadius}
+                        fill="none"
+                        stroke={ringColor}
+                        strokeWidth="4"
+                        strokeDasharray={`${ringDash} ${ringCirc}`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span
+                      className="absolute text-[10px] font-bold font-mono"
+                      style={{ color: ringColor }}
+                      title={`${successCount}/${history.length} cycles succeeded`}
+                    >
+                      {successPct}%
+                    </span>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] text-text-muted">
-            <span>#{history[0]?.cycleNumber}</span>
-            <span>#{history[history.length - 1]?.cycleNumber}</span>
-          </div>
+
+                {/* Duration strip */}
+                <div>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                    Duration
+                  </p>
+                  <div className="flex items-end gap-0.5 h-14">
+                    {history.map((h, i) => {
+                      const barHeight = Math.max((h.durationMs / maxMs) * 56, 2);
+                      const color = h.error || !h.success ? 'bg-red-400' : 'bg-green-400';
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 group relative"
+                          title={`Cycle ${h.cycleNumber}: ${formatDuration(h.durationMs)}${h.costUsd != null ? ` · ${formatCost(h.costUsd)}` : ''}${h.error ? ` · ${h.error}` : ''}`}
+                        >
+                          <div
+                            className={`w-full rounded-sm ${color} opacity-80 group-hover:opacity-100 transition-opacity`}
+                            style={{ height: `${barHeight}px` }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Cost strip — only render when at least one cycle had cost
+                    data; otherwise the strip is misleading flat bars. */}
+                {hasCost && (
+                  <div>
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                      Cost
+                    </p>
+                    <div className="flex items-end gap-0.5 h-10">
+                      {history.map((h, i) => {
+                        const cost = h.costUsd ?? 0;
+                        const barHeight = cost > 0 ? Math.max((cost / maxCost) * 40, 2) : 1;
+                        const tone =
+                          cost > maxCost * 0.66
+                            ? 'bg-amber-400'
+                            : cost > 0
+                              ? 'bg-emerald-400'
+                              : 'bg-gray-700';
+                        return (
+                          <div
+                            key={i}
+                            className="flex-1 group relative"
+                            title={`Cycle ${h.cycleNumber}: ${formatCost(cost)}`}
+                          >
+                            <div
+                              className={`w-full rounded-sm ${tone} opacity-80 group-hover:opacity-100 transition-opacity`}
+                              style={{ height: `${barHeight}px` }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-[10px] text-text-muted font-mono">
+                  <span>#{history[0]?.cycleNumber}</span>
+                  <span>#{history[history.length - 1]?.cycleNumber}</span>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 

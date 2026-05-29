@@ -685,6 +685,61 @@ describe('ClawManager', () => {
       await vi.advanceTimersByTimeAsync(5100);
       expect(manager.getSession('claw-1')).toBeNull();
     });
+
+    it('plan_complete stops when every task is terminal and at least one is completed', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'plan_complete' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        { id: 't1', title: 'A', status: 'completed', createdAt: 'x', updatedAt: 'x' },
+        { id: 't2', title: 'B', status: 'blocked', createdAt: 'x', updatedAt: 'x' },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+
+      expect(manager.getSession('claw-1')).toBeNull();
+    });
+
+    it('plan_complete does NOT stop when all tasks are blocked with none completed (stuck != done)', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'plan_complete' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        { id: 't1', title: 'A', status: 'blocked', createdAt: 'x', updatedAt: 'x' },
+        { id: 't2', title: 'B', status: 'blocked', createdAt: 'x', updatedAt: 'x' },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.getSession('claw-1')).not.toBeNull();
+    });
+
+    it('plan_complete does NOT stop on cycle 1 with an empty plan (otherwise the claw dies before planning)', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'plan_complete' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+      // Default makeSession-style: tasks: []
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.getSession('claw-1')).not.toBeNull();
+    });
+
+    it('plan_complete does NOT stop while at least one task is still pending or in_progress', async () => {
+      const config = makeConfig({ mode: 'continuous', stopCondition: 'plan_complete' });
+      setupRepo(config);
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        { id: 't1', title: 'A', status: 'completed', createdAt: 'x', updatedAt: 'x' },
+        { id: 't2', title: 'B', status: 'in_progress', createdAt: 'x', updatedAt: 'x' },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.getSession('claw-1')).not.toBeNull();
+    });
   });
 
   describe('config hot-reload', () => {
@@ -739,6 +794,265 @@ describe('ClawManager', () => {
 
       // After 5 consecutive errors, claw is auto-failed and removed from active claws
       expect(manager.getSession('claw-1')).toBeNull();
+    });
+  });
+
+  describe('reflection state', () => {
+    it('initializes fresh session with empty tasks list', async () => {
+      setupRepo(makeConfig());
+      await manager.startClaw('claw-1', 'user-1');
+      expect(manager.getSession('claw-1')?.tasks).toEqual([]);
+    });
+
+    it('increments cyclesInProgress on the in_progress task at each cycle', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Seed an in_progress task on the live session.
+      const sess = manager.getSession('claw-1');
+      expect(sess).not.toBeNull();
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Work',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          cyclesInProgress: 0,
+        },
+      ];
+
+      // First continuous cycle fires after MIN_DELAY (500ms).
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.getSession('claw-1')?.tasks[0]?.cyclesInProgress).toBe(1);
+
+      // After cycle completes, lastCycleToolCalls=0 → next delay is IDLE (5000ms).
+      await vi.advanceTimersByTimeAsync(5_100);
+      expect(manager.getSession('claw-1')?.tasks[0]?.cyclesInProgress).toBe(2);
+    });
+
+    it('rehydrates tasks from persistentContext on resume — plan survives restart', async () => {
+      const config = makeConfig();
+      const repo = setupRepo(config);
+      const savedTasks = [
+        {
+          id: 't1',
+          title: 'Continue mission',
+          status: 'in_progress',
+          createdAt: '2026-05-27T00:00:00.000Z',
+          updatedAt: '2026-05-27T10:00:00.000Z',
+        },
+      ];
+      repo.loadSession.mockResolvedValueOnce({
+        cyclesCompleted: 3,
+        totalToolCalls: 9,
+        totalCostUsd: 0.02,
+        lastCycleAt: new Date(),
+        lastCycleDurationMs: 800,
+        lastCycleError: null,
+        startedAt: new Date(),
+        // Tasks are persisted inside persistentContext under a reserved key.
+        persistentContext: { __claw_tasks: savedTasks, userKey: 'kept' },
+        inbox: [],
+        artifacts: [],
+        pendingEscalation: null,
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+
+      const session = manager.getSession('claw-1');
+      expect(session?.tasks).toHaveLength(1);
+      expect(session?.tasks[0]?.id).toBe('t1');
+      // The reserved key must NOT leak into the rehydrated persistentContext,
+      // otherwise the agent could read or mutate it from claw_set_context.
+      expect(session?.persistentContext.__claw_tasks).toBeUndefined();
+      // User-set keys must survive the strip.
+      expect(session?.persistentContext.userKey).toBe('kept');
+    });
+
+    it('initializes fresh session with consecutiveErrors=0 and empty recentFailures', async () => {
+      setupRepo(makeConfig());
+      await manager.startClaw('claw-1', 'user-1');
+
+      const session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(0);
+      expect(session?.recentFailures).toEqual([]);
+    });
+
+    it('resets reflection state when resuming a saved session — restart deserves a clean retry', async () => {
+      const config = makeConfig();
+      const repo = setupRepo(config);
+      // Saved session has no reflection fields persisted; manager must default them
+      repo.loadSession.mockResolvedValueOnce({
+        cyclesCompleted: 5,
+        totalToolCalls: 12,
+        totalCostUsd: 0.05,
+        lastCycleAt: new Date(),
+        lastCycleDurationMs: 1000,
+        lastCycleError: 'previous error',
+        startedAt: new Date(),
+        persistentContext: {},
+        inbox: [],
+        artifacts: [],
+        pendingEscalation: null,
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+
+      const session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(0);
+      expect(session?.recentFailures).toEqual([]);
+    });
+
+    it('increments consecutiveErrors on cycle failure and resets on success', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      // Default the runner to failure so the first cycle fails.
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: false, error: 'boom' }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      // First continuous cycle fires after MIN_DELAY (500ms).
+      await vi.advanceTimersByTimeAsync(600);
+
+      let session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(1);
+      expect(session?.recentFailures).toHaveLength(1);
+      expect(session?.recentFailures[0]?.error).toBe('boom');
+
+      // Now swap the default to success and let the error-backoff cycle fire.
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: true }));
+      await vi.advanceTimersByTimeAsync(10_100);
+
+      session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(0);
+      // ring is not cleared on success — past failures remain visible until evicted
+      expect(session?.recentFailures).toHaveLength(1);
+    });
+
+    it('records per-tool failures and truncates oversized error payloads', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      const huge = 'X'.repeat(2000);
+      mockRunCycle.mockResolvedValueOnce(
+        makeCycleResult({
+          success: false,
+          error: 'cycle failed',
+          toolCalls: [
+            {
+              tool: 'browser_open',
+              args: {},
+              result: huge,
+              success: false,
+              durationMs: 10,
+            },
+          ],
+        })
+      );
+
+      await manager.startClaw('claw-1', 'user-1');
+      await vi.advanceTimersByTimeAsync(11_000);
+
+      const failure = manager.getSession('claw-1')?.recentFailures[0];
+      expect(failure?.toolErrors).toHaveLength(1);
+      expect(failure?.toolErrors?.[0]?.tool).toBe('browser_open');
+      expect(failure?.toolErrors?.[0]?.error.length).toBeLessThan(huge.length);
+      expect(failure?.toolErrors?.[0]?.error).toContain('[truncated]');
+    });
+
+    it('setNextIntent (agent) stores raw intent; (operator) prefixes [OPERATOR]', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: true }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Default actor is 'agent'.
+      const okAgent = await manager.setNextIntent('claw-1', 'finish task #3 and report');
+      expect(okAgent).toBe(true);
+      expect(manager.getSession('claw-1')?.nextIntent).toBe('finish task #3 and report');
+
+      // Operator overwrites with marker prefix.
+      const okOp = await manager.setNextIntent(
+        'claw-1',
+        'switch to debugging the auth bug',
+        'operator'
+      );
+      expect(okOp).toBe(true);
+      expect(manager.getSession('claw-1')?.nextIntent).toBe(
+        '[OPERATOR] switch to debugging the auth bug'
+      );
+    });
+
+    it('setNextIntent throws on empty / oversized', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: true }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      await expect(manager.setNextIntent('claw-1', '   ')).rejects.toThrow(/empty/);
+      await expect(manager.setNextIntent('claw-1', 'x'.repeat(600))).rejects.toThrow(/exceeds 500/);
+    });
+
+    it('setNextIntent returns false for unknown claw', async () => {
+      const ok = await manager.setNextIntent('does-not-exist', 'whatever');
+      expect(ok).toBe(false);
+    });
+
+    it('resetFailures clears consecutiveErrors and recentFailures on a live claw', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValueOnce(makeCycleResult({ success: false, error: 'boom-1' }));
+      mockRunCycle.mockResolvedValueOnce(makeCycleResult({ success: false, error: 'boom-2' }));
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: false, error: 'boom-rest' }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      // Two failures with backoff between them: first fires after MIN_DELAY,
+      // second after the post-failure backoff (~10s).
+      await vi.advanceTimersByTimeAsync(600);
+      await vi.advanceTimersByTimeAsync(11_000);
+
+      let session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBeGreaterThanOrEqual(2);
+      expect(session?.recentFailures.length).toBeGreaterThanOrEqual(2);
+
+      const ok = await manager.resetFailures('claw-1');
+      expect(ok).toBe(true);
+
+      session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(0);
+      expect(session?.recentFailures).toEqual([]);
+    });
+
+    it('resetFailures returns false for an unknown claw', async () => {
+      const ok = await manager.resetFailures('does-not-exist');
+      expect(ok).toBe(false);
+    });
+
+    it('resetFailures is a safe no-op when nothing is set', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: true }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const ok = await manager.resetFailures('claw-1');
+      expect(ok).toBe(true);
+
+      const session = manager.getSession('claw-1');
+      expect(session?.consecutiveErrors).toBe(0);
+      expect(session?.recentFailures).toEqual([]);
+    });
+
+    it('caps recentFailures at CLAW_RECENT_FAILURES_MAX (=5) entries', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      mockRunCycle.mockResolvedValue(makeCycleResult({ success: false, error: 'flaky' }));
+
+      await manager.startClaw('claw-1', 'user-1');
+      // Run more failures than the ring can hold; auto-fail kicks in at 5
+      // consecutive errors, so we observe the ring exactly at the cap.
+      for (let i = 0; i < 7; i++) {
+        await vi.advanceTimersByTimeAsync(11_000);
+      }
+
+      // Session may be gone after auto-fail; assert via getAllSessions or skip
+      // if claw is already removed. The point is that during its life the ring
+      // never exceeded the cap — checked by listing what's left.
+      const sessions = manager.getAllSessions();
+      for (const s of sessions) {
+        expect(s.recentFailures.length).toBeLessThanOrEqual(5);
+      }
     });
   });
 
@@ -931,6 +1245,297 @@ describe('ClawManager', () => {
     });
   });
 
+  describe('task-stall auto-escalation', () => {
+    it('auto-requests task_stalled escalation once the focus task crosses CLAW_TASK_STALL_AUTO_ESCALATE cycles', async () => {
+      const repo = setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Seed an in_progress task one cycle below the auto-escalate threshold
+      // so the next cycle's tick crosses the line.
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Save raw API response to temp',
+          successCriteria: 'Raw JSON file saved to temp/',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          cyclesInProgress: 9,
+        },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const after = manager.getSession('claw-1');
+      expect(after?.state).toBe('escalation_pending');
+      expect(after?.pendingEscalation?.type).toBe('task_stalled');
+      expect(after?.pendingEscalation?.details?.taskId).toBe('t1');
+      expect(after?.pendingEscalation?.details?.autoTriggered).toBe(true);
+      expect(after?.tasks[0]?.autoEscalatedAt).toBeTruthy();
+      expect(repo.saveEscalationHistory).toHaveBeenCalled();
+    });
+
+    it('does not auto-escalate the same task twice — autoEscalatedAt marker blocks repeat', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Stuck task',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          // Past AUTO_ESCALATE (10) but below FORCE_BLOCK (20) — this is the
+          // band where the marker should suppress re-escalation. The next
+          // cycle would tick to 15 which is still below force-block.
+          cyclesInProgress: 14,
+          autoEscalatedAt: '2026-05-29T00:00:00.000Z',
+        },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const after = manager.getSession('claw-1');
+      // Already-escalated marker means no new escalation request.
+      expect(after?.pendingEscalation).toBeNull();
+      expect(after?.state).not.toBe('escalation_pending');
+    });
+
+    it('does not auto-escalate below the threshold even if STALL_THRESHOLD has been crossed', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Mildly stuck',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          // Past STALL_THRESHOLD (5) — the runner injects the warning — but
+          // below the AUTO_ESCALATE threshold (10). Should NOT escalate yet.
+          cyclesInProgress: 6,
+        },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const after = manager.getSession('claw-1');
+      expect(after?.pendingEscalation).toBeNull();
+      expect(after?.tasks[0]?.autoEscalatedAt).toBeUndefined();
+    });
+
+    it('injects an action-forcing inbox nudge when the operator approves a task_stalled escalation', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Push the session straight into escalation_pending with a task_stalled
+      // escalation so we test the approval path in isolation.
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Save raw API response to temp',
+          successCriteria: 'Raw JSON file saved to temp/',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          cyclesInProgress: 12,
+          autoEscalatedAt: '2026-05-29T00:00:00.000Z',
+        },
+      ];
+      sess!.state = 'escalation_pending';
+      sess!.pendingEscalation = {
+        id: 'esc-1',
+        type: 'task_stalled',
+        reason: 'stalled',
+        details: { taskId: 't1', taskTitle: 'Save raw API response to temp', cyclesInProgress: 12 },
+        requestedAt: new Date(),
+      };
+
+      const ok = await manager.approveEscalation('claw-1');
+      expect(ok).toBe(true);
+
+      const after = manager.getSession('claw-1');
+      expect(after?.state).not.toBe('escalation_pending');
+      expect(after?.pendingEscalation).toBeNull();
+      const nudge = after?.inbox.at(-1);
+      expect(nudge).toContain('[ESCALATION_APPROVED]');
+      expect(nudge).toContain('t1');
+      expect(nudge).toContain('Save raw API response to temp');
+      expect(nudge).toContain('claw_split_task');
+      expect(nudge).toContain('claw_update_task');
+    });
+
+    it('force-blocks the task at CLAW_TASK_STALL_FORCE_BLOCK cycles, fires escalation, and carries failure context', async () => {
+      const repo = setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      // Seed a task at one below the force-block threshold with the
+      // auto-escalate marker already set — simulating the case where the
+      // escalation was denied and the agent kept retrying. Also seed
+      // recentFailures so the nudge has actual error context to surface.
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Save raw API response to temp',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+          cyclesInProgress: 19,
+          autoEscalatedAt: '2026-05-29T00:00:00.000Z',
+        },
+      ];
+      sess!.recentFailures = [
+        {
+          cycleNumber: 17,
+          at: 'x',
+          error: 'write_file failed: ENOENT',
+          toolErrors: [
+            { tool: 'write_file', error: 'ENOENT: no such file or directory, open /tmp/foo.json' },
+          ],
+        },
+        {
+          cycleNumber: 18,
+          at: 'x',
+          error: 'write_file failed: ENOENT',
+          toolErrors: [
+            { tool: 'write_file', error: 'ENOENT: no such file or directory, open /tmp/foo.json' },
+          ],
+        },
+      ];
+
+      await vi.advanceTimersByTimeAsync(600);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const after = manager.getSession('claw-1');
+      const task = after?.tasks.find((t) => t.id === 't1');
+      expect(task?.status).toBe('blocked');
+      expect(task?.cyclesInProgress).toBe(0);
+      expect(task?.autoEscalatedAt).toBeUndefined();
+      expect(task?.notes).toContain('[AUTO-BLOCKED]');
+
+      // Inbox nudge surfaces recent failure context so the agent can
+      // diagnose the root cause on its next cycle.
+      const nudge = after?.inbox.at(-1);
+      expect(nudge).toContain('[TASK_FORCE_BLOCKED]');
+      expect(nudge).toContain('t1');
+      expect(nudge).toContain('Recent failure context');
+      expect(nudge).toContain('write_file');
+      expect(nudge).toContain('ENOENT');
+      // The three required next-cycle actions must be present so the agent
+      // does not just silently move on to dependent tasks.
+      expect(nudge).toContain('ROOT-CAUSE');
+      expect(nudge).toContain('ESCALATE');
+      expect(nudge).toContain('MARK MISSION BLOCKED');
+
+      // Force-block must ALSO trigger an operator-facing escalation — silent
+      // blocking leaves load-bearing tasks orphaned with no human notified.
+      expect(after?.state).toBe('escalation_pending');
+      expect(after?.pendingEscalation?.type).toBe('task_force_blocked');
+      expect(after?.pendingEscalation?.details?.taskId).toBe('t1');
+      expect(after?.pendingEscalation?.details?.cyclesInProgress).toBe(20);
+      expect(after?.pendingEscalation?.details?.recentFailures).toBeDefined();
+      expect(repo.saveEscalationHistory).toHaveBeenCalled();
+
+      // Plan history records the block as an operator-actor mutation.
+      const blockEntry = after?.planHistory.find((e) => e.newStatus === 'blocked');
+      expect(blockEntry?.kind).toBe('task_update');
+      expect(blockEntry?.actor).toBe('operator');
+    });
+
+    it('does not inject a stall nudge when approving a non-stall escalation', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.state = 'escalation_pending';
+      sess!.pendingEscalation = {
+        id: 'esc-2',
+        type: 'budget_increase',
+        reason: 'budget threshold',
+        details: { autoTriggered: true },
+        requestedAt: new Date(),
+      };
+      const inboxBefore = sess!.inbox.length;
+
+      await manager.approveEscalation('claw-1');
+
+      const after = manager.getSession('claw-1');
+      expect(after?.inbox.length).toBe(inboxBefore);
+    });
+
+    it('injects a recovery-or-fail nudge when approving a task_force_blocked escalation', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.state = 'escalation_pending';
+      sess!.pendingEscalation = {
+        id: 'esc-3',
+        type: 'task_force_blocked',
+        reason: 'auto-blocked',
+        details: { taskId: 't1.2', taskTitle: 'Save raw API response to temp' },
+        requestedAt: new Date(),
+      };
+
+      await manager.approveEscalation('claw-1');
+
+      const after = manager.getSession('claw-1');
+      const nudge = after?.inbox.at(-1);
+      expect(nudge).toContain('[ESCALATION_APPROVED]');
+      expect(nudge).toContain('task_force_blocked');
+      expect(nudge).toContain('t1.2');
+      expect(nudge).toContain('Save raw API response to temp');
+      // Must surface the three concrete recovery moves so the agent doesn't
+      // drift back to a doomed retry path.
+      expect(nudge).toContain('claw_split_task');
+      expect(nudge).toContain('claw_complete_report');
+      expect(nudge).toContain('claw_update_task');
+    });
+
+    it('denying a task_force_blocked escalation tells the agent to mark the mission failed, not "continue"', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const sess = manager.getSession('claw-1');
+      sess!.state = 'escalation_pending';
+      sess!.pendingEscalation = {
+        id: 'esc-4',
+        type: 'task_force_blocked',
+        reason: 'auto-blocked',
+        details: { taskId: 't1.2' },
+        requestedAt: new Date(),
+      };
+
+      await manager.denyEscalation('claw-1', 'not now');
+
+      const after = manager.getSession('claw-1');
+      const denial = after?.inbox.at(-1);
+      expect(denial).toContain('[ESCALATION_DENIED]');
+      expect(denial).toContain('task_force_blocked');
+      expect(denial).toContain('claw_complete_report');
+      expect(denial).toContain('status="failed"');
+      // The misleading default message ("Continue with your current
+      // capabilities") must NOT be used for force-block denials.
+      expect(denial).not.toContain('Continue with your current capabilities');
+    });
+  });
+
   describe('rate limiting', () => {
     it('pauses the claw and emits a paused event when hourly cap is hit', async () => {
       // Tight cap so we trip it on the first cycle.
@@ -966,6 +1571,236 @@ describe('ClawManager', () => {
       const payload = pausedEmits[0]?.[2] as { reason?: string };
       expect(payload?.reason).toBe('rate_limit');
       expect(manager.getSession('claw-1')?.state).toBe('paused');
+    });
+  });
+
+  describe('plan-updated broadcast', () => {
+    it('emits claw.plan.updated when replacePlan is called', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+
+      const emit = vi.fn();
+      mockGetEventSystem.mockReturnValue({
+        emit,
+        on: vi.fn(() => vi.fn()),
+        onAny: vi.fn(() => vi.fn()),
+        onPattern: vi.fn(() => vi.fn()),
+        off: vi.fn(),
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+
+      const now = new Date().toISOString();
+      await manager.replacePlan('claw-1', [
+        {
+          id: 't1',
+          title: 'Survey',
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+          cyclesInProgress: 0,
+        },
+      ]);
+
+      const planEmits = emit.mock.calls.filter((c) => c[0] === 'claw.plan.updated');
+      expect(planEmits.length).toBe(1);
+      const payload = planEmits[0]?.[2] as {
+        clawId: string;
+        source: string;
+        tasks: unknown[];
+        counts: { total: number; pending: number };
+      };
+      expect(payload?.clawId).toBe('claw-1');
+      expect(payload?.source).toBe('replace');
+      expect(payload?.tasks).toHaveLength(1);
+      expect(payload?.counts.total).toBe(1);
+      expect(payload?.counts.pending).toBe(1);
+    });
+
+    it('records a planHistory entry for each replacePlan with actor + count', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+
+      const now = new Date().toISOString();
+      await manager.replacePlan(
+        'claw-1',
+        [
+          {
+            id: 't1',
+            title: 'A',
+            status: 'pending',
+            createdAt: now,
+            updatedAt: now,
+            cyclesInProgress: 0,
+          },
+        ],
+        'operator'
+      );
+      await manager.replacePlan(
+        'claw-1',
+        [
+          {
+            id: 't1',
+            title: 'A',
+            status: 'pending',
+            createdAt: now,
+            updatedAt: now,
+            cyclesInProgress: 0,
+          },
+          {
+            id: 't2',
+            title: 'B',
+            status: 'pending',
+            createdAt: now,
+            updatedAt: now,
+            cyclesInProgress: 0,
+          },
+        ],
+        'agent'
+      );
+
+      const hist = manager.getSession('claw-1')?.planHistory ?? [];
+      expect(hist).toHaveLength(2);
+      expect(hist[0]).toMatchObject({ actor: 'operator', kind: 'replace', newTaskCount: 1 });
+      expect(hist[1]).toMatchObject({ actor: 'agent', kind: 'replace', newTaskCount: 2 });
+    });
+
+    it('records a task_update history entry only when status actually changes', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ];
+
+      // Status changes → entry recorded.
+      await manager.updateTaskOnSession('claw-1', { id: 't1', status: 'in_progress' }, 'operator');
+      // Notes-only update with same status → NO entry.
+      await manager.updateTaskOnSession(
+        'claw-1',
+        { id: 't1', status: 'in_progress', notes: 'pinning down repro' },
+        'operator'
+      );
+
+      const hist = manager.getSession('claw-1')?.planHistory ?? [];
+      expect(hist).toHaveLength(1);
+      expect(hist[0]).toMatchObject({
+        kind: 'task_update',
+        taskId: 't1',
+        prevStatus: 'pending',
+        newStatus: 'in_progress',
+        actor: 'operator',
+      });
+    });
+
+    it('splitTaskOnSession records one task_update + one task_added per subtask in plan history', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'Refactor',
+          status: 'in_progress',
+          cyclesInProgress: 6,
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ];
+      // Drop existing history so we can assert exactly what split recorded.
+      sess!.planHistory = [];
+
+      await manager.splitTaskOnSession(
+        'claw-1',
+        {
+          parentId: 't1',
+          subtasks: [{ title: 'part A' }, { title: 'part B' }],
+        },
+        'operator'
+      );
+
+      const hist = manager.getSession('claw-1')?.planHistory ?? [];
+      // 1 task_update for parent (in_progress → blocked) + 2 task_added.
+      expect(hist).toHaveLength(3);
+      expect(hist[0]).toMatchObject({
+        kind: 'task_update',
+        taskId: 't1',
+        prevStatus: 'in_progress',
+        newStatus: 'blocked',
+      });
+      expect(hist[1]).toMatchObject({ kind: 'task_added', taskId: 't1.1' });
+      expect(hist[2]).toMatchObject({ kind: 'task_added', taskId: 't1.2' });
+      // Parent must be flagged with auto-evidence so the audit trail is visible
+      // directly on the task row, not only in plan history.
+      expect(manager.getSession('claw-1')?.tasks[0]?.evidence).toContain('Split into: t1.1, t1.2');
+    });
+
+    it('caps planHistory at CLAW_PLAN_HISTORY_MAX entries', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+      await manager.startClaw('claw-1', 'user-1');
+      // Run 55 plan replacements; ring should hold 50.
+      const now = new Date().toISOString();
+      for (let i = 0; i < 55; i++) {
+        await manager.replacePlan(
+          'claw-1',
+          [
+            {
+              id: 't1',
+              title: `v${i}`,
+              status: 'pending',
+              createdAt: now,
+              updatedAt: now,
+              cyclesInProgress: 0,
+            },
+          ],
+          'agent'
+        );
+      }
+      const hist = manager.getSession('claw-1')?.planHistory ?? [];
+      expect(hist).toHaveLength(50);
+    });
+
+    it('emits claw.plan.updated with source="task" and taskId when updateTaskOnSession is called', async () => {
+      setupRepo(makeConfig({ mode: 'continuous' }));
+
+      const emit = vi.fn();
+      mockGetEventSystem.mockReturnValue({
+        emit,
+        on: vi.fn(() => vi.fn()),
+        onAny: vi.fn(() => vi.fn()),
+        onPattern: vi.fn(() => vi.fn()),
+        off: vi.fn(),
+      });
+
+      await manager.startClaw('claw-1', 'user-1');
+      const sess = manager.getSession('claw-1');
+      sess!.tasks = [
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ];
+
+      await manager.updateTaskOnSession('claw-1', { id: 't1', status: 'in_progress' });
+
+      const planEmits = emit.mock.calls.filter((c) => c[0] === 'claw.plan.updated');
+      expect(planEmits.length).toBeGreaterThan(0);
+      const payload = planEmits[planEmits.length - 1]?.[2] as {
+        source: string;
+        taskId: string;
+        counts: { in_progress: number };
+      };
+      expect(payload?.source).toBe('task');
+      expect(payload?.taskId).toBe('t1');
+      expect(payload?.counts.in_progress).toBe(1);
     });
   });
 

@@ -154,6 +154,8 @@ function mapUpdateBody(body: UpdateClawBody): UpdateClawInput {
   if (body.missionContract !== undefined) updates.missionContract = body.missionContract;
   if (body.autonomy_policy !== undefined) updates.autonomyPolicy = body.autonomy_policy;
   if (body.autonomyPolicy !== undefined) updates.autonomyPolicy = body.autonomyPolicy;
+  if (body.learn_skills !== undefined) updates.learnSkills = body.learn_skills;
+  if (body.learnSkills !== undefined) updates.learnSkills = body.learnSkills;
 
   return updates as UpdateClawInput;
 }
@@ -166,6 +168,35 @@ function scoreContract(config: ClawConfig): number {
   if (config.missionContract?.evidenceRequired) score += 15;
   if (config.stopCondition) score += 10;
   return Math.min(score, 100);
+}
+
+/**
+ * Build the public session DTO. Single source of truth for what the UI sees —
+ * both the list and the detail endpoint use this so adding a new field
+ * surfaces everywhere automatically. Includes the structured plan, focus
+ * task, reflection state (consecutiveErrors + recentFailures) so the UI can
+ * visualise what the agent is actually doing without scraping logs.
+ */
+function serializeSession(session: ClawSession | null) {
+  if (!session) return null;
+  return {
+    state: session.state,
+    cyclesCompleted: session.cyclesCompleted,
+    totalToolCalls: session.totalToolCalls,
+    totalCostUsd: session.totalCostUsd,
+    lastCycleAt: session.lastCycleAt,
+    lastCycleDurationMs: session.lastCycleDurationMs,
+    lastCycleError: session.lastCycleError,
+    startedAt: session.startedAt,
+    stoppedAt: session.stoppedAt,
+    artifacts: session.artifacts,
+    pendingEscalation: session.pendingEscalation,
+    tasks: session.tasks,
+    consecutiveErrors: session.consecutiveErrors,
+    recentFailures: session.recentFailures,
+    nextIntent: session.nextIntent,
+    planHistory: session.planHistory ?? [],
+  };
 }
 
 function buildHealthStatus(config: ClawConfig, session: ClawSession | null): ClawHealthStatus {
@@ -486,21 +517,7 @@ clawRoutes.get('/', async (c) => {
       return {
         ...config,
         health: buildHealthStatus(config, session ?? null),
-        session: session
-          ? {
-              state: session.state,
-              cyclesCompleted: session.cyclesCompleted,
-              totalToolCalls: session.totalToolCalls,
-              totalCostUsd: session.totalCostUsd,
-              lastCycleAt: session.lastCycleAt,
-              lastCycleDurationMs: session.lastCycleDurationMs,
-              lastCycleError: session.lastCycleError,
-              startedAt: session.startedAt,
-              stoppedAt: session.stoppedAt,
-              artifacts: session.artifacts,
-              pendingEscalation: session.pendingEscalation,
-            }
-          : null,
+        session: serializeSession(session ?? null),
       };
     });
 
@@ -647,6 +664,7 @@ clawRoutes.post('/', async (c) => {
       preset: body.preset,
       missionContract: body.mission_contract ?? body.missionContract,
       autonomyPolicy: body.autonomy_policy ?? body.autonomyPolicy,
+      learnSkills: body.learn_skills ?? body.learnSkills,
     });
 
     return apiResponse(c, config, 201);
@@ -837,6 +855,62 @@ clawRoutes.post('/:id/message', async (c) => {
   }
 });
 
+// POST /:id/next-intent — operator queues a directive for the next cycle
+// without interrupting the in-flight one. The runner renders it with
+// `[OPERATOR]` framing then auto-clears it after one cycle.
+clawRoutes.post('/:id/next-intent', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id } = c.req.param();
+    const body = (await c.req.json()) as { intent?: unknown };
+    if (typeof body.intent !== 'string' || body.intent.trim().length === 0) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'intent must be a non-empty string' },
+        400
+      );
+    }
+    const service = getClawService();
+    await service.setNextIntent(id, userId, body.intent);
+    return apiResponse(c, { queued: true });
+  } catch (err) {
+    const msg = getErrorMessage(err);
+    if (msg === 'Claw not found') {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
+    }
+    if (msg === 'Claw not running') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 409);
+    }
+    // setNextIntent length/empty errors bubble up here as Error instances.
+    if (msg.startsWith('intent ')) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 400);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+// POST /:id/reset-failures — operator clears consecutiveErrors + recentFailures
+// without restarting the claw. Lets reflection mode clear once the underlying
+// tool problem (network, config, expired token) has been fixed.
+clawRoutes.post('/:id/reset-failures', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id } = c.req.param();
+    const service = getClawService();
+    await service.resetFailures(id, userId);
+    return apiResponse(c, { reset: true });
+  } catch (err) {
+    const msg = getErrorMessage(err);
+    if (msg === 'Claw not found') {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
+    }
+    if (msg === 'Claw not running') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 409);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
 // POST /:id/steer — interrupt the in-flight cycle and redirect it now
 clawRoutes.post('/:id/steer', async (c) => {
   try {
@@ -854,6 +928,90 @@ clawRoutes.post('/:id/steer', async (c) => {
   }
 });
 
+// PUT /:id/plan — replace the structured task plan
+clawRoutes.put('/:id/plan', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id } = c.req.param();
+    const body = (await c.req.json()) as { tasks?: unknown };
+    const service = getClawService();
+    const tasks = await service.replacePlan(id, userId, body.tasks);
+    return apiResponse(c, { tasks });
+  } catch (err) {
+    const msg = getErrorMessage(err);
+    // Validation errors carry actionable messages — surface them as 400.
+    if (msg.includes('must ') || msg.includes('exceeds ') || msg.includes('duplicates')) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 400);
+    }
+    if (msg === 'Claw not found') {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
+    }
+    if (msg === 'Claw not running') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 409);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+// PATCH /:id/tasks/:taskId — update a single task (status/notes/evidence)
+clawRoutes.patch('/:id/tasks/:taskId', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id, taskId } = c.req.param();
+    const body = (await c.req.json()) as Record<string, unknown>;
+    const service = getClawService();
+    const result = await service.updateTask(id, userId, { ...body, id: taskId });
+    return apiResponse(c, result);
+  } catch (err) {
+    const msg = getErrorMessage(err);
+    if (msg.includes('not found')) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
+    }
+    if (
+      msg.includes('must ') ||
+      msg.includes('exceeds ') ||
+      msg.includes('At least one') ||
+      msg.includes('Cannot start')
+    ) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 400);
+    }
+    if (msg === 'Claw not running') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 409);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
+// POST /:id/tasks/:taskId/split — atomically split a task into subtasks
+clawRoutes.post('/:id/tasks/:taskId/split', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id, taskId } = c.req.param();
+    const body = (await c.req.json()) as Record<string, unknown>;
+    const service = getClawService();
+    const result = await service.splitTask(id, userId, { ...body, task_id: taskId });
+    return apiResponse(c, result);
+  } catch (err) {
+    const msg = getErrorMessage(err);
+    if (msg.includes('not found')) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
+    }
+    if (
+      msg.includes('must ') ||
+      msg.includes('exceeds ') ||
+      msg.includes('would exceed') ||
+      msg.includes('at least') ||
+      msg.includes('exceeds maximum')
+    ) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 400);
+    }
+    if (msg === 'Claw not running') {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 409);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
+  }
+});
+
 // GET /:id/history
 clawRoutes.get('/:id/history', async (c) => {
   try {
@@ -864,6 +1022,30 @@ clawRoutes.get('/:id/history', async (c) => {
 
     const { entries, total } = await service.getHistory(id, userId, limit, offset);
     return apiResponse(c, { entries, total, limit, offset });
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+  }
+});
+
+// GET /:id/trajectory — Export run history as a ShareGPT-format trajectory
+// (Hermes-style trajectory data for eval / fine-tuning).
+clawRoutes.get('/:id/trajectory', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const { id } = c.req.param();
+    const { limit, offset } = getPaginationParams(c);
+    const service = getClawService();
+
+    const config = await service.getClaw(id, userId);
+    if (!config) {
+      return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' }, 404);
+    }
+
+    const { entries } = await service.getHistory(id, userId, limit, offset);
+    const { toShareGPT } = await import('../services/claw/trajectory-export.js');
+    const trajectory = toShareGPT(config, entries);
+
+    return apiResponse(c, { format: 'sharegpt', trajectory });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
   }
@@ -974,21 +1156,7 @@ clawRoutes.get('/:id', async (c) => {
     return apiResponse(c, {
       ...config,
       health: buildHealthStatus(config, session),
-      session: session
-        ? {
-            state: session.state,
-            cyclesCompleted: session.cyclesCompleted,
-            totalToolCalls: session.totalToolCalls,
-            totalCostUsd: session.totalCostUsd,
-            lastCycleAt: session.lastCycleAt,
-            lastCycleDurationMs: session.lastCycleDurationMs,
-            lastCycleError: session.lastCycleError,
-            startedAt: session.startedAt,
-            stoppedAt: session.stoppedAt,
-            artifacts: session.artifacts,
-            pendingEscalation: session.pendingEscalation,
-          }
-        : null,
+      session: serializeSession(session),
     });
   } catch (err) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);

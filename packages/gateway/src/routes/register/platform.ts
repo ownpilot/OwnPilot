@@ -10,6 +10,7 @@ import type { Hono } from 'hono';
 import {
   healthRoutes,
   uiAuthRoutes,
+  providerAuthRoutes,
   settingsRoutes,
   profileRoutes,
   providersRoutes,
@@ -30,6 +31,11 @@ import {
 export function registerPlatformRoutes(app: Hono): void {
   app.route('/health', healthRoutes);
   app.route('/api/v1/auth', uiAuthRoutes);
+  // OAuth sign-in for LLM providers (Codex, etc) — distinct from the UI
+  // session auth above. Mounted at its own prefix so the two namespaces
+  // can't collide (uiAuth owns /login,/logout,/sessions; provider-auth
+  // owns /oauth/device/start,/oauth/device/poll,/signout,/providers).
+  app.route('/api/v1/provider-auth', providerAuthRoutes);
   app.route('/api/v1/health', healthRoutes); // Also mount at /api/v1 for API consistency
 
   // Settings & Profile

@@ -347,6 +347,9 @@ export class WSGateway {
           case 'claw.update':
             this.broadcast('claw:update', { clawId, state: d.state as string });
             break;
+          case 'claw.plan.updated':
+            this.broadcast('claw:plan:updated', d as unknown as ServerEvents['claw:plan:updated']);
+            break;
         }
       })
     );

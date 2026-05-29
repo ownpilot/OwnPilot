@@ -12,6 +12,48 @@
   },
   "models": [
     {
+      "id": "mimo-v2.5-tts-voicedesign",
+      "name": "MiMo-V2.5-TTS-VoiceDesign",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo-v2.5-tts-voiceclone",
+      "name": "MiMo-V2.5-TTS-VoiceClone",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo-v2.5-tts",
+      "name": "MiMo-V2.5-TTS",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "mimo-v2.5",
       "name": "MiMo-V2.5",
       "contextWindow": 1048576,
@@ -26,7 +68,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-22"
     },
     {
@@ -49,7 +91,7 @@
       "id": "mimo-v2-tts",
       "name": "MiMo-V2-TTS",
       "contextWindow": 8192,
-      "maxOutput": 16384,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -92,22 +134,6 @@
       ],
       "default": false,
       "releaseDate": "2026-03-18"
-    },
-    {
-      "id": "mimo-v2-flash",
-      "name": "MiMo-V2-Flash",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-16"
     }
   ],
   "baseUrl": "https://token-plan-sgp.xiaomimimo.com/v1",

@@ -22,9 +22,14 @@ import { settingsApi, providersApi, modelsApi, localProvidersApi } from '../api'
 import type { ProviderConfig, LocalProviderInfo, ModelInfo } from '../types';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { EmptyState } from '../components/EmptyState';
+import { ProviderAuthPanel } from './auth/ProviderAuthPanel';
 
-type TabId = 'home' | 'keys';
-const TAB_LABELS: Record<TabId, string> = { home: 'Home', keys: 'API Keys' };
+type TabId = 'home' | 'keys' | 'oauth';
+const TAB_LABELS: Record<TabId, string> = {
+  home: 'Home',
+  keys: 'API Keys',
+  oauth: 'OAuth Sign-in',
+};
 
 interface ProviderCategory {
   name: string;
@@ -437,7 +442,7 @@ export function ApiKeysPage() {
 
       {/* URL-based tabs */}
       <div className="flex border-b border-border dark:border-dark-border px-6">
-        {(['home', 'keys'] as TabId[]).map((t) => (
+        {(['home', 'keys', 'oauth'] as TabId[]).map((t) => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -706,6 +711,12 @@ export function ApiKeysPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'oauth' && (
+        <div className="flex-1 overflow-y-auto p-6">
+          <ProviderAuthPanel />
         </div>
       )}
     </div>

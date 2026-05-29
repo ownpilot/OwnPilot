@@ -127,6 +127,56 @@ export function OverviewTab({
         </div>
       )}
 
+      {/* Reflection-loop banner — the agent has crossed the consecutive-failures
+          threshold and is being prompted to diagnose root cause. Surfaced on
+          the first tab so it's the first thing a user investigating a stuck
+          claw sees. */}
+      {session && session.consecutiveErrors >= 2 && (
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-red-600 dark:text-red-400">
+              Reflection required — {session.consecutiveErrors} consecutive failures
+            </p>
+            <p className="text-[11px] text-red-500/80 mt-0.5">
+              The agent is being prompted to change strategy. See the Plan tab for recent failure
+              details.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Focus banner — surface the current in-progress task. The plan-tab
+          renders the full task list; here we just answer "what is it doing
+          right now?" without making the user switch tabs. */}
+      {(() => {
+        const focus = session?.tasks?.find((t) => t.status === 'in_progress');
+        if (!focus) return null;
+        const stalled = (focus.cyclesInProgress ?? 0) >= 5;
+        return (
+          <div
+            className={`flex items-start gap-2 p-3 rounded-lg ${
+              stalled
+                ? 'bg-red-500/10 border border-red-500/20'
+                : 'bg-blue-500/10 border border-blue-500/20'
+            }`}
+          >
+            <Activity
+              className={`w-4 h-4 shrink-0 mt-0.5 ${stalled ? 'text-red-500' : 'text-blue-500'}`}
+            />
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-medium ${stalled ? 'text-red-500' : 'text-blue-500'}`}>
+                Focus: [{focus.id}] {focus.title}
+                {stalled && ` · ⚠ stalled (${focus.cyclesInProgress ?? 0} cycles)`}
+              </p>
+              {focus.successCriteria && (
+                <p className="text-[11px] text-text-muted mt-0.5">{focus.successCriteria}</p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Stats grid — 6 key metrics */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
         {[

@@ -28,6 +28,65 @@ const URGENCY_BG: Record<string, string> = {
   report: 'bg-purple-500/10 text-purple-600',
 };
 
+// Static class maps — Tailwind cannot resolve `border-${u}/30` at build time,
+// so previous pills rendered unstyled. These maps keep every class string
+// statically scannable.
+const URGENCY_PILL_IDLE: Record<string, string> = {
+  urgent: 'text-red-400 border-red-500/30 bg-red-500/5',
+  high: 'text-amber-400 border-amber-500/30 bg-amber-500/5',
+  normal: 'text-green-400 border-green-500/30 bg-green-500/5',
+  info: 'text-blue-400 border-blue-500/30 bg-blue-500/5',
+  report: 'text-purple-400 border-purple-500/30 bg-purple-500/5',
+};
+const TYPE_PILL_IDLE: Record<string, string> = {
+  report: 'text-purple-400 border-purple-500/30 bg-purple-500/5',
+  progress: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/5',
+  artifact: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/5',
+  error: 'text-red-400 border-red-500/30 bg-red-500/5',
+  warning: 'text-amber-400 border-amber-500/30 bg-amber-500/5',
+  message: 'text-green-400 border-green-500/30 bg-green-500/5',
+  output: 'text-gray-300 border-gray-700 bg-gray-500/5',
+};
+const TYPE_PILL_ACTIVE: Record<string, string> = {
+  report: 'bg-purple-500/10 text-purple-600 border-transparent',
+  progress: 'bg-cyan-500/10 text-cyan-600 border-transparent',
+  artifact: 'bg-yellow-500/10 text-yellow-600 border-transparent',
+  error: 'bg-red-500/10 text-red-600 border-transparent',
+  warning: 'bg-amber-500/10 text-amber-600 border-transparent',
+  message: 'bg-green-500/10 text-green-600 border-transparent',
+  output: 'bg-gray-500/15 text-gray-300 border-transparent',
+};
+
+// Build a fixed-bucket sparkline from event timestamps. The strip is purely
+// visual — it animates the terminal so an operator can see "is this thing
+// actually doing work right now or has it gone quiet for a minute".
+const SPARK_BUCKETS = 32;
+function buildSparkline(events: ClawOutputEvent[]): {
+  buckets: number[];
+  max: number;
+  rangeMs: number;
+} {
+  if (events.length === 0) return { buckets: [], max: 0, rangeMs: 0 };
+  const first = new Date(events[0]!.timestamp).getTime();
+  const last = new Date(events[events.length - 1]!.timestamp).getTime();
+  const rangeMs = Math.max(1, last - first);
+  const buckets = new Array<number>(SPARK_BUCKETS).fill(0);
+  for (const e of events) {
+    const t = new Date(e.timestamp).getTime();
+    const idx = Math.min(SPARK_BUCKETS - 1, Math.floor(((t - first) / rangeMs) * SPARK_BUCKETS));
+    buckets[idx] = (buckets[idx] ?? 0) + 1;
+  }
+  let max = 0;
+  for (const b of buckets) if (b > max) max = b;
+  return { buckets, max, rangeMs };
+}
+
+function formatRange(rangeMs: number): string {
+  if (rangeMs < 60_000) return `${Math.round(rangeMs / 1000)}s span`;
+  if (rangeMs < 3_600_000) return `${Math.round(rangeMs / 60_000)}m span`;
+  return `${(rangeMs / 3_600_000).toFixed(1)}h span`;
+}
+
 const TYPE_COLORS: Record<string, string> = {
   report: 'text-purple-400',
   progress: 'text-cyan-400',
@@ -135,6 +194,8 @@ export function OutputTab({ outputFeed }: { outputFeed: ClawOutputEvent[] }) {
   const uniqueUrgencies = Object.keys(urgencyCounts);
   const uniqueTypes = Object.keys(typeCounts);
 
+  const sparkline = useMemo(() => buildSparkline(displayFeed), [displayFeed]);
+
   return (
     <div className="flex flex-col h-full rounded-lg border border-[#1a1a1a] overflow-hidden">
       {/* Terminal header */}
@@ -235,22 +296,73 @@ export function OutputTab({ outputFeed }: { outputFeed: ClawOutputEvent[] }) {
           )}
         </div>
 
-        {/* Urgency summary pills */}
+        {/* Summary pill rows — clickable filters for both urgency and type. */}
         <div className="flex flex-wrap gap-1.5">
-          {Object.entries(urgencyCounts).map(([u, n]) => (
-            <button
-              key={u}
-              onClick={() => setUrgencyFilter(urgencyFilter === u ? '' : u)}
-              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
-                urgencyFilter === u
-                  ? `${URGENCY_BG[u]} border-transparent`
-                  : `${URGENCY_COLORS[u]} border-${u}/30 bg-${u}/5 opacity-70 hover:opacity-100`
-              }`}
-            >
-              {u}: {n}
-            </button>
-          ))}
+          {Object.entries(urgencyCounts).map(([u, n]) => {
+            const isActive = urgencyFilter === u;
+            const idle = URGENCY_PILL_IDLE[u] ?? 'text-gray-400 border-gray-700 bg-gray-500/5';
+            const active = URGENCY_BG[u] ?? 'bg-gray-500/15 text-gray-300';
+            return (
+              <button
+                key={u}
+                onClick={() => setUrgencyFilter(isActive ? '' : u)}
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                  isActive ? `${active} border-transparent` : `${idle} opacity-70 hover:opacity-100`
+                }`}
+                title={`${isActive ? 'Clear' : 'Filter to'} urgency: ${u}`}
+              >
+                {u} {n}
+              </button>
+            );
+          })}
+          {uniqueTypes.length > 0 && (
+            <span className="text-[10px] font-mono text-gray-700 px-1 self-center">|</span>
+          )}
+          {Object.entries(typeCounts).map(([t, n]) => {
+            const isActive = typeFilter === t;
+            const idle = TYPE_PILL_IDLE[t] ?? 'text-gray-400 border-gray-700 bg-gray-500/5';
+            const active = TYPE_PILL_ACTIVE[t] ?? 'bg-gray-500/15 text-gray-300 border-transparent';
+            return (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(isActive ? '' : t)}
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+                  isActive ? active : `${idle} opacity-70 hover:opacity-100`
+                }`}
+                title={`${isActive ? 'Clear' : 'Filter to'} type: ${t}`}
+              >
+                {TYPE_PREFIX[t] ?? '›'} {t} {n}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Event-rate sparkline — purely cosmetic, shows whether the claw is
+            currently spamming output or has gone idle for a while. */}
+        {sparkline.buckets.length > 0 && sparkline.max > 0 && (
+          <div
+            className="flex items-end gap-px h-6"
+            title={`${formatRange(sparkline.rangeMs)}, peak ${sparkline.max}/bucket`}
+          >
+            {sparkline.buckets.map((n, i) => {
+              const pct = Math.max(4, Math.round((n / sparkline.max) * 100));
+              const isLast = i >= sparkline.buckets.length - 2 && n > 0;
+              return (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-sm transition-all ${
+                    n === 0
+                      ? 'bg-[#1a1a1a]'
+                      : isLast
+                        ? 'bg-emerald-400 animate-pulse'
+                        : 'bg-emerald-500/40'
+                  }`}
+                  style={{ height: `${pct}%` }}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Terminal body */}

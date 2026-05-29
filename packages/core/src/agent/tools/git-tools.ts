@@ -717,6 +717,249 @@ export const gitCheckoutExecutor: ToolExecutor = async (
 };
 
 // ============================================================================
+// GIT SHOW TOOL — inspect a specific commit
+// ============================================================================
+
+export const gitShowTool: ToolDefinition = {
+  name: 'git_show',
+  brief: 'Show a commit (message + diff) or a file at a specific revision',
+  description:
+    'Show the contents of a git object — typically a commit (message + diff) or ' +
+    'a file at a given revision. Read-only. Use this to inspect what a specific ' +
+    'commit changed, or what a file looked like at a past commit.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string', description: 'Path to the git repository' },
+      ref: {
+        type: 'string',
+        description:
+          'The object to show — commit SHA, branch name, tag, or "HEAD" / "HEAD~1". Defaults to HEAD.',
+      },
+      file: {
+        type: 'string',
+        description:
+          'Optional file path. When supplied, returns the file contents at <ref> instead of the commit diff.',
+      },
+      statOnly: {
+        type: 'boolean',
+        description:
+          'When true, return only file-change stats (--stat) instead of the full diff. Much cheaper for large commits.',
+      },
+    },
+  },
+};
+
+export const gitShowExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
+  const repoPath = (params.path as string) || process.cwd();
+  const file = params.file as string | undefined;
+  const statOnly = params.statOnly === true;
+  let ref: string;
+  let validatedFile: string | undefined;
+  try {
+    ref = validateGitRef((params.ref as string) || 'HEAD', 'ref');
+    if (file) validatedFile = validateGitFile(file, 'file');
+  } catch (err) {
+    return { content: { error: (err as Error).message }, isError: true };
+  }
+
+  try {
+    let args: string[];
+    if (validatedFile) {
+      // "git show <ref>:<file>" prints the file at that revision.
+      args = ['show', `${ref}:${validatedFile}`];
+    } else {
+      args = ['show'];
+      if (statOnly) args.push('--stat');
+      args.push(ref);
+    }
+    const stdout = await gitExec(args, repoPath);
+    return {
+      content: { ref, file: file ?? null, output: stdout },
+      isError: false,
+    };
+  } catch (error: unknown) {
+    const err = error as Error & { stderr?: string };
+    return { content: { error: err.message, stderr: err.stderr }, isError: true };
+  }
+};
+
+// ============================================================================
+// GIT BLAME TOOL — line-by-line authorship
+// ============================================================================
+
+export const gitBlameTool: ToolDefinition = {
+  name: 'git_blame',
+  brief: 'Show who last modified each line of a file (and when)',
+  description:
+    'Run git blame on a file to see, for each line, the commit + author that ' +
+    'last touched it. Read-only. Use this when debugging to understand the ' +
+    'history of a specific piece of code.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string', description: 'Path to the git repository' },
+      file: { type: 'string', description: 'File to blame (relative to repo root)' },
+      startLine: {
+        type: 'number',
+        description: 'Start line of the range to blame (1-indexed; default: 1)',
+      },
+      endLine: {
+        type: 'number',
+        description: 'End line of the range to blame (inclusive; default: end of file)',
+      },
+      ref: {
+        type: 'string',
+        description: 'Revision to blame at (default: HEAD)',
+      },
+    },
+    required: ['file'],
+  },
+};
+
+export const gitBlameExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
+  const repoPath = (params.path as string) || process.cwd();
+  let file: string;
+  let ref: string | undefined;
+  try {
+    file = validateGitFile(params.file as string, 'file');
+    if (params.ref) ref = validateGitRef(params.ref as string, 'ref');
+  } catch (err) {
+    return { content: { error: (err as Error).message }, isError: true };
+  }
+  const startLine = params.startLine as number | undefined;
+  const endLine = params.endLine as number | undefined;
+
+  try {
+    const args: string[] = ['blame'];
+    if (startLine !== undefined || endLine !== undefined) {
+      const s = startLine ?? 1;
+      const e = endLine ?? '';
+      args.push('-L', `${s},${e}`);
+    }
+    // --porcelain gives stable machine-readable output but is verbose; default
+    // to the human format which is what agents actually want to read.
+    if (ref) args.push(ref);
+    args.push('--', file);
+
+    const stdout = await gitExec(args, repoPath);
+    return { content: { file, output: stdout }, isError: false };
+  } catch (error: unknown) {
+    const err = error as Error & { stderr?: string };
+    return { content: { error: err.message, stderr: err.stderr }, isError: true };
+  }
+};
+
+// ============================================================================
+// GIT STASH TOOL — save / restore / list WIP
+// ============================================================================
+
+export const gitStashTool: ToolDefinition = {
+  name: 'git_stash',
+  brief: 'Save, restore, or list stashed working-directory changes',
+  description:
+    'Manage git stashes — a way to set aside working-directory changes without ' +
+    'committing them, then bring them back later. Supports actions: save (default), ' +
+    'pop (restore + drop), apply (restore without dropping), list, drop. Use this ' +
+    'when you need to switch contexts without losing work in progress.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string', description: 'Path to the git repository' },
+      action: {
+        type: 'string',
+        enum: ['save', 'pop', 'apply', 'list', 'drop'],
+        description: 'Stash action (default: save)',
+      },
+      message: {
+        type: 'string',
+        description: 'Optional message for save action',
+      },
+      ref: {
+        type: 'string',
+        description: 'Stash ref for pop/apply/drop (e.g. "stash@{0}" — the latest by default).',
+      },
+      includeUntracked: {
+        type: 'boolean',
+        description: 'Include untracked files in the stash (save action only)',
+      },
+    },
+  },
+};
+
+export const gitStashExecutor: ToolExecutor = async (
+  params,
+  _context
+): Promise<ToolExecutionResult> => {
+  const repoPath = (params.path as string) || process.cwd();
+  const action = (params.action as string) || 'save';
+  const message = params.message as string | undefined;
+  const ref = params.ref as string | undefined;
+  const includeUntracked = params.includeUntracked === true;
+
+  if (!['save', 'pop', 'apply', 'list', 'drop'].includes(action)) {
+    return {
+      content: { error: `Invalid action: ${action}. Use save | pop | apply | list | drop.` },
+      isError: true,
+    };
+  }
+
+  // Validate ref early (only for pop/apply/drop — list/save don't take one)
+  if (ref && (action === 'pop' || action === 'apply' || action === 'drop')) {
+    try {
+      validateGitRef(ref, 'ref');
+    } catch (err) {
+      return { content: { error: (err as Error).message }, isError: true };
+    }
+  }
+
+  try {
+    let args: string[];
+    switch (action) {
+      case 'save':
+        // `git stash push` is the modern form; `git stash save` is deprecated.
+        args = ['stash', 'push'];
+        if (includeUntracked) args.push('--include-untracked');
+        if (message) args.push('-m', message);
+        break;
+      case 'pop':
+        args = ['stash', 'pop'];
+        if (ref) args.push(ref);
+        break;
+      case 'apply':
+        args = ['stash', 'apply'];
+        if (ref) args.push(ref);
+        break;
+      case 'drop':
+        args = ['stash', 'drop'];
+        if (ref) args.push(ref);
+        break;
+      case 'list':
+        args = ['stash', 'list'];
+        break;
+      default:
+        // Unreachable due to the validation above, but TS doesn't know.
+        return { content: { error: 'unreachable' }, isError: true };
+    }
+
+    const stdout = await gitExec(args, repoPath);
+    return {
+      content: { action, output: stdout || `${action} completed` },
+      isError: false,
+    };
+  } catch (error: unknown) {
+    const err = error as Error & { stderr?: string };
+    return { content: { error: err.message, stderr: err.stderr }, isError: true };
+  }
+};
+
+// ============================================================================
 // EXPORT ALL GIT TOOLS
 // ============================================================================
 
@@ -728,6 +971,9 @@ export const GIT_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecut
   { definition: gitAddTool, executor: gitAddExecutor },
   { definition: gitBranchTool, executor: gitBranchExecutor },
   { definition: gitCheckoutTool, executor: gitCheckoutExecutor },
+  { definition: gitShowTool, executor: gitShowExecutor },
+  { definition: gitBlameTool, executor: gitBlameExecutor },
+  { definition: gitStashTool, executor: gitStashExecutor },
 ];
 
 export const GIT_TOOL_NAMES = GIT_TOOLS.map((t) => t.definition.name);

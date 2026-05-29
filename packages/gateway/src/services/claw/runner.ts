@@ -15,8 +15,19 @@
  * - Supports both cyclic and single-shot modes
  */
 
-import { getErrorMessage, type Agent } from '@ownpilot/core';
-import type { ClawConfig, ClawSession, ClawCycleResult, ClawToolCall } from '@ownpilot/core';
+import {
+  getErrorMessage,
+  type Agent,
+  CLAW_REFLECTION_THRESHOLD,
+  CLAW_TASK_STALL_THRESHOLD,
+} from '@ownpilot/core';
+import type {
+  ClawConfig,
+  ClawSession,
+  ClawCycleResult,
+  ClawToolCall,
+  ToolCall,
+} from '@ownpilot/core';
 import type { RuntimeContext } from '@ownpilot/core';
 import { getRuntimeContext } from '@ownpilot/core';
 import { getLog } from '../log.js';
@@ -28,6 +39,8 @@ import {
   buildDateTimeContext,
 } from '../agent/runner-utils.js';
 import { runInClawContext } from './context.js';
+import { getExtensionService } from '../extension/service.js';
+import { findLearnedSkills } from './skill-distiller.js';
 import {
   getSessionWorkspaceFiles,
   getSessionWorkspacePath,
@@ -149,6 +162,7 @@ export class ClawRunner {
         abortSignal,
         agentId: this.config.id,
         userId: this.config.userId,
+        onBeforeToolCall: this.buildGuardrail(cycleNumber),
       });
 
       const toolCalls: ClawToolCall[] = pipelineResult.toolCalls.map((tc) => ({
@@ -340,6 +354,11 @@ export class ClawRunner {
       parts.push('');
     }
 
+    // Learned skills (closed learning loop): surface procedures distilled from
+    // prior runs on similar missions so the claw reuses them instead of
+    // reasoning from scratch.
+    this.appendLearnedSkills(parts);
+
     // Autonomy Policy
     if (this.config.autonomyPolicy) {
       const p = this.config.autonomyPolicy;
@@ -382,6 +401,17 @@ export class ClawRunner {
     parts.push('| claw_complete_report | Final deliverable |');
     parts.push('| claw_emit_event | Trigger other claws/workflows |');
     parts.push('| claw_request_escalation | Need more capabilities |');
+    parts.push('| claw_plan | Set/replace the structured task plan |');
+    parts.push('| claw_update_task | Mark a task in_progress/completed/blocked |');
+    parts.push('| claw_list_tasks | Read the current plan |');
+    parts.push('| claw_think | Record a reasoning step (no side effects) |');
+    parts.push('| claw_set_next_intent | End-of-cycle handoff for the next cycle |');
+    parts.push('| claw_split_task | Break a stalled task into subtasks atomically |');
+    parts.push('| claw_recall_skill | Load a previously learned procedure for this kind of task |');
+    parts.push('| claw_save_skill | Capture a reusable procedure you discovered |');
+    parts.push(
+      '| claw_execute | Run JS calling many tools in one step (collapse read/query pipelines) |'
+    );
     parts.push('');
 
     // Web & Browser
@@ -390,6 +420,14 @@ export class ClawRunner {
     parts.push('|------|-------------|');
     parts.push('| browse_web | Render JS pages, interact with UIs |');
     parts.push('| browser_click/type/fill_form | Form automation |');
+    parts.push('| browser_select | Choose option in <select> dropdown |');
+    parts.push('| browser_press_key | Enter/Tab/Escape — keyboard-driven UIs |');
+    parts.push('| browser_wait_for | Wait for SPA content before interacting |');
+    parts.push('| browser_scroll | Reveal lazy-loaded content |');
+    parts.push('| browser_get_state | Verify URL/title after navigation |');
+    parts.push(
+      '| browser_accessibility_tree | Structured role/name outline of the page (better than HTML for navigating) |'
+    );
     parts.push('| browser_screenshot | Visual capture |');
     parts.push('| browser_extract | Structured data from pages |');
     parts.push('| search_web | Find information |');
@@ -418,7 +456,9 @@ export class ClawRunner {
     // System tools (concise)
     parts.push('## System Tools');
     parts.push('search_tools(query) to discover. Common categories:');
-    parts.push('- **Files**: read_file, write_file, list_directory');
+    parts.push(
+      '- **Files**: read_file, write_file, edit_file (in-place find/replace), move_file, copy_file, delete_file, create_directory, list_directory, search_files'
+    );
     parts.push('- **Data**: custom tables (CRUD), expenses, contacts');
     parts.push('- **Memory**: create_memory, search_memories');
     parts.push('- **Goals**: create_goal, decompose_goal, complete_step');
@@ -477,6 +517,100 @@ export class ClawRunner {
     );
   }
 
+  /**
+   * Build the per-tool-call guardrail. Returns `undefined` (zero overhead) when
+   * no autonomy policy is configured, preserving the prior behavior. When a
+   * policy is present, every tool call is checked against it via the
+   * PermissionGate — turning declared `autonomyPolicy` into real enforcement.
+   * Denied / approval-required calls are recorded to `claw_audit_log` under the
+   * `blocked` category so operators get a watcher trail.
+   */
+  private buildGuardrail(
+    cycleNumber: number
+  ): ((tc: ToolCall) => Promise<{ approved: boolean; reason?: string }>) | undefined {
+    const policy = this.config.autonomyPolicy;
+    if (!policy) return undefined;
+
+    const workspaceDir = this.config.workspaceId
+      ? getSessionWorkspacePath(this.config.workspaceId)
+      : undefined;
+
+    return async (tc: ToolCall) => {
+      let args: Record<string, unknown> = {};
+      try {
+        args = tc.arguments ? (JSON.parse(tc.arguments) as Record<string, unknown>) : {};
+      } catch {
+        args = {};
+      }
+
+      const decision = await this.runtime.permissions.check({
+        actorId: this.config.id,
+        tool: tc.name,
+        context: {
+          actorType: 'claw',
+          autonomyPolicy: policy,
+          workspaceDir,
+          args,
+        },
+      });
+
+      if (decision.type === 'allow') return { approved: true };
+
+      const reason = decision.reason;
+      log.warn(`[${this.config.id}] Guardrail blocked tool "${tc.name}": ${reason}`);
+      this.saveBlockedAudit(cycleNumber, tc.name, args, reason).catch((err) =>
+        log.warn(`[${this.config.id}] Failed to save blocked-audit entry: ${getErrorMessage(err)}`)
+      );
+      return { approved: false, reason };
+    };
+  }
+
+  /** Persist a guardrail-blocked tool call to the audit trail. */
+  private async saveBlockedAudit(
+    cycleNumber: number,
+    toolName: string,
+    args: Record<string, unknown>,
+    reason: string
+  ): Promise<void> {
+    const { getClawsRepository } = await import('../../db/repositories/claws.js');
+    await getClawsRepository().saveAuditEntry({
+      clawId: this.config.id,
+      cycleNumber,
+      toolName,
+      toolArgs: args,
+      toolResult: reason,
+      success: false,
+      durationMs: 0,
+      category: 'blocked',
+    });
+  }
+
+  /**
+   * Inject the most relevant learned skills for this mission. Best-effort and
+   * synchronous (the ExtensionService keeps an in-memory cache) so it adds no
+   * per-cycle latency — the agent is built once and reused across cycles. Skips
+   * silently when learning is disabled, none match, or the lookup fails.
+   */
+  private appendLearnedSkills(parts: string[]): void {
+    if (this.config.learnSkills === false) return;
+    try {
+      const matches = findLearnedSkills(getExtensionService(), this.config.mission, 3);
+      if (matches.length === 0) return;
+      parts.push('## Learned Skills (from prior runs)');
+      parts.push(
+        'Procedures distilled from earlier claws on similar tasks. Reuse them; call claw_recall_skill for the full text or to search others.'
+      );
+      for (const m of matches) {
+        const body =
+          m.instructions.length > 800 ? `${m.instructions.slice(0, 800)}…` : m.instructions;
+        parts.push(`\n### ${m.name}\n${m.description}\n\n${body}`);
+      }
+      parts.push('');
+    } catch (err) {
+      log.warn(`[${this.config.id}] Learned-skill injection failed: ${getErrorMessage(err)}`);
+    }
+  }
+
   private appendFileTree(parts: string[], files: WorkspaceFileInfo[], indent: number): void {
     const prefix = '  '.repeat(indent);
     for (const file of files) {
@@ -495,6 +629,30 @@ export class ClawRunner {
     const parts: string[] = [];
 
     parts.push(`--- Cycle ${cycleNumber} ---`);
+
+    // Cross-cycle handoff: if the previous cycle ended with claw_set_next_intent
+    // (agent path) OR an operator queued a directive via POST /next-intent,
+    // surface it at the very top so it's the first thing the model reads, then
+    // CLEAR it so a stale intent can't linger past one cycle. The agent must
+    // re-set it each cycle if it still applies — auto-staleness prevention.
+    // Operator-set intents are prefixed with `[OPERATOR] ` so this block can
+    // render them with different framing — the agent must know "you didn't say
+    // this — your operator did" or it'll get confused.
+    if (session.nextIntent && session.nextIntent.trim().length > 0) {
+      const trimmed = session.nextIntent.trim();
+      if (trimmed.startsWith('[OPERATOR] ')) {
+        const body = trimmed.slice('[OPERATOR] '.length).trim();
+        parts.push(
+          `\n## ↳ Operator directive (next cycle)\nYour operator has queued this for you: **${body}**\n_Treat this as a priority directive. Honor it on this cycle unless it conflicts with the mission contract._`
+        );
+      } else {
+        parts.push(
+          `\n## ↻ Continuing from last cycle\nYou said you would do this next: **${trimmed}**\n_If this is still the right next step, do it now. If priorities changed, ignore and re-plan._`
+        );
+      }
+      session.nextIntent = undefined;
+    }
+
     parts.push(`\n## Current Time\n${buildDateTimeContext()}`);
 
     // .claw/INSTRUCTIONS.md — re-injected every cycle so directive edits
@@ -532,10 +690,19 @@ export class ClawRunner {
       }
     }
 
-    // .claw/ TASKS.md — current task state
+    // Structured task plan (managed by claw_plan / claw_update_task tools).
+    // Rendered as a status table so the agent can read its own plan reliably
+    // without re-parsing the freeform .claw/TASKS.md every cycle.
+    if (session.tasks.length > 0) {
+      parts.push(this.buildTaskPlanBlock(session));
+    }
+
+    // .claw/ TASKS.md — current task state. Still rendered as a human/agent
+    // freeform scratchpad alongside the structured plan above. Agents that
+    // prefer to write narrative task notes can keep doing so here.
     const tasks = readClawFile(this.config.workspaceId, 'TASKS.md');
     if (tasks) {
-      parts.push(`\n## Current Tasks (.claw/TASKS.md)\n${tasks.trim()}`);
+      parts.push(`\n## Notes (.claw/TASKS.md)\n${tasks.trim()}`);
     }
 
     // .claw/ MEMORY.md — persistent memory
@@ -550,13 +717,47 @@ export class ClawRunner {
       parts.push(`\n## Published Artifacts: ${session.artifacts.length}`);
     }
 
-    // Stats
+    // Stats — show remaining budget/cycles so the agent can pace itself.
+    // Without these signals the agent has no way to know it's about to run
+    // out of fuel and may pursue a multi-cycle plan it can't finish.
     parts.push(`\nCycles completed: ${session.cyclesCompleted}`);
     parts.push(`Total tool calls: ${session.totalToolCalls}`);
     parts.push(`Total cost: $${session.totalCostUsd.toFixed(4)}`);
 
-    if (this.config.stopCondition) {
-      parts.push(`\nStop condition: ${this.config.stopCondition}`);
+    const budget = this.config.limits?.totalBudgetUsd;
+    if (typeof budget === 'number' && budget > 0) {
+      const remaining = Math.max(0, budget - session.totalCostUsd);
+      const pct = Math.round((session.totalCostUsd / budget) * 100);
+      parts.push(
+        `Budget remaining: $${remaining.toFixed(4)} of $${budget.toFixed(4)} (${pct}% used)`
+      );
+    }
+    const stopCond = this.config.stopCondition;
+    if (stopCond) {
+      parts.push(`\nStop condition: ${stopCond}`);
+      // Extract max_cycles:N so the agent sees a concrete cycles-remaining
+      // number rather than having to derive it from the bare condition.
+      const maxCyclesMatch = stopCond.match(/^max_cycles:(\d+)$/i);
+      if (maxCyclesMatch?.[1]) {
+        const maxCycles = parseInt(maxCyclesMatch[1], 10);
+        const cyclesLeft = Math.max(0, maxCycles - session.cyclesCompleted);
+        parts.push(`Cycles remaining: ${cyclesLeft} of ${maxCycles}`);
+      }
+      // When stop is gated on plan completion, remind the agent that finishing
+      // the plan terminates the claw — otherwise it may keep "improving" past
+      // the bar instead of shipping.
+      if (stopCond === 'plan_complete') {
+        parts.push(
+          '_Reminder: this claw stops when every task is completed or blocked (with at least one completion). Mark tasks as you finish them._'
+        );
+      }
+    }
+
+    // Reflection block: once consecutive failures cross the threshold, stop
+    // letting the agent retry the same approach blindly. Injected late so it
+    // sits right above the "continue" line and gets maximum attention.
+    if (session.consecutiveErrors >= CLAW_REFLECTION_THRESHOLD) {
+      parts.push(this.buildReflectionBlock(session));
     }
 
     parts.push(
@@ -564,5 +765,110 @@ export class ClawRunner {
     );
 
     return parts.join('\n');
+  }
+
+  /**
+   * Render the structured task plan as a status table. Shows status badges
+   * so the agent can see at a glance what's done, what's blocked, and what's
+   * next. Notes are included verbatim so blockers / sub-steps stay visible
+   * across cycles without the agent having to re-derive them.
+   */
+  private buildTaskPlanBlock(session: ClawSession): string {
+    const lines: string[] = [];
+    lines.push('\n## Plan');
+
+    // Surface current focus prominently. The invariant guarantees at most
+    // one in_progress task, so this is unambiguous.
+    const focused = session.tasks.find((t) => t.status === 'in_progress');
+    if (focused) {
+      const heat = focused.cyclesInProgress ?? 0;
+      const stallNote =
+        heat >= CLAW_TASK_STALL_THRESHOLD
+          ? ` ⚠ STALLED — ${heat} cycles without status change. Split, mark blocked, or escalate.`
+          : ` (${heat} cycle${heat === 1 ? '' : 's'})`;
+      lines.push(`**Focus**: [${focused.id}] ${focused.title}${stallNote}`);
+      // Surface the bar the agent committed to — keeps "done" honest.
+      if (focused.successCriteria) {
+        lines.push(`  - success criteria: ${focused.successCriteria}`);
+      }
+    } else if (session.tasks.some((t) => t.status === 'pending')) {
+      lines.push(
+        '**Focus**: none — pick the next pending task and mark it in_progress with claw_update_task.'
+      );
+    }
+
+    const badge: Record<string, string> = {
+      pending: '⏳',
+      in_progress: '▶',
+      completed: '✓',
+      blocked: '⛔',
+    };
+    for (const t of session.tasks) {
+      const mark = badge[t.status] ?? '?';
+      const stall =
+        t.status === 'in_progress' && (t.cyclesInProgress ?? 0) >= CLAW_TASK_STALL_THRESHOLD
+          ? ' ⚠STALL'
+          : '';
+      lines.push(`- ${mark} [${t.id}] ${t.title} _(${t.status})_${stall}`);
+      if (t.notes && t.notes.trim().length > 0) {
+        lines.push(`  - notes: ${t.notes.trim()}`);
+      }
+      // For completed tasks, show evidence — the auditable record of "how
+      // do I know it worked". Missing evidence is rendered as a discreet
+      // marker so the agent can fill it in retroactively.
+      if (t.status === 'completed') {
+        if (t.evidence && t.evidence.trim().length > 0) {
+          lines.push(`  - evidence: ${t.evidence.trim()}`);
+        } else {
+          lines.push('  - evidence: _(none recorded — call claw_update_task with evidence)_');
+        }
+      }
+    }
+    lines.push(
+      '\n_Use claw_plan to replace the plan, claw_update_task to mark progress. Only one task may be in_progress at a time._'
+    );
+    return lines.join('\n');
+  }
+
+  /**
+   * Build the REFLECTION REQUIRED block. Lists the most recent failures so
+   * the agent has concrete error messages to diagnose against — telling it
+   * "you've failed twice" without showing why is not actionable.
+   */
+  private buildReflectionBlock(session: ClawSession): string {
+    const lines: string[] = [];
+    lines.push('\n## ⚠ REFLECTION REQUIRED');
+    lines.push(
+      `You have failed ${session.consecutiveErrors} consecutive cycles. Stop retrying the same approach.`
+    );
+    lines.push('');
+    lines.push('Before taking any new action this cycle:');
+    lines.push('1. Read the failures below and identify the ROOT CAUSE — not just the symptom.');
+    lines.push(
+      '2. Decide whether the failure is environmental (missing tool, bad creds, network) or logical (wrong plan, wrong tool, wrong arguments).'
+    );
+    lines.push(
+      '3. Choose a DIFFERENT strategy than what you tried last cycle. Repeating the same call with the same arguments will not work.'
+    );
+    lines.push(
+      '4. If the root cause is outside your control, request escalation via `claw_request_escalation` instead of burning more cycles.'
+    );
+    lines.push(
+      '5. Write your diagnosis and new plan into .claw/MEMORY.md so future cycles see what you learned.'
+    );
+
+    if (session.recentFailures.length > 0) {
+      lines.push('');
+      lines.push('### Recent failures');
+      for (const f of session.recentFailures) {
+        lines.push(`- Cycle ${f.cycleNumber} (${f.at})${f.error ? ` — ${f.error}` : ''}`);
+        if (f.toolErrors && f.toolErrors.length > 0) {
+          for (const te of f.toolErrors) {
+            lines.push(`  - tool \`${te.tool}\`: ${te.error}`);
+          }
+        }
+      }
+    }
+    return lines.join('\n');
   }
 }

@@ -50,6 +50,7 @@ interface ClawRow {
   preset: string | null;
   mission_contract: string | null;
   autonomy_policy: string | null;
+  learn_skills: boolean | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -157,6 +158,7 @@ function rowToConfig(row: ClawRow): ClawConfig {
     preset: row.preset ?? undefined,
     missionContract,
     autonomyPolicy,
+    learnSkills: row.learn_skills ?? true,
     createdBy: row.created_by as ClawCreator,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -213,6 +215,7 @@ export class ClawsRepository extends BaseRepository {
     preset?: string;
     missionContract?: Partial<ClawMissionContract>;
     autonomyPolicy?: Partial<ClawAutonomyPolicy>;
+    learnSkills?: boolean;
     createdBy: ClawCreator;
   }): Promise<ClawConfig> {
     await this.execute(
@@ -220,9 +223,9 @@ export class ClawsRepository extends BaseRepository {
        (id, user_id, name, mission, mode, allowed_tools, limits, interval_ms, event_filters,
         auto_start, stop_condition, provider, model, soul_id, parent_claw_id,
         depth, sandbox, coding_agent_provider, skills, preset, mission_contract, autonomy_policy,
-        created_by)
+        learn_skills, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23)`,
+        $17, $18, $19, $20, $21, $22, $23, $24)`,
       [
         data.id,
         data.userId,
@@ -246,6 +249,7 @@ export class ClawsRepository extends BaseRepository {
         data.preset ?? null,
         JSON.stringify(data.missionContract ?? {}),
         JSON.stringify(data.autonomyPolicy ?? {}),
+        data.learnSkills ?? true,
         data.createdBy,
       ]
     );
@@ -334,6 +338,7 @@ export class ClawsRepository extends BaseRepository {
       preset: string | null;
       missionContract: Partial<ClawMissionContract> | null;
       autonomyPolicy: Partial<ClawAutonomyPolicy> | null;
+      learnSkills: boolean;
     }>
   ): Promise<ClawConfig | null> {
     let mergedLimits: ClawLimits | undefined;
@@ -422,6 +427,10 @@ export class ClawsRepository extends BaseRepository {
     if (updates.autonomyPolicy !== undefined) {
       sets.push(`autonomy_policy = $${idx++}`);
       params.push(JSON.stringify(updates.autonomyPolicy ?? {}));
+    }
+    if (updates.learnSkills !== undefined) {
+      sets.push(`learn_skills = $${idx++}`);
+      params.push(updates.learnSkills);
     }
 
     if (sets.length === 0) return this.getById(id, userId);
@@ -849,15 +858,7 @@ export class ClawsRepository extends BaseRepository {
 
   private categorizeToolCall(toolName: string): string {
     if (toolName.startsWith('claw_')) return 'claw';
-    if (
-      toolName.startsWith('browse_') ||
-      toolName === 'browser_click' ||
-      toolName === 'browser_type' ||
-      toolName === 'browser_fill_form' ||
-      toolName === 'browser_screenshot' ||
-      toolName === 'browser_extract'
-    )
-      return 'browser';
+    if (toolName.startsWith('browse_') || toolName.startsWith('browser_')) return 'browser';
     if (
       toolName === 'run_cli_tool' ||
       toolName === 'install_cli_tool' ||
@@ -879,10 +880,17 @@ export class ClawsRepository extends BaseRepository {
     if (toolName.includes('memory') || toolName.includes('goal') || toolName.includes('plan'))
       return 'knowledge';
     if (
-      toolName.startsWith('read_file') ||
-      toolName.startsWith('write_file') ||
-      toolName.startsWith('list_dir') ||
-      toolName.startsWith('delete_file')
+      toolName === 'read_file' ||
+      toolName === 'write_file' ||
+      toolName === 'edit_file' ||
+      toolName === 'move_file' ||
+      toolName === 'copy_file' ||
+      toolName === 'delete_file' ||
+      toolName === 'create_directory' ||
+      toolName === 'get_file_info' ||
+      toolName === 'list_directory' ||
+      toolName === 'search_files' ||
+      toolName === 'download_file'
     )
       return 'filesystem';
     return 'tool';

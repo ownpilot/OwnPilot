@@ -1,10 +1,12 @@
 /**
  * Claw Lifecycle Executors
  *
- * Three executors covering claw runtime mechanics:
+ * Executors covering claw runtime mechanics:
  *  - claw_install_package — npm/pnpm/pip install into the claw workspace
  *  - claw_run_script      — execute a script in Docker (preferred) or local sandbox
  *  - claw_create_tool     — compile & run an ephemeral tool from generated code
+ *  - claw_execute         — programmatic tool calling: in-process JS with a
+ *                           guarded utils.callTool() bridge (Hermes execute_code)
  *
  * Each is a pure handler that returns a uniform { success, result?, error? }.
  */
@@ -15,6 +17,32 @@ import { validatePackageName, validateToolName, truncateScriptOutput } from './v
 import { buildSandboxEnv } from './sandbox-env.js';
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };
+
+/**
+ * Data-access categories granted to programmatic execution. Mirrors the claw's
+ * existing tool authority — the genuinely dangerous categories (shell, file
+ * mutation, email, git, code-exec) are hard-blocked by the sandbox's callTool
+ * handler regardless of what is granted here.
+ */
+const CLAW_EXEC_PERMISSIONS = [
+  'memories',
+  'goals',
+  'tasks',
+  'contacts',
+  'calendar',
+  'notes',
+  'custom-data',
+  'triggers',
+  'plans',
+  'network',
+  'browser',
+  'config',
+  'expenses',
+  'bookmarks',
+  'habits',
+];
+
+const CLAW_EXEC_TIMEOUT_MS = 30_000;
 
 export async function executeInstallPackage(
   args: Record<string, unknown>,
@@ -373,5 +401,46 @@ __result = typeof __fn === 'function' ? __fn(args) : { error: "No function named
     };
   } catch (err) {
     return { success: false, error: `Tool execution failed: ${getErrorMessage(err)}` };
+  }
+}
+
+/**
+ * claw_execute — programmatic tool calling (Hermes "execute_code" parity).
+ *
+ * Runs the supplied JS in the shared worker-thread VM sandbox with a guarded
+ * `utils.callTool(name, args)` bridge, letting the claw collapse a multi-step
+ * read/query pipeline into a single inference instead of one tool call per turn.
+ * The sandbox's callTool handler hard-blocks dangerous categories (shell, file
+ * mutation, email, git, code-exec) and permission-gates the rest, so the bridge
+ * is safe by construction.
+ *
+ * The code must export an async function:
+ *   `module.exports = async (args, utils) => { ... }`
+ * with `utils.callTool('tool_name', {...})` and `utils.listTools()` available.
+ */
+export async function executeProgrammaticCode(
+  args: Record<string, unknown>,
+  userId: string
+): Promise<ExecResult> {
+  const ctx = getClawContext();
+  if (!ctx) return { success: false, error: 'Not running inside a Claw context' };
+
+  const code = (args.code as string)?.trim();
+  if (!code) return { success: false, error: 'code is required' };
+
+  try {
+    const { getExtensionSandbox } = await import('../../services/extension/sandbox.js');
+    const result = await getExtensionSandbox().execute({
+      extensionId: `claw:${ctx.clawId}`,
+      toolName: 'claw_execute',
+      code,
+      args: (args.args as Record<string, unknown>) ?? {},
+      grantedPermissions: CLAW_EXEC_PERMISSIONS,
+      ownerUserId: userId,
+      maxExecutionTime: CLAW_EXEC_TIMEOUT_MS,
+    });
+    return { success: result.success, result: result.result, error: result.error };
+  } catch (err) {
+    return { success: false, error: getErrorMessage(err) };
   }
 }

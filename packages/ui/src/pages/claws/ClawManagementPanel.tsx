@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../../hooks/useWebSocket';
 import { useToast } from '../../components/ToastProvider';
 import { clawsApi } from '../../api/endpoints/claws';
@@ -21,10 +21,12 @@ import {
   Pause,
   Square,
   Clock,
+  Target,
 } from '../../components/icons';
 import { authedFetch, getStateBadge, inputClass as ic } from './utils';
 import {
   OverviewTab,
+  PlanTab,
   StatsTab,
   SettingsTab,
   SkillsTab,
@@ -40,8 +42,12 @@ import {
   type AuditEntry,
 } from './ClawDetailTabs';
 
-type DetailTab =
+// Exported so ClawsPage (and any deep-link consumers) can construct values
+// from this union — otherwise the page-side type drifts and you can't pass
+// 'plan' as initialTab from a /claws?tab=plan deep link.
+export type DetailTab =
   | 'overview'
+  | 'plan'
   | 'stats'
   | 'runs'
   | 'doctor'
@@ -54,12 +60,35 @@ type DetailTab =
   | 'output'
   | 'conversation';
 
+// Set of valid tab ids — used to validate `?tab=<id>` deep-link params
+// without re-listing the union by hand.
+export const DETAIL_TAB_IDS: readonly DetailTab[] = [
+  'overview',
+  'plan',
+  'stats',
+  'runs',
+  'doctor',
+  'schedules',
+  'settings',
+  'skills',
+  'memory',
+  'config',
+  'files',
+  'output',
+  'conversation',
+] as const;
+
+export function isDetailTab(value: unknown): value is DetailTab {
+  return typeof value === 'string' && (DETAIL_TAB_IDS as readonly string[]).includes(value);
+}
+
 const DETAIL_TABS: {
   id: DetailTab;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: 'overview', label: 'Overview', icon: Activity },
+  { id: 'plan', label: 'Plan', icon: Target },
   { id: 'stats', label: 'Stats', icon: BarChart3 },
   { id: 'runs', label: 'Runs', icon: FileText },
   { id: 'doctor', label: 'Doctor', icon: Wrench },
@@ -72,6 +101,25 @@ const DETAIL_TABS: {
   { id: 'output', label: 'Output', icon: Send },
   { id: 'conversation', label: 'Chat', icon: Bot },
 ];
+
+// Mirror backend stall threshold so we can flag a stuck focus on the tab.
+const PANEL_STALL_THRESHOLD = 5;
+const PANEL_REFLECT_THRESHOLD = 2;
+
+type TabBadge = {
+  count?: number;
+  tone: 'neutral' | 'info' | 'warn' | 'danger' | 'attention';
+  pulse?: boolean;
+  title?: string;
+};
+
+const BADGE_TONE_CLASS: Record<TabBadge['tone'], string> = {
+  neutral: 'bg-gray-500/15 text-gray-400',
+  info: 'bg-blue-500/15 text-blue-400',
+  warn: 'bg-amber-500/15 text-amber-400',
+  danger: 'bg-red-500/15 text-red-400',
+  attention: 'bg-purple-500/15 text-purple-400',
+};
 
 export function ClawManagementPanel({
   claw,
@@ -133,6 +181,122 @@ export function ClawManagementPanel({
   const toast = useToast();
   const { subscribe } = useGateway();
 
+  // Per-tab attention badges — computed from the same live state that drives
+  // each tab body. Lets the operator see which tab needs work without opening
+  // each one. Counts are intentionally derived (no extra fetches).
+  const tabBadges = useMemo<Partial<Record<DetailTab, TabBadge>>>(() => {
+    const out: Partial<Record<DetailTab, TabBadge>> = {};
+    const tasks = claw.session?.tasks ?? [];
+    const session = claw.session;
+
+    // Overview — pulses when escalation pending or consecutive errors crossed
+    // the reflection threshold (the runner injects a meta-prompt at that point).
+    const consecErrors = session?.consecutiveErrors ?? 0;
+    if (session?.state === 'escalation_pending') {
+      out.overview = { tone: 'attention', pulse: true, title: 'Escalation pending' };
+    } else if (consecErrors >= PANEL_REFLECT_THRESHOLD) {
+      out.overview = {
+        tone: 'attention',
+        pulse: true,
+        count: consecErrors,
+        title: `Reflection: ${consecErrors} consecutive errors`,
+      };
+    } else if (session?.state === 'failed') {
+      out.overview = { tone: 'danger', title: 'Run failed' };
+    }
+
+    // Plan — shows total open work; warns if focus task has stalled.
+    if (tasks.length > 0) {
+      const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
+      const blocked = tasks.filter((t) => t.status === 'blocked').length;
+      const focus = tasks.find((t) => t.status === 'in_progress');
+      const stalled = focus !== undefined && (focus.cyclesInProgress ?? 0) >= PANEL_STALL_THRESHOLD;
+      const open = inProgress + blocked;
+      if (stalled) {
+        out.plan = {
+          tone: 'danger',
+          pulse: true,
+          count: focus!.cyclesInProgress ?? 0,
+          title: `Focus stalled: ${focus!.cyclesInProgress ?? 0} cycles on "${focus!.title}"`,
+        };
+      } else if (blocked > 0) {
+        out.plan = {
+          tone: 'warn',
+          count: blocked,
+          title: `${blocked} blocked task${blocked === 1 ? '' : 's'}`,
+        };
+      } else if (open > 0) {
+        out.plan = {
+          tone: 'info',
+          count: open,
+          title: `${inProgress} in progress${blocked > 0 ? `, ${blocked} blocked` : ''}`,
+        };
+      }
+    }
+
+    // Doctor — shows recommended fix count when the diagnostics have run.
+    const fixCount = doctor ? Object.keys(doctor.patch).length : 0;
+    if (fixCount > 0) {
+      out.doctor = {
+        tone: 'warn',
+        count: fixCount,
+        title: `${fixCount} suggested fix${fixCount === 1 ? '' : 'es'}`,
+      };
+    } else if (claw.health && claw.health.status !== 'healthy' && claw.health.status !== 'idle') {
+      out.doctor = {
+        tone: 'warn',
+        pulse: true,
+        title: `Health: ${claw.health.status}`,
+      };
+    }
+
+    // Output — live event stream count. Dot pulses when the most recent event
+    // is urgent so the operator notices without watching the feed.
+    if (outputFeed.length > 0) {
+      const last = outputFeed[outputFeed.length - 1];
+      const isUrgent = last?.urgency === 'urgent' || last?.urgency === 'high';
+      out.output = {
+        tone: isUrgent ? 'danger' : 'info',
+        pulse: isUrgent,
+        count: outputFeed.length,
+        title: `${outputFeed.length} live events`,
+      };
+    }
+
+    // Runs — surfaces the loaded history total. Stays neutral; it's a count
+    // not an alert.
+    if (historyTotal > 0) {
+      out.runs = {
+        tone: 'neutral',
+        count: historyTotal > 99 ? 99 : historyTotal,
+        title: `${historyTotal} cycle${historyTotal === 1 ? '' : 's'} recorded`,
+      };
+    }
+
+    // Files — workspace artifact count from the session.
+    const artifactCount = session?.artifacts.length ?? 0;
+    if (artifactCount > 0) {
+      out.files = {
+        tone: 'neutral',
+        count: artifactCount > 99 ? 99 : artifactCount,
+        title: `${artifactCount} artifact${artifactCount === 1 ? '' : 's'} emitted`,
+      };
+    }
+
+    // Skills — selection count so the operator can confirm config without
+    // opening the tab.
+    const selectedCount = selectedSkills.length;
+    if (selectedCount > 0) {
+      out.skills = {
+        tone: 'neutral',
+        count: selectedCount,
+        title: `${selectedCount} skill${selectedCount === 1 ? '' : 's'} attached`,
+      };
+    }
+
+    return out;
+  }, [claw, doctor, outputFeed, historyTotal, selectedSkills]);
+
   const approveEscalation = async (id: string) => {
     try {
       await clawsApi.approveEscalation(id);
@@ -178,6 +342,20 @@ export function ClawManagementPanel({
     });
     return () => unsub();
   }, [subscribe, claw.id]);
+
+  // Live plan updates — when the agent (or another operator) edits the
+  // structured plan, refresh the claw so the Plan tab and the card see the
+  // change without the operator hitting reload. We re-fetch instead of
+  // applying the WS payload directly to keep `claw` as a single source of
+  // truth (the WS event carries enough to update locally, but doing a full
+  // re-fetch also syncs cyclesInProgress ticks and reflection state without
+  // building a second update path).
+  useEffect(() => {
+    const unsub = subscribe<{ clawId: string }>('claw:plan:updated', (p) => {
+      if (p.clawId === claw.id) onUpdate();
+    });
+    return () => unsub();
+  }, [subscribe, claw.id, onUpdate]);
 
   // Load history + audit on runs tab switch
   useEffect(() => {
@@ -451,20 +629,33 @@ export function ClawManagementPanel({
       <div className="flex" style={{ maxHeight: 'calc(100vh - 220px)' }}>
         {/* Sidebar tabs */}
         <div className="w-36 shrink-0 border-r border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary overflow-y-auto">
-          {DETAIL_TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors text-left ${
-                tab === t.id
-                  ? 'bg-bg-primary dark:bg-dark-bg-primary text-primary border-r-2 border-primary'
-                  : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border-r-2 border-transparent'
-              }`}
-            >
-              <t.icon className="w-3.5 h-3.5 shrink-0" />
-              {t.label}
-            </button>
-          ))}
+          {DETAIL_TABS.map((t) => {
+            const badge = tabBadges[t.id];
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors text-left ${
+                  tab === t.id
+                    ? 'bg-bg-primary dark:bg-dark-bg-primary text-primary border-r-2 border-primary'
+                    : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary border-r-2 border-transparent'
+                }`}
+              >
+                <t.icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1 truncate">{t.label}</span>
+                {badge && (
+                  <span
+                    className={`shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-mono font-semibold ${BADGE_TONE_CLASS[badge.tone]} ${
+                      badge.pulse ? 'animate-pulse' : ''
+                    }`}
+                    title={badge.title ?? `${badge.count ?? ''}`}
+                  >
+                    {badge.count !== undefined ? badge.count : '•'}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Scrollable content */}
@@ -501,6 +692,8 @@ export function ClawManagementPanel({
             />
           )}
 
+          {tab === 'plan' && <PlanTab claw={claw} onPlanChanged={onUpdate} />}
+
           {tab === 'stats' && <StatsTab claw={claw} />}
 
           {tab === 'memory' && <MemoryTab claw={claw} />}
@@ -509,6 +702,7 @@ export function ClawManagementPanel({
 
           {tab === 'runs' && (
             <RunsTab
+              clawId={claw.id}
               history={history}
               historyTotal={historyTotal}
               isLoadingHistory={isLoadingHistory}

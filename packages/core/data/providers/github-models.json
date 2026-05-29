@@ -3,6 +3,15 @@
   "name": "GitHub Models",
   "type": "openai-compatible",
   "apiKeyEnv": "GITHUB_TOKEN",
+  "auth": {
+    "default": "api_key",
+    "supported": ["api_key", "oauth2_device_code"],
+    "oauth": {
+      "deviceCodeUrl": "https://github.com/login/device/code",
+      "tokenUrl": "https://github.com/login/oauth/access_token",
+      "scopes": ["read:user"]
+    }
+  },
   "features": {
     "streaming": true,
     "toolUse": true,

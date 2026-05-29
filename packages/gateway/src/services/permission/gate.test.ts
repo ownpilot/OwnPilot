@@ -5,7 +5,19 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DefaultPermissionGate } from './gate.js';
+import type { ClawAutonomyPolicy } from '@ownpilot/core';
+import { DefaultPermissionGate, evaluateAutonomyPolicy } from './gate.js';
+
+function policy(overrides: Partial<ClawAutonomyPolicy> = {}): ClawAutonomyPolicy {
+  return {
+    allowSelfModify: true,
+    allowSubclaws: true,
+    requireEvidence: false,
+    destructiveActionPolicy: 'allow',
+    filesystemScopes: [],
+    ...overrides,
+  };
+}
 
 describe('DefaultPermissionGate', () => {
   const gate = new DefaultPermissionGate();
@@ -138,5 +150,136 @@ describe('DefaultPermissionGate', () => {
       });
       expect(decision.type).toBe('allow');
     });
+  });
+
+  describe('autonomyPolicy enforcement (via check)', () => {
+    it('denies a destructive tool when destructiveActionPolicy is block', async () => {
+      const decision = await gate.check({
+        actorId: 'claw-1',
+        tool: 'core.delete_file',
+        context: {
+          actorType: 'claw',
+          autonomyPolicy: policy({ destructiveActionPolicy: 'block' }),
+          args: { path: '/ws/notes.txt' },
+          workspaceDir: '/ws',
+        },
+      });
+      expect(decision.type).toBe('deny');
+    });
+
+    it('requires approval for a destructive tool when policy is ask', async () => {
+      const decision = await gate.check({
+        actorId: 'claw-1',
+        tool: 'send_email',
+        context: { actorType: 'claw', autonomyPolicy: policy({ destructiveActionPolicy: 'ask' }) },
+      });
+      expect(decision.type).toBe('require_approval');
+    });
+
+    it('allows a destructive tool when policy is allow', async () => {
+      const decision = await gate.check({
+        actorId: 'claw-1',
+        tool: 'send_email',
+        context: {
+          actorType: 'claw',
+          autonomyPolicy: policy({ destructiveActionPolicy: 'allow' }),
+        },
+      });
+      expect(decision.type).toBe('allow');
+    });
+
+    it('does nothing when no autonomyPolicy is present (back-compat)', async () => {
+      const decision = await gate.check({
+        actorId: 'claw-1',
+        tool: 'core.delete_file',
+        context: { actorType: 'claw', args: { path: '/etc/passwd' } },
+      });
+      expect(decision.type).toBe('allow');
+    });
+  });
+});
+
+describe('evaluateAutonomyPolicy (pure)', () => {
+  it('denies claw_update_config when allowSelfModify is false', () => {
+    const d = evaluateAutonomyPolicy('claw_update_config', {}, policy({ allowSelfModify: false }));
+    expect(d.type).toBe('deny');
+  });
+
+  it('allows claw_update_config when allowSelfModify is true', () => {
+    const d = evaluateAutonomyPolicy('claw_update_config', {}, policy({ allowSelfModify: true }));
+    expect(d.type).toBe('allow');
+  });
+
+  it('denies claw_spawn_subclaw when allowSubclaws is false', () => {
+    const d = evaluateAutonomyPolicy('claw_spawn_subclaw', {}, policy({ allowSubclaws: false }));
+    expect(d.type).toBe('deny');
+  });
+
+  it('denies a file path outside the workspace + scopes', () => {
+    const d = evaluateAutonomyPolicy(
+      'core.write_file',
+      { file_path: '/etc/shadow' },
+      policy(),
+      '/ws'
+    );
+    expect(d.type).toBe('deny');
+    if (d.type === 'deny') expect(d.reason).toContain('filesystem scope');
+  });
+
+  it('allows a file path inside the workspace', () => {
+    const d = evaluateAutonomyPolicy(
+      'core.write_file',
+      { file_path: 'sub/out.txt' },
+      policy(),
+      '/ws'
+    );
+    expect(d.type).toBe('allow');
+  });
+
+  it('allows a file path inside an extra granted scope', () => {
+    const d = evaluateAutonomyPolicy(
+      'core.write_file',
+      { file_path: '/srv/data/x.json' },
+      policy({ filesystemScopes: ['/srv/data'] }),
+      '/ws'
+    );
+    expect(d.type).toBe('allow');
+  });
+
+  it('blocks a path-traversal escape from the workspace', () => {
+    const d = evaluateAutonomyPolicy(
+      'core.read_file',
+      { path: '../../etc/passwd' },
+      policy(),
+      '/ws'
+    );
+    expect(d.type).toBe('deny');
+  });
+
+  it('treats a shell script with rm -rf as destructive', () => {
+    const d = evaluateAutonomyPolicy(
+      'claw_run_script',
+      { language: 'shell', script: 'rm -rf /' },
+      policy({ destructiveActionPolicy: 'block' })
+    );
+    expect(d.type).toBe('deny');
+  });
+
+  it('treats a benign shell script as non-destructive', () => {
+    const d = evaluateAutonomyPolicy(
+      'claw_run_script',
+      { language: 'shell', script: 'echo hello && ls' },
+      policy({ destructiveActionPolicy: 'block' })
+    );
+    expect(d.type).toBe('allow');
+  });
+
+  it('flags git push --force as destructive', () => {
+    const d = evaluateAutonomyPolicy(
+      'claw_run_script',
+      { script: 'git push --force origin main' },
+      policy({ destructiveActionPolicy: 'block' })
+    );
+    expect(d.type).toBe('deny');
   });
 });

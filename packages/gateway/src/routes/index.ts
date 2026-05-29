@@ -42,6 +42,7 @@ export { webhookRoutes } from './webhooks.js';
 export { workflowRoutes } from './workflow/index.js';
 export { composioRoutes } from './composio.js';
 export { uiAuthRoutes } from './ui-auth.js';
+export { default as providerAuthRoutes } from './auth.js';
 export { modelRoutingRoutes } from './model-routing.js';
 export { codingAgentsRoutes } from './coding-agents.js';
 export { cliProvidersRoutes } from './cli/providers.js';

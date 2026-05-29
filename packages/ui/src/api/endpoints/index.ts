@@ -6,6 +6,13 @@ export { authApi } from './auth';
 export type { AuthStatus, LoginResponse, PasswordResponse, SessionsResponse } from './auth';
 export { providersApi } from './providers';
 export type { ProvidersListData, ProviderConfigData } from './providers';
+export { providerAuthApi } from './providerAuth';
+export type {
+  DeviceFlowStart,
+  DeviceFlowPollResult,
+  ProviderAuthInfo,
+  ProviderOAuthOverride,
+} from './providerAuth';
 export { modelsApi } from './models';
 export { settingsApi, modelRoutingApi } from './settings';
 export type {
@@ -150,6 +157,10 @@ export type {
   ClawRecommendation,
   ClawEscalation,
   ClawToolCall,
+  ClawTask,
+  ClawTaskStatus,
+  ClawCycleFailure,
+  ClawPlanHistoryEntry,
   CreateClawInput,
   UpdateClawInput,
 } from './claws';

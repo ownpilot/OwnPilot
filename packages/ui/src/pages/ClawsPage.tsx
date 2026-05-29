@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useGateway } from '../hooks/useWebSocket';
 import { useToast } from '../components/ToastProvider';
 import { useDialog } from '../components/ConfirmDialog';
@@ -25,14 +26,17 @@ import {
   Terminal,
   Play,
   Pause,
+  LayoutGrid,
+  Rows3,
 } from '../components/icons';
 import { timeAgo } from './claws/utils';
 import type { ClawOutputEvent } from './claws/tabs/OutputTab';
 
 import { CreateClawModal } from './claws/CreateClawModal';
 import { ClawCard } from './claws/ClawCard';
+import { ClawListRow } from './claws/ClawListRow';
 import { ClawHomeTab } from './claws/ClawHomeTab';
-import { ClawManagementPanel } from './claws/ClawManagementPanel';
+import { ClawManagementPanel, isDetailTab, type DetailTab } from './claws/ClawManagementPanel';
 import { ConcurrencyBar } from './claws/ConcurrencyBar';
 import { ignoreError } from '../utils/ignore-error';
 
@@ -41,8 +45,11 @@ import { ignoreError } from '../utils/ignore-error';
 // =============================================================================
 
 type PageTab = 'home' | 'claws';
-type DetailTab = 'overview' | 'doctor' | 'runs';
+// DetailTab is the full union exported by ClawManagementPanel — keeps the
+// page-side type in sync so deep-links (?tab=plan) can pass through cleanly.
 type BulkOp = 'stop' | 'delete' | 'start' | 'pause';
+type ViewMode = 'grid' | 'list';
+const VIEW_MODE_STORAGE_KEY = 'claws-view-mode';
 
 export function ClawsPage() {
   const [pageTab, setPageTab] = useState<PageTab>('claws');
@@ -70,6 +77,15 @@ export function ClawsPage() {
   >([]);
   const [outputFeed, setOutputFeed] = useState<ClawOutputEvent[]>([]);
   const [needsAttentionCount, setNeedsAttentionCount] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'grid';
+    const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return stored === 'list' ? 'list' : 'grid';
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
   const [llmConcurrency, setLlmConcurrency] = useState<{
     max: number;
     active: number;
@@ -85,6 +101,11 @@ export function ClawsPage() {
   const { subscribe } = useGateway();
   const toast = useToast();
   const { confirm } = useDialog();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Honor ?claw=<id> deep links (e.g., from the dashboard widget) exactly
+  // once after the first list load — so refreshes don't fight user navigation
+  // once they've moved on.
+  const deepLinkAppliedRef = useRef(false);
 
   const fetchClaws = useCallback(async () => {
     try {
@@ -192,6 +213,38 @@ export function ClawsPage() {
   useEffect(() => {
     if (pageTab === 'claws') fetchClaws();
   }, [page]);
+
+  // Deep-link: ?claw=<id> pre-selects that claw and opens the management
+  // panel. Runs once after the initial list arrives so refresh cycles don't
+  // re-open the panel after the operator dismisses it.
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    if (isLoading || claws.length === 0) return;
+    const targetId = searchParams.get('claw');
+    if (!targetId) {
+      deepLinkAppliedRef.current = true;
+      return;
+    }
+    const target = claws.find((c) => c.id === targetId);
+    if (target) {
+      setSelectedClaw(target);
+      // Honor ?tab=<id> when valid; otherwise land on overview as before.
+      const requestedTab = searchParams.get('tab');
+      setSelectedDetailTab(isDetailTab(requestedTab) ? requestedTab : 'overview');
+      setPageTab('claws');
+    } else {
+      // Unknown id — drop the stale param so we don't keep trying.
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('claw');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+    deepLinkAppliedRef.current = true;
+  }, [isLoading, claws, searchParams, setSearchParams]);
 
   // Actions
   const startClaw = async (id: string) => {
@@ -467,6 +520,23 @@ export function ClawsPage() {
     (c) => c.session && ['running', 'starting', 'waiting'].includes(c.session.state)
   ).length;
 
+  // Surface the new attention dimensions added in recent runner work
+  // (reflection / stall) at the page level so they are visible without
+  // drilling into individual claws. Each list is sorted to give the
+  // operator a one-click landing page on the Plan tab.
+  const REFLECT_THRESHOLD = 2;
+  const STALL_THRESHOLD_PAGE = 5;
+  const reflectClaws = claws.filter(
+    (c) => (c.session?.consecutiveErrors ?? 0) >= REFLECT_THRESHOLD
+  );
+  const stalledClaws = claws.filter((c) => {
+    if (!c.session?.tasks) return false;
+    const focus = c.session.tasks.find((t) => t.status === 'in_progress');
+    return focus !== undefined && (focus.cyclesInProgress ?? 0) >= STALL_THRESHOLD_PAGE;
+  });
+  const failedClaws = claws.filter((c) => c.session?.state === 'failed');
+  const operatorQueuedClaws = claws.filter((c) => c.session?.nextIntent?.startsWith('[OPERATOR] '));
+
   return (
     <div className="flex flex-col h-full">
       {/* Escalation Notification Banner */}
@@ -507,6 +577,61 @@ export function ClawsPage() {
         </div>
       )}
 
+      {/* Attention strip — surfaces the new runner dimensions (reflection,
+          stalled focus, failed, operator-queued directives) so the recent
+          plan/intervention work is visible at first glance. Each chip is
+          a deep-link straight onto the Plan tab of the affected claw so
+          one click lands the operator on the queue-intent / reset-failures
+          / split-task controls. */}
+      {reflectClaws.length + stalledClaws.length + failedClaws.length + operatorQueuedClaws.length >
+        0 && (
+        <div className="bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border px-6 py-2 flex items-center gap-2 flex-wrap text-xs">
+          <span className="text-text-muted dark:text-dark-text-muted font-medium">
+            Needs attention:
+          </span>
+          {reflectClaws.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openClawDetail(reflectClaws[0]!, 'plan')}
+              className="px-2 py-1 rounded-full bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-colors font-medium"
+              title={`Reflection required: ${reflectClaws.map((c) => c.name).join(', ')}`}
+            >
+              ⚠ {reflectClaws.length} reflecting
+            </button>
+          )}
+          {stalledClaws.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openClawDetail(stalledClaws[0]!, 'plan')}
+              className="px-2 py-1 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors font-medium"
+              title={`Stalled focus: ${stalledClaws.map((c) => c.name).join(', ')}`}
+            >
+              ⏳ {stalledClaws.length} stalled
+            </button>
+          )}
+          {failedClaws.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openClawDetail(failedClaws[0]!, 'plan')}
+              className="px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors font-medium"
+              title={`Failed: ${failedClaws.map((c) => c.name).join(', ')}`}
+            >
+              ✗ {failedClaws.length} failed
+            </button>
+          )}
+          {operatorQueuedClaws.length > 0 && (
+            <button
+              type="button"
+              onClick={() => openClawDetail(operatorQueuedClaws[0]!, 'plan')}
+              className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors font-medium"
+              title={`Operator directive queued: ${operatorQueuedClaws.map((c) => c.name).join(', ')}`}
+            >
+              ↳ {operatorQueuedClaws.length} op-queued
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
@@ -521,6 +646,39 @@ export function ClawsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View mode toggle — persists per-user in localStorage. */}
+          <div
+            role="group"
+            aria-label="View mode"
+            className="hidden sm:inline-flex items-center rounded-lg border border-border dark:border-dark-border overflow-hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
+              title="Grid view"
+              className={`p-1.5 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              aria-pressed={viewMode === 'list'}
+              title="List view"
+              className={`p-1.5 transition-colors border-l border-border dark:border-dark-border ${
+                viewMode === 'list'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary'
+              }`}
+            >
+              <Rows3 className="w-4 h-4" />
+            </button>
+          </div>
           <button
             onClick={() => {
               setIsLoading(true);
@@ -699,41 +857,72 @@ export function ClawsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {escalations.map((esc) => (
-                      <div
-                        key={esc.clawId}
-                        className="flex items-start justify-between gap-3 p-2 rounded border border-red-500/10 bg-bg-primary dark:bg-dark-bg-primary"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate">
-                            {esc.name}
-                          </p>
-                          <p className="text-[11px] text-text-muted dark:text-dark-text-muted">
-                            {esc.type}: {esc.reason}
-                          </p>
+                    {escalations.map((esc) => {
+                      // Per-type chip color. `task_force_blocked` is the
+                      // hard-failsafe at cycle 20 (the task was auto-blocked
+                      // and the operator needs to decide whether the mission
+                      // can recover) — given the strongest red tone since
+                      // dependent tasks may now be orphaned. `task_stalled`
+                      // is the softer cycle-10 escalation. `budget_increase`
+                      // is amber — different urgency category.
+                      const typeChip =
+                        esc.type === 'task_force_blocked'
+                          ? 'bg-red-600/20 text-red-500 ring-1 ring-red-500/30'
+                          : esc.type === 'task_stalled'
+                            ? 'bg-red-500/15 text-red-500'
+                            : esc.type === 'budget_increase'
+                              ? 'bg-amber-500/15 text-amber-500'
+                              : 'bg-purple-500/15 text-purple-500';
+                      return (
+                        <div
+                          key={esc.clawId}
+                          className="flex items-start justify-between gap-3 p-2 rounded border border-red-500/10 bg-bg-primary dark:bg-dark-bg-primary"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className="text-xs font-medium text-text-primary dark:text-dark-text-primary truncate">
+                                {esc.name}
+                              </p>
+                              <span
+                                className={`shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded ${typeChip}`}
+                              >
+                                {esc.type}
+                              </span>
+                            </div>
+                            <p
+                              className="text-[11px] text-text-muted dark:text-dark-text-muted mt-0.5"
+                              title={esc.reason}
+                            >
+                              {esc.reason}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                approveEscalation(esc.clawId);
+                                setEscalations((prev) =>
+                                  prev.filter((e) => e.clawId !== esc.clawId)
+                                );
+                              }}
+                              className="px-2 py-1 text-[11px] rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => {
+                                denyEscalation(esc.clawId);
+                                setEscalations((prev) =>
+                                  prev.filter((e) => e.clawId !== esc.clawId)
+                                );
+                              }}
+                              className="px-2 py-1 text-[11px] rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
+                            >
+                              Deny
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => {
-                              approveEscalation(esc.clawId);
-                              setEscalations((prev) => prev.filter((e) => e.clawId !== esc.clawId));
-                            }}
-                            className="px-2 py-1 text-[11px] rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => {
-                              denyEscalation(esc.clawId);
-                              setEscalations((prev) => prev.filter((e) => e.clawId !== esc.clawId));
-                            }}
-                            className="px-2 py-1 text-[11px] rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
-                          >
-                            Deny
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -926,28 +1115,51 @@ export function ClawsPage() {
                 </div>
               )}
 
-              {/* Claw Grid */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredClaws.map((claw) => (
-                  <ClawCard
-                    key={claw.id}
-                    claw={claw}
-                    onStart={() => startClaw(claw.id)}
-                    onPause={() => pauseClaw(claw.id)}
-                    onResume={() => resumeClaw(claw.id)}
-                    onStop={() => stopClaw(claw.id)}
-                    onDelete={() => deleteClaw(claw.id, claw.name)}
-                    onClone={() => cloneClaw(claw)}
-                    onDoctor={() => openClawDetail(claw, 'doctor')}
-                    onApproveEscalation={() => approveEscalation(claw.id)}
-                    onDenyEscalation={() => denyEscalation(claw.id)}
-                    onSelect={() => openClawDetail(claw)}
-                    isSelected={selectedClaw?.id === claw.id}
-                    isChecked={selectedIds.has(claw.id)}
-                    onToggleCheck={() => toggleSelect(claw.id)}
-                  />
-                ))}
-              </div>
+              {/* Claw Grid / List — visual show vs scan-friendly density. */}
+              {viewMode === 'grid' ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filteredClaws.map((claw) => (
+                    <ClawCard
+                      key={claw.id}
+                      claw={claw}
+                      onStart={() => startClaw(claw.id)}
+                      onPause={() => pauseClaw(claw.id)}
+                      onResume={() => resumeClaw(claw.id)}
+                      onStop={() => stopClaw(claw.id)}
+                      onDelete={() => deleteClaw(claw.id, claw.name)}
+                      onClone={() => cloneClaw(claw)}
+                      onDoctor={() => openClawDetail(claw, 'doctor')}
+                      onApproveEscalation={() => approveEscalation(claw.id)}
+                      onDenyEscalation={() => denyEscalation(claw.id)}
+                      onSelect={() => openClawDetail(claw)}
+                      isSelected={selectedClaw?.id === claw.id}
+                      isChecked={selectedIds.has(claw.id)}
+                      onToggleCheck={() => toggleSelect(claw.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {filteredClaws.map((claw) => (
+                    <ClawListRow
+                      key={claw.id}
+                      claw={claw}
+                      onStart={() => startClaw(claw.id)}
+                      onPause={() => pauseClaw(claw.id)}
+                      onResume={() => resumeClaw(claw.id)}
+                      onStop={() => stopClaw(claw.id)}
+                      onDelete={() => deleteClaw(claw.id, claw.name)}
+                      onClone={() => cloneClaw(claw)}
+                      onDoctor={() => openClawDetail(claw, 'doctor')}
+                      onApproveEscalation={() => approveEscalation(claw.id)}
+                      onSelect={() => openClawDetail(claw)}
+                      isSelected={selectedClaw?.id === claw.id}
+                      isChecked={selectedIds.has(claw.id)}
+                      onToggleCheck={() => toggleSelect(claw.id)}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Pagination */}
               {totalClaws > pageSize && (

@@ -65,8 +65,12 @@ const {
     setRequestInterception: vi.fn().mockResolvedValue(undefined),
     on: vi.fn(),
     select: vi.fn().mockResolvedValue([]),
+    focus: vi.fn().mockResolvedValue(undefined),
     mouse: {
       wheel: vi.fn().mockResolvedValue(undefined),
+    },
+    keyboard: {
+      press: vi.fn().mockResolvedValue(undefined),
     },
   };
 
@@ -781,6 +785,53 @@ describe('BrowserService', () => {
       await expect(service.select('no-session', '#sel', 'val')).rejects.toThrow(
         'No active browser session'
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // pressKey
+  // ---------------------------------------------------------------------------
+
+  describe('pressKey()', () => {
+    it('presses a key without focusing when no selector is given', async () => {
+      const service = await createServiceWithSession('user-press');
+      const result = await service.pressKey('user-press', 'Enter');
+      expect(mockPage.keyboard.press).toHaveBeenCalledWith('Enter');
+      expect(mockPage.focus).not.toHaveBeenCalled();
+      expect(result.url).toBe('https://example.com');
+    });
+
+    it('focuses the selector first, then presses the key', async () => {
+      const service = await createServiceWithSession('user-press2');
+      await service.pressKey('user-press2', 'Enter', 'input.search');
+      expect(mockPage.waitForSelector).toHaveBeenCalledWith('input.search', { timeout: 10000 });
+      expect(mockPage.focus).toHaveBeenCalledWith('input.search');
+      expect(mockPage.keyboard.press).toHaveBeenCalledWith('Enter');
+    });
+
+    it('throws when no active session exists', async () => {
+      const service = new BrowserService();
+      await expect(service.pressKey('no-session', 'Enter')).rejects.toThrow(
+        'No active browser session'
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getState
+  // ---------------------------------------------------------------------------
+
+  describe('getState()', () => {
+    it('returns url + title for an active session', async () => {
+      const service = await createServiceWithSession('user-state');
+      const state = await service.getState('user-state');
+      expect(state).toEqual({ url: 'https://example.com', title: 'Test Page' });
+    });
+
+    it('returns null (does NOT throw) when no session exists', async () => {
+      const service = new BrowserService();
+      const state = await service.getState('no-session');
+      expect(state).toBeNull();
     });
   });
 

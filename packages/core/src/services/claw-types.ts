@@ -147,6 +147,12 @@ export interface ClawConfig {
    * priority claws get shorter adaptive delays in continuous mode, allowing
    * more cycles per hour when the scheduler is under load. */
   priority?: number;
+  /**
+   * Closed learning loop: when not explicitly `false`, a successful
+   * `claw_complete_report` backed by enough tool calls is distilled into a
+   * reusable AgentSkills skill (default on). Set `false` to opt out.
+   */
+  learnSkills?: boolean;
   createdBy: ClawCreator;
   createdAt: Date;
   updatedAt: Date;
@@ -174,6 +180,7 @@ export interface CreateClawInput {
   preset?: string;
   missionContract?: Partial<ClawMissionContract>;
   autonomyPolicy?: Partial<ClawAutonomyPolicy>;
+  learnSkills?: boolean;
   createdBy?: ClawCreator;
 }
 
@@ -198,6 +205,7 @@ export interface UpdateClawInput {
   missionContract?: Partial<ClawMissionContract> | null;
   autonomyPolicy?: Partial<ClawAutonomyPolicy> | null;
   priority?: number | null;
+  learnSkills?: boolean;
 }
 
 // ============================================================================
@@ -229,7 +237,204 @@ export interface ClawSession {
   inbox: string[];
   artifacts: string[];
   pendingEscalation: ClawEscalation | null;
+  /**
+   * Number of consecutive failed cycles. Reset to 0 on first success.
+   * Exposed on the session so the runner can inject a reflection prompt
+   * when it crosses CLAW_REFLECTION_THRESHOLD — without this signal the
+   * agent has no way to know it's stuck in a failure loop and just keeps
+   * retrying the same approach.
+   */
+  consecutiveErrors: number;
+  /**
+   * Bounded ring of recent cycle/tool failures (max
+   * {@link CLAW_RECENT_FAILURES_MAX}). The runner serializes these into
+   * the REFLECTION REQUIRED prompt block so the agent has concrete error
+   * messages to diagnose against rather than just "you failed N times".
+   */
+  recentFailures: ClawCycleFailure[];
+  /**
+   * Structured task plan managed by the `claw_plan` / `claw_update_task`
+   * tools. Kept on the session (not just .claw/TASKS.md) so the runner can
+   * render the current state into every cycle prompt without re-parsing a
+   * freeform markdown file — the LLM had to re-derive structure from text
+   * before, which drifted across cycles.
+   */
+  tasks: ClawTask[];
+  /**
+   * One-line handoff from the previous cycle: "what I will do next cycle".
+   * Set by the `claw_set_next_intent` tool at the end of a cycle that made
+   * partial progress. Rendered prominently in the NEXT cycle's prompt and
+   * then auto-cleared so it can't go stale — the agent must re-set it each
+   * cycle if it still applies. Closes the inter-cycle thought-handoff gap
+   * where the agent loses its train of thought between cycles and has to
+   * re-derive "where was I?" from the plan + log alone.
+   */
+  nextIntent?: string;
+  /**
+   * Bounded ring of plan mutations (max {@link CLAW_PLAN_HISTORY_MAX}).
+   * Surfaced via API + UI so operators can see "what changed when"
+   * without scraping logs — answers questions like "when did the agent
+   * mark t3 blocked?" or "did the operator override the plan during the
+   * outage?". Records both agent-side (tool path) and operator-side
+   * (REST path) edits with a source tag.
+   */
+  planHistory?: ClawPlanHistoryEntry[];
 }
+
+/**
+ * A single recorded plan mutation. The `kind` distinguishes whole-plan
+ * rewrites from per-task patches; `actor` distinguishes the agent from a
+ * human operator so the UI can colour-code who did what. For task edits
+ * `before` captures the prior state so the diff is reconstructible
+ * without replaying the whole history.
+ */
+export interface ClawPlanHistoryEntry {
+  /** ISO timestamp of the mutation. */
+  at: string;
+  /** Who initiated the change. */
+  actor: 'agent' | 'operator';
+  /** What kind of mutation it was. */
+  kind: 'replace' | 'task_update' | 'task_added';
+  /** For task-scoped mutations, the affected task id. */
+  taskId?: string;
+  /** For task_update: the prior status (lets the UI render "pending → in_progress"). */
+  prevStatus?: ClawTaskStatus;
+  /** For task_update: the new status. */
+  newStatus?: ClawTaskStatus;
+  /** Short title of the task at mutation time (helps when the row is later renamed/removed). */
+  title?: string;
+  /** For replace: number of tasks in the new plan. */
+  newTaskCount?: number;
+}
+
+/** Status of a single planned task. `blocked` is for stalled work that needs
+ *  intervention or a precondition before it can move. */
+export type ClawTaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';
+
+/** Single entry in the structured plan. */
+export interface ClawTask {
+  /** Stable id — the agent picks this (e.g. "t1") so updates target the right row. */
+  id: string;
+  /** Short human-readable description of what the task accomplishes. */
+  title: string;
+  status: ClawTaskStatus;
+  /** Optional free-form note: blockers, links, sub-steps. */
+  notes?: string;
+  /** ISO timestamp when this task was created. */
+  createdAt: string;
+  /** ISO timestamp of the last status / notes change. */
+  updatedAt: string;
+  /**
+   * Number of cycles this task has spent in `in_progress` without a status
+   * change. Reset to 0 when status flips. The runner uses this to surface a
+   * stall warning so the agent splits or blocks rather than spinning on a
+   * task that's too big or has hidden blockers.
+   */
+  cyclesInProgress?: number;
+  /**
+   * Concrete, falsifiable bar for what counts as "done" — written at plan
+   * time so the agent commits to a definition of success BEFORE doing the
+   * work, rather than rationalising completion after the fact. Rendered
+   * next to the focused task every cycle so it stays salient.
+   */
+  successCriteria?: string;
+  /**
+   * Short, post-hoc record of what changed and how the agent knows the
+   * successCriteria was met. Surfaced next to completed tasks so future
+   * cycles (and the operator) can audit the claim instead of trusting a
+   * bare status flip. Optional — completing without evidence yields a soft
+   * warning rather than a hard error so the agent isn't blocked on a
+   * trivially-true task.
+   */
+  evidence?: string;
+  /**
+   * ISO timestamp set by the manager when this task triggered an automatic
+   * `task_stalled` escalation (see `CLAW_TASK_STALL_AUTO_ESCALATE`). Used to
+   * guarantee the auto-escalation fires at most once per task — even if the
+   * operator denies the escalation and the agent stays focused on the same
+   * task for further cycles. Cleared whenever the task's status changes.
+   */
+  autoEscalatedAt?: string;
+}
+
+/** Maximum number of tasks retained on a session — prevents the plan from
+ *  blowing up the cycle prompt. Sized to be useful for non-trivial missions
+ *  while still bounded. */
+export const CLAW_MAX_TASKS = 50;
+
+/**
+ * Number of cycles a task can sit in `in_progress` before the runner surfaces
+ * a stall warning. Picked deliberately larger than CLAW_REFLECTION_THRESHOLD
+ * (which fires on consecutive *failures*) — staying on one task for a few
+ * cycles is normal; staying for many is a signal it needs to be split.
+ */
+export const CLAW_TASK_STALL_THRESHOLD = 5;
+
+/**
+ * Number of cycles a single task can sit `in_progress` before the manager
+ * auto-requests a `task_stalled` escalation. The agent is given multiple
+ * cycles past `CLAW_TASK_STALL_THRESHOLD` to self-correct (split, block,
+ * or escalate) — when it doesn't, the manager forces the issue instead of
+ * letting the claw burn cycles on a single stuck task indefinitely.
+ *
+ * Fires once per task: the per-task `autoEscalatedAt` marker prevents a
+ * second escalation for the same task even if the operator denies the
+ * first and the agent keeps spinning.
+ */
+export const CLAW_TASK_STALL_AUTO_ESCALATE = 10;
+
+/**
+ * Hard fail-safe: number of cycles a single task can sit `in_progress` before
+ * the manager force-flips its status to `blocked` regardless of the agent's
+ * behavior. Sits above `CLAW_TASK_STALL_AUTO_ESCALATE` to give the
+ * operator-approval loop a chance to recover first — only fires when the
+ * escalation was denied (or not yet acted on) and the agent kept spinning.
+ *
+ * Operator can later edit the task back to `in_progress` from the Plan tab
+ * if the block was misjudged.
+ */
+export const CLAW_TASK_STALL_FORCE_BLOCK = 20;
+
+/**
+ * Max plan-history entries retained on a session. Picked to comfortably
+ * cover the operator inspecting "what happened in the last hour or so"
+ * without ballooning the session row when serialised.
+ */
+export const CLAW_PLAN_HISTORY_MAX = 50;
+
+/**
+ * Max length of a cross-cycle handoff message set via `claw_set_next_intent`.
+ * Intentionally tight — this is a one-liner that primes the next cycle, not
+ * a place to dump a plan. Larger context belongs in .claw/MEMORY.md.
+ */
+export const CLAW_NEXT_INTENT_MAX = 500;
+
+/**
+ * Snapshot of a failed cycle or failed tool call. Kept in a bounded
+ * ring on the session so the reflection prompt can show specifics —
+ * "tool X failed with ENOENT" is actionable; "you've failed 3 times" is
+ * not.
+ */
+export interface ClawCycleFailure {
+  cycleNumber: number;
+  /** ISO timestamp when the failure was observed. */
+  at: string;
+  /** Top-level cycle error message (if the whole cycle threw), else null. */
+  error: string | null;
+  /** Per-tool failures from inside the cycle. Truncated to keep prompts cheap. */
+  toolErrors?: Array<{ tool: string; error: string }>;
+}
+
+/** Maximum number of failure snapshots retained on a session. */
+export const CLAW_RECENT_FAILURES_MAX = 5;
+
+/**
+ * Consecutive-error count at which the runner injects a REFLECTION
+ * REQUIRED prompt block. Set deliberately below `MAX_CONSECUTIVE_ERRORS`
+ * (the auto-fail threshold) so the agent gets multiple chances to
+ * self-correct before the manager kills the claw.
+ */
+export const CLAW_REFLECTION_THRESHOLD = 2;
 
 // ============================================================================
 // Cycle Result Types

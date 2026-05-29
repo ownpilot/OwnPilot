@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS claws (
   preset TEXT,
   mission_contract JSONB DEFAULT '{}',
   autonomy_policy JSONB DEFAULT '{}',
+  learn_skills BOOLEAN NOT NULL DEFAULT TRUE,
   created_by TEXT NOT NULL DEFAULT 'user',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -95,6 +96,7 @@ ALTER TABLE claws ADD COLUMN IF NOT EXISTS event_filters JSONB DEFAULT '[]';
 ALTER TABLE claws ADD COLUMN IF NOT EXISTS preset TEXT;
 ALTER TABLE claws ADD COLUMN IF NOT EXISTS mission_contract JSONB DEFAULT '{}';
 ALTER TABLE claws ADD COLUMN IF NOT EXISTS autonomy_policy JSONB DEFAULT '{}';
+ALTER TABLE claws ADD COLUMN IF NOT EXISTS learn_skills BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- Repair the legacy 'cyclic' mode default (matches migration 023_claw_fixes.sql).
 ALTER TABLE claws ALTER COLUMN mode SET DEFAULT 'continuous';

@@ -22,6 +22,7 @@ import {
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
+  type ResolvedAuth,
   buildSoulPrompt,
 } from '@ownpilot/core';
 import type { SessionInfo } from '../../types/index.js';
@@ -35,6 +36,7 @@ import {
   getConfiguredProviderIds,
   getEnabledToolGroupIds,
 } from '../app-settings.js';
+import { resolveAuthForRequest } from '../auth/oauth-flow.js';
 import { localProvidersRepo } from '../../db/repositories/local-providers.js';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
 import { getAgentMessagesRepository } from '../../db/repositories/agents/messages.js';
@@ -491,8 +493,10 @@ async function createChatAgentInstance(
   let correlationId: string | undefined;
 
   let apiKey: string | undefined;
+  let resolvedAuth: ResolvedAuth | undefined;
   if (!isCliProvider) {
-    apiKey = await getProviderApiKey(provider);
+    resolvedAuth = await resolveAuthForRequest(provider);
+    apiKey = resolvedAuth?.value ?? (await getProviderApiKey(provider));
     if (!apiKey) {
       throw new Error(`API key not configured for provider: ${provider}`);
     }
@@ -598,6 +602,7 @@ async function createChatAgentInstance(
       id: provider,
       provider: providerType as AIProvider,
       apiKey: apiKey ?? 'cli-no-key',
+      resolvedAuth,
       baseUrl,
       headers: providerConfig?.headers,
       endpoint: providerConfig?.endpoint,
@@ -671,7 +676,8 @@ async function createChatAgentInstance(
   } else if (fallback) {
     // Build FallbackProvider if a backup model is configured
     try {
-      const fbApiKey = await getProviderApiKey(fallback.provider);
+      const fbResolvedAuth = await resolveAuthForRequest(fallback.provider);
+      const fbApiKey = fbResolvedAuth?.value ?? (await getProviderApiKey(fallback.provider));
       if (fbApiKey) {
         const fbConfig = loadProviderConfig(fallback.provider);
         const fbType = NATIVE_PROVIDERS.has(fallback.provider) ? fallback.provider : 'openai';
@@ -679,6 +685,7 @@ async function createChatAgentInstance(
           primary: {
             provider: providerType as AIProvider,
             apiKey: apiKey!,
+            resolvedAuth,
             baseUrl,
             headers: providerConfig?.headers,
           },
@@ -686,6 +693,7 @@ async function createChatAgentInstance(
             {
               provider: fbType as AIProvider,
               apiKey: fbApiKey,
+              resolvedAuth: fbResolvedAuth,
               baseUrl: fbConfig?.baseUrl,
               headers: fbConfig?.headers,
             },

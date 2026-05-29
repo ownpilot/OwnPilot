@@ -69,11 +69,34 @@ import { SIDEBAR_SECTION_LABELS } from '../types/layout-config';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
+/**
+ * Optional live status indicator for a sidebar item. Sections that have
+ * meaningful per-item runtime state (claws, agents, workflows) populate
+ * this; sections that don't omit it and the renderer falls back to the
+ * plain icon. Colors map to tailwind classes in SidebarDataSection.
+ */
+export type SidebarItemBadgeTone =
+  | 'running' // green — actively executing
+  | 'pending' // amber — paused / waiting
+  | 'escalation' // purple — needs operator decision
+  | 'reflection' // purple — consecutive errors, agent should reflect
+  | 'stalled' // red — focus task stuck past stall threshold
+  | 'failed' // amber — terminal failure
+  | 'idle'; // gray — stopped / completed
+
+export interface SidebarItemBadge {
+  tone: SidebarItemBadgeTone;
+  /** Hover tooltip — usually a short reason ("running · 7 cycles"). */
+  title?: string;
+}
+
 /** Generic sidebar item shape — all registry items normalize to this */
 export interface SidebarItem {
   id: string;
   label: string;
   route: string;
+  /** Optional live status badge — renders as a colored dot before the label. */
+  badge?: SidebarItemBadge;
 }
 
 /** Section group for visual grouping in ZoneEditor */
@@ -122,6 +145,18 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
           id: wf.id,
           label: wf.name,
           route: `/workflows/${wf.id}`,
+          // Active = armed (triggers fire, runs allowed); inactive = idle.
+          // Execution-time progress isn't on WS yet, so the dot is a static
+          // armed/idle indicator — still much more informative than the
+          // generic icon and lets the operator confirm at a glance which
+          // workflows would actually fire if their trigger arrived.
+          badge:
+            wf.status === 'active'
+              ? ({
+                  tone: 'pending',
+                  title: `armed${wf.runCount ? ` · ${wf.runCount} runs` : ''}`,
+                } as SidebarItemBadge)
+              : ({ tone: 'idle', title: 'inactive' } as SidebarItemBadge),
         }))
       ),
   },
@@ -150,11 +185,59 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
     maxItems: 5,
     showPlus: true,
     fetchItems: () =>
-      clawsApi
-        .list()
-        .then((res: { claws: { id: string; name: string }[] }) =>
-          res.claws.slice(0, 5).map((c) => ({ id: c.id, label: c.name, route: `/claws` }))
-        ),
+      clawsApi.list().then((res) => {
+        // Sort by attention priority so reflecting / stalled / escalation
+        // bubble to the top of the 5 visible rows — matches the dashboard
+        // widget ordering so the same claw is "first" in both surfaces.
+        const REFLECT_THRESHOLD = 2;
+        const STALL_THRESHOLD = 5;
+        const priority = (c: (typeof res.claws)[number]): number => {
+          if (c.session?.state === 'escalation_pending') return 0;
+          if ((c.session?.consecutiveErrors ?? 0) >= REFLECT_THRESHOLD) return 1;
+          if (c.session?.state === 'failed') return 2;
+          const focus = c.session?.tasks?.find((t) => t.status === 'in_progress');
+          if (focus && (focus.cyclesInProgress ?? 0) >= STALL_THRESHOLD) return 3;
+          if (c.session?.state === 'running' || c.session?.state === 'starting') return 4;
+          if (c.session?.state === 'waiting' || c.session?.state === 'paused') return 5;
+          return 6;
+        };
+        const computeBadge = (c: (typeof res.claws)[number]): SidebarItemBadge | undefined => {
+          if (!c.session) return { tone: 'idle', title: 'stopped' };
+          const state = c.session.state;
+          if (state === 'escalation_pending') {
+            return { tone: 'escalation', title: 'escalation pending' };
+          }
+          if ((c.session.consecutiveErrors ?? 0) >= REFLECT_THRESHOLD) {
+            return {
+              tone: 'reflection',
+              title: `reflection required (${c.session.consecutiveErrors} consecutive errors)`,
+            };
+          }
+          if (state === 'failed') return { tone: 'failed', title: 'failed' };
+          const focus = c.session.tasks?.find((t) => t.status === 'in_progress');
+          if (focus && (focus.cyclesInProgress ?? 0) >= STALL_THRESHOLD) {
+            return { tone: 'stalled', title: `stalled (${focus.cyclesInProgress} cycles)` };
+          }
+          if (state === 'running' || state === 'starting') {
+            return { tone: 'running', title: `running · ${c.session.cyclesCompleted} cycles` };
+          }
+          if (state === 'paused' || state === 'waiting') {
+            return { tone: 'pending', title: state };
+          }
+          return { tone: 'idle', title: state };
+        };
+        return [...res.claws]
+          .sort((a, b) => priority(a) - priority(b))
+          .slice(0, 5)
+          .map((c) => ({
+            id: c.id,
+            label: c.name,
+            // Deep-link via the ?claw= param honored by ClawsPage so the
+            // sidebar row opens the right detail panel directly.
+            route: `/claws?claw=${encodeURIComponent(c.id)}`,
+            badge: computeBadge(c),
+          }));
+      }),
   },
   triggers: {
     id: 'triggers',
@@ -166,10 +249,21 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
     fetchItems: () =>
       triggersApi
         .list()
-        .then((res: { triggers?: { id: string; name: string }[] }) =>
-          (res.triggers ?? [])
-            .slice(0, 5)
-            .map((t) => ({ id: t.id, label: t.name, route: `/triggers` }))
+        .then((res: { triggers?: { id: string; name: string; enabled?: boolean }[] }) =>
+          (res.triggers ?? []).slice(0, 5).map((t) => ({
+            id: t.id,
+            label: t.name,
+            route: `/triggers`,
+            // Enabled = will fire; disabled = idle. Live refetch on
+            // `trigger:executed` makes the icon momentarily change as
+            // the WS event arrives (caller already refetches; the dot
+            // changes only if enabled flipped, but the refetch itself
+            // is fast feedback that something happened).
+            badge:
+              t.enabled === false
+                ? ({ tone: 'idle', title: 'disabled' } as SidebarItemBadge)
+                : ({ tone: 'pending', title: 'armed' } as SidebarItemBadge),
+          }))
         ),
   },
   artifacts: {

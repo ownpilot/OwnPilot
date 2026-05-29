@@ -40,6 +40,9 @@ import {
   gitBranchExecutor,
   gitCheckoutTool,
   gitCheckoutExecutor,
+  gitShowExecutor,
+  gitBlameExecutor,
+  gitStashExecutor,
   GIT_TOOLS,
   GIT_TOOL_NAMES,
 } from './git-tools.js';
@@ -81,12 +84,12 @@ beforeEach(() => {
 // ===========================================================================
 
 describe('GIT_TOOLS and GIT_TOOL_NAMES', () => {
-  it('exports exactly 7 tools', () => {
-    expect(GIT_TOOLS).toHaveLength(7);
+  it('exports exactly 10 tools', () => {
+    expect(GIT_TOOLS).toHaveLength(10);
   });
 
   it('exports matching tool names array', () => {
-    expect(GIT_TOOL_NAMES).toHaveLength(7);
+    expect(GIT_TOOL_NAMES).toHaveLength(10);
     expect(GIT_TOOL_NAMES).toEqual([
       'git_status',
       'git_diff',
@@ -95,6 +98,9 @@ describe('GIT_TOOLS and GIT_TOOL_NAMES', () => {
       'git_add',
       'git_branch',
       'git_checkout',
+      'git_show',
+      'git_blame',
+      'git_stash',
     ]);
   });
 
@@ -1091,5 +1097,158 @@ describe('common gitExec behavior', () => {
 
     const callArgs = mockExecFile.mock.calls[0] as unknown[];
     expect(callArgs[0]).toBe('git');
+  });
+});
+
+// ===========================================================================
+// gitShowExecutor
+// ===========================================================================
+
+function gitArgs(callIndex = 0): string[] {
+  const callArgs = mockExecFile.mock.calls[callIndex] as unknown[];
+  return callArgs[1] as string[];
+}
+
+describe('gitShowExecutor', () => {
+  it('defaults to HEAD when no ref is given', async () => {
+    succeedWith('commit abc123\n…');
+    const result = await gitShowExecutor({});
+    expect(result.isError).toBe(false);
+    expect(gitArgs()).toEqual(['show', 'HEAD']);
+  });
+
+  it('accepts a specific ref', async () => {
+    succeedWith('commit deadbeef\n…');
+    await gitShowExecutor({ ref: 'deadbeef' });
+    expect(gitArgs()).toEqual(['show', 'deadbeef']);
+  });
+
+  it('returns file contents at <ref> when file is supplied', async () => {
+    succeedWith('file body');
+    const result = await gitShowExecutor({ ref: 'HEAD~1', file: 'src/app.ts' });
+    expect(result.isError).toBe(false);
+    expect(gitArgs()).toEqual(['show', 'HEAD~1:src/app.ts']);
+  });
+
+  it('honors statOnly with --stat', async () => {
+    succeedWith('stat output');
+    await gitShowExecutor({ ref: 'HEAD', statOnly: true });
+    expect(gitArgs()).toEqual(['show', '--stat', 'HEAD']);
+  });
+
+  it('rejects a ref starting with dash (injection guard)', async () => {
+    const result = await gitShowExecutor({ ref: '--evil' });
+    expect(result.isError).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it('rejects a file starting with dash (injection guard)', async () => {
+    const result = await gitShowExecutor({ ref: 'HEAD', file: '--inject' });
+    expect(result.isError).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it('surfaces git errors with stderr', async () => {
+    failWith('bad object', 'fatal: bad revision');
+    const result = await gitShowExecutor({ ref: 'doesnotexist' });
+    expect(result.isError).toBe(true);
+  });
+});
+
+// ===========================================================================
+// gitBlameExecutor
+// ===========================================================================
+
+describe('gitBlameExecutor', () => {
+  it('blames a file without a line range', async () => {
+    succeedWith('blame output');
+    const result = await gitBlameExecutor({ file: 'src/app.ts' });
+    expect(result.isError).toBe(false);
+    expect(gitArgs()).toEqual(['blame', '--', 'src/app.ts']);
+  });
+
+  it('applies -L when a line range is supplied', async () => {
+    succeedWith('blame output');
+    await gitBlameExecutor({ file: 'src/app.ts', startLine: 10, endLine: 20 });
+    expect(gitArgs()).toEqual(['blame', '-L', '10,20', '--', 'src/app.ts']);
+  });
+
+  it('omits end-of-range when only startLine is given', async () => {
+    succeedWith('blame output');
+    await gitBlameExecutor({ file: 'src/app.ts', startLine: 50 });
+    expect(gitArgs()).toEqual(['blame', '-L', '50,', '--', 'src/app.ts']);
+  });
+
+  it('appends the ref before -- when supplied', async () => {
+    succeedWith('blame output');
+    await gitBlameExecutor({ file: 'src/app.ts', ref: 'HEAD~5' });
+    expect(gitArgs()).toEqual(['blame', 'HEAD~5', '--', 'src/app.ts']);
+  });
+
+  it('rejects file starting with dash (injection guard)', async () => {
+    const result = await gitBlameExecutor({ file: '--evil' });
+    expect(result.isError).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
+// gitStashExecutor
+// ===========================================================================
+
+describe('gitStashExecutor', () => {
+  it('defaults to save (push) action', async () => {
+    succeedWith('Saved working directory');
+    const result = await gitStashExecutor({});
+    expect(result.isError).toBe(false);
+    expect(gitArgs()).toEqual(['stash', 'push']);
+  });
+
+  it('save with message and --include-untracked', async () => {
+    succeedWith('Saved');
+    await gitStashExecutor({ action: 'save', message: 'wip', includeUntracked: true });
+    expect(gitArgs()).toEqual(['stash', 'push', '--include-untracked', '-m', 'wip']);
+  });
+
+  it('pop without a ref', async () => {
+    succeedWith('Dropped stash');
+    await gitStashExecutor({ action: 'pop' });
+    expect(gitArgs()).toEqual(['stash', 'pop']);
+  });
+
+  it('pop with a ref', async () => {
+    succeedWith('Dropped stash');
+    await gitStashExecutor({ action: 'pop', ref: 'stash@{1}' });
+    expect(gitArgs()).toEqual(['stash', 'pop', 'stash@{1}']);
+  });
+
+  it('apply with a ref', async () => {
+    succeedWith('Applied');
+    await gitStashExecutor({ action: 'apply', ref: 'stash@{0}' });
+    expect(gitArgs()).toEqual(['stash', 'apply', 'stash@{0}']);
+  });
+
+  it('drop with a ref', async () => {
+    succeedWith('Dropped');
+    await gitStashExecutor({ action: 'drop', ref: 'stash@{2}' });
+    expect(gitArgs()).toEqual(['stash', 'drop', 'stash@{2}']);
+  });
+
+  it('list', async () => {
+    succeedWith('stash@{0}: WIP');
+    await gitStashExecutor({ action: 'list' });
+    expect(gitArgs()).toEqual(['stash', 'list']);
+  });
+
+  it('rejects unknown action', async () => {
+    const result = await gitStashExecutor({ action: 'destroy' });
+    expect(result.isError).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it('rejects ref starting with dash (injection guard)', async () => {
+    const result = await gitStashExecutor({ action: 'pop', ref: '--evil' });
+    expect(result.isError).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
   });
 });

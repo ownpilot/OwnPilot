@@ -146,6 +146,7 @@ vi.mock('../app-settings.js', () => ({
   getDefaultModel: (...args: unknown[]) => mockGetDefaultModel(...args),
   getConfiguredProviderIds: (...args: unknown[]) => mockGetConfiguredProviderIds(...args),
   getEnabledToolGroupIds: (...args: unknown[]) => mockGetEnabledToolGroupIds(...args),
+  getResolvedAuth: vi.fn(async () => undefined),
 }));
 
 vi.mock('../cli/chat-provider.js', () => ({

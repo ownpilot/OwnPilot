@@ -23,6 +23,36 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
 
   const clawFiles = ['INSTRUCTIONS.md', 'TASKS.md', 'MEMORY.md', 'LOG.md'];
 
+  // Per-file role hints — shown in empty states so a fresh claw page tells
+  // the operator what each file is *for* without making them open the docs.
+  const FILE_HINTS: Record<string, { purpose: string; writtenBy: string; example: string }> = {
+    'INSTRUCTIONS.md': {
+      purpose:
+        'Persistent operating principles for this claw. Injected into every cycle prompt — keep it short.',
+      writtenBy: 'Operator (you) — typically edited rarely.',
+      example:
+        '# Mission rules\n- Never push to main without a green CI run\n- Prefer Vitest over Jest',
+    },
+    'TASKS.md': {
+      purpose:
+        'Working task list. The claw reads it at cycle start and updates it as work progresses.',
+      writtenBy: 'Both — the claw appends, the operator can re-prioritize.',
+      example: '- [ ] Wire feature X\n- [ ] Add regression test\n- [x] Investigate flake',
+    },
+    'MEMORY.md': {
+      purpose:
+        'Cross-cycle learnings. Findings, dead-ends, decisions worth remembering past this cycle.',
+      writtenBy: 'The claw appends. The operator prunes when it grows.',
+      example:
+        '## 2026-05-29\n- DFMT exec fails on Windows paths with /d/ prefix → use D:\\ instead',
+    },
+    'LOG.md': {
+      purpose: 'Append-only journal of each cycle. Read-only — the runner manages it.',
+      writtenBy: 'Runner-managed — not editable from this tab.',
+      example: '[cycle 12] Ran tests, all green. Next: ship the PR.',
+    },
+  };
+
   useEffect(() => {
     if (!claw.workspaceId) return;
     setLoadingFiles(clawFiles);
@@ -197,9 +227,41 @@ export function MemoryTab({ claw }: { claw: ClawConfig }) {
                     autoFocus
                   />
                 ) : isEmpty ? (
-                  <div className="p-4 text-sm text-text-muted italic">
-                    No content yet. The claw will write here during execution.
-                  </div>
+                  (() => {
+                    const hint = FILE_HINTS[name];
+                    return (
+                      <div className="p-4 space-y-3 bg-bg-primary dark:bg-dark-bg-primary">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+                            What it's for
+                          </p>
+                          <p className="text-xs text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                            {hint?.purpose ?? 'No content yet.'}
+                          </p>
+                        </div>
+                        {hint && (
+                          <>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+                                Who writes it
+                              </p>
+                              <p className="text-xs text-text-secondary dark:text-dark-text-secondary leading-relaxed">
+                                {hint.writtenBy}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+                                Example
+                              </p>
+                              <pre className="text-[11px] font-mono text-text-muted bg-bg-secondary dark:bg-dark-bg-secondary p-2 rounded border border-border dark:border-dark-border whitespace-pre-wrap leading-relaxed">
+                                {hint.example}
+                              </pre>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <pre className="p-4 text-sm font-mono text-text-secondary dark:text-dark-text-secondary whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto bg-[#0d0d0d]">
                     {content}

@@ -81,6 +81,10 @@ export { seedConfigServices } from './db/seeds/config-services-seed.js';
 // Plugins
 export { initializePlugins, getDefaultPluginRegistry } from './plugins/index.js';
 
+// ACP (Agent Client Protocol) server — lets external IDEs/tools drive
+// OwnPilot as if it were any other ACP-compliant agent.
+export { runAcpServer, AcpServerAgent } from './acp/acp-server.js';
+
 // Config defaults (shared with CLI)
 export { RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS } from './config/defaults.js';
 

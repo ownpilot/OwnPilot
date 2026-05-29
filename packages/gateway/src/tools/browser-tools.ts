@@ -157,6 +157,150 @@ const browserExtractDef: ToolDefinition = {
   },
 };
 
+const browserWaitForDef: ToolDefinition = {
+  name: 'browser_wait_for',
+  brief: 'Wait for an element to appear or for a fixed delay',
+  description:
+    'Pauses until a CSS selector becomes present on the page (preferred), or ' +
+    'waits a fixed timeout if no selector is given. Essential for SPAs and ' +
+    'pages where content loads asynchronously after navigation or interaction. ' +
+    'Use this before browser_click / browser_extract when the target element ' +
+    'may not be present yet.',
+  category: 'Browser',
+  tags: ['browser', 'wait', 'selector', 'spa'],
+  parameters: {
+    type: 'object',
+    properties: {
+      selector: {
+        type: 'string',
+        description:
+          'CSS selector to wait for (preferred). Resolves as soon as the element exists.',
+      },
+      timeoutMs: {
+        type: 'number',
+        description:
+          'Max time to wait in milliseconds (default 5000). Also doubles as the pure-delay duration when no selector is given (capped at 10000).',
+      },
+    },
+  },
+};
+
+const browserScrollDef: ToolDefinition = {
+  name: 'browser_scroll',
+  brief: 'Scroll the page up or down',
+  description:
+    'Scrolls the current page by a pixel amount. Use this to reveal lazy-loaded ' +
+    'content (infinite-scroll lists, off-screen sections, dynamic comment threads) ' +
+    'before extracting or clicking.',
+  category: 'Browser',
+  tags: ['browser', 'scroll', 'page'],
+  parameters: {
+    type: 'object',
+    properties: {
+      direction: {
+        type: 'string',
+        enum: ['up', 'down'],
+        description: 'Scroll direction.',
+      },
+      pixels: {
+        type: 'number',
+        description: 'Pixels to scroll (default 500).',
+      },
+    },
+    required: ['direction'],
+  },
+};
+
+const browserSelectDef: ToolDefinition = {
+  name: 'browser_select',
+  brief: 'Choose an option in a <select> dropdown',
+  description:
+    'Selects an option by its value attribute in a native <select> dropdown. ' +
+    'Use this for form fields that present a list of choices — e.g. country pickers, ' +
+    'sort orders, filter dropdowns.',
+  category: 'Browser',
+  tags: ['browser', 'select', 'dropdown', 'form'],
+  parameters: {
+    type: 'object',
+    properties: {
+      selector: {
+        type: 'string',
+        description: 'CSS selector for the <select> element.',
+      },
+      value: {
+        type: 'string',
+        description:
+          "The option's value attribute to select (NOT its visible label — look at the <option value='...'> attribute).",
+      },
+    },
+    required: ['selector', 'value'],
+  },
+};
+
+const browserPressKeyDef: ToolDefinition = {
+  name: 'browser_press_key',
+  brief: 'Press a single keyboard key (Enter, Tab, Escape, etc.)',
+  description:
+    'Sends a keyboard key press to the active page. Supports single characters ' +
+    '("a", "1") and named keys (Enter, Tab, Escape, ArrowDown, ArrowUp, ArrowLeft, ArrowRight, ' +
+    'Backspace, Delete). Essential for search bars that submit on Enter, modals ' +
+    'that close on Esc, and any keyboard-driven UI element.',
+  category: 'Browser',
+  tags: ['browser', 'keyboard', 'key', 'press'],
+  parameters: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+        description: 'The key to press. Examples: "Enter", "Tab", "Escape", "ArrowDown", "a".',
+      },
+      selector: {
+        type: 'string',
+        description:
+          'Optional CSS selector — when supplied the element is focused before the key fires.',
+      },
+    },
+    required: ['key'],
+  },
+};
+
+const browserGetStateDef: ToolDefinition = {
+  name: 'browser_get_state',
+  brief: 'Read the current URL + title without acting on the page',
+  description:
+    "Returns the active page's current URL and title without performing any action. " +
+    'Use this to verify that a previous click or form submission landed where ' +
+    'you expected before proceeding. Returns null when no page is open.',
+  category: 'Browser',
+  tags: ['browser', 'state', 'inspect'],
+  parameters: {
+    type: 'object',
+    properties: {},
+  },
+};
+
+const browserAccessibilityTreeDef: ToolDefinition = {
+  name: 'browser_accessibility_tree',
+  brief: 'Get the page as a structured accessibility (role/name) outline',
+  description:
+    'Returns the current page as an accessibility tree — a compact, indented outline of ' +
+    'roles and names (button, link, textbox, heading, …) instead of raw HTML. This is the ' +
+    'best way to understand page structure and find interactive elements to click/type into: ' +
+    'it is far smaller than HTML and surfaces exactly what is actionable. Optionally pass a ' +
+    'selector to scope the tree to a subtree.',
+  category: 'Browser',
+  tags: ['browser', 'accessibility', 'a11y', 'structure', 'navigate', 'inspect'],
+  parameters: {
+    type: 'object',
+    properties: {
+      selector: {
+        type: 'string',
+        description: 'Optional CSS selector to scope the tree to a single subtree.',
+      },
+    },
+  },
+};
+
 export const BROWSER_TOOLS: ToolDefinition[] = [
   browseWebDef,
   browserClickDef,
@@ -164,6 +308,12 @@ export const BROWSER_TOOLS: ToolDefinition[] = [
   browserFillFormDef,
   browserScreenshotDef,
   browserExtractDef,
+  browserWaitForDef,
+  browserScrollDef,
+  browserSelectDef,
+  browserPressKeyDef,
+  browserGetStateDef,
+  browserAccessibilityTreeDef,
 ];
 
 export const BROWSER_TOOL_NAMES = BROWSER_TOOLS.map((t) => t.name);
@@ -259,6 +409,51 @@ export async function executeBrowserTool(
           return { success: true, result };
         }
         const result = await service.extractText(uid, args.selector as string | undefined);
+        return { success: true, result };
+      }
+
+      case 'browser_wait_for': {
+        const selector = args.selector as string | undefined;
+        const timeoutMs = typeof args.timeoutMs === 'number' ? args.timeoutMs : undefined;
+        const result = await service.wait(uid, selector, timeoutMs);
+        return { success: true, result };
+      }
+
+      case 'browser_scroll': {
+        const direction = args.direction as 'up' | 'down' | undefined;
+        if (direction !== 'up' && direction !== 'down') {
+          return { success: false, error: 'direction must be "up" or "down"' };
+        }
+        const pixels = typeof args.pixels === 'number' ? args.pixels : undefined;
+        const result = await service.scroll(uid, direction, pixels);
+        return { success: true, result };
+      }
+
+      case 'browser_select': {
+        const selector = args.selector as string;
+        const value = args.value as string;
+        if (!selector || typeof value !== 'string') {
+          return { success: false, error: 'selector and value are required' };
+        }
+        const result = await service.select(uid, selector, value);
+        return { success: true, result };
+      }
+
+      case 'browser_press_key': {
+        const key = args.key as string;
+        if (!key) return { success: false, error: 'key is required' };
+        const selector = args.selector as string | undefined;
+        const result = await service.pressKey(uid, key, selector);
+        return { success: true, result };
+      }
+
+      case 'browser_get_state': {
+        const result = await service.getState(uid);
+        return { success: true, result };
+      }
+
+      case 'browser_accessibility_tree': {
+        const result = await service.accessibilityTree(uid, args.selector as string | undefined);
         return { success: true, result };
       }
 

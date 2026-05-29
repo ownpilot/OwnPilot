@@ -9,8 +9,10 @@
  *  - claw_emit_event          — emit a custom event onto the EventBus
  */
 
-import { getErrorMessage, generateId, getEventSystem } from '@ownpilot/core';
+import { getErrorMessage, generateId, getEventSystem, getLog } from '@ownpilot/core';
 import { getClawContext } from '../../services/claw/context.js';
+
+const log = getLog('ClawOutputExecutors');
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };
 
@@ -307,6 +309,12 @@ export async function executeCompleteReport(
     results.conversationStored = false;
   }
 
+  // 5. Closed learning loop: distill this completed run into a reusable skill.
+  //    Fire-and-forget — must never block or fail the report.
+  maybeDistillSkill(ctx.clawId, userId, report, summary).catch((err) =>
+    log.warn(`Skill distillation trigger failed: ${getErrorMessage(err)}`)
+  );
+
   return {
     success: true,
     result: {
@@ -314,6 +322,49 @@ export async function executeCompleteReport(
       message: 'Report published, notification sent, conversation updated',
     },
   };
+}
+
+/**
+ * Auto-distill a completed claw run into a reusable AgentSkills skill when the
+ * run was substantial (>= MIN_TOOL_CALLS_FOR_SKILL tool calls) and the claw has
+ * `learnSkills` enabled. The trajectory is reconstructed from claw_history.
+ */
+async function maybeDistillSkill(
+  clawId: string,
+  userId: string,
+  report: string,
+  summary: string
+): Promise<void> {
+  const { getClawsRepository } = await import('../../db/repositories/claws.js');
+  const repo = getClawsRepository();
+  const config = await repo.getById(clawId, userId);
+  if (!config || config.learnSkills === false) return;
+
+  const { MIN_TOOL_CALLS_FOR_SKILL, distillSkillFromRun, createClawCompleter } =
+    await import('../../services/claw/skill-distiller.js');
+
+  const history = await repo.getHistory(clawId, 50, 0);
+  const toolSequence: string[] = [];
+  for (const entry of history.entries) {
+    for (const tc of entry.toolCalls ?? []) toolSequence.push(tc.tool);
+  }
+  if (toolSequence.length < MIN_TOOL_CALLS_FOR_SKILL) return;
+
+  const { getLLMRouter } = await import('@ownpilot/core');
+  const picked = await getLLMRouter().pick({
+    explicitProvider: config.provider,
+    explicitModel: config.model,
+    process: 'pulse',
+  });
+
+  await distillSkillFromRun({
+    config,
+    mission: config.mission,
+    toolSequence,
+    report,
+    summary,
+    complete: createClawCompleter(picked.provider, picked.model),
+  });
 }
 
 /**

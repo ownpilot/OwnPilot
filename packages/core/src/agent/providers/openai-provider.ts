@@ -28,6 +28,19 @@ import {
 } from '../debug.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { desanitizeToolName } from '../tool-namespace.js';
+import { getAuthHeader, type ResolvedAuth } from './configs/types.js';
+
+/**
+ * Build the Authorization header from either the new `resolvedAuth`
+ * discriminated union or the legacy `apiKey` field. New auth methods
+ * (session_token, oauth2_*) all reduce to `Bearer <value>` today, but
+ * keeping the resolution in one helper means callers do not need to
+ * know about the auth method at all.
+ */
+function authHeader(config: { resolvedAuth?: ResolvedAuth; apiKey?: string }): string {
+  if (config.resolvedAuth) return getAuthHeader(config.resolvedAuth);
+  return `Bearer ${config.apiKey ?? ''}`;
+}
 
 /**
  * OpenAI API response types
@@ -112,7 +125,7 @@ export class OpenAIProvider extends BaseProvider {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
+          Authorization: authHeader(this.config),
         },
         signal: controller.signal,
       });
@@ -424,7 +437,7 @@ export class OpenAIProvider extends BaseProvider {
     try {
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
+          Authorization: authHeader(this.config),
         },
       });
 

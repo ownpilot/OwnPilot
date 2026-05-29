@@ -99,6 +99,24 @@
       "releaseDate": "2026-04-24"
     },
     {
+      "id": "mimo-v2.5-free",
+      "name": "MiMo V2.5 Free",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
       "id": "gpt-5.5",
       "name": "GPT-5.5",
       "contextWindow": 1050000,

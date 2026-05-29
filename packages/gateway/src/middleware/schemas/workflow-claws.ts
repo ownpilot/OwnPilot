@@ -392,6 +392,8 @@ export const createClawSchema = z.object({
   missionContract: clawMissionContractSchema.optional(),
   autonomy_policy: clawAutonomyPolicySchema.optional(),
   autonomyPolicy: clawAutonomyPolicySchema.optional(),
+  learn_skills: z.boolean().optional(),
+  learnSkills: z.boolean().optional(),
 });
 
 export const updateClawSchema = z.object({
@@ -422,6 +424,8 @@ export const updateClawSchema = z.object({
   missionContract: clawMissionContractSchema.nullable().optional(),
   autonomy_policy: clawAutonomyPolicySchema.nullable().optional(),
   autonomyPolicy: clawAutonomyPolicySchema.nullable().optional(),
+  learn_skills: z.boolean().optional(),
+  learnSkills: z.boolean().optional(),
 });
 
 // ─── Claw small actions ──────────────────────────────────────────

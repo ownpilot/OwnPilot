@@ -65,6 +65,8 @@ export {
   Lightbulb,
   Link,
   ListChecks,
+  LayoutGrid,
+  Rows3,
   Lock,
   LogOut,
   Mail,

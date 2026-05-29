@@ -27,6 +27,7 @@ import type { AIProvider, ToolCall, ToolId, Message } from '@ownpilot/core';
 import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
+import { resolveAuthForRequest } from '../auth/oauth-flow.js';
 import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
 import {
   registerGatewayTools,
@@ -172,7 +173,13 @@ export interface CreateAgentOptions {
  * Single construction path for all runners.
  */
 export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<Agent> {
-  const apiKey = await getProviderApiKey(opts.provider);
+  // Resolve full auth (session_token / oauth / api_key). Falls back to the
+  // legacy `api_key:<provider>` setting via getResolvedAuth's fallback path
+  // when no auth blob is stored. Keep `apiKey` in sync as the canonical
+  // bearer string for backward compatibility with provider impls that have
+  // not yet migrated off `config.apiKey`.
+  const resolvedAuth = await resolveAuthForRequest(opts.provider);
+  const apiKey = resolvedAuth?.value ?? (await getProviderApiKey(opts.provider));
   if (!apiKey) {
     throw new Error(`API key not configured for provider: ${opts.provider}`);
   }
@@ -205,6 +212,7 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   const agentProviderConfig: ProviderConfig = {
     provider: providerType as AIProvider,
     apiKey,
+    resolvedAuth,
     baseUrl: providerConfig?.baseUrl,
     headers: providerConfig?.headers,
   };
@@ -217,7 +225,8 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
   let providerInstance: IProvider = createProvider(agentProviderConfig);
   if (opts.fallbackProvider && opts.fallbackModel) {
     try {
-      const fbApiKey = await getProviderApiKey(opts.fallbackProvider);
+      const fbResolvedAuth = await resolveAuthForRequest(opts.fallbackProvider);
+      const fbApiKey = fbResolvedAuth?.value ?? (await getProviderApiKey(opts.fallbackProvider));
       if (fbApiKey) {
         const fbConfig = loadProviderConfig(opts.fallbackProvider);
         const fbType = NATIVE_PROVIDERS.has(opts.fallbackProvider)
@@ -229,6 +238,7 @@ export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<A
             {
               provider: fbType as AIProvider,
               apiKey: fbApiKey,
+              resolvedAuth: fbResolvedAuth,
               baseUrl: fbConfig?.baseUrl,
               headers: fbConfig?.headers,
               defaultModel: { model: opts.fallbackModel },
@@ -508,6 +518,12 @@ export interface AgentPipelineOptions {
     tc: ToolCall,
     result: { content: string; isError: boolean; durationMs: number }
   ) => void;
+  /**
+   * Optional per-tool-call authorization gate. Runs before each tool executes;
+   * returning `{ approved: false }` skips the call. Used by autonomous runners
+   * to enforce permission / autonomy policy (see ClawRunner guardrail).
+   */
+  onBeforeToolCall?: (tc: ToolCall) => Promise<{ approved: boolean; reason?: string }>;
   /** Optional telemetry context for provider_metrics (gap 24.4) */
   workflowId?: string;
   agentId?: string;
@@ -607,7 +623,10 @@ export async function executeAgentPipeline(
       opts.agentId ?? opts.timeoutLabel ?? 'agent'
     );
 
-    const agentPromise = opts.agent.chat(opts.message, { onToolEnd: wrappedOnToolEnd });
+    const agentPromise = opts.agent.chat(opts.message, {
+      onToolEnd: wrappedOnToolEnd,
+      onBeforeToolCall: opts.onBeforeToolCall,
+    });
     // If timeout or cancellation wins the race, agentPromise keeps running and
     // may eventually reject (provider error, late timeout). Without a handler,
     // Node would emit unhandledRejection. timeout.promise / cancellation.promise

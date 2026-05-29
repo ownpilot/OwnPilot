@@ -245,12 +245,84 @@ function migrateConfig(raw: unknown): LayoutConfig {
       /* ignore */
     }
 
+    return migrateConfig({
+      ...config,
+      version: 7, // chain to V7→V8 so claws sections get promoted
+      sidebar: {
+        width: config.sidebar?.width ?? 'default',
+        sections: reindexed,
+      },
+    });
+  }
+
+  // V7 → V8: promote /claws nav link + claws accordion to user configs that
+  // haven't seen them yet. The unified Claw runtime became the headline
+  // autonomous-agent surface (plan editing, queue-intent, reset-failures,
+  // live event watch) — previously it was reachable only via Customize,
+  // making the entire surface invisible to existing users. Migration is
+  // additive: existing pinned items are preserved, sections only inserted
+  // if missing.
+  if (typeof obj.version === 'number' && obj.version === 7) {
+    const config = obj as unknown as LayoutConfig;
+    const oldSections = config.sidebar?.sections ?? [];
+    const existingIds = new Set(oldSections.map((s) => s.id));
+    const additions: SidebarSectionConfig[] = [];
+    if (!existingIds.has('/claws')) additions.push({ id: '/claws', order: 0 });
+    if (!existingIds.has('claws')) additions.push({ id: 'claws', order: 0, style: 'accordion' });
+    if (additions.length === 0) {
+      return { ...config, version: LAYOUT_CONFIG_VERSION };
+    }
+    // Insert /claws nav link right after /dashboard (or at the front if no
+    // /dashboard exists), and the live claws accordion at the end.
+    const dashboardIdx = oldSections.findIndex((s) => s.id === '/dashboard');
+    const navAddition = additions.find((s) => s.id === '/claws');
+    const accordionAddition = additions.find((s) => s.id === 'claws');
+    const next: SidebarSectionConfig[] = [];
+    oldSections.forEach((s, i) => {
+      next.push(s);
+      if (navAddition && i === dashboardIdx) next.push(navAddition);
+    });
+    if (navAddition && dashboardIdx === -1) next.unshift(navAddition);
+    if (accordionAddition) next.push(accordionAddition);
+    return migrateConfig({
+      ...config,
+      version: 8, // chain to V8→V9 so mission-control is also promoted
+      sidebar: {
+        ...config.sidebar,
+        width: config.sidebar?.width ?? 'default',
+        sections: next.map((s, i) => ({ ...s, order: i })),
+      },
+    });
+  }
+
+  // V8 → V9: promote /mission-control nav link to user configs. Mission
+  // Control is the single-pane fleet operator view (claws + escalations +
+  // activity feed) — making it the headline operator surface, so it needs
+  // to be visible by default just like /claws was promoted in V7→V8.
+  if (typeof obj.version === 'number' && obj.version === 8) {
+    const config = obj as unknown as LayoutConfig;
+    const oldSections = config.sidebar?.sections ?? [];
+    const existingIds = new Set(oldSections.map((s) => s.id));
+    if (existingIds.has('/mission-control')) {
+      return { ...config, version: LAYOUT_CONFIG_VERSION };
+    }
+    // Insert /mission-control right after /dashboard, or at the very top
+    // if no /dashboard exists in the user's config.
+    const dashboardIdx = oldSections.findIndex((s) => s.id === '/dashboard');
+    const newEntry: SidebarSectionConfig = { id: '/mission-control', order: 0 };
+    const next: SidebarSectionConfig[] = [];
+    if (dashboardIdx === -1) next.push(newEntry);
+    oldSections.forEach((s, i) => {
+      next.push(s);
+      if (i === dashboardIdx) next.push(newEntry);
+    });
     return {
       ...config,
       version: LAYOUT_CONFIG_VERSION,
       sidebar: {
+        ...config.sidebar,
         width: config.sidebar?.width ?? 'default',
-        sections: reindexed,
+        sections: next.map((s, i) => ({ ...s, order: i })),
       },
     };
   }

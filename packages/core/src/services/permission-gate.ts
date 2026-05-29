@@ -24,6 +24,8 @@
  * callback indirection.
  */
 
+import type { ClawAutonomyPolicy } from './claw-types.js';
+
 /** Where the request came from. Lets the gate apply different defaults per runtime. */
 export type PermissionActorType = 'chat' | 'claw' | 'soul-heartbeat' | 'crew' | 'extension';
 
@@ -50,6 +52,20 @@ export interface PermissionContext {
   skillAccessAllowed?: string[];
   /** Soul-level extension blocklist. Always denied. */
   skillAccessBlocked?: string[];
+  /**
+   * Claw autonomy guardrails. When set (claw / soul-heartbeat clawMode actors),
+   * the gate enforces `destructiveActionPolicy`, `filesystemScopes`,
+   * `allowSelfModify`, and `allowSubclaws` against the tool + its args — turning
+   * the declared policy into real per-call enforcement instead of prompt-only
+   * guidance.
+   */
+  autonomyPolicy?: ClawAutonomyPolicy;
+  /**
+   * Workspace root for the actor. Used as the implicit filesystem scope when
+   * `autonomyPolicy.filesystemScopes` is empty, and as a base for resolving
+   * relative paths during scope-containment checks.
+   */
+  workspaceDir?: string;
 }
 
 /** A request to authorize a tool call. */

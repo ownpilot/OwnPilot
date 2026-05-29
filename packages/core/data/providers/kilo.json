@@ -12,6 +12,41 @@
   },
   "models": [
     {
+      "id": "x-ai/grok-build-0.1",
+      "name": "xAI: Grok Build 0.1",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-20"
+    },
+    {
+      "id": "google/gemini-3.5-flash",
+      "name": "Google: Gemini 3.5 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-19"
+    },
+    {
       "id": "anthropic/claude-opus-4.7-fast",
       "name": "Anthropic: Claude Opus 4.7 (Fast)",
       "contextWindow": 1000000,
@@ -25,7 +60,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-12"
     },
     {
@@ -484,22 +519,6 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek/deepseek-v4-flash:free",
-      "name": "DeepSeek: DeepSeek V4 Flash (free)",
-      "contextWindow": 1048576,
-      "maxOutput": 384000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-24"
-    },
-    {
       "id": "deepseek/deepseek-v4-flash",
       "name": "DeepSeek: DeepSeek V4 Flash",
       "contextWindow": 1048576,
@@ -666,6 +685,23 @@
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "stealth/claude-opus-4.7",
+      "name": "Stealth: Claude Opus 4.7 (20% off)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 4,
+      "outputPrice": 20,
       "capabilities": [
         "chat",
         "vision",
@@ -1436,6 +1472,23 @@
       "releaseDate": "2026-02-19"
     },
     {
+      "id": "stealth/claude-sonnet-4.6",
+      "name": "Stealth: Claude Sonnet 4.6 (20% off)",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 2.4,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
       "id": "anthropic/claude-sonnet-4.6",
       "name": "Anthropic: Claude Sonnet 4.6",
       "contextWindow": 1000000,
@@ -1519,6 +1572,23 @@
       "releaseDate": "2026-02-12"
     },
     {
+      "id": "stealth/claude-opus-4.6",
+      "name": "Stealth: Claude Opus 4.6 (20% off)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 4,
+      "outputPrice": 20,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "anthropic/claude-opus-4.6",
       "name": "Anthropic: Claude Opus 4.6",
       "contextWindow": 1000000,
@@ -1582,21 +1652,6 @@
       ],
       "default": false,
       "releaseDate": "2026-01-29"
-    },
-    {
-      "id": "arcee-ai/trinity-large-preview",
-      "name": "Arcee AI: Trinity Large Preview",
-      "contextWindow": 131000,
-      "maxOutput": 32768,
-      "inputPrice": 0.15,
-      "outputPrice": 0.45,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-28"
     },
     {
       "id": "moonshotai/kimi-k2.5",
@@ -2595,22 +2650,6 @@
       "releaseDate": "2025-09-19"
     },
     {
-      "id": "alibaba/tongyi-deepresearch-30b-a3b",
-      "name": "Tongyi DeepResearch 30B A3B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.09,
-      "outputPrice": 0.45,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-18"
-    },
-    {
       "id": "openai/gpt-5-codex",
       "name": "OpenAI: GPT-5 Codex",
       "contextWindow": 400000,
@@ -2752,12 +2791,12 @@
       "releaseDate": "2025-09"
     },
     {
-      "id": "x-ai/grok-code-fast-1:optimized:free",
-      "name": "xAI: Grok Code Fast 1 Optimized (experimental, free)",
-      "contextWindow": 256000,
-      "maxOutput": 10000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "id": "qwen/qwen3.7-max",
+      "name": "Qwen: Qwen3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 1.625,
+      "outputPrice": 4.875,
       "capabilities": [
         "chat",
         "function_calling",
@@ -2765,7 +2804,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-08-27"
+      "releaseDate": "2025-08-26"
     },
     {
       "id": "qwen/qwen3.6-plus",
@@ -2777,22 +2816,6 @@
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-26"
-    },
-    {
-      "id": "stepfun/step-3.5-flash:free",
-      "name": "StepFun: Step 3.5 Flash (free)",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "function_calling",
         "reasoning",
         "streaming"

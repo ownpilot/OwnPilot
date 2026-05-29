@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from 'node:fs';
-import type { Browser, Page } from 'puppeteer-core';
+import type { Browser, Page, SerializedAXNode } from 'puppeteer-core';
 import { hasPII, detectPII, getLog, getConfigCenter } from '@ownpilot/core';
 import { isBlockedUrl, isPrivateUrlAsync } from '../utils/ssrf.js';
 
@@ -29,6 +29,19 @@ const CLEANUP_INTERVAL_MS = BROWSER_CLEANUP_INTERVAL_MS;
 const DEFAULT_NAVIGATION_TIMEOUT = BROWSER_NAVIGATION_TIMEOUT_MS;
 const DEFAULT_ACTION_TIMEOUT = BROWSER_ACTION_TIMEOUT_MS;
 const MAX_TEXT_LENGTH = BROWSER_MAX_TEXT_LENGTH;
+
+/** Render a serialized accessibility node into a compact indented outline. */
+function renderAxNode(node: SerializedAXNode, depth: number): string {
+  const indent = '  '.repeat(depth);
+  const parts: string[] = [node.role];
+  if (node.name) parts.push(`"${node.name}"`);
+  if (node.value !== undefined && node.value !== '') parts.push(`= ${String(node.value)}`);
+  let line = `${indent}- ${parts.join(' ')}`;
+  if (node.children?.length) {
+    line += `\n${node.children.map((child) => renderAxNode(child, depth + 1)).join('\n')}`;
+  }
+  return line;
+}
 
 // ============================================================================
 // Types
@@ -275,6 +288,40 @@ export class BrowserService {
   }
 
   // --------------------------------------------------------------------------
+  // Accessibility Tree
+  //
+  // Returns the page as a structured accessibility (a11y) outline — role + name
+  // hierarchy — instead of raw HTML. This is the representation Hermes Agent
+  // uses: far more compact and easier for an LLM to reason about and navigate
+  // than DOM/HTML, since it surfaces the same elements assistive tech exposes.
+  // --------------------------------------------------------------------------
+
+  async accessibilityTree(
+    userId: string,
+    selector?: string
+  ): Promise<{ tree: string; url: string; title: string }> {
+    const page = await this.getExistingPage(userId);
+
+    // Type inferred from page.$ — avoids naming DOM lib types (Element/Node),
+    // which aren't in the gateway tsconfig's lib set.
+    let root = null as Awaited<ReturnType<typeof page.$>>;
+    if (selector) {
+      await page.waitForSelector(selector, { timeout: DEFAULT_ACTION_TIMEOUT });
+      root = await page.$(selector);
+    }
+
+    const snapshot = await page.accessibility.snapshot({
+      interestingOnly: true,
+      root: root ?? undefined,
+    });
+    const tree = snapshot
+      ? renderAxNode(snapshot, 0).substring(0, MAX_TEXT_LENGTH)
+      : '(empty accessibility tree)';
+
+    return { tree, url: page.url(), title: await page.title() };
+  }
+
+  // --------------------------------------------------------------------------
   // Wait
   // --------------------------------------------------------------------------
 
@@ -329,6 +376,55 @@ export class BrowserService {
   // --------------------------------------------------------------------------
   // Session Management
   // --------------------------------------------------------------------------
+
+  /**
+   * Press a single keyboard key on the active page. Maps directly to
+   * Puppeteer's `keyboard.press`, which supports both single characters
+   * ('a', 'A') and named keys (Enter, Tab, Escape, ArrowDown, …).
+   *
+   * Critical for agent autonomy on real sites: many search bars submit
+   * on Enter rather than via a button, and modal dialogs close on Esc.
+   * Without this, agents could only type strings — not actually progress
+   * through keyboard-driven UIs.
+   *
+   * `selector` is optional — when supplied, the element is focused first
+   * so the key targets the right input. Without it, the key fires on
+   * whatever currently has focus (useful for global shortcuts).
+   */
+  async pressKey(
+    userId: string,
+    key: string,
+    selector?: string
+  ): Promise<{ url: string; title: string }> {
+    const page = await this.getExistingPage(userId);
+    if (selector) {
+      await page.waitForSelector(selector, { timeout: DEFAULT_ACTION_TIMEOUT });
+      await page.focus(selector);
+    }
+    // Puppeteer's KeyInput type is a literal union of ~200 keys; we accept
+    // a string from the LLM and forward it through. Invalid keys throw a
+    // clear Puppeteer error which the executor wraps for the LLM.
+    await page.keyboard.press(key as Parameters<typeof page.keyboard.press>[0]);
+    return { url: page.url(), title: await page.title() };
+  }
+
+  /**
+   * Read the current page's URL + title without taking any action.
+   *
+   * Agents need this to verify that a previous click / form-submit
+   * landed where they expected before proceeding. Returns null when the
+   * user has no open page (instead of throwing — letting agents probe
+   * cheaply without exception handling).
+   */
+  async getState(userId: string): Promise<{ url: string; title: string } | null> {
+    const session = this.sessions.get(userId);
+    if (!session) return null;
+    try {
+      return { url: session.page.url(), title: await session.page.title() };
+    } catch {
+      return null;
+    }
+  }
 
   async closePage(userId: string): Promise<boolean> {
     const session = this.sessions.get(userId);

@@ -65,6 +65,27 @@ export interface ClawEscalation {
   requestedAt: string;
 }
 
+export type ClawTaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';
+
+export interface ClawTask {
+  id: string;
+  title: string;
+  status: ClawTaskStatus;
+  notes?: string;
+  successCriteria?: string;
+  evidence?: string;
+  cyclesInProgress?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClawCycleFailure {
+  cycleNumber: number;
+  at: string;
+  error: string | null;
+  toolErrors?: Array<{ tool: string; error: string }>;
+}
+
 export interface ClawSession {
   state: ClawState;
   cyclesCompleted: number;
@@ -77,6 +98,28 @@ export interface ClawSession {
   stoppedAt: string | null;
   artifacts: string[];
   pendingEscalation: ClawEscalation | null;
+  tasks: ClawTask[];
+  consecutiveErrors: number;
+  recentFailures: ClawCycleFailure[];
+  /**
+   * Cross-cycle handoff message set by the agent via claw_set_next_intent.
+   * Surfaced once at the top of the next cycle prompt and then auto-cleared
+   * — so when the UI sees it set, the next cycle hasn't started yet.
+   */
+  nextIntent?: string;
+  /** Bounded ring of plan mutations. Newest entries are last. */
+  planHistory: ClawPlanHistoryEntry[];
+}
+
+export interface ClawPlanHistoryEntry {
+  at: string;
+  actor: 'agent' | 'operator';
+  kind: 'replace' | 'task_update' | 'task_added';
+  taskId?: string;
+  prevStatus?: ClawTaskStatus;
+  newStatus?: ClawTaskStatus;
+  title?: string;
+  newTaskCount?: number;
 }
 
 export interface ClawConfig {
@@ -105,6 +148,8 @@ export interface ClawConfig {
   autonomyPolicy?: ClawAutonomyPolicy;
   health?: ClawHealthStatus;
   priority?: number;
+  /** Closed learning loop: distill successful runs into reusable skills (default on). */
+  learnSkills?: boolean;
   createdBy: 'user' | 'ai' | 'claw';
   createdAt: string;
   updatedAt: string;
@@ -134,6 +179,17 @@ export interface ClawHistoryEntry {
   executedAt: string;
 }
 
+export interface ShareGPTTurn {
+  from: 'system' | 'human' | 'gpt' | 'tool';
+  value: string;
+}
+
+export interface ShareGPTTrajectory {
+  id: string;
+  mission: string;
+  conversations: ShareGPTTurn[];
+}
+
 export interface CreateClawInput {
   name: string;
   mission: string;
@@ -154,6 +210,7 @@ export interface CreateClawInput {
   mission_contract?: Partial<ClawMissionContract>;
   autonomy_policy?: Partial<ClawAutonomyPolicy>;
   priority?: number;
+  learn_skills?: boolean;
 }
 
 export interface UpdateClawInput extends Omit<
@@ -273,6 +330,52 @@ export const clawsApi = {
   sendMessage: (id: string, message: string) =>
     apiClient.post<{ sent: boolean }>(`/claws/${id}/message`, { message }),
 
+  /**
+   * Replace the structured task plan. Validation mirrors the agent's
+   * `claw_plan` tool, including the single-focus invariant — sending more
+   * than one in_progress task returns a 400.
+   */
+  replacePlan: (
+    id: string,
+    tasks: Array<{
+      id: string;
+      title: string;
+      status?: ClawTaskStatus;
+      notes?: string;
+      successCriteria?: string;
+    }>
+  ) => apiClient.put<{ tasks: ClawTask[] }>(`/claws/${id}/plan`, { tasks }),
+
+  /**
+   * Update a single task — same semantics as the agent's `claw_update_task`.
+   * Returns the updated task plus any soft warnings (e.g. completing
+   * without evidence).
+   */
+  updateTask: (
+    id: string,
+    taskId: string,
+    patch: { status?: ClawTaskStatus; notes?: string; evidence?: string }
+  ) =>
+    apiClient.patch<{ task: ClawTask; message: string; warnings?: string[] }>(
+      `/claws/${id}/tasks/${taskId}`,
+      patch
+    ),
+
+  /**
+   * Atomically split a task into subtasks. Same semantics as the agent's
+   * `claw_split_task` tool: marks parent blocked + inserts subtasks
+   * t&lt;parentId&gt;.&lt;N&gt; immediately after.
+   */
+  splitTask: (
+    id: string,
+    taskId: string,
+    subtasks: Array<{ title: string; successCriteria?: string }>
+  ) =>
+    apiClient.post<{ parent: ClawTask; subtasks: ClawTask[] }>(
+      `/claws/${id}/tasks/${taskId}/split`,
+      { subtasks }
+    ),
+
   getHistory: (id: string, limit = 20, offset = 0) =>
     apiClient.get<{ entries: ClawHistoryEntry[]; total: number }>(
       `/claws/${id}/history?limit=${limit}&offset=${offset}`
@@ -295,6 +398,14 @@ export const clawsApi = {
       total: number;
     }>(
       `/claws/${id}/audit?limit=${limit}&offset=${offset}${category ? `&category=${encodeURIComponent(category)}` : ''}`
+    ),
+
+  /**
+   * Export run history as a ShareGPT-format trajectory (for eval / fine-tuning).
+   */
+  exportTrajectory: (id: string, limit = 100, offset = 0) =>
+    apiClient.get<{ format: string; trajectory: ShareGPTTrajectory }>(
+      `/claws/${id}/trajectory?limit=${limit}&offset=${offset}`
     ),
 
   stats: () =>
@@ -320,6 +431,25 @@ export const clawsApi = {
         }>;
       };
     }>('/claws/stats'),
+
+  /**
+   * Operator-side recovery: clear consecutiveErrors + recentFailures without
+   * restarting the claw. After this the reflection-required banner clears and
+   * the next cycle is treated as a clean attempt. 409 if the claw is not
+   * running, 404 if not found.
+   */
+  resetFailures: (id: string) => apiClient.post<{ reset: boolean }>(`/claws/${id}/reset-failures`),
+
+  /**
+   * Operator-side soft handoff — queue a directive that will be rendered at
+   * the top of the next cycle prompt (with `[OPERATOR]` framing) and then
+   * auto-clear. Unlike `sendMessage` (lands in inbox) and steer (interrupts
+   * the in-flight cycle), this waits for the current cycle to finish and
+   * then nudges the next one. 400 on empty / oversized intent, 409 if not
+   * running, 404 if not found.
+   */
+  setNextIntent: (id: string, intent: string) =>
+    apiClient.post<{ queued: boolean }>(`/claws/${id}/next-intent`, { intent }),
 
   approveEscalation: (id: string) =>
     apiClient.post<{ approved: boolean }>(`/claws/${id}/approve-escalation`),

@@ -6,7 +6,9 @@ import { timeAgo } from '../utils';
 export function ConfigTab({ claw }: { claw: ClawConfig }) {
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAll, setShowAll] = useState(false);
   const config = JSON.stringify(claw, null, 2);
+  const configLineCount = config.split('\n').length;
 
   const copy = () => {
     navigator.clipboard.writeText(config).then(() => {
@@ -55,17 +57,31 @@ export function ConfigTab({ claw }: { claw: ClawConfig }) {
       )
     : statRows;
 
+  const visibleRows = searchQuery ? filteredRows : showAll ? statRows : statRows.slice(0, 9);
+  const hiddenCount = !searchQuery && !showAll ? statRows.length - 9 : 0;
+
   return (
     <div className="space-y-4">
       {/* Summary stats grid */}
-      <input
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search config..."
-        className="px-2 py-1 text-xs rounded border border-gray-700 bg-[#1a1a1a] text-gray-300 font-mono placeholder:text-gray-600 focus:outline-none focus:border-gray-500 mb-2"
-      />
+      <div className="flex items-center gap-2 mb-2">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search config..."
+          className="flex-1 px-2 py-1 text-xs rounded border border-gray-700 bg-[#1a1a1a] text-gray-300 font-mono placeholder:text-gray-600 focus:outline-none focus:border-gray-500"
+        />
+        {!searchQuery && statRows.length > 9 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="px-2 py-1 text-xs rounded border border-border dark:border-dark-border text-text-muted hover:text-text-primary hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-colors shrink-0"
+          >
+            {showAll ? `Show top 9` : `Show all (${statRows.length})`}
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        {(searchQuery ? filteredRows : statRows.slice(0, 9)).map((row) => (
+        {visibleRows.map((row) => (
           <div
             key={row.label}
             className="flex flex-col p-2.5 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary min-w-0"
@@ -81,6 +97,18 @@ export function ConfigTab({ claw }: { claw: ClawConfig }) {
           </div>
         ))}
       </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="text-xs text-primary hover:underline"
+        >
+          + {hiddenCount} more — show all
+        </button>
+      )}
+      {searchQuery && filteredRows.length === 0 && (
+        <p className="text-xs text-text-muted italic">No config rows match "{searchQuery}"</p>
+      )}
 
       {/* Limits detail */}
       <div className="p-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
@@ -157,7 +185,7 @@ export function ConfigTab({ claw }: { claw: ClawConfig }) {
       {/* Raw JSON with toggle */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-text-muted dark:text-dark-text-muted">
-          Full JSON configuration.
+          Full JSON configuration · {configLineCount} lines · {config.length} chars
         </p>
         <div className="flex items-center gap-2">
           <a

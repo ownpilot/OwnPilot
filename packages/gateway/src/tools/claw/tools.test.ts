@@ -8,15 +8,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mocks
 // ---------------------------------------------------------------------------
 
-const { mockGetClawContext, mockGetClawManager, mockGetArtifactService, mockGetClawsRepository } =
-  vi.hoisted(() => {
-    return {
-      mockGetClawContext: vi.fn(),
-      mockGetClawManager: vi.fn(),
-      mockGetArtifactService: vi.fn(),
-      mockGetClawsRepository: vi.fn(),
-    };
-  });
+const {
+  mockGetClawContext,
+  mockGetClawManager,
+  mockGetArtifactService,
+  mockGetClawsRepository,
+  mockSandboxExecute,
+} = vi.hoisted(() => {
+  return {
+    mockGetClawContext: vi.fn(),
+    mockGetClawManager: vi.fn(),
+    mockGetArtifactService: vi.fn(),
+    mockGetClawsRepository: vi.fn(),
+    mockSandboxExecute: vi.fn(),
+  };
+});
 
 vi.mock('../../services/claw/context.js', () => ({
   getClawContext: mockGetClawContext,
@@ -45,6 +51,11 @@ vi.mock('../../db/repositories/claws.js', () => ({
 vi.mock('../../workspace/file-workspace.js', () => ({
   getSessionWorkspacePath: vi.fn().mockReturnValue('/tmp/workspace/ws-1'),
   writeSessionWorkspaceFile: vi.fn(),
+  readSessionWorkspaceFile: vi.fn().mockReturnValue(null),
+}));
+
+vi.mock('../../services/extension/sandbox.js', () => ({
+  getExtensionSandbox: () => ({ execute: mockSandboxExecute }),
 }));
 
 const { executeClawTool, CLAW_TOOLS, CLAW_TOOL_NAMES, buildSandboxEnv } =
@@ -75,8 +86,8 @@ describe('Claw Tools', () => {
   });
 
   describe('CLAW_TOOLS', () => {
-    it('should export 16 tool definitions', () => {
-      expect(CLAW_TOOLS).toHaveLength(16);
+    it('should export 25 tool definitions', () => {
+      expect(CLAW_TOOLS).toHaveLength(25);
     });
 
     it('should have correct tool names', () => {
@@ -97,6 +108,15 @@ describe('Claw Tools', () => {
         'claw_stop_subclaw',
         'claw_set_context',
         'claw_get_context',
+        'claw_plan',
+        'claw_update_task',
+        'claw_list_tasks',
+        'claw_think',
+        'claw_set_next_intent',
+        'claw_split_task',
+        'claw_save_skill',
+        'claw_recall_skill',
+        'claw_execute',
       ]);
     });
 
@@ -114,11 +134,61 @@ describe('Claw Tools', () => {
     it('should fail when not inside a Claw context', async () => {
       mockGetClawContext.mockReturnValue(undefined);
 
-      for (const toolName of CLAW_TOOL_NAMES) {
+      // claw_recall_skill is a context-free read over learned skills — it
+      // validates its `query` arg rather than requiring a claw context.
+      const contextBound = CLAW_TOOL_NAMES.filter((n) => n !== 'claw_recall_skill');
+      for (const toolName of contextBound) {
         const result = await executeClawTool(toolName, {}, 'user-1');
         expect(result.success).toBe(false);
         expect(result.error).toContain('Claw context');
       }
+    });
+  });
+
+  describe('claw_execute (programmatic tool calling)', () => {
+    it('requires code', async () => {
+      setClawContext();
+      const result = await executeClawTool('claw_execute', {}, 'user-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('code is required');
+    });
+
+    it('runs code in the sandbox scoped to the claw and returns its result', async () => {
+      setClawContext();
+      mockSandboxExecute.mockResolvedValueOnce({
+        success: true,
+        result: { taskCount: 3 },
+        executionTime: 12,
+      });
+
+      const result = await executeClawTool(
+        'claw_execute',
+        { code: 'module.exports = async (a, u) => ({ taskCount: 3 });' },
+        'user-1'
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.result).toEqual({ taskCount: 3 });
+      const opts = mockSandboxExecute.mock.calls[0][0];
+      expect(opts.extensionId).toBe('claw:claw-1');
+      expect(opts.ownerUserId).toBe('user-1');
+      expect(opts.grantedPermissions).toContain('tasks');
+    });
+
+    it('propagates sandbox failures', async () => {
+      setClawContext();
+      mockSandboxExecute.mockResolvedValueOnce({
+        success: false,
+        error: 'permission_denied: tool "delete_file" is blocked',
+        executionTime: 1,
+      });
+      const result = await executeClawTool(
+        'claw_execute',
+        { code: "module.exports = async (a, u) => u.callTool('delete_file', {});" },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('blocked');
     });
   });
 
@@ -703,6 +773,585 @@ describe('Claw Tools', () => {
       const session = mockManager.getSession() as { persistentContext: Record<string, unknown> };
       expect(session.persistentContext.foo).toBeUndefined();
       expect(session.persistentContext.baz).toBe('qux');
+    });
+  });
+
+  describe('claw_plan / claw_update_task / claw_list_tasks', () => {
+    function setupSessionWithTasks(initial: Array<Record<string, unknown>> = []) {
+      setClawContext();
+      const session = { tasks: [...initial] as unknown[] };
+      const mockManager: Record<string, unknown> = {
+        getSession: vi.fn().mockReturnValue(session),
+        flushSession: vi.fn().mockResolvedValue(undefined),
+        notifyPlanUpdated: vi.fn(),
+      };
+      // Mirror the real manager API surface the executors now go through.
+      // replacePlan: just swap session.tasks and return them.
+      mockManager.replacePlan = vi.fn(async (_id: string, tasks: unknown[]) => {
+        session.tasks = tasks;
+        return tasks;
+      });
+      // updateTaskOnSession: delegate to applyTaskUpdate so the focus-discipline
+      // and not-found errors get the same treatment as the real path.
+      mockManager.updateTaskOnSession = vi.fn(
+        async (
+          _id: string,
+          update: { id: string; status?: string; notes?: string; evidence?: string }
+        ) => {
+          const { applyTaskUpdate } = await import('./plan-executors.js');
+          return applyTaskUpdate(session.tasks as never, update as never);
+        }
+      );
+      mockGetClawManager.mockReturnValue(mockManager);
+      return { mockManager, session };
+    }
+
+    it('claw_plan sets a fresh plan and persists immediately', async () => {
+      const { mockManager, session } = setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        {
+          tasks: [
+            { id: 't1', title: 'Survey codebase' },
+            { id: 't2', title: 'Draft fix', status: 'pending', notes: 'depends on t1' },
+          ],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect((result.result as { count: number }).count).toBe(2);
+      expect(session.tasks).toHaveLength(2);
+      // The executor now delegates to manager.replacePlan, which owns
+      // persistence — assert THAT was called rather than the prior direct
+      // flushSession path.
+      expect(mockManager.replacePlan).toHaveBeenCalled();
+    });
+
+    it('claw_plan rejects invalid ids', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        { tasks: [{ id: 'bad id with spaces!', title: 'x' }] },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('id');
+    });
+
+    it('claw_plan rejects duplicate ids', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        {
+          tasks: [
+            { id: 't1', title: 'A' },
+            { id: 't1', title: 'B' },
+          ],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('duplicates');
+    });
+
+    it('claw_plan rejects empty title', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        { tasks: [{ id: 't1', title: '  ' }] },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('title');
+    });
+
+    it('claw_plan rejects plans over CLAW_MAX_TASKS (=50)', async () => {
+      setupSessionWithTasks();
+      const tasks = Array.from({ length: 51 }, (_, i) => ({ id: `t${i}`, title: `Task ${i}` }));
+      const result = await executeClawTool('claw_plan', { tasks }, 'user-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('maximum');
+    });
+
+    it('claw_update_task updates status of an existing task', async () => {
+      const { mockManager, session } = setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'completed' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      const t = session.tasks[0] as { status: string; updatedAt: string };
+      expect(t.status).toBe('completed');
+      expect(t.updatedAt).not.toBe('2026-01-01T00:00:00.000Z');
+      // The executor now delegates to manager.updateTaskOnSession; that
+      // method owns persistence + history recording.
+      expect(mockManager.updateTaskOnSession).toHaveBeenCalled();
+    });
+
+    it('claw_update_task errors when id is unknown', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 'tX', status: 'completed' },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
+    });
+
+    it('claw_update_task errors when neither status nor notes provided', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ]);
+      const result = await executeClawTool('claw_update_task', { id: 't1' }, 'user-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('At least one');
+    });
+
+    it('claw_plan rejects more than one task with status="in_progress" (focus discipline)', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        {
+          tasks: [
+            { id: 't1', title: 'A', status: 'in_progress' },
+            { id: 't2', title: 'B', status: 'in_progress' },
+          ],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/one task/i);
+    });
+
+    it('claw_update_task rejects starting a second task while one is already in_progress', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'in_progress',
+          cyclesInProgress: 1,
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+        { id: 't2', title: 'B', status: 'pending', createdAt: 'x', updatedAt: 'x' },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't2', status: 'in_progress' },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('t1');
+      expect(result.error).toMatch(/already in_progress/i);
+    });
+
+    it('claw_update_task allows starting a second task after the first is completed', async () => {
+      const { session } = setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'pending',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+        { id: 't2', title: 'B', status: 'pending', createdAt: 'x', updatedAt: 'x' },
+      ]);
+      const first = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'in_progress' },
+        'user-1'
+      );
+      expect(first.success).toBe(true);
+
+      const finish = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'completed' },
+        'user-1'
+      );
+      expect(finish.success).toBe(true);
+
+      const second = await executeClawTool(
+        'claw_update_task',
+        { id: 't2', status: 'in_progress' },
+        'user-1'
+      );
+      expect(second.success).toBe(true);
+      expect((session.tasks[1] as { status: string }).status).toBe('in_progress');
+    });
+
+    it('claw_update_task resets cyclesInProgress on status flip', async () => {
+      const { session } = setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'in_progress',
+          cyclesInProgress: 7,
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'completed' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect((session.tasks[0] as { cyclesInProgress: number }).cyclesInProgress).toBe(0);
+    });
+
+    it('claw_plan stores successCriteria when provided', async () => {
+      const { session } = setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        {
+          tasks: [
+            { id: 't1', title: 'Add login', successCriteria: 'POST /login returns 200 with jwt' },
+          ],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect((session.tasks[0] as { successCriteria: string }).successCriteria).toBe(
+        'POST /login returns 200 with jwt'
+      );
+    });
+
+    it('claw_plan rejects successCriteria over 500 chars', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_plan',
+        {
+          tasks: [{ id: 't1', title: 'x', successCriteria: 'y'.repeat(501) }],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('successCriteria');
+    });
+
+    it('claw_update_task records evidence on the task', async () => {
+      const { session } = setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'completed', evidence: 'tests green 412/412' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect((session.tasks[0] as { evidence: string }).evidence).toBe('tests green 412/412');
+      // Completing WITH evidence must NOT produce a warning.
+      expect((result.result as { warnings?: string[] }).warnings).toBeUndefined();
+    });
+
+    it('claw_update_task warns (but does not fail) when completing without evidence', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', status: 'completed' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      const warnings = (result.result as { warnings?: string[] }).warnings;
+      expect(warnings).toBeDefined();
+      expect(warnings?.[0]).toMatch(/evidence/i);
+    });
+
+    it('claw_update_task rejects evidence over 1000 chars', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'in_progress',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', evidence: 'e'.repeat(1001) },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('evidence');
+    });
+
+    it('claw_update_task allows evidence-only update (e.g. backfilling a prior completion)', async () => {
+      const { session } = setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'completed',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+      ]);
+      const result = await executeClawTool(
+        'claw_update_task',
+        { id: 't1', evidence: 'retroactive proof' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect((session.tasks[0] as { evidence: string }).evidence).toBe('retroactive proof');
+    });
+
+    it('claw_set_next_intent records the intent on the session', async () => {
+      setClawContext();
+      const session = { tasks: [], nextIntent: undefined } as Record<string, unknown>;
+      const mockManager = {
+        getSession: vi.fn().mockReturnValue(session),
+        flushSession: vi.fn().mockResolvedValue(undefined),
+        // New unified path: tool executor delegates to manager.setNextIntent so
+        // both the agent and operator REST paths share the same validation,
+        // persist, and broadcast logic.
+        setNextIntent: vi.fn().mockImplementation((_id: string, intent: string) => {
+          session.nextIntent = intent.trim();
+          return Promise.resolve(true);
+        }),
+      };
+      mockGetClawManager.mockReturnValue(mockManager);
+
+      const result = await executeClawTool(
+        'claw_set_next_intent',
+        { intent: 'Re-run failing test with --grep auth.race to isolate' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      expect(session.nextIntent).toBe('Re-run failing test with --grep auth.race to isolate');
+      expect(mockManager.setNextIntent).toHaveBeenCalledWith(
+        'claw-1',
+        'Re-run failing test with --grep auth.race to isolate',
+        'agent'
+      );
+    });
+
+    it('claw_set_next_intent rejects empty intent', async () => {
+      setClawContext();
+      const mockManager = {
+        getSession: vi.fn().mockReturnValue({ tasks: [] }),
+        flushSession: vi.fn().mockResolvedValue(undefined),
+      };
+      mockGetClawManager.mockReturnValue(mockManager);
+
+      const result = await executeClawTool('claw_set_next_intent', { intent: '   ' }, 'user-1');
+      expect(result.success).toBe(false);
+    });
+
+    it('claw_set_next_intent rejects intent over 500 chars', async () => {
+      setClawContext();
+      const mockManager = {
+        getSession: vi.fn().mockReturnValue({ tasks: [] }),
+        flushSession: vi.fn().mockResolvedValue(undefined),
+      };
+      mockGetClawManager.mockReturnValue(mockManager);
+
+      const result = await executeClawTool(
+        'claw_set_next_intent',
+        { intent: 'x'.repeat(501) },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('500');
+    });
+
+    it('claw_think records the thought and returns it', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool(
+        'claw_think',
+        { thought: 'The login is failing because the token is stale — rotate before retry.' },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      const r = result.result as { thought: string; recorded: boolean; message: string };
+      expect(r.recorded).toBe(true);
+      expect(r.thought).toContain('rotate before retry');
+      // Strongly nudge against using think as a substitute for action.
+      expect(r.message).toMatch(/take action/i);
+    });
+
+    it('claw_think rejects empty thoughts', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool('claw_think', { thought: '   ' }, 'user-1');
+      expect(result.success).toBe(false);
+    });
+
+    it('claw_think rejects thoughts over 4000 chars', async () => {
+      setupSessionWithTasks();
+      const result = await executeClawTool('claw_think', { thought: 'x'.repeat(4001) }, 'user-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('4000');
+    });
+
+    it('claw_split_task atomically marks parent blocked and inserts subtasks', async () => {
+      setClawContext();
+      const session = {
+        tasks: [
+          {
+            id: 't1',
+            title: 'Refactor auth',
+            status: 'in_progress',
+            cyclesInProgress: 6,
+            createdAt: 'x',
+            updatedAt: 'x',
+          },
+          { id: 't2', title: 'Ship', status: 'pending', createdAt: 'x', updatedAt: 'x' },
+        ] as unknown[],
+      };
+      const mockManager: Record<string, unknown> = {
+        getSession: vi.fn().mockReturnValue(session),
+        flushSession: vi.fn().mockResolvedValue(undefined),
+        notifyPlanUpdated: vi.fn(),
+      };
+      mockManager.splitTaskOnSession = vi.fn(
+        async (_id: string, split: { parentId: string; subtasks: Array<{ title: string }> }) => {
+          const { applySplit } = await import('./plan-executors.js');
+          const result = applySplit(session.tasks as never, split as never);
+          return { parent: result.parent, subtasks: result.subtasks };
+        }
+      );
+      mockGetClawManager.mockReturnValue(mockManager);
+
+      const result = await executeClawTool(
+        'claw_split_task',
+        {
+          task_id: 't1',
+          subtasks: [
+            { title: 'Extract token rotation logic' },
+            { title: 'Add retry budget', successCriteria: 'Test passes with 3 retries' },
+            { title: 'Update tests' },
+          ],
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(true);
+      const r = result.result as {
+        parent: { id: string; status: string; evidence?: string };
+        subtasks: Array<{ id: string }>;
+      };
+      expect(r.parent.id).toBe('t1');
+      expect(r.parent.status).toBe('blocked');
+      expect(r.parent.evidence).toContain('Split into');
+      expect(r.subtasks).toHaveLength(3);
+      expect(r.subtasks.map((s) => s.id)).toEqual(['t1.1', 't1.2', 't1.3']);
+      // Subtasks must be inserted right after the parent — preserves reading order.
+      expect((session.tasks[1] as { id: string }).id).toBe('t1.1');
+      expect((session.tasks[3] as { id: string }).id).toBe('t1.3');
+      expect((session.tasks[4] as { id: string }).id).toBe('t2');
+    });
+
+    it('claw_split_task rejects splitting into only 1 subtask', async () => {
+      setClawContext();
+      mockGetClawManager.mockReturnValue({
+        getSession: vi.fn().mockReturnValue({ tasks: [] }),
+        splitTaskOnSession: vi.fn(),
+        notifyPlanUpdated: vi.fn(),
+      });
+      const result = await executeClawTool(
+        'claw_split_task',
+        { task_id: 't1', subtasks: [{ title: 'only one' }] },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('at least');
+    });
+
+    it('claw_split_task rejects splitting into more than 10 subtasks', async () => {
+      setClawContext();
+      mockGetClawManager.mockReturnValue({
+        getSession: vi.fn().mockReturnValue({ tasks: [] }),
+        splitTaskOnSession: vi.fn(),
+        notifyPlanUpdated: vi.fn(),
+      });
+      const result = await executeClawTool(
+        'claw_split_task',
+        {
+          task_id: 't1',
+          subtasks: Array.from({ length: 11 }, (_, i) => ({ title: `s${i}` })),
+        },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('exceeds maximum');
+    });
+
+    it('claw_split_task returns 404-style error when parent does not exist', async () => {
+      setClawContext();
+      const mockManager: Record<string, unknown> = {
+        getSession: vi.fn().mockReturnValue({ tasks: [] }),
+        notifyPlanUpdated: vi.fn(),
+      };
+      mockManager.splitTaskOnSession = vi.fn(
+        async (_id: string, split: { parentId: string; subtasks: Array<{ title: string }> }) => {
+          const { applySplit } = await import('./plan-executors.js');
+          return applySplit([], split as never);
+        }
+      );
+      mockGetClawManager.mockReturnValue(mockManager);
+
+      const result = await executeClawTool(
+        'claw_split_task',
+        { task_id: 'tX', subtasks: [{ title: 'a' }, { title: 'b' }] },
+        'user-1'
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found');
+    });
+
+    it('claw_list_tasks returns tasks with status counts', async () => {
+      setupSessionWithTasks([
+        {
+          id: 't1',
+          title: 'A',
+          status: 'completed',
+          createdAt: 'x',
+          updatedAt: 'x',
+        },
+        { id: 't2', title: 'B', status: 'in_progress', createdAt: 'x', updatedAt: 'x' },
+        { id: 't3', title: 'C', status: 'blocked', createdAt: 'x', updatedAt: 'x' },
+        { id: 't4', title: 'D', status: 'pending', createdAt: 'x', updatedAt: 'x' },
+      ]);
+      const result = await executeClawTool('claw_list_tasks', {}, 'user-1');
+      expect(result.success).toBe(true);
+      const counts = (result.result as { counts: Record<string, number> }).counts;
+      expect(counts).toEqual({ total: 4, pending: 1, in_progress: 1, completed: 1, blocked: 1 });
     });
   });
 

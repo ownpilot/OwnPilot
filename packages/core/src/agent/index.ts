@@ -240,6 +240,9 @@ export {
   getFastestModel,
   getSmartestModel,
   clearConfigCache,
+  // Auth abstraction (OAuth / session_token / api_key)
+  getAuthHeader,
+  isAuthExpired,
   // Sync functions (models.dev API)
   fetchModelsDevApi,
   syncProvider,
@@ -247,6 +250,24 @@ export {
   syncProviders,
   listModelsDevProviders,
 } from './providers/configs/index.js';
+export type {
+  AuthMethod,
+  ProviderAuthSupport,
+  ProviderOAuthConfig,
+  ResolvedAuth,
+} from './providers/configs/index.js';
+
+// OAuth 2.0 device-code flow (used by Codex CLI and similar sign-in providers)
+export { startDeviceAuthorization, pollForToken, refreshAccessToken } from './auth/index.js';
+export type {
+  DeviceAuthorizationResponse,
+  TokenResponse,
+  DeviceAuthError,
+  PollResult,
+  StartDeviceAuthorizationOptions,
+  PollForTokenOptions,
+  RefreshAccessTokenOptions,
+} from './auth/index.js';
 
 // OpenAI-Compatible Provider
 export {

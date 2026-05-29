@@ -883,6 +883,206 @@ export const copyFileExecutor: ToolExecutor = async (
 };
 
 /**
+ * Create directory tool — dedicated mkdir for autonomous agents.
+ *
+ * `write_file` can implicitly create parent dirs via `createDirs:true`, but
+ * that requires writing an unwanted placeholder file just to make a folder.
+ * Agents need explicit "make this empty directory" semantics for project
+ * scaffolding, workspace setup, etc.
+ */
+const createDirectoryTool: ToolDefinition = {
+  name: 'create_directory',
+  brief: 'Create a directory (and any missing parent directories)',
+  description:
+    'Create an empty directory at the given path. Parent directories are created as ' +
+    'needed (recursive). Idempotent — succeeds silently if the directory already exists. ' +
+    'Use this for project scaffolding, workspace setup, or whenever you need a folder ' +
+    'without writing a file into it.',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: {
+        type: 'string',
+        description: 'The directory path to create',
+      },
+    },
+    required: ['path'],
+  },
+};
+
+export const createDirectoryExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
+  const rawPath = args.path as string;
+  const dirPath = resolveFilePath(rawPath, context.workspaceDir);
+
+  if (!(await isPathAllowedAsync(dirPath, context.workspaceDir))) {
+    return { content: `Error: Access denied to path: ${dirPath}`, isError: true };
+  }
+
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+    return {
+      content: JSON.stringify({ success: true, path: dirPath, created: true }),
+    };
+  } catch (error) {
+    return { content: `Error creating directory: ${getErrorMessage(error)}`, isError: true };
+  }
+};
+
+/**
+ * Move / rename tool — dedicated discoverable surface for the move op.
+ *
+ * The same capability exists buried under `copy_file`'s `move:true` flag,
+ * but an LLM searching for "rename file" or "move file" by tool name
+ * misses it. This tool calls into the same logic with explicit semantics.
+ */
+const moveFileTool: ToolDefinition = {
+  name: 'move_file',
+  brief: 'Move or rename a file or directory',
+  description:
+    'Atomically move (or rename) a file or directory from source to destination. ' +
+    'Parent directories of the destination are created as needed. Use this instead ' +
+    'of copy_file + delete_file when you want true rename/move semantics.',
+  parameters: {
+    type: 'object',
+    properties: {
+      source: { type: 'string', description: 'Source path' },
+      destination: { type: 'string', description: 'Destination path' },
+      overwrite: {
+        type: 'boolean',
+        description: 'Overwrite destination if it exists (default: false)',
+      },
+    },
+    required: ['source', 'destination'],
+  },
+};
+
+export const moveFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
+  // Delegate to copy_file with move:true — keeps the path/scope/overwrite
+  // semantics identical to the existing copy/move so behaviour can't diverge.
+  return copyFileExecutor(
+    {
+      source: args.source,
+      destination: args.destination,
+      move: true,
+      overwrite: args.overwrite,
+    },
+    context
+  );
+};
+
+/**
+ * Edit file tool — in-place find/replace without full-file rewrite.
+ *
+ * For non-trivial edits (changing one function in a 5000-line file) the
+ * `write_file` workaround is expensive: the agent has to read the whole
+ * file, modify the string, and write it all back. This tool does the
+ * find/replace gateway-side, so the agent only sends the diff intent.
+ *
+ * Semantics: replaces `oldText` with `newText` in the file. By default
+ * `oldText` must occur EXACTLY ONCE — any other count rejects, since
+ * silently replacing zero or multiple occurrences is the bug that
+ * tools like sed have caused for decades. Override with `replaceAll`.
+ */
+const editFileTool: ToolDefinition = {
+  name: 'edit_file',
+  brief: 'In-place find/replace edit of a file (no full-file rewrite)',
+  description:
+    'Replace `oldText` with `newText` in a file in-place. By default `oldText` ' +
+    'must occur exactly once — set `replaceAll:true` to replace every occurrence. ' +
+    'Use this for surgical edits to large files where rewriting the whole file ' +
+    'with write_file would be expensive. The file must already exist (use ' +
+    'write_file to create new files).',
+  parameters: {
+    type: 'object',
+    properties: {
+      path: { type: 'string', description: 'The file to edit' },
+      oldText: {
+        type: 'string',
+        description: 'Text to find. Must occur exactly once unless replaceAll is true.',
+      },
+      newText: { type: 'string', description: 'Text to substitute in.' },
+      replaceAll: {
+        type: 'boolean',
+        description: 'Replace every occurrence (default: false → require exactly one).',
+      },
+    },
+    required: ['path', 'oldText', 'newText'],
+  },
+};
+
+export const editFileExecutor: ToolExecutor = async (
+  args,
+  context
+): Promise<ToolExecutionResult> => {
+  const rawPath = args.path as string;
+  const oldText = args.oldText as string;
+  const newText = args.newText as string;
+  const replaceAll = (args.replaceAll as boolean | undefined) ?? false;
+
+  if (typeof oldText !== 'string' || oldText.length === 0) {
+    return { content: 'Error: oldText must be a non-empty string', isError: true };
+  }
+  if (typeof newText !== 'string') {
+    return { content: 'Error: newText must be a string', isError: true };
+  }
+
+  const filePath = resolveFilePath(rawPath, context.workspaceDir);
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
+    return { content: `Error: Access denied to path: ${filePath}`, isError: true };
+  }
+
+  try {
+    const stats = await fs.stat(filePath);
+    if (stats.size > MAX_FILE_SIZE) {
+      return {
+        content: `Error: File too large (${(stats.size / 1024 / 1024).toFixed(1)} MB). Maximum is ${MAX_FILE_SIZE / 1024 / 1024} MB.`,
+        isError: true,
+      };
+    }
+
+    const original = await fs.readFile(filePath, 'utf-8');
+
+    // Count occurrences (use split for exact substring match, not regex).
+    const occurrences = original.split(oldText).length - 1;
+    if (occurrences === 0) {
+      return {
+        content: `Error: oldText not found in file. The file was not modified.`,
+        isError: true,
+      };
+    }
+    if (occurrences > 1 && !replaceAll) {
+      return {
+        content: `Error: oldText occurs ${occurrences} times. Set replaceAll:true to replace all, or extend oldText so it matches uniquely.`,
+        isError: true,
+      };
+    }
+
+    const updated = replaceAll
+      ? original.split(oldText).join(newText)
+      : original.replace(oldText, newText);
+
+    await fs.writeFile(filePath, updated, 'utf-8');
+    return {
+      content: JSON.stringify({
+        success: true,
+        path: filePath,
+        replacements: replaceAll ? occurrences : 1,
+        sizeBefore: original.length,
+        sizeAfter: updated.length,
+      }),
+    };
+  } catch (error) {
+    return { content: `Error editing file: ${getErrorMessage(error)}`, isError: true };
+  }
+};
+
+/**
  * All file system tools
  */
 export const FILE_SYSTEM_TOOLS: Array<{ definition: ToolDefinition; executor: ToolExecutor }> = [
@@ -894,4 +1094,7 @@ export const FILE_SYSTEM_TOOLS: Array<{ definition: ToolDefinition; executor: To
   { definition: fileInfoTool, executor: fileInfoExecutor },
   { definition: deleteFileTool, executor: deleteFileExecutor },
   { definition: copyFileTool, executor: copyFileExecutor },
+  { definition: createDirectoryTool, executor: createDirectoryExecutor },
+  { definition: moveFileTool, executor: moveFileExecutor },
+  { definition: editFileTool, executor: editFileExecutor },
 ];

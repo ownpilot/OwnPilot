@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "qwen3.7-max",
+      "name": "Qwen3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 2.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-21"
+    },
+    {
       "id": "deepseek-v4-pro",
       "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
@@ -50,8 +66,8 @@
       "name": "MiMo V2.5 Pro",
       "contextWindow": 1048576,
       "maxOutput": 128000,
-      "inputPrice": 1,
-      "outputPrice": 3,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
       "capabilities": [
         "chat",
         "function_calling",
@@ -66,8 +82,8 @@
       "name": "MiMo V2.5",
       "contextWindow": 1000000,
       "maxOutput": 128000,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
         "vision",

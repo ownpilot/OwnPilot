@@ -16,6 +16,7 @@ import { HeaderItemsProvider } from '../hooks/useHeaderItems';
 import { navGroups } from '../constants/nav-items';
 import { LayoutConfigProvider } from '../hooks/useLayoutConfig';
 import { HeaderItemsBar } from './HeaderItemsBar';
+import { FleetStatusIndicator } from './FleetStatusIndicator';
 
 const CustomizePage = lazy(() =>
   import('../pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
@@ -148,6 +149,11 @@ export function Layout() {
 
               {/* Zone 5: Settings dropdown + status (fixed) */}
               <div className="flex items-center gap-2 shrink-0 ml-3">
+                {/* Fleet attention chip — only renders when Claws need
+                    intervention. Visible from every page so escalations and
+                    reflections don't get missed by an operator working in
+                    chat / workflows / settings. */}
+                <FleetStatusIndicator />
                 <span
                   className={`w-2 h-2 rounded-full shrink-0 ${connectionStyle.color} ${connectionStyle.pulse ? 'animate-pulse' : ''}`}
                   title={connectionStyle.label}

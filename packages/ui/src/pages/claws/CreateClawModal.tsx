@@ -148,6 +148,7 @@ export function CreateClawModal({
   const [allowSelfModify, setAllowSelfModify] = useState(false);
   const [allowSubclaws, setAllowSubclaws] = useState(true);
   const [requireEvidence, setRequireEvidence] = useState(true);
+  const [learnSkills, setLearnSkills] = useState(true);
   const [destructiveActionPolicy, setDestructiveActionPolicy] = useState<'ask' | 'block' | 'allow'>(
     'ask'
   );
@@ -342,6 +343,7 @@ Skills: ${selectedSkills.join(', ') || 'none selected'}`;
             : undefined,
         interval_ms: mode === 'interval' ? intervalSecs * 1000 : undefined,
         priority: priority !== 3 ? priority : undefined,
+        learn_skills: learnSkills,
       });
       toast.success('Claw created');
       onCreated();
@@ -730,6 +732,18 @@ Skills: ${selectedSkills.join(', ') || 'none selected'}`;
                     className="w-4 h-4 rounded accent-primary"
                   />
                   Require evidence
+                </label>
+                <label
+                  className="flex items-center gap-2 text-sm text-text-primary dark:text-dark-text-primary"
+                  title="Distill successful runs into reusable skills the claw can recall on similar tasks"
+                >
+                  <input
+                    type="checkbox"
+                    checked={learnSkills}
+                    onChange={(e) => setLearnSkills(e.target.checked)}
+                    className="w-4 h-4 rounded accent-primary"
+                  />
+                  Learn skills
                 </label>
               </div>
 
