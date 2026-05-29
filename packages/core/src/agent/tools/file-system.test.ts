@@ -61,6 +61,7 @@ import {
   createDirectoryExecutor,
   moveFileExecutor,
   editFileExecutor,
+  buildEditMismatchHint,
   FILE_SYSTEM_TOOLS,
 } from './file-system.js';
 
@@ -1149,6 +1150,19 @@ describe('editFileExecutor', () => {
     expect(fsMock.writeFile).not.toHaveBeenCalled();
   });
 
+  it('includes a self-correction hint when oldText is not found', async () => {
+    // File has two spaces between the words; oldText has one -> not an exact
+    // substring, but a whitespace-insensitive match, which should be flagged.
+    fsMock.readFile.mockResolvedValue('line one\nindented  target\nline three');
+
+    const result = await editFileExecutor(
+      { path: 'a.txt', oldText: 'indented target', newText: 'x' },
+      ctx()
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('whitespace-insensitive match');
+  });
+
   it('refuses when oldText occurs multiple times without replaceAll', async () => {
     fsMock.readFile.mockResolvedValue('a a a');
 
@@ -1202,5 +1216,45 @@ describe('editFileExecutor', () => {
     const result = await editFileExecutor({ path: 'huge.txt', oldText: 'x', newText: 'y' }, ctx());
     expect(result.isError).toBe(true);
     expect(result.content).toContain('too large');
+  });
+});
+
+// ===========================================================================
+// buildEditMismatchHint — diagnostic for failed edit_file matches
+// ===========================================================================
+describe('buildEditMismatchHint', () => {
+  it('flags a whitespace-only difference', () => {
+    const file = 'function foo() {\n        return 1;\n}';
+    // Right text, wrong indentation.
+    const hint = buildEditMismatchHint(file, 'return 1;');
+    expect(hint).toContain('whitespace-insensitive match');
+  });
+
+  it('flags a CRLF vs LF difference', () => {
+    const file = 'alpha\r\nbeta\r\ngamma';
+    const hint = buildEditMismatchHint(file, 'alpha\nbeta');
+    expect(hint).toContain('whitespace-insensitive match');
+  });
+
+  it('shows the actual nearby content when the first line anchors', () => {
+    const file = 'a\nb\nconst target = 42;\nc\nd';
+    // Same anchor line, but the rest of oldText is wrong so no exact match.
+    const hint = buildEditMismatchHint(file, 'const target = 42;\nWRONG NEXT LINE');
+    expect(hint).toContain('Actual file content');
+    expect(hint).toContain('const target = 42;');
+    expect(hint).toContain('Copy oldText verbatim');
+  });
+
+  it('caps the context window so it cannot flood output', () => {
+    const longLine = 'x'.repeat(2000);
+    const file = `anchorline\n${longLine}`;
+    const hint = buildEditMismatchHint(file, 'anchorline\nnope');
+    expect(hint).toContain('…');
+    expect(hint.length).toBeLessThan(800);
+  });
+
+  it('falls back to a generic hint when nothing similar is found', () => {
+    const hint = buildEditMismatchHint('completely unrelated content', 'zzz qqq vvv');
+    expect(hint).toContain('No similar text was found');
   });
 });

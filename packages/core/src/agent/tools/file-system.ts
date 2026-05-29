@@ -1016,6 +1016,49 @@ const editFileTool: ToolDefinition = {
   },
 };
 
+/**
+ * Build a short, bounded diagnostic when `oldText` is not found verbatim.
+ * The model's most common edit failure is a whitespace / indentation / line-ending
+ * mismatch, or expecting content the file no longer has. A blind "not found" makes
+ * the model re-guess; surfacing the real nearby content lets it self-correct on the
+ * next attempt. Read-only — never mutates and is capped so it can't flood context.
+ */
+export function buildEditMismatchHint(original: string, oldText: string): string {
+  const MAX_CTX = 600;
+  const normalize = (s: string): string => s.replace(/\s+/g, ' ').trim();
+  const normOld = normalize(oldText);
+  if (normOld.length > 0 && normalize(original).includes(normOld)) {
+    return (
+      ' A whitespace-insensitive match exists, so the difference is likely indentation, ' +
+      'trailing spaces, or CRLF vs LF line endings. Re-read the file and copy oldText exactly.'
+    );
+  }
+
+  const firstLine = oldText
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l.length > 0);
+  if (firstLine) {
+    const lines = original.split('\n');
+    let idx = lines.findIndex((l) => l.includes(firstLine));
+    if (idx === -1) {
+      const frag = firstLine.slice(0, 24);
+      idx = frag.length >= 4 ? lines.findIndex((l) => l.includes(frag)) : -1;
+    }
+    if (idx !== -1) {
+      const start = Math.max(0, idx - 1);
+      const end = Math.min(lines.length, idx + 4);
+      let ctx = lines.slice(start, end).join('\n');
+      if (ctx.length > MAX_CTX) ctx = ctx.slice(0, MAX_CTX) + '…';
+      return (
+        ` The first line of oldText was located near line ${idx + 1}. Actual file content there:\n` +
+        `---\n${ctx}\n---\nCopy oldText verbatim from this region.`
+      );
+    }
+  }
+  return ' No similar text was found — the file content may differ from what you expect. Re-read the file before editing.';
+}
+
 export const editFileExecutor: ToolExecutor = async (
   args,
   context
@@ -1052,7 +1095,7 @@ export const editFileExecutor: ToolExecutor = async (
     const occurrences = original.split(oldText).length - 1;
     if (occurrences === 0) {
       return {
-        content: `Error: oldText not found in file. The file was not modified.`,
+        content: `Error: oldText not found in file. The file was not modified.${buildEditMismatchHint(original, oldText)}`,
         isError: true,
       };
     }
