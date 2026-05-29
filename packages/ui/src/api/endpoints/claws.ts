@@ -202,8 +202,15 @@ export interface ClawRunEval {
   cycles: { total: number; succeeded: number; failed: number; successRate: number };
   toolCalls: { total: number; succeeded: number; failed: number; successRate: number };
   byTool: Array<{ tool: string; calls: number; failures: number; failureRate: number }>;
-  topFailures: Array<{ signature: string; count: number; tools: string[]; example: string }>;
-  repeatedFailures: Array<{ tool: string; signature: string; count: number }>;
+  topFailures: Array<{
+    signature: string;
+    count: number;
+    tools: string[];
+    example: string;
+    lastSeen?: string;
+    firstSeen?: string;
+  }>;
+  repeatedFailures: Array<{ tool: string; signature: string; count: number; lastSeen?: string }>;
   efficiency: {
     avgToolCallsPerCycle: number;
     avgCycleDurationMs: number;
@@ -227,7 +234,13 @@ export interface FleetEval {
     cycles: number;
     wastedCalls: number;
   }>;
-  topRepeatedFailures: Array<{ tool: string; signature: string; count: number; claws: number }>;
+  topRepeatedFailures: Array<{
+    tool: string;
+    signature: string;
+    count: number;
+    claws: number;
+    lastSeen?: string;
+  }>;
 }
 
 export interface CreateClawInput {

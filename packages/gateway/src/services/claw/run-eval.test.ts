@@ -252,3 +252,99 @@ describe('aggregateFleetEval', () => {
     expect(f.topRepeatedFailures[0].claws).toBe(2); // systemic across the fleet
   });
 });
+
+describe('failure recency (lastSeen / firstSeen)', () => {
+  const t1 = '2026-05-01T10:00:00.000Z';
+  const t2 = '2026-05-20T10:00:00.000Z';
+
+  it('records firstSeen/lastSeen spanning all occurrences of a signature', () => {
+    const r = evaluateClawRun([
+      entry({
+        cycleNumber: 1,
+        executedAt: new Date(t1),
+        toolCalls: [call({ success: false, result: 'Error: boom 1' })],
+      }),
+      entry({
+        cycleNumber: 2,
+        executedAt: new Date(t2),
+        toolCalls: [call({ success: false, result: 'Error: boom 2' })],
+      }),
+    ]);
+    // Digits are masked, so both group into one signature.
+    expect(r.topFailures).toHaveLength(1);
+    expect(r.topFailures[0].firstSeen).toBe(t1);
+    expect(r.topFailures[0].lastSeen).toBe(t2);
+  });
+
+  it('repeatedFailures carry the most recent occurrence', () => {
+    const r = evaluateClawRun([
+      entry({
+        executedAt: new Date(t1),
+        toolCalls: [
+          call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+          call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+        ],
+      }),
+      entry({
+        executedAt: new Date(t2),
+        toolCalls: [call({ tool: 'core.edit_file', success: false, result: 'oldText not found' })],
+      }),
+    ]);
+    const rf = r.repeatedFailures.find((x) => x.tool === 'core.edit_file');
+    expect(rf?.count).toBe(3);
+    expect(rf?.lastSeen).toBe(t2);
+  });
+
+  it('accepts ISO-string executedAt (as it arrives over the API)', () => {
+    const r = evaluateClawRun([
+      entry({
+        executedAt: t2 as unknown as Date,
+        toolCalls: [call({ success: false, result: 'err' })],
+      }),
+    ]);
+    expect(r.topFailures[0].lastSeen).toBe(t2);
+  });
+
+  it('omits timestamps when executedAt is unparseable', () => {
+    const r = evaluateClawRun([
+      entry({
+        executedAt: 'not-a-date' as unknown as Date,
+        toolCalls: [call({ success: false, result: 'err' })],
+      }),
+    ]);
+    expect(r.topFailures[0].lastSeen).toBeUndefined();
+    expect(r.topFailures[0].firstSeen).toBeUndefined();
+  });
+
+  it('fleet topRepeatedFailures surface the latest occurrence across claws', () => {
+    const c1 = evaluateClawRun(
+      [
+        entry({
+          executedAt: new Date(t1),
+          toolCalls: [
+            call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+            call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+          ],
+        }),
+      ],
+      { id: 'c1' }
+    );
+    const c2 = evaluateClawRun(
+      [
+        entry({
+          executedAt: new Date(t2),
+          toolCalls: [
+            call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+            call({ tool: 'core.edit_file', success: false, result: 'oldText not found' }),
+          ],
+        }),
+      ],
+      { id: 'c2' }
+    );
+    const f = aggregateFleetEval([
+      { name: 'c1', evaluation: c1 },
+      { name: 'c2', evaluation: c2 },
+    ]);
+    expect(f.topRepeatedFailures[0].lastSeen).toBe(t2);
+  });
+});

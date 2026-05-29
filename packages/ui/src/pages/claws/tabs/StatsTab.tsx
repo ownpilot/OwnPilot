@@ -132,6 +132,14 @@ export function StatsTab({ claw }: { claw: ClawConfig }) {
                     {r.tool}
                   </span>
                   <span className="text-text-muted truncate">{r.signature}</span>
+                  {r.lastSeen && (
+                    <span
+                      className="text-text-muted/70 shrink-0 ml-auto tabular-nums"
+                      title={`Last seen ${new Date(r.lastSeen).toLocaleString()}`}
+                    >
+                      {timeAgo(r.lastSeen)}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

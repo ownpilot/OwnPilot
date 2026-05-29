@@ -24,6 +24,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import type { ClawConfig, FleetEval } from '../../api/endpoints/claws';
 import { clawsApi } from '../../api/endpoints/claws';
 import { ignoreError } from '../../utils/ignore-error';
+import { timeAgo } from './utils';
 import { useNavigate } from 'react-router-dom';
 
 // Mirrors backend constants — keep in sync with claw-types.ts.
@@ -412,6 +413,14 @@ export function ClawHomeTab({
                     <span className="text-[10px] text-rose-400 shrink-0">({r.claws} claws)</span>
                   )}
                   <span className="text-text-muted truncate">{r.signature}</span>
+                  {r.lastSeen && (
+                    <span
+                      className="text-text-muted/70 shrink-0 ml-auto tabular-nums"
+                      title={`Last seen ${new Date(r.lastSeen).toLocaleString()}`}
+                    >
+                      {timeAgo(r.lastSeen)}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
