@@ -1,10 +1,22 @@
 import { useState, useMemo } from 'react';
 import { clawsApi, type ClawHistoryEntry } from '../../../api/endpoints/claws';
-import type { AuditEntry } from './AuditTab';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { CheckCircle2, XCircle, ShieldAlert } from '../../../components/icons';
 import { ignoreError } from '../../../utils/ignore-error';
 import { formatDuration, formatCost, timeAgo } from '../utils';
+
+/** A single tool call recorded in the Claw audit log (`claw_audit_log`). */
+export interface AuditEntry {
+  id: string;
+  toolName: string;
+  toolArgs: Record<string, unknown>;
+  toolResult: string;
+  success: boolean;
+  durationMs: number;
+  category: string;
+  cycleNumber: number;
+  executedAt: string;
+}
 
 const CYCLE_BAR_COLOR: Record<string, string> = {
   success: 'bg-green-500',
