@@ -193,13 +193,37 @@ export class ConversationMemory {
       // e.g. a large Claw cycle prompt with .claw/MEMORY.md + workspace state
       // injected — would otherwise drop to zero messages, leaving getFullContext
       // to return a system-prompt-only request. Strict providers reject that
-      // ("chat content is empty (2013)" on MiniMax, "messages is empty" etc.).
-      // Better to send one over-budget turn than no turn at all.
+      // ("chat content is empty (2013)" on MiniMax, "messages is empty" /
+      // "messages parameter is illegal (1214)" on GLM/ZAI). Better to send one
+      // (truncated) turn than no turn at all.
       if (startIndex >= messages.length && messages.length > 0) {
         startIndex = messages.length - 1;
       }
 
-      return this.truncateOldToolResults(messages.slice(startIndex));
+      const kept = messages.slice(startIndex);
+
+      // If the sole kept message still blows the budget, truncate its text to
+      // fit rather than shipping it whole — a multi-hundred-KB cycle prompt
+      // would otherwise overflow the model's real context window and fail
+      // anyway. Keep the head: the Claw puts the cycle header / next-intent /
+      // instructions up front and trails MEMORY.md + artifacts at the end.
+      const only = kept.length === 1 ? kept[0] : undefined;
+      if (
+        only &&
+        typeof only.content === 'string' &&
+        this.estimateTokens(only) > this.config.maxTokens
+      ) {
+        const budgetChars = Math.max(2048, this.config.maxTokens * 4 - 256);
+        if (only.content.length > budgetChars) {
+          kept[0] = {
+            ...only,
+            content:
+              only.content.slice(0, budgetChars) + '\n\n[...truncated to fit context budget]',
+          };
+        }
+      }
+
+      return this.truncateOldToolResults(kept);
     }
 
     return this.truncateOldToolResults(messages);

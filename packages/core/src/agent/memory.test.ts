@@ -242,8 +242,9 @@ describe('ConversationMemory', () => {
     it('never drops the most recent message even if it alone exceeds maxTokens', () => {
       // Regression: a single over-budget turn (e.g. a large Claw cycle prompt)
       // must still be sent. Otherwise getFullContext returns a system-only
-      // request and strict providers reject it with "chat content is empty
-      // (2013)" (MiniMax) — the Claw crashed every cycle because of this.
+      // request and strict providers reject it ("chat content is empty (2013)"
+      // on MiniMax, "messages parameter is illegal (1214)" on GLM/ZAI) — the
+      // Claw crashed every cycle because of this.
       const tight = new ConversationMemory({ maxTokens: 1000 });
       const conversation = tight.create('System prompt');
       tight.addUserMessage(conversation.id, 'x'.repeat(20000)); // ~5000 tokens >> 1000
@@ -253,6 +254,22 @@ describe('ConversationMemory', () => {
       expect(context.some((m) => m.role === 'user')).toBe(true);
       expect(context[0].role).toBe('system');
       expect(context.length).toBe(2);
+    });
+
+    it('truncates the over-budget kept message to fit rather than shipping it whole', () => {
+      const tight = new ConversationMemory({ maxTokens: 1000 });
+      const conversation = tight.create('System prompt');
+      const huge = 'x'.repeat(200000); // ~50k tokens, would overflow a real ctx window
+      tight.addUserMessage(conversation.id, huge);
+
+      const context = tight.getFullContext(conversation.id);
+      const userMsg = context.find((m) => m.role === 'user');
+
+      expect(userMsg).toBeDefined();
+      const content = userMsg!.content as string;
+      // Truncated to ~maxTokens*4 chars, far below the original 200k
+      expect(content.length).toBeLessThan(20000);
+      expect(content).toContain('[...truncated to fit context budget]');
     });
   });
 
