@@ -189,15 +189,27 @@ export class ConversationMemory {
         startIndex = i;
       }
 
-      // Never trim away the most recent message. A single over-budget turn —
-      // e.g. a large Claw cycle prompt with .claw/MEMORY.md + workspace state
-      // injected — would otherwise drop to zero messages, leaving getFullContext
-      // to return a system-prompt-only request. Strict providers reject that
-      // ("chat content is empty (2013)" on MiniMax, "messages is empty" /
-      // "messages parameter is illegal (1214)" on GLM/ZAI). Better to send one
-      // (truncated) turn than no turn at all.
-      if (startIndex >= messages.length && messages.length > 0) {
-        startIndex = messages.length - 1;
+      // The kept window must contain a user turn and begin on a clean turn
+      // boundary. After many tool turns the budget trim can cut past the
+      // cycle's user message, leaving a window of only tool/assistant turns —
+      // or, for a single over-budget turn, nothing at all. Both are rejected
+      // as structurally invalid: GLM/ZAI return "messages parameter is illegal
+      // (1214)" for system+tool / system+assistant with no user; MiniMax
+      // returns "chat content is empty (2013)" for system-only. Back up to the
+      // most recent user message at or before the trim point so the slice
+      // starts cleanly and always carries a user turn. (This is what crashed
+      // every Claw cycle: a huge tool result pushed the user turn out of budget
+      // and produced a [system, tool] request.)
+      let boundary = Math.min(startIndex, messages.length - 1);
+      while (boundary >= 0 && messages[boundary]?.role !== 'user') {
+        boundary--;
+      }
+      if (boundary >= 0) {
+        startIndex = boundary;
+      } else if (messages.length > 0) {
+        // No user message anywhere in range — send what we have rather than
+        // an empty window (the genuinely-empty case can't be repaired here).
+        startIndex = 0;
       }
 
       const kept = messages.slice(startIndex);

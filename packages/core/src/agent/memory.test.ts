@@ -256,6 +256,27 @@ describe('ConversationMemory', () => {
       expect(context.length).toBe(2);
     });
 
+    it('backs up to the user turn instead of leaving a [system, tool] window', () => {
+      // Regression: after tool turns, a huge tool result pushed the cycle's
+      // user message out of the token budget; the trim kept only the trailing
+      // tool result, producing a [system, tool] request that GLM/ZAI reject
+      // with "messages parameter is illegal (1214)". The window must back up to
+      // include the user turn.
+      const tight = new ConversationMemory({ maxTokens: 500 });
+      const conv = tight.create('System prompt');
+      tight.addUserMessage(conv.id, 'do the mission');
+      tight.addAssistantMessage(conv.id, '', [{ id: 'c1', name: 'fetch', arguments: '{}' }]);
+      tight.addToolResults(conv.id, [{ toolCallId: 'c1', content: 'X'.repeat(8000) }]); // huge >> 500
+
+      const context = tight.getFullContext(conv.id);
+      const roles = context.map((m) => m.role);
+
+      expect(roles[0]).toBe('system');
+      expect(roles).toContain('user'); // never a system+tool-only window
+      // first non-system message is the user turn (clean boundary)
+      expect(roles[1]).toBe('user');
+    });
+
     it('truncates the over-budget kept message to fit rather than shipping it whole', () => {
       const tight = new ConversationMemory({ maxTokens: 1000 });
       const conversation = tight.create('System prompt');
