@@ -173,9 +173,10 @@ mcpRoutes.post('/tool-call', async (c) => {
     const { tool_name: toolName, arguments: toolArgs } = body;
 
     const registry = getSharedToolRegistry();
+    const userId = getUserId(c);
     const context = {
       callId: `mcp-cli-${Date.now()}`,
-      userId: 'default',
+      userId,
       conversationId: 'mcp-cli',
       source: 'mcp' as const,
     };

@@ -43,6 +43,11 @@ if (typeof voiceThrottleCleanup === 'object' && 'unref' in voiceThrottleCleanup)
 
 voiceRoutes.get('/config', async (c) => {
   try {
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
     const service = getVoiceService();
     const config = await service.getConfig();
     return apiResponse(c, config);
@@ -53,6 +58,11 @@ voiceRoutes.get('/config', async (c) => {
 
 voiceRoutes.get('/status', async (c) => {
   try {
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
     const service = getVoiceService();
     const config = await service.getConfig();
     return apiResponse(c, config);
@@ -63,6 +73,11 @@ voiceRoutes.get('/status', async (c) => {
 
 voiceRoutes.get('/voices', async (c) => {
   try {
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
     const service = getVoiceService();
     const config = await service.getConfig();
     return apiResponse(c, {
@@ -77,6 +92,11 @@ voiceRoutes.get('/voices', async (c) => {
 
 voiceRoutes.get('/diagnostics', async (c) => {
   try {
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
     const service = getVoiceService();
     const diagnostics = await service.getDiagnostics();
     return apiResponse(c, diagnostics);
@@ -91,7 +111,11 @@ voiceRoutes.get('/diagnostics', async (c) => {
 
 voiceRoutes.post('/transcribe', async (c) => {
   try {
-    getUserId(c); // ensure authenticated
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
 
     // Per-endpoint throttle — see voiceThrottle declaration above.
     // Skip in test env so sequential tests don't collide.
@@ -171,7 +195,11 @@ voiceRoutes.post('/transcribe', async (c) => {
 
 voiceRoutes.post('/synthesize', async (c) => {
   try {
-    getUserId(c); // ensure authenticated
+    const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
 
     if (process.env.NODE_ENV !== 'test') {
       const ip = getClientIp(c.req);

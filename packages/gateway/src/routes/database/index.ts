@@ -16,23 +16,16 @@ import { csvExportRoutes } from './csv-export.js';
 export const databaseRoutes = new Hono();
 
 // Admin guard for database operations (fail-closed).
-// Destructive routes (POST/DELETE) and export always require X-Admin-Key header.
-// Read-only GET routes (status, stats) are allowed with standard auth only.
+// All routes under /database require X-Admin-Key header.
+// GET routes are read-only but still sensitive (expose schema, size, config).
 databaseRoutes.use('*', async (c, next) => {
-  // Allow read-only GET requests (status, stats) — but NOT export
-  // Use includes() to prevent bypass attempts like /export?foo=bar or /export/
-  const pathname = new URL(c.req.url).pathname;
-  if (c.req.method === 'GET' && !pathname.includes('/export')) {
-    return next();
-  }
-  // Destructive operations (POST, DELETE) and export require admin key
   const adminKey = process.env.ADMIN_KEY;
   if (!adminKey) {
     return apiError(
       c,
       {
         code: ERROR_CODES.UNAUTHORIZED,
-        message: 'ADMIN_KEY environment variable must be set for database write operations.',
+        message: 'ADMIN_KEY environment variable must be set.',
       },
       403
     );
@@ -43,7 +36,7 @@ databaseRoutes.use('*', async (c, next) => {
       c,
       {
         code: ERROR_CODES.UNAUTHORIZED,
-        message: 'Admin key required for this operation. Set X-Admin-Key header.',
+        message: 'Admin key required. Set X-Admin-Key header.',
       },
       403
     );

@@ -407,6 +407,20 @@ vi.mock('../../utils/ssrf.js', () => ({
   isPrivateUrlAsyncFresh: (...args: unknown[]) => mockIsPrivateUrlAsyncFresh(...args),
 }));
 
+// Mock ChatRepository so conversation ownership checks don't hit the real DB
+// Use hoisted refs so tests can override per-call behavior
+const mockGetConversation = vi.hoisted(() => vi.fn(async () => null));
+const mockDeleteConversation = vi.hoisted(() => vi.fn(async () => true));
+
+vi.mock('../../db/repositories/index.js', () => ({
+  ChatRepository: vi.fn(function () {
+    return {
+      getConversation: mockGetConversation,
+      deleteConversation: mockDeleteConversation,
+    };
+  }),
+}));
+
 // ─── Import route + mocked modules ──────────────────────────────
 
 import { chatRoutes } from './index.js';

@@ -423,6 +423,10 @@ clawRoutes.get('/presets', (c) => {
 clawRoutes.get('/recommendations', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
     const service = getClawService();
     const configs = await service.listClaws(userId);
     const sessions = service.listSessions(userId);
@@ -452,6 +456,11 @@ clawRoutes.get('/recommendations', async (c) => {
 clawRoutes.post('/recommendations/apply', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     let raw: unknown = {};
     try {
       raw = await c.req.json();
@@ -524,6 +533,11 @@ clawRoutes.post('/recommendations/apply', async (c) => {
 clawRoutes.get('/', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const service = getClawService();
     const { limit = 50, offset = 0 } = getPaginationParams(c);
 
@@ -549,6 +563,11 @@ clawRoutes.get('/', async (c) => {
 clawRoutes.get('/stats', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const service = getClawService();
     const configs = await service.listClaws(userId);
     const sessions = service.listSessions(userId);
@@ -606,6 +625,11 @@ clawRoutes.get('/stats', async (c) => {
 clawRoutes.get('/fleet/eval', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const { limit } = getPaginationParams(c);
     const perClawLimit = Math.min(limit || 200, 500);
     const service = getClawService();
@@ -629,6 +653,11 @@ clawRoutes.get('/fleet/eval', async (c) => {
 clawRoutes.get('/health', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const service = getClawService();
     const configs = await service.listClaws(userId);
     const sessions = service.listSessions(userId);
@@ -683,6 +712,11 @@ clawRoutes.get('/health', async (c) => {
 clawRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const body = validateBody(createClawSchema, await c.req.json());
 
     const service = getClawService();
@@ -726,6 +760,11 @@ clawRoutes.post('/', async (c) => {
 clawRoutes.get('/:id/doctor', async (c) => {
   try {
     const userId = getUserId(c);
+    // IDOR-017: Reject unauthenticated requests
+    if (userId === 'default') {
+      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    }
+
     const { id } = c.req.param();
     const service = getClawService();
 

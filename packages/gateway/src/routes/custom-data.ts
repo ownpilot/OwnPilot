@@ -12,6 +12,7 @@ import {
   apiResponse,
   apiError,
   getIntParam,
+  getUserId,
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
@@ -286,11 +287,29 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
  */
 customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
+  const userId = getUserId(c);
+  if (!userId || userId === 'default') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+      401
+    );
+  }
   const service = getDatabaseService();
 
   const record = await service.getRecord(recordId);
   if (!record) {
     return notFoundError(c, 'Record', recordId);
+  }
+
+  // IDOR-007: Verify the table is not protected before returning records
+  const table = await service.getTable(record.tableId);
+  if (table?.isProtected) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.FORBIDDEN, message: 'Access to protected table records denied' },
+      403
+    );
   }
 
   return apiResponse(c, record);
@@ -301,6 +320,14 @@ customDataRoutes.get('/records/:id', async (c) => {
  */
 customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
+  const userId = getUserId(c);
+  if (!userId || userId === 'default') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+      401
+    );
+  }
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateCustomRecordSchema } = await import('../middleware/validation.js');
   const body = validateBody(updateCustomRecordSchema, rawBody) as { data: Record<string, unknown> };
@@ -315,6 +342,22 @@ customDataRoutes.put('/records/:id', async (c) => {
 
   try {
     const service = getDatabaseService();
+
+    // IDOR-007: Enforce ownership before updating
+    const existing = await service.getRecord(recordId);
+    if (!existing) {
+      return notFoundError(c, 'Record', recordId);
+    }
+    // Verify table is not protected
+    const table = await service.getTable(existing.tableId);
+    if (table?.isProtected) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.FORBIDDEN, message: 'Access to protected table records denied' },
+        403
+      );
+    }
+
     const updated = await service.updateRecord(recordId, body.data);
 
     if (!updated) {
@@ -342,7 +385,30 @@ customDataRoutes.put('/records/:id', async (c) => {
  */
 customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
+  const userId = getUserId(c);
+  if (!userId || userId === 'default') {
+    return apiError(
+      c,
+      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+      401
+    );
+  }
   const service = getDatabaseService();
+
+  // IDOR-007: Enforce ownership before deleting
+  const existing = await service.getRecord(recordId);
+  if (!existing) {
+    return notFoundError(c, 'Record', recordId);
+  }
+  // Verify table is not protected
+  const table = await service.getTable(existing.tableId);
+  if (table?.isProtected) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.FORBIDDEN, message: 'Access to protected table records denied' },
+      403
+    );
+  }
 
   const deleted = await service.deleteRecord(recordId);
   if (!deleted) {

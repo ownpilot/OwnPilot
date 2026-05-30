@@ -65,6 +65,11 @@ const { customDataRoutes } = await import('./custom-data.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate authenticated session — required by IDOR-007 fix
+  app.use('*', async (c, next) => {
+    c.set('userId', 'test-user');
+    return next();
+  });
   app.route('/custom-data', customDataRoutes);
   app.onError(errorHandler);
   return app;
@@ -400,6 +405,15 @@ describe('Custom Data Routes', () => {
 
   describe('PUT /custom-data/records/:id', () => {
     it('updates a record', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'tbl-1',
+        data: { title: 'Old' },
+      });
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        isProtected: false,
+      });
       mockCustomDataService.updateRecord.mockResolvedValue({
         id: 'r1',
         data: { title: 'Updated' },
@@ -445,6 +459,15 @@ describe('Custom Data Routes', () => {
 
   describe('DELETE /custom-data/records/:id', () => {
     it('deletes a record', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'tbl-1',
+        data: {},
+      });
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        isProtected: false,
+      });
       mockCustomDataService.deleteRecord.mockResolvedValue(true);
 
       const res = await app.request('/custom-data/records/r1', { method: 'DELETE' });
@@ -602,6 +625,15 @@ describe('Custom Data Routes', () => {
     });
 
     it('returns 400 when updateRecord throws', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'tbl-1',
+        data: {},
+      });
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        isProtected: false,
+      });
       mockCustomDataService.updateRecord.mockRejectedValue(new Error('Update failed'));
 
       const res = await app.request('/custom-data/records/r1', {
