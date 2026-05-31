@@ -208,7 +208,9 @@ describe('AgentCommunicationBus.readInbox()', () => {
     const repo = makeRepo();
     const bus = new AgentCommunicationBus(repo, makeEventBus());
     await bus.readInbox('agent-b');
-    expect(repo.findForAgent).toHaveBeenCalledWith('agent-b', {
+    // readInbox falls back to workspaceId = agentId, so findForAgent is called
+    // as (agentId, effectiveWorkspaceId, options).
+    expect(repo.findForAgent).toHaveBeenCalledWith('agent-b', 'agent-b', {
       unreadOnly: true,
       limit: 20,
       types: undefined,
