@@ -62,6 +62,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   qualifyToolName: mockQualifyToolName,
   calculateCost: mockCalculateCost,
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  resetServiceRegistrySync: vi.fn(),
   // Cap helpers now live on the LLMRouter capability. Mirror production
   // behavior so the Agent constructor still sees a sensible memory/output
   // budget regardless of which route a runner takes.

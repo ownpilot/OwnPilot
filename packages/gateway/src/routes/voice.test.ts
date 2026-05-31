@@ -36,6 +36,11 @@ const { voiceRoutes } = await import('./voice.js');
 function createApp() {
   const app = new Hono();
   app.use('*', requestId);
+  app.use('*', async (c, next) => {
+    // Simulate authenticated user for all voice routes
+    c.set('userId', 'user-1');
+    await next();
+  });
   app.route('/voice', voiceRoutes);
   app.onError(errorHandler);
   return app;

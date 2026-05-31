@@ -8,6 +8,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { requestId } from '../middleware/request-id.js';
+
+// Enable LOCAL_DEV bypass BEFORE importing debug routes so the
+// requireDebugAccess middleware sees it at module evaluation time
+process.env.LOCAL_DEV = 'true';
 import { errorHandler } from '../middleware/error-handler.js';
 
 // ---------------------------------------------------------------------------
@@ -69,7 +73,8 @@ const { debugRoutes } = await import('./debug.js');
 // ---------------------------------------------------------------------------
 
 function createApp() {
-  const app = new Hono();
+  // Pass LOCAL_DEV through app.env so c.env?.LOCAL_DEV works in middleware
+  const app = new Hono({ get: () => ({ LOCAL_DEV: process.env.LOCAL_DEV }) });
   app.use('*', requestId);
   app.route('/debug', debugRoutes);
   app.onError(errorHandler);
@@ -85,10 +90,21 @@ describe('Debug Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set ADMIN_API_KEY so the requireDebugAccess middleware allows requests.
+    // Tests that expect 403/503 delete/unset this before running.
+    process.env.ADMIN_API_KEY = 'secret-admin';
     mockDebugLog.getAll.mockReturnValue([...sampleEntries]);
     mockDebugLog.isEnabled.mockReturnValue(true);
     app = createApp();
   });
+
+  afterEach(() => {
+    delete process.env.ADMIN_API_KEY;
+  });
+
+  // Helper: make a request with the correct admin key header
+  const req = (path: string, init?: RequestInit) =>
+    app.request(path, { ...init, headers: { ...init?.headers, 'X-Admin-Key': 'secret-admin' } });
 
   // ========================================================================
   // GET /debug
@@ -96,7 +112,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug', () => {
     it('returns debug log entries', async () => {
-      const res = await app.request('/debug');
+      const res = await req('/debug');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -106,7 +122,7 @@ describe('Debug Routes', () => {
     });
 
     it('respects count parameter', async () => {
-      const res = await app.request('/debug?count=3');
+      const res = await req('/debug?count=3');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -121,7 +137,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug/recent', () => {
     it('returns recent entries', async () => {
-      const res = await app.request('/debug/recent');
+      const res = await req('/debug/recent');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -130,7 +146,7 @@ describe('Debug Routes', () => {
     });
 
     it('accepts custom count', async () => {
-      const res = await app.request('/debug/recent?count=5');
+      const res = await req('/debug/recent?count=5');
 
       expect(res.status).toBe(200);
       expect(mockDebugLog.getRecent).toHaveBeenCalledWith(5);
@@ -143,7 +159,7 @@ describe('Debug Routes', () => {
 
   describe('DELETE /debug', () => {
     it('clears debug log', async () => {
-      const res = await app.request('/debug', { method: 'DELETE' });
+      const res = await req('/debug', { method: 'DELETE' });
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -160,7 +176,7 @@ describe('Debug Routes', () => {
     it('toggles debug logging on', async () => {
       mockDebugLog.isEnabled.mockReturnValue(false);
 
-      const res = await app.request('/debug/toggle', {
+      const res = await req('/debug/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: true }),
@@ -173,7 +189,7 @@ describe('Debug Routes', () => {
     it('toggles debug logging off', async () => {
       mockDebugLog.isEnabled.mockReturnValue(false);
 
-      const res = await app.request('/debug/toggle', {
+      const res = await req('/debug/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: false }),
@@ -191,7 +207,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug/errors', () => {
     it('returns only error and retry entries', async () => {
-      const res = await app.request('/debug/errors');
+      const res = await req('/debug/errors');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -209,7 +225,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug/requests', () => {
     it('returns only request and response entries', async () => {
-      const res = await app.request('/debug/requests');
+      const res = await req('/debug/requests');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -228,7 +244,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug/tools', () => {
     it('returns only tool_call and tool_result entries', async () => {
-      const res = await app.request('/debug/tools');
+      const res = await req('/debug/tools');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -247,7 +263,7 @@ describe('Debug Routes', () => {
 
   describe('GET /debug/sandbox', () => {
     it('returns sandbox executions with stats', async () => {
-      const res = await app.request('/debug/sandbox');
+      const res = await req('/debug/sandbox');
 
       expect(res.status).toBe(200);
       const json = await res.json();
@@ -284,7 +300,9 @@ describe('Debug Routes', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ADMIN_API_KEY;
 
-      const res = await app.request('/debug');
+      const res = await app.request('/debug', {
+        headers: { origin: 'http://localhost:8199' },
+      });
 
       expect(res.status).toBe(503);
       const json = await res.json();
@@ -302,6 +320,17 @@ describe('Debug Routes', () => {
       expect(res.status).toBe(403);
       const json = await res.json();
       expect(json.error.code).toBe('ACCESS_DENIED');
+    });
+
+    it('returns 200 in production when correct X-Admin-Key is provided', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ADMIN_API_KEY = 'secret-admin-key';
+
+      const res = await app.request('/debug', {
+        headers: { 'X-Admin-Key': 'secret-admin-key' },
+      });
+
+      expect(res.status).toBe(200);
     });
   });
 });

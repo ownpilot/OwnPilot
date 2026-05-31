@@ -45,6 +45,11 @@ const { bridgeRoutes } = await import('./bridges.js');
 
 function createApp() {
   const app = new Hono();
+  app.use('*', async (c, next) => {
+    // Simulate authenticated user for all bridge routes
+    c.set('userId', 'user-1');
+    await next();
+  });
   app.route('/bridges', bridgeRoutes);
   app.onError(errorHandler);
   return app;

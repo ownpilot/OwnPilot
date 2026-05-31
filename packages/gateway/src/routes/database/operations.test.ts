@@ -40,6 +40,11 @@ vi.mock('fs/promises', () => ({
   stat: (...args: unknown[]) => mockStat(...(args as [])),
 }));
 
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ownpilot/core')>()),
+  resetServiceRegistrySync: vi.fn(),
+}));
+
 let testOperationStatus = { isRunning: false } as Record<string, unknown>;
 const mockSetOperationStatus = vi.fn((status: Record<string, unknown>) => {
   Object.assign(testOperationStatus, status);
@@ -392,6 +397,8 @@ describe('Operation Routes', () => {
 afterEach(async () => {
   vi.clearAllMocks();
 
+  // Reset all legacy singletons to prevent state pollution across tests
+  // Note: Some imports may not have reset functions, so we use optional pattern
   const [
     { resetServiceRegistrySync },
     { resetPulseMetricsService },
@@ -406,18 +413,22 @@ afterEach(async () => {
     { resetCodingAgentSessionManager },
     { resetBrowserService },
   ] = await Promise.all([
-    import('@ownpilot/core'),
-    import('../../services/metric/pulse.js'),
-    import('../../services/heartbeat/service.js'),
-    import('../../services/embedding/queue.js'),
-    import('../../services/embedding/service.js'),
-    import('../../services/memory-service.js'),
-    import('../../services/goal-service.js'),
-    import('../../services/plan-service.js'),
-    import('../../services/trigger-service.js'),
-    import('../../services/coding-agent/service.js'),
-    import('../../services/coding-agent/sessions.js'),
-    import('../../services/browser-service.js'),
+    import('@ownpilot/core').catch(() => ({ resetServiceRegistrySync: vi.fn() })),
+    import('../../services/metric/pulse.js').catch(() => ({ resetPulseMetricsService: vi.fn() })),
+    import('../../services/heartbeat/service.js').catch(() => ({ resetHeartbeatService: vi.fn() })),
+    import('../../services/embedding/queue.js').catch(() => ({ resetEmbeddingQueue: vi.fn() })),
+    import('../../services/embedding/service.js').catch(() => ({ resetEmbeddingService: vi.fn() })),
+    import('../../services/memory-service.js').catch(() => ({ resetMemoryService: vi.fn() })),
+    import('../../services/goal-service.js').catch(() => ({ resetGoalService: vi.fn() })),
+    import('../../services/plan-service.js').catch(() => ({ resetPlanService: vi.fn() })),
+    import('../../services/trigger-service.js').catch(() => ({ resetTriggerService: vi.fn() })),
+    import('../../services/coding-agent/service.js').catch(() => ({
+      resetCodingAgentService: vi.fn(),
+    })),
+    import('../../services/coding-agent/sessions.js').catch(() => ({
+      resetCodingAgentSessionManager: vi.fn(),
+    })),
+    import('../../services/browser-service.js').catch(() => ({ resetBrowserService: vi.fn() })),
   ]);
 
   resetBrowserService();

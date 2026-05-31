@@ -162,33 +162,36 @@ describe('Database Routes', () => {
     process.env = { ...originalEnv };
   });
 
-  // ─── No Admin Middleware ─────────────────────────────────────
-  // Database routes rely on the global auth middleware configured in app.ts.
-  // No separate admin key guard is applied.
+  // ─── Admin Key Required ───────────────────────────────────────
+  // Database routes require ADMIN_KEY env var and valid X-Admin-Key header.
 
   describe('Access without admin key', () => {
-    it('should allow /status without X-Admin-Key header', async () => {
-      mockAdapter.queryOne
-        .mockResolvedValueOnce({ size: '15 MB' })
-        .mockResolvedValueOnce({ count: '30' });
-      mockExistsSync.mockReturnValue(false);
-      mockReaddir.mockResolvedValue([]);
+    it('should return 403 when ADMIN_KEY is not set', async () => {
+      delete process.env.ADMIN_KEY;
+      // Reset to empty env to simulate no key configured
+      process.env = { ...originalEnv, ADMIN_KEY: undefined };
 
       const res = await app.request('/db/status');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
     });
 
-    it('should allow /stats without X-Admin-Key header', async () => {
-      mockAdapter.queryOne
-        .mockResolvedValueOnce({ size: '50 MB', raw_size: '52428800' })
-        .mockResolvedValueOnce({ active_connections: '3', max_connections: '100' })
-        .mockResolvedValueOnce({ version: 'PostgreSQL 16.1' });
-      mockAdapter.query.mockResolvedValue([]);
+    it('should return 403 when X-Admin-Key header is missing', async () => {
+      process.env.ADMIN_KEY = ADMIN_KEY;
 
-      const res = await app.request('/db/stats');
+      const res = await app.request('/db/status');
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(403);
+    });
+
+    it('should return 403 when X-Admin-Key header is wrong', async () => {
+      process.env.ADMIN_KEY = ADMIN_KEY;
+
+      const res = await app.request('/db/status', {
+        headers: { 'X-Admin-Key': 'wrong-key' },
+      });
+
+      expect(res.status).toBe(403);
     });
   });
 

@@ -31,6 +31,12 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
+// Mock @ownpilot/core — only resetServiceRegistrySync is needed in afterEach
+vi.mock('@ownpilot/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ownpilot/core')>()),
+  resetServiceRegistrySync: vi.fn(),
+}));
+
 import {
   CliChatProvider,
   detectCliChatProviders,
@@ -591,17 +597,17 @@ afterEach(async () => {
     { resetBrowserService },
   ] = await Promise.all([
     import('@ownpilot/core'),
-    import('../../metric/pulse.js'),
-    import('../../heartbeat/service.js'),
-    import('../../embedding/queue.js'),
-    import('../../embedding/service.js'),
-    import('../../memory-service.js'),
-    import('../../goal-service.js'),
-    import('../../plan-service.js'),
-    import('../../trigger-service.js'),
-    import('../../coding-agent/service.js'),
-    import('../../coding-agent/sessions.js'),
-    import('../../browser-service.js'),
+    import('../metric/pulse.js'),
+    import('../heartbeat/service.js'),
+    import('../embedding/queue.js'),
+    import('../embedding/service.js'),
+    import('../memory-service.js'),
+    import('../goal-service.js'),
+    import('../plan-service.js'),
+    import('../trigger-service.js'),
+    import('../coding-agent/service.js'),
+    import('../coding-agent/sessions.js'),
+    import('../browser-service.js'),
   ]);
 
   resetBrowserService();

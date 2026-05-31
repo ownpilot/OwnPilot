@@ -6,22 +6,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import { errorHandler } from '../middleware/error-handler.js';
 
-const { mockService } = vi.hoisted(() => ({
-  mockService: {
-    listCanvases: vi.fn(async () => []),
-    listElements: vi.fn(async () => []),
-    addElement: vi.fn(async () => null),
-    updateElement: vi.fn(async () => null),
-    moveElement: vi.fn(async () => null),
-    removeElement: vi.fn(async () => false),
-    clearCanvas: vi.fn(async () => 0),
-  },
-}));
+// Create mock service at module level with vi.fn() implementations
+const mockService = {
+  listCanvases: vi.fn<() => Promise<any>>(),
+  listElements: vi.fn<() => Promise<any>>(),
+  addElement: vi.fn<() => Promise<any>>(),
+  updateElement: vi.fn<() => Promise<any>>(),
+  moveElement: vi.fn<() => Promise<any>>(),
+  removeElement: vi.fn<() => Promise<any>>(),
+  clearCanvas: vi.fn<() => Promise<any>>(),
+};
 
+// Mock the service module — getCanvasServiceImpl returns mockService
 vi.mock('../services/canvas/service.js', () => ({
-  getCanvasServiceImpl: vi.fn(() => mockService),
+  getCanvasServiceImpl: () => mockService,
 }));
 
+// Named imports must match the named exports
 const { canvasRoutes } = await import('./canvas.js');
 
 function createApp() {
@@ -55,7 +56,15 @@ describe('Canvas Routes', () => {
   let app: Hono;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Do NOT call vi.clearAllMocks() — it clears the mockResolvedValue queue
+    // for vi.fn() mocks created with an initial implementation
+    mockService.listCanvases.mockClear();
+    mockService.listElements.mockClear();
+    mockService.addElement.mockClear();
+    mockService.updateElement.mockClear();
+    mockService.moveElement.mockClear();
+    mockService.removeElement.mockClear();
+    mockService.clearCanvas.mockClear();
     mockService.listCanvases.mockResolvedValue([{ canvasId: 'main', count: 1 }]);
     mockService.listElements.mockResolvedValue([sampleElement]);
     mockService.addElement.mockResolvedValue(sampleElement);
@@ -71,6 +80,7 @@ describe('Canvas Routes', () => {
       const res = await app.request('/canvas');
       expect(res.status).toBe(200);
       const body = await res.json();
+      expect(body.success).toBe(true);
       expect(body.data.canvases).toEqual([{ canvasId: 'main', count: 1 }]);
     });
   });
@@ -116,7 +126,7 @@ describe('Canvas Routes', () => {
     });
 
     it('returns 404 when missing', async () => {
-      mockService.updateElement.mockResolvedValueOnce(null);
+      mockService.updateElement.mockResolvedValue(null);
       const res = await app.request('/canvas/main/elements/missing', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
@@ -136,7 +146,7 @@ describe('Canvas Routes', () => {
     });
 
     it('returns 404 when missing', async () => {
-      mockService.removeElement.mockResolvedValueOnce(false);
+      mockService.removeElement.mockResolvedValue(false);
       const res = await app.request('/canvas/main/elements/missing', { method: 'DELETE' });
       expect(res.status).toBe(404);
     });
@@ -177,7 +187,7 @@ describe('Canvas Routes', () => {
     });
 
     it('returns 404 when the element does not exist', async () => {
-      mockService.moveElement.mockResolvedValueOnce(null);
+      mockService.moveElement.mockResolvedValue(null);
       const res = await app.request('/canvas/main/elements/missing/move', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

@@ -44,18 +44,6 @@ describe('databaseRoutes admin guard', () => {
     else delete process.env.ADMIN_KEY;
   });
 
-  // --- GET requests (read-only) pass without admin key ---
-
-  it('allows GET /status without admin key when ADMIN_KEY not set', async () => {
-    const res = await databaseRoutes.request('/status');
-    expect(res.status).not.toBe(403);
-  });
-
-  it('allows GET /backup without admin key', async () => {
-    const res = await databaseRoutes.request('/backup');
-    expect(res.status).not.toBe(403);
-  });
-
   // --- GET /export requires admin key (contains /export) ---
 
   it('blocks GET /export when ADMIN_KEY is not set', async () => {
