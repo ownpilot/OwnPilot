@@ -106,7 +106,18 @@ export const uiSessionMiddleware = createMiddleware(async (c, next) => {
         401
       );
     }
+
+    // Password configured + Authorization/X-API-Key present: let the API auth
+    // middleware validate the credential.
+    return next();
   }
 
+  // No UI password configured — this is an open single-user deployment, so the
+  // local owner is implicitly authenticated. Mark the request as the 'default'
+  // owner so downstream route guards (e.g. claws IDOR-017) don't mistake the
+  // legitimate owner for an anonymous caller and 401 them, which would bounce
+  // the web UI back to the login screen even though no password exists.
+  c.set('sessionAuthenticated', true);
+  c.set('userId', 'default');
   return next();
 });

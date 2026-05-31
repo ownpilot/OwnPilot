@@ -424,8 +424,12 @@ clawRoutes.get('/recommendations', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
     const service = getClawService();
     const configs = await service.listClaws(userId);
@@ -457,8 +461,12 @@ clawRoutes.post('/recommendations/apply', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     let raw: unknown = {};
@@ -534,8 +542,12 @@ clawRoutes.get('/', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const service = getClawService();
@@ -564,8 +576,12 @@ clawRoutes.get('/stats', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const service = getClawService();
@@ -626,8 +642,12 @@ clawRoutes.get('/fleet/eval', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const { limit } = getPaginationParams(c);
@@ -654,8 +674,12 @@ clawRoutes.get('/health', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const service = getClawService();
@@ -713,8 +737,12 @@ clawRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const body = validateBody(createClawSchema, await c.req.json());
@@ -761,8 +789,12 @@ clawRoutes.get('/:id/doctor', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const { id } = c.req.param();

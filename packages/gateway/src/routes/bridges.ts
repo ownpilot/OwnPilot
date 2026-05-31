@@ -73,8 +73,12 @@ bridgeRoutes.post('/', async (c) => {
   try {
     const userId = getUserId(c);
     // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default') {
-      return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+    if (userId === 'default' && !c.get('sessionAuthenticated')) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+        401
+      );
     }
 
     const body = validateBody(createBridgeSchema, await c.req.json());

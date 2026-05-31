@@ -593,7 +593,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
     const userId = getUserId(c);
-    if (!userId || userId === 'default') {
+    if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
       return apiError(
         c,
         { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },

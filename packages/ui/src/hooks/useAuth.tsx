@@ -90,7 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         dispatchSessionChanged(false);
         setState((prev) => {
           if (!prev.isAuthenticated) return prev;
-          return { ...prev, isAuthenticated: false, passwordConfigured: true };
+          // No password configured → the app is open; a stray 401 from any
+          // endpoint must not eject the owner to a login screen they cannot
+          // satisfy. Only force re-auth when a password actually gates the UI.
+          if (!prev.passwordConfigured) return prev;
+          return { ...prev, isAuthenticated: false };
         });
       }
     });
@@ -102,7 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!detail.authenticated) {
         setState((prev) => {
           if (!prev.isAuthenticated) return prev;
-          return { ...prev, isAuthenticated: false, passwordConfigured: true };
+          // No password configured → the app is open; a stray 401 from any
+          // endpoint must not eject the owner to a login screen they cannot
+          // satisfy. Only force re-auth when a password actually gates the UI.
+          if (!prev.passwordConfigured) return prev;
+          return { ...prev, isAuthenticated: false };
         });
       }
     });

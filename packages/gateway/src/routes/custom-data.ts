@@ -288,12 +288,8 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
 customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const userId = getUserId(c);
-  if (!userId || userId === 'default') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-      401
-    );
+  if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
   const service = getDatabaseService();
 
@@ -321,12 +317,8 @@ customDataRoutes.get('/records/:id', async (c) => {
 customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const userId = getUserId(c);
-  if (!userId || userId === 'default') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-      401
-    );
+  if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateCustomRecordSchema } = await import('../middleware/validation.js');
@@ -386,12 +378,8 @@ customDataRoutes.put('/records/:id', async (c) => {
 customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
   const userId = getUserId(c);
-  if (!userId || userId === 'default') {
-    return apiError(
-      c,
-      { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-      401
-    );
+  if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
   const service = getDatabaseService();
 
