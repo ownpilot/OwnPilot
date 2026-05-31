@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-const elementStyleSchema = z.record(z.unknown()).optional();
+const elementStyleSchema = z.record(z.string(), z.unknown()).optional();
 
 const baseElementSchema = z.object({
   type: z.enum(['text', 'note', 'heading', 'image', 'shape', 'markdown', 'html']),

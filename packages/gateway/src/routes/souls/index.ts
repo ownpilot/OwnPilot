@@ -50,7 +50,7 @@ soulRoutes.get('/stats', async (c) => {
     }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId);
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
 
     return apiResponse(c, {
       totalCycles: stats.totalCycles,
@@ -78,7 +78,7 @@ soulRoutes.get('/health', async (c) => {
     }
     const hbRepo = getHeartbeatLogRepository();
 
-    const stats = await hbRepo.getStatsByUser(userId);
+    const stats = await hbRepo.getStatsByUser(userId ?? 'default');
 
     const signals: string[] = [];
     const recommendations: string[] = [];

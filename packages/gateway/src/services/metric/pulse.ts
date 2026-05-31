@@ -43,7 +43,7 @@ export interface PulseClawStatus {
   nextRetryAt: number | null;
 }
 
-class PulseMetricsService {
+export class PulseMetricsService {
   private claws = new Map<string, TrackedClaw>();
   private eventCleanup: Array<() => void> = [];
   private running = false;

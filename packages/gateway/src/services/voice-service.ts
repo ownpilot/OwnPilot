@@ -207,3 +207,11 @@ export function getVoiceService(): VoiceService {
   }
   return instance;
 }
+
+/**
+ * Reset the singleton (used on shutdown / in tests) so a fresh instance is
+ * built on the next getVoiceService() call.
+ */
+export function resetVoiceService(): void {
+  instance = null;
+}

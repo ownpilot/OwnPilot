@@ -578,7 +578,11 @@ async function main() {
   // so event subscriptions can be cleaned up via resetPulseMetricsService() on shutdown.
   const { getPulseMetricsServiceForRegistry } = await import('./services/metric/pulse.js');
   registry.registerFactory(
-    Services.Pulse as ServiceToken<import('./services/metric/pulse.js').PulseMetricsService>,
+    // Services.Pulse intentionally holds the PulseMetricsService instance (see
+    // comment above); the token is typed for IPulseService, so bridge via unknown.
+    Services.Pulse as unknown as ServiceToken<
+      import('./services/metric/pulse.js').PulseMetricsService
+    >,
     () => getPulseMetricsServiceForRegistry()
   );
   // Start after registry registration so .start() is called once

@@ -22,7 +22,14 @@ import {
   CLAW_TASK_STALL_AUTO_ESCALATE,
   CLAW_TASK_STALL_FORCE_BLOCK,
 } from '@ownpilot/core';
-import type { ClawSession, ClawCycleResult, ClawEscalation, EventHandler } from '@ownpilot/core';
+import type {
+  ClawSession,
+  ClawCycleResult,
+  ClawEscalation,
+  ClawTask,
+  ClawPlanHistoryEntry,
+  EventHandler,
+} from '@ownpilot/core';
 import { ClawRunner } from './runner.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import {
