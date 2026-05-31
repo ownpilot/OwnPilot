@@ -11,7 +11,9 @@ export default defineConfig({
   retries: 0,
   use: {
     baseURL: 'http://localhost:8199',
-    headless: false,
+    // Headed locally for debugging, but headless in CI — CI runners have no
+    // X server, so a headed launch crashes with "platform failed to initialize".
+    headless: !!process.env.CI,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
