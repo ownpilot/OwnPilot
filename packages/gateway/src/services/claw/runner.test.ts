@@ -840,12 +840,10 @@ describe('ClawRunner autonomy guardrail', () => {
   });
 
   it('passes a guardrail that denies a blocked destructive tool and audits it', async () => {
-    const check = vi
-      .fn()
-      .mockResolvedValue({
-        type: 'deny',
-        reason: 'Destructive action "delete_file" blocked by autonomy policy',
-      });
+    const check = vi.fn().mockResolvedValue({
+      type: 'deny',
+      reason: 'Destructive action "delete_file" blocked by autonomy policy',
+    });
 
     let captured:
       | ((tc: {
