@@ -5,7 +5,7 @@
  * fake API endpoints and verifies the served spec covers them.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 import { registerOpenApiRoutes } from './openapi.js';
 
@@ -59,5 +59,33 @@ describe('OpenAPI routes', () => {
     const html = await res.text();
     expect(html).toContain('swagger-ui');
     expect(html).toContain('/openapi.json');
+  });
+
+  describe('API-001 production gate', () => {
+    const prevEnv = process.env.NODE_ENV;
+    const prevFlag = process.env.ENABLE_API_DOCS;
+    afterEach(() => {
+      process.env.NODE_ENV = prevEnv;
+      if (prevFlag === undefined) delete process.env.ENABLE_API_DOCS;
+      else process.env.ENABLE_API_DOCS = prevFlag;
+    });
+
+    it('does not register docs in production by default', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.ENABLE_API_DOCS;
+      const prod = new Hono();
+      registerOpenApiRoutes(prod);
+      expect((await prod.request('/openapi.json')).status).toBe(404);
+      expect((await prod.request('/docs')).status).toBe(404);
+    });
+
+    it('registers docs in production when ENABLE_API_DOCS=true', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.ENABLE_API_DOCS = 'true';
+      const prod = new Hono();
+      registerOpenApiRoutes(prod);
+      expect((await prod.request('/openapi.json')).status).toBe(200);
+      expect((await prod.request('/docs')).status).toBe(200);
+    });
   });
 });
