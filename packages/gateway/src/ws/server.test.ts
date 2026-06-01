@@ -422,6 +422,29 @@ describe('WSGateway', () => {
       expect(socket.close).not.toHaveBeenCalled();
     });
 
+    it('allows the gateway https self-origin over TLS (WS-001)', async () => {
+      const prevPort = process.env.PORT;
+      process.env.PORT = '9443'; // self-origin derives from PORT
+      try {
+        const gw = new WSGateway({ allowedOrigins: [] });
+        gw.start();
+
+        const handler = getConnectionHandler();
+        const socket = createMockSocket();
+        const request = createMockRequest('/', {
+          origin: 'https://localhost:9443',
+        });
+
+        await handler(socket, request);
+
+        expect(mockSessionManager.create).toHaveBeenCalled();
+        expect(socket.close).not.toHaveBeenCalled();
+      } finally {
+        if (prevPort === undefined) delete process.env.PORT;
+        else process.env.PORT = prevPort;
+      }
+    });
+
     it('rejects when no origin header even with empty allowlist (CSWSH defense)', async () => {
       const gw = new WSGateway({ allowedOrigins: [] });
       gw.start();
