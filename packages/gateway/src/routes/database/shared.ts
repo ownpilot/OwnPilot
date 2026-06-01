@@ -76,8 +76,12 @@ export const EXPORT_TABLES = [
   'local_models',
   // Edge
   'edge_devices',
-  // System
-  'system_settings',
+  // SECURITY (EXPOSE-002): `system_settings` is intentionally NOT exportable.
+  // It holds only regenerable runtime secrets (gateway API keys, JWT secret,
+  // channel pairing/ownership keys) — never user data — so dumping it into a
+  // portable, unencrypted backup/CSV leaked auth secrets to anyone with the
+  // export. Removing it from this allowlist blocks export, CSV download, and
+  // import of the table. Secrets are recreated by the gateway on next start.
 ];
 
 // --- SQL Injection Protection ---

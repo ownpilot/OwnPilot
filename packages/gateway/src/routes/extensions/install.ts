@@ -26,6 +26,7 @@ import {
   normalizeArchiveEntryPath,
   sanitizeFilenameSegment,
 } from '../../utils/file-safety.js';
+import { getAllScanDirectories } from '../../services/extension/scanner.js';
 import { createLoginThrottle } from '../../utils/login-throttle.js';
 import { getClientIp } from '../../utils/client-ip.js';
 import { MS_PER_MINUTE } from '../../config/defaults.js';
@@ -182,9 +183,26 @@ installRoutes.post('/install', async (c) => {
     );
   }
 
+  // SECURITY (PATH-001): install() does readFileSync(path) with no containment.
+  // Without this guard any authenticated caller could read arbitrary files on
+  // the host (e.g. /etc/shadow, ~/.ssh/id_rsa). Restrict the path to the known
+  // extensions/skills scan directories — the only legitimate install sources.
+  const requestedPath = (body as { path: string }).path;
+  const allowedRoots = getAllScanDirectories();
+  if (!allowedRoots.some((root) => isWithinDirectory(root, requestedPath))) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: 'path must be inside an extensions or skills directory',
+      },
+      400
+    );
+  }
+
   try {
     const service = getExtService();
-    const record = await service.install((body as { path: string }).path, userId);
+    const record = await service.install(requestedPath, userId);
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
     // Audit extension install — registers new code, tools, and triggers
     // in the runtime, plus any permissions the manifest declared.

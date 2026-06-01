@@ -28,7 +28,8 @@ import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
 import { resolveAuthForRequest } from '../auth/oauth-flow.js';
-import { getLLMRouter, getConfigCenter } from '@ownpilot/core';
+import { getLLMRouter, getConfigCenter, estimateCost } from '@ownpilot/core';
+import { budgetManager } from '../usage-tracking.js';
 import {
   registerGatewayTools,
   registerDynamicTools,
@@ -587,12 +588,54 @@ function createCancellationPromise(signal: AbortSignal): {
  * - Building the message
  * - Mapping `AgentPipelineResult` to its own domain result type
  */
+/**
+ * Thrown when a pre-spend budget check blocks an autonomous LLM call (BIZ-001).
+ * Distinct type so the fail-open catch around the budget subsystem does not
+ * swallow an intentional block, and so runners can recognise it.
+ */
+export class BudgetExceededError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'BudgetExceededError';
+  }
+}
+
 export async function executeAgentPipeline(
   provider: string,
   model: string,
   opts: AgentPipelineOptions
 ): Promise<AgentPipelineResult> {
   const startTime = Date.now();
+
+  // Pre-spend budget enforcement (BIZ-001): the chat HTTP route enforces the
+  // operator's budget before dispatching an LLM call, but autonomous runners
+  // (Claw continuous/interval, Soul heartbeat, Subagent) went straight to
+  // agent.chat() — a runaway loop could blow the daily/weekly/monthly budget.
+  // executeAgentPipeline is the shared chokepoint for all of them. Fail open on
+  // any budget-subsystem error so a misconfiguration never wedges autonomous
+  // execution; only an explicit "not allowed" decision blocks.
+  if (provider && model && !provider.startsWith('cli-')) {
+    try {
+      const messageText = typeof opts.message === 'string' ? opts.message : '';
+      const estimate = estimateCost(provider as AIProvider, model, messageText, 1000);
+      const decision = await budgetManager.canSpend(estimate.estimatedCost);
+      if (!decision.allowed) {
+        log.warn(
+          `[AgentPipeline] Blocked by budget for ${
+            opts.agentId ?? opts.timeoutLabel ?? 'agent'
+          }: ${decision.reason}`
+        );
+        throw new BudgetExceededError(decision.reason ?? 'Request blocked by budget policy.');
+      }
+    } catch (err) {
+      if (err instanceof BudgetExceededError) throw err;
+      log.debug(
+        `[AgentPipeline] Budget check skipped (fail-open): ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
+  }
 
   // Collect tool calls via callback
   const collector = createToolCallCollector();

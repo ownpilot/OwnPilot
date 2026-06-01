@@ -106,15 +106,21 @@ export const DANGEROUS_CODE_PATTERNS: ReadonlyArray<CodeValidationPattern> = [
     pattern: /[.[]\s*['"]?\s*constructor\b/,
     message: 'constructor property access is not allowed',
   },
-  // String-concat bypass — `obj['construct'+'or']` evades the literal-token
+  // String-concat bypass — `obj['constructo'+'r']` evades the literal-token
   // check above. Legitimate code does not assemble the word "constructor"
-  // from fragments. Catch the common splits explicitly.
+  // from fragments. These two patterns cover EVERY single split point of the
+  // word (left prefix immediately followed by `+`, or `+` immediately followed
+  // by a right suffix). NOTE: this is defense-in-depth only — the real fix is
+  // that the VM sandbox no longer injects any host-realm object, so even a
+  // multi-fragment split that evades these regexes can only reach the
+  // context-realm Function constructor, which `codeGeneration.strings:false`
+  // disables. See services/extension/sandbox.ts (RCE-001).
   {
-    pattern: /(['"]construct['"]|['"]constr['"]|['"]con['"]).*\+/,
+    pattern: /['"](?:co|con|cons|const|constr|constru|construc|construct|constructo)['"]\s*\+/,
     message: 'string-concat constructor access is not allowed',
   },
   {
-    pattern: /\+.*?(['"]uctor['"]|['"]ructor['"]|['"]tor['"]|['"]structor['"])/,
+    pattern: /\+\s*['"](?:r|or|tor|ctor|uctor|ructor|tructor|structor|nstructor|onstructor)['"]/,
     message: 'string-concat constructor access is not allowed',
   },
   { pattern: /\bgetPrototypeOf\b/, message: 'getPrototypeOf is not allowed' },

@@ -6,7 +6,7 @@
  * through EventBus, handles verification, and manages sessions.
  */
 
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, randomInt } from 'node:crypto';
 import {
   type IChannelService,
   type ChannelOutgoingMessage,
@@ -1430,8 +1430,10 @@ export class ChannelServiceImpl implements IChannelService {
     senderUserId: string,
     _ownerUserId: string
   ): Promise<string> {
-    // Generate 6-digit code
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    // Generate 6-digit code. SECURITY (EXPOSE-004): use a CSPRNG — Math.random()
+    // is a non-cryptographic PRNG whose internal state can be recovered from a
+    // few observed outputs, making pairing codes predictable/brute-forceable.
+    const code = String(randomInt(100000, 1000000));
 
     // Store in verification_tokens
     await this.dmPairingRequests.create({

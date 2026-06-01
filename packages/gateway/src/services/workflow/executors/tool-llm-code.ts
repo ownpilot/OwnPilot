@@ -20,7 +20,7 @@ import { createProvider, type ProviderConfig, type IToolService } from '@ownpilo
 import { getErrorMessage } from '../../../utils/common.js';
 import { NATIVE_PROVIDERS, loadProviderConfig, getProviderApiKey } from '../../agent/cache.js';
 import { resolveDefaultProviderAndModel } from '../../app-settings.js';
-import { resolveTemplates } from '../template-resolver.js';
+import { resolveTemplates, resolveCodeTemplates } from '../template-resolver.js';
 import type { ToolExecutionResult } from '../types.js';
 import { log, safeVmEval, toToolExecResult, resolveWorkflowToolName } from './utils.js';
 
@@ -271,8 +271,10 @@ export async function executeCodeNode(
       };
     }
 
-    const resolvedCode = resolveTemplates({ _code: data.code }, nodeOutputs, variables)
-      ._code as string;
+    // SECURITY (RCE-002): encode interpolated upstream values as JS literals so
+    // attacker-influenced node output (HTTP/LLM/webhook data) cannot break out
+    // of a data position into executable code.
+    const resolvedCode = resolveCodeTemplates(data.code ?? '', nodeOutputs, variables);
 
     const toolMap: Record<string, string> = {
       javascript: 'execute_javascript',
@@ -325,8 +327,9 @@ export function executeTransformerNode(
   try {
     const data = node.data as TransformerNodeData;
 
-    const resolvedExpr = resolveTemplates({ _expr: data.expression }, nodeOutputs, variables)
-      ._expr as string;
+    // SECURITY (RCE-002): JS-literal encode interpolated values; the expression
+    // already gets upstream data via the bound `data`/nodeId context below.
+    const resolvedExpr = resolveCodeTemplates(data.expression ?? '', nodeOutputs, variables);
 
     const evalContext: Record<string, unknown> = { ...variables };
     let lastOutput: unknown = undefined;
