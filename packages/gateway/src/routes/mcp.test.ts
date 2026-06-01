@@ -606,7 +606,11 @@ describe('MCP Routes', () => {
 
   describe('PUT /mcp/:id', () => {
     it('updates server configuration', async () => {
-      const updated = { ...sampleServer, displayName: 'Updated Name' };
+      // R3: displayName is no longer in the partial schema (it is the
+      // routing key and must not be mutable through the update endpoint).
+      // The repo receives the command change; the response echoes the
+      // mocked updated record.
+      const updated = { ...sampleServer, command: '/usr/bin/node-v2' };
       mockRepo.getById.mockResolvedValue(sampleServer);
       mockMcpClientService.isConnected.mockReturnValue(false);
       mockRepo.update.mockResolvedValue(updated);
@@ -614,16 +618,20 @@ describe('MCP Routes', () => {
       const res = await app.request('/mcp/mcp-1', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: 'Updated Name' }),
+        body: JSON.stringify({ command: '/usr/bin/node-v2' }),
       });
 
       expect(res.status).toBe(200);
       const json = (await res.json()) as { data: typeof updated };
-      expect(json.data.displayName).toBe('Updated Name');
+      expect(json.data.command).toBe('/usr/bin/node-v2');
       expect(mockRepo.update).toHaveBeenCalledWith(
         'mcp-1',
-        expect.objectContaining({ displayName: 'Updated Name' })
+        expect.objectContaining({ command: '/usr/bin/node-v2' })
       );
+      // Critically: the schema strips displayName, so the call must NOT
+      // contain it — even though the old test sent it.
+      const updateArgs = mockRepo.update.mock.calls[0]![1];
+      expect(updateArgs).not.toHaveProperty('displayName');
     });
 
     it('disconnects before updating when server is currently connected', async () => {
@@ -1308,6 +1316,76 @@ describe('MCP Routes', () => {
       expect(res.status).toBe(201);
       const createArgs = mockRepo.create.mock.calls[0]![0];
       expect(createArgs.env).toEqual({ OPENAI_API_KEY: 'sk-real' });
+    });
+  });
+
+  // ========================================================================
+  // PUT /mcp/servers/:id — R3 body validation
+  //
+  // The endpoint accepts partial updates. Schema strips name/displayName
+  // (routing key) and validates the `transport` enum. Unknown / wrong-type
+  // fields must be rejected with 400, not silently dropped or accepted.
+  // ========================================================================
+
+  describe('PUT /mcp/servers/:id — R3 body validation', () => {
+    beforeEach(() => {
+      mockRepo.getById.mockResolvedValue(sampleServer);
+      mockRepo.update.mockResolvedValue({ ...sampleServer });
+    });
+
+    it('rejects unknown transport value with 400 (was silently accepted before)', async () => {
+      const res = await app.request('/mcp/mcp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transport: 'websocket' }),
+      });
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error?.message ?? body.message).toMatch(/Validation failed/);
+      // Critically: repo.update was never called — invalid input never reached
+      // persistence.
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-boolean enabled with 400', async () => {
+      const res = await app.request('/mcp/mcp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: 'true' }), // string, not boolean
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('strips name/displayName from update body even if client sends them', async () => {
+      const res = await app.request('/mcp/mcp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          displayName: 'Renamed by attacker',
+          name: 'rebound',
+          command: '/usr/bin/node',
+        }),
+      });
+      expect(res.status).toBe(200);
+      const updateArgs = mockRepo.update.mock.calls[0]![1];
+      // The renamed routing key must NOT have reached the repo.
+      expect(updateArgs).not.toHaveProperty('name');
+      expect(updateArgs).not.toHaveProperty('displayName');
+      expect(updateArgs.command).toBe('/usr/bin/node');
+    });
+
+    it('accepts a valid partial update', async () => {
+      const res = await app.request('/mcp/mcp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false, autoConnect: true }),
+      });
+      expect(res.status).toBe(200);
+      expect(mockRepo.update).toHaveBeenCalledTimes(1);
+      const updateArgs = mockRepo.update.mock.calls[0]![1];
+      expect(updateArgs.enabled).toBe(false);
+      expect(updateArgs.autoConnect).toBe(true);
     });
   });
 });

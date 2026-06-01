@@ -301,7 +301,16 @@ export const createMcpServerSchema = z.object({
   description: z.string().max(5000).optional(),
   autoConnect: z.boolean().optional(),
   headers: z.record(z.string(), z.string()).optional(),
+  enabled: z.boolean().optional(),
 });
+
+// PUT /mcp/servers/:id — every field is optional (partial update), and
+// `name`/`displayName` MUST NOT be changed through the update endpoint
+// because the routing layer caches by them. Stripped from the partial
+// so a client cannot quietly break the routing key.
+export const updateMcpServerSchema = createMcpServerSchema
+  .omit({ name: true, displayName: true })
+  .partial();
 
 export const mcpToolSettingsSchema = z.object({
   toolName: z.string().min(1).max(200),

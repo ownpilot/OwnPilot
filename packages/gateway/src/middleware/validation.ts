@@ -136,6 +136,7 @@ export {
   providerConfigSchema,
   mcpToolCallSchema,
   createMcpServerSchema,
+  updateMcpServerSchema,
   mcpToolSettingsSchema,
   pluginSettingsSchema,
   setDefaultProviderSchema,

@@ -24,6 +24,7 @@ import {
   validateBody,
   mcpToolCallSchema,
   createMcpServerSchema,
+  updateMcpServerSchema,
   mcpToolSettingsSchema,
 } from '../middleware/validation.js';
 import { PUBLIC_BASE_URL } from '../config/defaults.js';
@@ -447,18 +448,10 @@ mcpRoutes.put('/:id', async (c) => {
   try {
     const userId = getUserId(c);
     const id = sanitizeId(c.req.param('id'));
-    const body = await c.req.json<{
-      name?: string;
-      displayName?: string;
-      transport?: 'stdio' | 'sse' | 'streamable-http';
-      command?: string;
-      args?: string[];
-      env?: Record<string, string>;
-      url?: string;
-      headers?: Record<string, string>;
-      enabled?: boolean;
-      autoConnect?: boolean;
-    }>();
+    // R3: validate body shape + enums (transport is the only field with a
+    // fixed enum). Schema also strips `name`/`displayName` from the partial
+    // so a client cannot quietly break the routing key.
+    const body = validateBody(updateMcpServerSchema, await c.req.json());
 
     const repo = getMcpServersRepo();
     const existing = await repo.getById(id);
@@ -472,9 +465,10 @@ mcpRoutes.put('/:id', async (c) => {
       await mcpService.disconnect(existing.name);
     }
 
+    // Note: name/displayName are intentionally NOT updateable (the schema
+    // omits them and the routing layer caches by them). The repo.update()
+    // call passes only the fields the client is allowed to change.
     const updated = await repo.update(id, {
-      name: body.name?.trim(),
-      displayName: body.displayName?.trim(),
       transport: body.transport,
       command: body.command?.trim(),
       args: body.args,
@@ -489,7 +483,13 @@ mcpRoutes.put('/:id', async (c) => {
     return apiResponse(c, updated);
   } catch (err) {
     log.error('Failed to update MCP server:', err);
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err) }, 500);
+    // R3: surface validation errors as 400 instead of generic 500.
+    const msg = getErrorMessage(err);
+    const isValidation = msg.startsWith('Validation failed');
+    if (isValidation) {
+      return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: msg }, 400);
+    }
+    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: msg }, 500);
   }
 });
 
