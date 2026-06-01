@@ -96,7 +96,17 @@ vi.mock('../../services/usage-tracking.js', () => ({
   usageTracker: {
     record: vi.fn(),
   },
+  budgetManager: {
+    canSpend: vi.fn(async () => ({ allowed: true })),
+    on: vi.fn(),
+  },
 }));
+
+// Pull the SAME budgetManager reference that the route under test sees, so
+// we can override canSpend per-test. `vi.mock` is hoisted above this import
+// (vitest's auto-hoist) and replaces the module's exports; importing here
+// gets the mocked object, not the real one.
+import { budgetManager as mockBudgetManager } from '../../services/usage-tracking.js';
 
 vi.mock('../../audit/index.js', () => ({
   logChatEvent: vi.fn(async () => {}),
@@ -149,6 +159,19 @@ vi.mock('../../tools/index.js', () => ({
   executePlanTool: vi.fn(),
   SOUL_COMMUNICATION_TOOLS: [],
   executeSoulCommunicationTool: vi.fn(),
+}));
+
+// Mock the usage-tracking service so tests can flip budget decisions per-case.
+// (mockBudgetManager is imported once at the top of the file — see line ~104.)
+
+vi.mock('../../db/repositories/model-configs.js', () => ({
+  modelConfigsRepo: {
+    getModel: vi.fn(async () => null),
+    saveModel: vi.fn(),
+    listModels: vi.fn(async () => []),
+    deleteModel: vi.fn(),
+  },
+  ModelConfigsRepository: vi.fn(),
 }));
 
 vi.mock('../../tools/config-tools.js', () => ({
@@ -256,6 +279,19 @@ vi.mock('@ownpilot/core', () => ({
     computeMemoryMaxTokens: vi.fn(() => 8192),
     calculateCost: vi.fn(() => 0),
   }),
+  // BUDGET-001: chat route's pre-spend check uses these from @ownpilot/core.
+  // Returning a tiny positive cost keeps the budget check on the happy path
+  // in the pre-existing tests; the dedicated budget tests mock canSpend
+  // directly to override the result.
+  estimateCost: vi.fn((_provider: string, _model: string, text: string, outTokens = 500) => ({
+    provider: _provider,
+    model: _model,
+    estimatedInputTokens: Math.ceil((text ?? '').length / 4),
+    estimatedOutputTokens: outTokens,
+    estimatedCost: 0.001,
+    withinBudget: true,
+  })),
+  formatCost: vi.fn((n: number) => `${n.toFixed(4)}`),
 }));
 
 vi.mock('../../services/memory-service.js', () => ({
@@ -1746,5 +1782,116 @@ describe('Chat Routes', () => {
       const res = await app.request('/chat/fetch-url?url=https%3A%2F%2Fexample.com');
       expect(res.status).toBe(400);
     });
+  });
+});
+
+// =====================================================================
+// Budget enforcement (BUDGET-001)
+//
+// Verifies the chat route consults BudgetManager.canSpend() before any
+// LLM call is dispatched, and that:
+//   - allowed=true   → request proceeds (no extra header, no audit noise)
+//   - allowed=false  → request is rejected with 429 and a structured body
+//   - canSpend() throws → request is allowed through (fail-open) and a
+//                          warning is logged. We don't assert on the log.
+// =====================================================================
+describe('Chat route — pre-spend budget enforcement', () => {
+  const baseBody = {
+    message: 'hello world',
+    provider: 'openai',
+    model: 'gpt-4o',
+  };
+
+  // Local Hono app — the outer describe('Chat Routes') owns its own `app`
+  // and these tests need to be runnable in isolation as well.
+  let app: Hono;
+
+  beforeEach(() => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockReset();
+    app = new Hono();
+    app.onError(errorHandler);
+    app.route('/chat', chatRoutes);
+    // Make sure demo mode is off — the chat route short-circuits in demo
+    // mode, which would mask the budget check.
+    vi.mocked(isDemoMode).mockResolvedValue(false);
+  });
+
+  it('allows the request when budgetManager.canSpend returns allowed=true', async () => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockResolvedValue({
+      allowed: true,
+    });
+    const res = await app.request('/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
+    });
+    expect(res.status).toBe(200);
+    // canSpend must have been called with a positive estimate
+    expect(mockBudgetManager.canSpend).toHaveBeenCalledTimes(1);
+    const est = (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mock.calls[0][0] as number;
+    expect(est).toBeGreaterThan(0);
+    // No X-Budget-* headers when allowed
+    expect(res.headers.get('X-Budget-Blocked')).toBeNull();
+    expect(res.headers.get('X-Budget-Warning')).toBeNull();
+  });
+
+  it('blocks the request with 429 when canSpend returns allowed=false', async () => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockResolvedValue({
+      allowed: false,
+      reason: 'Daily budget exceeded ($5.10 > $5.00)',
+      recommendation: 'Wait until tomorrow or increase daily limit',
+    });
+    const res = await app.request('/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
+    });
+    expect(res.status).toBe(429);
+    expect(res.headers.get('X-Budget-Blocked')).toBe('true');
+    expect(res.headers.get('X-Budget-Reason')).toContain('Daily budget exceeded');
+    const body = await res.json();
+    expect(body.error.message).toContain('Daily budget exceeded');
+    expect(body.error.recommendation).toContain('Wait until tomorrow');
+  });
+
+  it('emits an X-Budget-Warning header (but does not block) on warn-mode overage', async () => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockResolvedValue({
+      allowed: true,
+      reason: 'Daily budget exceeded but soft limit is on',
+    });
+    const res = await app.request('/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
+    });
+    // allowed=true ⇒ no block, but the reason is surfaced so the client can warn
+    expect(res.status).toBe(200);
+    expect(res.headers.get('X-Budget-Blocked')).toBeNull();
+    expect(res.headers.get('X-Budget-Warning')).toContain('soft limit');
+  });
+
+  it('fails open (allows the request) when canSpend throws', async () => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('budget service unavailable')
+    );
+    const res = await app.request('/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(baseBody),
+    });
+    // Fail-open: a misconfigured budget must not break the chat API.
+    expect(res.status).toBe(200);
+  });
+
+  it('does not consult the budget manager for CLI providers (no real spend)', async () => {
+    (mockBudgetManager.canSpend as ReturnType<typeof vi.fn>).mockClear();
+    const res = await app.request('/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ...baseBody, provider: 'cli-claude', model: 'cli-default' }),
+    });
+    expect(res.status).toBe(200);
+    // CLI providers have no cost — the budget gate must skip them entirely
+    expect(mockBudgetManager.canSpend).not.toHaveBeenCalled();
   });
 });
