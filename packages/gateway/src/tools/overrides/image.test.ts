@@ -39,6 +39,12 @@ const mockFetch = vi.hoisted(() => vi.fn());
 // Module mocks
 // ---------------------------------------------------------------------------
 
+// SSRF-001: image.ts downloads provider-returned image URLs via safeFetch.
+// Route it to the same fetch mock so tests don't perform real DNS/SSRF checks.
+vi.mock('../../utils/safe-fetch.js', () => ({
+  safeFetch: (...args: unknown[]) => mockFetch(...args),
+}));
+
 vi.mock('../../db/repositories/config-services.js', () => ({
   configServicesRepo: {
     getFieldValue: (...args: unknown[]) => mockGetFieldValue(...args),

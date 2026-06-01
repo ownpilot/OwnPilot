@@ -342,24 +342,40 @@ export async function executeCreateTool(args: Record<string, unknown>): Promise<
     const vm = await import('node:vm');
 
     const logs: string[] = [];
-    const sandbox: Record<string, unknown> = {
-      args: invokeArgs,
-      module: { exports: {} as Record<string, unknown> },
-      exports: {} as Record<string, unknown>,
-      __result: undefined,
-      console: {
-        log: (...a: unknown[]) => logs.push(a.map(String).join(' ')),
-        error: (...a: unknown[]) => logs.push('[err] ' + a.map(String).join(' ')),
-      },
-      // Block sandbox escape vectors
-      require: undefined,
-      process: undefined,
-      global: undefined,
-      globalThis: undefined,
-      Function: undefined,
-      eval: undefined,
-      import: undefined,
+
+    // SECURITY (TS-001 / RCE-001): never inject host-realm objects (console,
+    // args, module, ...) into the vm context. Any host function reachable from
+    // the sandbox exposes the HOST Function constructor via `.constructor`,
+    // which `codeGeneration.strings:false` does NOT disable — a full escape, and
+    // this code runs in the MAIN gateway thread. Instead we pass host fns under
+    // a single `__host` global, rebuild context-realm equivalents in a bootstrap,
+    // then sever `__host`. After that the only Function reachable is the
+    // context's own, which is blocked. See services/extension/sandbox.ts for the
+    // canonical (worker-isolated) version.
+    const hostBridge = {
+      log: (...a: unknown[]) => logs.push(a.map(String).join(' ')),
+      error: (...a: unknown[]) => logs.push('[err] ' + a.map(String).join(' ')),
     };
+
+    const vmCtx = vm.createContext(
+      { __host: hostBridge, __argsJson: JSON.stringify(invokeArgs ?? {}) },
+      { codeGeneration: { strings: false, wasm: false } }
+    );
+
+    const BOOTSTRAP = `(() => {
+      const h = __host;
+      globalThis.console = Object.freeze({
+        log: (...a) => h.log(...a.map(String)),
+        error: (...a) => h.error(...a.map(String)),
+      });
+      globalThis.args = JSON.parse(__argsJson);
+      globalThis.module = { exports: {} };
+      globalThis.exports = globalThis.module.exports;
+      globalThis.__result = undefined;
+      delete globalThis.__host;
+      delete globalThis.__argsJson;
+    })();`;
+    vm.runInContext(BOOTSTRAP, vmCtx);
 
     const wrappedCode = `
 ${code}
@@ -371,9 +387,6 @@ const __fn = typeof ${name} === 'function'
 __result = typeof __fn === 'function' ? __fn(args) : { error: "No function named '${name}' found. Define: function ${name}(args) { ... }" };
 `;
 
-    const vmCtx = vm.createContext(sandbox, {
-      codeGeneration: { strings: false, wasm: false },
-    });
     vm.runInContext(wrappedCode, vmCtx, { timeout: 10_000 });
 
     // Resolve promises (sync vm can't await, but we can resolve simple thenables)

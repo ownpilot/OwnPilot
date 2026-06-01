@@ -24,6 +24,11 @@ vi.mock('../../paths/index.js', () => ({
   getDataDirectoryInfo: vi.fn(() => ({ root: '/tmp/ownpilot-test' })),
 }));
 
+// PATH-001: install path must be within an allowed scan directory.
+vi.mock('../../services/extension/scanner.js', () => ({
+  getAllScanDirectories: () => ['/allowed'],
+}));
+
 const mockExistsSync = vi.fn(() => true);
 const mockMkdirSync = vi.fn();
 const mockReaddirSync = vi.fn(() => [] as unknown[]);
@@ -378,7 +383,7 @@ describe('POST /ext/install — from file path', () => {
 
     const res = await app.request('/ext/install', {
       method: 'POST',
-      body: JSON.stringify({ path: '/home/user/my-skill/SKILL.md' }),
+      body: JSON.stringify({ path: '/allowed/my-skill/SKILL.md' }),
       headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status).toBe(201);
@@ -391,7 +396,7 @@ describe('POST /ext/install — from file path', () => {
 
     const res = await app.request('/ext/install', {
       method: 'POST',
-      body: JSON.stringify({ path: '/missing/SKILL.md' }),
+      body: JSON.stringify({ path: '/allowed/missing/SKILL.md' }),
       headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status).toBe(400);
@@ -404,9 +409,21 @@ describe('POST /ext/install — from file path', () => {
 
     const res = await app.request('/ext/install', {
       method: 'POST',
-      body: JSON.stringify({ path: '/some/path' }),
+      body: JSON.stringify({ path: '/allowed/some/path' }),
       headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status).toBe(500);
+  });
+
+  it('rejects a path outside the allowed scan directories (PATH-001)', async () => {
+    const res = await app.request('/ext/install', {
+      method: 'POST',
+      body: JSON.stringify({ path: '/etc/shadow' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error.message).toContain('extensions or skills directory');
+    expect(mockExtService.install).not.toHaveBeenCalled();
   });
 });

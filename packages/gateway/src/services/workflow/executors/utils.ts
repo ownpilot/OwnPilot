@@ -28,8 +28,13 @@ const MAX_EXPRESSION_LENGTH = 10_000;
  *
  * Defenses:
  * - `codeGeneration.strings: false` blocks dynamic-code constructors inside the sandbox
- * - Dangerous globals (`process`, `require`, `global`, `globalThis`) are frozen as undefined
- * - Timeout prevents infinite loops
+ * - SECURITY (RCE-001/RCE-003): context values are serialized to JSON and
+ *   re-parsed INSIDE the vm, so every binding the expression can reach is a
+ *   *context-realm* object whose `.constructor` is the context Function (blocked
+ *   by the codegen flag). The previous implementation injected `structuredClone`
+ *   results, which are HOST-realm objects — `data['con'+'structor']['con'+'structor']('return process')()`
+ *   walked their constructor chain to the host Function and escaped the sandbox.
+ * - Timeout prevents infinite loops.
  */
 export function safeVmEval(
   expression: string,
@@ -45,28 +50,31 @@ export function safeVmEval(
     throw new Error(`Expression blocked: ${validation.errors.join('; ')}`);
   }
 
-  const cloneContext = new Map<string, unknown>();
-  for (const [k, v] of Object.entries(context)) {
-    if (typeof v === 'object' && v !== null) {
-      try {
-        cloneContext.set(k, structuredClone(v));
-      } catch {
-        throw new Error(
-          `Transformer input "${k}" must be JSON-serializable. Functions, Symbols, and non-cloneable values are not supported.`
-        );
-      }
-    } else {
-      cloneContext.set(k, v);
-    }
+  // Serialize the whole context to JSON. Functions/Symbols are dropped and
+  // circular structures throw — both surfaced as the JSON-serializable error,
+  // matching the documented contract.
+  let ctxJson: string | undefined;
+  try {
+    ctxJson = JSON.stringify(context ?? {});
+  } catch {
+    throw new Error(
+      'Transformer input must be JSON-serializable. Functions, Symbols, and circular values are not supported.'
+    );
   }
+  if (ctxJson === undefined) ctxJson = '{}';
 
-  const dangerous = ['process', 'require', 'global', 'globalThis', 'Function', 'eval', 'import'];
-  const sandbox: Record<string, unknown> = { ...Object.fromEntries(cloneContext) };
-  for (const key of dangerous) sandbox[key] = undefined;
+  const vmContext = vm.createContext(
+    { __ctxJson: ctxJson },
+    { codeGeneration: { strings: false, wasm: false } }
+  );
 
-  const vmContext = vm.createContext(sandbox, {
-    codeGeneration: { strings: false, wasm: false },
-  });
+  // Bootstrap: re-parse the context inside the vm (values become context-realm),
+  // bind each key as a global, then sever the raw JSON payload.
+  vm.runInContext(
+    `(() => { const c = JSON.parse(__ctxJson); for (const k of Object.keys(c)) globalThis[k] = c[k]; delete globalThis.__ctxJson; })();`,
+    vmContext
+  );
+
   return vm.runInContext(expression, vmContext, { timeout: timeoutMs });
 }
 

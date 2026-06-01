@@ -156,61 +156,78 @@ function workerMain() {
       };
       port.on('message', responseHandler);
 
-      // Build the sandbox context
-      // NOTE: Do NOT pass host constructors (Object, Array, Map, Set, String, Number, Boolean, Promise).
-      // vm.createContext() creates its own V8 built-ins per context.
-      // Passing host constructors shares prototype chains, enabling prototype pollution attacks.
-      const sandboxGlobals = {
-        console: consoleMethods,
-        JSON,
-        Math,
-        Date,
-        URL,
-        URLSearchParams,
-        // Safe constructors only — RegExp, Error, etc. are fine as they're stateless
-        RegExp,
-        Error,
-        TypeError,
-        RangeError,
-        parseInt,
-        parseFloat,
-        isNaN,
-        isFinite,
-        encodeURIComponent,
-        decodeURIComponent,
-        encodeURI,
-        decodeURI,
-        // H-S5 defense-in-depth: wrap timers in narrow shims so the sandbox
-        // never holds a reference to the host setTimeout directly. The
-        // code-validator regex catches `.constructor`/`[constructor]` access
-        // statically, but a frozen wrapper also denies casual prototype
-        // walking at runtime if any new exposure pattern slips past the
-        // validator. We intentionally don't return the host timer handle —
-        // callers can only cancel via `clearTimeout(id)` with the integer id
-        // returned here. Tools that need long sleeps should call the host via
-        // utils.callTool() instead.
-        setTimeout: Object.freeze((cb: () => void, ms: number): number => {
+      // Build the sandbox context.
+      //
+      // SECURITY (RCE-001): do NOT inject ANY host-realm value into the context.
+      // vm.createContext() already provides every ECMAScript intrinsic (JSON,
+      // Math, Date, Object, Array, RegExp, Error, parseInt, ...) as *context-realm*
+      // builtins, whose `.constructor` resolves to the context's own Function —
+      // which is disabled by `codeGeneration.strings:false`. Injecting the HOST
+      // copies instead let an extension walk e.g.
+      //   Math['con'+'structor']('return process')()
+      // up to the HOST Function constructor (not bound by this context's codegen
+      // flag) and execute arbitrary code in the gateway process — full escape.
+      // This was empirically reproducible; the static code-validator alone cannot
+      // close it because string-concat property access (`x['con'+'structor']`,
+      // `x[a+b]`) is unbounded.
+      //
+      // The few capabilities the SDK needs that are NOT context intrinsics
+      // (console, timers, args, utils.callTool) are host functions, so they are
+      // passed under a single `__host` global and immediately re-wrapped as
+      // context-realm functions by the bootstrap below, after which `__host` is
+      // deleted. The wrappers close over the host refs (unreachable via any
+      // property path) and their OWN `.constructor` is the blocked context
+      // Function. callTool results and args are deep-cloned through the context's
+      // JSON so no host-realm object ever leaks back into the sandbox.
+      const hostBridge = {
+        log: consoleMethods.log,
+        warn: consoleMethods.warn,
+        error: consoleMethods.error,
+        callTool: callToolBridge,
+        listTools: () => callToolBridge('__list_tools__', {}),
+        // Narrow timer shims — never hand the sandbox a real host timer handle.
+        setTimeout: (cb: () => void, ms: number): number => {
           const h = globalThis.setTimeout(cb, ms);
-          // Return a numeric id (in Node, timers are objects with Symbol.toPrimitive).
           return typeof h === 'object' && h !== null ? Number(h) : (h as unknown as number);
-        }),
-        clearTimeout: Object.freeze((id: number): void => {
+        },
+        clearTimeout: (id: number): void => {
           globalThis.clearTimeout(id as unknown as NodeJS.Timeout);
-        }),
-        // Extension SDK
-        args,
-        utils: {
-          callTool: callToolBridge,
-          listTools: () => callToolBridge('__list_tools__', {}),
         },
       };
 
-      const vmContext = createContext(sandboxGlobals, {
-        name: `ext-sandbox:${extensionId}:${toolName}`,
-        codeGeneration: { strings: false, wasm: false },
-      });
+      const vmContext = createContext(
+        { __host: hostBridge, __argsJson: JSON.stringify(args ?? {}) },
+        {
+          name: `ext-sandbox:${extensionId}:${toolName}`,
+          codeGeneration: { strings: false, wasm: false },
+        }
+      );
 
-      // Wrap the tool code
+      // Bootstrap: rebuild a safe, context-realm SDK from __host, then sever
+      // every host reference. Compiled as a Script (allowed) and run before any
+      // extension code. After this runs, `__host`/`__argsJson` are unreachable.
+      const BOOTSTRAP = `(() => {
+        const h = __host;
+        const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+        globalThis.console = Object.freeze({
+          log: (...a) => h.log(...a.map(String)),
+          warn: (...a) => h.warn(...a.map(String)),
+          error: (...a) => h.error(...a.map(String)),
+        });
+        globalThis.setTimeout = (cb, ms) => h.setTimeout(cb, ms);
+        globalThis.clearTimeout = (id) => h.clearTimeout(id);
+        globalThis.utils = Object.freeze({
+          callTool: async (name, toolArgs) => clone(await h.callTool(name, clone(toolArgs) ?? {})),
+          listTools: async () => clone(await h.listTools()),
+        });
+        globalThis.args = JSON.parse(__argsJson);
+        delete globalThis.__host;
+        delete globalThis.__argsJson;
+      })();`;
+      new Script(BOOTSTRAP, { filename: `ext-bootstrap:${extensionId}` }).runInContext(vmContext);
+
+      // Wrap the tool code. `args` and `utils` are read from the context globals
+      // established by the bootstrap (NOT passed in as host objects).
       const wrappedCode = `(async () => {
         const module = { exports: {} };
         ${code}

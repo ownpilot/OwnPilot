@@ -18,6 +18,7 @@ import {
 import { configServicesRepo } from '../../db/repositories/config-services.js';
 import { getLog } from '../../services/log.js';
 import { getErrorMessage } from '../../utils/common.js';
+import { safeFetch } from '../../utils/safe-fetch.js';
 
 const log = getLog('ImageOverrides');
 
@@ -382,7 +383,10 @@ async function callFalImageGen(
   // FAL returns URLs — download to base64
   const results: ImageGenResult[] = [];
   for (const img of data.images) {
-    const imgResp = await fetch(img.url);
+    // SECURITY (SSRF-001): img.url comes from the provider's JSON response and
+    // must not be fetched with bare fetch() — a spoofed/compromised response
+    // could point at 169.254.169.254 or other internal addresses.
+    const imgResp = await safeFetch(img.url);
     const buffer = Buffer.from(await imgResp.arrayBuffer());
     results.push({ base64: buffer.toString('base64') });
   }
@@ -418,7 +422,9 @@ async function callReplicateImageGen(
   const data = (await response.json()) as { output: string[] };
   const results: ImageGenResult[] = [];
   for (const imgUrl of data.output ?? []) {
-    const imgResp = await fetch(imgUrl);
+    // SECURITY (SSRF-001): imgUrl comes from the provider response — fetch via
+    // the SSRF guard, not bare fetch().
+    const imgResp = await safeFetch(imgUrl);
     const buffer = Buffer.from(await imgResp.arrayBuffer());
     results.push({ base64: buffer.toString('base64') });
   }
