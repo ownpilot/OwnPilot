@@ -111,22 +111,40 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
    * Connect to WebSocket
    */
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
+    // Skip if a socket is already open or still opening — avoids orphaning a
+    // CONNECTING socket (which would never be closed) on a double connect().
+    // Intentional reconnects (login) null wsRef first, so they still proceed.
+    const existing = wsRef.current?.readyState;
+    if (existing === WebSocket.OPEN || existing === WebSocket.CONNECTING) {
       return;
     }
 
     setStatus('connecting');
 
     try {
-      wsRef.current = new WebSocket(url);
+      const socket = new WebSocket(url);
+      wsRef.current = socket;
 
-      wsRef.current.onopen = () => {
+      // Per-socket identity guard: once wsRef.current is replaced (reconnect)
+      // or nulled (disconnect / logout / unmount), this socket's late events
+      // must NOT mutate state or schedule a reconnect. Without it, an
+      // intentional close still reconnected (tokenless after logout; a zombie
+      // socket that reconnected forever after unmount).
+      const isActive = () => wsRef.current === socket;
+
+      socket.onopen = () => {
+        if (!isActive()) return;
         setStatus('connected');
       };
 
-      wsRef.current.onmessage = handleMessage;
+      socket.onmessage = (event) => {
+        if (!isActive()) return;
+        handleMessage(event);
+      };
 
-      wsRef.current.onclose = () => {
+      socket.onclose = () => {
+        if (!isActive()) return;
+        wsRef.current = null;
         setStatus('disconnected');
         setSessionId(null);
 
@@ -144,7 +162,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRes
         }
       };
 
-      wsRef.current.onerror = (error) => {
+      socket.onerror = (error) => {
+        if (!isActive()) return;
         setStatus('error');
         console.error('WebSocket error:', error);
       };
