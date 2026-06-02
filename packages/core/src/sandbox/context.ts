@@ -234,60 +234,122 @@ let SANDBOX_FUNCTION_STUB: any;
 }
 
 /**
- * Wrap a host-realm constructor so the sandbox cannot walk its prototype chain
- * into the host Function constructor. Both `Ctor.constructor` and
- * `(new Ctor(...)).constructor` resolve to {@link SANDBOX_FUNCTION_STUB}.
+ * Recursive security membrane.
  *
- * Without this wrapper, an injected host constructor like `URL` would let any
- * sandbox code run `new URL('http://x').constructor.constructor('return process')()`
- * and obtain HOST-realm code execution — even with `codeGeneration.strings:false`,
- * which only governs the VM realm's own Function constructor.
+ * Any host-realm value that crosses into the sandbox is wrapped so that NO
+ * property or prototype walk can reach the host `Function` constructor — which
+ * `codeGeneration.strings:false` does NOT bound (it only governs the VM realm's
+ * own Function). Blocking `.constructor` alone is insufficient: a raw host
+ * object is reachable via `.prototype`, `Object.getPrototypeOf(x)`, and nested
+ * accessors (e.g. `new URL(u).searchParams`), each of whose prototype chain
+ * ends at host Function. The membrane closes all of them:
+ *   - `.constructor` → throwing {@link SANDBOX_FUNCTION_STUB}
+ *   - `getPrototypeOf` → null (dead-ends the chain)
+ *   - every returned object/function is recursively hardened
+ *   - sandbox callbacks handed to host functions get their host-provided
+ *     arguments hardened before the sandbox sees them (e.g. `fetch().then(res…)`)
+ *
+ * This supersedes the previous per-constructor `.constructor` blocker, which
+ * left `.prototype` / `getPrototypeOf` / nested host objects walkable (RCE).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function wrapHostConstructor<T extends abstract new (...args: any[]) => any>(HostCtor: T): T {
-  const handler: ProxyHandler<T> = {
-    get(target, prop, receiver) {
-      if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
-      return Reflect.get(target, prop, receiver);
-    },
-    construct(target, args, newTarget) {
-      const instance = Reflect.construct(
-        target as unknown as new (...a: unknown[]) => unknown,
-        args as unknown[],
-        newTarget === wrapped ? (target as unknown as new (...a: unknown[]) => unknown) : newTarget
-      );
-      return new Proxy(instance as object, {
-        // For host classes with private internal slots (URL, Response, Headers,
-        // TextEncoder…), accessor getters require `this` to be the real
-        // instance, NOT the wrapping Proxy. Forward the real target as
-        // receiver. The Proxy's only job here is to block `.constructor`.
-        get(t, p) {
-          if (p === 'constructor') return SANDBOX_FUNCTION_STUB;
-          const v = Reflect.get(t, p, t);
-          if (typeof v === 'function') {
-            return v.bind(t);
-          }
-          return v;
-        },
-      }) as unknown as object;
-    },
-  };
-  const wrapped = new Proxy(HostCtor, handler);
-  return wrapped;
+const MEMBRANE_TARGET = Symbol('membraneTarget');
+const membraneCache = new WeakMap<object, object>();
+
+function unwrap(value: unknown): unknown {
+  if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
+    const inner = (value as Record<symbol, unknown>)[MEMBRANE_TARGET];
+    if (inner !== undefined) return inner;
+  }
+  return value;
 }
 
 /**
- * Wrap a host-realm function (e.g. bound `fetch`) so `.constructor` resolves
- * to the sandbox stub instead of host Function. The returned function value
- * is still callable normally.
+ * A sandbox callback handed to a host function: harden the host-provided
+ * arguments before the sandbox callback runs, and harden its return value.
  */
-function wrapHostFunction<F extends (...args: never[]) => unknown>(hostFn: F): F {
-  return new Proxy(hostFn, {
-    get(target, prop, receiver) {
-      if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
-      return Reflect.get(target, prop, receiver);
-    },
-  }) as F;
+function wrapIncomingCallback(fn: (...a: unknown[]) => unknown): (...a: unknown[]) => unknown {
+  return function (this: unknown, ...hostArgs: unknown[]): unknown {
+    return harden(Reflect.apply(fn, unwrap(this), hostArgs.map(harden)));
+  };
+}
+
+function toRealArg(a: unknown): unknown {
+  return typeof a === 'function'
+    ? wrapIncomingCallback(a as (...x: unknown[]) => unknown)
+    : unwrap(a);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const membraneHandler: ProxyHandler<any> = {
+  get(target, prop) {
+    if (prop === MEMBRANE_TARGET) return target;
+    if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
+    // Always harden. For a non-configurable, non-writable data property the
+    // proxy get-invariant forces the target's exact value to be returned:
+    //  - primitives harden to themselves (identity), so the invariant holds;
+    //  - objects (e.g. a class constructor's non-writable `.prototype`) harden
+    //    to a different proxy, so V8 throws on access — FAIL-CLOSED, which is
+    //    exactly what we want: the `.prototype.constructor.constructor` walk
+    //    dies with a TypeError instead of reaching the host Function.
+    return harden(Reflect.get(target, prop, target));
+  },
+  getPrototypeOf() {
+    return null;
+  },
+  setPrototypeOf() {
+    return false;
+  },
+  apply(target, thisArg, args) {
+    return harden(Reflect.apply(target, unwrap(thisArg), args.map(toRealArg)));
+  },
+  construct(target, args) {
+    return harden(Reflect.construct(target, args.map(toRealArg)));
+  },
+  has(target, prop) {
+    return prop === MEMBRANE_TARGET ? false : Reflect.has(target, prop);
+  },
+  set(target, prop, value) {
+    return Reflect.set(target, prop, unwrap(value), target);
+  },
+  deleteProperty(target, prop) {
+    return Reflect.deleteProperty(target, prop);
+  },
+  defineProperty() {
+    // The sandbox may not reshape host objects.
+    return false;
+  },
+  ownKeys(target) {
+    return Reflect.ownKeys(target);
+  },
+  getOwnPropertyDescriptor(target, prop) {
+    const d = Reflect.getOwnPropertyDescriptor(target, prop);
+    if (!d) return d;
+    // Harden any data value. As in get(), a non-configurable/non-writable
+    // object value makes V8 throw (fail-closed) rather than leak the raw host
+    // object via `getOwnPropertyDescriptor(URL,'prototype').value`.
+    if ('value' in d) d.value = harden(d.value);
+    return d;
+  },
+};
+
+/**
+ * Wrap a host-realm value behind the membrane. Primitives pass through;
+ * objects/functions get a recursively-hardening Proxy (identity-stable via a
+ * WeakMap cache so repeated access returns the same wrapper).
+ */
+function harden<T>(value: T): T {
+  if (value === null) return value;
+  const t = typeof value;
+  if (t !== 'object' && t !== 'function') return value;
+  if ((value as unknown) === SANDBOX_FUNCTION_STUB) return value;
+  const obj = value as unknown as object;
+  const cached = membraneCache.get(obj);
+  if (cached) return cached as T;
+  // Already a membrane proxy? (its get trap answers MEMBRANE_TARGET)
+  if ((obj as Record<symbol, unknown>)[MEMBRANE_TARGET] !== undefined) return value;
+  const proxy = new Proxy(obj, membraneHandler);
+  membraneCache.set(obj, proxy);
+  return proxy as T;
 }
 
 /**
@@ -338,10 +400,10 @@ export function buildSandboxContext(
     // Node-only host constructors that V8's per-context globals do NOT provide.
     // Each is Proxy-wrapped so `instance.constructor.constructor` resolves to a
     // sandbox-realm throwing stub instead of the host Function constructor.
-    URL: wrapHostConstructor(URL),
-    URLSearchParams: wrapHostConstructor(URLSearchParams),
-    TextEncoder: wrapHostConstructor(TextEncoder),
-    TextDecoder: wrapHostConstructor(TextDecoder),
+    URL,
+    URLSearchParams,
+    TextEncoder,
+    TextDecoder,
 
     // Timers (if allowed)
     ...(perms.timers
@@ -361,10 +423,10 @@ export function buildSandboxContext(
     // The constructors themselves are wrapped for the same reason.
     ...(perms.network
       ? {
-          fetch: wrapHostFunction(globalThis.fetch.bind(globalThis)),
-          Response: wrapHostConstructor(globalThis.Response),
-          Request: wrapHostConstructor(globalThis.Request),
-          Headers: wrapHostConstructor(globalThis.Headers),
+          fetch: globalThis.fetch.bind(globalThis),
+          Response: globalThis.Response,
+          Request: globalThis.Request,
+          Headers: globalThis.Headers,
         }
       : {}),
 
@@ -385,6 +447,16 @@ export function buildSandboxContext(
     Atomics: undefined, // Prevent shared memory attacks
     SharedArrayBuffer: undefined, // Prevent shared memory attacks
   };
+
+  // Harden every injected HOST-realm value behind the recursive membrane so no
+  // property/prototype walk from sandbox code can reach the host Function
+  // constructor (see harden()). VM-realm intrinsics that createContext provides
+  // (Object, Array, JSON, Math, Promise, …) are NOT in this object and are
+  // already safe. Must run BEFORE the dangerous-key defineProperty loop below,
+  // which makes some keys non-writable. undefined/primitive values pass through.
+  for (const key of Object.keys(context)) {
+    context[key] = harden(context[key]);
+  }
 
   // NOTE: Prototype freezing is done INSIDE the VM context via SANDBOX_INIT_CODE
   // (see below). Doing Object.freeze(Object.prototype) here would freeze the
