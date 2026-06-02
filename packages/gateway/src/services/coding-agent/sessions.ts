@@ -190,6 +190,13 @@ export class CodingAgentSessionManager {
             error,
           });
 
+          // Dispose the PTY just like onExit does. onError is the timeout path:
+          // after SIGTERM the streaming exit handler sees killed=true and skips
+          // the onExit callback, so without this the PTY handle and its node-pty
+          // onData/onExit listeners would leak on every coding-agent timeout.
+          managed.pty?.dispose();
+          managed.pty = null;
+
           // Fire completion callbacks on error too
           this.fireCompletionCallbacks(managed);
 

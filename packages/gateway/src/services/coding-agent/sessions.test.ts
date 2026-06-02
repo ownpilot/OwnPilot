@@ -358,6 +358,20 @@ describe('CodingAgentSessionManager', () => {
         error: 'spawn error',
       });
     });
+
+    it('onError disposes the PTY (no leak on timeout/error)', async () => {
+      // Regression: onError is the timeout path — after SIGTERM the streaming
+      // exit handler skips onExit (killed=true), so onError must dispose the PTY
+      // itself or its node-pty listeners leak on every coding-agent timeout.
+      const ptyHandle = createMockPtyHandle();
+      mockSpawnStreamingProcess.mockReturnValue(ptyHandle);
+
+      await manager.createSession(defaultInput(), USER_A, {}, 'codex', []);
+      const callbacks = mockSpawnStreamingProcess.mock.calls[0][3];
+      callbacks.onError('Process timed out after 1800000ms');
+
+      expect(ptyHandle.dispose).toHaveBeenCalled();
+    });
   });
 
   // ===========================================================================
