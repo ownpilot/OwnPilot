@@ -256,6 +256,21 @@ describe('CodingAgentSessionManager', () => {
       expect(manager.terminateSession(session.id, USER_B)).toBe(false);
     });
 
+    it('resolves a pending waitForCompletion immediately (no timeout wait)', async () => {
+      const ptyHandle = createMockPtyHandle();
+      mockSpawnStreamingProcess.mockReturnValue(ptyHandle);
+
+      const session = await manager.createSession(defaultInput(), USER_A, {}, 'codex', []);
+
+      // Start waiting BEFORE terminating — the PTY is disposed on terminate so
+      // onExit never fires; only fireCompletionCallbacks can unblock this.
+      const waiter = manager.waitForCompletion(session.id, USER_A, 1_800_000);
+      manager.terminateSession(session.id, USER_A);
+
+      const completed = await waiter;
+      expect(completed.state).toBe('terminated');
+    });
+
     it('allows new session after termination', async () => {
       const ptyHandle = createMockPtyHandle();
       mockSpawnStreamingProcess.mockReturnValue(ptyHandle);

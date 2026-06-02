@@ -611,6 +611,14 @@ export class CodingAgentSessionManager {
       state: 'terminated' as CodingAgentSessionState,
     });
 
+    // Resolve any waitForCompletion() promises NOW. Termination is a terminal
+    // transition, but disposing the PTY above detaches its onExit listener, so
+    // the normal completion path never fires. Without this, a waiter (e.g. the
+    // orchestrator loop sitting in waitForCompletion during cancelOrchestration)
+    // would block until its own timeout instead of unblocking on the cancel —
+    // exactly the wait that terminating the session was meant to avoid.
+    this.fireCompletionCallbacks(managed);
+
     log.info(`Coding agent session ${sessionId} terminated by user`);
     return true;
   }
