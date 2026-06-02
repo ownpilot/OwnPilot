@@ -791,18 +791,9 @@ export class TriggerEngine {
             }
       );
 
-      // Calculate next fire time for schedule triggers
+      // Advance a schedule trigger to its next fire time (mark non-schedule fired)
       if (trigger.type === 'schedule') {
-        const config = trigger.config as ScheduleConfig;
-        const nextFire = this.calculateNextFire(config);
-        await this.triggerService.markFired(this.config.userId, trigger.id, nextFire ?? undefined);
-        if (nextFire) {
-          log.info('Next fire scheduled', { trigger: trigger.name, nextFire });
-        } else {
-          log.warn('Trigger has no next fire time — will not auto-fire again', {
-            trigger: trigger.name,
-          });
-        }
+        await this.advanceSchedule(trigger);
       } else {
         await this.triggerService.markFired(this.config.userId, trigger.id);
       }
@@ -830,8 +821,42 @@ export class TriggerEngine {
         error: errorMessage,
       });
       log.error('Trigger failed', { trigger: trigger.name, error });
+
+      // Advance the schedule even on unexpected failure. Otherwise nextFire
+      // stays in the past, getDueTriggers keeps returning this trigger, and it
+      // re-fires on every poll — an infinite hot loop that re-hammers the
+      // failing action (e.g. a scheduled channel send to a blocked chat). Wrap
+      // in its own try so a reschedule failure can't mask the original error.
+      try {
+        await this.advanceSchedule(trigger);
+      } catch (rescheduleError) {
+        log.error('Failed to reschedule trigger after failure', {
+          trigger: trigger.name,
+          error: getErrorMessage(rescheduleError),
+        });
+      }
     } finally {
       this.executingTriggers.delete(trigger.id);
+    }
+  }
+
+  /**
+   * Advance a schedule trigger to its next cron fire time (persisted via
+   * markFired). No-op for non-schedule triggers. Extracted so it runs on BOTH
+   * the success and failure paths of executeTrigger — a throwing schedule
+   * trigger must still reschedule, or it hot-loops every poll.
+   */
+  private async advanceSchedule(trigger: Trigger): Promise<void> {
+    if (trigger.type !== 'schedule') return;
+    const config = trigger.config as ScheduleConfig;
+    const nextFire = this.calculateNextFire(config);
+    await this.triggerService.markFired(this.config.userId, trigger.id, nextFire ?? undefined);
+    if (nextFire) {
+      log.info('Next fire scheduled', { trigger: trigger.name, nextFire });
+    } else {
+      log.warn('Trigger has no next fire time — will not auto-fire again', {
+        trigger: trigger.name,
+      });
     }
   }
 

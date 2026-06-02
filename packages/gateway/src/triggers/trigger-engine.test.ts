@@ -1768,6 +1768,51 @@ describe('TriggerEngine', () => {
       e.stop();
     });
 
+    it('still advances nextFire when a schedule trigger throws (no hot loop)', async () => {
+      // Regression: if executeTrigger threw before rescheduling, nextFire stayed
+      // in the past, getDueTriggers kept returning the trigger, and it re-fired
+      // every poll forever. The failure path must still reschedule.
+      const nextDate = new Date('2025-12-01T10:00:00Z');
+      vi.mocked(getNextRunTime).mockReturnValue(nextDate);
+
+      const trigger = makeTrigger({
+        id: 'sched-throw',
+        type: 'schedule',
+        config: { cron: '0 10 * * *' },
+        action: { type: 'boom' as Trigger['action']['type'], payload: {} },
+      });
+      mockTriggerService.getDueTriggers.mockResolvedValueOnce([trigger]);
+
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
+      e.registerActionHandler('boom', async () => {
+        throw new Error('action exploded');
+      });
+      e.start();
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Logged as a failure...
+      expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
+        'default',
+        'sched-throw',
+        expect.any(String),
+        'failure',
+        undefined,
+        expect.any(String),
+        expect.any(Number)
+      );
+      // ...but nextFire was still advanced so it won't hot-loop.
+      expect(mockTriggerService.markFired).toHaveBeenCalledWith(
+        'default',
+        'sched-throw',
+        nextDate.toISOString()
+      );
+      e.stop();
+    });
+
     it('merges action payload with event payload, adding triggerId and triggerName', async () => {
       const handler = vi.fn(async () => ({ success: true, message: 'ok' }));
       engine.registerActionHandler('merge_test', handler);
