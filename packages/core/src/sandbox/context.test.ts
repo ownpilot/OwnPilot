@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import vm from 'node:vm';
 import {
   ResourceCounter,
   buildConsole,
@@ -297,14 +298,19 @@ describe('buildSandboxContext', () => {
     expect(context.Promise).toBeUndefined();
   });
 
-  it('includes string utilities', () => {
+  it('includes string utilities (wrapped behind the security membrane)', () => {
     const { context } = buildSandboxContext();
-    expect(context.encodeURIComponent).toBe(encodeURIComponent);
-    expect(context.decodeURIComponent).toBe(decodeURIComponent);
-    expect(context.parseInt).toBe(parseInt);
-    expect(context.parseFloat).toBe(parseFloat);
-    expect(context.isNaN).toBe(isNaN);
-    expect(context.isFinite).toBe(isFinite);
+    // These are no longer the raw host functions — exposing the host copies let
+    // `parseInt.constructor.constructor('return process')()` reach host Function
+    // (RCE). They are now membrane-wrapped, so assert callability/correctness
+    // rather than host identity.
+    expect(context.encodeURIComponent).not.toBe(encodeURIComponent);
+    expect((context.encodeURIComponent as typeof encodeURIComponent)('a b')).toBe('a%20b');
+    expect((context.decodeURIComponent as typeof decodeURIComponent)('a%20b')).toBe('a b');
+    expect((context.parseInt as typeof parseInt)('42px', 10)).toBe(42);
+    expect((context.parseFloat as typeof parseFloat)('3.14x')).toBe(3.14);
+    expect((context.isNaN as typeof isNaN)(NaN)).toBe(true);
+    expect((context.isFinite as typeof isFinite)(42)).toBe(true);
   });
 
   it('wraps Node-only host constructors (URL, TextEncoder) to block the constructor-chain escape', () => {
@@ -332,6 +338,55 @@ describe('buildSandboxContext', () => {
     expect(() => ctor.constructor('return typeof process')()).toThrow(
       /Function constructor is disabled in the sandbox/
     );
+  });
+
+  // RCE regression: a host-realm object reachable from the sandbox lets
+  // `x.constructor.constructor('return process')()` reach the HOST Function
+  // (codeGeneration:strings:false only bounds the VM-realm Function). The
+  // membrane must block every walk: `.constructor`, `.prototype`,
+  // getPrototypeOf, nested host objects, and getOwnPropertyDescriptor.value.
+  describe('host-Function escape chains (RCE regression)', () => {
+    const ESCAPE_VECTORS: Record<string, string> = {
+      'URL.prototype': `URL.prototype.constructor.constructor("return process.pid")()`,
+      'getPrototypeOf(new URL)': `Object.getPrototypeOf(new URL("http://x")).constructor.constructor("return process.pid")()`,
+      'new URL().searchParams': `new URL("http://x/?a=1").searchParams.constructor.constructor("return process.pid")()`,
+      'TextEncoder.prototype': `TextEncoder.prototype.constructor.constructor("return process.pid")()`,
+      'console.log.constructor': `console.log.constructor.constructor("return process.pid")()`,
+      'parseInt.constructor': `parseInt.constructor.constructor("return process.pid")()`,
+      '__proto__ walk': `(new URL("http://x")).__proto__.constructor.constructor("return process.pid")()`,
+      'getOwnPropertyDescriptor.value': `Object.getOwnPropertyDescriptor(URL,"prototype").value.constructor.constructor("return process.pid")()`,
+    };
+
+    for (const [name, code] of Object.entries(ESCAPE_VECTORS)) {
+      it(`blocks: ${name}`, () => {
+        const { context } = buildSandboxContext({ network: true }, {}, {});
+        const ctx = vm.createContext(context, {
+          codeGeneration: { strings: false, wasm: false },
+        });
+        let result: unknown;
+        let threw = false;
+        try {
+          result = new vm.Script(code).runInContext(ctx);
+        } catch {
+          threw = true;
+        }
+        // Either the walk threw (fail-closed) — never a host value like a pid.
+        expect(threw || typeof result !== 'number').toBe(true);
+        expect(result).not.toBe(process.pid);
+      });
+    }
+
+    it('still allows legitimate host APIs through the membrane', () => {
+      const { context } = buildSandboxContext({ crypto: true }, {}, {});
+      const ctx = vm.createContext(context, {
+        codeGeneration: { strings: false, wasm: false },
+      });
+      const run = (c: string) => new vm.Script(c).runInContext(ctx);
+      expect(run(`new URL("http://a/p?x=1").pathname`)).toBe('/p');
+      expect(run(`new URL("http://a/?x=42").searchParams.get("x")`)).toBe('42');
+      expect(run(`new TextDecoder().decode(new TextEncoder().encode("hi"))`)).toBe('hi');
+      expect(run(`typeof crypto.sha256("x")`)).toBe('string');
+    });
   });
 
   it('blocks dangerous globals as undefined', () => {
