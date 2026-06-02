@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
-import { baseNormalizer, stripInternalTags, transcribeAudioAttachment } from './base.js';
+import {
+  baseNormalizer,
+  createBaseNormalizer,
+  stripInternalTags,
+  transcribeAudioAttachment,
+} from './base.js';
 
 // Hoisted mocks so they can be overridden per test
 const { mockGetConfig, mockTranscribe } = vi.hoisted(() => ({
@@ -199,6 +204,24 @@ describe('baseNormalizer.normalizeOutgoing', () => {
     const parts = baseNormalizer.normalizeOutgoing(longText);
     expect(parts).toHaveLength(1);
     expect(parts[0]).toBe(longText);
+  });
+
+  it('splits long messages when built with a platform length limit', () => {
+    const normalizer = createBaseNormalizer('sms', 100);
+    const longText = 'word '.repeat(60).trim(); // ~299 chars, splits at spaces
+    const parts = normalizer.normalizeOutgoing(longText);
+
+    expect(parts.length).toBeGreaterThan(1);
+    for (const part of parts) expect(part.length).toBeLessThanOrEqual(100);
+    // Content round-trips (modulo the whitespace consumed at split points).
+    expect(parts.join(' ').replace(/\s+/g, ' ').trim()).toBe(longText);
+  });
+
+  it('strips internal tags before splitting', () => {
+    const normalizer = createBaseNormalizer('sms', 100);
+    const parts = normalizer.normalizeOutgoing('<think>secret reasoning</think>visible');
+    expect(parts.join('')).not.toContain('secret');
+    expect(parts.join('')).toContain('visible');
   });
 
   it('flattens <widget> tags to plain text — never leaks raw XML', () => {

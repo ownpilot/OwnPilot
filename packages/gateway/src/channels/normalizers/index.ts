@@ -9,7 +9,8 @@ import { telegramNormalizer } from './telegram.js';
 import { discordNormalizer } from './discord.js';
 import { whatsappNormalizer } from './whatsapp.js';
 import { slackNormalizer } from './slack.js';
-import { baseNormalizer } from './base.js';
+import { baseNormalizer, createBaseNormalizer } from './base.js';
+import { PLATFORM_MESSAGE_LIMITS } from '../utils/message-utils.js';
 import type { ChannelNormalizer } from './types.js';
 
 // Re-export types from types.ts for backward compatibility
@@ -26,6 +27,11 @@ normalizers.set('telegram', telegramNormalizer);
 normalizers.set('discord', discordNormalizer);
 normalizers.set('whatsapp', whatsappNormalizer);
 normalizers.set('slack', slackNormalizer);
+// Length-limited pass-through normalizers for platforms without bespoke
+// markdown handling. SMS/Matrix split long replies; email keeps the base
+// (unsplit) normalizer via the fallback in getNormalizer().
+normalizers.set('sms', createBaseNormalizer('sms', PLATFORM_MESSAGE_LIMITS.sms));
+normalizers.set('matrix', createBaseNormalizer('matrix', PLATFORM_MESSAGE_LIMITS.matrix));
 
 /**
  * Get the normalizer for a given platform.

@@ -9,6 +9,7 @@
 import type { ChannelIncomingMessage, NormalizedAttachment } from '@ownpilot/core';
 import type { ChannelNormalizer, NormalizedIncoming } from './types.js';
 import { flattenChatWidgetsToText } from '../../utils/chat-widgets.js';
+import { splitMessage } from '../utils/message-utils.js';
 
 /** Internal tags that should never leak to channel users */
 const INTERNAL_TAG_PATTERNS = [
@@ -73,51 +74,65 @@ export async function transcribeAudioAttachment(
   }
 }
 
-export const baseNormalizer: ChannelNormalizer = {
-  platform: 'default',
+/**
+ * Build a pass-through normalizer for a platform that has no bespoke
+ * implementation. Optionally splits the outgoing response so it fits within
+ * the platform's per-message length limit (e.g. SMS ~1600 chars). When
+ * `maxLength` is omitted the response is never split — correct for platforms
+ * with effectively no limit (email, web UI), where splitting one reply into
+ * several messages would be worse than a long single one.
+ */
+export function createBaseNormalizer(platform: string, maxLength?: number): ChannelNormalizer {
+  return {
+    platform,
 
-  async normalizeIncoming(msg: ChannelIncomingMessage): Promise<NormalizedIncoming> {
-    // Convert attachments to base64 data URIs
-    const attachments: NormalizedAttachment[] | undefined = msg.attachments
-      ?.filter((a) => a.data)
-      .map((a) => ({
-        type: a.type,
-        data: `data:${a.mimeType};base64,${Buffer.from(a.data!).toString('base64')}`,
-        mimeType: a.mimeType,
-        filename: a.filename,
-        size: a.size,
-      }));
+    async normalizeIncoming(msg: ChannelIncomingMessage): Promise<NormalizedIncoming> {
+      // Convert attachments to base64 data URIs
+      const attachments: NormalizedAttachment[] | undefined = msg.attachments
+        ?.filter((a) => a.data)
+        .map((a) => ({
+          type: a.type,
+          data: `data:${a.mimeType};base64,${Buffer.from(a.data!).toString('base64')}`,
+          mimeType: a.mimeType,
+          filename: a.filename,
+          size: a.size,
+        }));
 
-    // Auto-transcribe audio attachments
-    const transcriptions: string[] = [];
-    const audioAttachments = msg.attachments?.filter((a) => a.type === 'audio' && a.data);
-    if (audioAttachments?.length) {
-      for (const att of audioAttachments) {
-        const text = await transcribeAudioAttachment(att.data!, att.mimeType);
-        if (text) transcriptions.push(text);
+      // Auto-transcribe audio attachments
+      const transcriptions: string[] = [];
+      const audioAttachments = msg.attachments?.filter((a) => a.type === 'audio' && a.data);
+      if (audioAttachments?.length) {
+        for (const att of audioAttachments) {
+          const text = await transcribeAudioAttachment(att.data!, att.mimeType);
+          if (text) transcriptions.push(text);
+        }
       }
-    }
 
-    // Build final text: transcription prefix + original text
-    let text = msg.text || '';
-    if (transcriptions.length > 0) {
-      const prefix = transcriptions.map((t) => `[Voice message]: ${t}`).join('\n');
-      text = text ? `${prefix}\n\n${text}` : prefix;
-    } else if (!text && attachments?.length) {
-      text = '[Attachment]';
-    }
+      // Build final text: transcription prefix + original text
+      let text = msg.text || '';
+      if (transcriptions.length > 0) {
+        const prefix = transcriptions.map((t) => `[Voice message]: ${t}`).join('\n');
+        text = text ? `${prefix}\n\n${text}` : prefix;
+      } else if (!text && attachments?.length) {
+        text = '[Attachment]';
+      }
 
-    return {
-      text,
-      attachments: attachments?.length ? attachments : undefined,
-    };
-  },
+      return {
+        text,
+        attachments: attachments?.length ? attachments : undefined,
+      };
+    },
 
-  normalizeOutgoing(response: string): string[] {
-    const cleaned = stripInternalTags(response);
-    if (!cleaned) return [];
-    // Flatten <widget> tags — only the web UI can render them as visual blocks;
-    // every other channel sees raw XML otherwise.
-    return [flattenChatWidgetsToText(cleaned)];
-  },
-};
+    normalizeOutgoing(response: string): string[] {
+      const cleaned = stripInternalTags(response);
+      if (!cleaned) return [];
+      // Flatten <widget> tags — only the web UI can render them as visual blocks;
+      // every other channel sees raw XML otherwise.
+      const flattened = flattenChatWidgetsToText(cleaned);
+      return maxLength ? splitMessage(flattened, maxLength) : [flattened];
+    },
+  };
+}
+
+/** Default pass-through normalizer (no length splitting). */
+export const baseNormalizer: ChannelNormalizer = createBaseNormalizer('default');

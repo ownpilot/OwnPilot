@@ -11,6 +11,13 @@ export const PLATFORM_MESSAGE_LIMITS: Record<string, number> = {
   discord: 2000,
   whatsapp: 4096,
   slack: 4000,
+  // SMS: Twilio accepts up to 1600 chars per message (auto-segmented).
+  sms: 1600,
+  // Matrix: events cap at ~64KB total; keep a generous body limit as a safety
+  // net so a runaway response still gets chunked rather than rejected.
+  matrix: 32768,
+  // email is intentionally absent — bodies are effectively unbounded, and
+  // splitting one reply into several emails is worse than a long single one.
 };
 
 // ============================================================================
