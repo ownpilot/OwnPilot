@@ -322,11 +322,21 @@ export class WorkflowService implements IWorkflowService {
         }
 
         // Process results from both paths
+        let approvalPause: ApprovalPauseError | undefined;
         for (let i = 0; i < syncNodeIds.length; i++) {
           const nodeId = syncNodeIds[i]!;
           const settled = syncResults[i]!;
           if (settled.status === 'fulfilled') {
             nodeOutputs[nodeId] = settled.value;
+          } else if (settled.reason instanceof ApprovalPauseError) {
+            // The approval node throws ApprovalPauseError to pause the workflow.
+            // Promise.allSettled captures it as a rejected result, so we must
+            // re-throw it (below, after the rest of the level is captured).
+            // Otherwise it is recorded as a failed node and the finalize step
+            // overwrites the 'awaiting_approval' status with 'failed' — leaving
+            // the workflow un-resumable. Keep the node's persisted 'running'
+            // state rather than marking it an error.
+            approvalPause = settled.reason;
           } else {
             nodeOutputs[nodeId] = {
               nodeId,
@@ -339,6 +349,12 @@ export class WorkflowService implements IWorkflowService {
         // Merge jobified results into nodeOutputs
         for (const [nodeId, result] of Object.entries(jobifiedResults)) {
           nodeOutputs[nodeId] = result;
+        }
+        if (approvalPause) {
+          // Persist whatever completed this level, then propagate to the outer
+          // catch which returns the awaiting_approval log without finalizing.
+          await repo.updateLog(wfLog.id, { nodeResults: nodeOutputs });
+          throw approvalPause;
         }
 
         // Post-processing for all nodes in level
@@ -720,12 +736,19 @@ export class WorkflowService implements IWorkflowService {
         );
 
         // Process results (same logic as executeWorkflow)
+        let approvalPause: ApprovalPauseError | undefined;
         for (let i = 0; i < level.length; i++) {
           const nodeId = level[i]!;
           const settled = results[i]!;
 
           if (settled.status === 'fulfilled') {
             nodeOutputs[nodeId] = settled.value;
+          } else if (settled.reason instanceof ApprovalPauseError) {
+            // A second approval node hit during resume — re-throw (after the
+            // level) so the workflow pauses again rather than being marked
+            // failed. See the matching note in executeWorkflow.
+            approvalPause = settled.reason;
+            continue;
           } else {
             nodeOutputs[nodeId] = {
               nodeId,
@@ -860,6 +883,15 @@ export class WorkflowService implements IWorkflowService {
           }
 
           await repo.updateLog(logId, { nodeResults: nodeOutputs });
+        }
+
+        if (approvalPause) {
+          // A node in this level paused for approval (its per-node persist was
+          // skipped via `continue`). Persist and propagate to the outer catch,
+          // which returns the awaiting_approval log without finalizing the
+          // workflow as completed/failed.
+          await repo.updateLog(logId, { nodeResults: nodeOutputs });
+          throw approvalPause;
         }
       }
 

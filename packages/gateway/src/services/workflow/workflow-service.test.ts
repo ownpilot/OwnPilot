@@ -1244,6 +1244,50 @@ describe('approvalNode', () => {
     expect(doneEvent).toBeDefined();
   });
 
+  it('persists awaiting_approval and never overwrites it with failed', async () => {
+    const nodes = [
+      makeNode('ap1', 'approvalNode', { approvalMessage: 'Please approve', timeoutMinutes: 30 }),
+    ];
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
+    mockApprovalsRepo.create.mockResolvedValue({ id: 'approval-1' });
+    const statuses: string[] = [];
+    mockRepo.updateLog.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
+      if (typeof patch.status === 'string') statuses.push(patch.status);
+      return undefined;
+    });
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'awaiting_approval' }));
+
+    await service.executeWorkflow('wf-1', 'user1');
+
+    // The LAST status persisted must be awaiting_approval — never overwritten
+    // to 'failed' by a finalize step treating the pause as a node error.
+    expect(statuses[statuses.length - 1]).toBe('awaiting_approval');
+    expect(statuses).not.toContain('failed');
+  });
+
+  it('resumeFromApproval re-pauses when it reaches a second approval node', async () => {
+    const nodes = [
+      makeNode('ap1', 'approvalNode', { approvalMessage: 'First', timeoutMinutes: 30 }),
+      makeNode('ap2', 'approvalNode', { approvalMessage: 'Second', timeoutMinutes: 30 }),
+    ];
+    const edges = [makeEdge('ap1', 'ap2')];
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+    mockApprovalsRepo.create.mockResolvedValue({ id: 'approval-2' });
+
+    const statuses: string[] = [];
+    mockRepo.updateLog.mockImplementation(async (_id: string, patch: Record<string, unknown>) => {
+      if (typeof patch.status === 'string') statuses.push(patch.status);
+      return undefined;
+    });
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'awaiting_approval', nodeResults: {} }));
+
+    await service.resumeFromApproval('wf-1', 'user1', 'ap1', 'approved', 'log-1');
+
+    // Resuming past ap1 hits ap2, which must pause again — not fail.
+    expect(statuses).not.toContain('failed');
+    expect(statuses[statuses.length - 1]).toBe('awaiting_approval');
+  });
+
   it('executes approvalNode in dryRun mode (no approval created)', async () => {
     const nodes = [
       makeNode('ap1', 'approvalNode', { approvalMessage: 'Approve this', timeoutMinutes: 10 }),
