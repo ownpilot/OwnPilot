@@ -109,6 +109,51 @@ export class ChannelMessagesRepository extends BaseRepository {
     return result;
   }
 
+  /**
+   * Insert an inbound message only if its id is not already present.
+   * Returns true when a new row was inserted, false when the id already
+   * existed — i.e. a redelivered/duplicate webhook. Atomic dedup via
+   * `ON CONFLICT (id) DO NOTHING`, so it is race-safe against concurrent
+   * redeliveries (only one INSERT reports changes > 0).
+   */
+  async createIfNew(data: {
+    id: string;
+    channelId: string;
+    externalId?: string;
+    direction: ChannelMessage['direction'];
+    senderId?: string;
+    senderName?: string;
+    content: string;
+    contentType?: string;
+    attachments?: ChannelMessage['attachments'];
+    replyToId?: string;
+    conversationId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<boolean> {
+    const result = await this.execute(
+      `INSERT INTO channel_messages (
+        id, channel_id, external_id, direction, sender_id, sender_name,
+        content, content_type, attachments, reply_to_id, conversation_id, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (id) DO NOTHING`,
+      [
+        data.id,
+        data.channelId,
+        data.externalId ?? null,
+        data.direction,
+        data.senderId ?? null,
+        data.senderName ?? null,
+        data.content,
+        data.contentType ?? 'text',
+        data.attachments ? JSON.stringify(data.attachments) : null,
+        data.replyToId ?? null,
+        data.conversationId ?? null,
+        JSON.stringify(data.metadata ?? {}),
+      ]
+    );
+    return result.changes > 0;
+  }
+
   async getById(id: string): Promise<ChannelMessage | null> {
     const row = await this.queryOne<ChannelMessageRow>(
       `SELECT * FROM channel_messages WHERE id = $1`,

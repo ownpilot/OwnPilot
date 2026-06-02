@@ -860,10 +860,17 @@ export class ChannelServiceImpl implements IChannelService {
         } // end else (non-whatsapp verification)
       }
 
-      // 5. Save incoming message (conversationId wired after session creation below)
+      // 5. Save incoming message (conversationId wired after session creation
+      //    below). This is also the idempotency gate: message.id is derived
+      //    deterministically from the provider's message id (e.g. `slack:<ts>`,
+      //    `channel.sms:<sid>`), so a redelivered webhook produces the same id.
+      //    createIfNew inserts ON CONFLICT (id) DO NOTHING and reports whether
+      //    the row was new; a duplicate delivery returns early BEFORE the LLM
+      //    routing below, preventing a second (paid) AI reply to the same
+      //    message. Race-safe against concurrent redeliveries.
       let savedInboundId: string | undefined;
       try {
-        await this.messagesRepo.create({
+        const isNew = await this.messagesRepo.createIfNew({
           id: message.id,
           channelId: message.channelPluginId,
           externalId: message.metadata?.platformMessageId?.toString(),
@@ -886,8 +893,19 @@ export class ChannelServiceImpl implements IChannelService {
           replyToId: message.replyToId,
           metadata: message.metadata,
         });
+        if (!isNew) {
+          log.info('Duplicate inbound message ignored (idempotency)', {
+            id: message.id,
+            platform: message.platform,
+          });
+          return;
+        }
         savedInboundId = message.id;
       } catch (error) {
+        // A save failure here must NOT silently fall through to a second AI
+        // reply on the next retry. But unlike a clean duplicate, we can't tell
+        // whether this delivery was already answered, so we continue (best
+        // effort) — the dedup above handles the common redelivery case.
         log.warn('Failed to save incoming message', { error });
       }
 

@@ -184,6 +184,42 @@ describe('ChannelMessagesRepository', () => {
     });
   });
 
+  // ---- createIfNew (idempotency gate) ----
+
+  describe('createIfNew', () => {
+    it('uses ON CONFLICT DO NOTHING and returns true when a row is inserted', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      const inserted = await repo.createIfNew({
+        id: 'msg-1',
+        channelId: 'ch-1',
+        direction: 'inbound',
+        content: 'Hello',
+      });
+
+      expect(inserted).toBe(true);
+      expect(mockAdapter.execute).toHaveBeenCalledWith(
+        expect.stringContaining('ON CONFLICT (id) DO NOTHING'),
+        expect.arrayContaining(['msg-1', 'ch-1', 'inbound'])
+      );
+      // Pure insert — must not do a follow-up getById read.
+      expect(mockAdapter.queryOne).not.toHaveBeenCalled();
+    });
+
+    it('returns false when the id already exists (no row inserted)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+
+      const inserted = await repo.createIfNew({
+        id: 'dup-1',
+        channelId: 'ch-1',
+        direction: 'inbound',
+        content: 'Duplicate',
+      });
+
+      expect(inserted).toBe(false);
+    });
+  });
+
   // ---- getById ----
 
   describe('getById', () => {
