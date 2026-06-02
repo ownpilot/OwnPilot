@@ -1158,6 +1158,50 @@ describe('mergeNode', () => {
 
     expect(mockExecuteMergeNode).toHaveBeenCalled();
   });
+
+  it('does NOT skip a rejoin node reachable from the taken branch (if/else diamond)', async () => {
+    // cond ─(true)→ A ─┐
+    //      └(false)→ B ─┴→ join
+    // Taking the "true" branch must skip B but MUST still run `join`, because
+    // `join` is reachable from the live A branch. The not-taken-branch skip
+    // must not swallow a node that a live branch also feeds.
+    const nodes = [
+      makeNode('cond', 'conditionNode', { expression: 'true' }),
+      makeNode('A', 'toolNode', { toolName: 't1', toolArgs: {} }),
+      makeNode('B', 'toolNode', { toolName: 't2', toolArgs: {} }),
+      makeNode('join', 'toolNode', { toolName: 't3', toolArgs: {} }),
+    ];
+    const edges = [
+      makeEdge('cond', 'A', 'true'),
+      makeEdge('cond', 'B', 'false'),
+      makeEdge('A', 'join'),
+      makeEdge('B', 'join'),
+    ];
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes, edges));
+
+    mockExecuteConditionNode.mockReturnValue({
+      ...makeNodeResult('cond', true),
+      branchTaken: 'true',
+    });
+    mockExecuteNode.mockImplementation((node: WorkflowNode) =>
+      Promise.resolve(makeNodeResult(node.id, `ran-${node.id}`))
+    );
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'completed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
+
+    // B (not-taken branch) is skipped.
+    expect(progressEvents.some((e) => e.nodeId === 'B' && e.status === 'skipped')).toBe(true);
+
+    // join must NOT be skipped — it is reachable from the live A branch.
+    expect(progressEvents.some((e) => e.nodeId === 'join' && e.status === 'skipped')).toBe(false);
+    // join must actually execute.
+    const joinRan = (mockExecuteNode.mock.calls as Array<[WorkflowNode]>).some(
+      ([n]) => n.id === 'join'
+    );
+    expect(joinRan).toBe(true);
+  });
 });
 
 describe('stickyNoteNode', () => {

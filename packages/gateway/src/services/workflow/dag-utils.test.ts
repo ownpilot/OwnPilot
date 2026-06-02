@@ -15,6 +15,7 @@ import {
   topologicalSort,
   getDownstreamNodes,
   getDownstreamNodesByHandle,
+  computeSkippedNodes,
   getForEachBodyNodes,
   detectCycle,
 } from './dag-utils.js';
@@ -459,5 +460,81 @@ describe('detectCycle', () => {
     const edges = [vEdge('a', 'b'), vEdge('x', 'y'), vEdge('y', 'x')];
     const result = detectCycle(nodes, edges);
     expect(result).not.toBeNull();
+  });
+});
+
+// ============================================================================
+// computeSkippedNodes
+// ============================================================================
+
+describe('computeSkippedNodes', () => {
+  it('skips the not-taken branch but keeps a rejoin node fed by the live branch', () => {
+    // cond ─(true)→ A ─┐
+    //      └(false)→ B ─┴→ join → tail
+    const edges = [
+      makeEdge('cond', 'A', 'true'),
+      makeEdge('cond', 'B', 'false'),
+      makeEdge('A', 'join'),
+      makeEdge('B', 'join'),
+      makeEdge('join', 'tail'),
+    ];
+    // Take "true" → seed the false edge dead.
+    const dead = computeSkippedNodes([makeEdge('cond', 'B', 'false')], edges);
+    expect(dead.has('B')).toBe(true);
+    expect(dead.has('join')).toBe(false);
+    expect(dead.has('tail')).toBe(false);
+    expect(dead.has('A')).toBe(false);
+  });
+
+  it('propagates skip down a dead chain until a live rejoin', () => {
+    // cond ─(false)→ B → B2 → join ← A (live)
+    const edges = [
+      makeEdge('cond', 'A', 'true'),
+      makeEdge('cond', 'B', 'false'),
+      makeEdge('B', 'B2'),
+      makeEdge('B2', 'join'),
+      makeEdge('A', 'join'),
+    ];
+    const dead = computeSkippedNodes([makeEdge('cond', 'B', 'false')], edges);
+    expect([...dead].sort()).toEqual(['B', 'B2']);
+  });
+
+  it('skips a node whose every incoming edge is dead', () => {
+    // Both predecessors of M are on the not-taken side → M is skipped.
+    const edges = [
+      makeEdge('cond', 'B', 'false'),
+      makeEdge('cond', 'C', 'false'),
+      makeEdge('B', 'M'),
+      makeEdge('C', 'M'),
+    ];
+    const dead = computeSkippedNodes(
+      [makeEdge('cond', 'B', 'false'), makeEdge('cond', 'C', 'false')],
+      edges
+    );
+    expect(dead.has('M')).toBe(true);
+  });
+
+  it('handles a switch with multiple not-taken handles, keeping the join', () => {
+    // switch ─(a)→ A ─┐
+    //        ─(b)→ Bn ┤
+    //        ─(c)→ Cn ┴→ join   (take "a")
+    const edges = [
+      makeEdge('sw', 'A', 'a'),
+      makeEdge('sw', 'Bn', 'b'),
+      makeEdge('sw', 'Cn', 'c'),
+      makeEdge('A', 'join'),
+      makeEdge('Bn', 'join'),
+      makeEdge('Cn', 'join'),
+    ];
+    const dead = computeSkippedNodes([makeEdge('sw', 'Bn', 'b'), makeEdge('sw', 'Cn', 'c')], edges);
+    expect(dead.has('Bn')).toBe(true);
+    expect(dead.has('Cn')).toBe(true);
+    expect(dead.has('join')).toBe(false);
+    expect(dead.has('A')).toBe(false);
+  });
+
+  it('returns an empty set when no edges are seeded dead', () => {
+    const edges = [makeEdge('A', 'B'), makeEdge('B', 'C')];
+    expect(computeSkippedNodes([], edges).size).toBe(0);
   });
 });

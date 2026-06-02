@@ -13,7 +13,7 @@ import {
 import type { IToolService } from '@ownpilot/core';
 import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';
-import { topologicalSort, getForEachBodyNodes, getDownstreamNodesByHandle } from './dag-utils.js';
+import { topologicalSort, getForEachBodyNodes, computeSkippedNodes } from './dag-utils.js';
 import { resolveTemplates } from './template-resolver.js';
 import {
   executeNode,
@@ -230,7 +230,10 @@ export async function executeForEachNode(
           const bodyNode = nodeMap.get(bodyNodeId);
           if (bodyNode?.type === 'conditionNode' && bodyResult.branchTaken) {
             const skippedHandle = bodyResult.branchTaken === 'true' ? 'false' : 'true';
-            const skippedInBody = getDownstreamNodesByHandle(bodyNodeId, skippedHandle, bodyEdges);
+            const deadSeed = bodyEdges.filter(
+              (e) => e.source === bodyNodeId && (e.sourceHandle ?? '') === skippedHandle
+            );
+            const skippedInBody = computeSkippedNodes(deadSeed, bodyEdges);
             for (const skipId of skippedInBody) {
               if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
                 nodeOutputs[skipId] = {
@@ -247,19 +250,19 @@ export async function executeForEachNode(
           if (bodyNode?.type === 'switchNode' && bodyResult.branchTaken) {
             const switchData = bodyNode.data as SwitchNodeData;
             const allHandles = [...switchData.cases.map((c) => c.label), 'default'];
-            for (const handle of allHandles) {
-              if (handle !== bodyResult.branchTaken) {
-                const skippedInBody = getDownstreamNodesByHandle(bodyNodeId, handle, bodyEdges);
-                for (const skipId of skippedInBody) {
-                  if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
-                    nodeOutputs[skipId] = {
-                      nodeId: skipId,
-                      status: 'skipped',
-                      completedAt: new Date().toISOString(),
-                    };
-                    onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
-                  }
-                }
+            const notTaken = new Set(allHandles.filter((h) => h !== bodyResult.branchTaken));
+            const deadSeed = bodyEdges.filter(
+              (e) => e.source === bodyNodeId && notTaken.has(e.sourceHandle ?? '')
+            );
+            const skippedInBody = computeSkippedNodes(deadSeed, bodyEdges);
+            for (const skipId of skippedInBody) {
+              if (!nodeOutputs[skipId] || nodeOutputs[skipId].status !== 'skipped') {
+                nodeOutputs[skipId] = {
+                  nodeId: skipId,
+                  status: 'skipped',
+                  completedAt: new Date().toISOString(),
+                };
+                onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
               }
             }
           }

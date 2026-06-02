@@ -31,7 +31,7 @@ import { getLog } from '../log.js';
 import {
   topologicalSort,
   getDownstreamNodes,
-  getDownstreamNodesByHandle,
+  computeSkippedNodes,
   getForEachBodyNodes,
 } from './dag-utils.js';
 import { resolveTemplates } from './template-resolver.js';
@@ -436,11 +436,12 @@ export class WorkflowService implements IWorkflowService {
             const node = nodeMap.get(nodeId);
             if (node?.type === 'conditionNode' && nodeResult.branchTaken) {
               const skippedHandle = nodeResult.branchTaken === 'true' ? 'false' : 'true';
-              const skippedNodes = getDownstreamNodesByHandle(
-                nodeId,
-                skippedHandle,
-                workflow.edges
+              // Seed only the not-taken edge as dead; computeSkippedNodes stops
+              // at join/rejoin points that still have a live incoming edge.
+              const deadSeed = workflow.edges.filter(
+                (e) => e.source === nodeId && (e.sourceHandle ?? '') === skippedHandle
               );
+              const skippedNodes = computeSkippedNodes(deadSeed, workflow.edges);
               for (const skipId of skippedNodes) {
                 if (!nodeOutputs[skipId]) {
                   nodeOutputs[skipId] = {
@@ -453,23 +454,26 @@ export class WorkflowService implements IWorkflowService {
               }
             }
 
-            // Switch branching: skip all handles except the matched branch
+            // Switch branching: skip all handles except the matched branch.
+            // Seed every not-taken handle's edges together so a node fed only by
+            // not-taken handles is skipped, while a join with a live (taken or
+            // external) edge survives.
             if (node?.type === 'switchNode' && nodeResult.branchTaken) {
               const switchData = node.data as SwitchNodeData;
               const allHandles = [...switchData.cases.map((c) => c.label), 'default'];
-              for (const handle of allHandles) {
-                if (handle !== nodeResult.branchTaken) {
-                  const skippedNodes = getDownstreamNodesByHandle(nodeId, handle, workflow.edges);
-                  for (const skipId of skippedNodes) {
-                    if (!nodeOutputs[skipId]) {
-                      nodeOutputs[skipId] = {
-                        nodeId: skipId,
-                        status: 'skipped',
-                        completedAt: new Date().toISOString(),
-                      };
-                      onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
-                    }
-                  }
+              const notTaken = new Set(allHandles.filter((h) => h !== nodeResult.branchTaken));
+              const deadSeed = workflow.edges.filter(
+                (e) => e.source === nodeId && notTaken.has(e.sourceHandle ?? '')
+              );
+              const skippedNodes = computeSkippedNodes(deadSeed, workflow.edges);
+              for (const skipId of skippedNodes) {
+                if (!nodeOutputs[skipId]) {
+                  nodeOutputs[skipId] = {
+                    nodeId: skipId,
+                    status: 'skipped',
+                    completedAt: new Date().toISOString(),
+                  };
+                  onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
                 }
               }
             }
@@ -814,11 +818,12 @@ export class WorkflowService implements IWorkflowService {
             const node = nodeMap.get(nodeId);
             if (node?.type === 'conditionNode' && nodeResult.branchTaken) {
               const skippedHandle = nodeResult.branchTaken === 'true' ? 'false' : 'true';
-              const skippedNodes = getDownstreamNodesByHandle(
-                nodeId,
-                skippedHandle,
-                workflow.edges
+              // Seed only the not-taken edge as dead; computeSkippedNodes stops
+              // at join/rejoin points that still have a live incoming edge.
+              const deadSeed = workflow.edges.filter(
+                (e) => e.source === nodeId && (e.sourceHandle ?? '') === skippedHandle
               );
+              const skippedNodes = computeSkippedNodes(deadSeed, workflow.edges);
               for (const skipId of skippedNodes) {
                 if (!nodeOutputs[skipId]) {
                   nodeOutputs[skipId] = {
@@ -831,22 +836,24 @@ export class WorkflowService implements IWorkflowService {
               }
             }
 
+            // Switch branching: skip every not-taken handle together (see the
+            // matching block in executeWorkflow for the join-survival rationale).
             if (node?.type === 'switchNode' && nodeResult.branchTaken) {
               const switchData = node.data as SwitchNodeData;
               const allHandles = [...switchData.cases.map((c) => c.label), 'default'];
-              for (const handle of allHandles) {
-                if (handle !== nodeResult.branchTaken) {
-                  const skippedNodes = getDownstreamNodesByHandle(nodeId, handle, workflow.edges);
-                  for (const skipId of skippedNodes) {
-                    if (!nodeOutputs[skipId]) {
-                      nodeOutputs[skipId] = {
-                        nodeId: skipId,
-                        status: 'skipped',
-                        completedAt: new Date().toISOString(),
-                      };
-                      onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
-                    }
-                  }
+              const notTaken = new Set(allHandles.filter((h) => h !== nodeResult.branchTaken));
+              const deadSeed = workflow.edges.filter(
+                (e) => e.source === nodeId && notTaken.has(e.sourceHandle ?? '')
+              );
+              const skippedNodes = computeSkippedNodes(deadSeed, workflow.edges);
+              for (const skipId of skippedNodes) {
+                if (!nodeOutputs[skipId]) {
+                  nodeOutputs[skipId] = {
+                    nodeId: skipId,
+                    status: 'skipped',
+                    completedAt: new Date().toISOString(),
+                  };
+                  onProgress?.({ type: 'node_complete', nodeId: skipId, status: 'skipped' });
                 }
               }
             }
