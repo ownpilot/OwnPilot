@@ -24,6 +24,9 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface CachedSession {
   expiresAt: Date;
+  /** When the underlying session was created — used to enforce the
+   *  password-change cutoff on the cache-hit path (see validateSession). */
+  createdAt: Date;
 }
 
 /**
@@ -103,7 +106,7 @@ export async function createSession(): Promise<{ token: string; expiresAt: Date 
   const expiresAt = new Date(now.getTime() + getSessionTtlMs());
 
   await uiSessionsRepo.createSession(tokenHash, 'ui', 'default', expiresAt);
-  sessionCache.set(token, { expiresAt }, getSessionTtlMs());
+  sessionCache.set(token, { expiresAt, createdAt: now }, getSessionTtlMs());
   log.info('Session created');
 
   return { token, expiresAt };
@@ -121,7 +124,7 @@ export async function createMcpSession(): Promise<{ token: string; expiresAt: Da
   const expiresAt = new Date(now.getTime() + ttlMs);
 
   await uiSessionsRepo.createSession(tokenHash, 'mcp', 'default', expiresAt);
-  sessionCache.set(token, { expiresAt }, ttlMs);
+  sessionCache.set(token, { expiresAt, createdAt: now }, ttlMs);
   log.info('MCP session created');
 
   return { token, expiresAt };
@@ -138,11 +141,21 @@ export async function validateSession(token: string): Promise<boolean> {
   // 1. Cache hit path — no hashing
   const cached = sessionCache.get(token);
   if (cached) {
-    if (cached.expiresAt.getTime() > Date.now()) {
-      return true;
+    if (cached.expiresAt.getTime() <= Date.now()) {
+      sessionCache.invalidate(token);
+      return false;
     }
-    sessionCache.invalidate(token);
-    return false;
+    // Enforce the password-change cutoff here too. Without it, a session cached
+    // before a password change would keep validating until the cache TTL
+    // expires (~5 min) even though the DB path rejects it. Holds the invariant
+    // "a session created before the current password never validates" at the
+    // validation layer, independent of whether a caller cleared the cache.
+    const hashCreatedAt = getPasswordHashCreatedAt();
+    if (hashCreatedAt && cached.createdAt.getTime() < hashCreatedAt) {
+      sessionCache.invalidate(token);
+      return false;
+    }
+    return true;
   }
 
   // 2. Cache miss — hash and query DB
@@ -161,7 +174,7 @@ export async function validateSession(token: string): Promise<boolean> {
   }
 
   // 4. Populate cache by raw token so the next call hits the fast path
-  sessionCache.set(token, { expiresAt: record.expiresAt });
+  sessionCache.set(token, { expiresAt: record.expiresAt, createdAt: record.createdAt });
   return true;
 }
 

@@ -222,6 +222,23 @@ describe('UI Session Service', () => {
       });
       expect(await validateSession('legacy-session-token')).toBe(true);
     });
+
+    it('cache-hit path also enforces the password-change cutoff (no DB lookup)', async () => {
+      // No cutoff at creation time → the warmed-cache session is initially valid.
+      mockSettingsRepo.get.mockReturnValue(null);
+      mockUiSessionsRepo.createSession.mockResolvedValue(undefined);
+      const session = await createSession();
+      expect(await validateSession(session.token)).toBe(true);
+
+      // Simulate a password change AFTER this session was created. The cache
+      // still holds the (now-stale) session; the cache-hit path must reject it
+      // without falling back to the DB. mockReturnValueOnce so the numeric
+      // value is consumed by this single lookup and doesn't leak into later
+      // tests (vi.clearAllMocks does not reset mockReturnValue).
+      mockSettingsRepo.get.mockReturnValueOnce(Date.now() + 60_000);
+      expect(await validateSession(session.token)).toBe(false);
+      expect(mockUiSessionsRepo.getByTokenHash).toHaveBeenCalledTimes(0);
+    });
   });
 
   describe('invalidateSession', () => {
