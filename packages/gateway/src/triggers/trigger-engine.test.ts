@@ -1083,6 +1083,47 @@ describe('TriggerEngine', () => {
       e.stop();
     });
 
+    it('marks a failed condition trigger as fired so its throttle engages (no hot loop)', async () => {
+      // Regression: the failure path did not set lastFired for non-schedule
+      // triggers, so a condition trigger whose action threw never engaged its
+      // checkInterval throttle and re-fired every condition tick forever.
+      const trigger = makeTrigger({
+        id: 'cond-throw',
+        type: 'condition',
+        config: { condition: 'upcoming_deadline', threshold: 7 },
+        lastFired: null,
+        action: { type: 'cond_boom' as Trigger['action']['type'], payload: {} },
+      });
+      mockTriggerService.getConditionTriggers.mockResolvedValueOnce([trigger]);
+      mockGoalService.getUpcoming.mockResolvedValueOnce([{ id: 'g1', title: 'Due Soon' }]);
+
+      const e = new TriggerEngine({
+        enabled: true,
+        pollIntervalMs: 999999,
+        conditionCheckIntervalMs: 999999,
+      });
+      e.registerActionHandler('cond_boom', async () => {
+        throw new Error('condition action exploded');
+      });
+      e.start();
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Logged as a failure...
+      expect(mockTriggerService.logExecution).toHaveBeenCalledWith(
+        'default',
+        'cond-throw',
+        expect.any(String),
+        'failure',
+        undefined,
+        expect.any(String),
+        expect.any(Number)
+      );
+      // ...but lastFired was still set (markFired without nextFire) so the
+      // checkInterval throttle now applies on the next tick.
+      expect(mockTriggerService.markFired).toHaveBeenCalledWith('default', 'cond-throw');
+      e.stop();
+    });
+
     it('fires when trigger has never been fired (lastFired is null)', async () => {
       const trigger = makeTrigger({
         type: 'condition',

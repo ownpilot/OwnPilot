@@ -822,13 +822,19 @@ export class TriggerEngine {
       });
       log.error('Trigger failed', { trigger: trigger.name, error });
 
-      // Advance the schedule even on unexpected failure. Otherwise nextFire
-      // stays in the past, getDueTriggers keeps returning this trigger, and it
-      // re-fires on every poll — an infinite hot loop that re-hammers the
-      // failing action (e.g. a scheduled channel send to a blocked chat). Wrap
-      // in its own try so a reschedule failure can't mask the original error.
+      // Advance the trigger's schedule/lastFired even on unexpected failure,
+      // mirroring the success path. Otherwise a persistently-failing trigger
+      // re-fires forever: a schedule trigger stays "due" and fires every poll;
+      // a condition trigger never sets lastFired, so its checkInterval throttle
+      // never engages and it re-fires every condition tick — both re-hammer the
+      // failing action (e.g. a channel send to a blocked chat). Wrap in its own
+      // try so a reschedule failure can't mask the original error.
       try {
-        await this.advanceSchedule(trigger);
+        if (trigger.type === 'schedule') {
+          await this.advanceSchedule(trigger);
+        } else {
+          await this.triggerService.markFired(this.config.userId, trigger.id);
+        }
       } catch (rescheduleError) {
         log.error('Failed to reschedule trigger after failure', {
           trigger: trigger.name,
