@@ -9,6 +9,39 @@ import { BaseRepository, parseJsonField } from '../base.js';
 import { generateId } from '@ownpilot/core';
 
 /**
+ * Error thrown when a caller passes a filter key that is not part of the
+ * table's column schema. Distinct error class so route handlers can map it
+ * to a 400 response (Plan 11 SQL-001: defense-in-depth column allowlist).
+ */
+export class UnknownFilterKeyError extends Error {
+  constructor(
+    public readonly key: string,
+    public readonly tableName: string
+  ) {
+    super(`Filter key "${key}" is not defined in table "${tableName}" schema`);
+    this.name = 'UnknownFilterKeyError';
+  }
+}
+
+/**
+ * Throws {@link UnknownFilterKeyError} if `key` is not one of the table's
+ * declared columns. Called by `listRecords` before any SQL is built so that
+ * typos and stale callers fail fast with a clear message instead of silently
+ * returning zero rows.
+ *
+ * Note: the `key` is passed to Postgres as a query parameter (`data->>$N`),
+ * so this is NOT a SQL-injection defense — that's already covered by the
+ * adapter's parameter binding. The check exists for application correctness
+ * and to make the filter contract explicit.
+ */
+function validateFilterKey(key: string, table: CustomTableSchema): void {
+  const allowed = table.columns.some((c) => c.name === key);
+  if (!allowed) {
+    throw new UnknownFilterKeyError(key, table.name);
+  }
+}
+
+/**
  * Column definition for custom tables
  */
 export interface ColumnDefinition {
@@ -375,7 +408,12 @@ export class CustomDataRepository extends BaseRepository {
 
     if (options?.filter) {
       for (const [key, value] of Object.entries(options.filter)) {
-        conditions.push(`data->>$${paramIndex++} = $${paramIndex++}`);
+        // Defense-in-depth: only allow filtering on columns that are part
+        // of the table's declared schema. The key is already parameterized
+        // below (params.push(key)), so this is application correctness, not
+        // SQL-injection defense.
+        validateFilterKey(key, table);
+        conditions.push(`data->>${paramIndex++} = ${paramIndex++}`);
         params.push(key, String(value));
       }
     }

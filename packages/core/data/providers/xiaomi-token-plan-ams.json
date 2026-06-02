@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "mimo-v2.5-tts-voicedesign",
-      "name": "MiMo-V2.5-TTS-VoiceDesign",
+      "id": "mimo-v2.5-tts",
+      "name": "MiMo-V2.5-TTS",
       "contextWindow": 8192,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -40,14 +40,30 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "mimo-v2.5-tts",
-      "name": "MiMo-V2.5-TTS",
+      "id": "mimo-v2.5-tts-voicedesign",
+      "name": "MiMo-V2.5-TTS-VoiceDesign",
       "contextWindow": 8192,
       "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo-v2.5-pro",
+      "name": "MiMo-V2.5-Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -64,22 +80,6 @@
         "chat",
         "vision",
         "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-22"
-    },
-    {
-      "id": "mimo-v2.5-pro",
-      "name": "MiMo-V2.5-Pro",
-      "contextWindow": 1048576,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "function_calling",
         "reasoning",
         "streaming"

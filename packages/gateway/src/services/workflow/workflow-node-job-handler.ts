@@ -299,6 +299,14 @@ async function executeNodeInline(
 }
 
 /**
+ * Stop the workflow node job worker.
+ * Called during server shutdown via shutdown-cleanup.ts.
+ */
+export function stopWorkflowNodeWorker(): void {
+  JobQueueService.getInstance().shutdown();
+}
+
+/**
  * Check if any downstream nodes are now unblocked and enqueue them.
  * A node is unblocked when ALL its upstream dependencies have completed successfully.
  */

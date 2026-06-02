@@ -118,20 +118,6 @@
       "releaseDate": "2025-02-27"
     },
     {
-      "id": "c4ai-aya-expanse-32b",
-      "name": "Aya Expanse 32B",
-      "contextWindow": 128000,
-      "maxOutput": 4000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-10-24"
-    },
-    {
       "id": "c4ai-aya-expanse-8b",
       "name": "Aya Expanse 8B",
       "contextWindow": 8000,
@@ -146,12 +132,26 @@
       "releaseDate": "2024-10-24"
     },
     {
-      "id": "command-r-08-2024",
-      "name": "Command R",
+      "id": "c4ai-aya-expanse-32b",
+      "name": "Aya Expanse 32B",
       "contextWindow": 128000,
       "maxOutput": 4000,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-10-24"
+    },
+    {
+      "id": "command-r-plus-08-2024",
+      "name": "Command R+",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 2.5,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "function_calling",
@@ -161,12 +161,12 @@
       "releaseDate": "2024-08-30"
     },
     {
-      "id": "command-r-plus-08-2024",
-      "name": "Command R+",
+      "id": "command-r-08-2024",
+      "name": "Command R",
       "contextWindow": 128000,
       "maxOutput": 4000,
-      "inputPrice": 2.5,
-      "outputPrice": 10,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",

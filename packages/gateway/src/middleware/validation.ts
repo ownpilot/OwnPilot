@@ -91,6 +91,7 @@ export {
   clawMessageSchema,
   clawDenyEscalationSchema,
   clawApplyRecommendationsSchema,
+  clawNextIntentSchema,
   executeToolSchema,
   batchExecuteToolsSchema,
 } from './schemas/workflow-claws.js';

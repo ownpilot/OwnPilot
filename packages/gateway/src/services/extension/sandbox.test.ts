@@ -18,6 +18,8 @@ const {
   MockScript,
   getLastWorker,
   resetWorkerRegistry,
+  getMockLog,
+  resetMockLog,
 } = vi.hoisted(() => {
   // Per-instance worker objects stored so each test can access the latest worker
   const workerRegistry: Array<{
@@ -28,9 +30,29 @@ const {
     _handlers: Record<string, Array<(...args: unknown[]) => void>>;
   }> = [];
 
+  // Stable mock logger so we can assert on warn/error calls.
+  const mockLog = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+  const getMockLog = () => mockLog;
+  const resetMockLog = () => {
+    mockLog.info.mockReset();
+    mockLog.warn.mockReset();
+    mockLog.error.mockReset();
+    mockLog.debug.mockReset();
+  };
+
   function createWorkerInstance() {
     const handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
+    // Synthetic threadId — must be unique per worker so the registry
+    // lookup keyed by worker.threadId works under tests.
     const instance = {
+      // Real Node Worker exposes threadId: number. Each mock instance
+      // gets a fresh one (see MockWorker constructor below).
+      threadId: 0,
       on: vi.fn(function (event: string, handler: (...args: unknown[]) => void) {
         if (!handlers[event]) handlers[event] = [];
         handlers[event].push(handler);
@@ -49,6 +71,9 @@ const {
   // MockWorker must use function keyword so it can be used as constructor
   const MockWorker = vi.fn(function (this: ReturnType<typeof createWorkerInstance>) {
     const inst = createWorkerInstance();
+    // Assign a unique threadId mirroring Node's Worker.threadId. Starts
+    // at 1000 to avoid collisions with real thread IDs in the test runner.
+    inst.threadId = 1000 + workerRegistry.length;
     workerRegistry.push(inst);
     Object.assign(this, inst);
     return inst;
@@ -85,6 +110,8 @@ const {
     MockScript,
     getLastWorker,
     resetWorkerRegistry,
+    getMockLog,
+    resetMockLog,
   };
 });
 
@@ -101,12 +128,10 @@ vi.mock('node:vm', () => ({
 }));
 
 vi.mock('../log.js', () => ({
-  getLog: vi.fn(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  })),
+  // Use the hoisted stable logger so tests can assert on warn/error calls.
+  // The hoisted callback runs before vi.mock factories, so getMockLog
+  // is already defined here.
+  getLog: vi.fn(() => getMockLog()),
 }));
 
 vi.mock('@ownpilot/core', () => ({
@@ -174,6 +199,7 @@ describe('ExtensionSandboxManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetWorkerRegistry();
+    resetMockLog();
     manager = new ExtensionSandboxManager();
   });
 
@@ -610,6 +636,196 @@ describe('ExtensionSandboxManager', () => {
       const workerCtorCall = MockWorker.mock.calls[MockWorker.mock.calls.length - 1];
       const opts = workerCtorCall[1] as { resourceLimits: { maxOldGenerationSizeMb: number } };
       expect(opts.resourceLimits.maxOldGenerationSizeMb).toBe(128);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Plan 04 Step 2 (EXT-002): trust the worker registry, not the bridge
+  // message. The callTool handler must receive the ownerUserId /
+  // grantedPermissions that the main thread recorded when the worker was
+  // spawned, NEVER the values the worker claims in its callTool message.
+  // ---------------------------------------------------------------------------
+
+  describe('execute() - callTool identity (EXT-002)', () => {
+    it('uses registered ownerUserId even when worker claims a different one', async () => {
+      const handler = vi.fn().mockResolvedValue({ success: true, result: null });
+      manager.setCallToolHandler(handler);
+
+      const promise = manager.execute(makeOptions({ ownerUserId: 'alice' }));
+      await Promise.resolve();
+      const w = getLastWorker();
+
+      // Ready
+      w._emit('message', { type: 'result', success: true, executionTime: 0 });
+      await Promise.resolve();
+
+      // Worker claims to be 'mallory' — must be ignored
+      w._emit('message', {
+        type: 'callTool',
+        toolName: 'lookup',
+        toolArgs: { id: '1' },
+        requestId: 'ct-evil',
+        ownerUserId: 'mallory',
+        grantedPermissions: ['filesystem', 'network'],
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledWith(
+        'lookup',
+        { id: '1' },
+        { extensionId: 'ext-1', ownerUserId: 'alice', grantedPermissions: [] }
+      );
+
+      // Final result
+      w._emit('message', { type: 'result', success: true, value: null, executionTime: 5 });
+      await promise;
+    });
+
+    it('uses registered grantedPermissions, not worker-claimed ones', async () => {
+      const handler = vi.fn().mockResolvedValue({ success: true, result: null });
+      manager.setCallToolHandler(handler);
+
+      const promise = manager.execute(
+        makeOptions({ grantedPermissions: ['filesystem', 'network'] })
+      );
+      await Promise.resolve();
+      const w = getLastWorker();
+
+      w._emit('message', { type: 'result', success: true, executionTime: 0 });
+      await Promise.resolve();
+
+      // Worker claims NO permissions — must be ignored
+      w._emit('message', {
+        type: 'callTool',
+        toolName: 'read',
+        toolArgs: {},
+        requestId: 'ct-noop',
+        ownerUserId: 'test-user',
+        grantedPermissions: [],
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(handler).toHaveBeenCalledWith(
+        'read',
+        {},
+        expect.objectContaining({
+          grantedPermissions: ['filesystem', 'network'],
+        })
+      );
+
+      w._emit('message', { type: 'result', success: true, value: null, executionTime: 5 });
+      await promise;
+    });
+
+    it('warns on the log when the worker claims a different ownerUserId', async () => {
+      const handler = vi.fn().mockResolvedValue({ success: true, result: null });
+      manager.setCallToolHandler(handler);
+
+      const promise = manager.execute(makeOptions({ ownerUserId: 'alice' }));
+      await Promise.resolve();
+      const w = getLastWorker();
+
+      w._emit('message', { type: 'result', success: true, executionTime: 0 });
+      await Promise.resolve();
+
+      w._emit('message', {
+        type: 'callTool',
+        toolName: 'x',
+        toolArgs: {},
+        requestId: 'ct-lie',
+        ownerUserId: 'mallory',
+        grantedPermissions: [],
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(getMockLog().warn).toHaveBeenCalledWith(
+        expect.stringMatching(/claimed ownerUserId=mallory.*registered as alice/)
+      );
+
+      w._emit('message', { type: 'result', success: true, value: null, executionTime: 5 });
+      await promise;
+    });
+
+    it('does not warn when worker echoes the registered ownerUserId', async () => {
+      const handler = vi.fn().mockResolvedValue({ success: true, result: null });
+      manager.setCallToolHandler(handler);
+
+      const promise = manager.execute(makeOptions({ ownerUserId: 'alice' }));
+      await Promise.resolve();
+      const w = getLastWorker();
+
+      w._emit('message', { type: 'result', success: true, executionTime: 0 });
+      await Promise.resolve();
+
+      w._emit('message', {
+        type: 'callTool',
+        toolName: 'x',
+        toolArgs: {},
+        requestId: 'ct-echo',
+        ownerUserId: 'alice', // same as registered
+        grantedPermissions: [],
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const warnCalls = getMockLog().warn.mock.calls.flat().join(' ');
+      expect(warnCalls).not.toMatch(/claimed ownerUserId/);
+
+      w._emit('message', { type: 'result', success: true, value: null, executionTime: 5 });
+      await promise;
+    });
+
+    it('refuses callTool from a worker with no registered context (fail-closed)', async () => {
+      const handler = vi.fn();
+      manager.setCallToolHandler(handler);
+
+      const promise = manager.execute(makeOptions());
+      await Promise.resolve();
+      const w = getLastWorker();
+
+      w._emit('message', { type: 'result', success: true, executionTime: 0 });
+      await Promise.resolve();
+
+      // Simulate the registry being cleared (e.g., worker already exited)
+      // by terminating the worker, then attempting a callTool. In the mock
+      // we simulate by removing the worker via exit, then posting a late
+      // message — but the message handler is still bound, so we test the
+      // fail-closed path by clearing the registry directly.
+      // We access the manager's registry through a sentinel: send an
+      // exit, then a callTool. The exit handler will clear the entry.
+      w._emit('exit', 0);
+      await Promise.resolve();
+
+      // Now a late callTool arrives. The registry entry is gone.
+      w._emit('message', {
+        type: 'callTool',
+        toolName: 'x',
+        toolArgs: {},
+        requestId: 'ct-late',
+        ownerUserId: 'alice',
+        grantedPermissions: [],
+      });
+      await Promise.resolve();
+
+      expect(handler).not.toHaveBeenCalled();
+      const errorResult = w.postMessage.mock.calls.find(
+        (c: unknown[]) =>
+          (c[0] as { type: string }).type === 'callToolResult' &&
+          (c[0] as { requestId: string }).requestId === 'ct-late'
+      );
+      expect(errorResult).toBeDefined();
+      expect((errorResult![0] as { success: boolean }).success).toBe(false);
+      expect((errorResult![0] as { error: string }).error).toMatch(/worker context not found/);
+      expect(getMockLog().error).toHaveBeenCalledWith(
+        expect.stringMatching(/unregistered worker threadId=\d+/)
+      );
+
+      // Settle the original promise
+      w._emit('message', { type: 'result', success: true, value: null, executionTime: 5 });
+      await promise;
     });
   });
 });

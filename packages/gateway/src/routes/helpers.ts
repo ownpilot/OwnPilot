@@ -43,9 +43,20 @@ export {
  *
  * Returns the authenticated user ID from context (set by auth middleware),
  * or 'default' if no authentication is configured.
+ *
+ * Note: this codebase is single-tenant (shared UI password, one effective
+ * user). The `'default'` literal is the correct fallback for every request,
+ * not a security hole — IDOR-style concerns only apply if multiple distinct
+ * user IDs ever share a data store, which the schema supports but no
+ * deployment currently uses. See `docs/BUILTIN_DATA.md` (user_id column
+ * default) for the explicit design intent.
  */
 export function getUserId(c: Context): string {
-  return c.get('userId') ?? 'default';
+  const userId = c.get('userId');
+  if (userId == null || userId === '') {
+    return 'default';
+  }
+  return userId;
 }
 
 /**
@@ -239,7 +250,7 @@ export function zodValidationError(
   const summary = issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
   return apiError(
     c,
-    { code: ERROR_CODES.INVALID_INPUT, message: `Validation failed: ${summary}` },
+    { code: ERROR_CODES.VALIDATION_ERROR, message: `Validation failed: ${summary}` },
     400
   );
 }

@@ -45,8 +45,9 @@ import type { AuthConfig } from '../types/index.js';
 // Shared test constants
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET_32 = 'abcdefghijklmnopqrstuvwxyz123456'; // exactly 32 chars
-const JWT_SECRET_LONG = 'this-is-a-long-jwt-secret-for-testing-purposes-only-2026!!';
+const JWT_SECRET_64 = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@'; // exactly 64 chars
+const JWT_SECRET_LONG =
+  'this-is-a-long-jwt-secret-for-testing-purposes-only-2026!!-extra-padding-to-clear-64';
 
 // ---------------------------------------------------------------------------
 // JWT builder helpers
@@ -506,13 +507,17 @@ describe('createAuthMiddleware — type: jwt', () => {
     expect(res.status).toBe(403);
   });
 
-  it('accepts a JWT with a secret of exactly 32 characters', async () => {
-    const token = await buildJWT({ sub: 'user-32' }, JWT_SECRET_32);
-    const app = makeJwtApp(JWT_SECRET_32);
+  it('rejects a JWT signed with a 32-character secret (below new 64-char minimum)', async () => {
+    // Plan 02/15: secret minimum raised from 32 to 64. A token signed with
+    // a 32-char secret must be rejected even if the gateway is configured
+    // with the same 32-char secret.
+    const shortSecret = 'a'.repeat(32);
+    const token = await buildJWT({ sub: 'user-32' }, shortSecret);
+    const app = makeJwtApp(shortSecret);
     const res = await app.request('/test', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   it('includes additional claims in jwtPayload', async () => {
@@ -650,8 +655,8 @@ describe('createAuthMiddleware — type: jwt', () => {
     expect(body.error.message).toContain('sub');
   });
 
-  it('returns 403 when secret is 31 characters (one char below minimum)', async () => {
-    const shortSecret = 'a'.repeat(31);
+  it('returns 403 when secret is 63 characters (one char below minimum)', async () => {
+    const shortSecret = 'a'.repeat(63);
     const token = await buildJWT({ sub: 'user-1' }, JWT_SECRET_LONG);
     const app = makeJwtApp(shortSecret);
     const res = await app.request('/test', {
@@ -660,15 +665,24 @@ describe('createAuthMiddleware — type: jwt', () => {
     expect(res.status).toBe(403);
   });
 
-  it('returns an error message mentioning "32 characters" for too-short secret', async () => {
-    const shortSecret = 'too-short-secret'; // 16 chars
+  it('returns an error message mentioning "64 characters" for too-short secret', async () => {
+    const shortSecret = 'a'.repeat(32); // below the new 64-char minimum
     const token = await buildJWT({ sub: 'user-1' }, JWT_SECRET_LONG);
     const app = makeJwtApp(shortSecret);
     const res = await app.request('/test', {
       headers: { Authorization: `Bearer ${token}` },
     });
     const body = await res.json();
-    expect(body.error.message).toContain('32 characters');
+    expect(body.error.message).toContain('64 characters');
+  });
+
+  it('accepts a secret that is exactly 64 characters', async () => {
+    const token = await buildJWT({ sub: 'user-edge' }, JWT_SECRET_64);
+    const app = makeJwtApp(JWT_SECRET_64);
+    const res = await app.request('/test', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
   });
 
   it('returns 503 for an empty jwtSecret string (falsy check matches undefined)', async () => {
@@ -1005,15 +1019,20 @@ describe('createOptionalAuthMiddleware — type: jwt', () => {
     expect(handlerCalls).toBe(3);
   });
 
-  it('works correctly when jwtSecret is exactly 32 characters', async () => {
-    const token = await buildJWT({ sub: 'opt-user-32' }, JWT_SECRET_32);
-    const app = makeOptionalJwtApp(JWT_SECRET_32);
+  it('rejects a JWT when jwtSecret is exactly 32 characters (below new 64-char minimum)', async () => {
+    // Plan 02/15: even the optional auth path enforces the new 64-char minimum.
+    const shortSecret = 'a'.repeat(32);
+    const token = await buildJWT({ sub: 'opt-user-32' }, shortSecret);
+    const app = makeOptionalJwtApp(shortSecret);
     const res = await app.request('/test', {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect(res.status).toBe(200);
+    // Optional auth falls through with 200 (handler still runs) but the
+    // userId is NOT set because validation failed.
     const body = await res.json();
-    expect(body.userId).toBe('opt-user-32');
+    // Hono's c.get() returns null for unset keys; we use a truthy check
+    // so the test is robust to whether the unset value is `undefined` or `null`.
+    expect(body.userId).toBeFalsy();
   });
 });
 

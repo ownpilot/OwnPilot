@@ -125,8 +125,8 @@ async function validateJWT(
   token: string,
   secret: string
 ): Promise<{ sub: string; exp?: number; [key: string]: unknown }> {
-  if (!secret || secret.length < 32) {
-    throw new Error('JWT secret must be at least 32 characters');
+  if (!secret || secret.length < 64) {
+    throw new Error('JWT secret must be at least 64 characters');
   }
 
   const secretKey = createSecretKey(Buffer.from(secret, 'utf-8'));

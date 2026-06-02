@@ -16,6 +16,7 @@ import {
   validateTableName,
   validateColumnName,
   quoteIdentifier,
+  getUserFilter,
   operationStatus,
   setOperationStatus,
   getBackupDir,
@@ -62,6 +63,11 @@ transferRoutes.get('/export', async (c) => {
       errors.push(`Skipped invalid tables: ${skippedTables.join(', ')}`);
     }
 
+    // Plan 11 Step 3 (CSV-002): every per-user export is scoped to the
+    // calling user. Tables without a user_id (e.g. settings, channels)
+    // are still exported as-is because they're system-wide.
+    const userId = c.get('userId') as string | undefined;
+
     for (const table of tables) {
       try {
         // Check if table exists (table already validated above)
@@ -74,7 +80,11 @@ transferRoutes.get('/export', async (c) => {
         );
 
         if (exists?.exists) {
-          const rows = await adapter.query(`SELECT * FROM ${quoteIdentifier(table)}`);
+          const { where, params } = getUserFilter(table, userId);
+          const rows = await adapter.query(
+            `SELECT * FROM ${quoteIdentifier(table)}${where}`,
+            params
+          );
           exportData[table] = rows;
         }
       } catch (err) {
@@ -335,6 +345,10 @@ transferRoutes.post('/export/save', async (c) => {
     const tables = EXPORT_TABLES;
     const exportData: Record<string, unknown[]> = {};
 
+    // Plan 11 Step 3 (CSV-002): same user filter as GET /export. The
+    // save-to-disk path used to dump every user's data unfiltered.
+    const userId = c.get('userId') as string | undefined;
+
     for (const table of tables) {
       try {
         const exists = await adapter.queryOne<{ exists: boolean }>(
@@ -346,7 +360,11 @@ transferRoutes.post('/export/save', async (c) => {
         );
 
         if (exists?.exists) {
-          const rows = await adapter.query(`SELECT * FROM ${quoteIdentifier(table)}`);
+          const { where, params } = getUserFilter(table, userId);
+          const rows = await adapter.query(
+            `SELECT * FROM ${quoteIdentifier(table)}${where}`,
+            params
+          );
           exportData[table] = rows;
         }
       } catch {

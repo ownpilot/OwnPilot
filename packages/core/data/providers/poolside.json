@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "poolside/laguna-xs.2",
-      "name": "Laguna XS.2",
+      "id": "poolside/laguna-m.1",
+      "name": "Laguna M.1",
       "contextWindow": 131040,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -28,8 +28,8 @@
       "releaseDate": "2026-04-28"
     },
     {
-      "id": "poolside/laguna-m.1",
-      "name": "Laguna M.1",
+      "id": "poolside/laguna-xs.2",
+      "name": "Laguna XS.2",
       "contextWindow": 131040,
       "maxOutput": 8192,
       "inputPrice": 0,

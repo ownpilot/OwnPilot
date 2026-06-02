@@ -40,8 +40,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "Qwen3_5-9B-Q4_K_M",
-      "name": "Qwen 3.5 9B (Q4_K_M)",
+      "id": "Qwen3_5-9B-MLX-4bit",
+      "name": "Qwen 3.5 9B (MLX 4-bit)",
       "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -56,8 +56,8 @@
       "releaseDate": "2026-03-05"
     },
     {
-      "id": "Qwen3_5-9B-MLX-4bit",
-      "name": "Qwen 3.5 9B (MLX 4-bit)",
+      "id": "Qwen3_5-9B-Q4_K_M",
+      "name": "Qwen 3.5 9B (Q4_K_M)",
       "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0,

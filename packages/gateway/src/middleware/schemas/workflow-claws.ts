@@ -453,6 +453,10 @@ export const clawApplyRecommendationsSchema = z.object({
   ids: z.array(z.string().max(200)).max(500).optional(),
 });
 
+export const clawNextIntentSchema = z.object({
+  intent: z.string().min(1).max(10_000),
+});
+
 // ─── Tool Execution ──────────────────────────────────────────────
 
 export const executeToolSchema = z.object({

@@ -9,7 +9,7 @@
 import { Hono } from 'hono';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from '../helpers.js';
 import { getAdapter } from '../../db/adapters/index.js';
-import { quoteIdentifier } from './shared.js';
+import { quoteIdentifier, validateColumnName, getUserFilter } from './shared.js';
 
 export const csvExportRoutes = new Hono();
 
@@ -212,28 +212,16 @@ csvExportRoutes.get('/export/csv/:table', async (c) => {
     const columns = CSV_TABLES[tableName];
     const quotedCols = columns.map(quoteIdentifier).join(', ');
 
-    // Get user_id from auth context if available, otherwise export all
+    // Plan 11 Step 3 (CSV-002): reuse the shared user filter so the
+    // hardcoded list of "8 per-user tables" stops drifting from the
+    // real allowlist. getUserFilter handles per-user, child, and
+    // system scopes; for CSV export we always pass a userId from
+    // auth context (falls back to undefined → no filter for system
+    // tables, but the CSV_TABLES list is curated to user-owned ones).
     const userId = c.get('userId') as string | undefined;
-    let query = `SELECT ${quotedCols} FROM ${quoteIdentifier(tableName)}`;
-    const params: unknown[] = [];
+    const { where, params } = getUserFilter(tableName, userId);
 
-    if (
-      userId &&
-      [
-        'expenses',
-        'habits',
-        'bookmarks',
-        'notes',
-        'tasks',
-        'contacts',
-        'calendar_events',
-        'captures',
-      ].includes(tableName)
-    ) {
-      query += ` WHERE user_id = $1`;
-      params.push(userId);
-    }
-
+    let query = `SELECT ${quotedCols} FROM ${quoteIdentifier(tableName)}${where}`;
     query += ` ORDER BY created_at DESC`;
 
     const rows = await adapter.query<Record<string, unknown>>(query, params);
@@ -361,7 +349,30 @@ csvExportRoutes.post('/import/csv/:table', async (c) => {
 
     // Parse header
     const headerLine = lines[0];
-    const headers = parseCsvLine(headerLine ?? '');
+    const rawHeaders = parseCsvLine(headerLine ?? '');
+
+    // Plan 11 CSV-001: validate every header against the SQL identifier
+    // allowlist (^[a-z_][a-z0-9_]*$). quoteIdentifier below would otherwise
+    // turn a malicious header into a quoted string that Postgres treats as
+    // a literal column name — the column just doesn't exist and the INSERT
+    // fails, but the cost of failing early with a clear 400 is much lower
+    // than letting the request reach the database adapter.
+    const headers: string[] = [];
+    for (const h of rawHeaders) {
+      try {
+        headers.push(validateColumnName(h));
+      } catch (err) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.INVALID_IMPORT_DATA,
+            message: `Invalid CSV header: ${getErrorMessage(err, 'malformed')}`,
+          },
+          400
+        );
+      }
+    }
+
     const tableColumns = CSV_TABLES[tableName];
     const columns = tableColumns ? tableColumns.filter((col) => headers.includes(col)) : headers;
 

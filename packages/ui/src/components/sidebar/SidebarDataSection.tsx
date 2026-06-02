@@ -270,8 +270,10 @@ function useSidebarItems(
       .then((result) => {
         if (!cancelled) setItems(result);
       })
-      .catch(() => {
-        // Silently fail — sidebar items are non-critical
+      .catch((err) => {
+        // Sidebar items are non-critical — log and fall back to empty list
+        // so the dev-tools warning is visible (R4 migration).
+        console.warn('[ignored sidebar items fetch]', err);
         if (!cancelled) setItems([]);
       })
       .finally(() => {

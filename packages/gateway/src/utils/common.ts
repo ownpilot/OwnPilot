@@ -95,3 +95,46 @@ export function maskSecret(value: unknown): string {
 export function sanitizeText(text: string): string {
   return text.replace(/[^\w\s-]/g, '').slice(0, 200);
 }
+
+/**
+ * Canonical JSON serialization for use as a cache or hash key.
+ *
+ * Unlike `JSON.stringify`, the property order of objects is irrelevant:
+ * `{a: 1, b: 2}` and `{b: 2, a: 1}` produce the same string. Arrays
+ * preserve element order (semantic order matters), and the handling of
+ * `undefined` matches `JSON.stringify` exactly: keys with `undefined`
+ * values are dropped from objects, `undefined` in arrays becomes `null`,
+ * and a top-level `undefined` returns the string `"null"` so the function
+ * always produces a non-empty key.
+ *
+ * Used by the tool executor's idempotency cache so that semantically
+ * equivalent invocations with permuted argument keys hit the same cache
+ * entry (Plan 11 IDEMP-001).
+ */
+export function stableStringify(value: unknown): string {
+  if (value === undefined) {
+    // Match JSON.stringify's array-element convention (becomes `null` when
+    // placed in an array) and avoid an empty cache key at the top level.
+    return 'null';
+  }
+  if (value === null || typeof value !== 'object') {
+    // Primitives, null, functions, symbols — defer to JSON.stringify. It
+    // returns `undefined` (not a string) for function/symbol values; coerce
+    // to `null` to keep cache keys well-formed.
+    const s = JSON.stringify(value);
+    return s === undefined ? 'null' : s;
+  }
+  if (Array.isArray(value)) {
+    return '[' + value.map((v) => stableStringify(v)).join(',') + ']';
+  }
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  return (
+    '{' +
+    keys
+      .filter((k) => obj[k] !== undefined)
+      .map((k) => JSON.stringify(k) + ':' + stableStringify(obj[k]))
+      .join(',') +
+    '}'
+  );
+}

@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "route/deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "route/deepseek-v4-flash-6bit",
+      "name": "DeepSeek V4 Flash 6bit",
       "contextWindow": 1000000,
       "maxOutput": 131072,
       "inputPrice": 0.4928,
@@ -46,23 +46,6 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "route/deepseek-v4-flash-6bit",
-      "name": "DeepSeek V4 Flash 6bit",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 0.4928,
-      "outputPrice": 0.7392,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-24"
-    },
-    {
       "id": "route/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
@@ -78,6 +61,40 @@
       ],
       "default": false,
       "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.4928,
+      "outputPrice": 0.7392,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "route/mimo-v2.5-pro-6bit",
+      "name": "MiMo V2.5 Pro 6bit",
+      "contextWindow": 1000000,
+      "maxOutput": 262144,
+      "inputPrice": 0.45,
+      "outputPrice": 1.35,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
     },
     {
       "id": "route/qwen3.6-27b",
@@ -96,17 +113,16 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "route/mimo-v2.5-pro",
-      "name": "MiMo V2.5 Pro",
-      "contextWindow": 1000000,
-      "maxOutput": 262144,
-      "inputPrice": 0.45,
-      "outputPrice": 1.35,
+      "id": "route/qwen3.6-27b-202k",
+      "name": "Qwen3.6 27B 202K",
+      "contextWindow": 202000,
+      "maxOutput": 32768,
+      "inputPrice": 1.1,
+      "outputPrice": 3.3,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
-        "reasoning",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -130,8 +146,8 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "route/mimo-v2.5-pro-6bit",
-      "name": "MiMo V2.5 Pro 6bit",
+      "id": "route/mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro",
       "contextWindow": 1000000,
       "maxOutput": 262144,
       "inputPrice": 0.45,
@@ -147,24 +163,8 @@
       "releaseDate": "2026-04-22"
     },
     {
-      "id": "route/qwen3.6-27b-202k",
-      "name": "Qwen3.6 27B 202K",
-      "contextWindow": 202000,
-      "maxOutput": 32768,
-      "inputPrice": 1.1,
-      "outputPrice": 3.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-22"
-    },
-    {
-      "id": "route/kimi-k2.6-6bit",
-      "name": "Kimi K2.6 6bit",
+      "id": "route/kimi-k2.6",
+      "name": "Kimi K2.6",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0.462,
@@ -181,8 +181,8 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "route/kimi-k2.6",
-      "name": "Kimi K2.6",
+      "id": "route/kimi-k2.6-6bit",
+      "name": "Kimi K2.6 6bit",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0.462,
@@ -232,8 +232,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "route/glm-5.1",
-      "name": "GLM 5.1",
+      "id": "route/glm-5.1-6bit",
+      "name": "GLM 5.1 6bit",
       "contextWindow": 202752,
       "maxOutput": 65536,
       "inputPrice": 1,
@@ -249,8 +249,8 @@
       "releaseDate": "2026-03-27"
     },
     {
-      "id": "route/glm-5.1-6bit",
-      "name": "GLM 5.1 6bit",
+      "id": "route/glm-5.1",
+      "name": "GLM 5.1",
       "contextWindow": 202752,
       "maxOutput": 65536,
       "inputPrice": 1,
@@ -344,8 +344,8 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "route/stepfun-3.5-flash",
-      "name": "StepFun 3.5 Flash",
+      "id": "route/step-3.5-flash",
+      "name": "Step 3.5 Flash",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.096,
@@ -360,8 +360,8 @@
       "releaseDate": "2026-01-29"
     },
     {
-      "id": "route/step-3.5-flash",
-      "name": "Step 3.5 Flash",
+      "id": "route/stepfun-3.5-flash",
+      "name": "StepFun 3.5 Flash",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.096,

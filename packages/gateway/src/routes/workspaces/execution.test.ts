@@ -262,7 +262,7 @@ describe('Workspace Execution Routes', () => {
         body: JSON.stringify({ code: 'test', language: 'invalid' }),
       });
       expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe('INVALID_INPUT');
+      expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
     });
     it('should return 400 for missing code', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());
@@ -272,13 +272,13 @@ describe('Workspace Execution Routes', () => {
         body: JSON.stringify({ language: 'python' }),
       });
       expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe('INVALID_INPUT');
+      expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
     });
     it('should return 400 for missing body', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());
       const res = await app.request('/ws-1/execute', { method: 'POST' });
       expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe('INVALID_INPUT');
+      expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
     });
     it('should return 500 for execution errors and log audit', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace({ containerId: 'ctr-1', containerConfig: {} }));

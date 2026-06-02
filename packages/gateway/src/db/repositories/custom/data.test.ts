@@ -19,7 +19,7 @@ vi.mock('../../adapters/index.js', () => ({
   getAdapterSync: () => mockAdapter,
 }));
 
-import { CustomDataRepository } from './data.js';
+import { CustomDataRepository, UnknownFilterKeyError } from './data.js';
 
 // ---------------------------------------------------------------------------
 // Sample data
@@ -732,6 +732,41 @@ describe('CustomDataRepository', () => {
 
       expect(result.records).toHaveLength(0);
       expect(result.total).toBe(0);
+    });
+
+    // Plan 11 SQL-001: filter keys must be declared columns of the table.
+    // Defense-in-depth: a typo or stale caller fails fast with a clear
+    // error instead of silently returning zero rows. The key is already
+    // parameterized in the SQL string, so this is application correctness.
+    it('rejects a filter key that is not in the table schema', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
+
+      await expect(
+        repo.listRecords('contacts', { filter: { nonexistent_column: 'x' } })
+      ).rejects.toThrow(UnknownFilterKeyError);
+    });
+
+    it('rejected filter does not hit the database', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
+
+      await expect(repo.listRecords('contacts', { filter: { nonexistent: 'x' } })).rejects.toThrow(
+        UnknownFilterKeyError
+      );
+
+      // Only the getTable call should have hit the adapter — neither the
+      // count query nor the data query should fire.
+      expect(mockAdapter.queryOne).toHaveBeenCalledTimes(1);
+      expect(mockAdapter.query).not.toHaveBeenCalled();
+    });
+
+    it('rejects one bad key even if another is valid', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(makeSchemaRow());
+
+      // 'age' is a valid column, 'evil' is not. The validator runs per key
+      // and bails on the first invalid one — the SQL isn't built.
+      await expect(
+        repo.listRecords('contacts', { filter: { age: 30, evil: 'x' } })
+      ).rejects.toThrow(UnknownFilterKeyError);
     });
   });
 

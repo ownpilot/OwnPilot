@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "minimax-m3",
+      "name": "MiniMax M3",
+      "contextWindow": 512000,
+      "maxOutput": 131072,
+      "inputPrice": 0.6,
+      "outputPrice": 2.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-31"
+    },
+    {
       "id": "qwen3.7-max",
       "name": "Qwen3.7 Max",
       "contextWindow": 1000000,
@@ -24,25 +41,8 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2026-05-21"
-    },
-    {
-      "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
       "default": false,
-      "releaseDate": "2026-04-24"
+      "releaseDate": "2026-05-21"
     },
     {
       "id": "deepseek-v4-flash",
@@ -62,20 +62,21 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "mimo-v2.5-pro",
-      "name": "MiMo V2.5 Pro",
-      "contextWindow": 1048576,
-      "maxOutput": 128000,
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
       "inputPrice": 1.74,
       "outputPrice": 3.48,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-22"
+      "releaseDate": "2026-04-24"
     },
     {
       "id": "mimo-v2.5",
@@ -88,6 +89,22 @@
         "chat",
         "vision",
         "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 128000,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"

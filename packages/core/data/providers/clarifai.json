@@ -63,22 +63,6 @@
       "releaseDate": "2025-12-01"
     },
     {
-      "id": "arcee_ai/AFM/models/trinity-mini",
-      "name": "Trinity Mini",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.045,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12"
-    },
-    {
       "id": "mistralai/completion/models/Ministral-3-3B-Reasoning-2512",
       "name": "Ministral 3 3B Reasoning 2512",
       "contextWindow": 262144,
@@ -88,6 +72,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12"
+    },
+    {
+      "id": "arcee_ai/AFM/models/trinity-mini",
+      "name": "Trinity Mini",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.045,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"
@@ -111,22 +111,6 @@
       "releaseDate": "2025-10-20"
     },
     {
-      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
-      "name": "GPT OSS 120B High Throughput",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "openai/chat-completion/models/gpt-oss-20b",
       "name": "GPT OSS 20B",
       "contextWindow": 131072,
@@ -143,19 +127,20 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen/qwenCoder/models/Qwen3-Coder-30B-A3B-Instruct",
-      "name": "Qwen3 Coder 30B A3B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0.11458,
-      "outputPrice": 0.74812,
+      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
+      "name": "GPT OSS 120B High Throughput",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-07-31"
+      "releaseDate": "2025-08-05"
     },
     {
       "id": "qwen/qwenLM/models/Qwen3-30B-A3B-Thinking-2507",
@@ -169,6 +154,21 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-31"
+    },
+    {
+      "id": "qwen/qwenCoder/models/Qwen3-Coder-30B-A3B-Instruct",
+      "name": "Qwen3 Coder 30B A3B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.11458,
+      "outputPrice": 0.74812,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,

@@ -20,6 +20,7 @@ import {
 } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom/data.js';
+import { UnknownFilterKeyError } from '../db/repositories/custom/data.js';
 import { CustomDataServiceError } from '../services/custom/data-service.js';
 import { getDatabaseService } from '@ownpilot/core';
 import { wsGateway } from '../ws/server.js';
@@ -203,6 +204,13 @@ customDataRoutes.get(
         hasMore: offset + records.length < total,
       });
     } catch (err) {
+      // Plan 11 SQL-001: a filter key that doesn't match any declared column
+      // is a caller error (typo, stale contract), not a server fault. Map it
+      // to 400 INVALID_INPUT with a precise message; everything else stays
+      // as a generic LIST_FAILED 400.
+      if (err instanceof UnknownFilterKeyError) {
+        return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: err.message }, 400);
+      }
       return apiError(
         c,
         { code: ERROR_CODES.LIST_FAILED, message: getErrorMessage(err, 'Failed to list records') },

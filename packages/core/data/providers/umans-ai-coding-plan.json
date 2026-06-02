@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "umans-coder",
-      "name": "Umans Coder",
+      "id": "umans-kimi-k2.6",
+      "name": "Kimi K2.6",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,
@@ -30,8 +30,8 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "umans-kimi-k2.6",
-      "name": "Kimi K2.6",
+      "id": "umans-coder",
+      "name": "Umans Coder",
       "contextWindow": 262144,
       "maxOutput": 262144,
       "inputPrice": 0,

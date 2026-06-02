@@ -30,6 +30,8 @@ import {
   quoteIdentifier,
   getBackupDir,
   operationStatus,
+  getTableScope,
+  getUserFilter,
 } from './shared.js';
 
 // ---------------------------------------------------------------------------
@@ -228,5 +230,136 @@ describe('operationStatus and setOperationStatus', () => {
     expect(mod.operationStatus.output).toEqual(['line1', 'line2']);
     // Reset
     mod.setOperationStatus({ isRunning: false });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Plan 11 Step 3 (CSV-002): per-user export filtering
+// ---------------------------------------------------------------------------
+
+describe('getTableScope', () => {
+  it('classifies per-user tables', () => {
+    expect(getTableScope('conversations')).toBe('per-user');
+    expect(getTableScope('tasks')).toBe('per-user');
+    expect(getTableScope('habits')).toBe('per-user');
+    expect(getTableScope('user_extensions')).toBe('per-user');
+    expect(getTableScope('claws')).toBe('per-user');
+  });
+
+  it('classifies child tables', () => {
+    expect(getTableScope('messages')).toBe('child');
+    expect(getTableScope('goal_steps')).toBe('child');
+    expect(getTableScope('plan_steps')).toBe('child');
+    expect(getTableScope('claw_history')).toBe('child');
+  });
+
+  it('classifies system tables (default)', () => {
+    expect(getTableScope('settings')).toBe('system');
+    expect(getTableScope('system_settings')).toBe('system');
+    expect(getTableScope('channels')).toBe('system');
+    expect(getTableScope('agents')).toBe('system');
+  });
+
+  it('every EXPORT_TABLES entry is one of the three scopes', () => {
+    for (const t of EXPORT_TABLES) {
+      const scope = getTableScope(t);
+      expect(['per-user', 'child', 'system']).toContain(scope);
+    }
+  });
+});
+
+describe('getUserFilter (per-user scope)', () => {
+  it('returns WHERE user_id = $1 for per-user tables', () => {
+    const f = getUserFilter('conversations', 'alice');
+    expect(f.where).toBe(' WHERE user_id = $1');
+    expect(f.params).toEqual(['alice']);
+  });
+
+  it('uses paramOffset for the placeholder', () => {
+    const f = getUserFilter('tasks', 'bob', 3);
+    expect(f.where).toBe(' WHERE user_id = $3');
+    expect(f.params).toEqual(['bob']);
+  });
+
+  it('returns no filter when userId is undefined (legacy fallback)', () => {
+    const f = getUserFilter('conversations', undefined);
+    expect(f.where).toBe('');
+    expect(f.params).toEqual([]);
+  });
+
+  it('returns no filter for system tables even with a userId', () => {
+    const f = getUserFilter('settings', 'alice');
+    expect(f.where).toBe('');
+    expect(f.params).toEqual([]);
+  });
+});
+
+describe('getUserFilter (child scope)', () => {
+  it('uses WHERE EXISTS with parent join for messages', () => {
+    const f = getUserFilter('messages', 'alice');
+    expect(f.where).toContain('EXISTS');
+    expect(f.where).toContain('"conversations"');
+    expect(f.where).toContain('"messages"');
+    expect(f.where).toContain('"conversation_id"');
+    expect(f.where).toContain('"conversations".user_id = $1');
+    expect(f.params).toEqual(['alice']);
+  });
+
+  it('uses goal_steps → goals', () => {
+    const f = getUserFilter('goal_steps', 'alice');
+    expect(f.where).toContain('"goals"');
+    expect(f.where).toContain('"goal_id"');
+    expect(f.where).toContain('"goals".user_id = $1');
+  });
+
+  it('uses plan_steps → plans', () => {
+    const f = getUserFilter('plan_steps', 'alice');
+    expect(f.where).toContain('"plans"');
+    expect(f.where).toContain('"plan_id"');
+  });
+
+  it('uses claw_history → claws', () => {
+    const f = getUserFilter('claw_history', 'alice');
+    expect(f.where).toContain('"claws"');
+    expect(f.where).toContain('"claw_id"');
+  });
+
+  it('returns no filter for child tables when userId is undefined', () => {
+    const f = getUserFilter('messages', undefined);
+    expect(f.where).toBe('');
+    expect(f.params).toEqual([]);
+  });
+});
+
+describe('getUserFilter (system scope)', () => {
+  it.each(['settings', 'system_settings', 'channels', 'agents', 'plugins'])(
+    'returns no filter for system table %s',
+    (t) => {
+      const f = getUserFilter(t, 'alice');
+      expect(f.where).toBe('');
+      expect(f.params).toEqual([]);
+    }
+  );
+});
+
+describe('getUserFilter — coverage audit', () => {
+  it('every per-user table in EXPORT_TABLES is filtered', () => {
+    for (const t of EXPORT_TABLES) {
+      if (getTableScope(t) === 'per-user') {
+        const f = getUserFilter(t, 'alice');
+        expect(f.where).toMatch(/WHERE user_id = \$1/);
+        expect(f.params).toEqual(['alice']);
+      }
+    }
+  });
+
+  it('every child table in EXPORT_TABLES uses an EXISTS subquery', () => {
+    for (const t of EXPORT_TABLES) {
+      if (getTableScope(t) === 'child') {
+        const f = getUserFilter(t, 'alice');
+        expect(f.where).toContain('EXISTS');
+        expect(f.params).toEqual(['alice']);
+      }
+    }
   });
 });

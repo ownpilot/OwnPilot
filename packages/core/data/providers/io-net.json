@@ -135,12 +135,12 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT-OSS 20B",
-      "contextWindow": 64000,
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT-OSS 120B",
+      "contextWindow": 131072,
       "maxOutput": 4096,
-      "inputPrice": 0.03,
-      "outputPrice": 0.14,
+      "inputPrice": 0.04,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -150,12 +150,12 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT-OSS 120B",
-      "contextWindow": 131072,
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT-OSS 20B",
+      "contextWindow": 64000,
       "maxOutput": 4096,
-      "inputPrice": 0.04,
-      "outputPrice": 0.4,
+      "inputPrice": 0.03,
+      "outputPrice": 0.14,
       "capabilities": [
         "chat",
         "function_calling",
@@ -180,22 +180,6 @@
       "releaseDate": "2024-11-15"
     },
     {
-      "id": "moonshotai/Kimi-K2-Thinking",
-      "name": "Kimi K2 Thinking",
-      "contextWindow": 32768,
-      "maxOutput": 4096,
-      "inputPrice": 0.55,
-      "outputPrice": 2.25,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-01"
-    },
-    {
       "id": "mistralai/Mistral-Large-Instruct-2411",
       "name": "Mistral Large Instruct 2411",
       "contextWindow": 128000,
@@ -206,6 +190,22 @@
         "chat",
         "vision",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "moonshotai/Kimi-K2-Thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 32768,
+      "maxOutput": 4096,
+      "inputPrice": 0.55,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,

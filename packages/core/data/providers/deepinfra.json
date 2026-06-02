@@ -46,22 +46,6 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "xiaomi/mimo-v2.5-pro",
-      "name": "MiMo-V2.5-Pro",
-      "contextWindow": 1048576,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-22"
-    },
-    {
       "id": "xiaomi/mimo-v2.5",
       "name": "MiMo-V2.5",
       "contextWindow": 262144,
@@ -72,6 +56,22 @@
         "chat",
         "vision",
         "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "xiaomi/mimo-v2.5-pro",
+      "name": "MiMo-V2.5-Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 16384,
+      "inputPrice": 1,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"
@@ -168,22 +168,6 @@
       "releaseDate": "2026-04-01"
     },
     {
-      "id": "zai-org/GLM-5",
-      "name": "GLM-5",
-      "contextWindow": 202752,
-      "maxOutput": 16384,
-      "inputPrice": 0.8,
-      "outputPrice": 2.56,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-12"
-    },
-    {
       "id": "MiniMaxAI/MiniMax-M2.5",
       "name": "MiniMax M2.5",
       "contextWindow": 204800,
@@ -200,12 +184,28 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "Qwen/Qwen3.5-397B-A17B",
-      "name": "Qwen 3.5 397B A17B",
+      "id": "zai-org/GLM-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 16384,
+      "inputPrice": 0.8,
+      "outputPrice": 2.56,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "Qwen/Qwen3.5-35B-A3B",
+      "name": "Qwen 3.5 35B A3B",
       "contextWindow": 262144,
       "maxOutput": 81920,
-      "inputPrice": 0.54,
-      "outputPrice": 3.4,
+      "inputPrice": 0.2,
+      "outputPrice": 0.95,
       "capabilities": [
         "chat",
         "vision",
@@ -217,12 +217,12 @@
       "releaseDate": "2026-02-01"
     },
     {
-      "id": "Qwen/Qwen3.5-35B-A3B",
-      "name": "Qwen 3.5 35B A3B",
+      "id": "Qwen/Qwen3.5-397B-A17B",
+      "name": "Qwen 3.5 397B A17B",
       "contextWindow": 262144,
       "maxOutput": 81920,
-      "inputPrice": 0.2,
-      "outputPrice": 0.95,
+      "inputPrice": 0.54,
+      "outputPrice": 3.4,
       "capabilities": [
         "chat",
         "vision",
@@ -348,22 +348,6 @@
       "releaseDate": "2025-11-06"
     },
     {
-      "id": "zai-org/GLM-4.6",
-      "name": "GLM-4.6",
-      "contextWindow": 204800,
-      "maxOutput": 131072,
-      "inputPrice": 0.43,
-      "outputPrice": 1.74,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-30"
-    },
-    {
       "id": "zai-org/GLM-4.6V",
       "name": "GLM-4.6V",
       "contextWindow": 204800,
@@ -373,6 +357,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-30"
+    },
+    {
+      "id": "zai-org/GLM-4.6",
+      "name": "GLM-4.6",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.43,
+      "outputPrice": 1.74,
+      "capabilities": [
+        "chat",
         "function_calling",
         "reasoning",
         "streaming"
@@ -396,12 +396,12 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.03,
-      "outputPrice": 0.14,
+      "inputPrice": 0.05,
+      "outputPrice": 0.24,
       "capabilities": [
         "chat",
         "function_calling",
@@ -412,12 +412,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 16384,
-      "inputPrice": 0.05,
-      "outputPrice": 0.24,
+      "inputPrice": 0.03,
+      "outputPrice": 0.14,
       "capabilities": [
         "chat",
         "function_calling",
@@ -443,12 +443,12 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
-      "name": "Qwen3 Coder 480B A35B Instruct Turbo",
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
+      "name": "Qwen3 Coder 480B A35B Instruct",
       "contextWindow": 262144,
       "maxOutput": 66536,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -458,12 +458,12 @@
       "releaseDate": "2025-07-23"
     },
     {
-      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-      "name": "Qwen3 Coder 480B A35B Instruct",
+      "id": "Qwen/Qwen3-Coder-480B-A35B-Instruct-Turbo",
+      "name": "Qwen3 Coder 480B A35B Instruct Turbo",
       "contextWindow": 262144,
       "maxOutput": 66536,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -520,12 +520,12 @@
       "releaseDate": "2025-05-28"
     },
     {
-      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "name": "Llama 4 Scout 17B",
-      "contextWindow": 10000000,
+      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "name": "Llama 4 Maverick 17B FP8",
+      "contextWindow": 1000000,
       "maxOutput": 16384,
-      "inputPrice": 0.08,
-      "outputPrice": 0.3,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "vision",
@@ -536,12 +536,12 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
-      "name": "Llama 4 Maverick 17B FP8",
-      "contextWindow": 1000000,
+      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama 4 Scout 17B",
+      "contextWindow": 10000000,
       "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.08,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "vision",
@@ -584,12 +584,27 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "meta-llama/Llama-3.1-8B-Instruct",
-      "name": "Llama 3.1 8B",
+      "id": "meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama 3.1 70B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.4,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B-Instruct-Turbo",
+      "name": "Llama 3.1 8B Turbo",
       "contextWindow": 131072,
       "maxOutput": 16384,
       "inputPrice": 0.02,
-      "outputPrice": 0.05,
+      "outputPrice": 0.03,
       "capabilities": [
         "chat",
         "function_calling",
@@ -614,27 +629,12 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta-llama/Llama-3.1-70B-Instruct",
-      "name": "Llama 3.1 70B",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.4,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "meta-llama/Llama-3.1-8B-Instruct-Turbo",
-      "name": "Llama 3.1 8B Turbo",
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B",
       "contextWindow": 131072,
       "maxOutput": 16384,
       "inputPrice": 0.02,
-      "outputPrice": 0.03,
+      "outputPrice": 0.05,
       "capabilities": [
         "chat",
         "function_calling",

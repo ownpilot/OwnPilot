@@ -24,7 +24,15 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
   executionPermissionsRepo: mockRepo,
 }));
 
-const mockResolveApproval = vi.fn();
+const mockResolveApproval = vi.fn(
+  (): {
+    ok: true;
+    decision: { approved: boolean; decidedBy: string; decidedAt: number };
+  } => ({
+    ok: true,
+    decision: { approved: true, decidedBy: 'test-user', decidedAt: Date.now() },
+  })
+);
 
 vi.mock('../services/permission/execution-approval.js', () => ({
   resolveApproval: mockResolveApproval,
@@ -461,7 +469,10 @@ describe('Execution Permissions Routes', () => {
 
   describe('POST /exec/approvals/:id/resolve', () => {
     it('resolves approval when found (approved)', async () => {
-      mockResolveApproval.mockReturnValue(true);
+      mockResolveApproval.mockReturnValueOnce({
+        ok: true,
+        decision: { approved: true, decidedBy: 'test-user', decidedAt: 1234 },
+      });
 
       const res = await app.request('/exec/approvals/approval-123/resolve', {
         method: 'POST',
@@ -478,7 +489,10 @@ describe('Execution Permissions Routes', () => {
     });
 
     it('resolves approval when found (rejected)', async () => {
-      mockResolveApproval.mockReturnValue(true);
+      mockResolveApproval.mockReturnValueOnce({
+        ok: true,
+        decision: { approved: false, decidedBy: 'test-user', decidedAt: 1234 },
+      });
 
       const res = await app.request('/exec/approvals/approval-456/resolve', {
         method: 'POST',
@@ -495,7 +509,7 @@ describe('Execution Permissions Routes', () => {
     });
 
     it('returns 404 when approval not found', async () => {
-      mockResolveApproval.mockReturnValue(false);
+      mockResolveApproval.mockReturnValueOnce({ ok: false, reason: 'expired_or_missing' });
 
       const res = await app.request('/exec/approvals/nonexistent/resolve', {
         method: 'POST',
@@ -508,6 +522,24 @@ describe('Execution Permissions Routes', () => {
       expect(json.success).toBe(false);
       expect(json.error.code).toBe('NOT_FOUND');
       expect(json.error.message).toContain('not found');
+    });
+
+    it('returns 403 when caller is not the approval owner (IDOR guard)', async () => {
+      // Plan 04 Step 5: forbidden is now distinct from "not found" so the
+      // owner of an approval can see they were blocked, and so audit logs
+      // can distinguish a stale approval from a real IDOR attempt.
+      mockResolveApproval.mockReturnValueOnce({ ok: false, reason: 'forbidden' });
+
+      const res = await app.request('/exec/approvals/approval-789/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approved: true }),
+      });
+
+      expect(res.status).toBe(403);
+      const json = await res.json();
+      expect(json.success).toBe(false);
+      expect(json.error.code).toBe('UNAUTHORIZED');
     });
 
     it('returns 400 when approved is not a boolean', async () => {

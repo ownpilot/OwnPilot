@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1048576,
       "maxOutput": 384000,
-      "inputPrice": 1.553,
-      "outputPrice": 3.106,
+      "inputPrice": 0.133,
+      "outputPrice": 0.266,
       "capabilities": [
         "chat",
         "function_calling",
@@ -28,12 +28,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1048576,
       "maxOutput": 384000,
-      "inputPrice": 0.133,
-      "outputPrice": 0.266,
+      "inputPrice": 1.553,
+      "outputPrice": 3.106,
       "capabilities": [
         "chat",
         "function_calling",
@@ -291,21 +291,6 @@
       "releaseDate": "2025-12-22"
     },
     {
-      "id": "devstral-2512",
-      "name": "Devstral 2 2512",
-      "contextWindow": 262000,
-      "maxOutput": 262000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-09"
-    },
-    {
       "id": "devstral-small-2512",
       "name": "Devstral Small 2 2512",
       "contextWindow": 262000,
@@ -315,6 +300,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "devstral-2512",
+      "name": "Devstral 2 2512",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],

@@ -34,7 +34,7 @@ import {
   getCustomToolDynamicRegistry,
   setSharedRegistryForCustomTools,
 } from '../custom/tool-registry.js';
-import { getErrorMessage } from '../../utils/common.js';
+import { getErrorMessage, stableStringify } from '../../utils/common.js';
 import { getLog } from '../log.js';
 import { registerImageOverrides } from '../../tools/overrides/image.js';
 import { registerEmailOverrides } from '../../tools/overrides/email.js';
@@ -588,9 +588,12 @@ export async function executeTool(
     }
   }
 
-  // Check for cached result
+  // Check for cached result. The key is hashed over a *canonical* JSON form
+  // (stableStringify) so permuted argument keys collapse to the same hash:
+  // `{a:1,b:2}` and `{b:2,a:1}` are the same invocation for cache purposes
+  // (Plan 11 IDEMP-001).
   const idempotencyKey = `tool:${createHash('sha256')
-    .update(`${userId}:${toolName}:${JSON.stringify(args)}`)
+    .update(`${userId}:${toolName}:${stableStringify(args)}`)
     .digest('hex')}`;
   try {
     const idempotencyRepo = getIdempotencyKeysRepository();

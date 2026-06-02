@@ -3,15 +3,6 @@
   "name": "GitHub Models",
   "type": "openai-compatible",
   "apiKeyEnv": "GITHUB_TOKEN",
-  "auth": {
-    "default": "api_key",
-    "supported": ["api_key", "oauth2_device_code"],
-    "oauth": {
-      "deviceCodeUrl": "https://github.com/login/device/code",
-      "tokenUrl": "https://github.com/login/oauth/access_token",
-      "scopes": ["read:user"]
-    }
-  },
   "features": {
     "streaming": true,
     "toolUse": true,
@@ -54,8 +45,8 @@
       "releaseDate": "2025-05-01"
     },
     {
-      "id": "openai/gpt-4.1",
-      "name": "GPT-4.1",
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1-mini",
       "contextWindow": 128000,
       "maxOutput": 16384,
       "inputPrice": 0,
@@ -70,8 +61,8 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "openai/gpt-4.1-mini",
-      "name": "GPT-4.1-mini",
+      "id": "openai/gpt-4.1",
+      "name": "GPT-4.1",
       "contextWindow": 128000,
       "maxOutput": 16384,
       "inputPrice": 0,
@@ -135,6 +126,56 @@
       "releaseDate": "2025-03-01"
     },
     {
+      "id": "meta/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B 16E Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-31"
+    },
+    {
+      "id": "meta/llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama 4 Maverick 17B 128E Instruct FP8",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-31"
+    },
+    {
+      "id": "openai/o3",
+      "name": "OpenAI o3",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-31"
+    },
+    {
       "id": "openai/o4-mini",
       "name": "OpenAI o4-mini",
       "contextWindow": 200000,
@@ -166,58 +207,8 @@
       "releaseDate": "2025-01-31"
     },
     {
-      "id": "openai/o3",
-      "name": "OpenAI o3",
-      "contextWindow": 200000,
-      "maxOutput": 100000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-31"
-    },
-    {
-      "id": "meta/llama-4-maverick-17b-128e-instruct-fp8",
-      "name": "Llama 4 Maverick 17B 128E Instruct FP8",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-31"
-    },
-    {
-      "id": "meta/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B 16E Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-31"
-    },
-    {
-      "id": "microsoft/mai-ds-r1",
-      "name": "MAI-DS-R1",
+      "id": "deepseek/deepseek-r1",
+      "name": "DeepSeek-R1",
       "contextWindow": 65536,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -232,8 +223,8 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "deepseek/deepseek-r1",
-      "name": "DeepSeek-R1",
+      "id": "microsoft/mai-ds-r1",
+      "name": "MAI-DS-R1",
       "contextWindow": 65536,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -264,6 +255,22 @@
       "releaseDate": "2025-01-01"
     },
     {
+      "id": "microsoft/phi-4-reasoning",
+      "name": "Phi-4-Reasoning",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-11"
+    },
+    {
       "id": "microsoft/phi-4",
       "name": "Phi-4",
       "contextWindow": 16000,
@@ -280,14 +287,16 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "microsoft/phi-4-reasoning",
-      "name": "Phi-4-Reasoning",
+      "id": "microsoft/phi-4-multimodal-instruct",
+      "name": "Phi-4-multimodal-instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
+        "audio",
         "function_calling",
         "reasoning",
         "streaming"
@@ -328,26 +337,8 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "microsoft/phi-4-multimodal-instruct",
-      "name": "Phi-4-multimodal-instruct",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-11"
-    },
-    {
-      "id": "xai/grok-3-mini",
-      "name": "Grok 3 Mini",
+      "id": "xai/grok-3",
+      "name": "Grok 3",
       "contextWindow": 128000,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -362,8 +353,8 @@
       "releaseDate": "2024-12-09"
     },
     {
-      "id": "xai/grok-3",
-      "name": "Grok 3",
+      "id": "xai/grok-3-mini",
+      "name": "Grok 3 Mini",
       "contextWindow": 128000,
       "maxOutput": 8192,
       "inputPrice": 0,
@@ -442,6 +433,24 @@
       "releaseDate": "2024-10-22"
     },
     {
+      "id": "meta/llama-3.2-11b-vision-instruct",
+      "name": "Llama-3.2-11B-Vision-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-25"
+    },
+    {
       "id": "meta/llama-3.2-90b-vision-instruct",
       "name": "Llama-3.2-90B-Vision-Instruct",
       "contextWindow": 128000,
@@ -460,22 +469,19 @@
       "releaseDate": "2024-09-25"
     },
     {
-      "id": "meta/llama-3.2-11b-vision-instruct",
-      "name": "Llama-3.2-11B-Vision-Instruct",
+      "id": "openai/o1-mini",
+      "name": "OpenAI o1-mini",
       "contextWindow": 128000,
-      "maxOutput": 8192,
+      "maxOutput": 65536,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-09-25"
+      "releaseDate": "2024-09-12"
     },
     {
       "id": "openai/o1-preview",
@@ -509,23 +515,8 @@
       "releaseDate": "2024-09-12"
     },
     {
-      "id": "openai/o1-mini",
-      "name": "OpenAI o1-mini",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09-12"
-    },
-    {
-      "id": "ai21-labs/ai21-jamba-1.5-mini",
-      "name": "AI21 Jamba 1.5 Mini",
+      "id": "ai21-labs/ai21-jamba-1.5-large",
+      "name": "AI21 Jamba 1.5 Large",
       "contextWindow": 256000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -540,8 +531,8 @@
       "releaseDate": "2024-08-29"
     },
     {
-      "id": "ai21-labs/ai21-jamba-1.5-large",
-      "name": "AI21 Jamba 1.5 Large",
+      "id": "ai21-labs/ai21-jamba-1.5-mini",
+      "name": "AI21 Jamba 1.5 Mini",
       "contextWindow": 256000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -573,8 +564,8 @@
       "releaseDate": "2024-08-20"
     },
     {
-      "id": "microsoft/phi-3.5-moe-instruct",
-      "name": "Phi-3.5-MoE instruct (128k)",
+      "id": "microsoft/phi-3.5-mini-instruct",
+      "name": "Phi-3.5-mini instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -589,8 +580,8 @@
       "releaseDate": "2024-08-20"
     },
     {
-      "id": "microsoft/phi-3.5-mini-instruct",
-      "name": "Phi-3.5-mini instruct (128k)",
+      "id": "microsoft/phi-3.5-moe-instruct",
+      "name": "Phi-3.5-MoE instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
       "inputPrice": 0,
@@ -651,22 +642,6 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta/meta-llama-3.1-70b-instruct",
-      "name": "Meta-Llama-3.1-70B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
       "id": "meta/meta-llama-3.1-8b-instruct",
       "name": "Meta-Llama-3.1-8B-Instruct",
       "contextWindow": 128000,
@@ -683,21 +658,20 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "openai/gpt-4o-mini",
-      "name": "GPT-4o mini",
+      "id": "meta/meta-llama-3.1-70b-instruct",
+      "name": "Meta-Llama-3.1-70B-Instruct",
       "contextWindow": 128000,
-      "maxOutput": 16384,
+      "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2024-07-18"
+      "releaseDate": "2024-07-23"
     },
     {
       "id": "mistral-ai/mistral-nemo",
@@ -710,6 +684,23 @@
         "chat",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -737,22 +728,6 @@
       "name": "Phi-3-medium instruct (128k)",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-23"
-    },
-    {
-      "id": "microsoft/phi-3-medium-4k-instruct",
-      "name": "Phi-3-medium instruct (4k)",
-      "contextWindow": 4096,
-      "maxOutput": 1024,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -829,8 +804,24 @@
       "releaseDate": "2024-04-23"
     },
     {
-      "id": "meta/meta-llama-3-70b-instruct",
-      "name": "Meta-Llama-3-70B-Instruct",
+      "id": "microsoft/phi-3-medium-4k-instruct",
+      "name": "Phi-3-medium instruct (4k)",
+      "contextWindow": 4096,
+      "maxOutput": 1024,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-23"
+    },
+    {
+      "id": "meta/meta-llama-3-8b-instruct",
+      "name": "Meta-Llama-3-8B-Instruct",
       "contextWindow": 8192,
       "maxOutput": 2048,
       "inputPrice": 0,
@@ -845,8 +836,8 @@
       "releaseDate": "2024-04-18"
     },
     {
-      "id": "meta/meta-llama-3-8b-instruct",
-      "name": "Meta-Llama-3-8B-Instruct",
+      "id": "meta/meta-llama-3-70b-instruct",
+      "name": "Meta-Llama-3-70B-Instruct",
       "contextWindow": 8192,
       "maxOutput": 2048,
       "inputPrice": 0,

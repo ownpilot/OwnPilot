@@ -66,6 +66,18 @@ describe('Route Helpers', () => {
 
       expect(result).toBe('default');
     });
+
+    // Empty string is also treated as "no user" — covers the case where a
+    // misconfigured middleware sets `userId: ''` instead of leaving the key
+    // unset.
+    it('should return default when userId is empty string', () => {
+      const c = createMockContext();
+      vi.mocked(c.get).mockReturnValue('');
+
+      const result = getUserId(c);
+
+      expect(result).toBe('default');
+    });
   });
 
   describe('getPaginationParams', () => {

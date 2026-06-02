@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-opus-4-8@default",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-28"
+    },
+    {
       "id": "gemini-3.5-flash",
       "name": "Gemini 3.5 Flash",
       "contextWindow": 1048576,
@@ -27,7 +44,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-19"
     },
     {
@@ -402,12 +419,12 @@
       "releaseDate": "2025-08-13"
     },
     {
-      "id": "openai/gpt-oss-20b-maas",
-      "name": "GPT OSS 20B",
+      "id": "openai/gpt-oss-120b-maas",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.07,
-      "outputPrice": 0.25,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
@@ -418,12 +435,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b-maas",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b-maas",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
+      "inputPrice": 0.07,
+      "outputPrice": 0.25,
       "capabilities": [
         "chat",
         "function_calling",
@@ -505,12 +522,12 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "claude-opus-4@20250514",
-      "name": "Claude Opus 4",
+      "id": "claude-sonnet-4@20250514",
+      "name": "Claude Sonnet 4",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -522,12 +539,12 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "claude-sonnet-4@20250514",
-      "name": "Claude Sonnet 4",
+      "id": "claude-opus-4@20250514",
+      "name": "Claude Opus 4",
       "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",
@@ -553,22 +570,6 @@
       "releaseDate": "2025-05-20"
     },
     {
-      "id": "meta/llama-3.3-70b-instruct-maas",
-      "name": "Llama 3.3 70B Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.72,
-      "outputPrice": 0.72,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-29"
-    },
-    {
       "id": "meta/llama-4-maverick-17b-128e-instruct-maas",
       "name": "Llama 4 Maverick 17B 128E Instruct",
       "contextWindow": 524288,
@@ -578,6 +579,22 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-29"
+    },
+    {
+      "id": "meta/llama-3.3-70b-instruct-maas",
+      "name": "Llama 3.3 70B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.72,
+      "outputPrice": 0.72,
+      "capabilities": [
+        "chat",
         "function_calling",
         "json_mode",
         "streaming"
@@ -655,12 +672,12 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "claude-3-5-haiku@20241022",
-      "name": "Claude Haiku 3.5",
+      "id": "claude-3-5-sonnet@20241022",
+      "name": "Claude Sonnet 3.5 v2",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 0.8,
-      "outputPrice": 4,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -671,12 +688,12 @@
       "releaseDate": "2024-10-22"
     },
     {
-      "id": "claude-3-5-sonnet@20241022",
-      "name": "Claude Sonnet 3.5 v2",
+      "id": "claude-3-5-haiku@20241022",
+      "name": "Claude Haiku 3.5",
       "contextWindow": 200000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "inputPrice": 0.8,
+      "outputPrice": 4,
       "capabilities": [
         "chat",
         "vision",

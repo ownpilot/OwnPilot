@@ -227,14 +227,14 @@ async function main(): Promise<void> {
   await server.connect(transport);
 
   // Handle graceful shutdown
-  process.on('SIGINT', async () => {
-    await server.close();
-    process.exit(0);
+  // NOTE: process.on() does NOT wait for async callbacks — we must chain
+  // process.exit() after the await so server.close() completes first.
+  process.on('SIGINT', () => {
+    server.close().finally(() => process.exit(0));
   });
 
-  process.on('SIGTERM', async () => {
-    await server.close();
-    process.exit(0);
+  process.on('SIGTERM', () => {
+    server.close().finally(() => process.exit(0));
   });
 }
 

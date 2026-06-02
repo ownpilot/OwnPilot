@@ -123,6 +123,31 @@ describe('DefaultPermissionGate', () => {
         expect(decision.reason).toContain('not in actor');
       }
     });
+
+    // PERM-001: the old `tool.endsWith('.${t}')` check would let
+    // `allowedTools: ['delete']` match `db.delete_file` because the suffix
+    // `.delete` is contained in `db.delete_file`. Base-name matching
+    // requires the entire last segment to match, so this is correctly denied.
+    it('denies when only the base-name suffix matches (e.g. delete vs db.delete_file)', async () => {
+      const decision = await gate.check({
+        actorId: 'a',
+        tool: 'db.delete_file',
+        context: { allowedTools: ['delete'] },
+      });
+      expect(decision.type).toBe('deny');
+      if (decision.type === 'deny') {
+        expect(decision.reason).toContain('not in actor');
+      }
+    });
+
+    it('allows when the base name matches a namespaced tool', async () => {
+      const decision = await gate.check({
+        actorId: 'a',
+        tool: 'core.delete',
+        context: { allowedTools: ['delete'] },
+      });
+      expect(decision.type).toBe('allow');
+    });
   });
 
   describe('layered policy', () => {
@@ -210,9 +235,47 @@ describe('evaluateAutonomyPolicy (pure)', () => {
     expect(d.type).toBe('allow');
   });
 
+  // Plan 04 Step 6: pin the default-allow behavior when the boolean
+  // field is omitted (undefined). A previous version of this gate used a
+  // truthiness check that silently denied tools when the field was
+  // absent. The strict `=== false` check is intentional and these tests
+  // guard against regressions.
+  it('allows claw_update_config when allowSelfModify is undefined (default)', () => {
+    const p = policy();
+    delete (p as Partial<ClawAutonomyPolicy>).allowSelfModify;
+    const d = evaluateAutonomyPolicy('claw_update_config', {}, p);
+    expect(d.type).toBe('allow');
+  });
+
   it('denies claw_spawn_subclaw when allowSubclaws is false', () => {
     const d = evaluateAutonomyPolicy('claw_spawn_subclaw', {}, policy({ allowSubclaws: false }));
     expect(d.type).toBe('deny');
+  });
+
+  it('allows claw_spawn_subclaw when allowSubclaws is true', () => {
+    const d = evaluateAutonomyPolicy('claw_spawn_subclaw', {}, policy({ allowSubclaws: true }));
+    expect(d.type).toBe('allow');
+  });
+
+  it('allows claw_spawn_subclaw when allowSubclaws is undefined (default)', () => {
+    const p = policy();
+    delete (p as Partial<ClawAutonomyPolicy>).allowSubclaws;
+    const d = evaluateAutonomyPolicy('claw_spawn_subclaw', {}, p);
+    expect(d.type).toBe('allow');
+  });
+
+  it('does not treat missing allowSubclaws as a deny (regression for loose !check)', () => {
+    // Direct construction with no allowSubclaws at all — this is the
+    // shape a fresh claw config produces.
+    const loosePolicy: ClawAutonomyPolicy = {
+      allowSelfModify: false,
+      // allowSubclaws intentionally omitted
+      requireEvidence: false,
+      destructiveActionPolicy: 'allow',
+      filesystemScopes: [],
+    };
+    const d = evaluateAutonomyPolicy('claw_spawn_subclaw', {}, loosePolicy);
+    expect(d.type).toBe('allow');
   });
 
   it('denies a file path outside the workspace + scopes', () => {

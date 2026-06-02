@@ -133,8 +133,8 @@
       "releaseDate": "2026-01-18"
     },
     {
-      "id": "hf:moonshotai/Kimi-K2.5",
-      "name": "Kimi K2.5",
+      "id": "hf:nvidia/Kimi-K2.5-NVFP4",
+      "name": "Kimi K2.5 (NVFP4)",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.55,
@@ -150,8 +150,8 @@
       "releaseDate": "2026-01"
     },
     {
-      "id": "hf:nvidia/Kimi-K2.5-NVFP4",
-      "name": "Kimi K2.5 (NVFP4)",
+      "id": "hf:moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.55,
@@ -327,6 +327,21 @@
       "releaseDate": "2025-08-05"
     },
     {
+      "id": "hf:deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 (0324)",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 1.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-01"
+    },
+    {
       "id": "hf:deepseek-ai/DeepSeek-R1-0528",
       "name": "DeepSeek R1 (0528)",
       "contextWindow": 128000,
@@ -337,21 +352,6 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-01"
-    },
-    {
-      "id": "hf:deepseek-ai/DeepSeek-V3-0324",
-      "name": "DeepSeek V3 (0324)",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 1.2,
-      "outputPrice": 1.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -404,12 +404,12 @@
       "releaseDate": "2025-04-28"
     },
     {
-      "id": "hf:meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "name": "Llama-4-Scout-17B-16E-Instruct",
-      "contextWindow": 328000,
+      "id": "hf:meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
+      "contextWindow": 524000,
       "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.22,
+      "outputPrice": 0.88,
       "capabilities": [
         "chat",
         "vision",
@@ -420,12 +420,12 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "hf:meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
-      "name": "Llama-4-Maverick-17B-128E-Instruct-FP8",
-      "contextWindow": 524000,
+      "id": "hf:meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "name": "Llama-4-Scout-17B-16E-Instruct",
+      "contextWindow": 328000,
       "maxOutput": 4096,
-      "inputPrice": 0.22,
-      "outputPrice": 0.88,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "vision",
@@ -498,22 +498,6 @@
       "releaseDate": "2024-11-11"
     },
     {
-      "id": "hf:meta-llama/Llama-3.1-8B-Instruct",
-      "name": "Llama-3.1-8B-Instruct",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
       "id": "hf:meta-llama/Llama-3.1-70B-Instruct",
       "name": "Llama-3.1-70B-Instruct",
       "contextWindow": 128000,
@@ -536,6 +520,22 @@
       "maxOutput": 32768,
       "inputPrice": 3,
       "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
+      "id": "hf:meta-llama/Llama-3.1-8B-Instruct",
+      "name": "Llama-3.1-8B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",

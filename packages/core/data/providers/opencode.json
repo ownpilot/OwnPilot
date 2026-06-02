@@ -12,6 +12,40 @@
   },
   "models": [
     {
+      "id": "minimax-m3-free",
+      "name": "MiniMax M3 Free",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-31"
+    },
+    {
+      "id": "claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
       "id": "grok-build-0.1",
       "name": "Grok Build 0.1",
       "contextWindow": 256000,
@@ -26,7 +60,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-20"
     },
     {
@@ -65,6 +99,24 @@
       "releaseDate": "2026-05-08"
     },
     {
+      "id": "mimo-v2.5-free",
+      "name": "MiMo V2.5 Free",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
       "id": "gpt-5.5-pro",
       "name": "GPT-5.5 Pro",
       "contextWindow": 1050000,
@@ -99,17 +151,16 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "mimo-v2.5-free",
-      "name": "MiMo V2.5 Free",
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -135,21 +186,6 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "ling-2.6-flash-free",
-      "name": "Ling 2.6 Flash Free",
-      "contextWindow": 262100,
-      "maxOutput": 32800,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-21"
-    },
-    {
       "id": "kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
@@ -161,6 +197,21 @@
         "vision",
         "function_calling",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "ling-2.6-flash-free",
+      "name": "Ling 2.6 Flash Free",
+      "contextWindow": 262100,
+      "maxOutput": 32800,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -216,23 +267,6 @@
       "releaseDate": "2026-04-07"
     },
     {
-      "id": "qwen3.6-plus-free",
-      "name": "Qwen3.6 Plus Free",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-02"
-    },
-    {
       "id": "qwen3.6-plus",
       "name": "Qwen3.6 Plus",
       "contextWindow": 262144,
@@ -250,14 +284,33 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "mimo-v2-pro-free",
-      "name": "MiMo V2 Pro Free",
-      "contextWindow": 1048576,
+      "id": "qwen3.6-plus-free",
+      "name": "Qwen3.6 Plus Free",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "mimo-v2-omni-free",
+      "name": "MiMo V2 Omni Free",
+      "contextWindow": 262144,
       "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
+        "audio",
         "function_calling",
         "reasoning",
         "streaming"
@@ -282,16 +335,14 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "mimo-v2-omni-free",
-      "name": "MiMo V2 Omni Free",
-      "contextWindow": 262144,
+      "id": "mimo-v2-pro-free",
+      "name": "MiMo V2 Pro Free",
+      "contextWindow": 1048576,
       "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
-        "audio",
         "function_calling",
         "reasoning",
         "streaming"
@@ -507,12 +558,12 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "glm-5-free",
-      "name": "GLM-5 Free",
+      "id": "glm-5",
+      "name": "GLM-5",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -523,12 +574,12 @@
       "releaseDate": "2026-02-11"
     },
     {
-      "id": "glm-5",
-      "name": "GLM-5",
+      "id": "glm-5-free",
+      "name": "GLM-5 Free",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 1,
-      "outputPrice": 3.2,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
@@ -571,12 +622,12 @@
       "releaseDate": "2026-01-28"
     },
     {
-      "id": "kimi-k2.5",
-      "name": "Kimi K2.5",
+      "id": "kimi-k2.5-free",
+      "name": "Kimi K2.5 Free",
       "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0.6,
-      "outputPrice": 3,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
@@ -588,12 +639,12 @@
       "releaseDate": "2026-01-27"
     },
     {
-      "id": "kimi-k2.5-free",
-      "name": "Kimi K2.5 Free",
+      "id": "kimi-k2.5",
+      "name": "Kimi K2.5",
       "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 65536,
+      "inputPrice": 0.6,
+      "outputPrice": 3,
       "capabilities": [
         "chat",
         "vision",
@@ -655,12 +706,12 @@
       "releaseDate": "2025-12-23"
     },
     {
-      "id": "glm-4.7-free",
-      "name": "GLM-4.7 Free",
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -671,12 +722,12 @@
       "releaseDate": "2025-12-22"
     },
     {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
+      "id": "glm-4.7-free",
+      "name": "GLM-4.7 Free",
       "contextWindow": 204800,
       "maxOutput": 131072,
-      "inputPrice": 0.6,
-      "outputPrice": 2.2,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
@@ -776,24 +827,6 @@
       "releaseDate": "2025-11-18"
     },
     {
-      "id": "gpt-5.1-codex-mini",
-      "name": "GPT-5.1 Codex Mini",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-13"
-    },
-    {
       "id": "gpt-5.1",
       "name": "GPT-5.1",
       "contextWindow": 400000,
@@ -818,6 +851,24 @@
       "maxOutput": 128000,
       "inputPrice": 1.25,
       "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
+    },
+    {
+      "id": "gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex Mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -980,12 +1031,12 @@
       "releaseDate": "2025-08-20"
     },
     {
-      "id": "gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.07,
+      "outputPrice": 8.5,
       "capabilities": [
         "chat",
         "vision",
@@ -998,12 +1049,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5",
-      "name": "GPT-5",
+      "id": "gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.07,
-      "outputPrice": 8.5,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",

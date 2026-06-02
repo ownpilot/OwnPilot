@@ -250,12 +250,28 @@ export function evaluateAutonomyPolicy(
 ): PermissionDecision {
   const base = toolBaseName(tool);
 
-  // 1. Self-modification — hard deny when disabled.
+  // 1. Self-modification — hard deny when explicitly disabled.
+  //
+  // Plan 04 Step 6 normalization: we use a strict `=== false` check so that
+  // the three possible values of `allowSelfModify` have distinct, documented
+  // semantics:
+  //   - `undefined` (field omitted) — default; not denied by this gate
+  //   - `false`                    — operator explicitly opted out, deny
+  //   - `true`                     — operator explicitly opted in, no gate deny
+  // The strict check makes the default-allow behavior visible at the call
+  // site and prevents an accidental `if (!policy.allowSelfModify)` from
+  // silently denying self-modify when the field is unset.
   if (policy.allowSelfModify === false && SELF_MODIFY_TOOLS.has(base)) {
     return { type: 'deny', reason: 'Self-modification is disabled by autonomy policy' };
   }
 
-  // 2. Sub-claw spawning — hard deny when disabled.
+  // 2. Sub-claw spawning — hard deny when explicitly disabled.
+  // Same strict-false semantic as self-modify above (Plan 04 Step 6).
+  // Note: the claw runner currently treats `require_approval` decisions as
+  // a hard deny (silent fallback) — surfacing them as a real
+  // pending_approval queue is a Plan 04 Step 6 follow-up that requires
+  // runner-side changes to enqueue via execution-approval.ts and expose a
+  // poll handle to the caller.
   if (policy.allowSubclaws === false && SUBCLAW_TOOLS.has(base)) {
     return { type: 'deny', reason: 'Sub-claws are disabled by autonomy policy' };
   }
@@ -339,9 +355,13 @@ export class DefaultPermissionGate implements IPermissionGate {
     }
 
     // 3. Task-level allowedTools — if set, the tool must match exactly or by
-    //    base name (suffix match handles namespaced variants like core.X / custom.X).
+    //    base name (e.g. `core.delete` / `custom.delete` / `ext.foo.delete`
+    //    all match an allowed entry of `delete`). Compare base names so that
+    //    an allowlist entry of `delete` does NOT silently grant `db.delete_file`
+    //    via the old `endsWith('.delete')` suffix check.
     if (allowedTools && allowedTools.length > 0) {
-      const allowed = allowedTools.some((t) => tool === t || tool.endsWith(`.${t}`));
+      const toolBase = toolBaseName(tool);
+      const allowed = allowedTools.some((t) => toolBaseName(t) === toolBase);
       if (!allowed) {
         return {
           type: 'deny',

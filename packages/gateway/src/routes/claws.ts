@@ -10,7 +10,7 @@
  */
 
 import { Hono } from 'hono';
-import type { z } from 'zod';
+import { z } from 'zod';
 import type {
   ClawAutonomyPolicy,
   ClawConfig,
@@ -29,14 +29,17 @@ import {
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
+  zodValidationError,
 } from './helpers.js';
 import {
   validateBody,
+  ValidationError,
   createClawSchema,
   updateClawSchema,
   clawMessageSchema,
   clawDenyEscalationSchema,
   clawApplyRecommendationsSchema,
+  clawNextIntentSchema,
 } from '../middleware/validation.js';
 
 export const clawRoutes = new Hono();
@@ -976,8 +979,8 @@ clawRoutes.post('/:id/next-intent', async (c) => {
   try {
     const userId = getUserId(c);
     const { id } = c.req.param();
-    const body = (await c.req.json()) as { intent?: unknown };
-    if (typeof body.intent !== 'string' || body.intent.trim().length === 0) {
+    const body = validateBody(clawNextIntentSchema, await c.req.json());
+    if (body.intent.trim().length === 0) {
       return apiError(
         c,
         { code: ERROR_CODES.VALIDATION_ERROR, message: 'intent must be a non-empty string' },
@@ -988,6 +991,7 @@ clawRoutes.post('/:id/next-intent', async (c) => {
     await service.setNextIntent(id, userId, body.intent);
     return apiResponse(c, { queued: true });
   } catch (err) {
+    if (err instanceof ValidationError) return zodValidationError(c, err.issues);
     const msg = getErrorMessage(err);
     if (msg === 'Claw not found') {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: msg }, 404);
@@ -1047,7 +1051,10 @@ clawRoutes.put('/:id/plan', async (c) => {
   try {
     const userId = getUserId(c);
     const { id } = c.req.param();
-    const body = (await c.req.json()) as { tasks?: unknown };
+    const body = validateBody(
+      z.object({ tasks: z.array(z.unknown()).max(1000).optional() }),
+      await c.req.json()
+    );
     const service = getClawService();
     const tasks = await service.replacePlan(id, userId, body.tasks);
     return apiResponse(c, { tasks });
@@ -1072,7 +1079,7 @@ clawRoutes.patch('/:id/tasks/:taskId', async (c) => {
   try {
     const userId = getUserId(c);
     const { id, taskId } = c.req.param();
-    const body = (await c.req.json()) as Record<string, unknown>;
+    const body = validateBody(z.record(z.string(), z.unknown()), await c.req.json());
     const service = getClawService();
     const result = await service.updateTask(id, userId, { ...body, id: taskId });
     return apiResponse(c, result);
@@ -1101,7 +1108,7 @@ clawRoutes.post('/:id/tasks/:taskId/split', async (c) => {
   try {
     const userId = getUserId(c);
     const { id, taskId } = c.req.param();
-    const body = (await c.req.json()) as Record<string, unknown>;
+    const body = validateBody(z.record(z.string(), z.unknown()), await c.req.json());
     const service = getClawService();
     const result = await service.splitTask(id, userId, { ...body, task_id: taskId });
     return apiResponse(c, result);

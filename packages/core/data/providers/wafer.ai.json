@@ -12,12 +12,29 @@
   },
   "models": [
     {
+      "id": "qwen3.7-max",
+      "name": "Qwen3.7-Max",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 5,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-21"
+    },
+    {
       "id": "Kimi-K2.6",
-      "name": "Kimi K2.6",
+      "name": "Kimi-K2.6",
       "contextWindow": 262144,
       "maxOutput": 65536,
-      "inputPrice": 1.1,
-      "outputPrice": 4.8,
+      "inputPrice": 0.68,
+      "outputPrice": 3.15,
       "capabilities": [
         "chat",
         "vision",
@@ -26,16 +43,16 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-13"
     },
     {
       "id": "Qwen3.6-35B-A3B",
-      "name": "Qwen3.6 35B A3B",
-      "contextWindow": 32768,
-      "maxOutput": 16384,
-      "inputPrice": 0.19,
-      "outputPrice": 1.25,
+      "name": "Qwen3.6-35B-A3B",
+      "contextWindow": 256000,
+      "maxOutput": 65536,
+      "inputPrice": 0.15,
+      "outputPrice": 1,
       "capabilities": [
         "chat",
         "vision",
@@ -48,12 +65,46 @@
       "releaseDate": "2026-05-11"
     },
     {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
       "id": "GLM-5.1",
       "name": "GLM-5.1",
       "contextWindow": 202752,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -66,11 +117,11 @@
     },
     {
       "id": "Qwen3.5-397B-A17B",
-      "name": "Qwen3.5 397B A17B",
+      "name": "Qwen3.5-397B-A17B",
       "contextWindow": 262144,
       "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.43,
+      "outputPrice": 2.6,
       "capabilities": [
         "chat",
         "vision",

@@ -173,8 +173,7 @@ soulRoutes.get('/', async (c) => {
 
 soulRoutes.post('/', async (c) => {
   try {
-    const rawBody = await c.req.json();
-    const body = validateBody(createSoulSchema, rawBody);
+    const body = validateBody(createSoulSchema, await c.req.json());
 
     const soulData = {
       agentId: body.agentId,
@@ -185,8 +184,8 @@ soulRoutes.post('/', async (c) => {
       relationships: body.relationships ?? {},
       evolution: body.evolution,
       bootSequence: body.bootSequence ?? {},
-      provider: rawBody.provider,
-      skillAccess: rawBody.skillAccess,
+      provider: body.provider,
+      skillAccess: body.skillAccess,
       workspaceId: body.workspaceId,
     } as unknown as Parameters<ReturnType<typeof getSoulsRepository>['create']>[0];
     const soul = await getSoulsRepository().create(soulData);

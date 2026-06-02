@@ -51,8 +51,10 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 });
 
 // Set BOOTSTRAP_TOKEN before routes are loaded (used by first-time password setup route).
-// H-S13: must be ≥32 chars to satisfy MIN_BOOTSTRAP_TOKEN_LENGTH.
-process.env.BOOTSTRAP_TOKEN = 'test-bootstrap-token-min32chars-padding';
+// H-S13: must be ≥64 chars to satisfy MIN_BOOTSTRAP_TOKEN_LENGTH.
+// Length: 80 chars — well over the 64 minimum.
+process.env.BOOTSTRAP_TOKEN =
+  'test-bootstrap-token-min64chars-padding-padding-padding-padding-extra-padding-padding';
 
 import { isPasswordConfigured, getPasswordHash, validateSession } from '../services/ui-session.js';
 
@@ -266,7 +268,8 @@ describe('UI Auth Routes', () => {
         body: JSON.stringify({ password: 'new-password-123' }),
         headers: {
           'Content-Type': 'application/json',
-          'X-Bootstrap-Token': 'test-bootstrap-token-min32chars-padding',
+          'X-Bootstrap-Token':
+            'test-bootstrap-token-min64chars-padding-padding-padding-padding-extra-padding-padding',
         },
       });
       expect(res.status).toBe(200);
@@ -285,6 +288,32 @@ describe('UI Auth Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.message).toContain('at least 8');
+    });
+
+    // Plan 02 / Plan 15: BOOTSTRAP_TOKEN minimum raised from 32 to 64 chars.
+    // When the gateway is misconfigured with a short token, the operator gets
+    // a 503 with a clear error message rather than a silent 403 (which would
+    // be indistinguishable from a wrong-token attempt by the client).
+    it('rejects setup with a 32-character BOOTSTRAP_TOKEN in env (below new 64-char minimum)', async () => {
+      const previousEnv = process.env.BOOTSTRAP_TOKEN;
+      process.env.BOOTSTRAP_TOKEN = 'a'.repeat(32);
+      try {
+        const res = await app.request('/auth/password', {
+          method: 'POST',
+          body: JSON.stringify({ password: 'new-password-123' }),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Bootstrap-Token': 'a'.repeat(32),
+          },
+        });
+        // 503 SERVICE_UNAVAILABLE — the length check on the env var
+        // fires before the user-supplied header is compared.
+        expect(res.status).toBe(503);
+        const body = await res.json();
+        expect(body.error.message).toContain('64 characters');
+      } finally {
+        process.env.BOOTSTRAP_TOKEN = previousEnv;
+      }
     });
 
     it('requires auth to change existing password', async () => {

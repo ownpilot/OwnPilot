@@ -47,24 +47,6 @@
       "releaseDate": "2026-03-11"
     },
     {
-      "id": "@cf/moonshotai/kimi-k2.5",
-      "name": "Kimi K2.5",
-      "contextWindow": 256000,
-      "maxOutput": 256000,
-      "inputPrice": 0.6,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-27"
-    },
-    {
       "id": "@cf/zai-org/glm-4.7-flash",
       "name": "GLM-4.7-Flash",
       "contextWindow": 131072,
@@ -129,12 +111,12 @@
       "releaseDate": "2025-09-23"
     },
     {
-      "id": "@cf/openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "@cf/openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.2,
-      "outputPrice": 0.3,
+      "inputPrice": 0.35,
+      "outputPrice": 0.75,
       "capabilities": [
         "chat",
         "function_calling",
@@ -146,12 +128,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "@cf/openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "@cf/openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.35,
-      "outputPrice": 0.75,
+      "inputPrice": 0.2,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -204,20 +186,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-18"
-    },
-    {
-      "id": "@cf/google/gemma-3-12b-it",
-      "name": "Gemma 3 12B It",
-      "contextWindow": 80000,
-      "maxOutput": 80000,
-      "inputPrice": 0.345,
-      "outputPrice": 0.556,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,
@@ -297,12 +265,12 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "@cf/meta/llama-3.2-1b-instruct",
-      "name": "Llama 3.2 1B Instruct",
-      "contextWindow": 60000,
-      "maxOutput": 60000,
-      "inputPrice": 0.027,
-      "outputPrice": 0.201,
+      "id": "@cf/meta/llama-3.2-3b-instruct",
+      "name": "Llama 3.2 3B Instruct",
+      "contextWindow": 80000,
+      "maxOutput": 80000,
+      "inputPrice": 0.0509,
+      "outputPrice": 0.335,
       "capabilities": [
         "chat",
         "streaming"
@@ -326,12 +294,12 @@
       "releaseDate": "2024-09-25"
     },
     {
-      "id": "@cf/meta/llama-3.2-3b-instruct",
-      "name": "Llama 3.2 3B Instruct",
-      "contextWindow": 80000,
-      "maxOutput": 80000,
-      "inputPrice": 0.0509,
-      "outputPrice": 0.335,
+      "id": "@cf/meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1B Instruct",
+      "contextWindow": 60000,
+      "maxOutput": 60000,
+      "inputPrice": 0.027,
+      "outputPrice": 0.201,
       "capabilities": [
         "chat",
         "streaming"
@@ -352,76 +320,6 @@
       ],
       "default": false,
       "releaseDate": "2024-07-25"
-    },
-    {
-      "id": "@cf/meta/llama-3.1-8b-instruct-awq",
-      "name": "Llama 3.1 8B Instruct Awq",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.123,
-      "outputPrice": 0.266,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-25"
-    },
-    {
-      "id": "@cf/meta/llama-3-8b-instruct-awq",
-      "name": "Llama 3 8B Instruct Awq",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.123,
-      "outputPrice": 0.266,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-05-09"
-    },
-    {
-      "id": "@cf/meta/llama-3-8b-instruct",
-      "name": "Llama 3 8B Instruct",
-      "contextWindow": 7968,
-      "maxOutput": 7968,
-      "inputPrice": 0.282,
-      "outputPrice": 0.827,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-18"
-    },
-    {
-      "id": "@cf/mistral/mistral-7b-instruct-v0.1",
-      "name": "Mistral 7B Instruct V0.1",
-      "contextWindow": 2824,
-      "maxOutput": 2824,
-      "inputPrice": 0.11,
-      "outputPrice": 0.19,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-07"
-    },
-    {
-      "id": "@cf/meta/llama-2-7b-chat-fp16",
-      "name": "Llama 2 7B Chat fp16",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0.556,
-      "outputPrice": 6.667,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-07"
     }
   ],
   "baseUrl": "https://api.cloudflareworkersai.com/v1",

@@ -12,8 +12,25 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-pro",
-      "name": "deepseek-v4-pro",
+      "id": "minimax-m3",
+      "name": "minimax-m3",
+      "contextWindow": 512000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-31"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "deepseek-v4-flash",
       "contextWindow": 1048576,
       "maxOutput": 1048576,
       "inputPrice": 0,
@@ -24,12 +41,12 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-flash",
-      "name": "deepseek-v4-flash",
+      "id": "deepseek-v4-pro",
+      "name": "deepseek-v4-pro",
       "contextWindow": 1048576,
       "maxOutput": 1048576,
       "inputPrice": 0,
@@ -397,6 +414,22 @@
       "releaseDate": "2025-09-29"
     },
     {
+      "id": "qwen3-vl:235b-instruct",
+      "name": "qwen3-vl:235b-instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-22"
+    },
+    {
       "id": "qwen3-vl:235b",
       "name": "qwen3-vl:235b",
       "contextWindow": 262144,
@@ -408,22 +441,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-22"
-    },
-    {
-      "id": "qwen3-vl:235b-instruct",
-      "name": "qwen3-vl:235b-instruct",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -462,8 +479,8 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "gpt-oss:120b",
-      "name": "gpt-oss:120b",
+      "id": "gpt-oss:20b",
+      "name": "gpt-oss:20b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -478,8 +495,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gpt-oss:20b",
-      "name": "gpt-oss:20b",
+      "id": "gpt-oss:120b",
+      "name": "gpt-oss:120b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -555,22 +572,6 @@
       "releaseDate": "2025-06-15"
     },
     {
-      "id": "ministral-3:8b",
-      "name": "ministral-3:8b",
-      "contextWindow": 262144,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
       "id": "gemma3:4b",
       "name": "gemma3:4b",
       "contextWindow": 131072,
@@ -588,6 +589,22 @@
     {
       "id": "ministral-3:14b",
       "name": "ministral-3:14b",
+      "contextWindow": 262144,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "ministral-3:8b",
+      "name": "ministral-3:8b",
       "contextWindow": 262144,
       "maxOutput": 128000,
       "inputPrice": 0,

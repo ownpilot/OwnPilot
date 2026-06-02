@@ -62,22 +62,6 @@
       "releaseDate": "2026-04-03"
     },
     {
-      "id": "grok-4.20-0309-non-reasoning",
-      "name": "Grok 4.20 (Non-Reasoning)",
-      "contextWindow": 2000000,
-      "maxOutput": 30000,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-09"
-    },
-    {
       "id": "grok-4.20-0309-reasoning",
       "name": "Grok 4.20 (Reasoning)",
       "contextWindow": 2000000,
@@ -111,9 +95,25 @@
       "releaseDate": "2026-03-09"
     },
     {
-      "id": "grok-imagine-video",
-      "name": "Grok Imagine Video",
-      "contextWindow": 1024,
+      "id": "grok-4.20-0309-non-reasoning",
+      "name": "Grok 4.20 (Non-Reasoning)",
+      "contextWindow": 2000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-09"
+    },
+    {
+      "id": "grok-imagine-image",
+      "name": "Grok Imagine Image",
+      "contextWindow": 8000,
       "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -126,9 +126,9 @@
       "releaseDate": "2026-01-28"
     },
     {
-      "id": "grok-imagine-image",
-      "name": "Grok Imagine Image",
-      "contextWindow": 8000,
+      "id": "grok-imagine-video",
+      "name": "Grok Imagine Video",
+      "contextWindow": 1024,
       "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,

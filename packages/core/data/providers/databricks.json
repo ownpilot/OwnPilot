@@ -281,23 +281,6 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "databricks-claude-sonnet-4-5",
-      "name": "Claude Sonnet 4.5 (latest)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-29"
-    },
-    {
       "id": "databricks-claude-sonnet-4",
       "name": "Claude Sonnet 4.5",
       "contextWindow": 200000,
@@ -315,12 +298,29 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "databricks-gpt-5",
-      "name": "GPT-5",
+      "id": "databricks-claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "databricks-gpt-5-nano",
+      "name": "GPT-5 Nano",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -351,12 +351,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "databricks-gpt-5-nano",
-      "name": "GPT-5 Nano",
+      "id": "databricks-gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",

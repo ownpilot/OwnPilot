@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-pro-precision",
-      "name": "DeepSeek V4 Pro (Precision)",
+      "id": "deepseek-v4-pro-lightning",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
+      "inputPrice": 0.8,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -26,23 +26,6 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-04-24"
-    },
-    {
-      "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
-      "contextWindow": 1000000,
-      "maxOutput": 131072,
-      "inputPrice": 0.4,
-      "outputPrice": 0.85,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
@@ -63,20 +46,21 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "mimo-v2.5-pro-precision",
-      "name": "MiMo-V2.5-Pro (Precision)",
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0.8,
-      "outputPrice": 2.5,
+      "inputPrice": 0.35,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-22"
+      "releaseDate": "2026-04-24"
     },
     {
       "id": "qwen3.6-27b",
@@ -102,8 +86,8 @@
       "name": "MiMo-V2.5-Pro",
       "contextWindow": 1048576,
       "maxOutput": 131072,
-      "inputPrice": 0.5,
-      "outputPrice": 1.5,
+      "inputPrice": 0.4,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
@@ -112,24 +96,6 @@
       ],
       "default": false,
       "releaseDate": "2026-04-22"
-    },
-    {
-      "id": "kimi-k2.6-precision",
-      "name": "Kimi K2.6 (Precision)",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.55,
-      "outputPrice": 2.7,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-21"
     },
     {
       "id": "kimi-k2.6",
@@ -168,29 +134,12 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "glm-5.1-precision",
-      "name": "GLM 5.1 (Precision)",
-      "contextWindow": 202752,
-      "maxOutput": 202752,
-      "inputPrice": 0.75,
-      "outputPrice": 2.9,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-27"
-    },
-    {
       "id": "glm-5.1",
       "name": "GLM-5.1",
       "contextWindow": 202752,
       "maxOutput": 202752,
       "inputPrice": 0.45,
-      "outputPrice": 2.1,
+      "outputPrice": 2.15,
       "capabilities": [
         "chat",
         "function_calling",
@@ -289,12 +238,54 @@
       "releaseDate": "2026-02-06"
     },
     {
-      "id": "greg",
-      "name": "Experiment!: Greg",
+      "id": "greg-1",
+      "name": "Greg 1 Normal",
       "contextWindow": 229376,
       "maxOutput": 229376,
       "inputPrice": 0.1,
-      "outputPrice": 0.2,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "greg-rp",
+      "name": "Greg (Roleplay)",
+      "contextWindow": 229376,
+      "maxOutput": 229376,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "greg-1-super",
+      "name": "Greg 1 Super",
+      "contextWindow": 229376,
+      "maxOutput": 229376,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
+      "id": "greg-1-mini",
+      "name": "Greg 1 Mini",
+      "contextWindow": 229376,
+      "maxOutput": 229376,
+      "inputPrice": 0.07,
+      "outputPrice": 0.15,
       "capabilities": [
         "chat",
         "streaming"
@@ -305,7 +296,7 @@
     {
       "id": "glm-4.7-flash",
       "name": "GLM-4.7-Flash",
-      "contextWindow": 200000,
+      "contextWindow": 202752,
       "maxOutput": 131072,
       "inputPrice": 0.04,
       "outputPrice": 0.3,
@@ -357,8 +348,8 @@
       "name": "DeepSeek V3.2",
       "contextWindow": 163840,
       "maxOutput": 163840,
-      "inputPrice": 0.28,
-      "outputPrice": 0.38,
+      "inputPrice": 0.18,
+      "outputPrice": 0.35,
       "capabilities": [
         "chat",
         "function_calling",

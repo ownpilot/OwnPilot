@@ -38,6 +38,7 @@ import {
 } from './helpers.js';
 import { getLog } from '../services/log.js';
 import { uiSessionMiddleware } from '../middleware/ui-session.js';
+import { validateBody, ValidationError } from '../middleware/validation.js';
 
 const log = getLog('AuthRoutes');
 const app = new Hono();
@@ -55,16 +56,15 @@ const ProviderBody = z.object({ provider: z.string().min(1).max(64) });
  * Returns: { userCode, verificationUri, verificationUriComplete?, expiresIn, interval }
  */
 app.post('/oauth/device/start', async (c) => {
-  let body: unknown;
+  let parsed: z.infer<typeof ProviderBody>;
   try {
-    body = await c.req.json();
-  } catch {
+    parsed = validateBody(ProviderBody, await c.req.json());
+  } catch (err) {
+    if (err instanceof ValidationError) return zodValidationError(c, err.issues);
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
-  const parsed = ProviderBody.safeParse(body);
-  if (!parsed.success) return zodValidationError(c, parsed.error.issues);
 
-  const provider = sanitizeProviderName(parsed.data.provider);
+  const provider = sanitizeProviderName(parsed.provider);
   if (!provider) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid provider id' }, 400);
   }
@@ -97,16 +97,15 @@ app.post('/oauth/device/start', async (c) => {
  * returned to the client — the credential is stored gateway-side.
  */
 app.post('/oauth/device/poll', async (c) => {
-  let body: unknown;
+  let parsed: z.infer<typeof ProviderBody>;
   try {
-    body = await c.req.json();
-  } catch {
+    parsed = validateBody(ProviderBody, await c.req.json());
+  } catch (err) {
+    if (err instanceof ValidationError) return zodValidationError(c, err.issues);
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
-  const parsed = ProviderBody.safeParse(body);
-  if (!parsed.success) return zodValidationError(c, parsed.error.issues);
 
-  const provider = sanitizeProviderName(parsed.data.provider);
+  const provider = sanitizeProviderName(parsed.provider);
   if (!provider) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid provider id' }, 400);
   }
@@ -141,16 +140,15 @@ app.post('/oauth/device/poll', async (c) => {
  * surface (the existing settings UI).
  */
 app.post('/signout', async (c) => {
-  let body: unknown;
+  let parsed: z.infer<typeof ProviderBody>;
   try {
-    body = await c.req.json();
-  } catch {
+    parsed = validateBody(ProviderBody, await c.req.json());
+  } catch (err) {
+    if (err instanceof ValidationError) return zodValidationError(c, err.issues);
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
-  const parsed = ProviderBody.safeParse(body);
-  if (!parsed.success) return zodValidationError(c, parsed.error.issues);
 
-  const provider = sanitizeProviderName(parsed.data.provider);
+  const provider = sanitizeProviderName(parsed.provider);
   if (!provider) {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid provider id' }, 400);
   }
@@ -234,21 +232,20 @@ app.put('/config/:provider', async (c) => {
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid provider id' }, 400);
   }
 
-  let body: unknown;
+  let parsed: z.infer<typeof ConfigBody>;
   try {
-    body = await c.req.json();
-  } catch {
+    parsed = validateBody(ConfigBody, await c.req.json());
+  } catch (err) {
+    if (err instanceof ValidationError) return zodValidationError(c, err.issues);
     return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: 'Invalid JSON body' }, 400);
   }
-  const parsed = ConfigBody.safeParse(body);
-  if (!parsed.success) return zodValidationError(c, parsed.error.issues);
 
   const hasAnyField =
-    parsed.data.deviceCodeUrl ||
-    parsed.data.authorizationUrl ||
-    parsed.data.tokenUrl ||
-    parsed.data.clientId ||
-    (parsed.data.scopes && parsed.data.scopes.length > 0);
+    parsed.deviceCodeUrl ||
+    parsed.authorizationUrl ||
+    parsed.tokenUrl ||
+    parsed.clientId ||
+    (parsed.scopes && parsed.scopes.length > 0);
   if (!hasAnyField) {
     return apiError(
       c,
@@ -260,9 +257,9 @@ app.put('/config/:provider', async (c) => {
     );
   }
 
-  await setProviderOAuthOverride(provider, parsed.data);
+  await setProviderOAuthOverride(provider, parsed);
   log.info(`Stored OAuth override for provider=${provider}`);
-  return apiResponse(c, { provider, override: parsed.data });
+  return apiResponse(c, { provider, override: parsed });
 });
 
 /**

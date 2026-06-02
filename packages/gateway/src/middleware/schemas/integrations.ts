@@ -209,6 +209,8 @@ export const crewDeploySchema = z.object({
   templateId: z.string().min(1).max(200),
   name: z.string().max(200).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
+  provider: z.string().max(100).optional(),
+  model: z.string().max(200).optional(),
 });
 
 export const crewMessageSchema = z.object({
@@ -392,6 +394,8 @@ export const createSoulSchema = z.object({
   // run with file-system tools scoped to getSessionWorkspacePath(workspaceId)
   // via ExecContext (see soul-service.ts).
   workspaceId: z.string().min(1).max(200).optional(),
+  provider: z.string().max(100).optional(),
+  skillAccess: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const soulGoalSchema = z.object({
@@ -400,6 +404,8 @@ export const soulGoalSchema = z.object({
 
 export const soulMissionSchema = z.object({
   mission: z.string().min(1).max(5000),
+  autoPlan: z.boolean().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
 });
 
 export const soulToolsSchema = z.object({
@@ -416,6 +422,7 @@ export const soulFeedbackSchema = z.object({
   type: z.enum(['praise', 'correction', 'directive', 'personality_tweak']),
   content: z.string().min(1).max(5000),
   context: z.record(z.string(), z.unknown()).optional(),
+  source: z.string().max(50).optional(),
 });
 
 // ─── Voice ───────────────────────────────────────────────────────

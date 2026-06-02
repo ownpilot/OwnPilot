@@ -111,12 +111,12 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "gpt-oss-20b",
+      "id": "openai/gpt-oss-120b",
+      "name": "gpt-oss-120b",
       "contextWindow": 131072,
       "maxOutput": 131072,
-      "inputPrice": 0.05,
-      "outputPrice": 0.2,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -127,12 +127,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "gpt-oss-120b",
+      "id": "openai/gpt-oss-20b",
+      "name": "gpt-oss-20b",
       "contextWindow": 131072,
       "maxOutput": 131072,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.05,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -276,6 +276,22 @@
       "releaseDate": "2024-12-06"
     },
     {
+      "id": "meta-llama/Llama-3.1-70B-Instruct",
+      "name": "Llama 3.1 70B",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.8,
+      "outputPrice": 0.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-23"
+    },
+    {
       "id": "meta-llama/Llama-3.1-8B-Instruct",
       "name": "Meta-Llama-3.1-8B-Instruct",
       "contextWindow": 128000,
@@ -287,22 +303,6 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "meta-llama/Llama-3.1-70B-Instruct",
-      "name": "Llama 3.1 70B",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0.8,
-      "outputPrice": 0.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,

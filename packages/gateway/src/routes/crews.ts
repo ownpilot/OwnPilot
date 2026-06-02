@@ -161,12 +161,11 @@ crewRoutes.get('/templates/:id', (c) => {
 crewRoutes.post('/deploy', async (c) => {
   try {
     const userId = getUserId(c);
-    const rawBody = await c.req.json();
-    const body = validateBody(crewDeploySchema, rawBody);
+    const body = validateBody(crewDeploySchema, await c.req.json());
     const { templateId } = body;
-    // provider and model are pass-through fields not in the schema
-    const provider = (rawBody as Record<string, unknown>).provider as string | undefined;
-    const model = (rawBody as Record<string, unknown>).model as string | undefined;
+    // provider and model are pass-through fields validated by the schema
+    const provider = body.provider;
+    const model = body.model;
 
     const template = getCrewTemplate(templateId);
     if (!template) {

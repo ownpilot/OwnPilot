@@ -106,6 +106,172 @@ export function validateColumnName(name: string): string {
   return trimmed;
 }
 
+// --- Per-user export filtering (Plan 11 Step 3, CSV-002) -------------------
+//
+// The export routes used to dump every row of every whitelisted table, so
+// user A's GET /db/export leaked user B's data. Each table now has a
+// declared "scope" that determines the filter applied to SELECT *:
+//
+//   - 'per-user'  — table has a `user_id TEXT NOT NULL` column; the filter
+//                   is `WHERE user_id = $1` (one param).
+//   - 'child'     — table has no user_id, but has a FK to a per-user parent
+//                   (e.g. messages → conversations). The filter is
+//                   `WHERE EXISTS (SELECT 1 FROM <parent> WHERE
+//                   <parent>.id = <child>.<fk_col> AND <parent>.user_id = $1)`
+//                   (still one param).
+//   - 'system'    — table is shared system state with no per-user row
+//                   (e.g. settings, channels). No filter is applied.
+//
+// Tables that are not in either map default to 'system' — the export is
+// still gated by the EXPORT_TABLES allowlist, and a missed entry is the
+// least-bad outcome (operator sees all rows of a system table, not all
+// users' data).
+
+/** Per-user tables — the user's own row(s) are identified by `user_id`. */
+const PER_USER_TABLES = new Set<string>([
+  // core personal
+  'conversations',
+  'request_logs',
+  'bookmarks',
+  'notes',
+  'tasks',
+  'calendar_events',
+  'contacts',
+  'captures',
+  // pomodoro / habits
+  'pomodoro_settings',
+  'pomodoro_sessions',
+  'pomodoro_daily_stats',
+  'habits',
+  'habit_logs',
+  // memory / goals
+  'memories',
+  'goals',
+  'triggers',
+  'plans',
+  // oauth / media
+  'oauth_integrations',
+  'user_workspaces',
+  'user_containers',
+  'code_executions',
+  'workspace_audit',
+  // model / provider configs
+  'user_model_configs',
+  'custom_providers',
+  'user_provider_configs',
+  // custom data
+  'custom_data',
+  'custom_tools',
+  // browser
+  'browser_workflows',
+  // artifacts
+  'artifacts',
+  // claws
+  'claws',
+  // extensions
+  'user_extensions',
+  // providers / edge
+  'local_providers',
+  'local_models',
+  'edge_devices',
+]);
+
+/**
+ * Child tables — no own user_id, but the parent row is per-user.
+ * key = child table, value = { parent, fkColumn }.
+ * The filter is `EXISTS (SELECT 1 FROM <parent> WHERE
+ * <parent>.id = <child>.<fkColumn> AND <parent>.user_id = $1)`.
+ */
+const CHILD_TABLES: Record<string, { parent: string; fkColumn: string }> = {
+  messages: { parent: 'conversations', fkColumn: 'conversation_id' },
+  goal_steps: { parent: 'goals', fkColumn: 'goal_id' },
+  plan_steps: { parent: 'plans', fkColumn: 'plan_id' },
+  plan_history: { parent: 'plans', fkColumn: 'plan_id' },
+  // crew_* are system-wide in the current schema (agent_crews has no
+  // user_id), so they are NOT child tables here — they fall through to
+  // the system scope. See plan/follow-up note in the docstring.
+  claw_sessions: { parent: 'claws', fkColumn: 'claw_id' },
+  claw_history: { parent: 'claws', fkColumn: 'claw_id' },
+  claw_audit_log: { parent: 'claws', fkColumn: 'claw_id' },
+};
+
+/** Distinguishes the per-row ownership strategy for a table. */
+export type TableScope = 'per-user' | 'child' | 'system';
+
+/**
+ * Return the ownership scope of a table.
+ *
+ * The export routes call this to decide which WHERE clause (if any) to
+ * append to `SELECT * FROM <table>`. The default is `'system'`, which
+ * preserves the operator-visible behavior for shared infrastructure
+ * tables like `settings` and `channels`.
+ */
+export function getTableScope(table: string): TableScope {
+  if (PER_USER_TABLES.has(table)) return 'per-user';
+  if (table in CHILD_TABLES) return 'child';
+  return 'system';
+}
+
+/**
+ * Build the user-scoping SQL fragment for a SELECT against `table`.
+ *
+ * Returns `{ where, params }` where `where` is a SQL fragment to append
+ * after `FROM <table>` (e.g. ` WHERE user_id = $1`) and `params` is the
+ * array of bind values. Returns `{ where: '', params: [] }` for
+ * system tables.
+ *
+ * @param table       — already-validated table name (whitelisted)
+ * @param userId      — the requesting user; if undefined, no filter is
+ *                      applied even for per-user tables (backward-compat
+ *                      fallback for routes that don't yet wire auth).
+ *                      Plan 11 Step 3 sets this strictly to a real id.
+ * @param paramOffset — 1-based offset for the `$N` placeholder. Defaults
+ *                      to 1, which is what every caller uses today.
+ *                      Provided so future composed queries can stack
+ *                      other predicates.
+ */
+export function getUserFilter(
+  table: string,
+  userId: string | undefined,
+  paramOffset = 1
+): { where: string; params: unknown[] } {
+  if (!userId) return { where: '', params: [] };
+  // Pre-compute the `$N` placeholder. We can't put `$$` directly in a
+  // template literal because some toolchains mangle it — the cleanest
+  // fix is to build the literal `$` separately and concat. See
+  // git history for the "WHERE user_id = 1" vs "WHERE user_id = $1"
+  // bug that motivated this.
+  const placeholder = '$' + paramOffset;
+  const scope = getTableScope(table);
+  if (scope === 'per-user') {
+    return {
+      where: ' WHERE user_id = ' + placeholder,
+      params: [userId],
+    };
+  }
+  if (scope === 'child') {
+    const { parent, fkColumn } = CHILD_TABLES[table]!;
+    return {
+      where:
+        ' WHERE EXISTS (SELECT 1 FROM ' +
+        quoteIdentifier(parent) +
+        ' WHERE ' +
+        quoteIdentifier(parent) +
+        '.id = ' +
+        quoteIdentifier(table) +
+        '.' +
+        quoteIdentifier(fkColumn) +
+        ' AND ' +
+        quoteIdentifier(parent) +
+        '.user_id = ' +
+        placeholder +
+        ')',
+      params: [userId],
+    };
+  }
+  return { where: '', params: [] };
+}
+
 export function quoteIdentifier(name: string): string {
   // Double-quote PostgreSQL identifier (escape any embedded quotes)
   return `"${name.replace(/"/g, '""')}"`;

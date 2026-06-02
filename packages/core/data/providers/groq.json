@@ -56,22 +56,6 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "groq/compound",
-      "name": "Compound",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-04"
-    },
-    {
       "id": "groq/compound-mini",
       "name": "Compound Mini",
       "contextWindow": 131072,
@@ -88,12 +72,28 @@
       "releaseDate": "2025-09-04"
     },
     {
-      "id": "openai/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "groq/compound",
+      "name": "Compound",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-04"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 65536,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -105,12 +105,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 65536,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -137,17 +137,15 @@
       "releaseDate": "2025-07-14"
     },
     {
-      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B",
+      "id": "meta-llama/llama-guard-4-12b",
+      "name": "Llama Guard 4 12B",
       "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.11,
-      "outputPrice": 0.34,
+      "maxOutput": 1024,
+      "inputPrice": 0.2,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -171,15 +169,17 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "meta-llama/llama-guard-4-12b",
-      "name": "Llama Guard 4 12B",
+      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "name": "Llama 4 Scout 17B",
       "contextWindow": 131072,
-      "maxOutput": 1024,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
+      "maxOutput": 8192,
+      "inputPrice": 0.11,
+      "outputPrice": 0.34,
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -295,12 +295,12 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "meta-llama/llama-prompt-guard-2-22m",
-      "name": "Llama Prompt Guard 2 22M",
+      "id": "meta-llama/llama-prompt-guard-2-86m",
+      "name": "Llama Prompt Guard 2 86M",
       "contextWindow": 512,
       "maxOutput": 512,
-      "inputPrice": 0.03,
-      "outputPrice": 0.03,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
         "streaming"
@@ -309,12 +309,12 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "meta-llama/llama-prompt-guard-2-86m",
-      "name": "Llama Prompt Guard 2 86M",
+      "id": "meta-llama/llama-prompt-guard-2-22m",
+      "name": "Llama Prompt Guard 2 22M",
       "contextWindow": 512,
       "maxOutput": 512,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
+      "inputPrice": 0.03,
+      "outputPrice": 0.03,
       "capabilities": [
         "chat",
         "streaming"

@@ -12,24 +12,6 @@
   },
   "models": [
     {
-      "id": "google/gemma-4-31B-turbo-TEE",
-      "name": "gemma 4 31B turbo TEE",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.13,
-      "outputPrice": 0.38,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2026-04-25"
-    },
-    {
       "id": "XiaomiMiMo/MiMo-V2-Flash-TEE",
       "name": "MiMo V2 Flash TEE",
       "contextWindow": 262144,
@@ -42,16 +24,16 @@
         "json_mode",
         "streaming"
       ],
-      "default": false,
+      "default": true,
       "releaseDate": "2026-04-25"
     },
     {
-      "id": "Qwen/Qwen3-32B-TEE",
-      "name": "Qwen3 32B TEE",
-      "contextWindow": 40960,
-      "maxOutput": 40960,
-      "inputPrice": 0.08,
-      "outputPrice": 0.24,
+      "id": "tngtech/DeepSeek-TNG-R1T2-Chimera-TEE",
+      "name": "DeepSeek TNG R1T2 Chimera TEE",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.3,
+      "outputPrice": 1.1,
       "capabilities": [
         "chat",
         "function_calling",
@@ -97,14 +79,32 @@
       "releaseDate": "2026-04-25"
     },
     {
-      "id": "tngtech/DeepSeek-TNG-R1T2-Chimera-TEE",
-      "name": "DeepSeek TNG R1T2 Chimera TEE",
-      "contextWindow": 163840,
-      "maxOutput": 163840,
-      "inputPrice": 0.3,
-      "outputPrice": 1.1,
+      "id": "Qwen/Qwen3-32B-TEE",
+      "name": "Qwen3 32B TEE",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0.08,
+      "outputPrice": 0.24,
       "capabilities": [
         "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-25"
+    },
+    {
+      "id": "google/gemma-4-31B-turbo-TEE",
+      "name": "gemma 4 31B turbo TEE",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.13,
+      "outputPrice": 0.38,
+      "capabilities": [
+        "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -218,15 +218,14 @@
       "releaseDate": "2026-02-14"
     },
     {
-      "id": "moonshotai/Kimi-K2.5-TEE",
-      "name": "Kimi K2.5 TEE",
-      "contextWindow": 262144,
+      "id": "zai-org/GLM-4.7-FP8",
+      "name": "GLM 4.7 FP8",
+      "contextWindow": 202752,
       "maxOutput": 65535,
-      "inputPrice": 0.44,
-      "outputPrice": 2,
+      "inputPrice": 0.2989,
+      "outputPrice": 1.1957,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -236,14 +235,15 @@
       "releaseDate": "2026-01-27"
     },
     {
-      "id": "zai-org/GLM-4.7-FP8",
-      "name": "GLM 4.7 FP8",
-      "contextWindow": 202752,
+      "id": "moonshotai/Kimi-K2.5-TEE",
+      "name": "Kimi K2.5 TEE",
+      "contextWindow": 262144,
       "maxOutput": 65535,
-      "inputPrice": 0.2989,
-      "outputPrice": 1.1957,
+      "inputPrice": 0.44,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -265,107 +265,6 @@
       ],
       "default": false,
       "releaseDate": "2026-01-27"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-R1-0528-TEE",
-      "name": "DeepSeek R1 0528 TEE",
-      "contextWindow": 163840,
-      "maxOutput": 65536,
-      "inputPrice": 0.45,
-      "outputPrice": 2.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V3.1-TEE",
-      "name": "DeepSeek V3.1 TEE",
-      "contextWindow": 163840,
-      "maxOutput": 65536,
-      "inputPrice": 0.27,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V3-0324-TEE",
-      "name": "DeepSeek V3 0324 TEE",
-      "contextWindow": 163840,
-      "maxOutput": 65536,
-      "inputPrice": 0.25,
-      "outputPrice": 1,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
-      "name": "DeepSeek R1 Distill Llama 70B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.0272,
-      "outputPrice": 0.1087,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "deepseek-ai/DeepSeek-V3.2-TEE",
-      "name": "DeepSeek V3.2 TEE",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.28,
-      "outputPrice": 0.42,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "openai/gpt-oss-120b-TEE",
-      "name": "gpt oss 120b TEE",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
     },
     {
       "id": "zai-org/GLM-4.7-TEE",
@@ -397,69 +296,6 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "unsloth/gemma-3-27b-it",
-      "name": "gemma 3 27b it",
-      "contextWindow": 128000,
-      "maxOutput": 65536,
-      "inputPrice": 0.0272,
-      "outputPrice": 0.1087,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "unsloth/Mistral-Nemo-Instruct-2407",
-      "name": "Mistral Nemo Instruct 2407",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.02,
-      "outputPrice": 0.04,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "unsloth/gemma-3-12b-it",
-      "name": "gemma 3 12b it",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.03,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "unsloth/gemma-3-4b-it",
-      "name": "gemma 3 4b it",
-      "contextWindow": 96000,
-      "maxOutput": 96000,
-      "inputPrice": 0.01,
-      "outputPrice": 0.0272,
-      "capabilities": [
-        "chat",
-        "vision",
-        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -499,6 +335,90 @@
       "releaseDate": "2025-12-29"
     },
     {
+      "id": "deepseek-ai/DeepSeek-V3.1-TEE",
+      "name": "DeepSeek V3.1 TEE",
+      "contextWindow": 163840,
+      "maxOutput": 65536,
+      "inputPrice": 0.27,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3.2-TEE",
+      "name": "DeepSeek V3.2 TEE",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.28,
+      "outputPrice": 0.42,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+      "name": "DeepSeek R1 Distill Llama 70B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.0272,
+      "outputPrice": 0.1087,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3-0324-TEE",
+      "name": "DeepSeek V3 0324 TEE",
+      "contextWindow": 163840,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-0528-TEE",
+      "name": "DeepSeek R1 0528 TEE",
+      "contextWindow": 163840,
+      "maxOutput": 65536,
+      "inputPrice": 0.45,
+      "outputPrice": 2.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
       "id": "rednote-hilab/dots.ocr",
       "name": "dots.ocr",
       "contextWindow": 131072,
@@ -509,6 +429,102 @@
         "chat",
         "vision",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "unsloth/Mistral-Nemo-Instruct-2407",
+      "name": "Mistral Nemo Instruct 2407",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.02,
+      "outputPrice": 0.04,
+      "capabilities": [
+        "chat",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "unsloth/gemma-3-27b-it",
+      "name": "gemma 3 27b it",
+      "contextWindow": 128000,
+      "maxOutput": 65536,
+      "inputPrice": 0.0272,
+      "outputPrice": 0.1087,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "unsloth/gemma-3-12b-it",
+      "name": "gemma 3 12b it",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.03,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "unsloth/gemma-3-4b-it",
+      "name": "gemma 3 4b it",
+      "contextWindow": 96000,
+      "maxOutput": 96000,
+      "inputPrice": 0.01,
+      "outputPrice": 0.0272,
+      "capabilities": [
+        "chat",
+        "vision",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "Qwen/Qwen2.5-72B-Instruct",
+      "name": "Qwen2.5 72B Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.2989,
+      "outputPrice": 1.1957,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-29"
+    },
+    {
+      "id": "Qwen/Qwen3-30B-A3B",
+      "name": "Qwen3 30B A3B",
+      "contextWindow": 40960,
+      "maxOutput": 40960,
+      "inputPrice": 0.06,
+      "outputPrice": 0.22,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -532,12 +548,12 @@
       "releaseDate": "2025-12-29"
     },
     {
-      "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-      "name": "Qwen3 Next 80B A3B Instruct",
+      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-TEE",
+      "name": "Qwen3 235B A22B Instruct 2507 TEE",
       "contextWindow": 262144,
-      "maxOutput": 262144,
+      "maxOutput": 65536,
       "inputPrice": 0.1,
-      "outputPrice": 0.8,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -548,12 +564,12 @@
       "releaseDate": "2025-12-29"
     },
     {
-      "id": "Qwen/Qwen3-235B-A22B-Instruct-2507-TEE",
-      "name": "Qwen3 235B A22B Instruct 2507 TEE",
+      "id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "name": "Qwen3 Next 80B A3B Instruct",
       "contextWindow": 262144,
-      "maxOutput": 65536,
+      "maxOutput": 262144,
       "inputPrice": 0.1,
-      "outputPrice": 0.6,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
@@ -578,17 +594,15 @@
       "releaseDate": "2025-12-29"
     },
     {
-      "id": "Qwen/Qwen3-30B-A3B",
-      "name": "Qwen3 30B A3B",
-      "contextWindow": 40960,
-      "maxOutput": 40960,
-      "inputPrice": 0.06,
-      "outputPrice": 0.22,
+      "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
+      "name": "Qwen2.5 Coder 32B Instruct",
+      "contextWindow": 32768,
+      "maxOutput": 32768,
+      "inputPrice": 0.0272,
+      "outputPrice": 0.1087,
       "capabilities": [
         "chat",
-        "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -611,31 +625,17 @@
       "releaseDate": "2025-12-29"
     },
     {
-      "id": "Qwen/Qwen2.5-Coder-32B-Instruct",
-      "name": "Qwen2.5 Coder 32B Instruct",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.0272,
-      "outputPrice": 0.1087,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-29"
-    },
-    {
-      "id": "Qwen/Qwen2.5-72B-Instruct",
-      "name": "Qwen2.5 72B Instruct",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.2989,
-      "outputPrice": 1.1957,
+      "id": "openai/gpt-oss-120b-TEE",
+      "name": "gpt oss 120b TEE",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,

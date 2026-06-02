@@ -566,7 +566,7 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error.code).toBe('INVALID_INPUT');
+      expect(data.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('should return 400 for invalid language', async () => {
@@ -583,7 +583,7 @@ describe('Workspaces Routes', () => {
 
       expect(res.status).toBe(400);
       const data = await res.json();
-      expect(data.error.code).toBe('INVALID_INPUT');
+      expect(data.error.code).toBe('VALIDATION_ERROR');
     });
 
     it('should create container if not exists', async () => {

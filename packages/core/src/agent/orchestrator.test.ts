@@ -330,7 +330,10 @@ describe('AgentOrchestrator', () => {
     it('should generate an execution ID starting with exec_', async () => {
       const orchestrator = new AgentOrchestrator(makeConfig());
       const result = await orchestrator.execute('Hello');
-      expect(result.id).toMatch(/^exec_\d+_/);
+      // Plan 15 Step 1 (ID-001): generateId now emits `prefix_<24 hex>`,
+      // no embedded timestamp. The exec_ prefix and the opaque random
+      // segment are what we assert on.
+      expect(result.id).toMatch(/^exec_[0-9a-f]{24}$/);
     });
 
     it('should set startTime', async () => {
@@ -1864,7 +1867,9 @@ describe('AgentOrchestrator', () => {
       }
 
       const context = result.value as OrchestratorContext;
-      expect(context.id).toMatch(/^exec_\d+_/);
+      // Plan 15 Step 1 (ID-001): see generateId docstring — the public
+      // ID is `exec_<24 hex>` with no embedded timestamp.
+      expect(context.id).toMatch(/^exec_[0-9a-f]{24}$/);
     });
 
     it('should clear currentExecution after stream completes', async () => {

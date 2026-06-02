@@ -72,28 +72,12 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "google/gemma-3",
-      "name": "Google Gemma 3",
-      "contextWindow": 125000,
-      "maxOutput": 4096,
-      "inputPrice": 0.15,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "meta/llama-3.2-1b-instruct",
-      "name": "Llama 3.2 1B Instruct",
+      "id": "meta/llama-3.2-3b-instruct",
+      "name": "Llama 3.2 3B Instruct",
       "contextWindow": 16000,
       "maxOutput": 4096,
-      "inputPrice": 0.01,
-      "outputPrice": 0.01,
+      "inputPrice": 0.02,
+      "outputPrice": 0.02,
       "capabilities": [
         "chat",
         "function_calling",
@@ -119,12 +103,12 @@
       "releaseDate": "2025-01-01"
     },
     {
-      "id": "meta/llama-3.2-3b-instruct",
-      "name": "Llama 3.2 3B Instruct",
+      "id": "meta/llama-3.2-1b-instruct",
+      "name": "Llama 3.2 1B Instruct",
       "contextWindow": 16000,
       "maxOutput": 4096,
-      "inputPrice": 0.02,
-      "outputPrice": 0.02,
+      "inputPrice": 0.01,
+      "outputPrice": 0.01,
       "capabilities": [
         "chat",
         "function_calling",
@@ -142,6 +126,22 @@
       "outputPrice": 0.025,
       "capabilities": [
         "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
+      "id": "google/gemma-3",
+      "name": "Google Gemma 3",
+      "contextWindow": 125000,
+      "maxOutput": 4096,
+      "inputPrice": 0.15,
+      "outputPrice": 0.3,
+      "capabilities": [
+        "chat",
+        "vision",
         "function_calling",
         "streaming"
       ],

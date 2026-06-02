@@ -30,10 +30,11 @@ import { getEventSystem } from '@ownpilot/core';
 import { MS_PER_MINUTE } from '../config/defaults.js';
 
 const MIN_PASSWORD_LENGTH = 8;
-// H-S13: minimum entropy for BOOTSTRAP_TOKEN. 32 chars of randomness gives ≥128
-// bits if it's truly random; short tokens are brute-forceable in the first-time
-// setup window. We refuse to honor any BOOTSTRAP_TOKEN shorter than this.
-const MIN_BOOTSTRAP_TOKEN_LENGTH = 32;
+// H-S13: minimum entropy for BOOTSTRAP_TOKEN. Plan 02 / Plan 15 raise the
+// floor from 32 to 64 chars (≥256 bits if truly random) so short tokens are
+// not brute-forceable in the first-time setup window. We refuse to honor any
+// BOOTSTRAP_TOKEN shorter than this.
+const MIN_BOOTSTRAP_TOKEN_LENGTH = 64;
 
 import { getClientIp as getClientIpShared } from '../utils/client-ip.js';
 

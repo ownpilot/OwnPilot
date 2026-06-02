@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-28"
+    },
+    {
       "id": "claude-opus-4-7",
       "name": "Claude Opus 4.7",
       "contextWindow": 1000000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-16"
     },
     {
@@ -97,23 +114,6 @@
       "releaseDate": "2025-11-01"
     },
     {
-      "id": "claude-haiku-4-5",
-      "name": "Claude Haiku 4.5 (latest)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 1,
-      "outputPrice": 5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-10-15"
-    },
-    {
       "id": "claude-haiku-4-5-20251001",
       "name": "Claude Haiku 4.5",
       "contextWindow": 200000,
@@ -131,12 +131,12 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "claude-sonnet-4-5",
-      "name": "Claude Sonnet 4.5 (latest)",
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5 (latest)",
       "contextWindow": 200000,
       "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "inputPrice": 1,
+      "outputPrice": 5,
       "capabilities": [
         "chat",
         "vision",
@@ -145,7 +145,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-09-29"
+      "releaseDate": "2025-10-15"
     },
     {
       "id": "claude-sonnet-4-5-20250929",
@@ -165,12 +165,12 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "claude-opus-4-1-20250805",
-      "name": "Claude Opus 4.1",
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5 (latest)",
       "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -179,7 +179,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-08-05"
+      "releaseDate": "2025-09-29"
     },
     {
       "id": "claude-opus-4-1",
@@ -199,8 +199,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "claude-opus-4-0",
-      "name": "Claude Opus 4 (latest)",
+      "id": "claude-opus-4-1-20250805",
+      "name": "Claude Opus 4.1",
       "contextWindow": 200000,
       "maxOutput": 32000,
       "inputPrice": 15,
@@ -213,7 +213,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-05-22"
+      "releaseDate": "2025-08-05"
     },
     {
       "id": "claude-sonnet-4-0",
@@ -256,6 +256,23 @@
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-22"
+    },
+    {
+      "id": "claude-opus-4-0",
+      "name": "Claude Opus 4 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
         "vision",

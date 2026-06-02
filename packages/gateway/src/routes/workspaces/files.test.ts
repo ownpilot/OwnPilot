@@ -231,7 +231,7 @@ describe('Workspace File Routes', () => {
         body: JSON.stringify({}),
       });
       expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe('INVALID_INPUT');
+      expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
     });
     it('should return 400 for missing body', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());
@@ -239,7 +239,7 @@ describe('Workspace File Routes', () => {
         method: 'PUT',
       });
       expect(res.status).toBe(400);
-      expect((await res.json()).error.code).toBe('INVALID_INPUT');
+      expect((await res.json()).error.code).toBe('VALIDATION_ERROR');
     });
     it('should return 403 for StorageSecurityError on write', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());

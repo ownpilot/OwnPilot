@@ -94,12 +94,28 @@ app.post('/approvals/:id/resolve', async (c) => {
   }
 
   // IDOR guard: resolveApproval checks that caller owns this approval request
-  const resolved = resolveApproval(approvalId, body.approved, userId);
-  if (!resolved) {
+  // and returns a discriminated result so the route can return the right HTTP
+  // code (404 for missing/expired, 403 for IDOR, 200 for success).
+  const result = resolveApproval(approvalId, body.approved, userId);
+  if (!result.ok) {
+    if (result.reason === 'forbidden') {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: 'You do not own this approval request',
+        },
+        403
+      );
+    }
     return notFoundError(c, 'Approval request', approvalId);
   }
 
-  return apiResponse(c, { resolved: true, approved: body.approved });
+  return apiResponse(c, {
+    resolved: true,
+    approved: body.approved,
+    decidedAt: result.decision.decidedAt,
+  });
 });
 
 /**

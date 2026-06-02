@@ -41,7 +41,9 @@ import { errorHandler, notFoundHandler } from './error-handler.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-const JWT_SECRET = 'test-secret-key-that-is-long-enough-32+';
+// Plan 02 / Plan 15: JWT secret minimum raised from 32 to 64 chars.
+// Use a 70-char secret in tests so the validation passes.
+const JWT_SECRET = 'test-secret-key-that-is-long-enough-to-satisfy-the-64-char-minimum-2026!!';
 
 /**
  * Build a signed HS256 JWT with the given claims.
@@ -233,7 +235,9 @@ describe('createAuthMiddleware', () => {
       expect(body.error.code).toBe('ACCESS_DENIED');
     });
 
-    it('should return 403 when jwt secret is shorter than 32 characters', async () => {
+    it('should return 403 when jwt secret is shorter than 64 characters', async () => {
+      // Plan 02 / Plan 15: minimum secret length raised from 32 to 64 chars.
+      // 'short-secret' (12 chars) is well below the new minimum.
       const app = createApp('short-secret');
       const token = await signToken({ sub: 'user-1' }, JWT_SECRET);
 
@@ -243,7 +247,7 @@ describe('createAuthMiddleware', () => {
 
       expect(res.status).toBe(403);
       const body = await res.json();
-      expect(body.error.message).toContain('at least 32 characters');
+      expect(body.error.message).toContain('at least 64 characters');
     });
 
     it('should return 403 for a token signed with wrong secret', async () => {

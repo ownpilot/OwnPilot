@@ -270,8 +270,7 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Invalid agent ID' }, 404);
     }
 
-    const rawBody = await c.req.json();
-    const body = validateBody(soulMissionSchema, rawBody);
+    const body = validateBody(soulMissionSchema, await c.req.json());
 
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
@@ -282,7 +281,7 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
     soul.purpose.mission = body.mission;
     soul.updatedAt = new Date();
 
-    if (rawBody.autoPlan) {
+    if (body.autoPlan) {
       soul.bootSequence.onHeartbeat = [
         'analyze_mission',
         'gather_context',
@@ -296,7 +295,7 @@ soulAgentRoutes.post('/:agentId/mission', async (c) => {
     return apiResponse(c, {
       agentId,
       mission: soul.purpose.mission,
-      priority: rawBody.priority ?? 'medium',
+      priority: body.priority ?? 'medium',
       status: 'accepted',
     });
   } catch (err) {
@@ -604,8 +603,7 @@ soulAgentRoutes.get('/:agentId/versions/:v', async (c) => {
 soulAgentRoutes.post('/:agentId/feedback', async (c) => {
   try {
     const agentId = c.req.param('agentId');
-    const rawBody = await c.req.json();
-    const body = validateBody(soulFeedbackSchema, rawBody);
+    const body = validateBody(soulFeedbackSchema, await c.req.json());
 
     const repo = getSoulsRepository();
     const soul = await repo.getByAgentId(agentId);
@@ -614,7 +612,7 @@ soulAgentRoutes.post('/:agentId/feedback', async (c) => {
     }
 
     // Create version snapshot
-    await repo.createVersion(soul, body.content, rawBody.source || 'user');
+    await repo.createVersion(soul, body.content, body.source || 'user');
 
     const feedback: SoulFeedback = {
       id: crypto.randomUUID(),
@@ -622,7 +620,7 @@ soulAgentRoutes.post('/:agentId/feedback', async (c) => {
       type: body.type,
       content: body.content,
       appliedToVersion: soul.evolution.version,
-      source: (rawBody.source || 'user') as SoulFeedback['source'],
+      source: (body.source || 'user') as SoulFeedback['source'],
     };
 
     switch (feedback.type) {

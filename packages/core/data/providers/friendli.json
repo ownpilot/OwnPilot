@@ -29,12 +29,12 @@
       "releaseDate": "2026-04-07"
     },
     {
-      "id": "zai-org/GLM-5",
-      "name": "GLM-5",
-      "contextWindow": 202752,
-      "maxOutput": 202752,
-      "inputPrice": 1,
-      "outputPrice": 3.2,
+      "id": "MiniMaxAI/MiniMax-M2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 196608,
+      "maxOutput": 196608,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -46,12 +46,12 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "MiniMaxAI/MiniMax-M2.5",
-      "name": "MiniMax-M2.5",
-      "contextWindow": 196608,
-      "maxOutput": 196608,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "id": "zai-org/GLM-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1,
+      "outputPrice": 3.2,
       "capabilities": [
         "chat",
         "function_calling",

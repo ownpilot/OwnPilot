@@ -13,7 +13,7 @@
   "models": [
     {
       "id": "xpersona-frieren-coder",
-      "name": "Xpersona Frieren Coder",
+      "name": "Xpersona Frieren 1",
       "contextWindow": 1000000,
       "maxOutput": 384000,
       "inputPrice": 1.5,

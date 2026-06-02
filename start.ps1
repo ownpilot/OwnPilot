@@ -180,41 +180,18 @@ function Start-DevMode {
 
     Set-Location $ScriptDir
 
-    # Start gateway in background
-    $gatewayJob = Start-Job -ScriptBlock {
-        param($dir, $port)
-        Set-Location $dir
-        $env:PORT = $port
-        pnpm --filter @ownpilot/gateway dev
-    } -ArgumentList $ScriptDir, $Port
+    # Run dev servers in the FOREGROUND via turbo so that:
+    #   - the .env vars loaded into this process are inherited by the children
+    #     (Start-Job spawns a separate process that does NOT inherit Process-scope env vars)
+    #   - tsx-watch / vite live output streams directly to the console
+    #   - Ctrl+C propagates to the child processes and shuts them down cleanly
+    $env:PORT = $Port
+    $env:UI_PORT = $UIPort
 
-    if (-not $NoUI) {
-        # Start UI in background
-        $uiJob = Start-Job -ScriptBlock {
-            param($dir, $port)
-            Set-Location $dir
-            $env:UI_PORT = $port
-            pnpm --filter @ownpilot/ui dev
-        } -ArgumentList $ScriptDir, $UIPort
-    }
-
-    # Wait and show output
-    try {
-        while ($true) {
-            Receive-Job -Job $gatewayJob -ErrorAction SilentlyContinue
-            if ($uiJob) {
-                Receive-Job -Job $uiJob -ErrorAction SilentlyContinue
-            }
-            Start-Sleep -Milliseconds 500
-        }
-    } finally {
-        Write-Info "`nStopping services..."
-        Stop-Job -Job $gatewayJob -ErrorAction SilentlyContinue
-        Remove-Job -Job $gatewayJob -Force -ErrorAction SilentlyContinue
-        if ($uiJob) {
-            Stop-Job -Job $uiJob -ErrorAction SilentlyContinue
-            Remove-Job -Job $uiJob -Force -ErrorAction SilentlyContinue
-        }
+    if ($NoUI) {
+        pnpm exec turbo dev --filter=@ownpilot/gateway
+    } else {
+        pnpm exec turbo dev --filter=@ownpilot/gateway --filter=@ownpilot/ui
     }
 }
 

@@ -284,8 +284,31 @@ export type CallToolHandler = (
   extensionIdentity: { extensionId: string; ownerUserId: string; grantedPermissions: string[] }
 ) => Promise<{ success: boolean; result?: unknown; error?: string }>;
 
+/**
+ * Trusted worker context — populated by the main thread when a worker is
+ * spawned and used as the source of truth for the worker's identity when it
+ * requests tool calls via utils.callTool(). The worker itself can echo any
+ * ownerUserId it likes, but the main thread will only ever use the values
+ * stored in this registry.
+ */
+interface WorkerContext {
+  extensionId: string;
+  ownerUserId: string;
+  grantedPermissions: string[];
+}
+
 export class ExtensionSandboxManager {
   private callToolHandler: CallToolHandler | null = null;
+  /**
+   * Map<worker.threadId, WorkerContext> — the trusted identity of each
+   * live worker. The callTool bridge message includes ownerUserId /
+   * grantedPermissions from the worker; those values are NOT trusted.
+   * Looked up by worker.threadId on every callTool message.
+   *
+   * Entries are removed on worker 'exit' and 'error' so the map stays
+   * bounded by the number of in-flight executions.
+   */
+  private workerRegistry = new Map<number, WorkerContext>();
 
   /** Set the handler for utils.callTool() calls from sandboxed extensions */
   setCallToolHandler(handler: CallToolHandler): void {
@@ -347,6 +370,16 @@ export class ExtensionSandboxManager {
         return;
       }
 
+      // Plan 04 Step 2 (EXT-002): register the trusted identity for this
+      // worker. The worker cannot self-attribute — every callTool lookup
+      // resolves ownerUserId / grantedPermissions from this map keyed by
+      // worker.threadId. Removed on exit/error below.
+      this.workerRegistry.set(worker.threadId, {
+        extensionId,
+        ownerUserId,
+        grantedPermissions: grantedPermissions ?? [],
+      });
+
       // Execution timeout
       const timeout = setTimeout(() => {
         log.warn(`Sandbox timeout for ${extensionId}/${toolName} after ${maxExecutionTime}ms`);
@@ -398,10 +431,45 @@ export class ExtensionSandboxManager {
             return;
           }
 
+          // Plan 04 Step 2 (EXT-002): resolve identity from the trusted
+          // registry, NOT from the message. The worker can echo any
+          // ownerUserId it wants, but the main thread will only ever
+          // hand the handler the values recorded at spawn time.
+          const trusted = this.workerRegistry.get(worker.threadId);
+          if (!trusted) {
+            // No registered context — should never happen in practice
+            // (the worker is still running and posting messages), but
+            // fail closed rather than attributing to a synthetic 'system'
+            // user.
+            log.error(
+              `callTool from unregistered worker threadId=${worker.threadId} ` +
+                `for ${extensionId}; refusing to attribute`
+            );
+            worker.postMessage({
+              type: 'callToolResult',
+              requestId: msg.requestId,
+              success: false,
+              error: 'Internal error: worker context not found',
+            } satisfies CallToolResponse);
+            return;
+          }
+
+          // Defense-in-depth audit: if the worker claims a different
+          // identity than the one it was spawned with, that's a bug or
+          // an attack. Surface it; the handler still gets the trusted
+          // values below.
+          if (msg.ownerUserId !== undefined && msg.ownerUserId !== trusted.ownerUserId) {
+            log.warn(
+              `Extension ${trusted.extensionId} worker claimed ` +
+                `ownerUserId=${msg.ownerUserId} but was registered as ` +
+                `${trusted.ownerUserId} (using registered value)`
+            );
+          }
+
           const extensionIdentity = {
-            extensionId,
-            ownerUserId: msg.ownerUserId ?? 'system',
-            grantedPermissions: msg.grantedPermissions ?? [],
+            extensionId: trusted.extensionId,
+            ownerUserId: trusted.ownerUserId,
+            grantedPermissions: trusted.grantedPermissions,
           };
 
           try {
@@ -442,6 +510,7 @@ export class ExtensionSandboxManager {
 
       worker.on('error', (err) => {
         clearTimeout(timeout);
+        this.workerRegistry.delete(worker.threadId);
         settle({
           success: false,
           error: `Worker error: ${getErrorMessage(err)}`,
@@ -451,6 +520,7 @@ export class ExtensionSandboxManager {
 
       worker.on('exit', (exitCode) => {
         clearTimeout(timeout);
+        this.workerRegistry.delete(worker.threadId);
         if (!settled) {
           settle({
             success: false,
