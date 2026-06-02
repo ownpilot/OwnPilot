@@ -131,17 +131,48 @@ class TerminalManager {
     return this.terminals.get(id);
   }
 
+  /**
+   * SIGTERM the process, then SIGKILL after a grace period if it didn't exit.
+   * These terminals are children of the GATEWAY (not the ACP agent), so they
+   * do NOT die when the agent process exits — without the SIGKILL escalation a
+   * command that ignores SIGTERM (e.g. a trapped dev server) leaks as a zombie
+   * gateway child after the session closes. Mirrors the force-kill in
+   * AcpClient.close() and CodingAgentSessionManager.stop(). No-op if exited.
+   */
+  private hardKill(t: ManagedTerminal): void {
+    if (t.exited) return;
+    const proc = t.process;
+    try {
+      proc.kill('SIGTERM');
+    } catch {
+      /* already gone */
+    }
+    const timer = setTimeout(() => {
+      // exitCode/signalCode (not `.killed`, true the instant SIGTERM is sent)
+      // tell us the process is genuinely still alive — also avoids SIGKILL-ing
+      // a reused PID after a clean exit.
+      if (proc.exitCode === null && proc.signalCode === null) {
+        try {
+          proc.kill('SIGKILL');
+        } catch {
+          /* already gone */
+        }
+      }
+    }, 5000);
+    timer.unref?.();
+  }
+
   kill(id: string): boolean {
     const t = this.terminals.get(id);
     if (!t || t.exited) return false;
-    t.process.kill('SIGTERM');
+    this.hardKill(t);
     return true;
   }
 
   release(id: string): void {
     const t = this.terminals.get(id);
     if (t) {
-      if (!t.exited) t.process.kill('SIGTERM');
+      this.hardKill(t);
       this.terminals.delete(id);
     }
   }

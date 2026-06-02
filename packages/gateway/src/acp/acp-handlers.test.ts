@@ -19,6 +19,9 @@ const mockChild = {
   on: vi.fn(),
   kill: vi.fn(),
   killed: false,
+  // Live process: not yet exited (mirrors ChildProcess before exit).
+  exitCode: null as number | null,
+  signalCode: null as string | null,
 };
 
 vi.mock('node:child_process', () => ({
@@ -352,6 +355,26 @@ describe('acp-handlers', () => {
       } as any);
       await handler.killTerminal({ terminalId } as any);
       expect(mockChild.kill).toHaveBeenCalledWith('SIGTERM');
+    });
+
+    it('escalates to SIGKILL when a killed terminal ignores SIGTERM', async () => {
+      vi.useFakeTimers();
+      try {
+        const { terminalId } = await handler.createTerminal({
+          command: 'sleep',
+          args: ['60'],
+        } as any);
+        await handler.killTerminal({ terminalId } as any);
+        expect(mockChild.kill).toHaveBeenCalledWith('SIGTERM');
+        expect(mockChild.kill).not.toHaveBeenCalledWith('SIGKILL');
+        // Process never exited (exitCode/signalCode stay null) → after the
+        // grace period the gateway-owned child must be force-killed so it
+        // doesn't leak as a zombie.
+        await vi.advanceTimersByTimeAsync(5001);
+        expect(mockChild.kill).toHaveBeenCalledWith('SIGKILL');
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('releases a terminal', async () => {
