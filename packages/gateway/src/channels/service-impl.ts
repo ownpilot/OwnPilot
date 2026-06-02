@@ -529,6 +529,16 @@ export class ChannelServiceImpl implements IChannelService {
    * This is the main pipeline: auth check -> session lookup -> AI routing.
    */
   async processIncomingMessage(message: ChannelIncomingMessage): Promise<void> {
+    type ChannelProgressManager = {
+      start(text?: string): Promise<string>;
+      update(text: string): void;
+      finish(text: string): Promise<string>;
+      cancel(): Promise<void>;
+      getMessageId(): number | null;
+    };
+    // Hoisted out of the try so the catch can replace a dangling "Thinking..."
+    // progress placeholder with the error message instead of orphaning it.
+    let progress: ChannelProgressManager | null = null;
     try {
       // 0. Drop floods before any DB/LLM work. A single sender cannot exhaust
       //    resources by spamming — see isFlooding() for the sliding window.
@@ -1040,7 +1050,7 @@ export class ChannelServiceImpl implements IChannelService {
         shouldReplyWithVoice?(message: ChannelIncomingMessage): Promise<boolean> | boolean;
       };
       const progressApi = api as ProgressCapableAPI;
-      const progress =
+      progress =
         typeof progressApi.createProgressManager === 'function'
           ? progressApi.createProgressManager(message.platformChatId)
           : null;
@@ -1154,15 +1164,25 @@ export class ChannelServiceImpl implements IChannelService {
         ? 'No AI provider configured. Please set up an API key (e.g. OpenAI, Anthropic) in OwnPilot Settings or Config Center.'
         : 'Sorry, I encountered an internal error. Please try again.';
 
-      // Try to send error reply
+      // Surface the error to the user. If a progress ("Thinking...") placeholder
+      // is pending, replace it in place — otherwise it is orphaned in the chat
+      // while a second error message is appended. finish() edits the placeholder
+      // when one was sent and falls back to a fresh message when it wasn't.
+      // Nothing after a successful reply throws to this catch (the post-send save
+      // is self-contained and wsGateway.broadcast never throws), so finishing
+      // here cannot overwrite a reply that was already delivered.
       try {
-        const api = this.getChannel(message.channelPluginId);
-        if (api) {
-          await api.sendMessage({
-            platformChatId: message.platformChatId,
-            text: userMessage,
-            replyToId: message.id,
-          });
+        if (progress) {
+          await progress.finish(userMessage);
+        } else {
+          const api = this.getChannel(message.channelPluginId);
+          if (api) {
+            await api.sendMessage({
+              platformChatId: message.platformChatId,
+              text: userMessage,
+              replyToId: message.id,
+            });
+          }
         }
       } catch {
         // Best-effort error reply — original error already logged above
