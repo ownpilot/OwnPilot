@@ -466,6 +466,31 @@ describe('EdgeMqttClient', () => {
       expect((client as any).reconnectDelay).toBe(delayBefore * 2);
     });
 
+    it('ends the previous client on reconnect and neutralizes its stale handlers', async () => {
+      const reconnectClient = makeMockMqttClient();
+      connectWithMock(client, mockMqttClient);
+      vi.useFakeTimers();
+
+      (client as any).connectFn = () => reconnectClient;
+
+      mockMqttClient._emit('close'); // schedule reconnect
+      await vi.advanceTimersByTimeAsync((client as any).reconnectDelay + 1);
+
+      // Previous client was torn down (no socket/fd leak).
+      expect(mockMqttClient.end).toHaveBeenCalledWith(true);
+      expect((client as any).client).toBe(reconnectClient);
+
+      // A stale event from the OLD client must NOT reach handlers or schedule
+      // another reconnect now that it has been replaced.
+      const staleHandler = vi.fn();
+      client.subscribe('ownpilot/+/devices/+/telemetry', staleHandler);
+      const timersBefore = vi.getTimerCount();
+      mockMqttClient._emit('message', 'ownpilot/u1/devices/d1/telemetry', 'stale');
+      mockMqttClient._emit('close');
+      expect(staleHandler).not.toHaveBeenCalled();
+      expect(vi.getTimerCount()).toBe(timersBefore);
+    });
+
     it('reconnect delay caps at maxReconnectDelay', async () => {
       const reconnectClient = makeMockMqttClient();
       connectWithMock(client, mockMqttClient);

@@ -116,42 +116,71 @@ export class EdgeMqttClient {
   private doConnect(): boolean {
     if (!this.connectFn || !this.brokerUrl) return false;
 
+    // doConnect runs on every reconnect (scheduleReconnect) and on a
+    // re-entrant connect(). The previous client must be torn down, otherwise
+    // each reconnect leaks its socket/fd, keepalive timer, and event listeners
+    // (reconnectPeriod:0 means mqtt.js never reuses or closes it for us). We
+    // end it AFTER wiring up the replacement below — the identity guard on each
+    // handler neutralizes the old client's events, so end()'s own 'close' can't
+    // trigger a spurious reconnect against the live client.
+    const previous = this.client;
+
     try {
-      this.client = this.connectFn(this.brokerUrl, {
+      const client = this.connectFn(this.brokerUrl, {
         reconnectPeriod: 0, // We handle reconnection ourselves
         connectTimeout: 10000,
         clean: true,
       });
+      this.client = client;
 
-      this.client.on('connect', () => {
+      // Each handler no-ops once it is no longer the live client. Without this,
+      // a stale client (replaced by a reconnect, or torn down by disconnect)
+      // could still dispatch duplicate messages or schedule reconnects after we
+      // have moved on.
+      client.on('connect', () => {
+        if (this.client !== client) return;
         log.info(`Connected to MQTT broker: ${this.brokerUrl}`);
         this.reconnectDelay = 1000;
 
         // Resubscribe to all topics
         for (const topic of this.handlers.keys()) {
-          this.client?.subscribe(topic);
+          client.subscribe(topic);
         }
       });
 
-      this.client.on('message', (topic: unknown, message: unknown) => {
+      client.on('message', (topic: unknown, message: unknown) => {
+        if (this.client !== client) return;
         const topicStr = String(topic);
         const payload = this.parsePayload(message);
         this.dispatchMessage(topicStr, payload);
       });
 
-      this.client.on('error', (err: unknown) => {
+      client.on('error', (err: unknown) => {
+        if (this.client !== client) return;
         log.warn(`MQTT error: ${err instanceof Error ? err.message : String(err)}`);
       });
 
-      this.client.on('close', () => {
+      client.on('close', () => {
+        if (this.client !== client) return;
         log.info('MQTT connection closed');
         this.scheduleReconnect();
       });
 
-      this.client.on('offline', () => {
+      client.on('offline', () => {
+        if (this.client !== client) return;
         log.info('MQTT client offline');
         this.scheduleReconnect();
       });
+
+      // Tear down the previous client now that the replacement is live and its
+      // handlers are neutralized by the identity guard above.
+      if (previous) {
+        try {
+          previous.end(true);
+        } catch {
+          /* best-effort teardown of the stale client */
+        }
+      }
 
       return true;
     } catch (err) {
@@ -180,9 +209,17 @@ export class EdgeMqttClient {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    if (this.client) {
-      this.client.end(true);
-      this.client = null;
+    // Null the reference BEFORE end() so the identity guard in the client's
+    // event handlers neutralizes any 'close'/'offline' that end() emits —
+    // otherwise an intentional disconnect would schedule a reconnect.
+    const client = this.client;
+    this.client = null;
+    if (client) {
+      try {
+        client.end(true);
+      } catch {
+        /* best-effort */
+      }
     }
     this.brokerUrl = null;
     log.info('MQTT client disconnected');
