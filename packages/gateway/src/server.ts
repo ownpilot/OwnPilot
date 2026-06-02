@@ -441,6 +441,15 @@ async function main() {
   installService(Services.Channel, channelService, setChannelService);
   log.info('Channel Service initialized.');
 
+  // Wire cross-channel bridges into the live pipeline (forwards inbound
+  // messages between the owner's channels per configured bridges).
+  try {
+    const { initChannelBridges } = await import('./channels/bridge-runtime.js');
+    await initChannelBridges(channelService);
+  } catch (err) {
+    log.warn('Channel bridge init failed', { error: String(err) });
+  }
+
   // Auto-connect channels that have valid configuration
   channelService.autoConnectChannels().catch((err) => {
     log.warn('Channel auto-connect had errors', { error: String(err) });

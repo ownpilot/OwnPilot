@@ -66,6 +66,7 @@ import {
   processDirectAgent as processDirectAgentImpl,
 } from './channel-ai-routing.js';
 import { channelAssetStore } from '../services/channel-asset-store.js';
+import { bridgeIncomingMessage } from './bridge-runtime.js';
 
 const log = getLog('ChannelService');
 
@@ -906,6 +907,12 @@ export class ChannelServiceImpl implements IChannelService {
         type: 'info',
         message: `New message from ${message.sender.displayName} on ${message.platform}`,
         action: 'channel:message',
+      });
+
+      // 5d. Forward to any configured cross-channel bridges (best-effort,
+      //     fire-and-forget — never blocks or fails the AI reply path).
+      void bridgeIncomingMessage(message).catch((err) => {
+        log.debug('Bridge forwarding error', { error: err });
       });
 
       // 6. Find or create session -> conversation (serialized per chat to prevent duplicates)

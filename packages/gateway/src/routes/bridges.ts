@@ -8,6 +8,7 @@ import { Hono } from 'hono';
 import { ChannelBridgesRepository } from '../db/repositories/channels/bridges.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getUserId } from './helpers.js';
 import { validateBody, createBridgeSchema, updateBridgeSchema } from '../middleware/validation.js';
+import { reloadChannelBridges } from '../channels/bridge-runtime.js';
 
 export const bridgeRoutes = new Hono();
 
@@ -92,6 +93,9 @@ bridgeRoutes.post('/', async (c) => {
       enabled: body.enabled ?? true,
     });
 
+    // Refresh the live bridge manager so the new bridge takes effect immediately.
+    await reloadChannelBridges();
+
     return apiResponse(c, bridge, 201);
   } catch (e) {
     const msg = getErrorMessage(e);
@@ -129,6 +133,7 @@ bridgeRoutes.patch('/:id', async (c) => {
     const body = validateBody(updateBridgeSchema, await c.req.json());
 
     await repo.update(id, body);
+    await reloadChannelBridges();
 
     const updated = await repo.getById(id);
     return apiResponse(c, updated);
@@ -166,6 +171,7 @@ bridgeRoutes.delete('/:id', async (c) => {
     }
 
     await repo.remove(id);
+    await reloadChannelBridges();
     return apiResponse(c, { deleted: true });
   } catch (e) {
     return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(e) }, 500);
