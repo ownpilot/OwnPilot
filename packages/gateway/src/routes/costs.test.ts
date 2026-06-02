@@ -72,6 +72,11 @@ const mockUsageTracker = {
 const mockBudgetManager = {
   getStatus: vi.fn(async () => mockBudgetStatus),
   configure: vi.fn(),
+  // BUDGET-002: usage-tracking.ts calls budgetManager.on('alert', ...) on
+  // module load. The real BudgetManager extends EventEmitter; the mock just
+  // needs an on() that swallows the registration.
+  on: vi.fn(),
+  emit: vi.fn(),
 };
 
 vi.mock('@ownpilot/core', async (importOriginal) => {

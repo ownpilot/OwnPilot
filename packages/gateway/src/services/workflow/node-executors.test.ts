@@ -31,6 +31,7 @@ const mockToolService = {
 
 vi.mock('./template-resolver.js', () => ({
   resolveTemplates: vi.fn((args: Record<string, unknown>) => args),
+  resolveCodeTemplates: vi.fn((code: string) => code),
 }));
 
 vi.mock('../../utils/ssrf.js', () => ({
@@ -155,7 +156,7 @@ import {
   executeDataStoreNode,
   executeAggregateNode,
 } from './node-executors.js';
-import { resolveTemplates } from './template-resolver.js';
+import { resolveTemplates, resolveCodeTemplates } from './template-resolver.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -181,6 +182,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   // Reset resolveTemplates mock to pass-through
   vi.mocked(resolveTemplates).mockImplementation((args) => args);
+  vi.mocked(resolveCodeTemplates).mockImplementation((code) => code);
 });
 
 // ============================================================================
@@ -578,7 +580,7 @@ describe('executeCodeNode', () => {
   });
 
   it('resolves templates in the code string', async () => {
-    vi.mocked(resolveTemplates).mockReturnValue({ _code: 'console.log("resolved-value")' });
+    vi.mocked(resolveCodeTemplates).mockReturnValue('console.log("resolved-value")');
     mockToolService.execute.mockResolvedValue({ content: '"ok"', isError: false });
 
     const node = makeNode('code1', 'codeNode', {
@@ -588,8 +590,10 @@ describe('executeCodeNode', () => {
     const nodeOutputs = { prev: makeResult('prev', 'resolved-value') };
     await executeCodeNode(node, nodeOutputs, {}, 'user1', mockToolService);
 
-    expect(resolveTemplates).toHaveBeenCalledWith(
-      { _code: 'console.log("{{prev.output}}")' },
+    // SECURITY (RCE-002): code nodes use resolveCodeTemplates (JS-literal
+    // encoding), not the raw resolveTemplates path.
+    expect(resolveCodeTemplates).toHaveBeenCalledWith(
+      'console.log("{{prev.output}}")',
       nodeOutputs,
       {}
     );

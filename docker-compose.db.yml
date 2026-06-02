@@ -22,6 +22,11 @@ services:
       - '127.0.0.1:${POSTGRES_PORT:-25432}:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ownpilot}
+      # SECURITY (DOCK-003): `ownpilot_secret` is a committed, publicly-known
+      # fallback intended ONLY for local development. The port above is bound to
+      # 127.0.0.1, so the DB is never exposed beyond this host. For any shared,
+      # remote, or production use you MUST set POSTGRES_PASSWORD in your .env to
+      # a strong secret (the gateway reads the same value).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ownpilot_secret}
       POSTGRES_DB: ${POSTGRES_DB:-ownpilot}
     volumes:

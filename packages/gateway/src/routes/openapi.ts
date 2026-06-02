@@ -15,6 +15,16 @@ import { SWAGGER_UI_HTML } from '../openapi/swagger-html.js';
 import { VERSION } from '@ownpilot/core';
 
 export function registerOpenApiRoutes(app: Hono): void {
+  // API-001: the OpenAPI spec and Swagger UI disclose the entire API surface to
+  // anonymous callers. They are a development aid, so they are disabled in
+  // production unless an operator explicitly opts in via ENABLE_API_DOCS=true.
+  // Outside production they remain on for convenience. This deliberately avoids
+  // wiring docs into the session-auth model (which has had IDOR/login-loop
+  // regressions) — a hard on/off switch is the lower-risk control.
+  const docsEnabled =
+    process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true';
+  if (!docsEnabled) return;
+
   let cached: OpenApiSpec | null = null;
 
   app.get('/openapi.json', (c) => {

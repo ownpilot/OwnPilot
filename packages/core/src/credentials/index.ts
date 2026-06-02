@@ -218,7 +218,10 @@ function deriveKey(masterKey: string, salt?: Buffer): Buffer {
   if (salt) {
     return pbkdf2Sync(masterKey, salt, PBKDF2_ITERATIONS, 32, 'sha256');
   }
-  // Legacy fallback — single SHA-256 (no brute-force resistance)
+  // Legacy fallback — single SHA-256 (no brute-force resistance). Retained
+  // ONLY to read pre-salt entries; those are re-encrypted with PBKDF2+salt on
+  // first read via migrateLegacyEntryIfNeeded (CRYPTO-004), so this path is
+  // self-healing and a no-salt entry should not persist past one read.
   return createHash('sha256').update(masterKey).digest();
 }
 
@@ -337,6 +340,25 @@ export class UserCredentialStore {
   }
 
   /**
+   * CRYPTO-004: lazily upgrade legacy (no-salt, single-SHA-256) entries to the
+   * PBKDF2+salt scheme the first time they are successfully decrypted, so the
+   * weak O(1) key derivation never survives a read. Non-fatal on failure — a
+   * migration error must never break a credential read.
+   */
+  private async migrateLegacyEntryIfNeeded(
+    entry: CredentialEntry,
+    plaintext: string
+  ): Promise<void> {
+    if (entry.salt) return;
+    try {
+      const { encrypted, iv, salt } = encryptValue(plaintext, this.config.encryptionKey);
+      await this.backend.set({ ...entry, encryptedValue: encrypted, iv, salt });
+    } catch {
+      // best-effort; keep serving the decrypted value
+    }
+  }
+
+  /**
    * Get a credential for use
    */
   async get(userId: string, provider: CredentialProvider): Promise<Credential | null> {
@@ -358,6 +380,9 @@ export class UserCredentialStore {
       this.config.encryptionKey,
       entry.salt
     );
+
+    // CRYPTO-004: upgrade legacy no-salt entries on read.
+    await this.migrateLegacyEntryIfNeeded(entry, value);
 
     // Update usage
     await this.updateUsage(entry);
@@ -393,6 +418,9 @@ export class UserCredentialStore {
       this.config.encryptionKey,
       entry.salt
     );
+
+    // CRYPTO-004: upgrade legacy no-salt entries on read.
+    await this.migrateLegacyEntryIfNeeded(entry, value);
 
     // Update usage
     await this.updateUsage(entry);

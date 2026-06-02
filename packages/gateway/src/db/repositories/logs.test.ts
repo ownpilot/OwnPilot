@@ -178,6 +178,18 @@ describe('LogsRepository', () => {
       expect(params[18]).toBeNull(); // userAgent
     });
 
+    it('truncates an oversized error stack to the cap (EXPOSE-001)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+      mockAdapter.queryOne.mockResolvedValueOnce(makeLogRow());
+
+      const hugeStack = 'Error: boom\n' + '    at frame\n'.repeat(5000);
+      await repo.log({ type: 'chat', errorStack: hugeStack });
+
+      const params = mockAdapter.execute.mock.calls[0]![1] as unknown[];
+      expect((params[16] as string).length).toBe(2000); // persisted stack capped
+      expect(params[16]).toBe(hugeStack.slice(0, 2000));
+    });
+
     it('should return a fallback log entry when insert fails', async () => {
       mockAdapter.execute.mockRejectedValueOnce(new Error('DB connection lost'));
 

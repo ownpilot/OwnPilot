@@ -53,6 +53,8 @@ import { getLog } from '../../services/log.js';
 import { PUBLIC_BASE_URL, MS_PER_MINUTE } from '../../config/defaults.js';
 import { createLoginThrottle } from '../../utils/login-throttle.js';
 import { getClientIp } from '../../utils/client-ip.js';
+import { budgetManager } from '../../services/usage-tracking.js';
+import { estimateCost, formatCost, type AIProvider } from '@ownpilot/core';
 
 // RATE-003: per-IP throttle for the chat endpoint. /chat is the single
 // most expensive endpoint — every request hits a paid LLM provider
@@ -329,6 +331,47 @@ chatRoutes.post('/', async (c) => {
     userContextWindow = userConfig?.contextWindow ?? undefined;
   } catch {
     // Fall back to pricing defaults if DB lookup fails
+  }
+
+  // Pre-spend budget check (BUDGET-001): a configured daily/weekly/monthly or
+  // per-request budget MUST be enforced before any LLM call is dispatched, or
+  // a buggy agent loop / runaway client can burn through the operator's
+  // monthly LLM budget in minutes. We estimate cost from the user message
+  // text + a conservative output budget; `budgetManager.canSpend()` already
+  // consults perRequestLimit, dailyLimit, weeklyLimit, monthlyLimit and
+  // respects `limitAction` (warn vs block). We only block when allowed=false
+  // AND limitAction=block. With limitAction=warn we surface a header so the
+  // client can show a soft warning but the request still goes through.
+  // Skip in demo mode (no real spend) and on errors from the budget manager
+  // (fail-open: a misconfigured budget should not break the API).
+  if (provider && model && !provider.startsWith('cli-')) {
+    try {
+      const estimate = estimateCost(provider as AIProvider, model, body.message ?? '', 1000);
+      const decision = await budgetManager.canSpend(estimate.estimatedCost);
+      if (!decision.allowed) {
+        log.warn(
+          `[Chat] Blocked by budget: ${decision.reason} (est. ${formatCost(estimate.estimatedCost)})`
+        );
+        c.header('X-Budget-Blocked', 'true');
+        c.header('X-Budget-Reason', decision.reason ?? 'budget_exceeded');
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.RATE_LIMITED,
+            message: decision.reason ?? 'Request blocked by budget policy.',
+            ...(decision.recommendation && { recommendation: decision.recommendation }),
+          },
+          429
+        );
+      }
+      if (decision.reason) {
+        // warn-mode overage — proceed but signal it to the client
+        c.header('X-Budget-Warning', decision.reason);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log.warn(`[Chat] Budget check failed (allowing request): ${msg}`);
+    }
   }
 
   // Get agent based on agentId or provider/model from request

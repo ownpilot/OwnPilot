@@ -9,6 +9,12 @@ import { getLog } from '../../services/log.js';
 
 const log = getLog('LogsRepo');
 
+// EXPOSE-001: bound how much of a JS error stack we persist. Full stacks leak
+// internal file paths / code structure into request_logs (which is included in
+// per-user DB exports) and bloat the table. Keep the top frames (enough to
+// debug) and drop the rest.
+const MAX_ERROR_STACK_LEN = 2000;
+
 // =====================================================
 // TYPES
 // =====================================================
@@ -152,6 +158,7 @@ export class LogsRepository extends BaseRepository {
   async log(input: CreateLogInput): Promise<RequestLog> {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
+    const errorStack = input.errorStack ? input.errorStack.slice(0, MAX_ERROR_STACK_LEN) : null;
 
     try {
       await this.execute(
@@ -177,7 +184,7 @@ export class LogsRepository extends BaseRepository {
           input.totalTokens || null,
           input.durationMs || null,
           input.error || null,
-          input.errorStack || null,
+          errorStack,
           input.ipAddress || null,
           input.userAgent || null,
           now,
@@ -207,7 +214,7 @@ export class LogsRepository extends BaseRepository {
         totalTokens: input.totalTokens || null,
         durationMs: input.durationMs || null,
         error: input.error || null,
-        errorStack: input.errorStack || null,
+        errorStack,
         ipAddress: input.ipAddress || null,
         userAgent: input.userAgent || null,
         createdAt: new Date(now),

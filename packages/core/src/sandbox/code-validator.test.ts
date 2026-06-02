@@ -122,6 +122,24 @@ describe('new dangerous patterns', () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Atomics is not allowed (timing attack vector)');
   });
+
+  // RCE-001 regression: the constructor-walk escape relies on splitting the
+  // word "constructor" across string-concat to evade the literal-token check.
+  // Every single split point must be caught. (Defense-in-depth; the VM sandbox
+  // itself no longer injects host objects, so even a 3-way split cannot escape.)
+  it.each([
+    `Math['constructo'+'r']('return process')`,
+    `Math['construct'+'or']('x')`,
+    `Math['con'+'structor']('x')`,
+    `Math['constr'+'uctor']('x')`,
+    `Math['constru'+'ctor']('x')`,
+    `obj['co'+'nstructor']`,
+    `obj['constructo' + 'r']`,
+  ])('blocks split-string constructor access: %s', (code) => {
+    const result = validateToolCode(code);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('string-concat constructor access is not allowed');
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -94,6 +94,11 @@ vi.mock('../../services/extension/types.js', () => ({
   validateManifest: vi.fn(() => ({ valid: true, errors: [] })),
 }));
 
+// PATH-001: install path must be within an allowed scan directory.
+vi.mock('../../services/extension/scanner.js', () => ({
+  getAllScanDirectories: () => ['/path/to'],
+}));
+
 vi.mock('@ownpilot/core', () => ({
   createProvider: vi.fn(() => ({ complete: mockComplete })),
   getProviderConfig: vi.fn(() => null),

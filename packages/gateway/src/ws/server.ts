@@ -175,15 +175,35 @@ const DEFAULT_LOCALHOST_WS_ORIGINS = [
 ];
 
 /**
+ * The gateway's own origin(s), derived from PORT. A WebSocket upgrade whose
+ * Origin matches the server that served the page is same-origin and can never
+ * be a cross-site hijack, so these are always allowed — including when the
+ * gateway serves the built UI on its own port (e.g. http://127.0.0.1:8200).
+ * Production deployments behind a domain still need WS_ALLOWED_ORIGINS.
+ */
+function getGatewaySelfOrigins(): string[] {
+  const port = process.env.PORT ?? String(WS_PORT);
+  // WS-001: include https:// variants so a gateway served over TLS on its own
+  // port still recognises its same-origin (the http:// only list rejected it).
+  return [
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`,
+    `https://localhost:${port}`,
+    `https://127.0.0.1:${port}`,
+  ];
+}
+
+/**
  * Validate WebSocket origin against allowed origins.
  * - Always requires the browser to send an `Origin` header (CSWSH defense).
  * - Empty configured allowlist falls back to localhost-only, never allow-all.
+ * - The gateway's own same-origin is always permitted (UI served by gateway).
  */
 function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
   const effective = allowedOrigins.length > 0 ? allowedOrigins : DEFAULT_LOCALHOST_WS_ORIGINS;
   // No origin header — reject. Browsers always send Origin on WS upgrades.
   if (!origin) return false;
-  return effective.some((allowed) => origin === allowed);
+  return effective.includes(origin) || getGatewaySelfOrigins().includes(origin);
 }
 
 /**
@@ -1346,6 +1366,14 @@ const _wsAllowedOrigins = sanitizeCorsOriginsFromEnv(_rawWsOrigins);
 if (_rawWsOrigins && _rawWsOrigins.includes('*')) {
   log.warn(
     '[WARN] WS: origins env contains "*" — stripped. WS connections will use the configured non-wildcard origins (or localhost defaults).'
+  );
+}
+// WS-001: in production with no explicit allowlist, the gateway falls back to
+// localhost-only origins, so WS upgrades from a real domain are rejected. Warn
+// loudly rather than failing silently.
+if (process.env.NODE_ENV === 'production' && _wsAllowedOrigins.length === 0) {
+  log.warn(
+    '[WARN] WS: no WS_ALLOWED_ORIGINS/CORS_ORIGINS set in production — WebSocket connections from your domain will be rejected (localhost-only fallback). Set WS_ALLOWED_ORIGINS to your site origin(s).'
   );
 }
 

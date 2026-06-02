@@ -60,6 +60,33 @@ export function resolveStringTemplates(
   });
 }
 
+/**
+ * Resolve templates destined for a CODE body (codeNode / expression fields).
+ *
+ * SECURITY (RCE-002): unlike resolveTemplates(), which splices resolved values
+ * into the string RAW, this encodes every substituted value as a JS/JSON
+ * *literal*. Upstream data (HTTP response bodies, LLM output, webhook payloads)
+ * therefore always lands in a data position — it can never break out into
+ * executable code. `{{node.output}}` used as `const x = {{node.output}}` still
+ * works (object/array/number/string become valid literals); the unsafe pattern
+ * `"{{node.text}}"` (manually quoted) must drop the quotes after this change.
+ */
+export function resolveCodeTemplates(
+  code: string,
+  nodeOutputs: Record<string, NodeResult>,
+  variables: Record<string, unknown>,
+  aliasMap?: Map<string, string>
+): string {
+  return code.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
+    const val = resolveTemplatePathWithFallback(path.trim(), nodeOutputs, variables, aliasMap);
+    if (val === undefined) return 'undefined';
+    // JSON.stringify yields a safe, non-executable JS literal for any
+    // serializable value. Fall back to `undefined` for non-serializable inputs.
+    const encoded = JSON.stringify(val);
+    return encoded === undefined ? 'undefined' : encoded;
+  });
+}
+
 export function resolveTemplatePath(
   path: string,
   nodeOutputs: Record<string, NodeResult>,

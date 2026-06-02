@@ -122,6 +122,12 @@ vi.mock('../log.js', () => ({
   }),
 }));
 
+// BIZ-001: budget pre-spend check in executeAgentPipeline.
+const mockCanSpend = vi.hoisted(() => vi.fn());
+vi.mock('../usage-tracking.js', () => ({
+  budgetManager: { canSpend: mockCanSpend },
+}));
+
 // ============================================================================
 // Import after mocks
 // ============================================================================
@@ -136,6 +142,8 @@ import {
   calculateExecutionCost,
   registerAllToolSources,
   createConfiguredAgent,
+  executeAgentPipeline,
+  BudgetExceededError,
 } from './runner-utils.js';
 
 // ============================================================================
@@ -621,4 +629,55 @@ afterEach(async () => {
   resetHeartbeatService();
   resetPulseMetricsService();
   resetServiceRegistrySync();
+});
+
+describe('executeAgentPipeline() — budget enforcement (BIZ-001)', () => {
+  beforeEach(() => {
+    mockCanSpend.mockReset();
+  });
+
+  it('throws BudgetExceededError and never calls the LLM when budget blocks', async () => {
+    mockCanSpend.mockResolvedValueOnce({ allowed: false, reason: 'daily limit reached' });
+    const chat = vi.fn();
+    await expect(
+      executeAgentPipeline('anthropic', 'claude-3-opus', {
+        agent: { chat } as never,
+        message: 'do something expensive',
+        timeoutMs: 5000,
+        agentId: 'claw-1',
+      })
+    ).rejects.toBeInstanceOf(BudgetExceededError);
+    expect(mockCanSpend).toHaveBeenCalledTimes(1);
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it('proceeds (fail-open) when the budget subsystem throws', async () => {
+    mockCanSpend.mockRejectedValueOnce(new Error('db down'));
+    const chat = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: 'ok', usage: { promptTokens: 1, completionTokens: 1 } },
+    });
+    const res = await executeAgentPipeline('anthropic', 'claude-3-opus', {
+      agent: { chat } as never,
+      message: 'hi',
+      timeoutMs: 5000,
+      agentId: 'claw-1',
+    });
+    expect(chat).toHaveBeenCalledTimes(1);
+    expect(res.content).toBe('ok');
+  });
+
+  it('skips the budget check for cli- providers', async () => {
+    const chat = vi
+      .fn()
+      .mockResolvedValue({ ok: true, value: { content: 'cli', usage: undefined } });
+    await executeAgentPipeline('cli-claude', 'sonnet', {
+      agent: { chat } as never,
+      message: 'hi',
+      timeoutMs: 5000,
+      agentId: 'claw-1',
+    });
+    expect(mockCanSpend).not.toHaveBeenCalled();
+    expect(chat).toHaveBeenCalledTimes(1);
+  });
 });

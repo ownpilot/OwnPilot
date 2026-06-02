@@ -4,12 +4,23 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-COPY package.json ./
+# SECURITY (DOCK-001): run as the image's built-in non-root `node` user instead
+# of root, matching the production Dockerfiles (which use a dedicated ownpilot
+# user). Ownership is handed to `node` before dependency install so pnpm can
+# write node_modules without root.
+RUN chown -R node:node /app
+USER node
+
+COPY --chown=node:node package.json ./
 
 RUN pnpm install
 
-COPY . .
+COPY --chown=node:node . .
 
 EXPOSE 3000
+
+# Basic liveness check for the Vite dev server.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1
 
 CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3000"]
