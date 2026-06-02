@@ -1696,6 +1696,35 @@ describe('ChannelServiceImpl', () => {
         mockGetOrCreateChatAgent.mockResolvedValue(createMockAgent());
       });
 
+      it('replaces a pending progress placeholder with the error on failure', async () => {
+        // Channel exposes a progress manager (e.g. Telegram "Thinking..."). When
+        // the pipeline throws after the placeholder is shown, the catch must
+        // finish() it with the error text — not orphan it and append a second
+        // message.
+        const finish = vi.fn().mockResolvedValue('msg-err');
+        const progressManager = {
+          start: vi.fn().mockResolvedValue('msg-prog'),
+          update: vi.fn(),
+          finish,
+          cancel: vi.fn().mockResolvedValue(undefined),
+          getMessageId: vi.fn().mockReturnValue(1),
+        };
+        (channelPlugin.api as Record<string, unknown>).createProgressManager = vi.fn(
+          () => progressManager
+        );
+        mockBus.process.mockRejectedValueOnce(new Error('pipeline boom'));
+
+        await service.processIncomingMessage(message);
+
+        // Placeholder was started, then replaced in place with the error...
+        expect(progressManager.start).toHaveBeenCalled();
+        expect(finish).toHaveBeenCalledWith(
+          expect.stringContaining('Sorry, I encountered an internal error')
+        );
+        // ...not orphaned with a separate sendMessage error reply.
+        expect(channelPlugin.api.sendMessage).not.toHaveBeenCalled();
+      });
+
       it('should route through MessageBus when available', async () => {
         await service.processIncomingMessage(message);
 
