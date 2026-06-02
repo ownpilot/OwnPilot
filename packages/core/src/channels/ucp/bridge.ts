@@ -89,6 +89,15 @@ export class UCPBridgeManager {
   async bridgeMessage(msg: UCPMessage): Promise<number> {
     if (!this.sendFn || msg.direction !== 'inbound') return 0;
 
+    // Loop guard (defense in depth): a bridge always re-emits a message AS the
+    // bot, so anything bridged that later re-enters the inbound path is
+    // bot-flagged. Skipping bot-originated messages stops cross-channel echo
+    // loops even if a channel plugin fails to filter the bot's own messages —
+    // today every plugin does, but the bridge must not depend on that invariant
+    // holding for every current and future platform. The single-owner mirror
+    // use case only ever bridges the human owner's messages.
+    if (msg.sender?.isBot) return 0;
+
     const sourceId = msg.channelInstanceId;
     let forwardCount = 0;
 
@@ -109,6 +118,10 @@ export class UCPBridgeManager {
       }
 
       if (!targetId) continue;
+
+      // Never forward a message back onto its own channel (a misconfigured
+      // source === target bridge) — that would just echo to the owner.
+      if (targetId === sourceId) continue;
 
       // Apply filter pattern if configured
       if (bridge.filterPattern) {

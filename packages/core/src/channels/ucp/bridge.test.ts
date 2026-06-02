@@ -156,6 +156,41 @@ describe('UCPBridgeManager', () => {
       expect(count).toBe(0);
     });
 
+    it('does not bridge bot-originated messages (loop guard)', async () => {
+      // A bridge re-emits AS the bot; if that output ever re-enters the inbound
+      // path it is bot-flagged. Skipping bot senders breaks cross-channel echo
+      // loops independently of per-plugin self-message filtering.
+      manager.addBridge(makeBridge());
+
+      const msg = makeMessage({
+        channelInstanceId: 'channel.telegram',
+        direction: 'inbound',
+        sender: { id: 'bot-1', platform: 'telegram', isBot: true },
+      });
+      const count = await manager.bridgeMessage(msg);
+      expect(count).toBe(0);
+      expect(sendFn).not.toHaveBeenCalled();
+    });
+
+    it('does not forward to the same channel (source === target)', async () => {
+      // Misconfigured self-bridge must not echo the message back to its origin.
+      manager.addBridge(
+        makeBridge({
+          sourceChannelId: 'channel.telegram',
+          targetChannelId: 'channel.telegram',
+          direction: 'both',
+        })
+      );
+
+      const msg = makeMessage({
+        channelInstanceId: 'channel.telegram',
+        direction: 'inbound',
+      });
+      const count = await manager.bridgeMessage(msg);
+      expect(count).toBe(0);
+      expect(sendFn).not.toHaveBeenCalled();
+    });
+
     it('does not bridge disabled bridges', async () => {
       manager.addBridge(makeBridge({ enabled: false }));
 
