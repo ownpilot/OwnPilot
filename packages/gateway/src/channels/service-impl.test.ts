@@ -42,6 +42,7 @@ const mockSessionsRepo = vi.hoisted(() => ({
 
 const mockMessagesRepo = vi.hoisted(() => ({
   create: vi.fn().mockResolvedValue(undefined),
+  createIfNew: vi.fn().mockResolvedValue(true),
   linkConversation: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -185,6 +186,7 @@ vi.mock('../db/repositories/channels/sessions.js', () => ({
 vi.mock('../db/repositories/channels/messages.js', () => ({
   ChannelMessagesRepository: class {
     create = mockMessagesRepo.create;
+    createIfNew = mockMessagesRepo.createIfNew;
     linkConversation = mockMessagesRepo.linkConversation;
   },
 }));
@@ -1204,12 +1206,12 @@ describe('ChannelServiceImpl', () => {
         expect(mockUsersRepo.findOrCreate).toHaveBeenCalledTimes(limit);
 
         // One more from the same sender within the window — should be dropped
-        // BEFORE findOrCreate / messagesRepo.create are called.
+        // BEFORE findOrCreate / the inbound createIfNew save are called.
         mockUsersRepo.findOrCreate.mockClear();
-        mockMessagesRepo.create.mockClear();
+        mockMessagesRepo.createIfNew.mockClear();
         await service.processIncomingMessage(createIncomingMessage({ id: 'msg-overflow' }));
         expect(mockUsersRepo.findOrCreate).not.toHaveBeenCalled();
-        expect(mockMessagesRepo.create).not.toHaveBeenCalled();
+        expect(mockMessagesRepo.createIfNew).not.toHaveBeenCalled();
       });
 
       it('does not penalize a different sender on the same channel', async () => {
@@ -1491,7 +1493,8 @@ describe('ChannelServiceImpl', () => {
       it('should save incoming message', async () => {
         await service.processIncomingMessage(message);
 
-        expect(mockMessagesRepo.create).toHaveBeenCalledWith(
+        // Inbound save goes through createIfNew (the idempotency gate).
+        expect(mockMessagesRepo.createIfNew).toHaveBeenCalledWith(
           expect.objectContaining({
             id: 'msg-1',
             channelId: 'test-plugin',
@@ -1503,8 +1506,18 @@ describe('ChannelServiceImpl', () => {
         );
       });
 
+      it('ignores a duplicate (redelivered) inbound message before AI routing', async () => {
+        // createIfNew returns false → the row already existed → must short-circuit
+        // before the session lookup / LLM call so the user isn't replied to twice.
+        mockMessagesRepo.createIfNew.mockResolvedValueOnce(false);
+
+        await service.processIncomingMessage(message);
+
+        expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
+      });
+
       it('should tolerate save failure for incoming message', async () => {
-        mockMessagesRepo.create.mockRejectedValueOnce(new Error('DB error'));
+        mockMessagesRepo.createIfNew.mockRejectedValueOnce(new Error('DB error'));
 
         // Should not throw; continues processing
         await service.processIncomingMessage(message);
@@ -1771,8 +1784,9 @@ describe('ChannelServiceImpl', () => {
       it('should save outgoing message to channel_messages table', async () => {
         await service.processIncomingMessage(message);
 
-        // Second call to create (first is incoming, second is outgoing)
-        const outgoingCall = mockMessagesRepo.create.mock.calls[1];
+        // Inbound now goes through createIfNew (idempotency gate); the outbound
+        // save is the first (and only) plain create() call.
+        const outgoingCall = mockMessagesRepo.create.mock.calls[0];
         expect(outgoingCall[0]).toMatchObject({
           channelId: 'test-plugin',
           direction: 'outbound',
