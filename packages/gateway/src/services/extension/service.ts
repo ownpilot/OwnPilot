@@ -411,16 +411,22 @@ export class ExtensionService implements IExtensionService {
 
     if (record.status !== 'error') return record;
 
-    // Try to reload from disk if source path exists
+    // Try to reload from disk if source path exists (refreshes the manifest and
+    // re-registers config requirements). Do NOT return install()'s record here:
+    // install() upserts, but the ON CONFLICT clause preserves the existing
+    // status, so a successful reload leaves the row still 'error'. We must fall
+    // through and explicitly clear the error below — otherwise "recover" is a
+    // no-op that returns an extension still stuck in the error state.
     if (record.sourcePath && existsSync(record.sourcePath)) {
       try {
-        return await this.install(record.sourcePath, userId);
+        await this.install(record.sourcePath, userId);
       } catch (e) {
         log.warn(`Recovery reload failed for ${id}, resetting to disabled`, { error: String(e) });
       }
     }
 
-    // Fall back to disabling (clear error state)
+    // Clear the error state. 'disabled' is the safe post-recovery state; the
+    // user re-enables when ready (which re-activates triggers).
     const updated = await extensionsRepo.updateStatus(id, 'disabled');
     if (updated) {
       getEventSystem().emit('extension.disabled', 'extension-service', {

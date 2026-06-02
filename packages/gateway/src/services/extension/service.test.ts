@@ -604,6 +604,63 @@ describe('ExtensionService', () => {
     });
   });
 
+  describe('recover()', () => {
+    it('returns null when extension not found', async () => {
+      mockRepo.getById.mockReturnValue(null);
+      expect(await svc.recover('no-such-id')).toBeNull();
+    });
+
+    it('returns the record unchanged when not in error state', async () => {
+      const record = makeRecord({ status: 'enabled' });
+      mockRepo.getById.mockReturnValue(record);
+      const result = await svc.recover('test-ext');
+      expect(result).toEqual(record);
+      expect(mockRepo.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('clears the error to disabled after a successful reload (not left stuck in error)', async () => {
+      // Regression: install() upserts but ON CONFLICT preserves status, so a
+      // successful reload returns a record still in 'error'. recover() must fall
+      // through and clear the error rather than return that record.
+      mockRepo.getById.mockReturnValue(makeRecord({ status: 'error' }));
+      mockExists.mockReturnValue(true);
+      const installSpy = vi
+        .spyOn(svc, 'install')
+        .mockResolvedValue(makeRecord({ status: 'error' }));
+      mockRepo.updateStatus.mockResolvedValue(makeRecord({ status: 'disabled' }));
+
+      const result = await svc.recover('test-ext');
+
+      expect(installSpy).toHaveBeenCalledWith('/path/to/extension.json', 'default');
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith('test-ext', 'disabled');
+      expect(result).toEqual(makeRecord({ status: 'disabled' }));
+      expect(mockESEmit).toHaveBeenCalledWith(
+        'extension.disabled',
+        'extension-service',
+        expect.any(Object)
+      );
+    });
+
+    it('resets to disabled when the reload throws', async () => {
+      mockRepo.getById.mockReturnValue(makeRecord({ status: 'error' }));
+      mockExists.mockReturnValue(true);
+      vi.spyOn(svc, 'install').mockRejectedValue(new Error('reload boom'));
+      mockRepo.updateStatus.mockResolvedValue(makeRecord({ status: 'disabled' }));
+
+      await svc.recover('test-ext');
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith('test-ext', 'disabled');
+    });
+
+    it('resets to disabled when there is no source path on disk', async () => {
+      mockRepo.getById.mockReturnValue(makeRecord({ status: 'error' }));
+      mockExists.mockReturnValue(false);
+      mockRepo.updateStatus.mockResolvedValue(makeRecord({ status: 'disabled' }));
+
+      await svc.recover('test-ext');
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith('test-ext', 'disabled');
+    });
+  });
+
   // ==========================================================================
   // Read methods
   // ==========================================================================
