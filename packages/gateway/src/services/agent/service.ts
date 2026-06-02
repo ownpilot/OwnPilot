@@ -945,6 +945,19 @@ async function mirrorCompactionToDatabase(opts: {
   const olderDbMessages = existing.slice(0, Math.max(0, existing.length - opts.keepRecent));
   const firstRemaining = existing[existing.length - opts.keepRecent];
 
+  // Nothing older to fold into a summary. This happens when the DB has
+  // <= keepRecent messages while the in-memory store accumulated past the
+  // compaction threshold (transient desync — e.g. in-memory messages not yet
+  // flushed). Inserting a summary pair here would orphan it: no messages get
+  // deleted, and with no `firstRemaining` the pair lands at Date.now() — i.e.
+  // appended to the END of an uncompacted conversation, at the wrong
+  // chronological position and diverging from the in-memory layout. Mirror the
+  // in-memory `too_few_messages` guard and skip — the next chat write reconciles
+  // any drift once persistence catches up.
+  if (olderDbMessages.length === 0) {
+    return;
+  }
+
   // Delete the older DB messages.
   for (const msg of olderDbMessages) {
     await chatRepo.deleteMessage(msg.id);

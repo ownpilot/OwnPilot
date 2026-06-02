@@ -1986,6 +1986,48 @@ describe('compactContext', () => {
     expect(mockChatRepoAddMessage).not.toHaveBeenCalled();
   });
 
+  it('skips DB mirror when the DB has fewer messages than keepRecent (no orphan summary)', async () => {
+    // Transient in-memory/DB desync: in-memory accumulated past the compaction
+    // threshold (12 msgs) while the DB only has 4 persisted rows. With
+    // keepRecent=6 there is nothing older to fold into a summary, so the mirror
+    // must NOT delete anything AND must NOT insert a summary pair — otherwise it
+    // would orphan the pair at Date.now() (end of an uncompacted conversation),
+    // diverging from the in-memory layout. The next chat write reconciles drift.
+    const messages = Array.from({ length: 12 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `msg-${i}`,
+    }));
+    const { agent, memory } = makeMockAgent();
+    memory.getContextMessages.mockReturnValue(messages);
+    memory.getStats.mockReturnValue({
+      messageCount: 8,
+      estimatedTokens: 500,
+      lastActivity: new Date(),
+    });
+    chatAgentCache.set('chat|openai|gpt-4o', agent);
+
+    // Only 4 DB messages — fewer than keepRecent=6 → olderDbMessages is empty.
+    mockChatRepoGetMessages.mockResolvedValueOnce(
+      Array.from({ length: 4 }, (_, i) => ({
+        id: `db-msg-${i}`,
+        role: i % 2 === 0 ? 'user' : 'assistant',
+        content: `db msg ${i}`,
+        createdAt: new Date(2026, 0, 1, 12, i).toISOString(),
+      }))
+    );
+
+    const mockProvider = {
+      complete: vi.fn().mockResolvedValue({ ok: true, value: { content: 'Summary' } }),
+    };
+    mockCreateProvider.mockReturnValue(mockProvider);
+
+    const result = await mod.compactContext('openai', 'gpt-4o', 6, undefined, 'user-123');
+    // In-memory compaction still succeeds; only the DB mirror is skipped.
+    expect(result.compacted).toBe(true);
+    expect(mockChatRepoDeleteMessage).not.toHaveBeenCalled();
+    expect(mockChatRepoAddMessage).not.toHaveBeenCalled();
+  });
+
   it('does NOT attempt DB mirror when userId is omitted', async () => {
     const messages = Array.from({ length: 12 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
