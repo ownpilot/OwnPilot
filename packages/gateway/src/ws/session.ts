@@ -435,7 +435,6 @@ export class SessionManager {
   cleanup(maxIdleMs: number): number {
     const now = Date.now();
     let removed = 0;
-    const svc = tryGetSessionService();
 
     for (const [id, session] of this.sessions) {
       if (now - session.lastActivityAt.getTime() > maxIdleMs) {
@@ -444,12 +443,15 @@ export class SessionManager {
         } catch {
           // Socket may already be closed — continue cleanup
         }
-        this.sessions.delete(id);
-        try {
-          svc?.close(id);
-        } catch (error) {
-          log.debug('Session service close failed', { sessionId: id, error });
-        }
+        // Route through remove() rather than a bare sessions.delete(): remove()
+        // unsubscribes the session's EventBus listeners (onPattern handlers) and
+        // clears socketToSession + ISessionService. A direct delete here leaked
+        // every event subscription — the listeners kept firing send() to an
+        // already-removed session on every matching event, forever, so the
+        // EventBus accumulated dead listeners (unbounded memory + per-event CPU)
+        // as ungracefully-dropped clients were reaped. remove() also calls
+        // svc.close(id), so no separate ISessionService close is needed.
+        this.remove(id);
         removed++;
       }
     }

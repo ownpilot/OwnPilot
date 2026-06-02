@@ -982,5 +982,26 @@ describe('SessionManager', () => {
       expect(removed).toBe(3);
       expect(manager.count).toBe(0);
     });
+
+    it('unsubscribes EventBus subscriptions when reaping an idle session', () => {
+      // Regression: cleanup() used a bare sessions.delete() that skipped the
+      // remove() unsubscribe loop, leaking every onPattern() listener for
+      // ungracefully-dropped clients (unbounded EventBus growth).
+      const socket = createMockSocket(1);
+      const session = manager.create(socket);
+
+      const unsubA = vi.fn();
+      const unsubB = vi.fn();
+      manager.addEventSubscription(session.id, 'chat.*', unsubA);
+      manager.addEventSubscription(session.id, 'claw.*', unsubB);
+
+      vi.advanceTimersByTime(60_000);
+      const removed = manager.cleanup(30_000);
+
+      expect(removed).toBe(1);
+      expect(unsubA).toHaveBeenCalledTimes(1);
+      expect(unsubB).toHaveBeenCalledTimes(1);
+      expect(manager.getEventSubscriptions(session.id)).toEqual([]);
+    });
   });
 });
