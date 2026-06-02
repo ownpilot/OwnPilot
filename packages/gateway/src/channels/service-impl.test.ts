@@ -1115,7 +1115,7 @@ describe('ChannelServiceImpl', () => {
         expect(channelPlugin.api.sendMessage).not.toHaveBeenCalled();
       });
 
-      it('sends pairing instructions when no owner has been claimed yet', async () => {
+      it('prompts the owner to claim without disclosing the key when unclaimed', async () => {
         // No owner claimed on this platform yet
         mockGetOwnerUserId.mockResolvedValue(null);
 
@@ -1123,10 +1123,11 @@ describe('ChannelServiceImpl', () => {
 
         expect(mockMessagesRepo.create).not.toHaveBeenCalled();
         expect(mockSessionsRepo.findActive).not.toHaveBeenCalled();
-        // Should reply with pairing instructions
-        expect(channelPlugin.api.sendMessage).toHaveBeenCalledWith(
-          expect.objectContaining({ text: expect.stringContaining('/connect TEST-KEY-1234') })
-        );
+        // SECURITY: must NOT leak the pairing key in-band to whoever messages first.
+        // It should only direct the owner to the console / web UI.
+        const reply = (channelPlugin.api.sendMessage as ReturnType<typeof vi.fn>).mock.calls[0][0];
+        expect(reply.text).not.toContain('TEST-KEY-1234');
+        expect(reply.text).toMatch(/not been activated|console|web UI/i);
       });
 
       it('auto-claims WhatsApp owner when sender matches bot phone (self-chat)', async () => {

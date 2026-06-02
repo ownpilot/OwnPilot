@@ -54,12 +54,7 @@ import { dmPairingRequestsRepo } from '../db/repositories/channels/dm-pairing.js
 import { wsGateway } from '../ws/server.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
-import {
-  claimOwnership,
-  getOwnerUserId,
-  getPairingKey,
-  autoClaimOwnership,
-} from '../services/pairing-service.js';
+import { claimOwnership, getOwnerUserId, autoClaimOwnership } from '../services/pairing-service.js';
 import { clearChannelSession } from '../services/conversation-service.js';
 import {
   processViaBus as processViaBusImpl,
@@ -698,21 +693,27 @@ export class ChannelServiceImpl implements IChannelService {
             return;
           }
         } else {
-          // Telegram/other: reply with pairing instructions so the user knows what to do
-          log.info('No owner claimed yet — sending pairing instructions', {
+          // Telegram/other: the channel is unclaimed. SECURITY: never disclose the
+          // pairing key in-band — anyone who messages an unclaimed bot would receive
+          // it and could claim ownership of the assistant. The key is shown only on
+          // the server console (startup banner) and the authenticated web UI; the
+          // owner claims with `/connect <key>` from there.
+          log.info('No owner claimed yet — prompting owner to claim from console', {
             platform: message.platform,
             sender: message.sender.platformUserId,
           });
           const api = this.getChannel(message.channelPluginId);
           if (api) {
             try {
-              const key = await getPairingKey(message.channelPluginId);
               await api.sendMessage({
                 platformChatId: message.platformChatId,
-                text: `👋 OwnPilot is running but not yet claimed.\n\nTo activate, send:\n/connect ${key}`,
+                text:
+                  `👋 This OwnPilot assistant has not been activated yet.\n\n` +
+                  `If you are the owner, open the OwnPilot console or web UI (Channels) ` +
+                  `to get your pairing key, then send:\n/connect YOUR-KEY`,
               });
             } catch (err) {
-              log.warn('Failed to send pairing instructions', { error: getErrorMessage(err) });
+              log.warn('Failed to send activation notice', { error: getErrorMessage(err) });
             }
           }
           return;
