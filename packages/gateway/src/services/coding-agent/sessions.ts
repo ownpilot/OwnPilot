@@ -346,6 +346,13 @@ export class CodingAgentSessionManager {
         onStateChange: (state) => {
           log.debug(`ACP state change for session ${sessionId}: ${state}`);
           if (state === 'closed' || state === 'error') {
+            // Ignore a terminal state change once the session is already done.
+            // terminateSession() calls acpClient.close(), which synchronously
+            // emits 'closed'; and a clean run that has already resolved may emit
+            // a teardown 'error'. Without this guard either would overwrite the
+            // real outcome (e.g. flip 'terminated'→'completed' or 'completed'→
+            // 'failed') and persist a second, wrong result.
+            if (this.isTerminalState(session.state)) return;
             const newState = state === 'error' ? 'failed' : 'completed';
             session.state = newState as import('@ownpilot/core').CodingAgentSessionState;
             session.completedAt = new Date().toISOString();
@@ -363,6 +370,9 @@ export class CodingAgentSessionManager {
         },
         onError: (err) => {
           log.error(`ACP error for session ${sessionId}: ${err.message}`);
+          // A late error during teardown must not flip an already-terminal
+          // session (completed/terminated) to 'failed'.
+          if (this.isTerminalState(session.state)) return;
           session.state = 'failed';
           session.completedAt = new Date().toISOString();
           this.sendToSubscribers(managed, 'coding-agent:session:error', {
@@ -589,6 +599,14 @@ export class CodingAgentSessionManager {
     const managed = this.sessions.get(sessionId);
     if (!managed || managed.session.userId !== userId) return false;
 
+    // Mark the terminal state BEFORE closing the ACP client or disposing the
+    // PTY. acpClient.close() synchronously emits onStateChange('closed'), whose
+    // handler would otherwise overwrite this with 'completed' and persist a
+    // second, wrong result; setting 'terminated' first lets that handler's
+    // terminal-state guard no-op.
+    managed.session.state = 'terminated';
+    managed.session.completedAt = new Date().toISOString();
+
     // Close ACP client if present
     if (managed.acpClient) {
       managed.acpClient
@@ -602,9 +620,6 @@ export class CodingAgentSessionManager {
       managed.pty.dispose();
       managed.pty = null;
     }
-
-    managed.session.state = 'terminated';
-    managed.session.completedAt = new Date().toISOString();
 
     this.sendToSubscribers(managed, 'coding-agent:session:state', {
       sessionId,
@@ -811,6 +826,10 @@ export class CodingAgentSessionManager {
   // ===========================================================================
   // Internal
   // ===========================================================================
+
+  private isTerminalState(state: CodingAgentSessionState): boolean {
+    return state === 'completed' || state === 'failed' || state === 'terminated';
+  }
 
   private fireCompletionCallbacks(managed: ManagedSession): void {
     const callbacks = managed.completionCallbacks.splice(0);

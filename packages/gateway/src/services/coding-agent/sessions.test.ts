@@ -32,6 +32,44 @@ vi.mock('../log.js', () => ({
   }),
 }));
 
+// Mock the ACP client. The constructor captures the options (so tests can fire
+// onStateChange), prompt() resolves to a controllable result, and close()
+// synchronously emits 'closed' — exactly as the real AcpClient.setState does.
+const acpHooks = vi.hoisted(() => ({
+  options: null as null | { onStateChange?: (s: string) => void },
+  promptResult: null as unknown,
+}));
+vi.mock('../../acp/acp-client.js', () => ({
+  AcpClient: class {
+    pid = 4242;
+    currentSession = null;
+    constructor(options: { onStateChange?: (s: string) => void }) {
+      acpHooks.options = options;
+    }
+    async connect() {}
+    async createSession() {}
+    async prompt() {
+      return (
+        acpHooks.promptResult ?? {
+          toolCalls: [],
+          plan: null,
+          output: 'done',
+          stopReason: 'end_turn',
+        }
+      );
+    }
+    async close() {
+      acpHooks.options?.onStateChange?.('closed');
+    }
+  },
+}));
+
+// Mock the results repo so persistResult never touches a real DB.
+const repoHooks = vi.hoisted(() => ({ save: vi.fn() }));
+vi.mock('../../db/repositories/coding-agent/results.js', () => ({
+  codingAgentResultsRepo: { save: (...args: unknown[]) => repoHooks.save(...args) },
+}));
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -519,6 +557,60 @@ describe('CodingAgentSessionManager', () => {
 
       expect(ptyHandle1.kill).toHaveBeenCalledWith('SIGTERM');
       expect(ptyHandle2.kill).toHaveBeenCalledWith('SIGTERM');
+    });
+  });
+
+  // ===========================================================================
+  // ACP terminal-state guard
+  // ===========================================================================
+  describe('ACP terminal-state guard', () => {
+    beforeEach(() => {
+      acpHooks.options = null;
+      acpHooks.promptResult = null;
+      repoHooks.save.mockResolvedValue(undefined);
+    });
+
+    it('does not flip a completed ACP session to failed on a teardown error', async () => {
+      const session = await manager.createAcpSession(
+        defaultInput(),
+        USER_A,
+        {},
+        'claude-acp',
+        [],
+        []
+      );
+
+      // runAcpPrompt is fire-and-forget; let prompt() resolve and mark completed.
+      await vi.waitFor(() => {
+        expect(manager.getSession(session.id, USER_A)?.state).toBe('completed');
+      });
+
+      // A late teardown error must be ignored now that the session is terminal.
+      acpHooks.options!.onStateChange!('error');
+
+      expect(manager.getSession(session.id, USER_A)?.state).toBe('completed');
+    });
+
+    it('does not persist a spurious completed result when terminating a running session', async () => {
+      // prompt() never resolves so the session stays 'running' until terminated.
+      acpHooks.promptResult = new Promise(() => {});
+      const session = await manager.createAcpSession(
+        defaultInput(),
+        USER_A,
+        {},
+        'claude-acp',
+        [],
+        []
+      );
+      expect(manager.getSession(session.id, USER_A)?.state).toBe('running');
+
+      repoHooks.save.mockClear();
+      manager.terminateSession(session.id, USER_A);
+
+      // close() emits 'closed', but the session is already 'terminated' — the
+      // onStateChange guard must prevent the spurious completed-result persist.
+      expect(manager.getSession(session.id, USER_A)?.state).toBe('terminated');
+      expect(repoHooks.save).not.toHaveBeenCalled();
     });
   });
 });
