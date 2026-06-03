@@ -890,6 +890,45 @@ describe('Scheduler start/stop', () => {
     scheduler.start();
     expect(() => scheduler.stop()).not.toThrow();
   });
+
+  it('does not run the same task concurrently when execution outlasts the check interval', async () => {
+    // checkInterval (1s) << defaultTimeout (large) so a hung task spans many ticks.
+    const scheduler = makeScheduler({ checkInterval: 1000, defaultTimeout: 1_000_000 });
+
+    // Executor that hangs until released — simulates a task running longer than
+    // the check interval.
+    let release!: (v: TaskExecutionResult) => void;
+    const pending = new Promise<TaskExecutionResult>((r) => {
+      release = r;
+    });
+    const executor = vi.fn(() => pending);
+    scheduler.setTaskExecutor(executor);
+
+    // A task that is already due (runAt in the past).
+    await scheduler.addTask(
+      makeMinimalAddTask({
+        runAt: new Date(Date.now() - 60_000).toISOString(),
+        oneTime: false,
+      })
+    );
+
+    scheduler.start();
+
+    // Tick 1: task is due — execution starts and hangs.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(executor).toHaveBeenCalledTimes(1);
+
+    // Tick 2: task is still "due" (nextRun is only advanced after execution
+    // finishes) but is already running — it must NOT be launched again.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(executor).toHaveBeenCalledTimes(1);
+
+    // Release and let it settle so nextRun advances and the guard clears.
+    release(makeSuccessResult('task_test_1'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    scheduler.stop();
+  });
 });
 
 // =============================================================================

@@ -418,6 +418,14 @@ export class Scheduler {
   private history: Map<string, TaskHistoryEntry[]> = new Map();
   private checkTimer: NodeJS.Timeout | null = null;
   private isRunning = false;
+  /**
+   * Task ids currently mid-execution. The check timer fires on a fixed interval
+   * (checkInterval) but a task may run far longer (up to its timeout), and
+   * nextRun is only advanced AFTER execution finishes — so without this guard an
+   * overlapping tick would see the same task still "due" and launch it again,
+   * running it concurrently with itself (duplicated side effects + cost).
+   */
+  private readonly runningTasks = new Set<string>();
   private taskExecutor?: (task: ScheduledTask) => Promise<TaskExecutionResult>;
   private notificationBridge?: SchedulerNotificationBridge;
 
@@ -647,13 +655,22 @@ export class Scheduler {
 
       const nextRunDate = new Date(task.nextRun);
       if (now >= nextRunDate) {
+        // Skip if a previous (still-running) tick is already executing this task.
+        // nextRun is not advanced until execution completes, so an overlapping
+        // tick would otherwise re-run the same task concurrently.
+        if (this.runningTasks.has(task.id)) {
+          continue;
+        }
         // Task is due
         log.info(`Running task: ${task.name} ${task.oneTime ? '(one-time)' : ''}`);
 
+        this.runningTasks.add(task.id);
         try {
           await this.executeTask(task);
         } catch (error) {
           log.error(`Task failed: ${task.name}`, error);
+        } finally {
+          this.runningTasks.delete(task.id);
         }
 
         // Handle one-time vs recurring tasks
