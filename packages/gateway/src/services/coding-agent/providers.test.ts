@@ -22,17 +22,21 @@ import {
   buildSkillsPreamble,
   buildClaudeCodePermissionArgs,
   resolvePermissions,
+  runClaudeCode,
 } from './providers.js';
 
 // Mock dependencies — coding-agent-providers now reads keys via the
 // ConfigCenter capability (read-only) instead of the repo directly.
 const mockGetApiKey = vi.fn();
+// tryImport is used to load the Claude Code SDK; the test supplies a fake.
+const mockTryImport = vi.hoisted(() => vi.fn());
 
 vi.mock('@ownpilot/core', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getConfigCenter: () => ({
     getApiKey: (...args: unknown[]) => mockGetApiKey(...args),
   }),
+  tryImport: (...args: unknown[]) => mockTryImport(...args),
 }));
 
 describe('coding-agent-providers', () => {
@@ -295,6 +299,37 @@ describe('coding-agent-providers', () => {
       expect(result.fileAccess).toBe('none');
       expect(result.autonomy).toBe('full-auto');
       expect(result.networkAccess).toBe(false);
+    });
+  });
+
+  describe('runClaudeCode env sanitization', () => {
+    it('does not pass ambient gateway secrets to the Claude Code SDK', async () => {
+      const mockQuery = vi.fn(async function* () {
+        // empty turn — we only care about the env passed to query()
+      });
+      mockTryImport.mockResolvedValue({ query: mockQuery });
+
+      process.env.OPENAI_API_KEY = 'sk-openai-leak';
+      process.env.AWS_SECRET_ACCESS_KEY = 'aws-leak';
+      process.env.SMTP_PASS = 'smtp-leak';
+      try {
+        // No cwd → skips getAllowedDirs/validateCwd.
+        await runClaudeCode({ prompt: 'hello' } as never, 'sk-ant-resolved');
+      } finally {
+        delete process.env.OPENAI_API_KEY;
+        delete process.env.AWS_SECRET_ACCESS_KEY;
+        delete process.env.SMTP_PASS;
+      }
+
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+      const passedEnv = (
+        mockQuery.mock.calls[0]![0] as { options: { env: Record<string, string> } }
+      ).options.env;
+      expect(passedEnv.OPENAI_API_KEY).toBeUndefined();
+      expect(passedEnv.AWS_SECRET_ACCESS_KEY).toBeUndefined();
+      expect(passedEnv.SMTP_PASS).toBeUndefined();
+      // The resolved provider key is still injected for the SDK to authenticate.
+      expect(passedEnv.ANTHROPIC_API_KEY).toBe('sk-ant-resolved');
     });
   });
 });

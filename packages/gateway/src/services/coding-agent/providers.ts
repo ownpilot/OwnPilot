@@ -217,10 +217,12 @@ export async function runClaudeCode(
   // approach raced under concurrent calls (each call would clobber the
   // env var while another's `await` was suspended), so two simultaneous
   // claude-code invocations could authenticate with the wrong key.
-  const sdkEnv: Record<string, string | undefined> = {
-    ...process.env,
-    ANTHROPIC_API_KEY: apiKey,
-  };
+  //
+  // Use the same sanitizer as the Codex/Gemini CLI paths: the SDK runs Claude
+  // Code (which executes arbitrary Bash) so it must NOT inherit the gateway's
+  // ambient secrets (other providers' keys, cloud creds, SMTP password, …).
+  // createSanitizedEnv strips those and injects ANTHROPIC_API_KEY for us.
+  const sdkEnv: Record<string, string | undefined> = createSanitizedEnv('claude-code', apiKey);
 
   try {
     for await (const msg of sdkModule.query({
