@@ -73,11 +73,20 @@ export class ChannelVerificationService {
       ownpilotUserId: tokenEntity.ownpilotUserId,
     });
 
-    // Mark as verified
-    await this.usersRepo.markVerified(channelUser.id, tokenEntity.ownpilotUserId, 'pin');
+    // Atomically claim the single-use token BEFORE marking verified. The read
+    // above (findValidToken) is not race-safe on its own: two concurrent
+    // /connect messages with the same token both observe is_used = FALSE.
+    // consumeToken's `AND is_used = FALSE` makes it the authoritative gate, so
+    // only the caller that actually flips the row proceeds to verification —
+    // the loser falls through to the invalid-token response instead of being
+    // linked to the owner's OwnPilot account off a single-use token.
+    const claimed = await this.verificationRepo.consumeToken(tokenEntity.id, channelUser.id);
+    if (!claimed) {
+      return { success: false, error: 'Invalid or expired token.' };
+    }
 
-    // Consume the token
-    await this.verificationRepo.consumeToken(tokenEntity.id, channelUser.id);
+    // Mark as verified (only the claim winner reaches here)
+    await this.usersRepo.markVerified(channelUser.id, tokenEntity.ownpilotUserId, 'pin');
 
     // Emit verification event
     try {

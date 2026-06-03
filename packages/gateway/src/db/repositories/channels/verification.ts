@@ -121,15 +121,20 @@ export class ChannelVerificationRepository extends BaseRepository {
   }
 
   /**
-   * Consume a token (mark as used).
+   * Atomically consume a single-use token. The `AND is_used = FALSE` guard
+   * makes this the authoritative claim: only the first concurrent caller flips
+   * the row, so it returns true exactly once per token. A find-then-consume
+   * sequence is NOT race-safe on its own (two `/connect` messages can both read
+   * an unused token); callers must gate verification on this return value.
    */
-  async consumeToken(tokenId: string, channelUserId: string): Promise<void> {
-    await this.execute(
+  async consumeToken(tokenId: string, channelUserId: string): Promise<boolean> {
+    const result = await this.execute(
       `UPDATE channel_verification_tokens
        SET is_used = TRUE, used_at = NOW(), used_by_channel_user_id = $1
-       WHERE id = $2`,
+       WHERE id = $2 AND is_used = FALSE`,
       [channelUserId, tokenId]
     );
+    return result.changes > 0;
   }
 
   /**

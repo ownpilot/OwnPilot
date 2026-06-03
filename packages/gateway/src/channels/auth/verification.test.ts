@@ -28,7 +28,8 @@ function createMockVerificationRepo() {
   return {
     generateToken: vi.fn(),
     findValidToken: vi.fn(),
-    consumeToken: vi.fn(),
+    // Default: this caller wins the atomic single-use claim.
+    consumeToken: vi.fn().mockResolvedValue(true),
     cleanupExpired: vi.fn(),
   };
 }
@@ -147,7 +148,7 @@ describe('ChannelVerificationService', () => {
       mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       mockUsersRepo.markVerified.mockResolvedValue(undefined);
-      mockVerificationRepo.consumeToken.mockResolvedValue(undefined);
+      mockVerificationRepo.consumeToken.mockResolvedValue(true);
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus
       >);
@@ -158,6 +159,21 @@ describe('ChannelVerificationService', () => {
         success: true,
         ownpilotUserId: 'owner-1',
       });
+    });
+
+    it('rejects and does NOT verify when the atomic token claim is lost (race)', async () => {
+      const tokenEntity = makeTokenEntity();
+      const channelUser = makeChannelUser();
+      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
+      // A concurrent /connect already consumed this single-use token → claim lost.
+      mockVerificationRepo.consumeToken.mockResolvedValue(false);
+
+      const result = await service.verifyToken(token, platform, platformUserId, displayName);
+
+      expect(result).toEqual({ success: false, error: 'Invalid or expired token.' });
+      // The loser must NOT be linked to the owner's account.
+      expect(mockUsersRepo.markVerified).not.toHaveBeenCalled();
     });
 
     it('should return error when token is invalid or expired', async () => {

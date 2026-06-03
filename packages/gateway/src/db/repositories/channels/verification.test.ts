@@ -205,11 +205,12 @@ describe('ChannelVerificationRepository', () => {
   // ---- consumeToken ----
 
   describe('consumeToken', () => {
-    it('marks a token as used', async () => {
+    it('atomically claims an unused token and returns true', async () => {
       mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
 
-      await repo.consumeToken('tok-1', 'cu-1');
+      const claimed = await repo.consumeToken('tok-1', 'cu-1');
 
+      expect(claimed).toBe(true);
       expect(mockAdapter.execute).toHaveBeenCalledWith(
         expect.stringContaining('SET is_used = TRUE'),
         ['cu-1', 'tok-1']
@@ -217,6 +218,16 @@ describe('ChannelVerificationRepository', () => {
       const sql = mockAdapter.execute.mock.calls[0][0] as string;
       expect(sql).toContain('used_at = NOW()');
       expect(sql).toContain('used_by_channel_user_id = $1');
+      // Atomic single-use guard — only flips a still-unused token.
+      expect(sql).toContain('is_used = FALSE');
+    });
+
+    it('returns false when the token was already consumed (no row updated)', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+
+      const claimed = await repo.consumeToken('tok-1', 'cu-1');
+
+      expect(claimed).toBe(false);
     });
   });
 
