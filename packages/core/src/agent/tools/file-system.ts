@@ -59,6 +59,37 @@ function getWorkspaceDir(workspaceDir?: string): string {
 }
 
 /**
+ * Resolve the real path of `target` when `target` itself does not exist yet
+ * (e.g. creating a new file). `fs.realpath` only resolves symlinks for paths
+ * that EXIST, so a missing leaf would skip symlink resolution entirely — and
+ * `path.normalize` does NOT follow symlinks. That gap lets a symlinked PARENT
+ * directory inside the workspace be used to escape it on create/write/delete/
+ * move (e.g. writing through a `cache -> /outside` symlink). This walks up to
+ * the nearest existing ancestor, resolves ITS symlinks, then re-attaches the
+ * non-existent trailing segments so the caller range-checks the real location.
+ * Exported for unit testing.
+ */
+export async function realpathNearestExistingAncestor(target: string): Promise<string> {
+  let current = path.resolve(target);
+  const trailing: string[] = [];
+  for (;;) {
+    try {
+      const real = await fs.realpath(current);
+      return trailing.length ? path.join(real, ...trailing) : real;
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) {
+        // Reached the filesystem root without an existing ancestor — fall back
+        // to the normalized (symlink-free) path.
+        return path.normalize(path.resolve(target));
+      }
+      trailing.unshift(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+/**
  * Check if path is within allowed directories (secure implementation)
  * - Resolves symlinks to prevent escape attacks
  * - Uses proper path comparison with separator check
@@ -80,9 +111,12 @@ export async function isPathAllowedAsync(
     try {
       resolvedPath = await fs.realpath(targetPath);
     } catch {
-      // File doesn't exist yet, use the normalized path
-      // But still check parent directory to prevent traversal
-      resolvedPath = path.normalize(targetPath);
+      // The target doesn't exist yet (e.g. creating a new file). realpath only
+      // resolves symlinks for paths that exist and path.normalize does NOT
+      // follow symlinks, so resolve the nearest existing ancestor's real path
+      // and re-attach the missing remainder — otherwise a symlinked parent
+      // directory could be used to escape the workspace on write/create.
+      resolvedPath = await realpathNearestExistingAncestor(targetPath);
     }
 
     // Reject null bytes and other injection attempts

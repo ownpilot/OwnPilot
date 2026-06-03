@@ -257,6 +257,31 @@ describe('Path traversal prevention', () => {
     expect(result.isError).toBe(true);
     expect(result.content).toContain('Access denied');
   });
+
+  it('blocks writing a NEW file through a symlinked parent dir that escapes the workspace', async () => {
+    // A symlinked directory exists inside the workspace ("cache" -> /outside),
+    // and the agent writes a file that does not exist yet under it. realpath of
+    // the missing leaf fails; the symlinked parent resolves OUTSIDE the
+    // workspace. Without resolving the parent's symlink, path.normalize would
+    // keep the path under the workspace prefix and the write would follow the
+    // symlink to escape.
+    const linkParent = path.join(WORKSPACE, 'cache');
+    const newFile = path.join(linkParent, 'evil.sh');
+    fsMock.realpath.mockImplementation(async (p: string) => {
+      if (p === newFile) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+      if (p === linkParent) return path.resolve('/outside/secrets');
+      return p;
+    });
+    fsMock.mkdir.mockResolvedValue(undefined);
+    fsMock.writeFile.mockResolvedValue(undefined);
+    fsMock.stat.mockResolvedValue(makeStat({ size: 4 }));
+
+    const result = await writeFileExecutor({ path: newFile, content: 'evil' }, ctx());
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Access denied');
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
 });
 
 // ===========================================================================
