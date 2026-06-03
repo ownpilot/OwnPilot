@@ -679,6 +679,24 @@ describe('PluginVerifier', () => {
       expect(result.trustLevel).toBe('community');
     });
 
+    it('warns and leaves integrity unverified when a signed manifest is checked without a content hash', () => {
+      const keys = generatePublisherKeys();
+      verifier.registerPublisherKey(keys.keyId, keys.publicKey, true);
+      const manifest = makeMinimalManifest();
+      const sig = signManifest(manifest, keys.privateKey, keys.keyId, 'the-real-hash');
+      const signedManifest: MarketplaceManifest = { ...manifest, signature: sig };
+
+      // No content hash passed — the files are not bound to the signature.
+      const result = verifier.verify(signedManifest);
+
+      expect(result.signatureValid).toBe(true);
+      expect(result.integrityValid).toBe(false);
+      // Must not silently look fully verified: integrity is capped at community
+      // and the gap is surfaced as a warning for the caller/operator.
+      expect(result.trustLevel).toBe('community');
+      expect(result.warnings.some((w) => /integrity NOT verified/i.test(w))).toBe(true);
+    });
+
     it('should return verified trust level for trusted publisher with content hash', () => {
       const keys = generatePublisherKeys();
       verifier.registerPublisherKey(keys.keyId, keys.publicKey, true);

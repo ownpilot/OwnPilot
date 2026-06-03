@@ -516,6 +516,18 @@ export class PluginVerifier {
               result.valid = false;
               result.errors.push('Content hash mismatch - files may have been tampered with');
             }
+          } else {
+            // The signature is valid, but without the actual content hash the
+            // package FILES were never bound to it — a valid signature over a
+            // claimed hash says nothing about what was downloaded. Surface this
+            // so a caller does not treat a signed manifest as installable on the
+            // signature alone. integrityValid stays false and trust is capped at
+            // 'community' below; this warning makes the gap explicit rather than
+            // silent. Callers gating installs must require integrityValid, not
+            // valid/signatureValid.
+            result.warnings.push(
+              'Signature valid but file integrity NOT verified — pass the downloaded content hash to verify() to confirm the files match the signature'
+            );
           }
         } else {
           result.valid = false;
