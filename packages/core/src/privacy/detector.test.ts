@@ -177,6 +177,44 @@ describe('PIIDetector', () => {
       expect(result.hasPII).toBe(true);
       expect(result.matches.some((m) => m.category === 'custom')).toBe(true);
     });
+
+    it('handles a custom pattern supplied without the global flag (no infinite loop)', () => {
+      // Without forcing the 'g' flag, the matching loop never advances lastIndex
+      // and detect() hangs forever. A 1s test timeout turns that hang into a
+      // failure; with the fix it completes and still finds every occurrence.
+      const detector = createDetector({
+        customPatterns: [
+          {
+            name: 'ticket',
+            category: 'custom',
+            pattern: /TKT-\d{4}/, // NOTE: no 'g'
+            confidence: 0.95,
+            severity: 'low',
+          },
+        ],
+      });
+      const result = detector.detect('Tickets TKT-1111 and TKT-2222');
+      expect(result.matches.filter((m) => m.category === 'custom')).toHaveLength(2);
+    }, 1000);
+
+    it('handles a zero-width-capable custom pattern (no infinite loop)', () => {
+      // A global pattern that can match the empty string does not advance
+      // lastIndex on the empty match — the zero-width guard must skip it.
+      const detector = createDetector({
+        customPatterns: [
+          {
+            name: 'maybe-digits',
+            category: 'custom',
+            pattern: /\d*/g,
+            confidence: 0.95,
+            severity: 'low',
+          },
+        ],
+      });
+      // Just needs to terminate; the assertion is that we got here at all.
+      const result = detector.detect('abc 123 def');
+      expect(result).toBeDefined();
+    }, 1000);
   });
 
   describe('utility functions', () => {

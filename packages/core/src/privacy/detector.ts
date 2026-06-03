@@ -75,12 +75,27 @@ export class PIIDetector {
       }
 
       // Create a fresh regex from the source pattern to avoid lastIndex interference
-      // under concurrent calls on the same PIIDetector instance.
-      const regex = new RegExp(pattern.pattern.source, pattern.pattern.flags);
+      // under concurrent calls on the same PIIDetector instance. Force the global
+      // flag: the matching loop below only advances lastIndex when the regex is
+      // global, so a pattern without 'g' (a custom pattern via
+      // DetectorConfig.customPatterns) would re-match the first occurrence forever
+      // and hang the detector on any input.
+      const flags = pattern.pattern.flags.includes('g')
+        ? pattern.pattern.flags
+        : pattern.pattern.flags + 'g';
+      const regex = new RegExp(pattern.pattern.source, flags);
 
       let match: RegExpExecArray | null;
       while ((match = regex.exec(text)) !== null) {
         const matchText = match[0];
+
+        // Guard against zero-width matches (e.g. a custom pattern like /x*/):
+        // a global regex does not advance lastIndex on an empty match, so without
+        // this the loop would never terminate.
+        if (matchText === '') {
+          regex.lastIndex++;
+          continue;
+        }
         const start = match.index;
         const end = start + matchText.length;
         const rangeKey = `${start}-${end}`;
