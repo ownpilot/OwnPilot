@@ -55,6 +55,27 @@ const log = getLog('CliChatProvider');
 
 export type { CliChatBinary } from './chat-parsers.js';
 
+/**
+ * Escape a single argument for a Windows `cmd.exe` command line (shell:true).
+ *
+ * The previous `"${arg}"` wrapping did NOT escape an embedded `"`, so an
+ * argument containing a double quote (e.g. a binary path or model name from
+ * config) could break out of the quotes and inject commands. This implements
+ * the well-known qntm.org/cmd algorithm (as used by `cross-spawn`): escape the
+ * argument for the program's CommandLineToArgvW parser, wrap it in quotes, then
+ * escape every cmd.exe metacharacter with `^`. Exported for unit testing.
+ */
+export function escapeWindowsArg(arg: string): string {
+  let escaped = `${arg}`;
+  // Escape embedded quotes (and the backslashes that precede them) for the
+  // program's argv parser, plus double any trailing backslashes.
+  escaped = escaped.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1');
+  escaped = `"${escaped}"`;
+  // Neutralize cmd.exe metacharacters so they cannot be interpreted by the shell.
+  escaped = escaped.replace(/([()%!^<>&|;,\s])/g, '^$1');
+  return escaped;
+}
+
 export interface CliChatProviderConfig {
   /** CLI binary name */
   binary: CliChatBinary;
@@ -736,9 +757,11 @@ export class CliChatProvider implements IProvider {
       let stderr = '';
       let killed = false;
 
-      // On Windows, join command+args into a single shell string to avoid DEP0190 warning
+      // On Windows, join command+args into a single shell string to avoid the
+      // DEP0190 warning. Each token is escaped (qntm.org/cmd algorithm) so a
+      // quote or metacharacter in the binary path / args cannot inject commands.
       const proc = IS_WIN
-        ? spawn([command, ...args].map((a) => `"${a}"`).join(' '), [], {
+        ? spawn([command, ...args].map(escapeWindowsArg).join(' '), [], {
             env,
             cwd: this.config.cwd,
             stdio: ['pipe', 'pipe', 'pipe'],

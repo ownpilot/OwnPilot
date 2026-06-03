@@ -44,6 +44,7 @@ import {
   getCliBinaryFromProviderId,
   getCliChatProviderDefinition,
   createCliChatProvider,
+  escapeWindowsArg,
 } from './chat-provider.js';
 import { isBinaryInstalled } from '../binary-utils.js';
 import { platform } from 'node:os';
@@ -622,4 +623,29 @@ afterEach(async () => {
   resetHeartbeatService();
   resetPulseMetricsService();
   resetServiceRegistrySync();
+});
+
+describe('escapeWindowsArg', () => {
+  it('wraps a plain argument in quotes', () => {
+    expect(escapeWindowsArg('plain')).toBe('"plain"');
+  });
+
+  it('escapes an embedded double quote so it cannot break out', () => {
+    // Without escaping, `a"b` would close the wrapping quote mid-argument.
+    expect(escapeWindowsArg('a"b')).toBe('"a\\"b"');
+  });
+
+  it('neutralizes cmd.exe metacharacters with a caret', () => {
+    expect(escapeWindowsArg('a&b')).toBe('"a^&b"');
+    expect(escapeWindowsArg('a|b')).toBe('"a^|b"');
+  });
+
+  it('neutralizes a command-injection attempt', () => {
+    const escaped = escapeWindowsArg('x" & whoami & "y');
+    // The embedded quotes are escaped (\") and the & are caret-escaped, so the
+    // payload stays a single literal argument instead of three commands.
+    expect(escaped).toContain('\\"');
+    expect(escaped).toContain('^&');
+    expect(escaped).not.toMatch(/(^|[^^])&/); // no un-escaped &
+  });
 });
