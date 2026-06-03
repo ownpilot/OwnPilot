@@ -174,9 +174,14 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
         return err({ type: 'response_too_large', maxSize: this.maxResponseSize });
       }
 
-      const body = await response.text();
-
-      if (body.length > this.maxResponseSize) {
+      // Enforce the size cap WHILE streaming. response.text() buffers the entire
+      // body into memory before returning, so a response that omits (or lies
+      // about) content-length could exhaust process memory long before the
+      // post-read body.length check fired — the limit existed but never actually
+      // bounded memory. Read incrementally and abort the moment the accumulated
+      // bytes exceed maxResponseSize.
+      const body = await this.readBodyWithCap(response);
+      if (body === null) {
         return err({ type: 'response_too_large', maxSize: this.maxResponseSize });
       }
 
@@ -203,6 +208,37 @@ export class PluginIsolatedNetwork implements IsolatedNetwork {
         message: getErrorMessage(e),
       });
     }
+  }
+
+  /**
+   * Read a response body to a string, enforcing {@link maxResponseSize} as bytes
+   * arrive. Returns `null` (and cancels the stream) the moment the accumulated
+   * size exceeds the cap, so an unbounded/undeclared response can't buffer the
+   * whole payload into memory. Falls back to text() when the platform Response
+   * has no readable stream (e.g. some mocked responses).
+   */
+  private async readBodyWithCap(response: Response): Promise<string | null> {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      const text = await response.text();
+      return text.length > this.maxResponseSize ? null : text;
+    }
+
+    const decoder = new TextDecoder();
+    let received = 0;
+    let text = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > this.maxResponseSize) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    return text;
   }
 
   isDomainAllowed(domain: string): boolean {
