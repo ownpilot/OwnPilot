@@ -883,6 +883,55 @@ describe('Agent processConversation (via chat)', () => {
     }
   });
 
+  it('preserves the originating tool_call id when executeToolCall itself rejects', async () => {
+    // executeToolCall is designed to RETURN error results, but the loop wraps it
+    // in Promise.allSettled as a defensive net for an unexpected throw. That net
+    // must keep the original tool_call id: providers like Anthropic reject the
+    // NEXT request if an assistant tool_use block has no matching tool_result.
+    const { agent, provider } = createAgentWithMockProvider();
+    const completeFn = provider.complete as ReturnType<typeof vi.fn>;
+
+    // Force the rejected branch (not the returned-error branch).
+    vi.spyOn(agent.getToolRegistry(), 'executeToolCall').mockRejectedValue(
+      new Error('unexpected executor crash')
+    );
+
+    completeFn.mockResolvedValueOnce(
+      ok({
+        id: 'resp-1',
+        content: '',
+        toolCalls: [{ id: 'tc-keep-me', name: 'test_tool', arguments: '{}' }],
+        finishReason: 'tool_calls' as const,
+        model: 'gpt-4o',
+        createdAt: new Date(),
+      })
+    );
+    completeFn.mockResolvedValueOnce(
+      ok({
+        id: 'resp-2',
+        content: 'Recovered.',
+        finishReason: 'stop' as const,
+        model: 'gpt-4o',
+        createdAt: new Date(),
+      })
+    );
+
+    const result = await agent.chat('Run tool that crashes the executor');
+    expect(result.ok).toBe(true);
+
+    // The second provider call must carry a tool result keyed to the ORIGINAL
+    // id 'tc-keep-me', never the old 'unknown' placeholder that orphaned it.
+    const secondRequest = completeFn.mock.calls[1]?.[0] as { messages: unknown[] };
+    const toolResults = secondRequest.messages
+      .filter((m): m is { role: string; toolResults?: { toolCallId: string }[] } => {
+        return typeof m === 'object' && m !== null && (m as { role?: string }).role === 'tool';
+      })
+      .flatMap((m) => m.toolResults ?? []);
+
+    expect(toolResults.some((r) => r.toolCallId === 'tc-keep-me')).toBe(true);
+    expect(toolResults.some((r) => r.toolCallId === 'unknown')).toBe(false);
+  });
+
   it('returns error when maximum turns exceeded', async () => {
     const { agent, provider } = createAgentWithMockProvider({}, { maxTurns: 2 });
     const completeFn = provider.complete as ReturnType<typeof vi.fn>;

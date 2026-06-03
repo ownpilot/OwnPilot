@@ -430,13 +430,20 @@ export class Agent {
           });
 
           const settled = await Promise.allSettled(execPromises);
-          for (const outcome of settled) {
+          for (let i = 0; i < settled.length; i++) {
+            const outcome = settled[i]!;
             if (outcome.status === 'fulfilled') {
               executionResults.push(outcome.value);
             } else {
-              // Rejected tool call — report error back to the model
+              // Rejected tool call — report the error back to the model, but keep
+              // the ORIGINATING tool_call id. Promise.allSettled preserves input
+              // order, so settled[i] corresponds to approvedToolCalls[i]. Using a
+              // placeholder id here would orphan the assistant's tool_use block:
+              // providers that require a matching tool_result for every tool_use
+              // (e.g. Anthropic) reject the NEXT request, breaking the whole
+              // conversation rather than degrading this single call.
               executionResults.push({
-                toolCallId: 'unknown',
+                toolCallId: approvedToolCalls[i]!.id,
                 content: `Tool execution failed: ${getErrorMessage(outcome.reason)}`,
                 isError: true,
               });
