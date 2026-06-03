@@ -89,11 +89,40 @@ export class PIIRedactor {
       };
     }
 
-    // Sort matches by position (reverse order for safe replacement)
-    const sortedMatches = [...matchesToRedact].sort((a, b) => b.start - a.start);
+    // Coalesce overlapping/contained matches into non-overlapping spans BEFORE
+    // replacing. The detector dedups only exact ranges, so a generic and a
+    // specific pattern can both match overlapping spans of the same value (e.g.
+    // "api_key=sk-…" matched as both api_key and the specific sk- token). The
+    // reverse-order slice replacement below is only correct for disjoint spans;
+    // with overlaps and a length-changing mode (category/hash/remove) the second
+    // splice reads stale offsets and can LEAVE ORIGINAL PII CHARACTERS in the
+    // output. Merge first so every covered character is redacted exactly once.
+    const ascending = [...matchesToRedact].sort((a, b) => a.start - b.start || a.end - b.end);
+    // Mutable copy type — PIIMatch fields are readonly, but the merge below
+    // extends spans in place.
+    const mergedSpans: { -readonly [K in keyof PIIMatch]: PIIMatch[K] }[] = [];
+    for (const m of ascending) {
+      const last = mergedSpans[mergedSpans.length - 1];
+      if (last && m.start < last.end) {
+        // Overlapping/contained — extend the span and keep the highest severity
+        // (and its category) for labeling the merged region.
+        if (m.end > last.end) {
+          last.end = m.end;
+          last.match = text.slice(last.start, last.end);
+        }
+        if (SEVERITY_ORDER[m.severity] > SEVERITY_ORDER[last.severity]) {
+          last.severity = m.severity;
+          last.category = m.category;
+        }
+      } else {
+        mergedSpans.push({ ...m, match: text.slice(m.start, m.end) });
+      }
+    }
 
+    // Replace right-to-left so earlier (lower-offset) spans stay valid.
     let redactedText = text;
-    for (const match of sortedMatches) {
+    for (let i = mergedSpans.length - 1; i >= 0; i--) {
+      const match = mergedSpans[i]!;
       const replacement = this.getRedaction(match, opts);
       redactedText =
         redactedText.slice(0, match.start) + replacement + redactedText.slice(match.end);

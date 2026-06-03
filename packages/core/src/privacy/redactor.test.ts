@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createRedactor, redactPII, maskPII, labelPII, removePII } from './redactor.js';
+import { createDetector } from './detector.js';
 
 describe('PIIRedactor', () => {
   describe('mask mode', () => {
@@ -186,6 +187,38 @@ describe('PIIRedactor', () => {
       const result = redactPII('Email: test@example.com');
       expect(result.redacted_matches.length).toBe(1);
       expect(result.redacted_matches[0]?.category).toBe('email');
+    });
+
+    it('does not leak PII when matches overlap in a length-changing mode', () => {
+      // Two patterns produce overlapping/contained spans of the same value:
+      // /\d{10}/ matches the whole number, /23/ matches a pair inside it. The
+      // detector keeps both (distinct ranges). Without coalescing the spans,
+      // reverse-order replacement in a length-changing mode (category) reads
+      // stale offsets and leaves original digits in the output.
+      const detector = createDetector({
+        // Isolate the two overlapping custom patterns from built-in ones (a
+        // built-in phone pattern also matches 10 digits and would change the
+        // label) so the test deterministically exercises the overlap merge.
+        useBuiltInPatterns: false,
+        customPatterns: [
+          {
+            name: 'long-num',
+            category: 'custom',
+            pattern: /\d{10}/g,
+            confidence: 0.95,
+            severity: 'high',
+          },
+          { name: 'pair', category: 'custom', pattern: /23/g, confidence: 0.95, severity: 'low' },
+        ],
+      });
+      const redactor = createRedactor(detector);
+
+      const labeled = redactor.redact('0123456789', { mode: 'category' });
+      expect(labeled.redacted).toBe('[CUSTOM]');
+      expect(labeled.redacted).not.toMatch(/\d/);
+
+      const removed = redactor.redact('0123456789', { mode: 'remove' });
+      expect(removed.redacted).not.toMatch(/\d/);
     });
 
     it('handles keepFirst + keepLast larger than string', () => {
