@@ -5,6 +5,7 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
+import { isPathAllowedAsync, resolveFilePath } from './file-system.js';
 
 // ============================================================================
 // READ PDF TOOL
@@ -41,11 +42,17 @@ export const readPdfTool: ToolDefinition = {
 
 export const readPdfExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
-  const path = params.path as string;
+  const rawPath = params.path as string;
   const pages = (params.pages as string) || 'all';
   const extractTables = params.extractTables === true;
+
+  // Confine to the workspace sandbox, same as the file-system tools.
+  const filePath = resolveFilePath(rawPath, context.workspaceDir);
+  if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
+    return { content: { error: `Access denied to path: ${rawPath}` }, isError: true };
+  }
 
   try {
     // Dynamic import for PDF parsing
@@ -53,15 +60,15 @@ export const readPdfExecutor: ToolExecutor = async (
 
     // Check if file exists
     try {
-      await fs.access(path);
+      await fs.access(filePath);
     } catch {
       return {
-        content: { error: `PDF file not found: ${path}` },
+        content: { error: `PDF file not found: ${rawPath}` },
         isError: true,
       };
     }
 
-    const fileBuffer = await fs.readFile(path);
+    const fileBuffer = await fs.readFile(filePath);
 
     // pdf-parse type for dynamic import
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,11 +108,11 @@ export const readPdfExecutor: ToolExecutor = async (
     }
 
     // Fallback: Return file info only
-    const stats = await fs.stat(path);
+    const stats = await fs.stat(filePath);
     return {
       content: {
         warning: 'pdf-parse library not installed. Install with: pnpm add pdf-parse',
-        path,
+        path: filePath,
         size: stats.size,
         modified: stats.mtime.toISOString(),
       },
@@ -205,14 +212,20 @@ export const createPdfTool: ToolDefinition = {
 
 export const createPdfExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
-  const outputPath = params.path as string;
+  const rawOutputPath = params.path as string;
   const content = params.content as string;
   const format = (params.format as string) || 'text';
   const title = params.title as string | undefined;
   const author = params.author as string | undefined;
   const pageSize = (params.pageSize as string) || 'A4';
+
+  // Confine writes to the workspace sandbox, same as the file-system tools.
+  const outputPath = resolveFilePath(rawOutputPath, context.workspaceDir);
+  if (!(await isPathAllowedAsync(outputPath, context.workspaceDir))) {
+    return { content: { error: `Access denied to path: ${rawOutputPath}` }, isError: true };
+  }
 
   try {
     const fs = await import('node:fs/promises');
@@ -365,9 +378,15 @@ export const pdfInfoTool: ToolDefinition = {
 
 export const pdfInfoExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
-  const pdfPath = params.path as string;
+  const rawPath = params.path as string;
+
+  // Confine to the workspace sandbox, same as the file-system tools.
+  const pdfPath = resolveFilePath(rawPath, context.workspaceDir);
+  if (!(await isPathAllowedAsync(pdfPath, context.workspaceDir))) {
+    return { content: { error: `Access denied to path: ${rawPath}` }, isError: true };
+  }
 
   try {
     const fs = await import('node:fs/promises');

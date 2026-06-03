@@ -30,6 +30,15 @@ vi.mock('node:path', () => ({
   dirname: (...args: unknown[]) => mockDirname(...args),
 }));
 
+// The workspace sandbox is exercised by file-system.test.ts; here we mock it so
+// these PDF-logic tests are not coupled to the real path/realpath resolution.
+// Default: allow. Individual tests flip it to false to assert rejection.
+const mockIsPathAllowed = vi.hoisted(() => vi.fn(async () => true));
+vi.mock('./file-system.js', () => ({
+  isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowed(...args),
+  resolveFilePath: (p: string) => p,
+}));
+
 // ---------------------------------------------------------------------------
 // Import module under test (after mocks are wired)
 // ---------------------------------------------------------------------------
@@ -126,6 +135,7 @@ function makePdfKitMock(chunkContent = 'pdf-bytes') {
 beforeEach(() => {
   vi.resetAllMocks();
   mockDirname.mockImplementation((p: string) => p.substring(0, p.lastIndexOf('/')) || '.');
+  mockIsPathAllowed.mockResolvedValue(true);
 });
 
 // =====================================================================
@@ -1173,5 +1183,36 @@ describe('Edge cases', () => {
     const result = await pdfInfoExecutor({ path: '/info.pdf' }, emptyContext);
     const content = result.content as Record<string, unknown>;
     expect(content.modified).toBe('2024-01-15T08:30:00.000Z');
+  });
+});
+
+describe('workspace sandbox enforcement', () => {
+  it('read_pdf denies a path outside the workspace and reads nothing', async () => {
+    mockIsPathAllowed.mockResolvedValueOnce(false);
+    const result = await readPdfExecutor({ path: '/etc/passwd' }, emptyContext);
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('Access denied');
+    expect(mockReadFile).not.toHaveBeenCalled();
+    expect(mockAccess).not.toHaveBeenCalled();
+  });
+
+  it('create_pdf denies a write outside the workspace and writes nothing', async () => {
+    mockIsPathAllowed.mockResolvedValueOnce(false);
+    const result = await createPdfExecutor(
+      { path: '/etc/cron.d/evil', content: 'payload' },
+      emptyContext
+    );
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('Access denied');
+    expect(mockWriteFile).not.toHaveBeenCalled();
+    expect(mockMkdir).not.toHaveBeenCalled();
+  });
+
+  it('pdf_info denies a path outside the workspace', async () => {
+    mockIsPathAllowed.mockResolvedValueOnce(false);
+    const result = await pdfInfoExecutor({ path: '/etc/shadow' }, emptyContext);
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('Access denied');
+    expect(mockStat).not.toHaveBeenCalled();
   });
 });

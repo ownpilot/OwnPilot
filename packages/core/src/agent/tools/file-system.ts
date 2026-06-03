@@ -158,7 +158,7 @@ export async function isPathAllowedAsync(
  * @param filePath Path to resolve
  * @param workspaceDir Optional workspace directory override from context
  */
-function resolveFilePath(filePath: string, workspaceDir?: string): string {
+export function resolveFilePath(filePath: string, workspaceDir?: string): string {
   if (path.isAbsolute(filePath)) {
     return path.resolve(filePath);
   }

@@ -44,6 +44,15 @@ vi.mock('node:path', () => ({
   join: (...args: unknown[]) => mockJoin(...args),
 }));
 
+// The workspace sandbox is exercised by file-system.test.ts; mock it here so the
+// image-logic tests are not coupled to real path/realpath resolution. Default:
+// allow. Tests flip it to false to assert rejection.
+const mockIsPathAllowed = vi.hoisted(() => vi.fn(async () => true));
+vi.mock('./file-system.js', () => ({
+  isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowed(...args),
+  resolveFilePath: (p: string) => p,
+}));
+
 const {
   analyzeImageTool,
   analyzeImageExecutor,
@@ -1286,5 +1295,28 @@ describe('resizeImageExecutor', () => {
       // 500 / (1000/500) = 500 / 2 = 250
       expect(mockSharpInstance.resize).toHaveBeenCalledWith(500, 250, { fit: 'inside' });
     });
+  });
+});
+
+describe('workspace sandbox enforcement', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('analyze_image denies a local file outside the workspace and reads nothing', async () => {
+    mockIsPathAllowed.mockResolvedValueOnce(false);
+    const result = await analyzeImageExecutor({ source: '/etc/passwd.png' }, ctx);
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('Access denied');
+    expect(mockStat).not.toHaveBeenCalled();
+    expect(mockReadFile).not.toHaveBeenCalled();
+  });
+
+  it('resize_image denies a source outside the workspace and reads nothing', async () => {
+    mockIsPathAllowed.mockResolvedValueOnce(false);
+    const result = await resizeImageExecutor({ source: '/etc/secret.png', width: 100 }, ctx);
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain('Access denied');
+    expect(mockAccess).not.toHaveBeenCalled();
   });
 });

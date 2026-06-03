@@ -5,6 +5,7 @@
 
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
+import { isPathAllowedAsync, resolveFilePath } from './file-system.js';
 
 // Maximum image size for analysis (10MB)
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
@@ -91,7 +92,7 @@ export const analyzeImageTool: ToolDefinition = {
 
 export const analyzeImageExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const task = (params.task as string) || 'describe';
@@ -127,9 +128,15 @@ export const analyzeImageExecutor: ToolExecutor = async (
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
 
+      // Confine local-file reads to the workspace sandbox, like the file tools.
+      const filePath = resolveFilePath(source, context.workspaceDir);
+      if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
+        return { content: { error: `Access denied to path: ${source}` }, isError: true };
+      }
+
       // Check if file exists
       try {
-        const stats = await fs.stat(source);
+        const stats = await fs.stat(filePath);
         if (stats.size > MAX_IMAGE_SIZE) {
           return {
             content: {
@@ -145,7 +152,7 @@ export const analyzeImageExecutor: ToolExecutor = async (
         };
       }
 
-      imageFormat = path.extname(source).slice(1).toLowerCase();
+      imageFormat = path.extname(filePath).slice(1).toLowerCase();
 
       // Validate format
       if (!SUPPORTED_FORMATS.includes(imageFormat)) {
@@ -159,7 +166,7 @@ export const analyzeImageExecutor: ToolExecutor = async (
       }
 
       // Read and validate the file (actual data passed to Vision API at integration time)
-      await fs.readFile(source);
+      await fs.readFile(filePath);
     }
 
     // Build analysis prompt based on task
@@ -384,7 +391,7 @@ export const resizeImageTool: ToolDefinition = {
 
 export const resizeImageExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
   const source = params.source as string;
   const width = params.width as number | undefined;
@@ -404,8 +411,14 @@ export const resizeImageExecutor: ToolExecutor = async (
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
 
+    // Confine source reads to the workspace sandbox, like the file tools.
+    const sourcePath = resolveFilePath(source, context.workspaceDir);
+    if (!(await isPathAllowedAsync(sourcePath, context.workspaceDir))) {
+      return { content: { error: `Access denied to path: ${source}` }, isError: true };
+    }
+
     // Check if file exists
-    await fs.access(source);
+    await fs.access(sourcePath);
 
     // Sharp type for dynamic import
     type SharpInstance = {
@@ -435,7 +448,7 @@ export const resizeImageExecutor: ToolExecutor = async (
     }
 
     // Process image
-    let image = sharp(source);
+    let image = sharp(sourcePath);
     const metadata = await image.metadata();
 
     // Calculate dimensions
@@ -457,10 +470,20 @@ export const resizeImageExecutor: ToolExecutor = async (
     });
 
     // Determine output path
-    const ext = path.extname(source);
-    const baseName = path.basename(source, ext);
-    const dir = path.dirname(source);
-    const output = outputPath || path.join(dir, `${baseName}_resized${ext}`);
+    const ext = path.extname(sourcePath);
+    const baseName = path.basename(sourcePath, ext);
+    const dir = path.dirname(sourcePath);
+    const output = resolveFilePath(
+      outputPath || path.join(dir, `${baseName}_resized${ext}`),
+      context.workspaceDir
+    );
+    // Confine the write target to the workspace sandbox too.
+    if (!(await isPathAllowedAsync(output, context.workspaceDir))) {
+      return {
+        content: { error: `Access denied to path: ${outputPath ?? output}` },
+        isError: true,
+      };
+    }
 
     // Apply quality for JPEG
     if (ext.toLowerCase() === '.jpg' || ext.toLowerCase() === '.jpeg') {
