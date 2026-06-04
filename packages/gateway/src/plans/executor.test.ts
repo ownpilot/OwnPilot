@@ -889,6 +889,51 @@ describe('PlanExecutor', () => {
       // but executeSteps completed (step=null → completed path)
       expect(result.planId).toBe('plan-1');
     });
+
+    it('persists status=cancelled (not failed) when aborted mid-loop', async () => {
+      // Regression: abort() sets status='cancelled' and aborts the signal; the
+      // loop then throws 'Plan execution aborted'. The catch must NOT overwrite
+      // the cancelled status with 'failed' (nor fire plan:failed).
+      const plan = makePlan();
+      const step = makeStep({ config: { toolName: 'slow_tool', toolArgs: {} } });
+
+      mockPlanService.getPlan.mockResolvedValue(plan);
+      mockPlanService.getSteps.mockResolvedValue([step]);
+      mockPlanService.getStepsByStatus.mockResolvedValue([]);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+      (executeTool as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true, result: {} });
+
+      // Block the loop in getNextStep so we can abort while it is in flight,
+      // then hand it a step so the loop executes it and iterates back to the
+      // top — where the aborted signal triggers the throw.
+      let releaseStep!: () => void;
+      mockPlanService.getNextStep
+        .mockImplementationOnce(
+          () => new Promise<PlanStep>((resolve) => (releaseStep = () => resolve(step)))
+        )
+        .mockResolvedValue(null);
+
+      const failedListener = vi.fn();
+      executor.on('plan:failed', failedListener);
+
+      const promise = executor.execute('plan-1');
+      await vi.advanceTimersByTimeAsync(0); // reach getNextStep
+
+      expect(await executor.abort('plan-1')).toBe(true);
+
+      releaseStep();
+      await vi.advanceTimersByTimeAsync(100); // run step, loop back, throw on aborted signal
+      const result = await promise;
+
+      expect(result.status).toBe('cancelled');
+      expect(result.error).toBeUndefined();
+      expect(failedListener).not.toHaveBeenCalled();
+      expect(mockPlanService.updatePlan).not.toHaveBeenCalledWith(
+        'user-1',
+        'plan-1',
+        expect.objectContaining({ status: 'failed' })
+      );
+    });
   });
 
   // ========================================================================

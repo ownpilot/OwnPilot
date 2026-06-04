@@ -184,8 +184,30 @@ export class PlanExecutor extends EventEmitter {
 
       return result;
     } catch (error) {
+      // If the signal was already aborted when we reached here, this is a
+      // user-initiated abort(): it has already persisted status='cancelled'
+      // and the execution loop threw 'Plan execution aborted'. Capture that
+      // BEFORE our own abort() call below so we can tell a cancellation apart
+      // from a genuine failure — otherwise the catch would overwrite the
+      // 'cancelled' status with 'failed' (and fire plan:failed) for every
+      // user cancel of a running plan.
+      const wasCancelled = abortController.signal.aborted;
+
       // Signal cancellation to any pending step execution
       abortController.abort();
+
+      if (wasCancelled) {
+        return {
+          planId,
+          status: 'cancelled',
+          completedSteps: (
+            await this.planService.getStepsByStatus(this.config.userId, planId, 'completed')
+          ).length,
+          totalSteps: (await this.planService.getSteps(this.config.userId, planId)).length,
+          duration: Date.now() - startTime,
+          results,
+        };
+      }
 
       const errorMessage = getErrorMessage(error);
       await this.planService.updatePlan(this.config.userId, planId, {
