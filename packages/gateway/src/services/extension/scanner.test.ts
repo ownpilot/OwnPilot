@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { join, resolve } from 'path';
 
 vi.mock('fs', () => ({
   existsSync: vi.fn(() => false),
@@ -23,6 +24,8 @@ const {
   getDefaultSkillsDirectory,
   getWorkspaceSkillsDirectory,
   getAllScanDirectories,
+  getScanDirectories,
+  resolveManagedSkillDir,
   scanSingleDirectory,
   orderScanCandidates,
   SKILL_TIER_RANK,
@@ -82,6 +85,46 @@ describe('precedence ordering', () => {
       { dir: '/ws', tier: 'workspace' },
     ]);
     expect(ordered[ordered.length - 1]!.tier).toBe('workspace');
+  });
+});
+
+describe('resolveManagedSkillDir', () => {
+  it('returns null for a missing source path (DB-only skills)', () => {
+    expect(resolveManagedSkillDir(undefined)).toBeNull();
+    expect(resolveManagedSkillDir(null)).toBeNull();
+    expect(resolveManagedSkillDir('')).toBeNull();
+  });
+
+  it('returns the skill directory for a personal-skills manifest', () => {
+    const root = getDefaultSkillsDirectory(); // /data/skills
+    const manifest = join(root, 'code-review', 'SKILL.md');
+    expect(resolveManagedSkillDir(manifest)).toBe(resolve(join(root, 'code-review')));
+  });
+
+  it('returns the skill directory for a managed-extensions upload manifest', () => {
+    const root = getDefaultExtensionsDirectory(); // /data/extensions
+    const manifest = join(root, 'upload-abc123', 'SKILL.md');
+    expect(resolveManagedSkillDir(manifest)).toBe(resolve(join(root, 'upload-abc123')));
+  });
+
+  it('refuses to delete bundled (read-only) skills', () => {
+    vi.mocked(existsSync).mockReturnValue(true); // make bundled dirs resolve
+    const bundled = getScanDirectories().find((d) => d.tier === 'bundled');
+    expect(bundled).toBeDefined();
+    const manifest = join(bundled!.dir, 'document-assistant', 'SKILL.md');
+    expect(resolveManagedSkillDir(manifest)).toBeNull();
+  });
+
+  it('refuses a path that is not an immediate child of a writable root', () => {
+    const root = getDefaultSkillsDirectory();
+    // parent is /data/skills/a (not a scan root itself) → not deletable
+    const nested = join(root, 'a', 'b', 'SKILL.md');
+    expect(resolveManagedSkillDir(nested)).toBeNull();
+  });
+
+  it('refuses an arbitrary path outside every scan root', () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+    expect(resolveManagedSkillDir(join('/somewhere', 'else', 'SKILL.md'))).toBeNull();
   });
 });
 

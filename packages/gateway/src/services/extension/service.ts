@@ -5,7 +5,7 @@
  * Handles trigger synchronization and Config Center registration.
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, rmSync } from 'fs';
 import { resolve } from 'path';
 import { getEventSystem, type IExtensionService } from '@ownpilot/core';
 import { extensionsRepo, type ExtensionRecord } from '../../db/repositories/extensions.js';
@@ -28,7 +28,12 @@ import {
   deactivateExtensionTriggers,
   cleanupOrphanTriggers as cleanupOrphanTriggersImpl,
 } from './trigger-manager.js';
-import { getAllScanDirectories, scanSingleDirectory, type ScanResult } from './scanner.js';
+import {
+  getAllScanDirectories,
+  resolveManagedSkillDir,
+  scanSingleDirectory,
+  type ScanResult,
+} from './scanner.js';
 import { isWithinDirectory } from '../../utils/file-safety.js';
 import { evaluateExtensionGate, describeGateFailure, type ExtensionGateResult } from './gate.js';
 
@@ -324,6 +329,25 @@ export class ExtensionService implements IExtensionService {
     const deleted = await extensionsRepo.delete(id);
 
     if (deleted) {
+      // Hard-delete the skill's files when they live in a writable, OwnPilot-managed
+      // scan directory (uploads, personal/workspace skills). Without this the manifest
+      // stays on disk and the startup scanner keeps re-discovering it — a soft delete
+      // that masquerades as a real one. Bundled (read-only) skills return null here and
+      // fall back to the removal marker below.
+      const skillDir = resolveManagedSkillDir(record.sourcePath);
+      if (skillDir) {
+        try {
+          rmSync(skillDir, { recursive: true, force: true });
+          log.info('Deleted skill files from disk', { id, dir: skillDir });
+        } catch (e) {
+          log.warn('Failed to delete skill files from disk', {
+            id,
+            dir: skillDir,
+            error: String(e),
+          });
+        }
+      }
+
       try {
         await (
           extensionsRepo as typeof extensionsRepo & {

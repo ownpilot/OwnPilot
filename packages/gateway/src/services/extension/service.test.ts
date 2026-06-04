@@ -18,6 +18,8 @@ const {
   mockReadFile,
   mockReaddir,
   mockExists,
+  mockRmSync,
+  mockResolveManagedSkillDir,
   mockRegReqs,
   mockUnregDeps,
   mockParseMd,
@@ -49,6 +51,8 @@ const {
   mockReadFile: vi.fn(),
   mockReaddir: vi.fn(() => [] as unknown[]),
   mockExists: vi.fn(() => false),
+  mockRmSync: vi.fn(),
+  mockResolveManagedSkillDir: vi.fn((_p?: string | null) => null as string | null),
   mockRegReqs: vi.fn(),
   mockUnregDeps: vi.fn(),
   mockParseMd: vi.fn(),
@@ -68,6 +72,12 @@ vi.mock('fs', () => ({
   readFileSync: mockReadFile,
   readdirSync: mockReaddir,
   existsSync: mockExists,
+  rmSync: mockRmSync,
+}));
+
+vi.mock('./scanner.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  resolveManagedSkillDir: mockResolveManagedSkillDir,
 }));
 
 vi.mock('@ownpilot/core', async (importOriginal) => {
@@ -505,6 +515,61 @@ describe('ExtensionService', () => {
 
       const result = await svc.uninstall('test-ext');
       expect(result).toBe(true); // Still succeeds
+    });
+
+    it('hard-deletes the skill files from disk for a managed skill', async () => {
+      const record = makeRecord({ sourcePath: '/data/skills/code-review/SKILL.md' });
+      mockRepo.getById.mockReturnValue(record);
+      mockRepo.delete.mockResolvedValue(true);
+      mockResolveManagedSkillDir.mockReturnValue('/data/skills/code-review');
+
+      const result = await svc.uninstall('test-ext');
+
+      expect(result).toBe(true);
+      expect(mockResolveManagedSkillDir).toHaveBeenCalledWith(record.sourcePath);
+      expect(mockRmSync).toHaveBeenCalledWith('/data/skills/code-review', {
+        recursive: true,
+        force: true,
+      });
+    });
+
+    it('does not touch disk for a bundled (read-only) skill', async () => {
+      mockRepo.getById.mockReturnValue(
+        makeRecord({ sourcePath: '/app/data/example-skills/meeting-notes/SKILL.md' })
+      );
+      mockRepo.delete.mockResolvedValue(true);
+      mockResolveManagedSkillDir.mockReturnValue(null); // bundled → not deletable
+
+      const result = await svc.uninstall('test-ext');
+
+      expect(result).toBe(true);
+      expect(mockRmSync).not.toHaveBeenCalled();
+      expect(mockRepo.markRemoved).toHaveBeenCalled(); // marker is the fallback
+    });
+
+    it('still succeeds when deleting skill files from disk throws', async () => {
+      mockRepo.getById.mockReturnValue(makeRecord({ sourcePath: '/data/skills/x/SKILL.md' }));
+      mockRepo.delete.mockResolvedValue(true);
+      mockResolveManagedSkillDir.mockReturnValue('/data/skills/x');
+      mockRmSync.mockImplementationOnce(() => {
+        throw new Error('EACCES');
+      });
+
+      const result = await svc.uninstall('test-ext');
+
+      expect(result).toBe(true);
+      expect(mockRepo.markRemoved).toHaveBeenCalled();
+    });
+
+    it('does not delete files when the row was already gone', async () => {
+      mockRepo.getById.mockReturnValue(makeRecord({ sourcePath: '/data/skills/x/SKILL.md' }));
+      mockRepo.delete.mockResolvedValue(false);
+      mockResolveManagedSkillDir.mockReturnValue('/data/skills/x');
+
+      const result = await svc.uninstall('test-ext');
+
+      expect(result).toBe(false);
+      expect(mockRmSync).not.toHaveBeenCalled();
     });
   });
 

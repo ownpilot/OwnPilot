@@ -10,7 +10,7 @@
  */
 
 import { existsSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { getDataDirectoryInfo } from '../../paths/index.js';
 import { getLog } from '../log.js';
@@ -118,6 +118,37 @@ export function getScanDirectories(): ScanDirectory[] {
  */
 export function getAllScanDirectories(): string[] {
   return getScanDirectories().map((d) => d.dir);
+}
+
+/**
+ * Given a skill's manifest source path, return the on-disk skill directory that
+ * a hard uninstall is allowed to delete — or `null` if nothing should be
+ * removed from disk.
+ *
+ * A skill's files are deletable only when the manifest lives **directly inside a
+ * writable (non-bundled) scan root** (managed / personal / workspace). This
+ * deliberately refuses to delete:
+ *   - bundled, read-only skills shipped with the app (the `bundled` tier),
+ *   - DB-only skills with no source path (e.g. claw-learned skills),
+ *   - npm/temp installs whose source path no longer resolves under a scan root,
+ *   - any path that is not an immediate child of a known writable root.
+ *
+ * The "immediate child" guard ensures a hard delete can never escape the managed
+ * skill trees or remove a scan root itself. Pure — exported for testing.
+ */
+export function resolveManagedSkillDir(sourcePath: string | undefined | null): string | null {
+  if (!sourcePath) return null;
+
+  const skillDir = dirname(resolve(sourcePath));
+  const parent = dirname(skillDir);
+  // At the filesystem root (parent === skillDir) there is nothing safe to delete.
+  if (parent === skillDir) return null;
+
+  const writableRoots = getScanDirectories()
+    .filter((d) => d.tier !== 'bundled')
+    .map((d) => resolve(d.dir));
+
+  return writableRoots.includes(parent) ? skillDir : null;
 }
 
 // ============================================================================
