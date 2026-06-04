@@ -10,9 +10,13 @@ import { EventEmitter } from 'events';
 const mockExistsSync = vi.fn();
 const mockSpawn = vi.fn();
 
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => mockSpawn(...args),
-}));
+// Preserve the real module and override only spawn — replacing the whole
+// module drops other named exports (e.g. exec), which breaks any module in
+// the import chain that imports them and fails vitest collection.
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, spawn: (...args: unknown[]) => mockSpawn(...args) };
+});
 
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
