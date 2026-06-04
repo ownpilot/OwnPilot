@@ -271,7 +271,7 @@ export class ExtensionsRepository extends BaseRepository {
     await this.execute(
       `DELETE FROM user_extension_removals
        WHERE user_id = $1
-         AND (extension_id = $2 OR ($3 IS NOT NULL AND source_path = $3))`,
+         AND (extension_id = $2 OR ($3::text IS NOT NULL AND source_path = $3))`,
       [userId, extensionId, sourcePath ?? null]
     );
   }
@@ -283,8 +283,8 @@ export class ExtensionsRepository extends BaseRepository {
       `SELECT user_id, extension_id, source_path, removed_at
        FROM user_extension_removals
        WHERE user_id = $1
-         AND (($2 IS NOT NULL AND extension_id = $2)
-           OR ($3 IS NOT NULL AND source_path = $3))
+         AND (($2::text IS NOT NULL AND extension_id = $2)
+           OR ($3::text IS NOT NULL AND source_path = $3))
        LIMIT 1`,
       [userId, extensionId ?? null, sourcePath ?? null]
     );
