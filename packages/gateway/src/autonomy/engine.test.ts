@@ -278,6 +278,63 @@ describe('AutonomyEngine', () => {
       expect(firstResult.error).toBeUndefined();
     });
 
+    it('keeps the scheduled loop alive when a tick fires during a manual pulse', async () => {
+      // Regression: a scheduled tick that fires while a user-triggered manual
+      // pulse is in flight must re-arm the timer. Manual pulses never
+      // reschedule themselves, so without re-arming the autonomous loop would
+      // silently die until restart.
+      const { gatherPulseContext } = await import('./context.js');
+      const mockGather = gatherPulseContext as ReturnType<typeof vi.fn>;
+
+      const idleCtx = {
+        userId: 'test-user',
+        gatheredAt: new Date(),
+        timeContext: { hour: 10, dayOfWeek: 1, isWeekend: false },
+        goals: { active: [], stale: [], upcoming: [] },
+        memories: { total: 0, recentCount: 0, avgImportance: 0.5 },
+        activity: { daysSinceLastActivity: 0, hasRecentActivity: true },
+        systemHealth: { pendingApprovals: 0, triggerErrors: 0 },
+      };
+
+      // quietHoursStart === quietHoursEnd disables quiet hours regardless of the
+      // (fake-timer) wall clock, so tick() always reaches runPulse.
+      const loopEngine = new AutonomyEngine({
+        userId: 'test-user',
+        minIntervalMs: 1000,
+        maxIntervalMs: 5000,
+        quietHoursStart: 0,
+        quietHoursEnd: 0,
+      });
+
+      try {
+        loopEngine.start(); // schedules the first tick at maxIntervalMs (5000)
+
+        // Begin a manual pulse that blocks in gatherPulseContext, holding the
+        // execution lock (activePulse) open.
+        let releaseManual!: () => void;
+        mockGather.mockImplementationOnce(
+          () => new Promise<unknown>((resolve) => (releaseManual = () => resolve(idleCtx)))
+        );
+        const manual = loopEngine.runPulse('test-user', true);
+
+        // Fire the scheduled tick while the manual pulse is still in flight.
+        await vi.advanceTimersByTimeAsync(5000);
+
+        // Release the manual pulse and let it settle.
+        releaseManual();
+        await manual;
+
+        // The loop must still be armed: advancing past minIntervalMs should run
+        // a fresh scheduled pulse. Before the fix the tick was consumed without
+        // rescheduling and this stays at 0.
+        mockGather.mockClear();
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(mockGather).toHaveBeenCalled();
+      } finally {
+        loopEngine.stop();
+      }
+    });
+
     it('getStatus exposes activePulse as null when idle', () => {
       const status = engine.getStatus();
       expect(status.activePulse).toBeNull();

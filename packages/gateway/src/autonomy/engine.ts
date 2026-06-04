@@ -587,7 +587,20 @@ export class AutonomyEngine implements IPulseService {
   }
 
   private async tick(): Promise<void> {
-    if (!this.running || this.activePulse) return;
+    if (!this.running) return;
+
+    // A pulse is already in flight — almost always a user-triggered manual
+    // pulse (two scheduled pulses can't overlap, since each schedules its
+    // successor only on completion). Don't start a second pulse, but DO
+    // re-arm the timer: this tick consumed the pending timeout, and manual
+    // pulses never reschedule themselves (gated on !manual in runPulse), so
+    // without this the autonomous loop silently dies until the engine is
+    // restarted. Retry at minInterval so a normal cadence resumes promptly
+    // once the in-flight pulse clears.
+    if (this.activePulse) {
+      this.scheduleNext(this.config.minIntervalMs);
+      return;
+    }
 
     // Quiet hours check
     const hour = new Date().getHours();
