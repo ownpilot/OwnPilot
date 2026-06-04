@@ -4,6 +4,7 @@
  * API for managing and executing autonomous plans.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import {
   type CreatePlanInput,
@@ -13,7 +14,6 @@ import {
 import { getPlanExecutor } from '../plans/index.js';
 import { getPlanService, Services } from '@ownpilot/core';
 import {
-  getUserId,
   apiResponse,
   apiError,
   getIntParam,
@@ -39,7 +39,7 @@ export const plansRoutes = new Hono();
  * GET /plans - List plans
  */
 plansRoutes.get('/', pagination(), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const status = validateQueryEnum(c.req.query('status'), [
     'pending',
     'running',
@@ -71,7 +71,7 @@ plansRoutes.get('/', pagination(), async (c) => {
  * POST /plans - Create a new plan
  */
 plansRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanSchema } = await import('../middleware/validation.js');
   const body = validateBody(createPlanSchema, rawBody) as unknown as CreatePlanInput;
@@ -95,7 +95,7 @@ plansRoutes.post('/', async (c) => {
  * GET /plans/stats - Get plan statistics
  */
 plansRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getPlanService();
   const stats = await service.getStats(userId);
 
@@ -106,7 +106,7 @@ plansRoutes.get('/stats', async (c) => {
  * GET /plans/active - Get active plans
  */
 plansRoutes.get('/active', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getPlanService();
   const plans = await service.getActive(userId);
 
@@ -120,7 +120,7 @@ plansRoutes.get('/active', async (c) => {
  * GET /plans/pending - Get pending plans
  */
 plansRoutes.get('/pending', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getPlanService();
   const plans = await service.getPending(userId);
 
@@ -134,7 +134,7 @@ plansRoutes.get('/pending', async (c) => {
  * GET /plans/:id - Get a specific plan
  */
 plansRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -159,7 +159,7 @@ plansRoutes.get('/:id', async (c) => {
  * PATCH /plans/:id - Update a plan
  */
 plansRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updatePlanSchema } = await import('../middleware/validation.js');
@@ -198,7 +198,7 @@ plansRoutes.route('/', planCrudRoutes);
  *   - maxConcurrent: Maximum concurrent steps in wave mode (default: 5)
  */
 plansRoutes.post('/:id/execute', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const waveExecution = c.req.query('waveExecution') === 'true';
   const maxConcurrent = getIntParam(c, 'maxConcurrent', 5, 1, 20);
@@ -258,7 +258,7 @@ plansRoutes.post('/:id/execute', async (c) => {
  * POST /plans/:id/pause - Pause a running plan
  */
 plansRoutes.post('/:id/pause', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -288,7 +288,7 @@ plansRoutes.post('/:id/pause', async (c) => {
  * POST /plans/:id/resume - Resume a paused plan
  */
 plansRoutes.post('/:id/resume', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -333,7 +333,7 @@ plansRoutes.post('/:id/resume', async (c) => {
  * POST /plans/:id/abort - Abort a running plan
  */
 plansRoutes.post('/:id/abort', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -363,7 +363,7 @@ plansRoutes.post('/:id/abort', async (c) => {
  * POST /plans/:id/checkpoint - Create a checkpoint
  */
 plansRoutes.post('/:id/checkpoint', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await c.req.json<{ data?: unknown }>().catch((): { data?: unknown } => ({}));
 
@@ -405,7 +405,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
  * POST /plans/:id/start - Start a plan (alias for /execute)
  */
 plansRoutes.post('/:id/start', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -462,7 +462,7 @@ plansRoutes.post('/:id/start', async (c) => {
  * POST /plans/:id/rollback - Rollback plan to last checkpoint
  */
 plansRoutes.post('/:id/rollback', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -531,7 +531,7 @@ plansRoutes.post('/:id/rollback', async (c) => {
  * GET /plans/:id/steps - Get all steps for a plan
  */
 plansRoutes.get('/:id/steps', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getPlanService();
@@ -554,7 +554,7 @@ plansRoutes.get('/:id/steps', async (c) => {
  * POST /plans/:id/steps - Add a step to a plan
  */
 plansRoutes.post('/:id/steps', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanStepSchema } = await import('../middleware/validation.js');
@@ -584,7 +584,7 @@ plansRoutes.post('/:id/steps', async (c) => {
  * GET /plans/:id/steps/:stepId - Get a specific step
  */
 plansRoutes.get('/:id/steps/:stepId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const stepId = c.req.param('stepId');
 
   const service = getPlanService();
@@ -601,7 +601,7 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
  * PATCH /plans/:id/steps/:stepId - Update a step
  */
 plansRoutes.patch('/:id/steps/:stepId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const stepId = c.req.param('stepId');
   const rawBody = await parseJsonBody(c);
 
@@ -629,7 +629,7 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
  * GET /plans/:id/history - Get history for a plan
  */
 plansRoutes.get('/:id/history', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const limit = getIntParam(c, 'limit', 50, 1, 200);
 
@@ -657,7 +657,7 @@ plansRoutes.get('/:id/history', async (c) => {
  * GET /plans/executor/status - Get executor status
  */
 plansRoutes.get('/executor/status', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const executor = getPlanExecutor({ userId });
 
   return apiResponse(c, {

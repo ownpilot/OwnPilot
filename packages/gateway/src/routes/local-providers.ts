@@ -5,12 +5,12 @@
  * Supports full CRUD, model discovery, enable/disable toggle, and default selection.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { localProvidersRepo } from '../db/repositories/local-providers.js';
 import { discoverModels } from '../services/local-discovery.js';
 import { getLog } from '../services/log.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -107,7 +107,7 @@ localProvidersRoutes.get('/templates', (c) => {
  * GET / - List all local providers with model counts
  */
 localProvidersRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   try {
     const providers = await localProvidersRepo.listProviders(userId);
@@ -140,7 +140,7 @@ localProvidersRoutes.get('/', async (c) => {
  * POST / - Create a new local provider
  */
 localProvidersRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   try {
     const body = await parseJsonBody(c);
@@ -197,7 +197,7 @@ localProvidersRoutes.post('/', async (c) => {
  * GET /:id - Get a single local provider with its models
  */
 localProvidersRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -230,7 +230,7 @@ localProvidersRoutes.get('/:id', async (c) => {
  * PUT /:id - Update a local provider
  */
 localProvidersRoutes.put('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -288,7 +288,7 @@ localProvidersRoutes.put('/:id', async (c) => {
  * DELETE /:id - Delete a local provider (CASCADE deletes its models)
  */
 localProvidersRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -322,7 +322,7 @@ localProvidersRoutes.delete('/:id', async (c) => {
  * PATCH /:id/toggle - Toggle provider enabled/disabled
  */
 localProvidersRoutes.patch('/:id/toggle', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -366,7 +366,7 @@ localProvidersRoutes.patch('/:id/toggle', async (c) => {
  * PATCH /:id/set-default - Set as the default local provider
  */
 localProvidersRoutes.patch('/:id/set-default', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -399,7 +399,7 @@ localProvidersRoutes.patch('/:id/set-default', async (c) => {
  * and tracks new vs existing models.
  */
 localProvidersRoutes.post('/:id/discover', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -469,7 +469,7 @@ localProvidersRoutes.post('/:id/discover', async (c) => {
  * GET /:id/models - List models for a local provider
  */
 localProvidersRoutes.get('/:id/models', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -509,7 +509,7 @@ localProvidersRoutes.patch('/:id/models/:modelId/toggle', async (c) => {
     const { enabled } = parsed.data;
 
     // Find the model by provider ID + logical modelId to get its DB record id
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const models = await localProvidersRepo.listModels(userId, id);
     const model = models.find((m) => m.modelId === modelId);
 

@@ -5,16 +5,10 @@
  * Execution happens via AI tool calling (run_cli_tool), not via these routes.
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { getCliToolService } from '../../services/cli/tool-service.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  parseJsonBody,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import type { CliToolPolicy, CliInstallMethod } from '@ownpilot/core';
 import { CLI_TOOLS_BY_NAME } from '../../services/cli/tools-catalog.js';
 import { cliProvidersRepo } from '../../db/repositories/cli/providers.js';
@@ -44,7 +38,7 @@ export const cliToolsRoutes = new Hono();
 // =============================================================================
 
 cliToolsRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const service = getCliToolService();
     const tools = await service.listTools(userId);
@@ -59,7 +53,7 @@ cliToolsRoutes.get('/', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.get('/policies', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const service = getCliToolService();
     const tools = await service.listTools(userId);
@@ -82,7 +76,7 @@ cliToolsRoutes.get('/policies', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.put('/policies/:toolName', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const toolName = c.req.param('toolName');
 
   const body = await parseJsonBody(c);
@@ -119,7 +113,7 @@ cliToolsRoutes.put('/policies/:toolName', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.post('/:name/install', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const name = c.req.param('name');
 
   const body = await parseJsonBody(c);
@@ -169,7 +163,7 @@ cliToolsRoutes.post('/refresh', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.post('/policies/batch', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await parseJsonBody(c);
   if (!body) {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
@@ -234,7 +228,7 @@ cliToolsRoutes.post('/policies/batch', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.post('/custom', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await parseJsonBody(c);
   if (!body) {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
@@ -349,7 +343,7 @@ cliToolsRoutes.post('/custom', async (c) => {
 // =============================================================================
 
 cliToolsRoutes.delete('/custom/:name', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const name = c.req.param('name');
 
   try {

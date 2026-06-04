@@ -90,7 +90,7 @@ const { workspaceCrudRoutes } = await import('./crud.js');
 
 const sampleWorkspace = {
   id: 'ws-1',
-  userId: 'user-1',
+  userId: 'default',
   name: 'My Workspace',
   description: 'Test workspace',
   status: 'active',
@@ -109,7 +109,7 @@ const sampleWorkspace = {
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/', workspaceCrudRoutes);
@@ -349,7 +349,7 @@ describe('Workspace CRUD Routes', () => {
 
     it('calls getStorageUsage with userId/workspaceId path', async () => {
       await app.request('/ws-1');
-      expect(mockStorage.getStorageUsage).toHaveBeenCalledWith('user-1/ws-1');
+      expect(mockStorage.getStorageUsage).toHaveBeenCalledWith('default/ws-1');
     });
   });
 

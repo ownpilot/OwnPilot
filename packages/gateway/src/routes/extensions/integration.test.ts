@@ -672,20 +672,24 @@ describe('Extensions Routes', () => {
       expect(json.data.total).toBe(1);
     });
 
-    it('GET / as different user sees only their extensions', async () => {
+    it('GET / lists only local-owner extensions, filtering out other userIds', async () => {
+      // Single-tenant: every request resolves to LOCAL_OWNER_ID ('default'),
+      // and the route filters getAll() by that owner. Records carrying any
+      // other userId (e.g. legacy rows) must be excluded.
       const otherUserRecord = { ...sampleRecord, id: 'other-ext', userId: 'user-2' };
       mockService.getAll.mockReturnValue([sampleRecord, otherUserRecord]);
 
-      const user2App = createApp('user-2');
-      const res = await user2App.request('/extensions');
+      const res = await app.request('/extensions');
       const json = await res.json();
       expect(json.data.packages).toHaveLength(1);
-      expect(json.data.packages[0].id).toBe('other-ext');
+      expect(json.data.packages[0].id).toBe('test-ext');
     });
 
-    it("GET /:id returns 404 for another user's extension", async () => {
-      const user2App = createApp('user-2');
-      const res = await user2App.request('/extensions/test-ext');
+    it('GET /:id returns 404 for an extension owned by a non-local userId', async () => {
+      // The residual ownership guard (pkg.userId !== LOCAL_OWNER_ID) still 404s
+      // rows that are not owned by the local owner.
+      mockService.getById.mockReturnValue({ ...sampleRecord, userId: 'user-2' });
+      const res = await app.request('/extensions/test-ext');
       expect(res.status).toBe(404);
     });
 

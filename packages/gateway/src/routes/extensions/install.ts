@@ -4,20 +4,14 @@
  * POST /install, POST /upload
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { Hono, type Context } from 'hono';
 import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  parseJsonBody,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getDataDirectoryInfo } from '../../paths/index.js';
 import {
@@ -170,7 +164,7 @@ function findManifestInDir(dir: string): string | null {
  * POST /install - Install from file path
  */
 installRoutes.post('/install', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const throttled = checkInstallThrottle(c);
   if (throttled) return throttled;
   const body = await parseJsonBody(c);
@@ -237,7 +231,7 @@ installRoutes.post('/install', async (c) => {
  * POST /upload - Upload extension file (single .md/.json or .zip)
  */
 installRoutes.post('/upload', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const throttled = checkInstallThrottle(c);
   if (throttled) return throttled;
 

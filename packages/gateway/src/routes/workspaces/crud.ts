@@ -8,6 +8,7 @@
  * DELETE /:id - Delete workspace
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import {
@@ -18,14 +19,7 @@ import {
   type ContainerConfig,
   DEFAULT_CONTAINER_CONFIG,
 } from '@ownpilot/core';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getUserId,
-  getErrorMessage,
-  parseJsonBody,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { sanitizeContainerConfig } from './shared.js';
 
@@ -35,7 +29,7 @@ const app = new Hono();
  * GET /workspaces - List user's workspaces
  */
 app.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = new WorkspacesRepository(userId);
 
   try {
@@ -73,7 +67,7 @@ app.get('/', async (c) => {
  * POST /workspaces - Create a new workspace
  */
 app.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = new WorkspacesRepository(userId);
 
   try {
@@ -157,7 +151,7 @@ app.post('/', async (c) => {
  * GET /workspaces/:id - Get workspace details
  */
 app.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 
@@ -206,7 +200,7 @@ app.get('/:id', async (c) => {
  * PATCH /workspaces/:id - Update workspace
  */
 app.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 
@@ -278,7 +272,7 @@ app.patch('/:id', async (c) => {
  * DELETE /workspaces/:id - Delete workspace
  */
 app.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 

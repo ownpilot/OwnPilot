@@ -5,6 +5,7 @@
  * (Claude Code, OpenAI Codex, Google Gemini CLI).
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { CodingAgentProvider } from '@ownpilot/core';
 import { getCodingAgentService } from '../services/coding-agent/service.js';
@@ -22,7 +23,6 @@ import { codingAgentPermissionsRepo } from '../db/repositories/coding-agent/perm
 import { codingAgentSkillAttachmentsRepo } from '../db/repositories/coding-agent/skill-attachments.js';
 import { codingAgentSubscriptionsRepo } from '../db/repositories/coding-agent/subscriptions.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -59,7 +59,7 @@ codingAgentsRoutes.get('/status', async (c) => {
 // =============================================================================
 
 codingAgentsRoutes.post('/run', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const body = await parseJsonBody(c);
   if (!body) {
@@ -169,7 +169,7 @@ codingAgentsRoutes.post('/test', async (c) => {
 // =============================================================================
 
 codingAgentsRoutes.get('/sessions', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getCodingAgentService();
   const sessions = service.listSessions(userId);
   return apiResponse(c, sessions);
@@ -180,7 +180,7 @@ codingAgentsRoutes.get('/sessions', (c) => {
 // =============================================================================
 
 codingAgentsRoutes.post('/sessions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const body = await parseJsonBody(c);
   if (!body) {
@@ -287,7 +287,7 @@ codingAgentsRoutes.post('/sessions', async (c) => {
 // =============================================================================
 
 codingAgentsRoutes.get('/sessions/:id', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
   const service = getCodingAgentService();
   const session = service.getSession(sessionId, userId);
@@ -316,7 +316,7 @@ codingAgentsRoutes.get('/sessions/:id', (c) => {
 // =============================================================================
 
 codingAgentsRoutes.delete('/sessions/:id', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
   const service = getCodingAgentService();
   const success = service.terminateSession(sessionId, userId);
@@ -331,7 +331,7 @@ codingAgentsRoutes.delete('/sessions/:id', (c) => {
 // =============================================================================
 
 codingAgentsRoutes.post('/sessions/:id/input', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
 
   const body = await parseJsonBody(c);
@@ -368,7 +368,7 @@ codingAgentsRoutes.post('/sessions/:id/input', async (c) => {
 // =============================================================================
 
 codingAgentsRoutes.get('/sessions/:id/output', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
   const service = getCodingAgentService();
 
@@ -387,7 +387,7 @@ codingAgentsRoutes.get('/sessions/:id/output', (c) => {
 });
 
 codingAgentsRoutes.post('/sessions/:id/resize', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
 
   const body = await parseJsonBody(c);
@@ -422,7 +422,7 @@ codingAgentsRoutes.post('/sessions/:id/resize', async (c) => {
 
 // GET /results - List persisted coding agent results
 codingAgentsRoutes.get('/results', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = getPaginationParams(c);
 
   try {
@@ -440,7 +440,7 @@ codingAgentsRoutes.get('/results', async (c) => {
 
 // GET /results/:id - Get a specific result
 codingAgentsRoutes.get('/results/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const resultId = c.req.param('id');
 
   try {
@@ -460,7 +460,7 @@ codingAgentsRoutes.get('/results/:id', async (c) => {
 
 // GET /permissions - List all permission profiles
 codingAgentsRoutes.get('/permissions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const perms = await codingAgentPermissionsRepo.list(userId);
     return apiResponse(c, perms);
@@ -471,7 +471,7 @@ codingAgentsRoutes.get('/permissions', async (c) => {
 
 // GET /permissions/:providerRef - Get permission profile for a provider
 codingAgentsRoutes.get('/permissions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   try {
@@ -491,7 +491,7 @@ codingAgentsRoutes.get('/permissions/:providerRef', async (c) => {
 
 // PUT /permissions/:providerRef - Upsert permission profile
 codingAgentsRoutes.put('/permissions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   const body = await parseJsonBody(c);
@@ -524,7 +524,7 @@ codingAgentsRoutes.put('/permissions/:providerRef', async (c) => {
 
 // DELETE /permissions/:providerRef - Delete permission profile
 codingAgentsRoutes.delete('/permissions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   try {
@@ -544,7 +544,7 @@ codingAgentsRoutes.delete('/permissions/:providerRef', async (c) => {
 
 // GET /skills/:providerRef - List skill attachments for a provider
 codingAgentsRoutes.get('/skills/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   try {
@@ -557,7 +557,7 @@ codingAgentsRoutes.get('/skills/:providerRef', async (c) => {
 
 // POST /skills/:providerRef - Attach a skill
 codingAgentsRoutes.post('/skills/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   const body = await parseJsonBody(c);
@@ -595,7 +595,7 @@ codingAgentsRoutes.post('/skills/:providerRef', async (c) => {
 
 // PUT /skills/:providerRef/:id - Update a skill attachment
 codingAgentsRoutes.put('/skills/:providerRef/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const attachmentId = c.req.param('id');
 
   const body = await parseJsonBody(c);
@@ -631,7 +631,7 @@ codingAgentsRoutes.put('/skills/:providerRef/:id', async (c) => {
 
 // DELETE /skills/:providerRef/:id - Detach a skill
 codingAgentsRoutes.delete('/skills/:providerRef/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const attachmentId = c.req.param('id');
 
   try {
@@ -651,7 +651,7 @@ codingAgentsRoutes.delete('/skills/:providerRef/:id', async (c) => {
 
 // GET /subscriptions - List all subscriptions
 codingAgentsRoutes.get('/subscriptions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const subs = await codingAgentSubscriptionsRepo.list(userId);
     return apiResponse(c, subs);
@@ -662,7 +662,7 @@ codingAgentsRoutes.get('/subscriptions', async (c) => {
 
 // GET /subscriptions/:providerRef - Get subscription for a provider
 codingAgentsRoutes.get('/subscriptions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   try {
@@ -682,7 +682,7 @@ codingAgentsRoutes.get('/subscriptions/:providerRef', async (c) => {
 
 // PUT /subscriptions/:providerRef - Upsert subscription
 codingAgentsRoutes.put('/subscriptions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   const body = await parseJsonBody(c);
@@ -712,7 +712,7 @@ codingAgentsRoutes.put('/subscriptions/:providerRef', async (c) => {
 
 // DELETE /subscriptions/:providerRef - Delete subscription
 codingAgentsRoutes.delete('/subscriptions/:providerRef', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerRef = c.req.param('providerRef');
 
   try {
@@ -734,7 +734,7 @@ codingAgentsRoutes.delete('/subscriptions/:providerRef', async (c) => {
  * POST /orchestrate - Start a new orchestration run
  */
 codingAgentsRoutes.post('/orchestrate', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await parseJsonBody<{
     goal: string;
     provider: string;
@@ -795,7 +795,7 @@ codingAgentsRoutes.post('/orchestrate', async (c) => {
  * GET /orchestrate - List orchestration runs
  */
 codingAgentsRoutes.get('/orchestrate', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = getPaginationParams(c);
   const [runs, total] = await Promise.all([
     listOrchestrations(userId, limit, offset),
@@ -808,7 +808,7 @@ codingAgentsRoutes.get('/orchestrate', async (c) => {
  * GET /orchestrate/:id - Get a specific orchestration run
  */
 codingAgentsRoutes.get('/orchestrate/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const run = await getOrchestration(id, userId);
   if (!run) {
@@ -821,7 +821,7 @@ codingAgentsRoutes.get('/orchestrate/:id', async (c) => {
  * POST /orchestrate/:id/continue - Continue a paused run with user input
  */
 codingAgentsRoutes.post('/orchestrate/:id/continue', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await parseJsonBody<{ prompt: string }>(c);
 
@@ -852,7 +852,7 @@ codingAgentsRoutes.post('/orchestrate/:id/continue', async (c) => {
  * POST /orchestrate/:id/cancel - Cancel an orchestration run
  */
 codingAgentsRoutes.post('/orchestrate/:id/cancel', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const cancelled = await cancelOrchestration(id, userId);
@@ -866,7 +866,7 @@ codingAgentsRoutes.post('/orchestrate/:id/cancel', async (c) => {
  * DELETE /orchestrate/:id - Delete an orchestration run
  */
 codingAgentsRoutes.delete('/orchestrate/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const deleted = await orchestrationRunsRepo.delete(id, userId);
@@ -884,7 +884,7 @@ codingAgentsRoutes.delete('/orchestrate/:id', async (c) => {
  * GET /sessions/:id/acp - Get ACP-specific data (tool calls, plan)
  */
 codingAgentsRoutes.get('/sessions/:id/acp', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
   const service = getCodingAgentService();
 
@@ -900,7 +900,7 @@ codingAgentsRoutes.get('/sessions/:id/acp', (c) => {
  * POST /sessions/:id/acp/prompt - Send a follow-up prompt to an ACP session
  */
 codingAgentsRoutes.post('/sessions/:id/acp/prompt', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
 
   const body = await parseJsonBody(c);
@@ -930,7 +930,7 @@ codingAgentsRoutes.post('/sessions/:id/acp/prompt', async (c) => {
  * POST /sessions/:id/acp/cancel - Cancel an ongoing ACP prompt turn
  */
 codingAgentsRoutes.post('/sessions/:id/acp/cancel', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('id');
 
   try {

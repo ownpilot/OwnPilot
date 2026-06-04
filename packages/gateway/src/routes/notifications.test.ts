@@ -86,14 +86,14 @@ describe('POST /notifications/send', () => {
   });
 
   it('ignores client-supplied body.userId and scopes to the authenticated user (IDOR)', async () => {
-    const app = createApp('alice');
+    const app = createApp('default');
     await app.request('/notifications/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Attacker tries to push a notification onto 'victim' channels.
       body: JSON.stringify({ userId: 'victim', title: 'Hi', body: 'There' }),
     });
-    expect(mockRouter.notify).toHaveBeenCalledWith('alice', expect.anything());
+    expect(mockRouter.notify).toHaveBeenCalledWith('default', expect.anything());
     expect(mockRouter.notify).not.toHaveBeenCalledWith('victim', expect.anything());
   });
 });
@@ -157,21 +157,21 @@ describe('POST /notifications/broadcast', () => {
 
 describe('GET /notifications/preferences/:userId', () => {
   it('reads preferences scoped to the authenticated user, ignoring the :userId param (IDOR)', async () => {
-    const app = createApp('alice');
+    const app = createApp('default');
     // Attacker requests another user's preferences via the URL param.
     const res = await app.request('/notifications/preferences/victim');
 
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.data.preferences.channelPriority).toEqual(['web']);
-    expect(mockRouter.getPreferences).toHaveBeenCalledWith('alice');
+    expect(mockRouter.getPreferences).toHaveBeenCalledWith('default');
     expect(mockRouter.getPreferences).not.toHaveBeenCalledWith('victim');
   });
 });
 
 describe('PUT /notifications/preferences/:userId', () => {
   it('writes preferences scoped to the authenticated user, ignoring the :userId param (IDOR)', async () => {
-    const app = createApp('alice');
+    const app = createApp('default');
     const res = await app.request('/notifications/preferences/victim', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,7 @@ describe('PUT /notifications/preferences/:userId', () => {
 
     expect(res.status).toBe(200);
     expect(mockRouter.setPreferences).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'alice', minPriority: 'normal' })
+      expect.objectContaining({ userId: 'default', minPriority: 'normal' })
     );
     expect(mockRouter.setPreferences).not.toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'victim' })

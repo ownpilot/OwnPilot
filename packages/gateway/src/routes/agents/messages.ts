@@ -2,6 +2,7 @@
  * Agent Messages Routes — inter-agent communication API
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import type { AgentMessageType } from '@ownpilot/core';
 import { getAgentMessagesRepository } from '../../db/repositories/agents/messages.js';
@@ -11,7 +12,6 @@ import {
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
-  getUserId,
 } from '../helpers.js';
 import { validateBody, sendAgentMessageSchema } from '../../middleware/validation.js';
 
@@ -73,7 +73,7 @@ agentMessageRoutes.get('/crew/:id', async (c) => {
 agentMessageRoutes.post('/', async (c) => {
   try {
     const body = validateBody(sendAgentMessageSchema, await c.req.json());
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
 
     const message = {
       id: crypto.randomUUID(),

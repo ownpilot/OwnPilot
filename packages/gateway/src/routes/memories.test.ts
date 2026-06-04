@@ -95,7 +95,7 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated user
   app.use('*', async (c, next) => {
-    c.set('userId', 'u1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/memories', memoriesRoutes);
@@ -141,13 +141,13 @@ describe('Memories Routes', () => {
 
       await app.request('/memories?type=fact&limit=5&minImportance=0.5');
 
-      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', {
+      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('default', {
         type: 'fact',
         limit: 5,
         minImportance: 0.5,
         orderBy: 'importance',
       });
-      expect(mockMemoryService.countMemories).toHaveBeenCalledWith('u1', 'fact');
+      expect(mockMemoryService.countMemories).toHaveBeenCalledWith('default', 'fact');
     });
 
     it('uses authenticated userId from context', async () => {
@@ -156,7 +156,7 @@ describe('Memories Routes', () => {
 
       await app.request('/memories');
 
-      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', expect.anything());
+      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('default', expect.anything());
     });
   });
 
@@ -581,7 +581,7 @@ describe('Memories Routes', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(mockMemoryService.boostMemory).toHaveBeenCalledWith('u1', 'm1', 0.1);
+      expect(mockMemoryService.boostMemory).toHaveBeenCalledWith('default', 'm1', 0.1);
       const json = await res.json();
       expect(json.data.message).toContain('0.1');
     });
@@ -656,7 +656,7 @@ describe('Memories Routes', () => {
       await app.request('/memories?minImportance=5.0');
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           minImportance: 1,
         })
@@ -670,7 +670,7 @@ describe('Memories Routes', () => {
       await app.request('/memories?minImportance=-0.5');
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           minImportance: 0,
         })
@@ -684,7 +684,7 @@ describe('Memories Routes', () => {
       await app.request('/memories?minImportance=abc');
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           minImportance: 0,
         })
@@ -698,7 +698,7 @@ describe('Memories Routes', () => {
       await app.request('/memories');
 
       expect(mockMemoryService.listMemories).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           minImportance: undefined,
         })
@@ -729,7 +729,7 @@ describe('Memories Routes', () => {
 
       await app.request('/memories/search?q=test&type=preference&limit=5');
 
-      expect(mockMemoryService.hybridSearch).toHaveBeenCalledWith('u1', 'test', {
+      expect(mockMemoryService.hybridSearch).toHaveBeenCalledWith('default', 'test', {
         type: 'preference',
         limit: 5,
       });
@@ -814,14 +814,14 @@ describe('executeMemoryTool', () => {
 
   describe('create_memory', () => {
     it('returns error when content missing', async () => {
-      const result = await executeMemoryTool('create_memory', { type: 'fact' }, 'u1');
+      const result = await executeMemoryTool('create_memory', { type: 'fact' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('content and type are required');
     });
 
     it('returns error when type missing', async () => {
-      const result = await executeMemoryTool('create_memory', { content: 'Hello' }, 'u1');
+      const result = await executeMemoryTool('create_memory', { content: 'Hello' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('content and type are required');
@@ -841,7 +841,7 @@ describe('executeMemoryTool', () => {
           importance: 0.7,
           tags: ['tech'],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -861,7 +861,7 @@ describe('executeMemoryTool', () => {
           content: 'Similar content',
           type: 'fact',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -881,10 +881,10 @@ describe('executeMemoryTool', () => {
           content: 'Some fact',
           type: 'fact',
         },
-        'u1'
+        'default'
       );
 
-      expect(mockMemoryService.rememberMemory).toHaveBeenCalledWith('u1', {
+      expect(mockMemoryService.rememberMemory).toHaveBeenCalledWith('default', {
         content: 'Some fact',
         type: 'fact',
         importance: 0.5,
@@ -897,7 +897,7 @@ describe('executeMemoryTool', () => {
 
   describe('batch_create_memories', () => {
     it('returns error when memories is not array', async () => {
-      const result = await executeMemoryTool('batch_create_memories', {}, 'u1');
+      const result = await executeMemoryTool('batch_create_memories', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('memories must be an array');
@@ -923,7 +923,7 @@ describe('executeMemoryTool', () => {
             { content: 'Fact 2', type: 'fact', importance: 0.8 },
           ],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -937,7 +937,7 @@ describe('executeMemoryTool', () => {
 
   describe('search_memories', () => {
     it('returns error when query missing', async () => {
-      const result = await executeMemoryTool('search_memories', {}, 'u1');
+      const result = await executeMemoryTool('search_memories', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('query is required');
@@ -951,7 +951,7 @@ describe('executeMemoryTool', () => {
         {
           query: 'nonexistent',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -978,7 +978,7 @@ describe('executeMemoryTool', () => {
         {
           query: 'TypeScript',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -998,7 +998,7 @@ describe('executeMemoryTool', () => {
           query: 'test',
           tags: ['tech'],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -1015,10 +1015,10 @@ describe('executeMemoryTool', () => {
           query: 'test',
           limit: 999,
         },
-        'u1'
+        'default'
       );
 
-      expect(mockMemoryService.hybridSearch).toHaveBeenCalledWith('u1', 'test', {
+      expect(mockMemoryService.hybridSearch).toHaveBeenCalledWith('default', 'test', {
         type: undefined,
         limit: 100,
       });
@@ -1029,7 +1029,7 @@ describe('executeMemoryTool', () => {
 
   describe('delete_memory', () => {
     it('returns error when memoryId missing', async () => {
-      const result = await executeMemoryTool('delete_memory', {}, 'u1');
+      const result = await executeMemoryTool('delete_memory', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('memoryId is required');
@@ -1038,7 +1038,7 @@ describe('executeMemoryTool', () => {
     it('returns error when memory not found', async () => {
       mockMemoryService.getMemory.mockResolvedValue(null);
 
-      const result = await executeMemoryTool('delete_memory', { memoryId: 'm999' }, 'u1');
+      const result = await executeMemoryTool('delete_memory', { memoryId: 'm999' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Memory not found');
@@ -1051,7 +1051,7 @@ describe('executeMemoryTool', () => {
       });
       mockMemoryService.deleteMemory.mockResolvedValue(true);
 
-      const result = await executeMemoryTool('delete_memory', { memoryId: 'm1' }, 'u1');
+      const result = await executeMemoryTool('delete_memory', { memoryId: 'm1' }, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('Forgot');
@@ -1074,7 +1074,7 @@ describe('executeMemoryTool', () => {
       ]);
       mockMemoryService.countMemories.mockResolvedValue(1);
 
-      const result = await executeMemoryTool('list_memories', {}, 'u1');
+      const result = await executeMemoryTool('list_memories', {}, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.memories).toHaveLength(1);
@@ -1093,10 +1093,10 @@ describe('executeMemoryTool', () => {
           limit: 5,
           minImportance: 0.3,
         },
-        'u1'
+        'default'
       );
 
-      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('u1', {
+      expect(mockMemoryService.listMemories).toHaveBeenCalledWith('default', {
         type: 'preference',
         limit: 5,
         minImportance: 0.3,
@@ -1110,7 +1110,7 @@ describe('executeMemoryTool', () => {
 
   describe('update_memory_importance', () => {
     it('returns error when memoryId missing', async () => {
-      const result = await executeMemoryTool('update_memory_importance', {}, 'u1');
+      const result = await executeMemoryTool('update_memory_importance', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('memoryId is required');
@@ -1125,7 +1125,7 @@ describe('executeMemoryTool', () => {
           memoryId: 'm999',
           amount: 0.2,
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(false);
@@ -1145,7 +1145,7 @@ describe('executeMemoryTool', () => {
           memoryId: 'm1',
           amount: 0.15,
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -1165,10 +1165,10 @@ describe('executeMemoryTool', () => {
         {
           memoryId: 'm1',
         },
-        'u1'
+        'default'
       );
 
-      expect(mockMemoryService.boostMemory).toHaveBeenCalledWith('u1', 'm1', 0.1);
+      expect(mockMemoryService.boostMemory).toHaveBeenCalledWith('default', 'm1', 0.1);
     });
   });
 
@@ -1181,7 +1181,7 @@ describe('executeMemoryTool', () => {
         recentCount: 8,
       });
 
-      const result = await executeMemoryTool('get_memory_stats', {}, 'u1');
+      const result = await executeMemoryTool('get_memory_stats', {}, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('50 total');
@@ -1194,7 +1194,7 @@ describe('executeMemoryTool', () => {
 
   describe('unknown tool', () => {
     it('returns error for unknown tool', async () => {
-      const result = await executeMemoryTool('nonexistent_tool', {}, 'u1');
+      const result = await executeMemoryTool('nonexistent_tool', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown tool');
@@ -1229,7 +1229,7 @@ describe('executeMemoryTool', () => {
           content: 'Test',
           type: 'fact',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(false);
@@ -1245,7 +1245,7 @@ describe('executeMemoryTool', () => {
           content: 'Test',
           type: 'fact',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(false);

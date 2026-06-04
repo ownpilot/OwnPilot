@@ -67,7 +67,8 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated session — required by IDOR-007 fix
   app.use('*', async (c, next) => {
-    c.set('userId', 'test-user');
+    c.set('userId', 'default');
+    c.set('sessionAuthenticated', true);
     return next();
   });
   app.route('/custom-data', customDataRoutes);

@@ -5,9 +5,10 @@
  * All agent activities, tool executions, and system events are logged.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getAuditLogger } from '../audit/index.js';
-import { apiResponse, apiError, ERROR_CODES, getUserId, validateQueryEnum } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, validateQueryEnum } from './helpers.js';
 import { pagination } from '../middleware/pagination.js';
 
 const app = new Hono();
@@ -31,7 +32,7 @@ const app = new Hono();
  * - order: asc or desc (default desc)
  */
 app.get('/', pagination({ defaultLimit: 100, maxLimit: 1000 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
@@ -100,7 +101,7 @@ app.get('/stats', async (c) => {
  * GET /audit/tools - Get tool execution logs
  */
 app.get('/tools', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
@@ -127,7 +128,7 @@ app.get('/tools', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) =>
  * GET /audit/sessions - Get session/conversation logs
  */
 app.get('/sessions', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
@@ -154,7 +155,7 @@ app.get('/sessions', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c)
  * GET /audit/errors - Get error logs
  */
 app.get('/errors', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = c.get('pagination')!;
   const logger = getAuditLogger();
   await logger.initialize();
@@ -181,7 +182,7 @@ app.get('/errors', pagination({ defaultLimit: 50, maxLimit: 1000 }), async (c) =
  * GET /audit/request/:requestId - Get all events for a specific request
  */
 app.get('/request/:requestId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const requestId = c.req.param('requestId');
   const logger = getAuditLogger();
   await logger.initialize();

@@ -21,7 +21,7 @@ import { workspaceContainerRoutes } from './container.js';
 function makeWorkspace(overrides: Record<string, unknown> = {}) {
   return {
     id: 'ws-1',
-    userId: 'user-1',
+    userId: 'default',
     name: 'Test',
     status: 'active',
     storagePath: '/tmp/ws-1',
@@ -43,7 +43,7 @@ describe('Workspace Container Routes', () => {
     vi.clearAllMocks();
     app = new Hono();
     app.use('*', async (c, next) => {
-      c.set('userId', 'user-1');
+      c.set('userId', 'default');
       await next();
     });
     app.route('/', workspaceContainerRoutes);
@@ -75,7 +75,7 @@ describe('Workspace Container Routes', () => {
       expect(json.data.containerId).toBe('ctr-new');
       expect(json.data.status).toBe('running');
       expect(mockOrchestrator.createContainer).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'ws-1',
         '/tmp/ws-1',
         ws.containerConfig

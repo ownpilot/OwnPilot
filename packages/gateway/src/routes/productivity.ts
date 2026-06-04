@@ -4,6 +4,7 @@
  * API for Pomodoro, Habits, and Captures functionality
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { PomodoroRepository, type UpdateSettingsInput } from '../db/repositories/pomodoro.js';
 import { HabitsRepository, type UpdateHabitInput } from '../db/repositories/habits.js';
@@ -11,7 +12,6 @@ import { CapturesRepository } from '../db/repositories/captures.js';
 import {
   apiResponse,
   apiError,
-  getUserId,
   getIntParam,
   ERROR_CODES,
   validateQueryEnum,
@@ -44,7 +44,7 @@ function getPomodoroRepo(userId = 'default'): PomodoroRepository {
  * GET /pomodoro/session - Get active session
  */
 pomodoroRoutes.get('/session', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getPomodoroRepo(userId);
   const session = await repo.getActiveSession();
 
@@ -56,7 +56,7 @@ pomodoroRoutes.get('/session', async (c) => {
  */
 pomodoroRoutes.post('/session/start', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(startPomodoroSchema, await c.req.json());
 
     const repo = getPomodoroRepo(userId);
@@ -87,7 +87,7 @@ pomodoroRoutes.post('/session/start', async (c) => {
  * POST /pomodoro/session/:id/complete - Complete a session
  */
 pomodoroRoutes.post('/session/:id/complete', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getPomodoroRepo(userId);
@@ -106,7 +106,7 @@ pomodoroRoutes.post('/session/:id/complete', async (c) => {
  * POST /pomodoro/session/:id/interrupt - Interrupt a session
  */
 pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await c.req.json<{ reason?: string }>().catch((): { reason?: string } => ({}));
 
@@ -126,7 +126,7 @@ pomodoroRoutes.post('/session/:id/interrupt', async (c) => {
  * GET /pomodoro/sessions - List sessions
  */
 pomodoroRoutes.get('/sessions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const type = validateQueryEnum(c.req.query('type'), [
     'work',
     'short_break',
@@ -144,7 +144,7 @@ pomodoroRoutes.get('/sessions', async (c) => {
  * GET /pomodoro/settings - Get settings
  */
 pomodoroRoutes.get('/settings', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getPomodoroRepo(userId);
   const settings = await repo.getSettings();
 
@@ -155,7 +155,7 @@ pomodoroRoutes.get('/settings', async (c) => {
  * PATCH /pomodoro/settings - Update settings
  */
 pomodoroRoutes.patch('/settings', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await c.req.json<UpdateSettingsInput>();
 
   const repo = getPomodoroRepo(userId);
@@ -170,7 +170,7 @@ pomodoroRoutes.patch('/settings', async (c) => {
  * GET /pomodoro/stats - Get statistics
  */
 pomodoroRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getPomodoroRepo(userId);
   const stats = await repo.getTotalStats();
   const today = await repo.getDailyStats();
@@ -182,7 +182,7 @@ pomodoroRoutes.get('/stats', async (c) => {
  * GET /pomodoro/stats/daily/:date - Get daily stats
  */
 pomodoroRoutes.get('/stats/daily/:date', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const date = c.req.param('date');
 
   const repo = getPomodoroRepo(userId);
@@ -214,7 +214,7 @@ function getHabitsRepo(userId = 'default'): HabitsRepository {
  * GET /habits - List habits
  */
 habitsRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const category = c.req.query('category');
   const isArchived = c.req.query('archived') === 'true';
 
@@ -229,7 +229,7 @@ habitsRoutes.get('/', async (c) => {
  */
 habitsRoutes.post('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(createHabitSchema, await c.req.json());
 
     const repo = getHabitsRepo(userId);
@@ -249,7 +249,7 @@ habitsRoutes.post('/', async (c) => {
  * GET /habits/today - Get today's habits with status
  */
 habitsRoutes.get('/today', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getHabitsRepo(userId);
   const progress = await repo.getTodayProgress();
 
@@ -260,7 +260,7 @@ habitsRoutes.get('/today', async (c) => {
  * GET /habits/categories - Get all categories
  */
 habitsRoutes.get('/categories', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getHabitsRepo(userId);
   const categories = await repo.getCategories();
 
@@ -271,7 +271,7 @@ habitsRoutes.get('/categories', async (c) => {
  * GET /habits/:id - Get a habit
  */
 habitsRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
@@ -288,7 +288,7 @@ habitsRoutes.get('/:id', async (c) => {
  * PATCH /habits/:id - Update a habit
  */
 habitsRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await c.req.json<UpdateHabitInput>();
 
@@ -308,7 +308,7 @@ habitsRoutes.patch('/:id', async (c) => {
  * DELETE /habits/:id - Delete a habit
  */
 habitsRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
@@ -327,7 +327,7 @@ habitsRoutes.delete('/:id', async (c) => {
  * POST /habits/:id/archive - Archive a habit
  */
 habitsRoutes.post('/:id/archive', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getHabitsRepo(userId);
@@ -346,7 +346,7 @@ habitsRoutes.post('/:id/archive', async (c) => {
  * POST /habits/:id/log - Log habit completion
  */
 habitsRoutes.post('/:id/log', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await c.req
     .json<{ date?: string; count?: number; notes?: string }>()
@@ -371,7 +371,7 @@ habitsRoutes.post('/:id/log', async (c) => {
  * GET /habits/:id/logs - Get habit logs
  */
 habitsRoutes.get('/:id/logs', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const startDate = c.req.query('startDate');
   const endDate = c.req.query('endDate');
@@ -401,7 +401,7 @@ function getCapturesRepo(userId = 'default'): CapturesRepository {
  * GET /captures - List captures
  */
 capturesRoutes.get('/', pagination(), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const type = validateQueryEnum(c.req.query('type'), [
     'idea',
     'thought',
@@ -433,7 +433,7 @@ capturesRoutes.get('/', pagination(), async (c) => {
  */
 capturesRoutes.post('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(createCaptureSchema, await c.req.json());
 
     const repo = getCapturesRepo(userId);
@@ -462,7 +462,7 @@ capturesRoutes.post('/', async (c) => {
  * GET /captures/inbox - Get unprocessed captures
  */
 capturesRoutes.get('/inbox', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const limit = getIntParam(c, 'limit', 10, 1, 50);
 
   const repo = getCapturesRepo(userId);
@@ -491,7 +491,7 @@ capturesRoutes.get('/inbox', async (c) => {
  * GET /captures/stats - Get capture statistics
  */
 capturesRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const repo = getCapturesRepo(userId);
   const stats = await repo.getStats();
 
@@ -502,7 +502,7 @@ capturesRoutes.get('/stats', async (c) => {
  * GET /captures/:id - Get a capture
  */
 capturesRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getCapturesRepo(userId);
@@ -520,7 +520,7 @@ capturesRoutes.get('/:id', async (c) => {
  */
 capturesRoutes.post('/:id/process', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const body = validateBody(processCaptureSchema, await c.req.json());
 
@@ -551,7 +551,7 @@ capturesRoutes.post('/:id/process', async (c) => {
  * DELETE /captures/:id - Delete a capture
  */
 capturesRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const repo = getCapturesRepo(userId);

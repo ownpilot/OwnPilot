@@ -4,12 +4,13 @@
  * GET /:id/package — Download extension as .skill ZIP file
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { existsSync, readdirSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 import { Hono } from 'hono';
 import { getExtensionService } from '@ownpilot/core';
 import type { ExtensionService } from '../../services/extension/service.js';
-import { getUserId, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
+import { apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';
 import { attachmentDisposition, sanitizeFilenameSegment } from '../../utils/file-safety.js';
 
@@ -23,7 +24,7 @@ const getExtService = () => getExtensionService() as unknown as ExtensionService
  * GET /:id/package — Download .skill ZIP
  */
 packagingRoutes.get('/:id/package', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getExtService();

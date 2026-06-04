@@ -38,7 +38,8 @@ function createApp() {
   app.use('*', requestId);
   app.use('*', async (c, next) => {
     // Simulate authenticated user for all voice routes
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
+    c.set('sessionAuthenticated', true);
     await next();
   });
   app.route('/voice', voiceRoutes);

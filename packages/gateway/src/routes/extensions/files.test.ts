@@ -67,7 +67,7 @@ const { fileRoutes } = await import('./files.js');
 // App setup
 // ---------------------------------------------------------------------------
 
-const USER_ID = 'user-test';
+const USER_ID = 'default';
 const SKILL_DIR = resolve('/skills/my-skill');
 const MANIFEST = 'SKILL.md';
 const SOURCE_PATH = join(SKILL_DIR, MANIFEST);

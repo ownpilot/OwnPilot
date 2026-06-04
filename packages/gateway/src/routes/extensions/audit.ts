@@ -8,6 +8,7 @@
  * POST /audit-manifest   — Audit a manifest before installation
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import {
   createProvider,
@@ -24,7 +25,6 @@ import {
   type SkillLlmAuditResult,
 } from '../../services/skill/security-audit.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -61,7 +61,7 @@ const getExtService = () => getExtensionService() as unknown as ExtensionService
 // =============================================================================
 
 auditRoutes.post('/:id/audit', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getExtService();

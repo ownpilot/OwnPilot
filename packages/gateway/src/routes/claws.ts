@@ -9,6 +9,7 @@
  * 3. Generic dynamic route (/:id) - MUST be last
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type {
@@ -23,7 +24,6 @@ import type {
 import { getClawService } from '../services/claw/service.js';
 import { getLlmSemaphore } from '../services/llm/semaphore.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -425,15 +425,7 @@ clawRoutes.get('/presets', (c) => {
 // GET /recommendations - Operational recommendations for claws that need attention
 clawRoutes.get('/recommendations', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
     const service = getClawService();
     const configs = await service.listClaws(userId);
     const sessions = service.listSessions(userId);
@@ -462,15 +454,7 @@ clawRoutes.get('/recommendations', async (c) => {
 // POST /recommendations/apply - Apply conservative fixes to attention claws
 clawRoutes.post('/recommendations/apply', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     let raw: unknown = {};
     try {
@@ -543,15 +527,7 @@ clawRoutes.post('/recommendations/apply', async (c) => {
 // GET / - List all claws
 clawRoutes.get('/', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const service = getClawService();
     const { limit = 50, offset = 0 } = getPaginationParams(c);
@@ -577,15 +553,7 @@ clawRoutes.get('/', async (c) => {
 // GET /stats - Aggregate claw statistics
 clawRoutes.get('/stats', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const service = getClawService();
     const configs = await service.listClaws(userId);
@@ -643,15 +611,7 @@ clawRoutes.get('/stats', async (c) => {
 // Registered before the /:id routes so "fleet" is not parsed as a claw id.
 clawRoutes.get('/fleet/eval', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const { limit } = getPaginationParams(c);
     const perClawLimit = Math.min(limit || 200, 500);
@@ -675,15 +635,7 @@ clawRoutes.get('/fleet/eval', async (c) => {
 // GET /health - Claw health indicators
 clawRoutes.get('/health', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const service = getClawService();
     const configs = await service.listClaws(userId);
@@ -738,15 +690,7 @@ clawRoutes.get('/health', async (c) => {
 // POST / - Create a new claw
 clawRoutes.post('/', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const body = validateBody(createClawSchema, await c.req.json());
 
@@ -790,15 +734,7 @@ clawRoutes.post('/', async (c) => {
 // GET /:id/doctor - Preview safe operational fixes for a claw
 clawRoutes.get('/:id/doctor', async (c) => {
   try {
-    const userId = getUserId(c);
-    // IDOR-017: Reject unauthenticated requests
-    if (userId === 'default' && !c.get('sessionAuthenticated')) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
-    }
+    const userId = LOCAL_OWNER_ID;
 
     const { id } = c.req.param();
     const service = getClawService();
@@ -826,7 +762,7 @@ clawRoutes.get('/:id/doctor', async (c) => {
 // POST /:id/apply-recommendations - Apply conservative config fixes
 clawRoutes.post('/:id/apply-recommendations', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -867,7 +803,7 @@ clawRoutes.post('/:id/apply-recommendations', async (c) => {
 // POST /:id/start
 clawRoutes.post('/:id/start', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -881,7 +817,7 @@ clawRoutes.post('/:id/start', async (c) => {
 // POST /:id/pause
 clawRoutes.post('/:id/pause', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -902,7 +838,7 @@ clawRoutes.post('/:id/pause', async (c) => {
 // POST /:id/resume
 clawRoutes.post('/:id/resume', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -923,7 +859,7 @@ clawRoutes.post('/:id/resume', async (c) => {
 // POST /:id/stop
 clawRoutes.post('/:id/stop', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -944,7 +880,7 @@ clawRoutes.post('/:id/stop', async (c) => {
 // POST /:id/execute
 clawRoutes.post('/:id/execute', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -958,7 +894,7 @@ clawRoutes.post('/:id/execute', async (c) => {
 // POST /:id/message
 clawRoutes.post('/:id/message', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const body = validateBody(clawMessageSchema, await c.req.json());
 
@@ -977,7 +913,7 @@ clawRoutes.post('/:id/message', async (c) => {
 // `[OPERATOR]` framing then auto-clears it after one cycle.
 clawRoutes.post('/:id/next-intent', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const body = validateBody(clawNextIntentSchema, await c.req.json());
     if (body.intent.trim().length === 0) {
@@ -1012,7 +948,7 @@ clawRoutes.post('/:id/next-intent', async (c) => {
 // tool problem (network, config, expired token) has been fixed.
 clawRoutes.post('/:id/reset-failures', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
     await service.resetFailures(id, userId);
@@ -1032,7 +968,7 @@ clawRoutes.post('/:id/reset-failures', async (c) => {
 // POST /:id/steer — interrupt the in-flight cycle and redirect it now
 clawRoutes.post('/:id/steer', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const body = validateBody(clawMessageSchema, await c.req.json());
 
@@ -1049,7 +985,7 @@ clawRoutes.post('/:id/steer', async (c) => {
 // PUT /:id/plan — replace the structured task plan
 clawRoutes.put('/:id/plan', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const body = validateBody(
       z.object({ tasks: z.array(z.unknown()).max(1000).optional() }),
@@ -1077,7 +1013,7 @@ clawRoutes.put('/:id/plan', async (c) => {
 // PATCH /:id/tasks/:taskId — update a single task (status/notes/evidence)
 clawRoutes.patch('/:id/tasks/:taskId', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id, taskId } = c.req.param();
     const body = validateBody(z.record(z.string(), z.unknown()), await c.req.json());
     const service = getClawService();
@@ -1106,7 +1042,7 @@ clawRoutes.patch('/:id/tasks/:taskId', async (c) => {
 // POST /:id/tasks/:taskId/split — atomically split a task into subtasks
 clawRoutes.post('/:id/tasks/:taskId/split', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id, taskId } = c.req.param();
     const body = validateBody(z.record(z.string(), z.unknown()), await c.req.json());
     const service = getClawService();
@@ -1136,7 +1072,7 @@ clawRoutes.post('/:id/tasks/:taskId/split', async (c) => {
 // GET /:id/history
 clawRoutes.get('/:id/history', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const { limit, offset } = getPaginationParams(c);
     const service = getClawService();
@@ -1152,7 +1088,7 @@ clawRoutes.get('/:id/history', async (c) => {
 // (Hermes-style trajectory data for eval / fine-tuning).
 clawRoutes.get('/:id/trajectory', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const { limit, offset } = getPaginationParams(c);
     const service = getClawService();
@@ -1177,7 +1113,7 @@ clawRoutes.get('/:id/trajectory', async (c) => {
 // retry) detection, efficiency, and a 0-100 composite reliabilityScore.
 clawRoutes.get('/:id/eval', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const { limit, offset } = getPaginationParams(c);
     const service = getClawService();
@@ -1200,7 +1136,7 @@ clawRoutes.get('/:id/eval', async (c) => {
 // GET /:id/audit — Get audit log (per-tool-call tracking)
 clawRoutes.get('/:id/audit', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const { limit, offset } = getPaginationParams(c);
     const category = c.req.query('category');
@@ -1225,7 +1161,7 @@ clawRoutes.get('/:id/audit', async (c) => {
 // POST /:id/approve-escalation
 clawRoutes.post('/:id/approve-escalation', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -1249,7 +1185,7 @@ clawRoutes.post('/:id/approve-escalation', async (c) => {
 // POST /:id/deny-escalation
 clawRoutes.post('/:id/deny-escalation', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     let raw: unknown = {};
     try {
@@ -1288,7 +1224,7 @@ clawRoutes.post('/:id/deny-escalation', async (c) => {
 // GET /:id
 clawRoutes.get('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 
@@ -1312,7 +1248,7 @@ clawRoutes.get('/:id', async (c) => {
 // PUT /:id
 clawRoutes.put('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const body = validateBody(updateClawSchema, await c.req.json());
     const service = getClawService();
@@ -1353,7 +1289,7 @@ clawRoutes.put('/:id', async (c) => {
 // DELETE /:id
 clawRoutes.delete('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { id } = c.req.param();
     const service = getClawService();
 

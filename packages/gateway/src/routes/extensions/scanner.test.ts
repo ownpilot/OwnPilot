@@ -34,7 +34,7 @@ const { scannerRoutes } = await import('./scanner.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/extensions', scannerRoutes);
@@ -80,7 +80,7 @@ describe('Extensions Scanner Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data).toEqual(scanResult);
-      expect(mockScanDirectory).toHaveBeenCalledWith('/tmp/packages', 'user-1');
+      expect(mockScanDirectory).toHaveBeenCalledWith('/tmp/packages', 'default');
     });
 
     it('scans without directory (uses default)', async () => {
@@ -89,7 +89,7 @@ describe('Extensions Scanner Routes', () => {
       const res = await app.request('/extensions/scan', { method: 'POST' });
 
       expect(res.status).toBe(200);
-      expect(mockScanDirectory).toHaveBeenCalledWith(undefined, 'user-1');
+      expect(mockScanDirectory).toHaveBeenCalledWith(undefined, 'default');
     });
 
     it('returns 500 when scan fails', async () => {

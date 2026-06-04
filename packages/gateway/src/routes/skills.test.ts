@@ -74,7 +74,7 @@ const { skillsRoutes } = await import('./skills.js');
 // App setup
 // ---------------------------------------------------------------------------
 
-const USER_ID = 'user-1';
+const USER_ID = 'default';
 
 function createApp() {
   const app = new Hono();

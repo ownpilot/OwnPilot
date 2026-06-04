@@ -5,11 +5,11 @@
  * POST /:id/enable, POST /:id/disable, POST /:id/reload
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono, type Context } from 'hono';
 import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -28,7 +28,7 @@ export const crudRoutes = new Hono();
 const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 async function uninstallExtension(c: Context) {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   if (!id) {
@@ -66,7 +66,7 @@ async function uninstallExtension(c: Context) {
  * GET / - List extensions
  */
 crudRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const status = c.req.query('status');
   const category = c.req.query('category');
   const format = c.req.query('format'); // 'ownpilot' | 'agentskills'
@@ -102,7 +102,7 @@ crudRoutes.get('/gate-status', async (c) => {
  * POST / - Install from inline manifest
  */
 crudRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await parseJsonBody(c);
 
   if (!body || !(body as { manifest?: unknown }).manifest) {
@@ -145,7 +145,7 @@ crudRoutes.post('/', async (c) => {
  * GET /:id - Get package details
  */
 crudRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getExtService();
@@ -175,7 +175,7 @@ crudRoutes.post('/:id/remove', async (c) => uninstallExtension(c));
  * PATCH /:id - Update extension metadata (name, description, version)
  */
 crudRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getExtService();
@@ -252,7 +252,7 @@ crudRoutes.patch('/:id', async (c) => {
  * POST /:id/enable - Enable package + triggers
  */
 crudRoutes.post('/:id/enable', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -288,7 +288,7 @@ crudRoutes.post('/:id/enable', async (c) => {
  * POST /:id/disable - Disable package + triggers
  */
 crudRoutes.post('/:id/disable', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -324,7 +324,7 @@ crudRoutes.post('/:id/disable', async (c) => {
  * POST /:id/recover - Recover from error status
  */
 crudRoutes.post('/:id/recover', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {
@@ -356,7 +356,7 @@ crudRoutes.post('/:id/recover', async (c) => {
  * POST /:id/reload - Reload manifest from disk
  */
 crudRoutes.post('/:id/reload', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   try {

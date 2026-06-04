@@ -4,17 +4,11 @@
  * POST /scan
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { getExtensionService } from '@ownpilot/core';
 import { type ExtensionService } from '../../services/extension/service.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  parseJsonBody,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 
 export const scannerRoutes = new Hono();
 
@@ -25,7 +19,7 @@ const getExtService = () => getExtensionService() as unknown as ExtensionService
  * POST /scan - Scan directory for packages
  */
 scannerRoutes.post('/scan', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = ((await parseJsonBody(c)) ?? {}) as { directory?: string };
 
   try {

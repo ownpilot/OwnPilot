@@ -7,6 +7,7 @@
  * All business logic is delegated to GoalService.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type {
   StepStatus,
@@ -17,7 +18,6 @@ import type {
 import { GoalServiceError } from '../services/goal-service.js';
 import { getGoalService, Services } from '@ownpilot/core';
 import {
-  getUserId,
   apiResponse,
   apiError,
   getIntParam,
@@ -44,7 +44,7 @@ export const goalsRoutes = new Hono();
  * GET /goals - List goals
  */
 goalsRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const status = validateQueryEnum(c.req.query('status'), [
     'active',
     'paused',
@@ -72,7 +72,7 @@ goalsRoutes.get('/', async (c) => {
  * POST /goals - Create a new goal
  */
 goalsRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalSchema, rawBody) as unknown as CreateGoalInput;
@@ -110,7 +110,7 @@ goalsRoutes.post('/', async (c) => {
  * GET /goals/stats - Get goal statistics
  */
 goalsRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getGoalService();
   const stats = await service.getStats(userId);
 
@@ -121,7 +121,7 @@ goalsRoutes.get('/stats', async (c) => {
  * GET /goals/next-actions - Get next actionable steps
  */
 goalsRoutes.get('/next-actions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const limit = getIntParam(c, 'limit', 5, 1, 20);
 
   const service = getGoalService();
@@ -137,7 +137,7 @@ goalsRoutes.get('/next-actions', async (c) => {
  * GET /goals/upcoming - Get goals with upcoming due dates
  */
 goalsRoutes.get('/upcoming', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
 
   const service = getGoalService();
@@ -153,7 +153,7 @@ goalsRoutes.get('/upcoming', async (c) => {
  * GET /goals/:id - Get a specific goal with steps
  */
 goalsRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getGoalService();
@@ -170,7 +170,7 @@ goalsRoutes.get('/:id', async (c) => {
  * PATCH /goals/:id - Update a goal
  */
 goalsRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateGoalSchema } = await import('../middleware/validation.js');
@@ -204,7 +204,7 @@ goalsRoutes.route('/', goalCrudRoutes);
  * POST /goals/:id/steps - Add steps to a goal
  */
 goalsRoutes.post('/:id/steps', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const goalId = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
@@ -245,7 +245,7 @@ goalsRoutes.post('/:id/steps', async (c) => {
  * GET /goals/:id/steps - Get all steps for a goal
  */
 goalsRoutes.get('/:id/steps', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const goalId = c.req.param('id');
 
   const service = getGoalService();
@@ -262,7 +262,7 @@ goalsRoutes.get('/:id/steps', async (c) => {
  * Progress is recalculated automatically when status changes.
  */
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const stepId = c.req.param('stepId');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateGoalStepSchema } = await import('../middleware/validation.js');
@@ -293,7 +293,7 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
  * Progress is recalculated automatically.
  */
 goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const stepId = c.req.param('stepId');
   const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, completeGoalStepSchema } = await import('../middleware/validation.js');
@@ -322,7 +322,7 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
  * Progress is recalculated automatically.
  */
 goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const stepId = c.req.param('stepId');
 
   const service = getGoalService();

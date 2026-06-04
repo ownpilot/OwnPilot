@@ -7,7 +7,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Context } from 'hono';
 import {
-  getUserId,
   getPaginationParams,
   getIntParam,
   getOptionalIntParam,
@@ -37,49 +36,6 @@ function createMockContext(overrides: Partial<Context> = {}): Context {
 }
 
 describe('Route Helpers', () => {
-  describe('getUserId', () => {
-    it('should return userId from context.get when available', () => {
-      const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue('user-from-auth');
-
-      const result = getUserId(c);
-
-      expect(result).toBe('user-from-auth');
-      expect(c.get).toHaveBeenCalledWith('userId');
-    });
-
-    it('should return default when no userId in auth context', () => {
-      const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue(undefined);
-
-      const result = getUserId(c);
-
-      expect(result).toBe('default');
-    });
-
-    it('should not accept userId from query parameters (security)', () => {
-      const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue(undefined);
-      vi.mocked(c.req.query).mockReturnValue('malicious-user');
-
-      const result = getUserId(c);
-
-      expect(result).toBe('default');
-    });
-
-    // Empty string is also treated as "no user" — covers the case where a
-    // misconfigured middleware sets `userId: ''` instead of leaving the key
-    // unset.
-    it('should return default when userId is empty string', () => {
-      const c = createMockContext();
-      vi.mocked(c.get).mockReturnValue('');
-
-      const result = getUserId(c);
-
-      expect(result).toBe('default');
-    });
-  });
-
   describe('getPaginationParams', () => {
     it('should return default pagination values when no query params', () => {
       const c = createMockContext();

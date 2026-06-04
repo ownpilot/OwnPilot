@@ -5,11 +5,11 @@
  * with data bindings and dashboard pinning.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { ArtifactType, DataBinding, DashboardSize } from '@ownpilot/core';
 import { getArtifactService } from '../services/artifact/service.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -34,7 +34,7 @@ const VALID_TYPES = ['html', 'svg', 'markdown', 'form', 'chart', 'react'] as con
 
 artifactsRoutes.get('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { limit, offset } = getPaginationParams(c);
     const type = validateQueryEnum(c.req.query('type'), VALID_TYPES) as ArtifactType | undefined;
     const pinned = c.req.query('pinned');
@@ -63,7 +63,7 @@ artifactsRoutes.get('/', async (c) => {
 
 artifactsRoutes.get('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const service = getArtifactService();
 
@@ -84,7 +84,7 @@ artifactsRoutes.get('/:id', async (c) => {
 
 artifactsRoutes.post('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(createArtifactSchema, await c.req.json());
 
     const service = getArtifactService();
@@ -113,7 +113,7 @@ artifactsRoutes.post('/', async (c) => {
 
 artifactsRoutes.patch('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const body = validateBody(updateArtifactSchema, await c.req.json());
     const service = getArtifactService();
@@ -144,7 +144,7 @@ artifactsRoutes.patch('/:id', async (c) => {
 
 artifactsRoutes.delete('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const service = getArtifactService();
 
@@ -165,7 +165,7 @@ artifactsRoutes.delete('/:id', async (c) => {
 
 artifactsRoutes.post('/:id/pin', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const service = getArtifactService();
 
@@ -186,7 +186,7 @@ artifactsRoutes.post('/:id/pin', async (c) => {
 
 artifactsRoutes.post('/:id/refresh', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const service = getArtifactService();
 
@@ -207,7 +207,7 @@ artifactsRoutes.post('/:id/refresh', async (c) => {
 
 artifactsRoutes.get('/:id/versions', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const service = getArtifactService();
 

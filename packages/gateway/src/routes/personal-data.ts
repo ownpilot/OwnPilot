@@ -9,6 +9,7 @@
  * - Contacts
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import {
   TasksRepository,
@@ -31,7 +32,6 @@ import {
   apiError,
   ERROR_CODES,
   getErrorMessage,
-  getUserId,
   getIntParam,
   getOptionalIntParam,
   validateQueryEnum,
@@ -98,7 +98,7 @@ export const personalDataRoutes = new Hono();
 const tasksRoutes = new Hono();
 
 tasksRoutes.get('/', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const query: TaskQuery = {
     status: validateQueryEnum(c.req.query('status'), [
       'pending',
@@ -124,32 +124,32 @@ tasksRoutes.get('/', async (c) => {
 });
 
 tasksRoutes.get('/today', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const tasks = await repo.getDueToday();
   return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/overdue', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const tasks = await repo.getOverdue();
   return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/upcoming', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
   const tasks = await repo.getUpcoming(days);
   return apiResponse(c, tasks);
 });
 
 tasksRoutes.get('/categories', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const categories = await repo.getCategories();
   return apiResponse(c, categories);
 });
 
 tasksRoutes.get('/:id', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const task = await repo.get(c.req.param('id'));
   if (!task) {
     return notFoundError(c, 'Task', c.req.param('id'));
@@ -160,7 +160,7 @@ tasksRoutes.get('/:id', async (c) => {
 tasksRoutes.post('/', async (c) => {
   const parsed = await parseBody(c, createTaskSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const task = await repo.create(parsed.data);
   emitDataChanged('task', 'created', task.id);
   return apiResponse(c, task, 201);
@@ -169,7 +169,7 @@ tasksRoutes.post('/', async (c) => {
 tasksRoutes.patch('/:id', async (c) => {
   const parsed = await parseBody(c, updateTaskSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const task = await repo.update(c.req.param('id'), parsed.data);
   if (!task) {
     return notFoundError(c, 'Task', c.req.param('id'));
@@ -179,7 +179,7 @@ tasksRoutes.patch('/:id', async (c) => {
 });
 
 tasksRoutes.post('/:id/complete', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const task = await repo.complete(c.req.param('id'));
   if (!task) {
     return notFoundError(c, 'Task', c.req.param('id'));
@@ -189,7 +189,7 @@ tasksRoutes.post('/:id/complete', async (c) => {
 });
 
 tasksRoutes.delete('/:id', async (c) => {
-  const repo = new TasksRepository(getUserId(c));
+  const repo = new TasksRepository(LOCAL_OWNER_ID);
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -206,7 +206,7 @@ tasksRoutes.delete('/:id', async (c) => {
 const bookmarksRoutes = new Hono();
 
 bookmarksRoutes.get('/', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const query: BookmarkQuery = {
     category: c.req.query('category'),
     isFavorite: c.req.query('favorite') === 'true' ? true : undefined,
@@ -220,26 +220,26 @@ bookmarksRoutes.get('/', async (c) => {
 });
 
 bookmarksRoutes.get('/favorites', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const bookmarks = await repo.getFavorites();
   return apiResponse(c, bookmarks);
 });
 
 bookmarksRoutes.get('/recent', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const limit = getIntParam(c, 'limit', 10, 1, 50);
   const bookmarks = await repo.getRecent(limit);
   return apiResponse(c, bookmarks);
 });
 
 bookmarksRoutes.get('/categories', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const categories = await repo.getCategories();
   return apiResponse(c, categories);
 });
 
 bookmarksRoutes.get('/:id', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const bookmark = await repo.get(c.req.param('id'));
   if (!bookmark) {
     return notFoundError(c, 'Bookmark', c.req.param('id'));
@@ -250,7 +250,7 @@ bookmarksRoutes.get('/:id', async (c) => {
 bookmarksRoutes.post('/', async (c) => {
   const parsed = await parseBody(c, createBookmarkSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const bookmark = await repo.create(parsed.data);
   emitDataChanged('bookmark', 'created', bookmark.id);
   return apiResponse(c, bookmark, 201);
@@ -259,7 +259,7 @@ bookmarksRoutes.post('/', async (c) => {
 bookmarksRoutes.patch('/:id', async (c) => {
   const parsed = await parseBody(c, updateBookmarkSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const bookmark = await repo.update(c.req.param('id'), parsed.data);
   if (!bookmark) {
     return notFoundError(c, 'Bookmark', c.req.param('id'));
@@ -269,7 +269,7 @@ bookmarksRoutes.patch('/:id', async (c) => {
 });
 
 bookmarksRoutes.post('/:id/favorite', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const bookmark = await repo.toggleFavorite(c.req.param('id'));
   if (!bookmark) {
     return notFoundError(c, 'Bookmark', c.req.param('id'));
@@ -279,7 +279,7 @@ bookmarksRoutes.post('/:id/favorite', async (c) => {
 });
 
 bookmarksRoutes.delete('/:id', async (c) => {
-  const repo = new BookmarksRepository(getUserId(c));
+  const repo = new BookmarksRepository(LOCAL_OWNER_ID);
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -296,7 +296,7 @@ bookmarksRoutes.delete('/:id', async (c) => {
 const notesRoutes = new Hono();
 
 notesRoutes.get('/', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const query: NoteQuery = {
     category: c.req.query('category'),
     isPinned: c.req.query('pinned') === 'true' ? true : undefined,
@@ -311,25 +311,25 @@ notesRoutes.get('/', async (c) => {
 });
 
 notesRoutes.get('/pinned', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const notes = await repo.getPinned();
   return apiResponse(c, notes);
 });
 
 notesRoutes.get('/archived', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const notes = await repo.getArchived();
   return apiResponse(c, notes);
 });
 
 notesRoutes.get('/categories', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const categories = await repo.getCategories();
   return apiResponse(c, categories);
 });
 
 notesRoutes.get('/:id', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.get(c.req.param('id'));
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
@@ -340,7 +340,7 @@ notesRoutes.get('/:id', async (c) => {
 notesRoutes.post('/', async (c) => {
   const parsed = await parseBody(c, createNoteSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.create(parsed.data);
   emitDataChanged('note', 'created', note.id);
   return apiResponse(c, note, 201);
@@ -349,7 +349,7 @@ notesRoutes.post('/', async (c) => {
 notesRoutes.patch('/:id', async (c) => {
   const parsed = await parseBody(c, updateNoteSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.update(c.req.param('id'), parsed.data);
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
@@ -359,7 +359,7 @@ notesRoutes.patch('/:id', async (c) => {
 });
 
 notesRoutes.post('/:id/pin', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.togglePin(c.req.param('id'));
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
@@ -369,7 +369,7 @@ notesRoutes.post('/:id/pin', async (c) => {
 });
 
 notesRoutes.post('/:id/archive', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.archive(c.req.param('id'));
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
@@ -379,7 +379,7 @@ notesRoutes.post('/:id/archive', async (c) => {
 });
 
 notesRoutes.post('/:id/unarchive', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const note = await repo.unarchive(c.req.param('id'));
   if (!note) {
     return notFoundError(c, 'Note', c.req.param('id'));
@@ -389,7 +389,7 @@ notesRoutes.post('/:id/unarchive', async (c) => {
 });
 
 notesRoutes.delete('/:id', async (c) => {
-  const repo = new NotesRepository(getUserId(c));
+  const repo = new NotesRepository(LOCAL_OWNER_ID);
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -406,7 +406,7 @@ notesRoutes.delete('/:id', async (c) => {
 const calendarRoutes = new Hono();
 
 calendarRoutes.get('/', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const query: EventQuery = {
     startAfter: c.req.query('startAfter'),
     startBefore: c.req.query('startBefore'),
@@ -421,26 +421,26 @@ calendarRoutes.get('/', async (c) => {
 });
 
 calendarRoutes.get('/today', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const events = await repo.getToday();
   return apiResponse(c, events);
 });
 
 calendarRoutes.get('/upcoming', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const days = getIntParam(c, 'days', 7, 1, MAX_DAYS_LOOKBACK);
   const events = await repo.getUpcoming(days);
   return apiResponse(c, events);
 });
 
 calendarRoutes.get('/categories', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const categories = await repo.getCategories();
   return apiResponse(c, categories);
 });
 
 calendarRoutes.get('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const event = await repo.get(c.req.param('id'));
   if (!event) {
     return notFoundError(c, 'Event', c.req.param('id'));
@@ -479,7 +479,7 @@ calendarRoutes.post('/', async (c) => {
     reminderMinutes: reminders && reminders.length > 0 ? Number(reminders[0]) : undefined,
   };
 
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const event = await repo.create(createInput);
   emitDataChanged('calendar', 'created', event.id);
   return apiResponse(c, event, 201);
@@ -506,7 +506,7 @@ calendarRoutes.patch('/:id', async (c) => {
     updateInput.reminderMinutes = Number(reminders[0]);
   }
 
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const event = await repo.update(c.req.param('id'), updateInput);
   if (!event) {
     return notFoundError(c, 'Event', c.req.param('id'));
@@ -516,7 +516,7 @@ calendarRoutes.patch('/:id', async (c) => {
 });
 
 calendarRoutes.delete('/:id', async (c) => {
-  const repo = new CalendarRepository(getUserId(c));
+  const repo = new CalendarRepository(LOCAL_OWNER_ID);
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -533,7 +533,7 @@ calendarRoutes.delete('/:id', async (c) => {
 const contactsRoutes = new Hono();
 
 contactsRoutes.get('/', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const query: ContactQuery = {
     relationship: c.req.query('relationship'),
     company: c.req.query('company'),
@@ -548,39 +548,39 @@ contactsRoutes.get('/', async (c) => {
 });
 
 contactsRoutes.get('/favorites', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const contacts = await repo.getFavorites();
   return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/recent', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const limit = getIntParam(c, 'limit', 10, 1, 100);
   const contacts = await repo.getRecentlyContacted(limit);
   return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/birthdays', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const days = getIntParam(c, 'days', 30, 1, MAX_DAYS_LOOKBACK);
   const contacts = await repo.getUpcomingBirthdays(days);
   return apiResponse(c, contacts);
 });
 
 contactsRoutes.get('/relationships', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const relationships = await repo.getRelationships();
   return apiResponse(c, relationships);
 });
 
 contactsRoutes.get('/companies', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const companies = await repo.getCompanies();
   return apiResponse(c, companies);
 });
 
 contactsRoutes.get('/:id', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const contact = await repo.get(c.req.param('id'));
   if (!contact) {
     return notFoundError(c, 'Contact', c.req.param('id'));
@@ -591,7 +591,7 @@ contactsRoutes.get('/:id', async (c) => {
 contactsRoutes.post('/', async (c) => {
   const parsed = await parseBody(c, createContactSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const contact = await repo.create(parsed.data);
   emitDataChanged('contact', 'created', contact.id);
   return apiResponse(c, contact, 201);
@@ -600,7 +600,7 @@ contactsRoutes.post('/', async (c) => {
 contactsRoutes.patch('/:id', async (c) => {
   const parsed = await parseBody(c, updateContactSchema);
   if (!parsed.ok) return parsed.res;
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const contact = await repo.update(c.req.param('id'), parsed.data);
   if (!contact) {
     return notFoundError(c, 'Contact', c.req.param('id'));
@@ -610,7 +610,7 @@ contactsRoutes.patch('/:id', async (c) => {
 });
 
 contactsRoutes.post('/:id/favorite', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const contact = await repo.toggleFavorite(c.req.param('id'));
   if (!contact) {
     return notFoundError(c, 'Contact', c.req.param('id'));
@@ -620,7 +620,7 @@ contactsRoutes.post('/:id/favorite', async (c) => {
 });
 
 contactsRoutes.delete('/:id', async (c) => {
-  const repo = new ContactsRepository(getUserId(c));
+  const repo = new ContactsRepository(LOCAL_OWNER_ID);
   const id = c.req.param('id');
   const deleted = await repo.delete(id);
   if (!deleted) {
@@ -642,7 +642,7 @@ personalDataRoutes.route('/contacts', contactsRoutes);
 
 // Summary endpoint - get overview of all personal data
 personalDataRoutes.get('/summary', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const tasksRepo = new TasksRepository(userId);
   const bookmarksRepo = new BookmarksRepository(userId);

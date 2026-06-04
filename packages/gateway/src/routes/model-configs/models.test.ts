@@ -47,7 +47,7 @@ vi.mock('../../services/log.js', () => ({
 
 const sampleModel = {
   id: 'cfg-1',
-  userId: 'user-1',
+  userId: 'default',
   providerId: 'anthropic',
   modelId: 'claude-3-sonnet',
   displayName: 'Claude 3 Sonnet',
@@ -61,7 +61,7 @@ const sampleModel = {
 
 const sampleModelOpenAI = {
   id: 'cfg-2',
-  userId: 'user-1',
+  userId: 'default',
   providerId: 'openai',
   modelId: 'gpt-4',
   displayName: 'GPT-4',
@@ -75,7 +75,7 @@ const sampleModelOpenAI = {
 
 const sampleModelDisabled = {
   id: 'cfg-3',
-  userId: 'user-1',
+  userId: 'default',
   providerId: 'openai',
   modelId: 'gpt-3.5-turbo',
   displayName: 'GPT-3.5 Turbo',
@@ -89,7 +89,7 @@ const sampleModelDisabled = {
 
 const sampleCustomModel = {
   id: 'cfg-4',
-  userId: 'user-1',
+  userId: 'default',
   providerId: 'anthropic',
   modelId: 'claude-custom',
   displayName: 'Custom Claude',
@@ -103,7 +103,7 @@ const sampleCustomModel = {
 
 const sampleModelWithOverride = {
   id: 'cfg-5',
-  userId: 'user-1',
+  userId: 'default',
   providerId: 'openai',
   modelId: 'gpt-4-override',
   displayName: 'GPT-4 Override',
@@ -128,7 +128,7 @@ const { modelRoutes } = await import('./models.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/models', modelRoutes);
@@ -163,7 +163,7 @@ describe('Model Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data).toHaveLength(3);
-      expect(mockGetMergedModels).toHaveBeenCalledWith('user-1');
+      expect(mockGetMergedModels).toHaveBeenCalledWith('default');
     });
 
     it('returns empty array when no models exist', async () => {
@@ -353,7 +353,7 @@ describe('Model Routes', () => {
     it('calls getMergedModels with correct userId', async () => {
       await app.request('/models/anthropic');
 
-      expect(mockGetMergedModels).toHaveBeenCalledWith('user-1');
+      expect(mockGetMergedModels).toHaveBeenCalledWith('default');
     });
   });
 
@@ -429,7 +429,7 @@ describe('Model Routes', () => {
         expect.objectContaining({
           providerId: 'anthropic',
           modelId: 'claude-custom',
-          userId: 'user-1',
+          userId: 'default',
           isCustom: true,
         })
       );
@@ -690,7 +690,7 @@ describe('Model Routes', () => {
       });
 
       expect(mockModelConfigsRepo.deleteModel).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'anthropic',
         'claude-custom'
       );
@@ -831,7 +831,7 @@ describe('Model Routes', () => {
 
       expect(mockModelConfigsRepo.upsertModel).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'user-1',
+          userId: 'default',
           providerId: 'anthropic',
           modelId: 'claude-3-sonnet',
           isEnabled: false,

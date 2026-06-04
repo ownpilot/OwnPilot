@@ -8,6 +8,7 @@
  *   GET /active/definitions
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import {
   createCustomToolsRepo,
@@ -25,7 +26,6 @@ import {
   unregisterToolFromRegistries,
 } from '../../services/custom/tool-registry.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -48,7 +48,7 @@ export const crudRoutes = new Hono();
  * Get custom tools statistics
  */
 crudRoutes.get('/stats', async (c) => {
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
   const stats = await repo.getStats();
 
   return apiResponse(c, stats);
@@ -58,7 +58,7 @@ crudRoutes.get('/stats', async (c) => {
  * List custom tools with filtering
  */
 crudRoutes.get('/', async (c) => {
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const status = validateQueryEnum(c.req.query('status'), [
     'active',
@@ -83,7 +83,7 @@ crudRoutes.get('/', async (c) => {
  * Get pending approval tools
  */
 crudRoutes.get('/pending', async (c) => {
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
   const tools = await repo.getPendingApproval();
 
   return apiResponse(c, {
@@ -126,7 +126,7 @@ crudRoutes.get('/templates', (c) => {
  */
 crudRoutes.get('/:id', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const tool = await repo.get(id);
   if (!tool) {
@@ -168,7 +168,7 @@ crudRoutes.post('/', async (c) => {
     );
   }
 
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   // Check if tool name already exists
   const existing = await repo.getByName(body.name);
@@ -231,7 +231,7 @@ crudRoutes.patch('/:id', async (c) => {
     requiredApiKeys?: CustomToolRecord['requiredApiKeys'];
   };
 
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   // Validate code if provided (centralized validator)
   if (body.code) {
@@ -277,7 +277,7 @@ crudRoutes.patch('/:id', async (c) => {
  */
 crudRoutes.delete('/:id', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   // Get tool name for unregistering
   const tool = await repo.get(id);
@@ -319,7 +319,7 @@ crudRoutes.patch('/:id/workflow-usable', async (c) => {
     );
   }
 
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
   const tool = await repo.get(id);
   if (!tool) {
     return notFoundError(c, 'Custom tool', id);
@@ -344,7 +344,7 @@ crudRoutes.patch('/:id/workflow-usable', async (c) => {
  */
 crudRoutes.post('/:id/enable', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const tool = await repo.enable(id);
   if (!tool) {
@@ -366,7 +366,7 @@ crudRoutes.post('/:id/enable', async (c) => {
  */
 crudRoutes.post('/:id/disable', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const tool = await repo.disable(id);
   if (!tool) {
@@ -423,7 +423,7 @@ crudRoutes.post('/templates/:templateId/create', async (c) => {
     );
   }
 
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   // Check duplicate
   const existing = await repo.getByName(toolName);
@@ -469,7 +469,7 @@ crudRoutes.post('/templates/:templateId/create', async (c) => {
  * Returns tools in a format suitable for LLM tool definitions
  */
 crudRoutes.get('/active/definitions', async (c) => {
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
   const tools = await repo.getActiveTools();
 
   const definitions = tools.map((tool) => ({

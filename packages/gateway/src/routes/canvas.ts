@@ -6,10 +6,10 @@
  * `canvas:op` WS event so all open boards update live.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getCanvasServiceImpl } from '../services/canvas/service.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -29,7 +29,7 @@ export const canvasRoutes = new Hono();
 // GET / - List canvases (distinct canvas ids + element counts)
 canvasRoutes.get('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const canvases = await getCanvasServiceImpl().listCanvases(userId);
     return apiResponse(c, { canvases });
   } catch (err) {
@@ -40,7 +40,7 @@ canvasRoutes.get('/', async (c) => {
 // GET /:canvasId/elements - List elements on a canvas
 canvasRoutes.get('/:canvasId/elements', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const canvasId = c.req.param('canvasId') || 'main';
     const elements = await getCanvasServiceImpl().listElements(userId, canvasId);
     return apiResponse(c, { canvasId, elements });
@@ -52,7 +52,7 @@ canvasRoutes.get('/:canvasId/elements', async (c) => {
 // POST /:canvasId/elements - Create an element (UI add)
 canvasRoutes.post('/:canvasId/elements', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const canvasId = c.req.param('canvasId') || 'main';
     const body = validateBody(createCanvasElementSchema, await c.req.json());
     const element = await getCanvasServiceImpl().addElement(userId, {
@@ -78,7 +78,7 @@ canvasRoutes.post('/:canvasId/elements', async (c) => {
 // PATCH /:canvasId/elements/:id - Update an element (content/size/position/style)
 canvasRoutes.patch('/:canvasId/elements/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const body = validateBody(updateCanvasElementSchema, await c.req.json());
     const element = await getCanvasServiceImpl().updateElement(userId, id, {
@@ -110,7 +110,7 @@ canvasRoutes.patch('/:canvasId/elements/:id', async (c) => {
 // POST /:canvasId/elements/:id/move - Move an element (user drag persistence)
 canvasRoutes.post('/:canvasId/elements/:id/move', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const body = validateBody(moveCanvasElementSchema, await c.req.json());
     const element = await getCanvasServiceImpl().moveElement(userId, id, body.x, body.y);
@@ -133,7 +133,7 @@ canvasRoutes.post('/:canvasId/elements/:id/move', async (c) => {
 // DELETE /:canvasId/elements/:id - Remove a single element
 canvasRoutes.delete('/:canvasId/elements/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const removed = await getCanvasServiceImpl().removeElement(userId, id);
     if (!removed) {
@@ -152,7 +152,7 @@ canvasRoutes.delete('/:canvasId/elements/:id', async (c) => {
 // DELETE /:canvasId - Clear all elements on a canvas
 canvasRoutes.delete('/:canvasId', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const canvasId = c.req.param('canvasId') || 'main';
     const removed = await getCanvasServiceImpl().clearCanvas(userId, canvasId);
     return apiResponse(c, { canvasId, removed });

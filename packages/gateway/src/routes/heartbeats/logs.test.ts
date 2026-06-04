@@ -36,7 +36,7 @@ const { heartbeatLogRoutes } = await import('./logs.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/heartbeat-logs', heartbeatLogRoutes);
@@ -80,7 +80,7 @@ describe('Heartbeat Log Routes', () => {
       expect(json.data.items).toHaveLength(1);
       expect(json.data.total).toBe(1);
       expect(mockRepo.listByUser).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.any(Number),
         expect.any(Number)
       );
@@ -88,7 +88,7 @@ describe('Heartbeat Log Routes', () => {
 
     it('passes limit and offset to repo', async () => {
       await app.request('/heartbeat-logs?limit=5&offset=10');
-      expect(mockRepo.listByUser).toHaveBeenCalledWith('user-1', 5, 10);
+      expect(mockRepo.listByUser).toHaveBeenCalledWith('default', 5, 10);
     });
 
     it('returns 500 when repo throws', async () => {
@@ -108,7 +108,7 @@ describe('Heartbeat Log Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data).toHaveLength(1);
-      expect(mockRepo.isAgentOwnedByUser).toHaveBeenCalledWith('agent-1', 'user-1');
+      expect(mockRepo.isAgentOwnedByUser).toHaveBeenCalledWith('agent-1', 'default');
       expect(mockRepo.listByAgent).toHaveBeenCalledWith(
         'agent-1',
         expect.any(Number),
@@ -145,13 +145,13 @@ describe('Heartbeat Log Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.total).toBe(10);
-      expect(mockRepo.getStatsByUser).toHaveBeenCalledWith('user-1', undefined);
+      expect(mockRepo.getStatsByUser).toHaveBeenCalledWith('default', undefined);
     });
 
     it('passes agentId to getStatsByUser when provided and owned', async () => {
       await app.request('/heartbeat-logs/stats?agentId=agent-42');
-      expect(mockRepo.isAgentOwnedByUser).toHaveBeenCalledWith('agent-42', 'user-1');
-      expect(mockRepo.getStatsByUser).toHaveBeenCalledWith('user-1', 'agent-42');
+      expect(mockRepo.isAgentOwnedByUser).toHaveBeenCalledWith('agent-42', 'default');
+      expect(mockRepo.getStatsByUser).toHaveBeenCalledWith('default', 'agent-42');
     });
 
     it('returns 404 when agentId is not owned by user', async () => {

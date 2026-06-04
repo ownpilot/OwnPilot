@@ -997,11 +997,12 @@ describe('MCP Routes', () => {
       expect(json.error.code).toBe('INTERNAL_ERROR');
     });
 
-    it('returns 404 when userId does not match server owner', async () => {
-      mockRepo.getById.mockResolvedValue(sampleServer);
+    it('returns 404 when the server is owned by a non-local userId', async () => {
+      // Single-tenant: requests resolve to LOCAL_OWNER_ID; the residual guard
+      // 404s a server row owned by any other userId.
+      mockRepo.getById.mockResolvedValue({ ...sampleServer, userId: 'user-2' });
 
-      const user2App = createApp('user-2');
-      const res = await user2App.request('/mcp/mcp-1/tools');
+      const res = await createApp().request('/mcp/mcp-1/tools');
 
       expect(res.status).toBe(404);
       const json = (await res.json()) as { error: { code: string; message: string } };
@@ -1134,11 +1135,11 @@ describe('MCP Routes', () => {
       expect(json.error.code).toBe('NOT_FOUND');
     });
 
-    it('returns 404 when userId does not match server owner', async () => {
-      mockRepo.getById.mockResolvedValue(sampleServer);
+    it('returns 404 when the server is owned by a non-local userId', async () => {
+      // Single-tenant residual guard: a server row owned by another userId 404s.
+      mockRepo.getById.mockResolvedValue({ ...sampleServer, userId: 'user-2' });
 
-      const user2App = createApp('user-2');
-      const res = await user2App.request('/mcp/mcp-1/tool-settings', {
+      const res = await createApp().request('/mcp/mcp-1/tool-settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toolName: 'my_tool', workflowUsable: false }),

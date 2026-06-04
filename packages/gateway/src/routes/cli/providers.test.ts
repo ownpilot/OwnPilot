@@ -40,7 +40,7 @@ const { cliProvidersRoutes } = await import('./providers.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/cli-providers', cliProvidersRoutes);
@@ -50,7 +50,7 @@ function createApp() {
 
 const sampleProvider = {
   id: 'prov-1',
-  userId: 'user-1',
+  userId: 'default',
   name: 'prettier',
   displayName: 'Prettier',
   binary: 'prettier',
@@ -90,7 +90,7 @@ describe('CLI Providers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data).toHaveLength(1);
-      expect(mockRepo.list).toHaveBeenCalledWith('user-1');
+      expect(mockRepo.list).toHaveBeenCalledWith('default');
     });
 
     it('returns 500 when repo throws', async () => {

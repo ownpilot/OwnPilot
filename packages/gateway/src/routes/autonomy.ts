@@ -4,6 +4,7 @@
  * API for managing autonomy levels, risk assessment, and approvals.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono, type Context } from 'hono';
 import type { AutonomyLevel } from '../autonomy/index.js';
 import {
@@ -20,7 +21,6 @@ import { DEFAULT_ACTION_COOLDOWNS } from '../autonomy/executor.js';
 import { DEFAULT_PULSE_DIRECTIVES, type PulseDirectives } from '../autonomy/engine.js';
 import { settingsRepo } from '../db/repositories/settings/index.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -41,7 +41,7 @@ export const autonomyRoutes = new Hono();
  * GET /autonomy/config - Get autonomy configuration
  */
 autonomyRoutes.get('/config', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
@@ -59,7 +59,7 @@ autonomyRoutes.get('/config', (c) => {
  * PATCH /autonomy/config - Update autonomy configuration
  */
 autonomyRoutes.patch('/config', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
 
   // Validate config update body
@@ -80,7 +80,7 @@ autonomyRoutes.patch('/config', async (c) => {
  * POST /autonomy/config/reset - Reset to default configuration
  */
 autonomyRoutes.post('/config/reset', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
 
   // Reset by setting empty config (will use defaults)
@@ -114,7 +114,7 @@ autonomyRoutes.get('/levels', (c) => {
  * POST /autonomy/level - Set autonomy level
  */
 autonomyRoutes.post('/level', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyLevelSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyLevelSchema, rawBody);
@@ -146,7 +146,7 @@ autonomyRoutes.post('/level', async (c) => {
  * POST /autonomy/assess - Assess risk for an action
  */
 autonomyRoutes.post('/assess', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyAssessSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyAssessSchema, rawBody) as {
@@ -189,7 +189,7 @@ autonomyRoutes.post('/assess', async (c) => {
  * GET /autonomy/approvals - Get pending approvals
  */
 autonomyRoutes.get('/approvals', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const pending = manager.getPendingActions(userId);
 
@@ -203,7 +203,7 @@ autonomyRoutes.get('/approvals', (c) => {
  * POST /autonomy/approvals/request - Request approval for an action
  */
 autonomyRoutes.post('/approvals/request', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyApprovalRequestSchema } =
     await import('../middleware/validation.js');
@@ -262,7 +262,7 @@ autonomyRoutes.post('/approvals/request', async (c) => {
  */
 autonomyRoutes.get('/approvals/:id', (c) => {
   const id = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const action = manager.getPendingAction(id);
 
@@ -286,7 +286,7 @@ autonomyRoutes.get('/approvals/:id', (c) => {
  */
 autonomyRoutes.post('/approvals/:id/decide', async (c) => {
   const id = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyDecisionSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyDecisionSchema, rawBody) as Omit<ApprovalDecision, 'actionId'>;
@@ -335,7 +335,7 @@ autonomyRoutes.post('/approvals/:id/decide', async (c) => {
  */
 async function handleApprovalShorthand(c: Context, decision: 'approve' | 'reject') {
   const id = c.req.param('id') ?? '';
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = (await parseJsonBody<Record<string, unknown>>(c)) ?? {};
   const { validateBody, autonomyApproveRejectSchema } = await import('../middleware/validation.js');
   const body = validateBody(autonomyApproveRejectSchema, rawBody) as {
@@ -377,7 +377,7 @@ autonomyRoutes.post('/approvals/:id/reject', (c) => handleApprovalShorthand(c, '
  */
 autonomyRoutes.delete('/approvals/:id', (c) => {
   const id = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const pending = manager.getPendingAction(id);
 
@@ -406,7 +406,7 @@ autonomyRoutes.delete('/approvals/:id', (c) => {
  * POST /autonomy/tools/allow - Add tool to allowed list
  */
 autonomyRoutes.post('/tools/allow', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyToolPermissionSchema } =
     await import('../middleware/validation.js');
@@ -437,7 +437,7 @@ autonomyRoutes.post('/tools/allow', async (c) => {
  * POST /autonomy/tools/block - Add tool to blocked list
  */
 autonomyRoutes.post('/tools/block', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, autonomyToolPermissionSchema } =
     await import('../middleware/validation.js');
@@ -468,7 +468,7 @@ autonomyRoutes.post('/tools/block', async (c) => {
  * DELETE /autonomy/tools/:tool - Remove tool from allowed/blocked lists
  */
 autonomyRoutes.delete('/tools/:tool', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const tool = c.req.param('tool');
 
   const manager = getApprovalManager();
@@ -492,7 +492,7 @@ autonomyRoutes.delete('/tools/:tool', (c) => {
  * DELETE /autonomy/remembered - Clear remembered decisions
  */
 autonomyRoutes.delete('/remembered', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const cleared = manager.clearRememberedDecisions(userId);
 
@@ -510,7 +510,7 @@ autonomyRoutes.delete('/remembered', (c) => {
  * GET /autonomy/budget - Get budget status
  */
 autonomyRoutes.get('/budget', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const manager = getApprovalManager();
   const config = manager.getUserConfig(userId);
 
@@ -527,7 +527,7 @@ autonomyRoutes.get('/budget', (c) => {
  * PATCH /autonomy/budget - Update budget settings
  */
 autonomyRoutes.patch('/budget', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
 
   // Validate budget update body
@@ -613,7 +613,7 @@ autonomyRoutes.post('/pulse/stop', (c) => {
  */
 autonomyRoutes.post('/pulse/run', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const engine = getAutonomyEngine();
 
     const status = engine.getStatus();
@@ -747,7 +747,7 @@ autonomyRoutes.put('/pulse/directives', async (c) => {
  */
 autonomyRoutes.get('/pulse/history', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { limit, offset } = getPaginationParams(c, 15);
     const engine = getAutonomyEngine();
     const result = await engine.getRecentLogsPaginated(userId, limit, offset);
@@ -766,7 +766,7 @@ autonomyRoutes.get('/pulse/history', async (c) => {
  */
 autonomyRoutes.get('/pulse/stats', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const engine = getAutonomyEngine();
     const stats = await engine.getStats(userId);
     return apiResponse(c, stats);

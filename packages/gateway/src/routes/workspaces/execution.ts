@@ -6,6 +6,7 @@
  * GET /:id/executions  - List executions
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import {
@@ -20,7 +21,6 @@ import {
   apiError,
   ERROR_CODES,
   getIntParam,
-  getUserId,
   zodValidationError,
   getErrorMessage,
   parseJsonBody,
@@ -32,7 +32,7 @@ const app = new Hono();
  * GET /workspaces/:id/stats - Get workspace statistics
  */
 app.get('/:id/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 
@@ -97,7 +97,7 @@ app.get('/:id/stats', async (c) => {
  * POST /workspaces/:id/execute - Execute code in workspace
  */
 app.post('/:id/execute', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 
@@ -215,7 +215,7 @@ app.post('/:id/execute', async (c) => {
  * GET /workspaces/:id/executions - List executions
  */
 app.get('/:id/executions', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const limit = getIntParam(c, 'limit', 50, 1, 200);
   const repo = new WorkspacesRepository(userId);

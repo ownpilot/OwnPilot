@@ -5,6 +5,7 @@
  * plus the MCP protocol endpoint for exposing OwnPilot tools.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getBaseName, getMcpClientService } from '@ownpilot/core';
 import { getMcpServersRepo } from '../db/repositories/mcp-servers.js';
@@ -12,14 +13,7 @@ import { handleMcpRequest } from '../services/mcp/server.js';
 import { getSharedToolRegistry } from '../services/tool/executor.js';
 import { wsGateway } from '../ws/server.js';
 import { getLog } from '../services/log.js';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  sanitizeId,
-  getUserId,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, sanitizeId } from './helpers.js';
 import {
   validateBody,
   mcpToolCallSchema,
@@ -174,7 +168,7 @@ mcpRoutes.post('/tool-call', async (c) => {
     const { tool_name: toolName, arguments: toolArgs } = body;
 
     const registry = getSharedToolRegistry();
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const context = {
       callId: `mcp-cli-${Date.now()}`,
       userId,
@@ -244,7 +238,7 @@ mcpRoutes.get('/presets', (c) => {
  */
 mcpRoutes.post('/presets/:id/install', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const presetId = c.req.param('id');
     const preset = getMcpPreset(presetId);
     if (!preset) {
@@ -333,7 +327,7 @@ mcpRoutes.post('/presets/:id/install', async (c) => {
  */
 mcpRoutes.get('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getMcpServersRepo();
     const servers = await repo.getAll(userId);
 
@@ -356,7 +350,7 @@ mcpRoutes.get('/', async (c) => {
  */
 mcpRoutes.post('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const rawBody = await c.req.json();
     const body = validateBody(createMcpServerSchema, rawBody);
     // enabled is a pass-through field not in the schema
@@ -422,7 +416,7 @@ mcpRoutes.post('/', async (c) => {
  */
 mcpRoutes.get('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
@@ -446,7 +440,7 @@ mcpRoutes.get('/:id', async (c) => {
  */
 mcpRoutes.put('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     // R3: validate body shape + enums (transport is the only field with a
     // fixed enum). Schema also strips `name`/`displayName` from the partial
@@ -498,7 +492,7 @@ mcpRoutes.put('/:id', async (c) => {
  */
 mcpRoutes.delete('/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
@@ -528,7 +522,7 @@ mcpRoutes.delete('/:id', async (c) => {
  */
 mcpRoutes.post('/:id/connect', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
@@ -556,7 +550,7 @@ mcpRoutes.post('/:id/connect', async (c) => {
  */
 mcpRoutes.post('/:id/disconnect', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);
@@ -580,7 +574,7 @@ mcpRoutes.post('/:id/disconnect', async (c) => {
  */
 mcpRoutes.patch('/:id/tool-settings', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const body = validateBody(mcpToolSettingsSchema, await c.req.json());
 
@@ -623,7 +617,7 @@ mcpRoutes.patch('/:id/tool-settings', async (c) => {
  */
 mcpRoutes.get('/:id/tools', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = sanitizeId(c.req.param('id'));
     const repo = getMcpServersRepo();
     const server = await repo.getById(id);

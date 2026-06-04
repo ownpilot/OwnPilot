@@ -6,19 +6,13 @@
  * All endpoints are scoped to the authenticated user.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
 import { stat, unlink } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { getLog } from '../services/log.js';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getUserId,
-  getErrorMessage,
-  parseJsonBody,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
 import { MAX_DAYS_LOOKBACK } from '../config/defaults.js';
 
 /** Sanitize a filename for use in Content-Disposition headers */
@@ -75,7 +69,7 @@ const app = new Hono();
  * GET /file-workspaces - List all session workspaces
  */
 app.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const workspaces = listSessionWorkspaces(userId);
 
@@ -99,7 +93,7 @@ app.get('/', async (c) => {
  * POST /file-workspaces - Create a new session workspace
  */
 app.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const body =
       (await parseJsonBody<{
@@ -138,7 +132,7 @@ app.post('/', async (c) => {
  * GET /file-workspaces/:id - Get workspace details
  */
 app.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
 
   try {
@@ -162,7 +156,7 @@ app.get('/:id', async (c) => {
  * DELETE /file-workspaces/:id - Delete a workspace
  */
 app.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
 
   try {
@@ -188,7 +182,7 @@ app.delete('/:id', async (c) => {
  * GET /file-workspaces/:id/files - List files in workspace
  */
 app.get('/:id/files', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const path = c.req.query('path') || '';
 
@@ -219,7 +213,7 @@ app.get('/:id/files', async (c) => {
  * GET /file-workspaces/:id/files/* - Read a file
  */
 app.get('/:id/file/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   // Extract the file path from the URL by locating the marker
   // `/${workspaceId}/file/` and taking everything after it. Previous code
@@ -316,7 +310,7 @@ app.get('/:id/file/*', async (c) => {
  * PUT /file-workspaces/:id/file/* - Write a file
  */
 app.put('/:id/file/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   // Extract the file path from the URL by locating the marker
   // `/${workspaceId}/file/` and taking everything after it. Previous code
@@ -365,7 +359,7 @@ app.put('/:id/file/*', async (c) => {
  * DELETE /file-workspaces/:id/file/* - Delete a file
  */
 app.delete('/:id/file/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   // Extract the file path from the URL by locating the marker
   // `/${workspaceId}/file/` and taking everything after it. Previous code
@@ -410,7 +404,7 @@ app.delete('/:id/file/*', async (c) => {
  * GET /file-workspaces/:id/download - Download workspace as ZIP
  */
 app.get('/:id/download', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
 
   try {
@@ -460,7 +454,7 @@ app.get('/:id/download', async (c) => {
  * POST /file-workspaces/cleanup - Clean up old workspaces
  */
 app.post('/cleanup', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   try {
     const body =
       (await parseJsonBody<{
@@ -503,7 +497,7 @@ app.post('/cleanup', async (c) => {
  * POST /file-workspaces/session/:sessionId - Get or create workspace for session
  */
 app.post('/session/:sessionId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const sessionId = c.req.param('sessionId');
 
   try {

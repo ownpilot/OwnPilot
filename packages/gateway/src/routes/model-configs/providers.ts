@@ -5,6 +5,7 @@
  * Includes model discovery from provider /v1/models endpoints.
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import {
   modelConfigsRepo,
@@ -22,7 +23,6 @@ import {
 import { getApiKey } from '../settings.js';
 import { getLog } from '../../services/log.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -46,7 +46,7 @@ export const providerRoutes = new Hono();
  * GET /api/v1/providers - List all providers (merged view)
  */
 providerRoutes.get('/providers/list', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const type = validateQueryEnum(c.req.query('type'), ['builtin', 'aggregator', 'custom'] as const);
 
   let providers = await getMergedProviders(userId);
@@ -63,7 +63,7 @@ providerRoutes.get('/providers/list', async (c) => {
  * Includes both models.dev providers and aggregators, with isConfigured flag
  */
 providerRoutes.get('/providers/available', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const customProviders = await modelConfigsRepo.listProviders(userId);
   const disabledProviders = new Set(
     customProviders.filter((p) => !p.isEnabled).map((p) => p.providerId)
@@ -137,7 +137,7 @@ providerRoutes.get('/providers/available', async (c) => {
  * GET /api/v1/providers/:id - Get single provider
  */
 providerRoutes.get('/providers/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('id');
 
   const provider = (await getMergedProviders(userId)).find((p) => p.id === providerId);
@@ -159,7 +159,7 @@ providerRoutes.get('/providers/:id', async (c) => {
  * POST /api/v1/providers - Create/enable custom provider
  */
 providerRoutes.post('/providers', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const body = await c.req.json<CreateProviderInput>().catch(() => null);
   if (!body) {
@@ -200,7 +200,7 @@ providerRoutes.post('/providers', async (c) => {
  * PUT /api/v1/providers/:id - Update provider
  */
 providerRoutes.put('/providers/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('id');
 
   const body = await c.req.json<UpdateProviderInput>().catch(() => null);
@@ -258,7 +258,7 @@ providerRoutes.put('/providers/:id', async (c) => {
  * DELETE /api/v1/providers/:id - Delete custom provider
  */
 providerRoutes.delete('/providers/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('id');
 
   // Can't delete built-in providers
@@ -290,7 +290,7 @@ providerRoutes.delete('/providers/:id', async (c) => {
  * Works for both builtin (models.dev) and aggregator providers
  */
 providerRoutes.patch('/providers/:id/toggle', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('id');
 
   const body = await c.req.json<{ enabled: boolean }>().catch(() => null);
@@ -379,7 +379,7 @@ providerRoutes.patch('/providers/:id/toggle', async (c) => {
  * and saves them as custom models in the database.
  */
 providerRoutes.post('/providers/:id/discover-models', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('id');
 
   // Resolve provider base URL (user override > built-in config > aggregator)

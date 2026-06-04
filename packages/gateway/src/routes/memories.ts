@@ -7,12 +7,12 @@
  * All business logic is delegated to MemoryService.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { CreateMemoryInput } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getMemoryService } from '@ownpilot/core';
 import {
-  getUserId,
   apiResponse,
   apiError,
   getIntParam,
@@ -37,7 +37,7 @@ export const memoriesRoutes = new Hono();
  * GET /memories - List memories
  */
 memoriesRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const type = validateQueryEnum(c.req.query('type'), [
     'fact',
     'preference',
@@ -70,7 +70,7 @@ memoriesRoutes.get('/', async (c) => {
  * POST /memories - Create a new memory (with deduplication)
  */
 memoriesRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createMemorySchema } = await import('../middleware/validation.js');
   const body = validateBody(createMemorySchema, rawBody) as unknown as CreateMemoryInput;
@@ -118,7 +118,7 @@ memoriesRoutes.post('/', async (c) => {
  * GET /memories/search - Search memories
  */
 memoriesRoutes.get('/search', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const query = c.req.query('q') ?? '';
   const type = validateQueryEnum(c.req.query('type'), [
     'fact',
@@ -156,7 +156,7 @@ memoriesRoutes.get('/search', async (c) => {
  * GET /memories/stats - Get memory statistics
  */
 memoriesRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getMemoryService();
   const stats = await service.getStats(userId);
 
@@ -189,7 +189,7 @@ memoriesRoutes.get('/embedding-stats', async (c) => {
  * GET /memories/:id - Get a specific memory
  */
 memoriesRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getMemoryService();
@@ -206,7 +206,7 @@ memoriesRoutes.get('/:id', async (c) => {
  * PATCH /memories/:id - Update a memory
  */
 memoriesRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateMemorySchema } = await import('../middleware/validation.js');
@@ -249,7 +249,7 @@ memoriesRoutes.patch('/:id', async (c) => {
  * POST /memories/:id/boost - Boost memory importance
  */
 memoriesRoutes.post('/:id/boost', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, boostMemorySchema } = await import('../middleware/validation.js');
@@ -283,7 +283,7 @@ memoriesRoutes.post('/:id/boost', async (c) => {
  * DELETE /memories/:id - Delete a memory
  */
 memoriesRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getMemoryService();
@@ -305,7 +305,7 @@ memoriesRoutes.delete('/:id', async (c) => {
  * POST /memories/decay - Run decay on old memories
  */
 memoriesRoutes.post('/decay', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, decayMemoriesSchema } = await import('../middleware/validation.js');
   const body = validateBody(decayMemoriesSchema, rawBody) as {
@@ -328,7 +328,7 @@ memoriesRoutes.post('/decay', async (c) => {
  * POST /memories/cleanup - Clean up low-importance memories
  */
 memoriesRoutes.post('/cleanup', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = (await parseJsonBody(c)) ?? {};
   const { validateBody, cleanupMemoriesSchema } = await import('../middleware/validation.js');
   const body = validateBody(cleanupMemoriesSchema, rawBody) as {
@@ -351,7 +351,7 @@ memoriesRoutes.post('/cleanup', async (c) => {
  * POST /memories/backfill-embeddings - Queue all memories without embeddings
  */
 memoriesRoutes.post('/backfill-embeddings', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const { getEmbeddingQueue } = await import('../services/embedding/queue.js');
   const queued = await getEmbeddingQueue().backfill(userId);

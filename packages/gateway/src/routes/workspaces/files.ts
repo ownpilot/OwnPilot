@@ -8,6 +8,7 @@
  * GET /:id/download    - Download workspace as ZIP
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core';
@@ -15,7 +16,6 @@ import {
   apiResponse,
   apiError,
   ERROR_CODES,
-  getUserId,
   zodValidationError,
   getErrorMessage,
   parseJsonBody,
@@ -28,7 +28,7 @@ const app = new Hono();
  * GET /workspaces/:id/files - List files in workspace
  */
 app.get('/:id/files', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const rawPath = c.req.query('path') || '.';
   const recursive = c.req.query('recursive') === 'true';
@@ -79,7 +79,7 @@ app.get('/:id/files', async (c) => {
  * GET /workspaces/:id/files/* - Read a file
  */
 app.get('/:id/files/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
@@ -130,7 +130,7 @@ app.get('/:id/files/*', async (c) => {
  * PUT /workspaces/:id/files/* - Write a file
  */
 app.put('/:id/files/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
@@ -193,7 +193,7 @@ app.put('/:id/files/*', async (c) => {
  * DELETE /workspaces/:id/files/* - Delete a file
  */
 app.delete('/:id/files/*', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const rawPath = c.req.path.replace(`/workspaces/${workspaceId}/files/`, '');
   const repo = new WorkspacesRepository(userId);
@@ -248,7 +248,7 @@ app.delete('/:id/files/*', async (c) => {
  * GET /workspaces/:id/download - Download workspace as ZIP
  */
 app.get('/:id/download', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const workspaceId = c.req.param('id');
   const repo = new WorkspacesRepository(userId);
 

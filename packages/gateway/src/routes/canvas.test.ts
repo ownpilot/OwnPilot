@@ -28,7 +28,7 @@ const { canvasRoutes } = await import('./canvas.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/canvas', canvasRoutes);
@@ -38,7 +38,7 @@ function createApp() {
 
 const sampleElement = {
   id: 'canv-1',
-  userId: 'user-1',
+  userId: 'default',
   canvasId: 'main',
   type: 'note',
   content: 'hello',
@@ -94,7 +94,7 @@ describe('Canvas Routes', () => {
       });
       expect(res.status).toBe(201);
       expect(mockService.addElement).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ canvasId: 'main', type: 'note', content: 'hi', x: 10, y: 20 })
       );
     });
@@ -119,7 +119,7 @@ describe('Canvas Routes', () => {
       });
       expect(res.status).toBe(200);
       expect(mockService.updateElement).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'canv-1',
         expect.objectContaining({ content: 'new', w: 300 })
       );
@@ -142,7 +142,7 @@ describe('Canvas Routes', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.removed).toBe(true);
-      expect(mockService.removeElement).toHaveBeenCalledWith('user-1', 'canv-1');
+      expect(mockService.removeElement).toHaveBeenCalledWith('default', 'canv-1');
     });
 
     it('returns 404 when missing', async () => {
@@ -159,7 +159,7 @@ describe('Canvas Routes', () => {
       const body = await res.json();
       expect(body.data.canvasId).toBe('main');
       expect(body.data.elements).toHaveLength(1);
-      expect(mockService.listElements).toHaveBeenCalledWith('user-1', 'main');
+      expect(mockService.listElements).toHaveBeenCalledWith('default', 'main');
     });
   });
 
@@ -173,7 +173,7 @@ describe('Canvas Routes', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.x).toBe(99);
-      expect(mockService.moveElement).toHaveBeenCalledWith('user-1', 'canv-1', 99, 88);
+      expect(mockService.moveElement).toHaveBeenCalledWith('default', 'canv-1', 99, 88);
     });
 
     it('rejects non-numeric coordinates with 400', async () => {
@@ -203,7 +203,7 @@ describe('Canvas Routes', () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.removed).toBe(2);
-      expect(mockService.clearCanvas).toHaveBeenCalledWith('user-1', 'main');
+      expect(mockService.clearCanvas).toHaveBeenCalledWith('default', 'main');
     });
   });
 });

@@ -123,7 +123,8 @@ import { errorHandler } from '../../middleware/error-handler.js';
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
+    c.set('sessionAuthenticated', true);
     await next();
   });
   app.route('/acc', agentCommandCenterRoutes);
@@ -191,7 +192,7 @@ function makeCrew(id = 'crew-1', overrides: Record<string, unknown> = {}) {
     templateId: 'default',
     coordinationPattern: 'hub_spoke',
     status: 'active',
-    workspaceId: 'user-1',
+    workspaceId: 'default',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-02'),
     ...overrides,

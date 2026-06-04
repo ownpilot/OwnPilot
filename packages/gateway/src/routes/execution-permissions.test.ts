@@ -30,21 +30,13 @@ const mockResolveApproval = vi.fn(
     decision: { approved: boolean; decidedBy: string; decidedAt: number };
   } => ({
     ok: true,
-    decision: { approved: true, decidedBy: 'test-user', decidedAt: Date.now() },
+    decision: { approved: true, decidedBy: 'default', decidedAt: Date.now() },
   })
 );
 
 vi.mock('../services/permission/execution-approval.js', () => ({
   resolveApproval: mockResolveApproval,
 }));
-
-vi.mock('./helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./helpers.js')>();
-  return {
-    ...actual,
-    getUserId: vi.fn(() => 'test-user'),
-  };
-});
 
 // Import after mocks
 const { executionPermissionsRoutes } = await import('./execution-permissions.js');
@@ -115,7 +107,7 @@ describe('Execution Permissions Routes', () => {
       expect(json.data.execute_javascript).toBe('allowed');
       expect(json.data.execute_python).toBe('prompt');
       expect(json.data.execute_shell).toBe('blocked');
-      expect(mockRepo.get).toHaveBeenCalledWith('test-user');
+      expect(mockRepo.get).toHaveBeenCalledWith('default');
     });
 
     it('returns default object when repo returns defaults', async () => {
@@ -155,7 +147,7 @@ describe('Execution Permissions Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.enabled).toBe(true);
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { enabled: true });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { enabled: true });
     });
 
     it('updates mode to local', async () => {
@@ -171,7 +163,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.mode).toBe('local');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { mode: 'local' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { mode: 'local' });
     });
 
     it('updates mode to docker', async () => {
@@ -187,7 +179,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.mode).toBe('docker');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { mode: 'docker' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { mode: 'docker' });
     });
 
     it('updates mode to auto', async () => {
@@ -203,7 +195,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.mode).toBe('auto');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { mode: 'auto' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { mode: 'auto' });
     });
 
     it('updates execute_javascript category permission', async () => {
@@ -219,7 +211,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.execute_javascript).toBe('allowed');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { execute_javascript: 'allowed' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { execute_javascript: 'allowed' });
     });
 
     it('updates execute_python category permission', async () => {
@@ -235,7 +227,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.execute_python).toBe('prompt');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { execute_python: 'prompt' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { execute_python: 'prompt' });
     });
 
     it('updates execute_shell category permission', async () => {
@@ -251,7 +243,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.execute_shell).toBe('blocked');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { execute_shell: 'blocked' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { execute_shell: 'blocked' });
     });
 
     it('updates compile_code category permission', async () => {
@@ -267,7 +259,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.compile_code).toBe('allowed');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { compile_code: 'allowed' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { compile_code: 'allowed' });
     });
 
     it('updates package_manager category permission', async () => {
@@ -283,7 +275,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.package_manager).toBe('prompt');
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { package_manager: 'prompt' });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { package_manager: 'prompt' });
     });
 
     it('updates multiple fields at once', async () => {
@@ -316,7 +308,7 @@ describe('Execution Permissions Routes', () => {
       expect(json.data.execute_python).toBe('prompt');
 
       const setCall = mockRepo.set.mock.calls[0];
-      expect(setCall[0]).toBe('test-user');
+      expect(setCall[0]).toBe('default');
       expect(setCall[1]).toMatchObject({
         enabled: true,
         mode: 'docker',
@@ -428,7 +420,7 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(mockRepo.set).toHaveBeenCalledWith('test-user', { enabled: true });
+      expect(mockRepo.set).toHaveBeenCalledWith('default', { enabled: true });
     });
 
     it('ignores non-string category values', async () => {
@@ -459,7 +451,7 @@ describe('Execution Permissions Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.reset).toBe(true);
-      expect(mockRepo.reset).toHaveBeenCalledWith('test-user');
+      expect(mockRepo.reset).toHaveBeenCalledWith('default');
     });
   });
 
@@ -471,7 +463,7 @@ describe('Execution Permissions Routes', () => {
     it('resolves approval when found (approved)', async () => {
       mockResolveApproval.mockReturnValueOnce({
         ok: true,
-        decision: { approved: true, decidedBy: 'test-user', decidedAt: 1234 },
+        decision: { approved: true, decidedBy: 'default', decidedAt: 1234 },
       });
 
       const res = await app.request('/exec/approvals/approval-123/resolve', {
@@ -485,13 +477,13 @@ describe('Execution Permissions Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.resolved).toBe(true);
       expect(json.data.approved).toBe(true);
-      expect(mockResolveApproval).toHaveBeenCalledWith('approval-123', true, 'test-user');
+      expect(mockResolveApproval).toHaveBeenCalledWith('approval-123', true, 'default');
     });
 
     it('resolves approval when found (rejected)', async () => {
       mockResolveApproval.mockReturnValueOnce({
         ok: true,
-        decision: { approved: false, decidedBy: 'test-user', decidedAt: 1234 },
+        decision: { approved: false, decidedBy: 'default', decidedAt: 1234 },
       });
 
       const res = await app.request('/exec/approvals/approval-456/resolve', {
@@ -505,7 +497,7 @@ describe('Execution Permissions Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.resolved).toBe(true);
       expect(json.data.approved).toBe(false);
-      expect(mockResolveApproval).toHaveBeenCalledWith('approval-456', false, 'test-user');
+      expect(mockResolveApproval).toHaveBeenCalledWith('approval-456', false, 'default');
     });
 
     it('returns 404 when approval not found', async () => {
@@ -600,13 +592,13 @@ describe('Execution Permissions Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
-      expect(json.data.userId).toBe('test-user');
+      expect(json.data.userId).toBe('default');
       expect(json.data.permissions).toBeDefined();
       expect(json.data.executionMode).toBe('local');
       expect(json.data.masterSwitch).toBe(true);
       expect(json.data.categoryResults).toBeDefined();
       expect(json.data.diagnosis).toBeDefined();
-      expect(mockRepo.get).toHaveBeenCalledWith('test-user');
+      expect(mockRepo.get).toHaveBeenCalledWith('default');
     });
 
     it('shows "Master switch is OFF" when disabled', async () => {

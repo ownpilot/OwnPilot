@@ -4,12 +4,12 @@
  * API for managing proactive triggers.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { type CreateTriggerInput, type UpdateTriggerInput } from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression, getTriggerService } from '@ownpilot/core';
 import {
-  getUserId,
   apiResponse,
   apiError,
   getIntParam,
@@ -33,7 +33,7 @@ export const triggersRoutes = new Hono();
  * GET /triggers - List triggers
  */
 triggersRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const type = validateQueryEnum(c.req.query('type'), [
     'schedule',
     'event',
@@ -60,7 +60,7 @@ triggersRoutes.get('/', async (c) => {
  * POST /triggers - Create a new trigger
  */
 triggersRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
   const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
@@ -110,7 +110,7 @@ triggersRoutes.post('/', async (c) => {
  * GET /triggers/stats - Get trigger statistics
  */
 triggersRoutes.get('/stats', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const service = getTriggerService();
   const stats = await service.getStats(userId);
 
@@ -121,7 +121,7 @@ triggersRoutes.get('/stats', async (c) => {
  * GET /triggers/history - Get recent trigger history
  */
 triggersRoutes.get('/history', pagination({ defaultLimit: 25, maxLimit: 200 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { limit, offset } = c.get('pagination')!;
   const status = validateQueryEnum(c.req.query('status'), [
     'success',
@@ -154,7 +154,7 @@ triggersRoutes.get('/history', pagination({ defaultLimit: 25, maxLimit: 200 }), 
  * GET /triggers/due - Get triggers that are due to fire
  */
 triggersRoutes.get('/due', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const service = getTriggerService();
   const triggers = await service.getDueTriggers(userId);
@@ -169,7 +169,7 @@ triggersRoutes.get('/due', async (c) => {
  * GET /triggers/:id - Get a specific trigger
  */
 triggersRoutes.get('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -192,7 +192,7 @@ triggersRoutes.get('/:id', async (c) => {
  * PATCH /triggers/:id - Update a trigger
  */
 triggersRoutes.patch('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const body = await parseJsonBody<UpdateTriggerInput>(c);
   if (!body) {
@@ -237,7 +237,7 @@ triggersRoutes.patch('/:id', async (c) => {
  * POST /triggers/:id/enable - Enable a trigger
  */
 triggersRoutes.post('/:id/enable', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -259,7 +259,7 @@ triggersRoutes.post('/:id/enable', async (c) => {
  * POST /triggers/:id/disable - Disable a trigger
  */
 triggersRoutes.post('/:id/disable', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -281,7 +281,7 @@ triggersRoutes.post('/:id/disable', async (c) => {
  * POST /triggers/:id/fire - Manually fire a trigger
  */
 triggersRoutes.post('/:id/fire', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -319,7 +319,7 @@ triggersRoutes.post('/:id/fire', async (c) => {
  * DELETE /triggers/:id - Delete a trigger
  */
 triggersRoutes.delete('/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
 
   const service = getTriggerService();
@@ -340,7 +340,7 @@ triggersRoutes.delete('/:id', async (c) => {
  * GET /triggers/:id/history - Get history for a specific trigger
  */
 triggersRoutes.get('/:id/history', pagination({ defaultLimit: 25, maxLimit: 200 }), async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const { limit, offset } = c.get('pagination')!;
   const status = validateQueryEnum(c.req.query('status'), [
@@ -380,7 +380,7 @@ triggersRoutes.get('/:id/history', pagination({ defaultLimit: 25, maxLimit: 200 
  * POST /triggers/cleanup - Clean up old history
  */
 triggersRoutes.post('/cleanup', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await c.req
     .json<{ maxAgeDays?: number }>()
     .catch((): { maxAgeDays?: number } => ({}));
@@ -446,7 +446,7 @@ triggersRoutes.post('/engine/stop', (c) => {
  * POST /triggers/from-natural-language - Create a schedule trigger from NL description
  */
 triggersRoutes.post('/from-natural-language', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const rawBody = (await parseJsonBody<Record<string, unknown>>(c)) ?? {};
 
   if (

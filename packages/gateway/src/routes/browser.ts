@@ -4,12 +4,13 @@
  * REST API for headless browser automation and workflow management.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getBrowserService } from '../services/browser-service.js';
 import { getTriggerService } from '../services/index.js';
 import { BrowserWorkflowsRepository } from '../db/repositories/browser-workflows.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
 import { getErrorMessage } from '@ownpilot/core';
 import {
   validateBody,
@@ -57,7 +58,7 @@ browserRoutes.get('/config', async (c) => {
 
 browserRoutes.post('/navigate', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(browserNavigateSchema, await c.req.json());
 
     const service = getBrowserService();
@@ -72,7 +73,7 @@ browserRoutes.post('/navigate', async (c) => {
 
 browserRoutes.post('/action', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(browserActionSchema, await c.req.json());
 
     const service = getBrowserService();
@@ -173,7 +174,7 @@ browserRoutes.post('/action', async (c) => {
 
 browserRoutes.post('/screenshot', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const raw = await c.req.json().catch(() => ({}));
     const body = validateBody(screenshotSchema, raw);
     const service = getBrowserService();
@@ -191,7 +192,7 @@ browserRoutes.post('/screenshot', async (c) => {
 
 browserRoutes.delete('/session', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const service = getBrowserService();
     const closed = await service.closePage(userId);
     return apiResponse(c, { closed });
@@ -206,7 +207,7 @@ browserRoutes.delete('/session', async (c) => {
 
 browserRoutes.get('/workflows', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { limit, offset } = getPaginationParams(c);
     const repo = getWorkflowRepo();
     const result = await repo.listByUser(userId, limit, offset);
@@ -218,7 +219,7 @@ browserRoutes.get('/workflows', async (c) => {
 
 browserRoutes.post('/workflows', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(createBrowserWorkflowSchema, await c.req.json());
 
     const repo = getWorkflowRepo();
@@ -241,7 +242,7 @@ browserRoutes.post('/workflows', async (c) => {
 
 browserRoutes.get('/workflows/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const repo = getWorkflowRepo();
     const workflow = await repo.getById(id, userId);
@@ -257,7 +258,7 @@ browserRoutes.get('/workflows/:id', async (c) => {
 
 browserRoutes.patch('/workflows/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const body = validateBody(updateBrowserWorkflowSchema, await c.req.json());
     const repo = getWorkflowRepo();
@@ -280,7 +281,7 @@ browserRoutes.patch('/workflows/:id', async (c) => {
 
 browserRoutes.delete('/workflows/:id', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const id = c.req.param('id');
     const repo = getWorkflowRepo();
 

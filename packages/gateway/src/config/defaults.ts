@@ -8,6 +8,17 @@
  */
 
 // ============================================================================
+// Single-user owner scope
+// ============================================================================
+
+/**
+ * OwnPilot is a single-user/self-hosted gateway. Tables keep a `user_id`
+ * column for historical compatibility and possible future profile separation,
+ * but request handlers must not derive an owner from the authenticated request.
+ */
+export const LOCAL_OWNER_ID = 'default';
+
+// ============================================================================
 // Database
 // ============================================================================
 

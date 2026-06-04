@@ -26,7 +26,7 @@ import { workspaceFileRoutes } from './files.js';
 function makeWorkspace(overrides: Record<string, unknown> = {}) {
   return {
     id: 'ws-1',
-    userId: 'user-1',
+    userId: 'default',
     name: 'Test Workspace',
     status: 'active',
     storagePath: '/tmp/ws-1',
@@ -46,7 +46,7 @@ describe('Workspace File Routes', () => {
     vi.clearAllMocks();
     app = new Hono();
     app.use('*', async (c, next) => {
-      c.set('userId', 'user-1');
+      c.set('userId', 'default');
       await next();
     });
     app.route('/workspaces', workspaceFileRoutes);
@@ -81,14 +81,14 @@ describe('Workspace File Routes', () => {
       expect(json.data.files).toHaveLength(2);
       expect(json.data.count).toBe(2);
       expect(json.data.path).toBe('.');
-      expect(mockStorage.listFiles).toHaveBeenCalledWith('user-1/ws-1', '.', false);
+      expect(mockStorage.listFiles).toHaveBeenCalledWith('default/ws-1', '.', false);
     });
     it('should list files with path and recursive params', async () => {
       mockRepo.get.mockResolvedValue(makeWorkspace());
       mockStorage.listFiles.mockResolvedValue([]);
       const res = await app.request('/workspaces/ws-1/files?path=src&recursive=true');
       expect(res.status).toBe(200);
-      expect(mockStorage.listFiles).toHaveBeenCalledWith('user-1/ws-1', 'src', true);
+      expect(mockStorage.listFiles).toHaveBeenCalledWith('default/ws-1', 'src', true);
     });
     it('should return 400 for directory traversal path', async () => {
       const res = await app.request('/workspaces/ws-1/files?path=../../etc/passwd');
@@ -188,7 +188,7 @@ describe('Workspace File Routes', () => {
       expect(json.data.path).toBe('new-file.txt');
       expect(json.data.written).toBe(true);
       expect(mockStorage.writeFile).toHaveBeenCalledWith(
-        'user-1/ws-1',
+        'default/ws-1',
         'new-file.txt',
         'hello world'
       );
@@ -277,7 +277,7 @@ describe('Workspace File Routes', () => {
       const json = await res.json();
       expect(json.data.path).toBe('old-file.txt');
       expect(json.data.deleted).toBe(true);
-      expect(mockStorage.deleteFile).toHaveBeenCalledWith('user-1/ws-1', 'old-file.txt');
+      expect(mockStorage.deleteFile).toHaveBeenCalledWith('default/ws-1', 'old-file.txt');
       expect(mockRepo.logAudit).toHaveBeenCalledWith('delete', 'file', 'old-file.txt');
     });
     it('should handle URL-normalized traversal paths', async () => {

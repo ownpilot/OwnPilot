@@ -117,7 +117,7 @@ const { crudRoutes } = await import('./crud.js');
 // Sample data factories
 // ---------------------------------------------------------------------------
 
-const USER_ID = 'user-1';
+const USER_ID = 'default';
 
 function makeTool(overrides: Record<string, unknown> = {}) {
   return {

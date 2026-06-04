@@ -11,6 +11,7 @@
  * - routes/chat.ts:             Route handlers (this file) + backward compat re-exports
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { ChatRequest } from '../../types/index.js';
@@ -18,7 +19,6 @@ import {
   apiResponse,
   apiError,
   ERROR_CODES,
-  getUserId,
   notFoundError,
   getErrorMessage,
   parseJsonBody,
@@ -230,7 +230,7 @@ chatRoutes.post('/', async (c) => {
   // Idempotency: deduplicate retried requests via Idempotency-Key header.
   // Namespaced by userId in the repo so two users sending the same key value
   // cannot read each other's cached response.
-  const idempotencyUserId = getUserId(c);
+  const idempotencyUserId = LOCAL_OWNER_ID;
   const idempotencyKey = c.req.header('Idempotency-Key');
   if (idempotencyKey) {
     try {
@@ -327,7 +327,7 @@ chatRoutes.post('/', async (c) => {
   // Look up user-configured context window from AI Models settings
   let userContextWindow: number | undefined;
   try {
-    const userConfig = await modelConfigsRepo.getModel(getUserId(c), provider, model);
+    const userConfig = await modelConfigsRepo.getModel(LOCAL_OWNER_ID, provider, model);
     userContextWindow = userConfig?.contextWindow ?? undefined;
   } catch {
     // Fall back to pricing defaults if DB lookup fails
@@ -421,7 +421,7 @@ chatRoutes.post('/', async (c) => {
     // (agent was reset/evicted), reconstruct it from database messages.
     // Pattern reference: LibreChat BaseClient.loadHistory() + Chatwoot session_registry
     if (!loaded) {
-      const chatRepo = new ChatRepository(getUserId(c));
+      const chatRepo = new ChatRepository(LOCAL_OWNER_ID);
       const dbData = await chatRepo.getConversationWithMessages(body.conversationId);
       if (dbData) {
         // Create conversation in agent memory with the ORIGINAL DB ID.
@@ -470,7 +470,7 @@ chatRoutes.post('/', async (c) => {
   // ── System prompt initialization ──────────────────────────────────────────
   const conversationId = agent.getConversation().id;
   const isPromptInitialized = promptInitializedConversations.has(conversationId);
-  const chatUserId = getUserId(c);
+  const chatUserId = LOCAL_OWNER_ID;
 
   // Workspace — set on every request (cheap), but prompt section only on first
   const sessionId = body.workspaceId || body.conversationId || conversationId;
@@ -596,7 +596,7 @@ chatRoutes.post('/', async (c) => {
       return streamSSE(c, async (stream) => {
         const conversationId = agent.getConversation().id;
         const streamAgentId = body.agentId ?? `chat-${provider}`;
-        const streamUserId = getUserId(c);
+        const streamUserId = LOCAL_OWNER_ID;
 
         // Propagate client disconnect to the provider so a closed browser tab
         // stops the LLM stream instead of letting it run to natural completion
@@ -663,7 +663,7 @@ chatRoutes.post('/', async (c) => {
     return streamSSE(c, async (stream) => {
       const conversationId = agent.getConversation().id;
       const streamAgentId = body.agentId ?? `chat-${provider}`;
-      const streamUserId = getUserId(c);
+      const streamUserId = LOCAL_OWNER_ID;
 
       // Propagate client disconnect (AbortController) to provider to stop streaming.
       // agent.cancel() calls provider.cancel() which calls abortController.abort() —
@@ -790,7 +790,7 @@ chatRoutes.post('/', async (c) => {
   const startTime = performance.now();
   const requestId = c.get('requestId') ?? crypto.randomUUID();
   const agentId = body.agentId ?? `chat-${provider}`;
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   // ── MessageBus Pipeline Path ──────────────────────────────────────────────
   const bus = tryGetMessageBus();
@@ -986,7 +986,7 @@ chatRoutes.post('/', async (c) => {
 chatRoutes.get('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   if (await isDemoMode()) {
     return apiResponse(c, {
@@ -1038,7 +1038,7 @@ chatRoutes.get('/conversations/:id', async (c) => {
 chatRoutes.delete('/conversations/:id', async (c) => {
   const id = c.req.param('id');
   const agentId = c.req.query('agentId');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   if (await isDemoMode()) {
     return apiResponse(c, {});

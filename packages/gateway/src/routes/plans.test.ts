@@ -78,7 +78,7 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated user
   app.use('*', async (c, next) => {
-    c.set('userId', 'u1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/plans', plansRoutes);
@@ -125,12 +125,12 @@ describe('Plans Routes', () => {
 
       await app.request('/plans?status=running&goalId=g1&limit=5&offset=10');
 
-      expect(mockPlanService.countPlans).toHaveBeenCalledWith('u1', {
+      expect(mockPlanService.countPlans).toHaveBeenCalledWith('default', {
         status: 'running',
         goalId: 'g1',
         triggerId: undefined,
       });
-      expect(mockPlanService.listPlans).toHaveBeenCalledWith('u1', {
+      expect(mockPlanService.listPlans).toHaveBeenCalledWith('default', {
         status: 'running',
         goalId: 'g1',
         triggerId: undefined,

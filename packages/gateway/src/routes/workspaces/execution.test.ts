@@ -22,7 +22,7 @@ import { workspaceExecutionRoutes } from './execution.js';
 function makeWorkspace(overrides: Record<string, unknown> = {}) {
   return {
     id: 'ws-1',
-    userId: 'user-1',
+    userId: 'default',
     name: 'Test',
     status: 'active',
     storagePath: '/tmp/ws-1',
@@ -45,7 +45,7 @@ describe('Workspace Execution Routes', () => {
     vi.clearAllMocks();
     app = new Hono();
     app.use('*', async (c, next) => {
-      c.set('userId', 'user-1');
+      c.set('userId', 'default');
       await next();
     });
     app.route('/', workspaceExecutionRoutes);
@@ -203,7 +203,7 @@ describe('Workspace Execution Routes', () => {
       });
       expect(res.status).toBe(200);
       expect(mockStorage.writeFile).toHaveBeenCalledWith(
-        'user-1/ws-1',
+        'default/ws-1',
         'helper.py',
         'def foo(): pass'
       );
@@ -310,7 +310,7 @@ describe('Workspace Execution Routes', () => {
         {
           id: 'exec-1',
           workspaceId: 'ws-1',
-          userId: 'user-1',
+          userId: 'default',
           language: 'python',
           codeHash: 'abc123',
           status: 'completed',

@@ -7,15 +7,9 @@
  * - Aggregate results from multiple agents
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
-import {
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  getUserId,
-  getIntParam,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, getIntParam } from '../helpers.js';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
 import { getCrewsRepository } from '../../db/repositories/crew/index.js';
 import { getHeartbeatLogRepository } from '../../db/repositories/heartbeats/log.js';
@@ -38,7 +32,7 @@ export const agentCommandCenterRoutes = new Hono();
 
 agentCommandCenterRoutes.post('/command', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(agentCommandSchema, await c.req.json());
 
     const results: {
@@ -147,7 +141,7 @@ agentCommandCenterRoutes.post('/command', async (c) => {
 
 agentCommandCenterRoutes.get('/overview', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const hbRepo = getHeartbeatLogRepository();
     const crewRepo = getCrewsRepository();
     const soulRepo = getSoulsRepository();
@@ -379,7 +373,7 @@ agentCommandCenterRoutes.get('/overview', async (c) => {
 
 agentCommandCenterRoutes.get('/status', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const soulRepo = getSoulsRepository();
     const crewRepo = getCrewsRepository();
 
@@ -527,7 +521,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
     const { getAgentMessagesRepository } = await import('../../db/repositories/agents/messages.js');
     const msgRepo = getAgentMessagesRepository();
 
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
 
     // Get souls for the authenticated user only
     const souls = await soulRepo.list(userId, 100, 0);
@@ -592,7 +586,7 @@ agentCommandCenterRoutes.get('/activity', async (c) => {
 
 agentCommandCenterRoutes.post('/execute', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
       return apiError(
         c,
@@ -660,7 +654,7 @@ agentCommandCenterRoutes.post('/execute', async (c) => {
 
 agentCommandCenterRoutes.get('/analytics', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const soulRepo = getSoulsRepository();
     const hbRepo = getHeartbeatLogRepository();
     const crewRepo = getCrewsRepository();

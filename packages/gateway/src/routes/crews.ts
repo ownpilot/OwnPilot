@@ -2,6 +2,7 @@
  * Crew Routes — deploy, manage, and monitor agent crews
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getLog } from '../services/log.js';
 
@@ -19,7 +20,6 @@ import {
   ERROR_CODES,
   getErrorMessage,
   getPaginationParams,
-  getUserId,
 } from './helpers.js';
 import {
   validateBody,
@@ -35,7 +35,7 @@ export const crewRoutes = new Hono();
 
 crewRoutes.get('/', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const { limit, offset } = getPaginationParams(c);
     const repo = getCrewsRepository();
     const [crews, total] = await Promise.all([
@@ -52,7 +52,7 @@ crewRoutes.get('/', async (c) => {
 
 crewRoutes.get('/stats', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const crewRepo = getCrewsRepository();
     const hbRepo = getHeartbeatLogRepository();
 
@@ -92,7 +92,7 @@ crewRoutes.get('/stats', async (c) => {
 
 crewRoutes.get('/health', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const crewRepo = getCrewsRepository();
     const hbRepo = getHeartbeatLogRepository();
 
@@ -140,8 +140,6 @@ crewRoutes.get('/health', async (c) => {
 // ── GET /templates — list crew templates (MUST be before /:id) ──
 
 crewRoutes.get('/templates', (c) => {
-  // Auth check: calling getUserId enforces session/API-key auth
-  getUserId(c);
   const templates = listCrewTemplates();
   return apiResponse(c, templates);
 });
@@ -160,7 +158,7 @@ crewRoutes.get('/templates/:id', (c) => {
 
 crewRoutes.post('/deploy', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(crewDeploySchema, await c.req.json());
     const { templateId } = body;
     // provider and model are pass-through fields validated by the schema
@@ -330,7 +328,7 @@ crewRoutes.post('/deploy', async (c) => {
 crewRoutes.get('/:id', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const crewRepo = getCrewsRepository();
     const crew = await crewRepo.getById(crewId, userId);
     if (!crew) {
@@ -372,7 +370,7 @@ crewRoutes.get('/:id', async (c) => {
 crewRoutes.post('/:id/pause', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -396,7 +394,7 @@ crewRoutes.post('/:id/pause', async (c) => {
 crewRoutes.post('/:id/resume', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -420,7 +418,7 @@ crewRoutes.post('/:id/resume', async (c) => {
 crewRoutes.delete('/:id', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -468,7 +466,7 @@ crewRoutes.delete('/:id', async (c) => {
 crewRoutes.post('/:id/message', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(crewMessageSchema, await c.req.json());
 
     const repo = getCrewsRepository();
@@ -531,7 +529,7 @@ crewRoutes.post('/:id/message', async (c) => {
 crewRoutes.post('/:id/delegate', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(crewDelegateSchema, await c.req.json());
 
     const repo = getCrewsRepository();
@@ -587,7 +585,7 @@ crewRoutes.post('/:id/delegate', async (c) => {
 crewRoutes.get('/:id/status', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -655,7 +653,7 @@ crewRoutes.get('/:id/status', async (c) => {
 crewRoutes.get('/:id/memory', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -687,7 +685,7 @@ crewRoutes.delete('/:id/memory/:memoryId', async (c) => {
   try {
     const crewId = c.req.param('id');
     const memoryId = c.req.param('memoryId');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -718,7 +716,7 @@ crewRoutes.delete('/:id/memory/:memoryId', async (c) => {
 crewRoutes.get('/:id/tasks', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const repo = getCrewsRepository();
     const crew = await repo.getById(crewId, userId);
     if (!crew) {
@@ -748,7 +746,7 @@ crewRoutes.get('/:id/tasks', async (c) => {
 crewRoutes.post('/:id/sync', async (c) => {
   try {
     const crewId = c.req.param('id');
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const body = validateBody(crewSyncSchema, await c.req.json());
 
     const repo = getCrewsRepository();

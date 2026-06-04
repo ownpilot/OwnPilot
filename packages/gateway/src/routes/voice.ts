@@ -9,9 +9,10 @@
  *   POST /synthesize — send text → get audio binary
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { getVoiceService } from '../services/voice-service.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { validateBody, synthesizeVoiceSchema } from '../middleware/validation.js';
 import { createLoginThrottle } from '../utils/login-throttle.js';
 import { getClientIp } from '../utils/client-ip.js';
@@ -43,7 +44,7 @@ if (typeof voiceThrottleCleanup === 'object' && 'unref' in voiceThrottleCleanup)
 
 voiceRoutes.get('/config', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(
@@ -62,7 +63,7 @@ voiceRoutes.get('/config', async (c) => {
 
 voiceRoutes.get('/status', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(
@@ -81,7 +82,7 @@ voiceRoutes.get('/status', async (c) => {
 
 voiceRoutes.get('/voices', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(
@@ -104,7 +105,7 @@ voiceRoutes.get('/voices', async (c) => {
 
 voiceRoutes.get('/diagnostics', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(
@@ -127,7 +128,7 @@ voiceRoutes.get('/diagnostics', async (c) => {
 
 voiceRoutes.post('/transcribe', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(
@@ -215,7 +216,7 @@ voiceRoutes.post('/transcribe', async (c) => {
 
 voiceRoutes.post('/synthesize', async (c) => {
   try {
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     // IDOR-017: Reject unauthenticated requests
     if (userId === 'default' && !c.get('sessionAuthenticated')) {
       return apiError(

@@ -47,7 +47,8 @@ function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
     // Simulate authenticated user for all bridge routes
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
+    c.set('sessionAuthenticated', true);
     await next();
   });
   app.route('/bridges', bridgeRoutes);

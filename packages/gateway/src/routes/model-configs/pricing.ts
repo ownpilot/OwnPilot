@@ -5,6 +5,7 @@
  * and per-provider config deletion.
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { modelConfigsRepo } from '../../db/repositories/index.js';
 import {
@@ -14,14 +15,7 @@ import {
   clearConfigCache,
 } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  sanitizeId,
-  notFoundError,
-} from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -187,7 +181,7 @@ pricingRoutes.post('/sync/reset', async (c) => {
     const fs = await import('fs');
 
     // 1. Clear database records first
-    const userId = getUserId(c);
+    const userId = LOCAL_OWNER_ID;
     const dbResult = await modelConfigsRepo.fullReset(userId);
 
     // 2. Delete all JSON config files

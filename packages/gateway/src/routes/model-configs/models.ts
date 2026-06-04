@@ -5,6 +5,7 @@
  * Includes capabilities listing and parameterized provider/model routes.
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import {
   modelConfigsRepo,
@@ -14,7 +15,6 @@ import {
 import { type ModelCapability } from '@ownpilot/core';
 import { getLog } from '../../services/log.js';
 import {
-  getUserId,
   apiResponse,
   apiError,
   ERROR_CODES,
@@ -36,7 +36,7 @@ export const modelRoutes = new Hono();
  * GET /api/v1/models - List all models (merged view)
  */
 modelRoutes.get('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.query('provider');
   const capability = validateQueryEnum(c.req.query('capability'), [
     'chat',
@@ -76,7 +76,7 @@ modelRoutes.get('/', async (c) => {
  * POST /api/v1/models - Create custom model
  */
 modelRoutes.post('/', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const body = await c.req.json<CreateModelConfigInput>().catch(() => null);
   if (!body) {
@@ -142,7 +142,7 @@ modelRoutes.get('/capabilities/list', async (c) => {
  * GET /api/v1/models/:provider - List models for a provider
  */
 modelRoutes.get('/:provider', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('provider');
 
   const models = (await getMergedModels(userId)).filter((m) => m.providerId === providerId);
@@ -154,7 +154,7 @@ modelRoutes.get('/:provider', async (c) => {
  * GET /api/v1/models/:provider/:model - Get single model
  */
 modelRoutes.get('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 
@@ -173,7 +173,7 @@ modelRoutes.get('/:provider/:model', async (c) => {
  * PUT /api/v1/models/:provider/:model - Update model config
  */
 modelRoutes.put('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 
@@ -213,7 +213,7 @@ modelRoutes.put('/:provider/:model', async (c) => {
  * DELETE /api/v1/models/:provider/:model - Delete custom model or remove override
  */
 modelRoutes.delete('/:provider/:model', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 
@@ -249,7 +249,7 @@ modelRoutes.delete('/:provider/:model', async (c) => {
  * PATCH /api/v1/models/:provider/:model/toggle - Toggle model enabled
  */
 modelRoutes.patch('/:provider/:model/toggle', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const providerId = c.req.param('provider');
   const modelId = decodeURIComponent(c.req.param('model'));
 

@@ -56,7 +56,7 @@ import { errorHandler } from '../middleware/error-handler.js';
 
 const sampleDevice = {
   id: 'dev-1',
-  userId: 'user-1',
+  userId: 'default',
   name: 'My Pi',
   type: 'raspberry-pi',
   status: 'online',
@@ -83,7 +83,7 @@ const sampleTelemetry = [
 function buildApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/edge', edgeRoutes);
@@ -161,7 +161,7 @@ describe('Edge Routes', () => {
       await app.request('/edge?type=esp32');
 
       expect(mockEdgeService.listDevices).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ type: 'esp32' })
       );
     });
@@ -172,7 +172,7 @@ describe('Edge Routes', () => {
       await app.request('/edge?status=offline');
 
       expect(mockEdgeService.listDevices).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ status: 'offline' })
       );
     });
@@ -183,7 +183,7 @@ describe('Edge Routes', () => {
       await app.request('/edge?search=Pi');
 
       expect(mockEdgeService.listDevices).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ search: 'Pi' })
       );
     });
@@ -194,7 +194,7 @@ describe('Edge Routes', () => {
       await app.request('/edge?type=invalid-type');
 
       expect(mockEdgeService.listDevices).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ type: undefined })
       );
     });
@@ -205,7 +205,7 @@ describe('Edge Routes', () => {
       await app.request('/edge?status=broken');
 
       expect(mockEdgeService.listDevices).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ status: undefined })
       );
     });
@@ -257,7 +257,7 @@ describe('Edge Routes', () => {
       });
 
       expect(mockEdgeService.registerDevice).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({
           name: 'Arduino',
           type: 'arduino',
@@ -330,7 +330,7 @@ describe('Edge Routes', () => {
 
       // Zod strips unknown fields; only name, type, and metadata are passed through
       expect(mockEdgeService.registerDevice).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ name: 'My Pi', type: 'raspberry-pi' })
       );
     });
@@ -415,7 +415,7 @@ describe('Edge Routes', () => {
       });
 
       expect(mockEdgeService.updateDevice).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'dev-1',
         expect.objectContaining({
           name: 'Updated',
@@ -584,7 +584,7 @@ describe('Edge Routes', () => {
       });
 
       expect(mockEdgeService.sendCommand).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'dev-1',
         expect.objectContaining({ payload })
       );
@@ -614,7 +614,7 @@ describe('Edge Routes', () => {
 
       await app.request('/edge/dev-1/commands?limit=10');
 
-      expect(mockEdgeService.getCommandHistory).toHaveBeenCalledWith('user-1', 'dev-1', 10);
+      expect(mockEdgeService.getCommandHistory).toHaveBeenCalledWith('default', 'dev-1', 10);
     });
 
     it('uses default limit of 50 when not specified', async () => {
@@ -622,7 +622,7 @@ describe('Edge Routes', () => {
 
       await app.request('/edge/dev-1/commands');
 
-      expect(mockEdgeService.getCommandHistory).toHaveBeenCalledWith('user-1', 'dev-1', 50);
+      expect(mockEdgeService.getCommandHistory).toHaveBeenCalledWith('default', 'dev-1', 50);
     });
 
     it('returns 500 when service throws', async () => {
@@ -658,7 +658,7 @@ describe('Edge Routes', () => {
 
       await app.request('/edge/dev-1/telemetry');
 
-      expect(mockEdgeService.getLatestTelemetry).toHaveBeenCalledWith('user-1', 'dev-1');
+      expect(mockEdgeService.getLatestTelemetry).toHaveBeenCalledWith('default', 'dev-1');
     });
 
     it('returns empty telemetry array when no data', async () => {
@@ -706,7 +706,7 @@ describe('Edge Routes', () => {
       await app.request('/edge/dev-1/telemetry/humidity');
 
       expect(mockEdgeService.getTelemetryHistory).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'dev-1',
         'humidity',
         100
@@ -719,7 +719,7 @@ describe('Edge Routes', () => {
       await app.request('/edge/dev-1/telemetry/temp?limit=25');
 
       expect(mockEdgeService.getTelemetryHistory).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         'dev-1',
         'temp',
         25

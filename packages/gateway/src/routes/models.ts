@@ -5,6 +5,7 @@
  * All model data is loaded from JSON config files - no hardcoded data
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { hasApiKey } from './settings.js';
 import {
@@ -19,14 +20,7 @@ import {
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { detectCliChatProviders } from '../services/cli/chat-provider.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  getErrorMessage,
-  parseJsonBody,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
 
 const log = console;
 
@@ -123,7 +117,7 @@ function convertToModelInfo(providerId: string): ModelInfo[] {
  */
 app.get('/', async (c) => {
   const enabledOnly = c.req.query('enabledOnly') !== 'false';
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
 
   const allModels: ModelInfo[] = [];
   const configuredProviders: string[] = [];

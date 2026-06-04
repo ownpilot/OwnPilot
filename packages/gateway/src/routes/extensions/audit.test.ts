@@ -88,7 +88,7 @@ const { parseLlmAuditResponse } = await import('../../services/skill/security-au
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/ext', auditRoutes);
@@ -105,7 +105,7 @@ function makeRequest(app: Hono, path: string, body?: Record<string, unknown>): P
 }
 
 /** Minimal ExtensionRecord stub for a given userId */
-function makeExtRecord(userId = 'user-1') {
+function makeExtRecord(userId = 'default') {
   return {
     id: 'ext-1',
     userId,

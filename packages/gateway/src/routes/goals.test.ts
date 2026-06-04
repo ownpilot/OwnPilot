@@ -84,7 +84,7 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated user
   app.use('*', async (c, next) => {
-    c.set('userId', 'u1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/goals', goalsRoutes);
@@ -128,7 +128,7 @@ describe('Goals Routes', () => {
 
       await app.request('/goals?status=active&limit=5');
 
-      expect(mockGoalService.listGoals).toHaveBeenCalledWith('u1', {
+      expect(mockGoalService.listGoals).toHaveBeenCalledWith('default', {
         status: 'active',
         limit: 5,
         parentId: undefined,
@@ -142,7 +142,7 @@ describe('Goals Routes', () => {
       await app.request('/goals?parentId=null');
 
       expect(mockGoalService.listGoals).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           parentId: null,
         })
@@ -592,7 +592,7 @@ describe('Goals Routes', () => {
       await app.request('/goals?status=invalid_status');
 
       expect(mockGoalService.listGoals).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           status: undefined,
         })
@@ -605,7 +605,7 @@ describe('Goals Routes', () => {
       await app.request('/goals?parentId=parent-123');
 
       expect(mockGoalService.listGoals).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           parentId: 'parent-123',
         })
@@ -623,7 +623,7 @@ describe('Goals Routes', () => {
 
       await app.request('/goals/next-actions?limit=10');
 
-      expect(mockGoalService.getNextActions).toHaveBeenCalledWith('u1', 10);
+      expect(mockGoalService.getNextActions).toHaveBeenCalledWith('default', 10);
     });
 
     it('returns empty actions list', async () => {
@@ -648,7 +648,7 @@ describe('Goals Routes', () => {
 
       await app.request('/goals/upcoming');
 
-      expect(mockGoalService.getUpcoming).toHaveBeenCalledWith('u1', 7);
+      expect(mockGoalService.getUpcoming).toHaveBeenCalledWith('default', 7);
     });
   });
 });
@@ -692,7 +692,7 @@ describe('executeGoalTool', () => {
           priority: 8,
           dueDate: '2026-06-01',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -714,11 +714,11 @@ describe('executeGoalTool', () => {
           title: 'Sub-goal',
           parentId: 'g1',
         },
-        'u1'
+        'default'
       );
 
       expect(mockGoalService.createGoal).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           parentId: 'g1',
         })
@@ -732,7 +732,7 @@ describe('executeGoalTool', () => {
     it('returns empty list message when no goals', async () => {
       mockGoalService.listGoals.mockResolvedValue([]);
 
-      const result = await executeGoalTool('list_goals', {}, 'u1');
+      const result = await executeGoalTool('list_goals', {}, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('No active goals found');
@@ -752,7 +752,7 @@ describe('executeGoalTool', () => {
         { id: 'g2', title: 'Goal B', status: 'active', priority: 5, progress: 0, dueDate: null },
       ]);
 
-      const result = await executeGoalTool('list_goals', { status: 'active', limit: 5 }, 'u1');
+      const result = await executeGoalTool('list_goals', { status: 'active', limit: 5 }, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.goals).toHaveLength(2);
@@ -763,9 +763,9 @@ describe('executeGoalTool', () => {
     it('uses default status "active" and limit 10', async () => {
       mockGoalService.listGoals.mockResolvedValue([]);
 
-      await executeGoalTool('list_goals', {}, 'u1');
+      await executeGoalTool('list_goals', {}, 'default');
 
-      expect(mockGoalService.listGoals).toHaveBeenCalledWith('u1', {
+      expect(mockGoalService.listGoals).toHaveBeenCalledWith('default', {
         status: 'active',
         limit: 10,
         orderBy: 'priority',
@@ -777,7 +777,7 @@ describe('executeGoalTool', () => {
 
   describe('update_goal', () => {
     it('returns error when goalId missing', async () => {
-      const result = await executeGoalTool('update_goal', {}, 'u1');
+      const result = await executeGoalTool('update_goal', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('goalId is required');
@@ -786,7 +786,7 @@ describe('executeGoalTool', () => {
     it('returns error when goal not found', async () => {
       mockGoalService.updateGoal.mockResolvedValue(null);
 
-      const result = await executeGoalTool('update_goal', { goalId: 'g999' }, 'u1');
+      const result = await executeGoalTool('update_goal', { goalId: 'g999' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Goal not found');
@@ -807,7 +807,7 @@ describe('executeGoalTool', () => {
           status: 'completed',
           progress: 100,
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -825,7 +825,7 @@ describe('executeGoalTool', () => {
         {
           steps: [{ title: 'Step 1' }],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(false);
@@ -833,7 +833,7 @@ describe('executeGoalTool', () => {
     });
 
     it('returns error when steps missing', async () => {
-      const result = await executeGoalTool('decompose_goal', { goalId: 'g1' }, 'u1');
+      const result = await executeGoalTool('decompose_goal', { goalId: 'g1' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('steps array is required');
@@ -846,7 +846,7 @@ describe('executeGoalTool', () => {
           goalId: 'g1',
           steps: [],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(false);
@@ -866,7 +866,7 @@ describe('executeGoalTool', () => {
           goalId: 'g1',
           steps: [{ title: 'Step 1' }, { title: 'Step 2' }],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -884,7 +884,7 @@ describe('executeGoalTool', () => {
           goalId: 'g1',
           steps: [{ title: 'Step 1' }],
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -898,7 +898,7 @@ describe('executeGoalTool', () => {
     it('returns empty actions message', async () => {
       mockGoalService.getNextActions.mockResolvedValue([]);
 
-      const result = await executeGoalTool('get_next_actions', {}, 'u1');
+      const result = await executeGoalTool('get_next_actions', {}, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('All caught up');
@@ -910,7 +910,7 @@ describe('executeGoalTool', () => {
         { id: 's1', title: 'Write tests', goalTitle: 'Ship v1', status: 'pending' },
       ]);
 
-      const result = await executeGoalTool('get_next_actions', { limit: 3 }, 'u1');
+      const result = await executeGoalTool('get_next_actions', { limit: 3 }, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.actions).toHaveLength(1);
@@ -923,7 +923,7 @@ describe('executeGoalTool', () => {
 
   describe('complete_step', () => {
     it('returns error when stepId missing', async () => {
-      const result = await executeGoalTool('complete_step', {}, 'u1');
+      const result = await executeGoalTool('complete_step', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('stepId is required');
@@ -932,7 +932,7 @@ describe('executeGoalTool', () => {
     it('returns error when step not found', async () => {
       mockGoalService.completeStep.mockResolvedValue(null);
 
-      const result = await executeGoalTool('complete_step', { stepId: 's999' }, 'u1');
+      const result = await executeGoalTool('complete_step', { stepId: 's999' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Step not found');
@@ -951,7 +951,7 @@ describe('executeGoalTool', () => {
           stepId: 's1',
           result: 'All tests passed',
         },
-        'u1'
+        'default'
       );
 
       expect(result.success).toBe(true);
@@ -964,7 +964,7 @@ describe('executeGoalTool', () => {
 
   describe('get_goal_details', () => {
     it('returns error when goalId missing', async () => {
-      const result = await executeGoalTool('get_goal_details', {}, 'u1');
+      const result = await executeGoalTool('get_goal_details', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('goalId is required');
@@ -973,7 +973,7 @@ describe('executeGoalTool', () => {
     it('returns error when goal not found', async () => {
       mockGoalService.getGoalWithSteps.mockResolvedValue(null);
 
-      const result = await executeGoalTool('get_goal_details', { goalId: 'g999' }, 'u1');
+      const result = await executeGoalTool('get_goal_details', { goalId: 'g999' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Goal not found');
@@ -996,7 +996,7 @@ describe('executeGoalTool', () => {
         ],
       });
 
-      const result = await executeGoalTool('get_goal_details', { goalId: 'g1' }, 'u1');
+      const result = await executeGoalTool('get_goal_details', { goalId: 'g1' }, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.goal.id).toBe('g1');
@@ -1015,7 +1015,7 @@ describe('executeGoalTool', () => {
         byStatus: { active: 7, completed: 3 },
       });
 
-      const result = await executeGoalTool('get_goal_stats', {}, 'u1');
+      const result = await executeGoalTool('get_goal_stats', {}, 'default');
 
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('10 goals total');
@@ -1028,7 +1028,7 @@ describe('executeGoalTool', () => {
 
   describe('unknown tool', () => {
     it('returns error for unknown tool', async () => {
-      const result = await executeGoalTool('nonexistent_tool', {}, 'u1');
+      const result = await executeGoalTool('nonexistent_tool', {}, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown tool');
@@ -1056,7 +1056,7 @@ describe('executeGoalTool', () => {
         new GoalServiceError('Duplicate goal', 'VALIDATION_ERROR')
       );
 
-      const result = await executeGoalTool('create_goal', { title: 'Dup' }, 'u1');
+      const result = await executeGoalTool('create_goal', { title: 'Dup' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Duplicate goal');
@@ -1065,7 +1065,7 @@ describe('executeGoalTool', () => {
     it('catches generic errors and returns error message', async () => {
       mockGoalService.createGoal.mockRejectedValue(new Error('Network timeout'));
 
-      const result = await executeGoalTool('create_goal', { title: 'Goal' }, 'u1');
+      const result = await executeGoalTool('create_goal', { title: 'Goal' }, 'default');
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Network timeout');

@@ -7,12 +7,12 @@
  * All business logic is delegated to CustomDataService.
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import {
   apiResponse,
   apiError,
   getIntParam,
-  getUserId,
   ERROR_CODES,
   notFoundError,
   getErrorMessage,
@@ -295,7 +295,7 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
  */
 customDataRoutes.get('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
@@ -324,7 +324,7 @@ customDataRoutes.get('/records/:id', async (c) => {
  */
 customDataRoutes.put('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }
@@ -385,7 +385,7 @@ customDataRoutes.put('/records/:id', async (c) => {
  */
 customDataRoutes.delete('/records/:id', async (c) => {
   const recordId = c.req.param('id');
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   if ((!userId || userId === 'default') && !c.get('sessionAuthenticated')) {
     return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
   }

@@ -79,7 +79,7 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated user
   app.use('*', async (c, next) => {
-    c.set('userId', 'u1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/triggers', triggersRoutes);
@@ -123,7 +123,7 @@ describe('Triggers Routes', () => {
 
       await app.request('/triggers?type=schedule&enabled=true&limit=5');
 
-      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('u1', {
+      expect(mockTriggerService.listTriggers).toHaveBeenCalledWith('default', {
         type: 'schedule',
         enabled: true,
         limit: 5,
@@ -136,7 +136,7 @@ describe('Triggers Routes', () => {
       await app.request('/triggers?enabled=false');
 
       expect(mockTriggerService.listTriggers).toHaveBeenCalledWith(
-        'u1',
+        'default',
         expect.objectContaining({
           enabled: false,
         })
@@ -410,7 +410,9 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.message).toContain('enabled');
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('u1', 't1', { enabled: true });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', {
+        enabled: true,
+      });
     });
 
     it('returns 404 when trigger not found', async () => {
@@ -434,7 +436,9 @@ describe('Triggers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.message).toContain('disabled');
-      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('u1', 't1', { enabled: false });
+      expect(mockTriggerService.updateTrigger).toHaveBeenCalledWith('default', 't1', {
+        enabled: false,
+      });
     });
 
     it('returns 404 when trigger not found', async () => {
@@ -577,7 +581,7 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.data.deletedCount).toBe(5);
       // Should use default of 30 days
-      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('u1', 30);
+      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('default', 30);
     });
 
     it('defaults to 30 when maxAgeDays is not a finite number', async () => {
@@ -592,7 +596,7 @@ describe('Triggers Routes', () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.data.deletedCount).toBe(3);
-      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('u1', 30);
+      expect(mockTriggerService.cleanupHistory).toHaveBeenCalledWith('default', 30);
     });
   });
 

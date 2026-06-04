@@ -90,6 +90,7 @@ vi.mock('../../middleware/validation.js', () => ({
 
 vi.mock('../../config/defaults.js', () => ({
   MAX_PAGINATION_OFFSET: 10000,
+  LOCAL_OWNER_ID: 'default',
 }));
 
 vi.mock('./copilot.js', () => ({
@@ -111,7 +112,7 @@ function createApp() {
   app.use('*', requestId);
   // Simulate authenticated user
   app.use('*', async (c, next) => {
-    c.set('userId', 'u1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/workflows', workflowRoutes);
@@ -817,7 +818,7 @@ describe('Workflow Routes', () => {
       expect(mockService.executeWorkflow).toHaveBeenCalledOnce();
       const [calledId, calledUserId] = mockService.executeWorkflow.mock.calls[0];
       expect(calledId).toBe('wf-1');
-      expect(calledUserId).toBe('u1');
+      expect(calledUserId).toBe('default');
     });
 
     it('passes dryRun flag to executeWorkflow when query param is set', async () => {
@@ -1400,7 +1401,11 @@ describe('Workflow Routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/event-stream');
-      expect(mockService.executeWorkflow).toHaveBeenCalledWith('wf-1', 'u1', expect.any(Function));
+      expect(mockService.executeWorkflow).toHaveBeenCalledWith(
+        'wf-1',
+        'default',
+        expect.any(Function)
+      );
     });
   });
 

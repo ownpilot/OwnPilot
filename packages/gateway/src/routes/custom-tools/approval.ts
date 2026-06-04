@@ -5,11 +5,12 @@
  * Endpoints: POST /:id/approve, POST /:id/reject
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { createCustomToolsRepo } from '../../db/repositories/custom/tools.js';
 import { invalidateAgentCache } from '../agents/index.js';
 import { syncToolToRegistry } from '../../services/custom/tool-registry.js';
-import { getUserId, apiResponse, apiError, ERROR_CODES, notFoundError } from '../helpers.js';
+import { apiResponse, apiError, ERROR_CODES, notFoundError } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 
 export const approvalRoutes = new Hono();
@@ -19,7 +20,7 @@ export const approvalRoutes = new Hono();
  */
 approvalRoutes.post('/:id/approve', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const tool = await repo.get(id);
   if (!tool) {
@@ -53,7 +54,7 @@ approvalRoutes.post('/:id/approve', async (c) => {
  */
 approvalRoutes.post('/:id/reject', async (c) => {
   const id = c.req.param('id');
-  const repo = createCustomToolsRepo(getUserId(c));
+  const repo = createCustomToolsRepo(LOCAL_OWNER_ID);
 
   const tool = await repo.get(id);
   if (!tool) {

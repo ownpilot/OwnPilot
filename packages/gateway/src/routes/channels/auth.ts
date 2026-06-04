@@ -5,10 +5,11 @@
  * Users generate tokens here, then use /connect on channel platforms.
  */
 
+import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { getChannelVerificationService } from '../../channels/auth/verification.js';
 import { channelUsersRepo } from '../../db/repositories/channels/users.js';
-import { getPaginationParams, apiResponse, apiError, ERROR_CODES, getUserId } from '../helpers.js';
+import { getPaginationParams, apiResponse, apiError, ERROR_CODES } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 
 export const channelAuthRoutes = new Hono();
@@ -32,7 +33,7 @@ async function getOwnedChannelUserById(id: string, ownerUserId: string) {
  * Uses the authenticated user's ID from context (security: prevents generating tokens for other users).
  */
 channelAuthRoutes.post('/generate-token', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = await c.req.json<{
     platform?: string;
     ttlMinutes?: number;
@@ -58,7 +59,7 @@ channelAuthRoutes.post('/generate-token', async (c) => {
  * Check verification status for a platform user.
  */
 channelAuthRoutes.get('/status/:platform/:platformUserId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { platform, platformUserId } = c.req.param();
   const service = getChannelVerificationService();
 
@@ -94,7 +95,7 @@ channelAuthRoutes.get('/status/:platform/:platformUserId', async (c) => {
  * Block a channel user.
  */
 channelAuthRoutes.post('/block/:platform/:platformUserId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { platform, platformUserId } = c.req.param();
   const target = await channelUsersRepo.findByPlatform(platform, platformUserId);
   if (!target || target.ownpilotUserId !== userId) {
@@ -111,7 +112,7 @@ channelAuthRoutes.post('/block/:platform/:platformUserId', async (c) => {
  * Unblock a channel user.
  */
 channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const { platform, platformUserId } = c.req.param();
   const target = await channelUsersRepo.findByPlatform(platform, platformUserId);
   if (!target || target.ownpilotUserId !== userId) {
@@ -128,7 +129,7 @@ channelAuthRoutes.post('/unblock/:platform/:platformUserId', async (c) => {
  * List all channel users with optional filters.
  */
 channelAuthRoutes.get('/users', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const platform = c.req.query('platform');
   const verified = c.req.query('verified');
   const { limit, offset } = getPaginationParams(c, 100);
@@ -171,7 +172,7 @@ channelAuthRoutes.get('/users', async (c) => {
  * Approve a pending channel user.
  */
 channelAuthRoutes.post('/users/:id/approve', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const owned = await getOwnedChannelUserById(id, userId);
   if (!owned) {
@@ -203,7 +204,7 @@ channelAuthRoutes.post('/users/:id/approve', async (c) => {
  * Block a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/block', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const user = await getOwnedChannelUserById(id, userId);
   if (!user) {
@@ -221,7 +222,7 @@ channelAuthRoutes.post('/users/:id/block', async (c) => {
  * Unblock a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/unblock', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const user = await getOwnedChannelUserById(id, userId);
   if (!user) {
@@ -239,7 +240,7 @@ channelAuthRoutes.post('/users/:id/unblock', async (c) => {
  * Revoke verification for a channel user by ID.
  */
 channelAuthRoutes.post('/users/:id/unverify', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const owned = await getOwnedChannelUserById(id, userId);
   if (!owned) {
@@ -263,7 +264,7 @@ channelAuthRoutes.post('/users/:id/unverify', async (c) => {
  * Delete a channel user by ID.
  */
 channelAuthRoutes.delete('/users/:id', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const id = c.req.param('id');
   const owned = await getOwnedChannelUserById(id, userId);
   if (!owned) {

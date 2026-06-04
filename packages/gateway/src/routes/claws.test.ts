@@ -24,14 +24,6 @@ vi.mock('../services/claw/manager.js', () => ({
   getClawManager: mockGetClawManager,
 }));
 
-vi.mock('./helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    getUserId: () => 'user-1',
-  };
-});
-
 const { clawRoutes } = await import('./claws.js');
 
 // ---------------------------------------------------------------------------
@@ -258,7 +250,7 @@ describe('Claws Routes', () => {
       expect(service.updateClaw).toHaveBeenCalledTimes(1);
       expect(service.updateClaw).toHaveBeenCalledWith(
         'claw-1',
-        'user-1',
+        'default',
         expect.objectContaining({ stopCondition: 'on_report' })
       );
 
@@ -352,7 +344,7 @@ describe('Claws Routes', () => {
 
       expect(service.updateClaw).toHaveBeenCalledWith(
         'claw-1',
-        'user-1',
+        'default',
         expect.objectContaining({
           stopCondition: 'idle:3',
           missionContract: expect.objectContaining({
@@ -640,7 +632,7 @@ describe('Claws Routes', () => {
       expect(res.status).toBe(200);
       expect(service.updateClaw).toHaveBeenCalledWith(
         'claw-1',
-        'user-1',
+        'default',
         expect.objectContaining({
           mode: 'event',
           intervalMs: 60_000,
@@ -801,7 +793,7 @@ describe('Claws Routes', () => {
       expect(res.status).toBe(200);
       expect(service.setNextIntent).toHaveBeenCalledWith(
         'claw-1',
-        'user-1',
+        'default',
         'switch to debugging the auth bug'
       );
     });
@@ -860,7 +852,7 @@ describe('Claws Routes', () => {
       service.resetFailures.mockResolvedValue(undefined);
       const res = await app.request('/claws/claw-1/reset-failures', { method: 'POST' });
       expect(res.status).toBe(200);
-      expect(service.resetFailures).toHaveBeenCalledWith('claw-1', 'user-1');
+      expect(service.resetFailures).toHaveBeenCalledWith('claw-1', 'default');
       const body = (await res.json()) as { data: { reset: boolean } };
       expect(body.data).toEqual({ reset: true });
     });
@@ -898,7 +890,7 @@ describe('Claws Routes', () => {
         body: JSON.stringify({ tasks: [{ id: 't1', title: 'Survey' }] }),
       });
       expect(res.status).toBe(200);
-      expect(service.replacePlan).toHaveBeenCalledWith('claw-1', 'user-1', [
+      expect(service.replacePlan).toHaveBeenCalledWith('claw-1', 'default', [
         { id: 't1', title: 'Survey' },
       ]);
     });
@@ -953,7 +945,7 @@ describe('Claws Routes', () => {
       });
       expect(res.status).toBe(200);
       // The route merges the URL taskId into the args under `id`.
-      expect(service.updateTask).toHaveBeenCalledWith('claw-1', 'user-1', {
+      expect(service.updateTask).toHaveBeenCalledWith('claw-1', 'default', {
         id: 't1',
         status: 'completed',
         evidence: 'tests green',
@@ -1003,7 +995,7 @@ describe('Claws Routes', () => {
       // The route folds the URL taskId into args.task_id so the service
       // gets the same shape regardless of whether the call came from REST
       // or from the tool dispatcher.
-      expect(service.splitTask).toHaveBeenCalledWith('claw-1', 'user-1', {
+      expect(service.splitTask).toHaveBeenCalledWith('claw-1', 'default', {
         task_id: 't1',
         subtasks: [{ title: 'sub1' }, { title: 'sub2' }],
       });
@@ -1198,7 +1190,7 @@ describe('Claws Routes', () => {
         body: JSON.stringify({ reason: 'Not needed' }),
       });
       expect(res.status).toBe(200);
-      expect(service.denyEscalation).toHaveBeenCalledWith('claw-1', 'user-1', 'Not needed');
+      expect(service.denyEscalation).toHaveBeenCalledWith('claw-1', 'default', 'Not needed');
     });
 
     it('should return 404 if no pending escalation', async () => {

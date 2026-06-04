@@ -9,18 +9,15 @@
  * Usage:
  *   import { createCrudRoutes } from './crud-factory.js';
  *   export const widgetsRoutes = createCrudRoutes({
- *     entity: 'widget',
- *     serviceToken: Services.Widget,
- *     schemas: { create: createWidgetSchema, update: updateWidgetSchema },
- *   });
+ *     entity: 'widget', *     serviceToken: Services.Widget, *     schemas: { create: createWidgetSchema, update: updateWidgetSchema }, *   });
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { ZodType } from 'zod';
 import { getServiceRegistry, type ServiceToken } from '@ownpilot/core';
 import {
-  getUserId,
   apiResponse,
   apiError,
   getErrorMessage,
@@ -205,7 +202,7 @@ export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TSe
   if (methods.includes('list')) {
     app.get('/', async (c) => {
       try {
-        const userId = getUserId(c);
+        const userId = LOCAL_OWNER_ID;
         const { limit, offset } = getPaginationParams(c, defaultLimit, maxLimit);
         const service = getService();
 
@@ -244,7 +241,7 @@ export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TSe
   if (methods.includes('get')) {
     app.get('/:id', async (c) => {
       try {
-        const userId = getUserId(c);
+        const userId = LOCAL_OWNER_ID;
         const id = c.req.param('id');
         const service = getService();
 
@@ -304,7 +301,7 @@ export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TSe
       }
 
       try {
-        const userId = getUserId(c);
+        const userId = LOCAL_OWNER_ID;
         const service = getService();
         const created = await callServiceMethod(service, createMethod, userId, validatedBody);
 
@@ -366,7 +363,7 @@ export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TSe
       }
 
       try {
-        const userId = getUserId(c);
+        const userId = LOCAL_OWNER_ID;
         const id = c.req.param('id');
         const service = getService();
         const updated = await callServiceMethod(service, updateMethod, userId, id, validatedBody);
@@ -402,7 +399,7 @@ export function createCrudRoutes<TService = unknown>(config: CrudRouteConfig<TSe
   if (methods.includes('delete')) {
     app.delete('/:id', async (c) => {
       try {
-        const userId = getUserId(c);
+        const userId = LOCAL_OWNER_ID;
         const id = c.req.param('id');
         const service = getService();
         const deleted = await callServiceMethod(service, deleteMethod, userId, id);

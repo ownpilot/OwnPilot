@@ -36,7 +36,7 @@ const { artifactsRoutes } = await import('./artifacts.js');
 function createApp() {
   const app = new Hono();
   app.use('*', async (c, next) => {
-    c.set('userId', 'user-1');
+    c.set('userId', 'default');
     await next();
   });
   app.route('/artifacts', artifactsRoutes);
@@ -46,7 +46,7 @@ function createApp() {
 
 const sampleArtifact = {
   id: 'art-1',
-  userId: 'user-1',
+  userId: 'default',
   type: 'html',
   title: 'My Chart',
   content: '<html>hello</html>',
@@ -95,7 +95,7 @@ describe('Artifact Routes', () => {
     it('passes type filter to service', async () => {
       await app.request('/artifacts?type=html');
       expect(mockService.listArtifacts).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ type: 'html' })
       );
     });
@@ -103,7 +103,7 @@ describe('Artifact Routes', () => {
     it('passes pinned=true filter to service', async () => {
       await app.request('/artifacts?pinned=true');
       expect(mockService.listArtifacts).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ pinned: true })
       );
     });
@@ -111,7 +111,7 @@ describe('Artifact Routes', () => {
     it('passes pinned=false filter to service', async () => {
       await app.request('/artifacts?pinned=false');
       expect(mockService.listArtifacts).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ pinned: false })
       );
     });
@@ -119,7 +119,7 @@ describe('Artifact Routes', () => {
     it('passes search filter to service', async () => {
       await app.request('/artifacts?search=hello');
       expect(mockService.listArtifacts).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ search: 'hello' })
       );
     });
@@ -127,7 +127,7 @@ describe('Artifact Routes', () => {
     it('passes conversationId filter to service', async () => {
       await app.request('/artifacts?conversationId=conv-1');
       expect(mockService.listArtifacts).toHaveBeenCalledWith(
-        'user-1',
+        'default',
         expect.objectContaining({ conversationId: 'conv-1' })
       );
     });

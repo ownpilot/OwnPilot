@@ -9,6 +9,7 @@
  * POST /scan/workflow     — Single workflow security scan
  */
 
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { analyzeToolCode, calculateSecurityScore } from '@ownpilot/core';
 import {
@@ -21,14 +22,7 @@ import {
   scanSingleTrigger,
   scanSingleWorkflow,
 } from '../services/security-scanner.js';
-import {
-  getUserId,
-  apiResponse,
-  apiError,
-  ERROR_CODES,
-  parseJsonBody,
-  notFoundError,
-} from './helpers.js';
+import { apiResponse, apiError, ERROR_CODES, parseJsonBody, notFoundError } from './helpers.js';
 
 export const securityRoutes = new Hono();
 
@@ -37,7 +31,7 @@ export const securityRoutes = new Hono();
 // =============================================================================
 
 securityRoutes.post('/scan', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = await scanPlatform(userId);
   return apiResponse(c, result);
 });
@@ -47,7 +41,7 @@ securityRoutes.post('/scan', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/extensions', (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = scanExtensions(userId);
   return apiResponse(c, result);
 });
@@ -57,7 +51,7 @@ securityRoutes.post('/scan/extensions', (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/custom-tools', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = await scanCustomTools(userId);
   return apiResponse(c, result);
 });
@@ -98,7 +92,7 @@ securityRoutes.post('/scan/custom-tool', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/triggers', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = await scanTriggers(userId);
   return apiResponse(c, result);
 });
@@ -108,7 +102,7 @@ securityRoutes.post('/scan/triggers', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/trigger', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = (await parseJsonBody(c)) as { triggerId: string } | null;
 
   if (!body?.triggerId) {
@@ -125,7 +119,7 @@ securityRoutes.post('/scan/trigger', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/workflows', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = await scanWorkflows(userId);
   return apiResponse(c, result);
 });
@@ -135,7 +129,7 @@ securityRoutes.post('/scan/workflows', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/workflow', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const body = (await parseJsonBody(c)) as { workflowId: string } | null;
 
   if (!body?.workflowId) {
@@ -152,7 +146,7 @@ securityRoutes.post('/scan/workflow', async (c) => {
 // =============================================================================
 
 securityRoutes.post('/scan/cli-tools', async (c) => {
-  const userId = getUserId(c);
+  const userId = LOCAL_OWNER_ID;
   const result = await scanCliPolicies(userId);
   return apiResponse(c, result);
 });
