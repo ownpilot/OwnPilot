@@ -95,13 +95,27 @@ export async function validateSecurityConfig(): Promise<SecurityStatus> {
       }
     }
 
-    // Require Docker in production
+    // Require Docker in production ONLY when execution mode is 'docker'.
+    // In 'auto'/'local' the gateway is expected to run without a Docker
+    // socket (e.g. the docker-compose gateway container has none) and gates
+    // code execution per-call instead — so a hard startup failure there would
+    // break valid deployments. Consult the mode-aware `dockerRequired` flag
+    // rather than failing unconditionally.
     if (!status.dockerAvailable) {
-      status.errors.push(
-        'SECURITY ERROR: Docker is required for production but not available. ' +
-          'Code execution tools will be disabled.'
-      );
-      status.isSecure = false;
+      if (status.dockerRequired) {
+        status.errors.push(
+          'SECURITY ERROR: EXECUTION_MODE=docker but Docker is not available. ' +
+            'Code execution requires a Docker sandbox in this mode.'
+        );
+        status.isSecure = false;
+      } else {
+        status.warnings.push(
+          'Docker not available in production. Code execution falls back to ' +
+            'per-call gating (mode: ' +
+            executionMode +
+            ').'
+        );
+      }
     }
   }
 

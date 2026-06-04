@@ -270,12 +270,26 @@ describe('Security Module', () => {
         expect(status.errors.some((e) => e.includes('DOCKER_SANDBOX_RELAXED_SECURITY'))).toBe(true);
       });
 
-      it('errors when Docker is not available', async () => {
+      it('errors when Docker unavailable in docker execution mode', async () => {
+        mockMode.mockReturnValue('docker');
         mockDocker.mockResolvedValue(false);
 
         const status = await validateSecurityConfig();
         expect(status.isSecure).toBe(false);
-        expect(status.errors.some((e) => e.includes('Docker is required'))).toBe(true);
+        expect(status.errors.some((e) => e.includes('Docker is not available'))).toBe(true);
+      });
+
+      it('warns (not errors) when Docker unavailable in auto/local mode', async () => {
+        // Production gateways commonly run without a Docker socket (e.g. the
+        // docker-compose gateway container) and gate execution per-call. That
+        // must not hard-fail startup — only EXECUTION_MODE=docker requires it.
+        mockMode.mockReturnValue('auto');
+        mockDocker.mockResolvedValue(false);
+
+        const status = await validateSecurityConfig();
+        expect(status.isSecure).toBe(true);
+        expect(status.errors).toHaveLength(0);
+        expect(status.warnings.some((w) => w.includes('per-call gating'))).toBe(true);
       });
 
       it('is secure when Docker is available and no dangerous vars', async () => {
@@ -352,9 +366,22 @@ describe('Security Module', () => {
   describe('enforceSecurityConfig', () => {
     it('throws in production when there are errors', async () => {
       process.env.NODE_ENV = 'production';
+      mockMode.mockReturnValue('docker'); // docker mode + no Docker => hard error
       mockDocker.mockResolvedValue(false);
 
       await expect(enforceSecurityConfig()).rejects.toThrow('SECURITY');
+    });
+
+    it('does not throw in production without Docker when mode is auto/local', async () => {
+      // Mirrors the docker-compose gateway: production, no Docker socket, but
+      // EXECUTION_MODE=auto — must start (per-call gating), not crash.
+      process.env.NODE_ENV = 'production';
+      mockMode.mockReturnValue('auto');
+      mockDocker.mockResolvedValue(false);
+      delete process.env.ALLOW_HOME_DIR_ACCESS;
+      delete process.env.DOCKER_SANDBOX_RELAXED_SECURITY;
+
+      await expect(enforceSecurityConfig()).resolves.toBeUndefined();
     });
 
     it('does not throw in development with errors', async () => {

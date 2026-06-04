@@ -64,6 +64,7 @@ import {
   Services,
   getEventSystem,
   setModuleResolver,
+  enforceSecurityConfig,
   type ServiceToken,
 } from '@ownpilot/core';
 import type { NormalizedMessage } from '@ownpilot/core';
@@ -157,6 +158,13 @@ async function main() {
   // ── Config Validation (fail-fast before any heavy initialization) ─────────
   const { assertBootConfig } = await import('./config/validation.js');
   assertBootConfig();
+
+  // ── Security enforcement (fail-fast) ──────────────────────────────────────
+  // Throws in production on insecure config: dangerous env vars
+  // (DOCKER_SANDBOX_RELAXED_SECURITY / ALLOW_HOME_DIR_ACCESS) always block;
+  // Docker is only required when EXECUTION_MODE=docker. Logs the security
+  // posture in all environments.
+  await enforceSecurityConfig();
 
   // ── Module resolver (allows core tools to import gateway's npm packages) ──
   setModuleResolver((name) => import(name));
