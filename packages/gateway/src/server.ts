@@ -878,6 +878,16 @@ async function main() {
     log.warn('Autonomy Engine failed to start', { error: String(error) });
   }
 
+  // Start always-on personal-memory retention (daily decay + cleanup). Pure
+  // hygiene — no LLM, no conversation extraction — so it runs by default,
+  // unlike the opt-in memory_extract / memory_consolidate triggers.
+  try {
+    const { startMemoryRetention } = await import('./services/memory/retention.js');
+    startMemoryRetention('default');
+  } catch (error) {
+    log.warn('Memory retention scheduler failed to start', { error: String(error) });
+  }
+
   // Seed example plans (only creates if not already present)
   try {
     const planSeed = await seedExamplePlans('default');
@@ -1096,6 +1106,14 @@ async function main() {
       resetHeartbeatService();
     } catch (e) {
       log.warn('Heartbeat service reset error', { error: String(e) });
+    }
+
+    // 5.6c-mem. Stop the personal-memory retention scheduler
+    try {
+      const { stopMemoryRetention } = await import('./services/memory/retention.js');
+      stopMemoryRetention();
+    } catch (e) {
+      log.warn('Memory retention stop error', { error: String(e) });
     }
 
     // 5.6d. Reset memory service

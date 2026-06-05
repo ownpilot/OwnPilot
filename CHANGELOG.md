@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Personal memory now has an always-on retention schedule.** Previously, personal-memory decay and cleanup ran only via manual REST calls or user-enabled triggers — there was no default daily enforcement (unlike the autonomous Claw runtime, which already trims its own tables daily). A new daily scheduler runs importance decay + dead-memory cleanup automatically. It is pure hygiene — no LLM calls, no conversation extraction, no semantic consolidation — and only removes already-dead entries (importance below 0.1, older than 90 days, and untouched for 90 days), so it runs by default while the LLM-driven `memory_extract` / `memory_consolidate` triggers stay opt-in. Cleanup (an idempotent delete) runs on startup and daily; the compounding decay step runs only on the daily tick, so it stays independent of how often the process restarts.
+
 ### Fixed
 
 - **UI shipped unstyled when the Tailwind native scanner fell back to WASM.** Tailwind v4 scans sources with the native `@tailwindcss/oxide` addon; when its platform binary fails to load (a corrupt `@tailwindcss/oxide-win32-x64-msvc` install — missing `package.json` — on Windows), oxide silently falls back to its WASM build, which scans nothing and emits a utility-less ~13 KB stylesheet instead of ~250 KB, with no error. A new build-only `css-size-guard` Vite plugin now **fails the build** if total emitted CSS is under 80 KB, so this can never silently ship (including in Docker images) again.
