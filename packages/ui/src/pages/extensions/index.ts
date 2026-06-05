@@ -1,1 +1,0 @@
-export { ExtensionsPage } from './ExtensionsPage';

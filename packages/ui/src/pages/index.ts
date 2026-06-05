@@ -1,9 +1,0 @@
-export { ChatPage } from './ChatPage';
-export { AgentsPage } from './AgentsPage';
-export { ToolsPage } from './tools';
-export { SettingsPage } from './SettingsPage';
-export { ConfigCenterPage } from './ConfigCenterPage';
-export { ApiKeysPage } from './ApiKeysPage';
-export { ProvidersPage } from './ProvidersPage';
-export { AIModelsPage } from './AIModelsPage';
-export { SystemPage } from './SystemPage';

@@ -9,8 +9,6 @@ import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { cleanStreamingChatContent } from '../utils/chat-content';
-// ConversationSidebar kept as backup — conversation management moved to Sidebar.tsx
-// import { ConversationSidebar } from '../components/ConversationSidebar';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
