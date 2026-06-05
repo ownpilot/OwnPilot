@@ -27,14 +27,3 @@ export const EXTENSION_CATEGORIES = [
   'lifestyle',
   'other',
 ] as const;
-
-export const TOOL_PERMISSIONS = ['network', 'filesystem', 'database', 'system'] as const;
-
-export const DEFAULT_PARAMS = '{\n  "type": "object",\n  "properties": {},\n  "required": []\n}';
-export const DEFAULT_CODE =
-  '// Access arguments via `args` object\n// Use `config.get(service, field)` for service config\n// Return { content: { ... } }\nreturn { content: { result: "ok" } };';
-
-let toolDraftCounter = 0;
-export function nextToolDraftId(): string {
-  return `tool-${Date.now()}-${++toolDraftCounter}`;
-}

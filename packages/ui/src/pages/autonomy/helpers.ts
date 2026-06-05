@@ -11,7 +11,7 @@ export const riskColors = {
   critical: 'text-error',
 };
 
-export const DEFAULT_THRESHOLDS: RuleThresholds = {
+const DEFAULT_THRESHOLDS: RuleThresholds = {
   staleDays: 3,
   deadlineDays: 3,
   activityDays: 2,
@@ -21,7 +21,7 @@ export const DEFAULT_THRESHOLDS: RuleThresholds = {
   triggerErrorMin: 3,
 };
 
-export const DEFAULT_COOLDOWNS: ActionCooldowns = {
+const DEFAULT_COOLDOWNS: ActionCooldowns = {
   create_memory: 30,
   update_goal_progress: 60,
   send_notification: 15,

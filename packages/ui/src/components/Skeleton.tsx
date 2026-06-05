@@ -46,32 +46,6 @@ export function SkeletonCard({ count = 3 }: { count?: number }) {
 }
 
 /** Chat message bubble skeleton */
-export function SkeletonMessage({ count = 5 }: { count?: number }) {
-  return (
-    <div className="space-y-3 max-w-3xl mx-auto">
-      {Array.from({ length: count }, (_, i) => {
-        const isOutgoing = i % 3 === 1;
-        return (
-          <div key={i} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`animate-pulse rounded-2xl px-4 py-3 ${
-                isOutgoing
-                  ? 'bg-primary/20 w-[60%]'
-                  : 'bg-bg-tertiary dark:bg-dark-bg-tertiary w-[70%]'
-              }`}
-            >
-              <div className="h-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-1/3 mb-2" />
-              <div className="space-y-1.5">
-                <div className="h-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-full" />
-                <div className="h-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded w-4/5" />
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /** Dashboard stat card skeleton */
 export function SkeletonStats({ count = 4 }: { count?: number }) {

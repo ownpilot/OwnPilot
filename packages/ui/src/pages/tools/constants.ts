@@ -53,5 +53,3 @@ export const SOURCE_NAMES: Record<string, string> = {
   plans: 'Plans',
   plugin: 'Plugin',
 };
-
-export const API_BASE = '/api/v1/tools';

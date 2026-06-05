@@ -62,7 +62,7 @@ export type DetailTab =
 
 // Set of valid tab ids — used to validate `?tab=<id>` deep-link params
 // without re-listing the union by hand.
-export const DETAIL_TAB_IDS: readonly DetailTab[] = [
+const DETAIL_TAB_IDS: readonly DetailTab[] = [
   'overview',
   'plan',
   'stats',

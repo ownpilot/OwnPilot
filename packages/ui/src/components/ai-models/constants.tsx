@@ -19,7 +19,7 @@ import type { ModelCapability, MergedModel } from '../../api';
 // Constants
 // ============================================================================
 
-export const CAPABILITY_ICONS: Record<ModelCapability, React.ReactNode> = {
+const CAPABILITY_ICONS: Record<ModelCapability, React.ReactNode> = {
   chat: <MessageSquare className="w-3.5 h-3.5" />,
   code: <Code className="w-3.5 h-3.5" />,
   vision: <Eye className="w-3.5 h-3.5" />,
@@ -32,7 +32,7 @@ export const CAPABILITY_ICONS: Record<ModelCapability, React.ReactNode> = {
   reasoning: <Brain className="w-3.5 h-3.5" />,
 };
 
-export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
+const CAPABILITY_LABELS: Record<ModelCapability, string> = {
   chat: 'Chat',
   code: 'Code',
   vision: 'Vision',
@@ -45,7 +45,7 @@ export const CAPABILITY_LABELS: Record<ModelCapability, string> = {
   reasoning: 'Think',
 };
 
-export const SOURCE_COLORS: Record<string, string> = {
+const SOURCE_COLORS: Record<string, string> = {
   builtin: 'bg-primary/10 text-primary',
   aggregator: 'bg-purple-500/10 text-purple-500',
   custom: 'bg-warning/10 text-warning',
@@ -56,7 +56,7 @@ export const SOURCE_COLORS: Record<string, string> = {
 // Helper Components
 // ============================================================================
 
-export function CapabilityBadge({ capability }: { capability: ModelCapability }) {
+function CapabilityBadge({ capability }: { capability: ModelCapability }) {
   return (
     <span
       className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-secondary dark:text-dark-text-secondary"
@@ -68,7 +68,7 @@ export function CapabilityBadge({ capability }: { capability: ModelCapability })
   );
 }
 
-export function PricingDisplay({
+function PricingDisplay({
   pricingInput,
   pricingOutput,
   pricingPerRequest,

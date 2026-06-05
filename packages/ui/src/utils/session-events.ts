@@ -1,4 +1,4 @@
-export const SESSION_CHANGED_EVENT = 'ownpilot:session-changed';
+const SESSION_CHANGED_EVENT = 'ownpilot:session-changed';
 
 interface SessionChangedDetail {
   authenticated: boolean;

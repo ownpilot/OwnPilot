@@ -48,15 +48,3 @@ export function silentCatch(tag?: string): (err: unknown) => void {
  * inline "fire and forget" calls inside effects or event handlers where you'd
  * otherwise need to wrap in an IIFE.
  */
-export function runAndIgnore<T>(fn: () => Promise<T> | T, tag?: string): void {
-  try {
-    const result = fn();
-    if (result && typeof (result as Promise<T>).catch === 'function') {
-      (result as Promise<T>).catch((err: unknown) => {
-        console.warn(`[ignored${tag ? ` ${tag}` : ''}]`, err);
-      });
-    }
-  } catch (err) {
-    console.warn(`[ignored${tag ? ` ${tag}` : ''}]`, err);
-  }
-}
