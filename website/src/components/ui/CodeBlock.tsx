@@ -82,23 +82,3 @@ export function CodeBlock({ code, language = 'bash', filename, className }: Code
     </div>
   );
 }
-
-interface InlineCodeProps {
-  children: React.ReactNode;
-  className?: string;
-}
-
-export function InlineCode({ children, className }: InlineCodeProps) {
-  return (
-    <code
-      className={cn(
-        'px-1.5 py-0.5 rounded-md text-sm font-mono',
-        'bg-[var(--color-code-bg)] text-[var(--color-code-text)]',
-        'border border-[var(--color-border)]',
-        className
-      )}
-    >
-      {children}
-    </code>
-  );
-}

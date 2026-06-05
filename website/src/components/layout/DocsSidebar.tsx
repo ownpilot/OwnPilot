@@ -3,14 +3,14 @@ import { Link, useLocation } from 'react-router';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface NavItem {
+interface NavItem {
   title: string;
   href?: string;
   items?: NavItem[];
   badge?: string;
 }
 
-export const docsNav: NavItem[] = [
+const docsNav: NavItem[] = [
   {
     title: 'Getting Started',
     items: [
