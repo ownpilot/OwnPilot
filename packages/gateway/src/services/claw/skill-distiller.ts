@@ -33,7 +33,7 @@ export const MIN_TOOL_CALLS_FOR_SKILL = 5;
 /** A single LLM completion: returns the assistant text (empty string on failure). */
 export type CompleteFn = (messages: { system: string; user: string }) => Promise<string>;
 
-export interface DistillInput {
+interface DistillInput {
   config: ClawConfig;
   /** Mission / objective the run was working toward. */
   mission: string;
@@ -49,7 +49,7 @@ export interface DistillInput {
   extensionService?: ExtensionService;
 }
 
-export interface DistillResult {
+interface DistillResult {
   skillId: string;
   name: string;
 }
@@ -174,7 +174,7 @@ export async function distillSkillFromRun(input: DistillInput): Promise<DistillR
 // Retrieval
 // ---------------------------------------------------------------------------
 
-export interface LearnedSkillMatch {
+interface LearnedSkillMatch {
   id: string;
   name: string;
   description: string;

@@ -6,7 +6,7 @@
 
 import { BaseRepository } from '../base.js';
 
-export interface Cost {
+interface Cost {
   id: string;
   provider: string;
   model: string;
@@ -50,7 +50,7 @@ function rowToCost(row: CostRow): Cost {
   };
 }
 
-export interface CostSummary {
+interface CostSummary {
   provider: string;
   model: string;
   totalCalls: number;
@@ -60,7 +60,7 @@ export interface CostSummary {
   totalCost: number;
 }
 
-export interface DailyCost {
+interface DailyCost {
   date: string;
   totalCalls: number;
   totalTokens: number;

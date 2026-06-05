@@ -159,7 +159,7 @@ export async function deleteResolvedAuth(provider: string): Promise<void> {
  */
 export const PROVIDER_OAUTH_CONFIG_PREFIX = 'provider_oauth_config:';
 
-export interface ProviderOAuthConfigOverride {
+interface ProviderOAuthConfigOverride {
   deviceCodeUrl?: string;
   authorizationUrl?: string;
   tokenUrl?: string;

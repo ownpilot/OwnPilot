@@ -27,32 +27,32 @@ const log = getLog('VoiceService');
 // Types
 // =============================================================================
 
-export interface TranscribeOptions {
+interface TranscribeOptions {
   language?: string;
   prompt?: string;
 }
 
-export interface TranscribeResult {
+interface TranscribeResult {
   text: string;
   language?: string;
   duration?: number;
   segments?: Array<{ start: number; end: number; text: string }>;
 }
 
-export interface SynthesizeOptions {
+interface SynthesizeOptions {
   voice?: string;
   model?: string;
   speed?: number;
   format?: string;
 }
 
-export interface SynthesizeResult {
+interface SynthesizeResult {
   audio: Buffer;
   format: string;
   contentType: string;
 }
 
-export interface VoiceConfigInfo {
+interface VoiceConfigInfo {
   available: boolean;
   provider: string | null;
   sttSupported: boolean;

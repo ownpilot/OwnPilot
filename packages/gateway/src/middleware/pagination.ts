@@ -20,7 +20,7 @@ export interface PaginationParams {
   offset: number;
 }
 
-export interface PaginationConfig {
+interface PaginationConfig {
   /** Default limit when query param is missing (default: 20) */
   defaultLimit?: number;
   /** Maximum allowed limit value (default: 100) */

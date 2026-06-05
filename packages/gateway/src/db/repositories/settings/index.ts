@@ -9,7 +9,7 @@ import { getLog } from '../../../services/log.js';
 
 const log = getLog('SettingsRepo');
 
-export interface Setting {
+interface Setting {
   key: string;
   value: unknown;
   updatedAt: Date;

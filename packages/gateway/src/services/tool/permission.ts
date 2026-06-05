@@ -25,14 +25,14 @@ const log = getLog('ToolPermissionService');
 // Types
 // =============================================================================
 
-export type PermissionDenialCode =
+type PermissionDenialCode =
   | 'TOOL_GROUP_DISABLED'
   | 'EXECUTION_BLOCKED'
   | 'CLI_POLICY_BLOCKED'
   | 'SKILL_NOT_ALLOWED'
   | 'REQUIRES_APPROVAL';
 
-export type PermissionResult =
+type PermissionResult =
   | { allowed: true }
   | { allowed: false; reason: string; code: PermissionDenialCode };
 

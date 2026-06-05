@@ -76,7 +76,7 @@ export function escapeWindowsArg(arg: string): string {
   return escaped;
 }
 
-export interface CliChatProviderConfig {
+interface CliChatProviderConfig {
   /** CLI binary name */
   binary: CliChatBinary;
   /** Model to use (optional — uses CLI's default when omitted, recommended) */
@@ -98,7 +98,7 @@ export interface CliChatProviderConfig {
 }
 
 /** Attachment for ToolBridge support on a CLI provider */
-export interface ToolBridgeAttachment {
+interface ToolBridgeAttachment {
   tools: import('@ownpilot/core').ToolRegistry;
   toolDefinitions: readonly import('@ownpilot/core').ToolDefinition[];
   conversationId: string;
@@ -107,7 +107,7 @@ export interface ToolBridgeAttachment {
 }
 
 /** CLI provider definition with metadata */
-export interface CliChatProviderDefinition {
+interface CliChatProviderDefinition {
   id: string;
   binary: CliChatBinary;
   displayName: string;

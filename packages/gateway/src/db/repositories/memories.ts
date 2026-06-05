@@ -11,7 +11,7 @@ import { getEventSystem } from '@ownpilot/core';
 import { RRF_K } from '../../config/defaults.js';
 
 export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
-export type MatchType = 'hybrid' | 'vector' | 'fts' | 'keyword';
+type MatchType = 'hybrid' | 'vector' | 'fts' | 'keyword';
 
 export interface Memory {
   id: string;

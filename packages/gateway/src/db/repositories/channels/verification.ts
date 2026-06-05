@@ -13,7 +13,7 @@ import { BaseRepository } from '../base.js';
 // Entity Types
 // ============================================================================
 
-export interface ChannelVerificationTokenEntity {
+interface ChannelVerificationTokenEntity {
   id: string;
   ownpilotUserId: string;
   token: string;

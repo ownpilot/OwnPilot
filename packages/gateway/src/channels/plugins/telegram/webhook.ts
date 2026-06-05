@@ -8,7 +8,7 @@
 
 import { webhookCallback, type Bot } from 'grammy';
 
-export interface WebhookHandler {
+interface WebhookHandler {
   secret: string;
   callback: (req: Request) => Promise<Response>;
 }

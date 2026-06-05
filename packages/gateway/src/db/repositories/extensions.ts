@@ -73,7 +73,7 @@ export interface ExtensionRecord {
   updatedAt: string;
 }
 
-export interface UpsertExtensionInput {
+interface UpsertExtensionInput {
   id: string;
   userId?: string;
   name: string;

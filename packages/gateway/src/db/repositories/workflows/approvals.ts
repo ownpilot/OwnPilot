@@ -11,9 +11,9 @@ import { generateId } from '@ownpilot/core';
 // Types
 // ============================================================================
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
-export interface WorkflowApproval {
+interface WorkflowApproval {
   id: string;
   workflowLogId: string;
   workflowId: string;
@@ -27,7 +27,7 @@ export interface WorkflowApproval {
   createdAt: Date;
 }
 
-export interface CreateApprovalInput {
+interface CreateApprovalInput {
   workflowLogId: string;
   workflowId: string;
   nodeId: string;

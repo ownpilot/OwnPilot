@@ -15,16 +15,16 @@ const log = getLog('JobQueueService');
 const DEFAULT_QUEUE = 'default';
 const SYSTEM_QUEUE = 'system';
 
-export interface EnqueueOptions {
+interface EnqueueOptions {
   queue?: string;
   priority?: number;
   maxAttempts?: number;
   runAfter?: Date;
 }
 
-export type JobHandler = (job: JobRecord) => Promise<Record<string, unknown>>;
+type JobHandler = (job: JobRecord) => Promise<Record<string, unknown>>;
 
-export interface WorkerOptions {
+interface WorkerOptions {
   queue?: string;
   concurrency?: number;
   name?: string;

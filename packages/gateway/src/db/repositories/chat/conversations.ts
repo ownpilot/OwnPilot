@@ -4,7 +4,7 @@
 
 import { BaseRepository, parseJsonField } from '../base.js';
 
-export interface Conversation {
+interface Conversation {
   id: string;
   agentName: string;
   systemPrompt?: string;

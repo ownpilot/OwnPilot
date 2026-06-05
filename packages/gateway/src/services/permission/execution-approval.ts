@@ -18,7 +18,7 @@ const APPROVAL_TIMEOUT_MS = 120_000;
 const MAX_PENDING = 1000;
 
 /** Atomic decision recorded the moment an approval is resolved. */
-export interface ApprovalDecision {
+interface ApprovalDecision {
   approved: boolean;
   decidedBy: string;
   decidedAt: number;
@@ -47,7 +47,7 @@ export class ApprovalCapExceededError extends Error {
 }
 
 /** Discriminated result of resolveApproval — caller maps each reason to an HTTP code. */
-export type ResolveResult =
+type ResolveResult =
   | { ok: true; decision: ApprovalDecision }
   | {
       ok: false;

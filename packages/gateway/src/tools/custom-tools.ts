@@ -34,7 +34,7 @@ import type { ToolExecutionResult as BaseToolExecutionResult } from '../services
  * Result shape for the meta-tool executors. Extends the base shape with
  * approval/confirmation flags that the LLM-facing flow needs.
  */
-export interface ToolExecutionResult extends BaseToolExecutionResult {
+interface ToolExecutionResult extends BaseToolExecutionResult {
   requiresApproval?: boolean;
   requiresConfirmation?: boolean;
   pendingToolId?: string;

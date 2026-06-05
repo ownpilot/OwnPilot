@@ -95,7 +95,7 @@ export async function isOwner(platform: string, platformUserId: string): Promise
   return owner !== null && owner === platformUserId;
 }
 
-export interface ClaimResult {
+interface ClaimResult {
   success: boolean;
   alreadyClaimed: boolean;
   message: string;

@@ -104,14 +104,6 @@ export type AgentState = 'idle' | 'thinking' | 'executing' | 'waiting' | 'error'
 /**
  * Agent info
  */
-export interface AgentInfo {
-  readonly id: string;
-  readonly name: string;
-  readonly provider: string;
-  readonly model: string;
-  readonly state: AgentState;
-  readonly currentTask?: string;
-}
 
 /**
  * Workspace info

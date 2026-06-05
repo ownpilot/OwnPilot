@@ -13,7 +13,7 @@ import { EMBEDDING_MAX_CHUNK_CHARS, EMBEDDING_MIN_CHUNK_CHARS } from '../config/
 // Types
 // ============================================================================
 
-export interface TextChunk {
+interface TextChunk {
   /** Chunk content (with heading context prepended) */
   text: string;
   /** Position in parent document (0-based) */

@@ -74,7 +74,7 @@ export interface ChatRequest {
 /**
  * Request trace information for debugging
  */
-export interface TraceInfo {
+interface TraceInfo {
   /** Total duration in ms */
   duration: number;
   /** Tool calls made */
@@ -255,19 +255,6 @@ export interface AgentInfo {
 /**
  * Agent detail response (with full config)
  */
-export interface AgentDetail extends AgentInfo {
-  systemPrompt: string;
-  config: {
-    maxTokens: number;
-    temperature: number;
-    maxTurns: number;
-    maxToolCalls: number;
-    /** Explicit tool names (optional) */
-    tools?: string[];
-    /** Tool group IDs (optional) */
-    toolGroups?: string[];
-  };
-}
 
 /**
  * Conversation info

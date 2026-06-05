@@ -33,7 +33,7 @@ const ORPHAN_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 // Types
 // ============================================================================
 
-export interface ReconciliationResult {
+interface ReconciliationResult {
   system: string;
   orphaned: number;
   recovered: number;

@@ -12,7 +12,7 @@ import type { BrowserAction } from '../../services/browser-service.js';
 // Types
 // ============================================================================
 
-export interface BrowserWorkflow {
+interface BrowserWorkflow {
   id: string;
   userId: string;
   name: string;
@@ -32,7 +32,7 @@ export interface WorkflowParameter {
   description: string;
 }
 
-export interface CreateBrowserWorkflowInput {
+interface CreateBrowserWorkflowInput {
   name: string;
   description?: string;
   steps: BrowserAction[];
@@ -40,7 +40,7 @@ export interface CreateBrowserWorkflowInput {
   triggerId?: string;
 }
 
-export interface UpdateBrowserWorkflowInput {
+interface UpdateBrowserWorkflowInput {
   name?: string;
   description?: string;
   steps?: BrowserAction[];

@@ -13,7 +13,7 @@ import type { ModelCapability } from '@ownpilot/core';
 // Types
 // ============================================================================
 
-export interface UserModelConfig {
+interface UserModelConfig {
   id: string;
   userId: string;
   providerId: string;
@@ -31,7 +31,7 @@ export interface UserModelConfig {
   updatedAt: Date;
 }
 
-export interface CustomProvider {
+interface CustomProvider {
   id: string;
   userId: string;
   providerId: string;
@@ -91,7 +91,7 @@ export interface CreateProviderInput {
 }
 
 // User provider config (overrides for built-in providers)
-export interface UserProviderConfig {
+interface UserProviderConfig {
   id: string;
   userId: string;
   providerId: string;
@@ -108,7 +108,7 @@ export interface UserProviderConfig {
   updatedAt: Date;
 }
 
-export interface CreateUserProviderConfigInput {
+interface CreateUserProviderConfigInput {
   userId?: string;
   providerId: string;
   baseUrl?: string;
@@ -122,7 +122,7 @@ export interface CreateUserProviderConfigInput {
   config?: Record<string, unknown>;
 }
 
-export interface UpdateUserProviderConfigInput {
+interface UpdateUserProviderConfigInput {
   baseUrl?: string;
   providerType?: string;
   isEnabled?: boolean;

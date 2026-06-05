@@ -1,6 +1,6 @@
 import { BaseRepository, parseJsonField } from '../base.js';
 
-export interface ChannelAssetRecord {
+interface ChannelAssetRecord {
   id: string;
   channelMessageId: string;
   channelPluginId: string;

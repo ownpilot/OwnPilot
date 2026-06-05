@@ -14,7 +14,7 @@
 
 import { isProxyAwareConfigured } from './client-ip.js';
 
-export interface RequestLike {
+interface RequestLike {
   url: string;
   header: (name: string) => string | undefined;
 }

@@ -16,7 +16,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 // Types
 // =============================================================================
 
-export type TraceEventType =
+type TraceEventType =
   | 'tool_call'
   | 'tool_result'
   | 'db_read'

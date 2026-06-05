@@ -27,7 +27,7 @@ const log = getLog('EmbeddingService');
 // Types
 // ============================================================================
 
-export interface EmbeddingResult {
+interface EmbeddingResult {
   embedding: number[];
   cached: boolean;
 }

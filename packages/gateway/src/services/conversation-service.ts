@@ -61,7 +61,7 @@ export interface SaveStreamingParams extends Omit<SaveChatParams, 'streaming' | 
 // Service
 // ─────────────────────────────────────────────
 
-export interface RawChatAttachment {
+interface RawChatAttachment {
   type: string;
   data?: string;
   mimeType?: string;

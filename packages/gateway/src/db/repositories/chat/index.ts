@@ -27,7 +27,7 @@ export interface Conversation {
   metadata: Record<string, unknown>;
 }
 
-export interface MessageAttachment {
+interface MessageAttachment {
   type: 'image' | 'file';
   mimeType?: string;
   filename?: string;
@@ -36,7 +36,7 @@ export interface MessageAttachment {
   path?: string;
 }
 
-export interface Message {
+interface Message {
   id: string;
   conversationId: string;
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -65,7 +65,7 @@ export interface CreateConversationInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface CreateMessageInput {
+interface CreateMessageInput {
   conversationId: string;
   role: Message['role'];
   content: string;
@@ -86,7 +86,7 @@ export interface CreateMessageInput {
   createdAt?: string;
 }
 
-export interface ConversationQuery {
+interface ConversationQuery {
   agentId?: string;
   isArchived?: boolean;
   search?: string;

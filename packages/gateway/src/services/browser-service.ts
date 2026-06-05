@@ -175,27 +175,17 @@ export interface BrowserAction {
   timeout?: number;
 }
 
-export interface BrowserResult {
-  success: boolean;
-  screenshot?: string;
-  extractedText?: string;
-  extractedData?: Record<string, unknown>;
-  url: string;
-  title: string;
-  error?: string;
-}
-
 export interface FormField {
   selector: string;
   value: string;
 }
 
-export interface ScreenshotOptions {
+interface ScreenshotOptions {
   fullPage?: boolean;
   selector?: string;
 }
 
-export interface BrowserConfigInfo {
+interface BrowserConfigInfo {
   available: boolean;
   executablePath: string | null;
   allowedDomains: string[];

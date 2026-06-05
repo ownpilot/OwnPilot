@@ -27,14 +27,14 @@ import { isBinaryInstalled } from '../services/binary-utils.js';
 // Types
 // =============================================================================
 
-export interface McpRegistrationConfig {
+interface McpRegistrationConfig {
   /** OwnPilot gateway URL (default: http://localhost:8080) */
   gatewayUrl?: string;
   /** Path to the MCP server script */
   serverScript?: string;
 }
 
-export interface McpRegistrationResult {
+interface McpRegistrationResult {
   cli: string;
   success: boolean;
   configPath: string;

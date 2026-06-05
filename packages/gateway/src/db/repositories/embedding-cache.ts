@@ -16,16 +16,6 @@ const log = getLog('EmbeddingCache');
 // Types
 // ============================================================================
 
-export interface EmbeddingCacheEntry {
-  id: string;
-  contentHash: string;
-  modelName: string;
-  embedding: number[];
-  createdAt: Date;
-  lastUsedAt: Date;
-  useCount: number;
-}
-
 interface EmbeddingCacheRow {
   id: string;
   content_hash: string;

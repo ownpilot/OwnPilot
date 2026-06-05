@@ -33,13 +33,13 @@ import type { ServerEvents } from '../ws/types.js';
 // =============================================================================
 
 /** Valid entity names for data:changed broadcasts. */
-export type DataChangedEntity = ServerEvents['data:changed']['entity'];
+type DataChangedEntity = ServerEvents['data:changed']['entity'];
 
 /** Available CRUD method names. */
-export type CrudMethod = 'list' | 'get' | 'create' | 'update' | 'delete';
+type CrudMethod = 'list' | 'get' | 'create' | 'update' | 'delete';
 
 /** Configuration for the CRUD route factory. */
-export interface CrudRouteConfig<TService = unknown> {
+interface CrudRouteConfig<TService = unknown> {
   /** Entity name used for error messages, broadcast events, and response keys. e.g. 'heartbeat' */
   entity: DataChangedEntity;
 

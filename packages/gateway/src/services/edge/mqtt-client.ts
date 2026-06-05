@@ -25,7 +25,7 @@ type MqttClient = {
 
 type MqttConnectFn = (url: string, opts?: Record<string, unknown>) => MqttClient;
 
-export type MqttMessageHandler = (topic: string, payload: unknown) => void;
+type MqttMessageHandler = (topic: string, payload: unknown) => void;
 
 // =============================================================================
 // Topic Helpers

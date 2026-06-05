@@ -8,15 +8,15 @@
 
 const VALID_TYPES = new Set(['fact', 'preference', 'conversation', 'event', 'skill']);
 
-export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
+type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';
 
-export interface MemoryItem {
+interface MemoryItem {
   type: MemoryType;
   content: string;
   importance?: number;
 }
 
-export interface MemoryExtractionResult {
+interface MemoryExtractionResult {
   /** Response content with <memories> tag stripped */
   content: string;
   /** Extracted memory items, empty array if none found */

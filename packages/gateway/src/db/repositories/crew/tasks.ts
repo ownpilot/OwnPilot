@@ -28,10 +28,10 @@ interface TaskRow {
 
 // ── Record Type ─────────────────────────────────────
 
-export type CrewTaskPriority = 'low' | 'normal' | 'high' | 'urgent';
-export type CrewTaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+type CrewTaskPriority = 'low' | 'normal' | 'high' | 'urgent';
+type CrewTaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
 
-export interface CrewTask {
+interface CrewTask {
   id: string;
   crewId: string;
   createdBy: string;

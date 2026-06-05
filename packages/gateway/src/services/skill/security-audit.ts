@@ -20,9 +20,9 @@ const log = getLog('SkillSecurityAudit');
 // Types
 // =============================================================================
 
-export type SkillRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+type SkillRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
-export interface SkillSecurityResult {
+interface SkillSecurityResult {
   /** Whether the skill should be blocked from installation */
   blocked: boolean;
   /** Reasons for blocking (empty if not blocked) */

@@ -28,7 +28,7 @@ const log = getLog('McpClient');
 // TYPES
 // =============================================================================
 
-export interface McpToolInfo {
+interface McpToolInfo {
   name: string;
   description?: string;
   inputSchema?: Record<string, unknown>;

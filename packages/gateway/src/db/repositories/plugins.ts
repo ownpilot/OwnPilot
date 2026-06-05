@@ -34,7 +34,7 @@ interface PluginRow {
 // PUBLIC TYPES
 // =============================================================================
 
-export interface PluginRecord {
+interface PluginRecord {
   id: string;
   name: string;
   version: string;
@@ -46,7 +46,7 @@ export interface PluginRecord {
   updatedAt: string;
 }
 
-export interface UpsertPluginInput {
+interface UpsertPluginInput {
   id: string;
   name: string;
   version: string;

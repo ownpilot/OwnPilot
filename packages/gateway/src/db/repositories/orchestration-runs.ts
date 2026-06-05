@@ -61,7 +61,7 @@ export interface OrchestrationRunRecord {
   completedAt?: string;
 }
 
-export interface CreateRunInput {
+interface CreateRunInput {
   id: string;
   userId: string;
   goal: string;

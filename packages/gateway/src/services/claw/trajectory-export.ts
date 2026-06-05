@@ -14,14 +14,14 @@
 
 import type { ClawConfig, ClawHistoryEntry } from '@ownpilot/core';
 
-export type ShareGPTRole = 'system' | 'human' | 'gpt' | 'tool';
+type ShareGPTRole = 'system' | 'human' | 'gpt' | 'tool';
 
-export interface ShareGPTTurn {
+interface ShareGPTTurn {
   from: ShareGPTRole;
   value: string;
 }
 
-export interface ShareGPTTrajectory {
+interface ShareGPTTrajectory {
   id: string;
   mission: string;
   conversations: ShareGPTTurn[];

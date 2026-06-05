@@ -25,7 +25,7 @@ export type ExpenseCategory =
   | 'housing'
   | 'other';
 
-export interface Expense {
+interface Expense {
   id: string;
   userId: string;
   date: string;
@@ -42,7 +42,7 @@ export interface Expense {
   updatedAt: Date;
 }
 
-export interface CreateExpenseInput {
+interface CreateExpenseInput {
   date: string;
   amount: number;
   currency?: string;
@@ -55,7 +55,7 @@ export interface CreateExpenseInput {
   notes?: string;
 }
 
-export interface UpdateExpenseInput {
+interface UpdateExpenseInput {
   date?: string;
   amount?: number;
   currency?: string;
@@ -66,7 +66,7 @@ export interface UpdateExpenseInput {
   notes?: string;
 }
 
-export interface ExpenseQuery {
+interface ExpenseQuery {
   dateFrom?: string;
   dateTo?: string;
   category?: string;

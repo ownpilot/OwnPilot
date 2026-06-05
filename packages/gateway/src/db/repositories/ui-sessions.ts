@@ -7,7 +7,7 @@
 
 import { BaseRepository, ensureTable } from './base.js';
 
-export interface UISession {
+interface UISession {
   tokenHash: string;
   kind: string;
   userId: string;

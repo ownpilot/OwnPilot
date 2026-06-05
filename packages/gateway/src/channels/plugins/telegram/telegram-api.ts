@@ -94,7 +94,7 @@ async function convertAudioToOggOpus(audio: Buffer): Promise<Buffer> {
 // Types
 // ============================================================================
 
-export interface TelegramChannelConfig {
+interface TelegramChannelConfig {
   bot_token: string;
   allowed_users?: string;
   allowed_chats?: string;

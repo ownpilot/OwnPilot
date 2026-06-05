@@ -24,7 +24,7 @@ import { getLog } from '../services/log.js';
 // Types
 // =============================================================================
 
-export interface WorkspaceConfig {
+interface WorkspaceConfig {
   /** OwnPilot gateway URL (default: http://localhost:8080) */
   gatewayUrl?: string;
   /** Base directory for workspaces (default: ~/.ownpilot/workspace) */
@@ -35,7 +35,7 @@ export interface WorkspaceConfig {
   sessionToken?: string;
 }
 
-export interface WorkspaceInfo {
+interface WorkspaceInfo {
   /** Workspace directory path */
   dir: string;
   /** MCP config file path */

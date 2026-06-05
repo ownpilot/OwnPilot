@@ -873,7 +873,7 @@ export function getContextBreakdown(
 // =============================================================================
 
 /** Result of a compaction request — `session` is the post-compact SessionInfo. */
-export interface CompactionResult {
+interface CompactionResult {
   compacted: boolean;
   reason?: string;
   summary?: string;

@@ -13,11 +13,11 @@ import type { ContainerConfig } from '@ownpilot/core';
 // Types
 // ============================================================================
 
-export type WorkspaceStatus = 'active' | 'paused' | 'deleted';
-export type ContainerStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
-export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'timeout';
+type WorkspaceStatus = 'active' | 'paused' | 'deleted';
+type ContainerStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
+type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'timeout';
 
-export interface UserWorkspace {
+interface UserWorkspace {
   id: string;
   userId: string;
   name: string;
@@ -31,7 +31,7 @@ export interface UserWorkspace {
   updatedAt: Date;
 }
 
-export interface CodeExecution {
+interface CodeExecution {
   id: string;
   workspaceId: string;
   userId: string;
@@ -45,7 +45,7 @@ export interface CodeExecution {
   createdAt: Date;
 }
 
-export interface CreateWorkspaceInput {
+interface CreateWorkspaceInput {
   userId?: string;
   name: string;
   description?: string;
@@ -53,7 +53,7 @@ export interface CreateWorkspaceInput {
   containerConfig: ContainerConfig;
 }
 
-export interface UpdateWorkspaceInput {
+interface UpdateWorkspaceInput {
   name?: string;
   description?: string;
   status?: WorkspaceStatus;

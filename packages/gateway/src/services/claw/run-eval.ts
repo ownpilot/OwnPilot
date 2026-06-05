@@ -14,14 +14,14 @@
 
 import type { ClawConfig, ClawHistoryEntry, ClawToolCall } from '@ownpilot/core';
 
-export interface ToolReliability {
+interface ToolReliability {
   tool: string;
   calls: number;
   failures: number;
   failureRate: number; // 0-1
 }
 
-export interface FailureSignature {
+interface FailureSignature {
   /** Normalized error prefix used to group similar failures. */
   signature: string;
   count: number;
@@ -35,7 +35,7 @@ export interface FailureSignature {
   firstSeen?: string;
 }
 
-export interface RepeatedFailure {
+interface RepeatedFailure {
   tool: string;
   signature: string;
   count: number;
@@ -44,7 +44,7 @@ export interface RepeatedFailure {
   lastSeen?: string;
 }
 
-export interface ClawRunEval {
+interface ClawRunEval {
   clawId?: string;
   sampleSize: number; // number of cycle entries evaluated
   cycles: { total: number; succeeded: number; failed: number; successRate: number };
@@ -269,7 +269,7 @@ export function evaluateClawRun(
 // Fleet aggregation
 // ============================================================================
 
-export interface FleetClawSummary {
+interface FleetClawSummary {
   clawId: string;
   name: string;
   reliabilityScore: number | null;
@@ -278,7 +278,7 @@ export interface FleetClawSummary {
   wastedCalls: number;
 }
 
-export interface FleetRepeatedFailure {
+interface FleetRepeatedFailure {
   tool: string;
   signature: string;
   count: number;
@@ -288,7 +288,7 @@ export interface FleetRepeatedFailure {
   lastSeen?: string;
 }
 
-export interface FleetEval {
+interface FleetEval {
   clawsEvaluated: number;
   totals: { cycles: number; toolCalls: number; toolsFailed: number; wastedCalls: number };
   fleetToolSuccessRate: number;

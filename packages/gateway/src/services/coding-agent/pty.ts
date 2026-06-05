@@ -181,7 +181,7 @@ export async function runWithPty(
 // =============================================================================
 
 /** Callbacks for streaming PTY output */
-export interface PtyStreamCallbacks {
+interface PtyStreamCallbacks {
   /** Raw PTY data (includes ANSI — xterm.js renders it) */
   onData: (data: string) => void;
   /** Process exited */

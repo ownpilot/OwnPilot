@@ -30,7 +30,7 @@ export interface Task {
   updatedAt: Date;
 }
 
-export interface CreateTaskInput {
+interface CreateTaskInput {
   title: string;
   description?: string;
   priority?: Task['priority'];
@@ -44,7 +44,7 @@ export interface CreateTaskInput {
   recurrence?: string;
 }
 
-export interface UpdateTaskInput {
+interface UpdateTaskInput {
   title?: string;
   description?: string;
   status?: Task['status'];

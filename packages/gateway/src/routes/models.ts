@@ -74,7 +74,7 @@ async function fetchBridgeModels(
 /**
  * Model information
  */
-export interface ModelInfo {
+interface ModelInfo {
   id: string;
   name: string;
   provider: string;

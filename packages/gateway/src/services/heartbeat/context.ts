@@ -9,7 +9,7 @@
 
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-export interface HeartbeatExecutionContext {
+interface HeartbeatExecutionContext {
   agentId: string;
   crewId?: string;
   workspaceId?: string;

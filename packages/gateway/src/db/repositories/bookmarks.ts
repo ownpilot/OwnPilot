@@ -9,7 +9,7 @@ import { parseJsonField } from './base.js';
 import { CrudRepository, type CreateFields } from './crud-base.js';
 import type { UpdateField } from './query-helpers.js';
 
-export interface Bookmark {
+interface Bookmark {
   id: string;
   userId: string;
   url: string;
@@ -25,7 +25,7 @@ export interface Bookmark {
   updatedAt: Date;
 }
 
-export interface CreateBookmarkInput {
+interface CreateBookmarkInput {
   url: string;
   title: string;
   description?: string;
@@ -35,7 +35,7 @@ export interface CreateBookmarkInput {
   isFavorite?: boolean;
 }
 
-export interface UpdateBookmarkInput {
+interface UpdateBookmarkInput {
   url?: string;
   title?: string;
   description?: string;

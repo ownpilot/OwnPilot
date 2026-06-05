@@ -20,7 +20,7 @@ export interface ExtensionGateResult {
   missing: { os?: string; binaries?: string[]; env?: string[] };
 }
 
-export interface GateDeps {
+interface GateDeps {
   platform: NodeJS.Platform;
   env: NodeJS.ProcessEnv;
   hasBinary: (bin: string) => boolean;

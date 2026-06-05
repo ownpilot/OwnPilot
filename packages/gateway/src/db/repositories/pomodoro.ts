@@ -11,10 +11,10 @@ import { MS_PER_DAY } from '../../config/defaults.js';
 // Types
 // =============================================================================
 
-export type SessionType = 'work' | 'short_break' | 'long_break';
-export type SessionStatus = 'running' | 'completed' | 'interrupted';
+type SessionType = 'work' | 'short_break' | 'long_break';
+type SessionStatus = 'running' | 'completed' | 'interrupted';
 
-export interface PomodoroSession {
+interface PomodoroSession {
   id: string;
   userId: string;
   type: SessionType;
@@ -27,7 +27,7 @@ export interface PomodoroSession {
   interruptionReason?: string;
 }
 
-export interface PomodoroSettings {
+interface PomodoroSettings {
   userId: string;
   workDuration: number;
   shortBreakDuration: number;
@@ -38,7 +38,7 @@ export interface PomodoroSettings {
   updatedAt: Date;
 }
 
-export interface PomodoroDailyStats {
+interface PomodoroDailyStats {
   id: string;
   userId: string;
   date: string;
@@ -48,7 +48,7 @@ export interface PomodoroDailyStats {
   interruptions: number;
 }
 
-export interface CreateSessionInput {
+interface CreateSessionInput {
   type: SessionType;
   taskDescription?: string;
   durationMinutes: number;

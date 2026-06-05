@@ -25,7 +25,7 @@ import {
   createSkillToolProvider,
 } from '../services/tool-providers/index.js';
 
-export interface ProviderEntry {
+interface ProviderEntry {
   /** Human-readable name for logging */
   name: string;
   /** Factory that creates the ToolProvider. Always receives userId. */

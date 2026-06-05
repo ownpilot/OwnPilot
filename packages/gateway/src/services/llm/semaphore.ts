@@ -27,11 +27,6 @@ const DEFAULT_MAX_SLOTS = 3;
  * Info about an active (or queued) LLM call, used by the UI to render
  * a live "which claw is using the LLM right now" strip.
  */
-export interface LlmSlotInfo {
-  agentId: string;
-  /** 'active' = currently in LLM call, 'queued' = waiting for a slot */
-  state: 'active' | 'queued';
-}
 
 /**
  * Global LLM concurrency limiter.

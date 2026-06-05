@@ -6,12 +6,12 @@
  * tag at the end of its response. This utility parses and strips the tag.
  */
 
-export interface Suggestion {
+interface Suggestion {
   title: string;
   detail: string;
 }
 
-export interface SuggestionExtractionResult {
+interface SuggestionExtractionResult {
   /** Response content with <suggestions> tag stripped */
   content: string;
   /** Extracted suggestions, empty array if none found */

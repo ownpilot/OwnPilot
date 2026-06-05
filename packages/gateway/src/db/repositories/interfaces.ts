@@ -66,29 +66,6 @@ export interface PaginatedResult<T> {
  * Repositories that implement this interface can still define additional
  * domain-specific methods (search, getActive, decay, etc.).
  */
-export interface IRepository<
-  TEntity,
-  TCreateInput = Partial<TEntity>,
-  TUpdateInput = Partial<TEntity>,
-> {
-  /** Get a single entity by ID. Returns null if not found. */
-  getById(id: string): Promise<TEntity | null>;
-
-  /** List entities with standard pagination and filtering. */
-  list(query?: StandardQuery): Promise<PaginatedResult<TEntity>>;
-
-  /** Create a new entity. Returns the created entity. */
-  create(input: TCreateInput): Promise<TEntity>;
-
-  /** Update an entity by ID. Returns the updated entity or null if not found. */
-  update(id: string, input: TUpdateInput): Promise<TEntity | null>;
-
-  /** Delete an entity by ID. Returns true if deleted, false if not found. */
-  delete(id: string): Promise<boolean>;
-
-  /** Count entities matching an optional filter. */
-  count(filter?: Record<string, unknown>): Promise<number>;
-}
 
 // ============================================================================
 // Helper: Build paginated result from items + total

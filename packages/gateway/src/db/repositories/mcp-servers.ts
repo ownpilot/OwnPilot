@@ -63,7 +63,7 @@ export interface McpServerRecord {
   updatedAt: string;
 }
 
-export interface CreateMcpServerInput {
+interface CreateMcpServerInput {
   name: string;
   displayName: string;
   transport: McpTransport;
@@ -77,7 +77,7 @@ export interface CreateMcpServerInput {
   userId?: string;
 }
 
-export interface UpdateMcpServerInput {
+interface UpdateMcpServerInput {
   name?: string;
   displayName?: string;
   transport?: McpTransport;

@@ -42,7 +42,7 @@ export interface WebhookConfig {
 
 export type TriggerConfig = ScheduleConfig | EventConfig | ConditionConfig | WebhookConfig;
 
-export interface TriggerPreRun {
+interface TriggerPreRun {
   code: string;
   timeoutMs?: number;
 }

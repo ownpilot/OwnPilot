@@ -43,7 +43,7 @@ const log = getLog('ExtService');
 // Types
 // =============================================================================
 
-export type ExtensionErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'ALREADY_EXISTS' | 'IO_ERROR';
+type ExtensionErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'ALREADY_EXISTS' | 'IO_ERROR';
 
 export class ExtensionError extends Error {
   constructor(

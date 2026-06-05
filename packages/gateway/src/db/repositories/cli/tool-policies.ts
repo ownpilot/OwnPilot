@@ -25,7 +25,7 @@ interface PolicyRow {
 // PUBLIC TYPES
 // =============================================================================
 
-export interface ToolPolicyRecord {
+interface ToolPolicyRecord {
   toolName: string;
   policy: CliToolPolicy;
 }

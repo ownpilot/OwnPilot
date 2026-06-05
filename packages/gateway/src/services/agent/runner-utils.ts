@@ -144,7 +144,7 @@ export async function resolveProviderAndModel(
 // Agent Factory
 // ============================================================================
 
-export interface CreateAgentOptions {
+interface CreateAgentOptions {
   name: string;
   provider: string;
   model: string;
@@ -456,7 +456,7 @@ export function safeParseJson(str: string): Record<string, unknown> {
 /**
  * Generic tool call collector callback factory.
  */
-export interface CollectedToolCall {
+interface CollectedToolCall {
   tool: string;
   args: Record<string, unknown>;
   result: string;
@@ -503,7 +503,7 @@ export function buildDateTimeContext(): string {
 /**
  * Options for the unified agent execution pipeline.
  */
-export interface AgentPipelineOptions {
+interface AgentPipelineOptions {
   /** Fully configured Agent instance */
   agent: Agent;
   /** Message to send to the agent */
@@ -534,7 +534,7 @@ export interface AgentPipelineOptions {
 /**
  * Result from the unified agent execution pipeline.
  */
-export interface AgentPipelineResult {
+interface AgentPipelineResult {
   content: string;
   toolCalls: CollectedToolCall[];
   usage: { promptTokens: number; completionTokens: number } | null;

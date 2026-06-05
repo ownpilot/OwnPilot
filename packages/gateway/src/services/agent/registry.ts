@@ -30,7 +30,7 @@ export interface AgentSummary {
 }
 
 /** Aggregated metrics across all agent types. */
-export interface SystemAgentMetrics {
+interface SystemAgentMetrics {
   totalActive: number;
   byType: Record<AgentType, number>;
   totalTokensUsed: number;

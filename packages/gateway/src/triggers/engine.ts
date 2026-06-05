@@ -59,23 +59,23 @@ interface PreRunGate {
 // Types
 // ============================================================================
 
-export interface TriggerEngineConfig {
+interface TriggerEngineConfig {
   pollIntervalMs?: number;
   conditionCheckIntervalMs?: number;
   enabled?: boolean;
   userId?: string;
 }
 
-export interface ActionResult {
+interface ActionResult {
   success: boolean;
   message?: string;
   data?: unknown;
   error?: string;
 }
 
-export type EventHandler = (event: TriggerEvent) => void;
+type EventHandler = (event: TriggerEvent) => void;
 
-export interface TriggerEvent {
+interface TriggerEvent {
   type: string;
   payload: Record<string, unknown>;
   timestamp: Date;
@@ -85,7 +85,7 @@ export interface TriggerEvent {
 // Trigger Engine
 // ============================================================================
 
-export type ChatHandler = (message: string, payload: Record<string, unknown>) => Promise<unknown>;
+type ChatHandler = (message: string, payload: Record<string, unknown>) => Promise<unknown>;
 
 export class TriggerEngine {
   private config: Required<TriggerEngineConfig>;

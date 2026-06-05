@@ -21,7 +21,7 @@ const DEFAULT_CPU_TIMEOUT = 10_000; // 10s per script.runInContext
 // Types
 // =============================================================================
 
-export interface SandboxExecutionOptions {
+interface SandboxExecutionOptions {
   extensionId: string;
   toolName: string;
   code: string;
@@ -36,7 +36,7 @@ export interface SandboxExecutionOptions {
   maxExecutionTime?: number;
 }
 
-export interface SandboxExecutionResult {
+interface SandboxExecutionResult {
   success: boolean;
   result?: unknown;
   error?: string;
@@ -278,7 +278,7 @@ if (!isMainThread && parentPort) {
 // =============================================================================
 
 /** Callback for handling tool calls from sandboxed code */
-export type CallToolHandler = (
+type CallToolHandler = (
   toolName: string,
   args: Record<string, unknown>,
   extensionIdentity: { extensionId: string; ownerUserId: string; grantedPermissions: string[] }

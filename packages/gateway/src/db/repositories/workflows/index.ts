@@ -150,14 +150,14 @@ export interface SwitchNodeData {
   timeoutMs?: number;
 }
 
-export interface ErrorHandlerNodeData {
+interface ErrorHandlerNodeData {
   label: string;
   description?: string;
   continueOnSuccess?: boolean;
   outputAlias?: string;
 }
 
-export interface SubWorkflowNodeData {
+interface SubWorkflowNodeData {
   label: string;
   subWorkflowId?: string;
   subWorkflowName?: string;
@@ -168,20 +168,20 @@ export interface SubWorkflowNodeData {
   timeoutMs?: number;
 }
 
-export interface ApprovalNodeData {
+interface ApprovalNodeData {
   label: string;
   approvalMessage?: string;
   timeoutMinutes?: number;
   description?: string;
 }
 
-export interface StickyNoteNodeData {
+interface StickyNoteNodeData {
   label: string;
   text?: string;
   color?: string;
 }
 
-export interface NotificationNodeData {
+interface NotificationNodeData {
   label: string;
   message?: string;
   severity?: 'info' | 'warning' | 'error' | 'success';
@@ -190,14 +190,14 @@ export interface NotificationNodeData {
   timeoutMs?: number;
 }
 
-export interface ParallelNodeData {
+interface ParallelNodeData {
   label: string;
   branchCount: number;
   branchLabels?: string[];
   description?: string;
 }
 
-export interface MergeNodeData {
+interface MergeNodeData {
   label: string;
   mode?: 'waitAll' | 'firstCompleted';
   description?: string;
@@ -352,7 +352,7 @@ export interface WorkflowLog {
   completedAt: Date | null;
 }
 
-export interface WorkflowVersion {
+interface WorkflowVersion {
   id: string;
   workflowId: string;
   version: number;
@@ -362,7 +362,7 @@ export interface WorkflowVersion {
   createdAt: Date;
 }
 
-export interface CreateWorkflowInput {
+interface CreateWorkflowInput {
   name: string;
   description?: string;
   nodes: WorkflowNode[];
@@ -372,7 +372,7 @@ export interface CreateWorkflowInput {
   inputSchema?: InputParameter[];
 }
 
-export interface UpdateWorkflowInput {
+interface UpdateWorkflowInput {
   name?: string;
   description?: string;
   nodes?: WorkflowNode[];

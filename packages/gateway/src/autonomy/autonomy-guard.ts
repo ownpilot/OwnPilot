@@ -20,7 +20,7 @@ import { AutonomyLevel } from './types.js';
 // Types
 // ============================================================================
 
-export interface AutonomyDecision {
+interface AutonomyDecision {
   /** Whether the action is allowed to proceed */
   allowed: boolean;
   /** Whether approval is required */

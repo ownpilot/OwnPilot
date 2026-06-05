@@ -13,7 +13,7 @@ const log = getLog('Composio');
 const APPS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // Types matching the SDK's response shapes (avoids importing internal SDK types)
-export interface ComposioApp {
+interface ComposioApp {
   slug: string;
   name: string;
   description?: string;
@@ -21,7 +21,7 @@ export interface ComposioApp {
   categories?: string[];
 }
 
-export interface ComposioConnection {
+interface ComposioConnection {
   id: string;
   appName: string;
   status: string;
@@ -29,7 +29,7 @@ export interface ComposioConnection {
   updatedAt?: string;
 }
 
-export interface ComposioActionInfo {
+interface ComposioActionInfo {
   slug: string;
   name: string;
   description: string;
@@ -38,7 +38,7 @@ export interface ComposioActionInfo {
   tags?: string[];
 }
 
-export interface ComposioConnectionRequest {
+interface ComposioConnectionRequest {
   redirectUrl: string | null;
   connectedAccountId: string;
   connectionStatus: string;

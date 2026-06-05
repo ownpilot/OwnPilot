@@ -52,12 +52,12 @@ function contentHash(text: string): string {
   return createHash('sha1').update(text).digest('hex');
 }
 
-export interface SemanticMatch {
+interface SemanticMatch {
   def: ToolDefinition;
   score: number;
 }
 
-export interface SemanticSearchResult {
+interface SemanticSearchResult {
   matches: SemanticMatch[];
   /** True iff every tool was successfully embedded. False signals partial. */
   complete: boolean;

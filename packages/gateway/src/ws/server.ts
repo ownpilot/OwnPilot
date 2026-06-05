@@ -131,7 +131,7 @@ const VALID_CLIENT_EVENTS = new Set<string>([
   'webchat:message',
 ]);
 
-export interface WSGatewayConfig {
+interface WSGatewayConfig {
   /** Port for standalone WebSocket server (if not using HTTP upgrade) */
   port?: number;
   /** Path for WebSocket endpoint when using HTTP upgrade */

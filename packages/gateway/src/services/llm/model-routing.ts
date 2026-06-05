@@ -31,14 +31,14 @@ export const VALID_PROCESSES: readonly RoutingProcess[] = [
   'pulse',
 ] as const;
 
-export interface ProcessRouting {
+interface ProcessRouting {
   provider: string | null;
   model: string | null;
   fallbackProvider: string | null;
   fallbackModel: string | null;
 }
 
-export interface ResolvedRouting extends ProcessRouting {
+interface ResolvedRouting extends ProcessRouting {
   /** Where the primary provider/model came from */
   source: 'process' | 'channel' | 'global' | 'first-configured';
 }

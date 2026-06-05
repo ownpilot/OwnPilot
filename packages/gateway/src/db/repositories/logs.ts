@@ -19,7 +19,7 @@ const MAX_ERROR_STACK_LEN = 2000;
 // TYPES
 // =====================================================
 
-export interface RequestLog {
+interface RequestLog {
   id: string;
   userId: string;
   conversationId: string | null;
@@ -42,7 +42,7 @@ export interface RequestLog {
   createdAt: Date;
 }
 
-export interface CreateLogInput {
+interface CreateLogInput {
   conversationId?: string;
   type: RequestLog['type'];
   provider?: string;
@@ -62,7 +62,7 @@ export interface CreateLogInput {
   userAgent?: string;
 }
 
-export interface LogQuery {
+interface LogQuery {
   type?: RequestLog['type'];
   conversationId?: string;
   provider?: string;
@@ -73,7 +73,7 @@ export interface LogQuery {
   offset?: number;
 }
 
-export interface LogStats {
+interface LogStats {
   totalRequests: number;
   errorCount: number;
   successCount: number;

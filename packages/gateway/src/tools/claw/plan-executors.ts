@@ -121,7 +121,7 @@ export function buildValidatedTasks(raw: unknown): ClawTask[] {
 }
 
 /** Parsed/validated subtask spec for a split operation. */
-export interface ValidatedSubtask {
+interface ValidatedSubtask {
   title: string;
   successCriteria?: string;
 }

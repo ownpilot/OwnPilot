@@ -10,7 +10,7 @@ import { BaseRepository, parseJsonField } from './base.js';
 // Types
 // =============================================================================
 
-export type CaptureType =
+type CaptureType =
   | 'idea'
   | 'thought'
   | 'todo'
@@ -19,9 +19,9 @@ export type CaptureType =
   | 'snippet'
   | 'question'
   | 'other';
-export type ProcessedAsType = 'note' | 'task' | 'bookmark' | 'discarded';
+type ProcessedAsType = 'note' | 'task' | 'bookmark' | 'discarded';
 
-export interface Capture {
+interface Capture {
   id: string;
   userId: string;
   content: string;
@@ -36,19 +36,19 @@ export interface Capture {
   processedAt?: Date;
 }
 
-export interface CreateCaptureInput {
+interface CreateCaptureInput {
   content: string;
   type?: CaptureType;
   tags?: string[];
   source?: string;
 }
 
-export interface ProcessCaptureInput {
+interface ProcessCaptureInput {
   processedAsType: ProcessedAsType;
   processedAsId?: string;
 }
 
-export interface CaptureQuery {
+interface CaptureQuery {
   type?: CaptureType;
   tag?: string;
   processed?: boolean;

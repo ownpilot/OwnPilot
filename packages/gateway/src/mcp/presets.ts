@@ -10,7 +10,7 @@
  * `POST /api/v1/mcp` config shape. Users can always edit the resulting row.
  */
 
-export type PresetEnvKind = 'secret' | 'plain';
+type PresetEnvKind = 'secret' | 'plain';
 
 export interface PresetEnvVar {
   name: string;
@@ -222,7 +222,7 @@ export function getMcpPreset(id: string): McpServerPreset | undefined {
  * Resolve a preset + user-supplied overrides into the row shape accepted by
  * `mcpServersRepo.create()`. Required env vars missing from `env` will throw.
  */
-export interface ResolvedPresetInstall {
+interface ResolvedPresetInstall {
   name: string;
   displayName: string;
   transport: 'stdio';
@@ -233,7 +233,7 @@ export interface ResolvedPresetInstall {
   autoConnect: boolean;
 }
 
-export interface PresetInstallOverrides {
+interface PresetInstallOverrides {
   name?: string;
   displayName?: string;
   extraArgs?: string[];

@@ -9,7 +9,7 @@
 // Types
 // =============================================================================
 
-export interface ToolTemplate {
+interface ToolTemplate {
   id: string;
   name: string;
   displayName: string;

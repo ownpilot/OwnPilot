@@ -10,23 +10,7 @@ import { BaseRepository } from '../base.js';
 
 const TABLE = 'provider_metrics';
 
-export interface ProviderMetric {
-  id: string;
-  providerId: string;
-  modelId: string;
-  recordedAt: Date;
-  latencyMs: number;
-  error: boolean;
-  errorType: string | null;
-  promptTokens: number | null;
-  completionTokens: number | null;
-  costUsd: number | null;
-  workflowId: string | null;
-  agentId: string | null;
-  userId: string | null;
-}
-
-export interface RecordMetricInput {
+interface RecordMetricInput {
   id: string;
   providerId: string;
   modelId: string;
@@ -41,7 +25,7 @@ export interface RecordMetricInput {
   userId?: string | null;
 }
 
-export interface RouteMetrics {
+interface RouteMetrics {
   providerId: string;
   modelId: string;
   avgLatencyMs: number;

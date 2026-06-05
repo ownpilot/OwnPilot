@@ -72,7 +72,7 @@ export interface LocalProvider {
   updatedAt: string;
 }
 
-export interface LocalModel {
+interface LocalModel {
   id: string;
   userId: string;
   localProviderId: string;
@@ -87,7 +87,7 @@ export interface LocalModel {
   updatedAt: string;
 }
 
-export interface CreateLocalProviderInput {
+interface CreateLocalProviderInput {
   userId?: string;
   name: string;
   providerType: LocalProviderType;
@@ -96,7 +96,7 @@ export interface CreateLocalProviderInput {
   discoveryEndpoint?: string;
 }
 
-export interface CreateLocalModelInput {
+interface CreateLocalModelInput {
   userId?: string;
   localProviderId: string;
   modelId: string;

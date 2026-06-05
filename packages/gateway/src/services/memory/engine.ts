@@ -29,13 +29,13 @@ import { createMemoriesRepository } from '../../db/repositories/memories.js';
 
 const log = getLog('MemoryEngine');
 
-export interface ExtractResult {
+interface ExtractResult {
   extracted: number;
   created: number;
   deduplicated: number;
 }
 
-export interface ConsolidateResult {
+interface ConsolidateResult {
   scanned: number;
   clusters: number;
   merged: number;
@@ -45,13 +45,13 @@ export interface ConsolidateResult {
   skippedReason?: string;
 }
 
-export interface RecallSource {
+interface RecallSource {
   id: string;
   content: string;
   score: number;
 }
 
-export interface RecallResult {
+interface RecallResult {
   summary: string;
   sources: RecallSource[];
 }

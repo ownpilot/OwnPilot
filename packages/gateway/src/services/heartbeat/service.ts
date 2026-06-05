@@ -20,7 +20,7 @@ const log = getLog('HeartbeatService');
 // Types
 // ============================================================================
 
-export interface CreateHeartbeatServiceInput {
+interface CreateHeartbeatServiceInput {
   scheduleText: string;
   taskDescription: string;
   name?: string;
@@ -28,7 +28,7 @@ export interface CreateHeartbeatServiceInput {
   tags?: string[];
 }
 
-export interface UpdateHeartbeatServiceInput {
+interface UpdateHeartbeatServiceInput {
   scheduleText?: string;
   taskDescription?: string;
   name?: string;
@@ -293,7 +293,7 @@ export class HeartbeatService {
 // Error Type
 // ============================================================================
 
-export type HeartbeatServiceErrorCode = 'VALIDATION_ERROR' | 'PARSE_ERROR' | 'NOT_FOUND';
+type HeartbeatServiceErrorCode = 'VALIDATION_ERROR' | 'PARSE_ERROR' | 'NOT_FOUND';
 
 export class HeartbeatServiceError extends Error {
   constructor(

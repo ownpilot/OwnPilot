@@ -10,7 +10,7 @@ import { BaseRepository } from './base.js';
 const TABLE = 'idempotency_keys';
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export interface IdempotencyRecord {
+interface IdempotencyRecord {
   key: string;
   result: unknown;
   createdAt: Date;

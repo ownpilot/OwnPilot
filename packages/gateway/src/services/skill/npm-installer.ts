@@ -28,7 +28,7 @@ const MAX_DOWNLOAD_REDIRECTS = 5;
 // Types
 // =============================================================================
 
-export interface NpmPackageInfo {
+interface NpmPackageInfo {
   name: string;
   version: string;
   description: string;
@@ -44,12 +44,12 @@ export interface NpmPackageInfo {
   };
 }
 
-export interface NpmSearchResult {
+interface NpmSearchResult {
   packages: NpmSearchPackage[];
   total: number;
 }
 
-export interface NpmSearchPackage {
+interface NpmSearchPackage {
   name: string;
   version: string;
   description: string;
@@ -59,7 +59,7 @@ export interface NpmSearchPackage {
   links?: { npm?: string; homepage?: string; repository?: string };
 }
 
-export interface NpmInstallResult {
+interface NpmInstallResult {
   success: boolean;
   extensionId?: string;
   error?: string;

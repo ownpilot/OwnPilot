@@ -196,7 +196,7 @@ const CHILD_TABLES: Record<string, { parent: string; fkColumn: string }> = {
 };
 
 /** Distinguishes the per-row ownership strategy for a table. */
-export type TableScope = 'per-user' | 'child' | 'system';
+type TableScope = 'per-user' | 'child' | 'system';
 
 /**
  * Return the ownership scope of a table.
@@ -287,7 +287,7 @@ export const getBackupDir = () => {
   return dir;
 };
 
-export interface OperationStatus {
+interface OperationStatus {
   isRunning: boolean;
   operation?: 'backup' | 'restore' | 'migrate' | 'maintenance';
   lastRun?: string;

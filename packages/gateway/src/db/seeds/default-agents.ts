@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 // Path to JSON data file
 const DATA_FILE = path.join(__dirname, '..', '..', '..', 'data', 'seeds', 'default-agents.json');
 
-export interface AgentSeed {
+interface AgentSeed {
   id: string;
   name: string;
   systemPrompt: string;

@@ -18,7 +18,7 @@ import {
 // Types
 // ============================================================================
 
-export interface TableStats {
+interface TableStats {
   recordCount: number;
   firstRecord?: string;
   lastRecord?: string;
@@ -294,11 +294,7 @@ export class CustomDataService implements IDatabaseService {
 // Error Type
 // ============================================================================
 
-export type CustomDataServiceErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'NOT_FOUND'
-  | 'PROTECTED'
-  | 'INTERNAL_ERROR';
+type CustomDataServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'PROTECTED' | 'INTERNAL_ERROR';
 
 export class CustomDataServiceError extends Error {
   constructor(

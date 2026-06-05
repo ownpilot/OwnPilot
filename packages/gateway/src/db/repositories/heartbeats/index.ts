@@ -30,7 +30,7 @@ export interface Heartbeat {
   updatedAt: Date;
 }
 
-export interface CreateHeartbeatInput {
+interface CreateHeartbeatInput {
   name: string;
   scheduleText: string;
   cron: string;
@@ -41,7 +41,7 @@ export interface CreateHeartbeatInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface UpdateHeartbeatInput {
+interface UpdateHeartbeatInput {
   name?: string;
   scheduleText?: string;
   cron?: string;

@@ -69,7 +69,7 @@ export const DEFAULT_PULSE_DIRECTIVES: PulseDirectives = {
 // Configuration
 // ============================================================================
 
-export interface AutonomyEngineConfig {
+interface AutonomyEngineConfig {
   userId: string;
   enabled?: boolean;
   minIntervalMs?: number;

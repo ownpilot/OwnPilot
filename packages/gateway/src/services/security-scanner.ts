@@ -32,23 +32,23 @@ const log = getLog('SecurityScanner');
 // TYPES
 // =============================================================================
 
-export type SeverityLevel = 'safe' | 'low' | 'medium' | 'high' | 'critical';
+type SeverityLevel = 'safe' | 'low' | 'medium' | 'high' | 'critical';
 
-export interface RiskItem {
+interface RiskItem {
   source: string;
   sourceId?: string;
   severity: SeverityLevel;
   description: string;
 }
 
-export interface SectionScanResult<T = unknown> {
+interface SectionScanResult<T = unknown> {
   count: number;
   issues: number;
   score: number;
   items: T[];
 }
 
-export interface ExtensionScanItem {
+interface ExtensionScanItem {
   id: string;
   name: string;
   format: string;
@@ -59,7 +59,7 @@ export interface ExtensionScanItem {
   warnings: string[];
 }
 
-export interface CustomToolScanItem {
+interface CustomToolScanItem {
   id: string;
   name: string;
   status: string;
@@ -69,7 +69,7 @@ export interface CustomToolScanItem {
   permissions: string[];
 }
 
-export interface TriggerScanItem {
+interface TriggerScanItem {
   id: string;
   name: string;
   type: string;
@@ -79,7 +79,7 @@ export interface TriggerScanItem {
   risks: string[];
 }
 
-export interface WorkflowScanItem {
+interface WorkflowScanItem {
   id: string;
   name: string;
   status: string;
@@ -88,7 +88,7 @@ export interface WorkflowScanItem {
   riskyNodes: string[];
 }
 
-export interface CliToolScanItem {
+interface CliToolScanItem {
   name: string;
   catalogRisk: string;
   policy: string;
@@ -96,7 +96,7 @@ export interface CliToolScanItem {
   issue?: string;
 }
 
-export interface PlatformScanResult {
+interface PlatformScanResult {
   overallScore: number;
   overallLevel: SeverityLevel;
   scannedAt: string;

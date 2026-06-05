@@ -4,7 +4,7 @@
 
 import { BaseRepository, parseJsonFieldNullable } from '../base.js';
 
-export interface MessageAttachment {
+interface MessageAttachment {
   type: 'image' | 'file';
   mimeType?: string;
   filename?: string;
@@ -13,7 +13,7 @@ export interface MessageAttachment {
   path?: string;
 }
 
-export interface Message {
+interface Message {
   id: string;
   conversationId: string;
   role: 'system' | 'user' | 'assistant' | 'tool';

@@ -41,7 +41,7 @@ import { getLog } from '../../services/log.js';
 
 const log = getLog('ChatLegacySend');
 
-export interface LegacySendParams {
+interface LegacySendParams {
   c: Context;
   agent: NonNullable<Awaited<ReturnType<typeof import('../agents/index.js').getAgent>>>;
   body: ChatRequest & { provider?: string; model?: string; workspaceId?: string };

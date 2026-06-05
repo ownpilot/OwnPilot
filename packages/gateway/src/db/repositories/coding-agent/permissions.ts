@@ -30,11 +30,11 @@ interface PermissionRow {
 // PUBLIC TYPES
 // =============================================================================
 
-export type IoFormat = 'text' | 'json' | 'stream-json';
-export type FsAccess = 'none' | 'read-only' | 'read-write' | 'full';
-export type Autonomy = 'supervised' | 'semi-auto' | 'full-auto';
+type IoFormat = 'text' | 'json' | 'stream-json';
+type FsAccess = 'none' | 'read-only' | 'read-write' | 'full';
+type Autonomy = 'supervised' | 'semi-auto' | 'full-auto';
 
-export interface CodingAgentPermissionRecord {
+interface CodingAgentPermissionRecord {
   id: string;
   userId: string;
   providerRef: string;
@@ -50,7 +50,7 @@ export interface CodingAgentPermissionRecord {
   updatedAt: string;
 }
 
-export interface UpsertPermissionInput {
+interface UpsertPermissionInput {
   providerRef: string;
   ioFormat?: IoFormat;
   fsAccess?: FsAccess;

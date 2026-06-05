@@ -21,7 +21,7 @@ export interface RawSetClause {
   sql: string;
 }
 
-export interface UpdateStatement {
+interface UpdateStatement {
   /** The full parameterized SQL string, e.g. UPDATE t SET col=$1 WHERE id=$2 */
   sql: string;
   /** Ordered parameter values matching the $N placeholders */

@@ -38,7 +38,7 @@ const TOOL_RESULTS_TYPE = 'ownpilot_tool_results';
 // Types
 // =============================================================================
 
-export interface ToolBridgeConfig {
+interface ToolBridgeConfig {
   /** Tool registry with registered executors */
   tools: ToolRegistry;
   /** Which tool definitions to expose (subset of registry) */
@@ -61,7 +61,7 @@ export interface ToolBridgeConfig {
   onToolEnd?: (toolCall: ToolCall, result: ToolResult) => void;
 }
 
-export interface ParsedToolCall {
+interface ParsedToolCall {
   name: string;
   arguments: Record<string, unknown>;
 }
@@ -82,7 +82,7 @@ interface ParsedBridgeResponse {
   error?: string;
 }
 
-export interface ToolBridgeResult {
+interface ToolBridgeResult {
   /** Final text response (tool calls stripped) */
   content: string;
   /** All tool calls made across all rounds */

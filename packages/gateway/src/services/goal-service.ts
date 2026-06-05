@@ -24,11 +24,11 @@ import {
 // Types
 // ============================================================================
 
-export interface GoalWithSteps extends Goal {
+interface GoalWithSteps extends Goal {
   steps: GoalStep[];
 }
 
-export interface GoalStats {
+interface GoalStats {
   total: number;
   byStatus: Record<GoalStatus, number>;
   completedThisWeek: number;
@@ -36,7 +36,7 @@ export interface GoalStats {
   overdueCount: number;
 }
 
-export interface DecomposeStepInput {
+interface DecomposeStepInput {
   title: string;
   description?: string;
 }
@@ -259,7 +259,7 @@ export class GoalService implements IGoalService {
 // Error Type
 // ============================================================================
 
-export type GoalServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
+type GoalServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
 
 export class GoalServiceError extends Error {
   constructor(

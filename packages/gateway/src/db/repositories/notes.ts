@@ -24,7 +24,7 @@ export interface Note {
   updatedAt: Date;
 }
 
-export interface CreateNoteInput {
+interface CreateNoteInput {
   title: string;
   content: string;
   contentType?: Note['contentType'];
@@ -34,7 +34,7 @@ export interface CreateNoteInput {
   color?: string;
 }
 
-export interface UpdateNoteInput {
+interface UpdateNoteInput {
   title?: string;
   content?: string;
   contentType?: Note['contentType'];

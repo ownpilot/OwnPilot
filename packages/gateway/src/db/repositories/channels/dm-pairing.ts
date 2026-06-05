@@ -14,7 +14,7 @@ import { BaseRepository } from '../base.js';
 // Entity Types
 // ============================================================================
 
-export interface DmPairingRequestEntity {
+interface DmPairingRequestEntity {
   id: string;
   platform: string;
   platformUserId: string;
@@ -24,7 +24,7 @@ export interface DmPairingRequestEntity {
   usedAt?: Date;
 }
 
-export interface CreateDmPairingRequestInput {
+interface CreateDmPairingRequestInput {
   platform: string;
   platformUserId: string;
   code: string;

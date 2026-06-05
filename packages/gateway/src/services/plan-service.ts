@@ -27,11 +27,11 @@ import {
 // Types
 // ============================================================================
 
-export interface PlanWithSteps extends Plan {
+interface PlanWithSteps extends Plan {
   steps: PlanStep[];
 }
 
-export interface PlanStats {
+interface PlanStats {
   total: number;
   byStatus: Record<string, number>;
   completionRate: number;
@@ -236,7 +236,7 @@ export class PlanService implements IPlanService {
 // Error Type
 // ============================================================================
 
-export type PlanServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
+type PlanServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
 
 export class PlanServiceError extends Error {
   constructor(

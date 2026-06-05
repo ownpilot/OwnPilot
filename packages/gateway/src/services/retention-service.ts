@@ -20,7 +20,7 @@ import { JobQueueService } from './job-queue-service.js';
 
 const log = getLog('RetentionService');
 
-export interface RetentionResult {
+interface RetentionResult {
   table: string;
   deleted: number;
   retentionDays: number;

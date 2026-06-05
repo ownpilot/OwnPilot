@@ -28,7 +28,7 @@ interface TrackedClaw {
   registeredAt: number;
 }
 
-export interface PulseClawStatus {
+interface PulseClawStatus {
   clawId: string;
   state: ClawState;
   circuitState: 'closed' | 'open' | 'half-open';

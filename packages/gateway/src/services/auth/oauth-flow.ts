@@ -131,7 +131,7 @@ export async function startDeviceFlow(provider: string): Promise<DeviceAuthoriza
   return response;
 }
 
-export type PollOutcome =
+type PollOutcome =
   | { status: 'success'; auth: ResolvedAuth }
   | { status: 'pending'; intervalSec: number }
   | { status: 'expired' }

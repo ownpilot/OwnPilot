@@ -32,7 +32,7 @@ const log = getLog('PlanExecutor');
 // Types
 // ============================================================================
 
-export interface ExecutorConfig {
+interface ExecutorConfig {
   userId?: string;
   /** Maximum concurrent step executions */
   maxConcurrent?: number;
@@ -53,12 +53,9 @@ interface StepExecutionContext {
   abortSignal?: AbortSignal;
 }
 
-export type StepHandler = (
-  config: StepConfig,
-  context: StepExecutionContext
-) => Promise<StepResult>;
+type StepHandler = (config: StepConfig, context: StepExecutionContext) => Promise<StepResult>;
 
-export interface StepResult {
+interface StepResult {
   success: boolean;
   data?: unknown;
   error?: string;
@@ -67,7 +64,7 @@ export interface StepResult {
   requiresApproval?: boolean;
 }
 
-export interface ExecutionResult {
+interface ExecutionResult {
   planId: string;
   status: PlanStatus;
   completedSteps: number;
@@ -75,19 +72,6 @@ export interface ExecutionResult {
   duration: number;
   results: Map<string, unknown>;
   error?: string;
-}
-
-export interface PlanExecutorEvents {
-  'plan:started': (plan: Plan) => void;
-  'plan:completed': (plan: Plan, result: ExecutionResult) => void;
-  'plan:failed': (plan: Plan, error: string) => void;
-  'plan:paused': (plan: Plan) => void;
-  'plan:resumed': (plan: Plan) => void;
-  'step:started': (plan: Plan, step: PlanStep) => void;
-  'step:completed': (plan: Plan, step: PlanStep, result: StepResult) => void;
-  'step:failed': (plan: Plan, step: PlanStep, error: string) => void;
-  'step:skipped': (plan: Plan, step: PlanStep, reason: string) => void;
-  'approval:required': (plan: Plan, step: PlanStep, context: unknown) => void;
 }
 
 // ============================================================================

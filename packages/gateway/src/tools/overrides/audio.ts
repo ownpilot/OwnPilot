@@ -91,7 +91,7 @@ async function ensureAudioService(): Promise<void> {
 // API Key Resolution
 // ============================================================================
 
-export interface AudioApiConfig {
+interface AudioApiConfig {
   apiKey?: string;
   baseUrl: string;
   providerType: string;

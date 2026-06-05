@@ -30,7 +30,7 @@ export interface ChannelUserEntity {
   lastSeenAt: Date;
 }
 
-export interface CreateChannelUserInput {
+interface CreateChannelUserInput {
   ownpilotUserId?: string;
   platform: string;
   platformUserId: string;

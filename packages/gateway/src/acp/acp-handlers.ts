@@ -46,7 +46,7 @@ const log = getLog('AcpHandlers');
 // TYPES
 // =============================================================================
 
-export interface AcpClientHandlerOptions {
+interface AcpClientHandlerOptions {
   ownerSessionId: string;
   cwd: string;
   env?: Record<string, string>;

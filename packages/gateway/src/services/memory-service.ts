@@ -24,7 +24,7 @@ const log = getLog('MemoryService');
 // Types
 // ============================================================================
 
-export interface MemoryStats {
+interface MemoryStats {
   total: number;
   byType: Record<MemoryType, number>;
   avgImportance: number;
@@ -431,7 +431,7 @@ export class MemoryService implements IMemoryService {
 // Error Type
 // ============================================================================
 
-export type MemoryServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
+type MemoryServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
 
 export class MemoryServiceError extends Error {
   constructor(

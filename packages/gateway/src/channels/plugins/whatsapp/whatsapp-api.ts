@@ -135,7 +135,7 @@ interface WhatsAppBaileysConfig {
 // Group/Chat Listing Types
 // ============================================================================
 
-export interface WhatsAppGroupSummary {
+interface WhatsAppGroupSummary {
   id: string;
   subject: string;
   description: string | null;
@@ -149,7 +149,7 @@ export interface WhatsAppGroupSummary {
   linkedParent: string | null;
 }
 
-export interface WhatsAppGroupDetail extends WhatsAppGroupSummary {
+interface WhatsAppGroupDetail extends WhatsAppGroupSummary {
   participants: Array<{
     jid: string;
     phone: string;

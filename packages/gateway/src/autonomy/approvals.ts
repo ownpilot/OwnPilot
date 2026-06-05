@@ -23,22 +23,13 @@ import { MS_PER_DAY, SCHEDULER_DEFAULT_TIMEOUT_MS } from '../config/defaults.js'
 // Approval Manager
 // ============================================================================
 
-export interface ApprovalManagerConfig {
+interface ApprovalManagerConfig {
   /** Default timeout for approvals in ms */
   defaultTimeout?: number;
   /** Maximum pending actions per user */
   maxPendingPerUser?: number;
   /** Enable auto-approval for low-risk actions */
   autoApproveLowRisk?: boolean;
-}
-
-export interface ApprovalManagerEvents {
-  'action:pending': (action: PendingAction) => void;
-  'action:approved': (action: PendingAction, decision: ApprovalDecision) => void;
-  'action:rejected': (action: PendingAction, decision: ApprovalDecision) => void;
-  'action:expired': (action: PendingAction) => void;
-  'action:auto_approved': (action: PendingAction) => void;
-  notification: (notification: AutonomyNotification) => void;
 }
 
 export class ApprovalManager extends EventEmitter {

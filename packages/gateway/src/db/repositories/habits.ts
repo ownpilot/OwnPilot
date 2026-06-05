@@ -28,7 +28,7 @@ function safeParseArray(raw: unknown): number[] {
 
 export type HabitFrequency = 'daily' | 'weekly' | 'weekdays' | 'custom';
 
-export interface Habit {
+interface Habit {
   id: string;
   userId: string;
   name: string;
@@ -49,7 +49,7 @@ export interface Habit {
   updatedAt: Date;
 }
 
-export interface HabitLog {
+interface HabitLog {
   id: string;
   habitId: string;
   userId: string;
@@ -59,7 +59,7 @@ export interface HabitLog {
   loggedAt: Date;
 }
 
-export interface CreateHabitInput {
+interface CreateHabitInput {
   name: string;
   description?: string;
   frequency?: HabitFrequency;
@@ -86,13 +86,13 @@ export interface UpdateHabitInput {
   isArchived?: boolean;
 }
 
-export interface HabitQuery {
+interface HabitQuery {
   category?: string;
   isArchived?: boolean;
   limit?: number;
 }
 
-export interface HabitWithTodayStatus extends Habit {
+interface HabitWithTodayStatus extends Habit {
   completedToday: boolean;
   todayCount: number;
 }

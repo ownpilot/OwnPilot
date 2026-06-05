@@ -60,7 +60,7 @@ import type { WorkflowProgressEvent } from './types.js';
 
 const log = getLog('WorkflowService');
 
-export interface WorkflowServiceOptions {
+interface WorkflowServiceOptions {
   /** Poll interval for the jobified-level wait loop (ms). */
   jobifiedPollIntervalMs?: number;
   /**

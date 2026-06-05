@@ -25,7 +25,7 @@ export const DEFAULT_MAX_REQUEST_BODY_SIZE = 10 * 1024 * 1024;
  * `signal` is honored when provided; otherwise safeFetch installs its own
  * AbortController tied to `timeoutMs`.
  */
-export interface SafeFetchOptions extends Omit<RequestInit, 'redirect'> {
+interface SafeFetchOptions extends Omit<RequestInit, 'redirect'> {
   /** Maximum redirects to follow (default 5). 0 = no redirects. */
   maxRedirects?: number;
   /** Request timeout in ms (default 30000). */

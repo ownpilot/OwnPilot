@@ -22,7 +22,7 @@ import {
 // Types
 // ============================================================================
 
-export interface TriggerStats {
+interface TriggerStats {
   total: number;
   enabled: number;
   byType: Record<string, number>;
@@ -178,7 +178,7 @@ export class TriggerService implements ITriggerService {
 // Error Type
 // ============================================================================
 
-export type TriggerServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
+type TriggerServiceErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR';
 
 export class TriggerServiceError extends Error {
   constructor(

@@ -9,7 +9,6 @@ import type {
   ToolCallStatus,
   PlanEntryStatus,
   PlanEntryPriority,
-  StopReason,
   ContentBlock,
   SessionMode,
   SessionConfigOption,
@@ -134,7 +133,7 @@ export type AcpEventType =
   | 'coding-agent:acp:session-info';
 
 /** Base payload for all ACP events */
-export interface AcpEventBase {
+interface AcpEventBase {
   sessionId: string;
   timestamp: string;
 }
@@ -170,9 +169,6 @@ export interface AcpThoughtEvent extends AcpEventBase {
 }
 
 /** Prompt turn completed */
-export interface AcpCompleteEvent extends AcpEventBase {
-  stopReason: StopReason;
-}
 
 /** Permission request from agent */
 export interface AcpPermissionRequestEvent extends AcpEventBase {

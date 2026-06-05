@@ -4,12 +4,12 @@ import { isSecureRequest } from './trusted-proxy.js';
 
 export const UI_SESSION_COOKIE = 'ownpilot_ui_session';
 
-export interface UiSessionAuth {
+interface UiSessionAuth {
   token?: string;
   source: 'header' | 'cookie' | 'none';
 }
 
-export interface UiSessionAuthOptions {
+interface UiSessionAuthOptions {
   allowHeader?: boolean;
 }
 

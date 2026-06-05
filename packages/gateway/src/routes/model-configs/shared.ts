@@ -17,7 +17,7 @@ import { hasApiKey, getConfiguredProviderIds } from '../settings.js';
 // Types
 // =============================================================================
 
-export interface MergedModel {
+interface MergedModel {
   providerId: string;
   providerName: string;
   modelId: string;
@@ -35,7 +35,7 @@ export interface MergedModel {
   source: 'builtin' | 'aggregator' | 'custom' | 'local';
 }
 
-export interface MergedProvider {
+interface MergedProvider {
   id: string;
   name: string;
   type: 'builtin' | 'aggregator' | 'custom' | 'local';

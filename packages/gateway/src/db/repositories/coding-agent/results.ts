@@ -32,7 +32,7 @@ interface ResultRow {
 // PUBLIC TYPES
 // =============================================================================
 
-export interface CodingAgentResultRecord {
+interface CodingAgentResultRecord {
   id: string;
   userId: string;
   sessionId?: string;
@@ -50,7 +50,7 @@ export interface CodingAgentResultRecord {
   createdAt: string;
 }
 
-export interface SaveResultInput {
+interface SaveResultInput {
   id: string;
   userId?: string;
   sessionId?: string;

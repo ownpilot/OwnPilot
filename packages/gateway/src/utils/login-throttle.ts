@@ -3,22 +3,22 @@
  * Per-IP attempt cap with window and lockout support.
  */
 
-export interface LoginThrottleOptions {
+interface LoginThrottleOptions {
   maxAttempts: number;
   windowMs: number;
   lockoutMs: number;
 }
 
-export interface LoginThrottleCheck {
+interface LoginThrottleCheck {
   allowed: true;
 }
 
-export interface LoginThrottleDenied {
+interface LoginThrottleDenied {
   allowed: false;
   retryAfterMs: number;
 }
 
-export type LoginThrottleResult = LoginThrottleCheck | LoginThrottleDenied;
+type LoginThrottleResult = LoginThrottleCheck | LoginThrottleDenied;
 
 interface ThrottleEntry {
   count: number;

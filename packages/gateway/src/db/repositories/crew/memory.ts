@@ -20,7 +20,7 @@ interface MemoryRow {
 
 // ── Record Type ─────────────────────────────────────
 
-export interface CrewMemoryEntry {
+interface CrewMemoryEntry {
   id: string;
   crewId: string;
   agentId: string;

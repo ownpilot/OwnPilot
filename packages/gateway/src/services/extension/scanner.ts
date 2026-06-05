@@ -68,7 +68,7 @@ function getBundledExampleSkillsDirectory(): string | null {
  *   bundled < managed < personal < workspace
  * (`project` reserved for a future repo-local tier).
  */
-export type SkillTier = 'bundled' | 'managed' | 'personal' | 'project' | 'workspace';
+type SkillTier = 'bundled' | 'managed' | 'personal' | 'project' | 'workspace';
 
 /** Higher number = higher precedence (wins on duplicate id). */
 export const SKILL_TIER_RANK: Record<SkillTier, number> = {
@@ -79,7 +79,7 @@ export const SKILL_TIER_RANK: Record<SkillTier, number> = {
   workspace: 4,
 };
 
-export interface ScanDirectory {
+interface ScanDirectory {
   dir: string;
   tier: SkillTier;
 }

@@ -46,7 +46,7 @@ export interface Signal {
   severity: SignalSeverity;
 }
 
-export interface EvaluationResult {
+interface EvaluationResult {
   /** Whether to invoke the LLM */
   shouldCallLLM: boolean;
   /** Detected signals */

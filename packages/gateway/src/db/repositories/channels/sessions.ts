@@ -12,7 +12,7 @@ import { BaseRepository, parseJsonField } from '../base.js';
 // Entity Types
 // ============================================================================
 
-export interface ChannelSessionEntity {
+interface ChannelSessionEntity {
   id: string;
   channelUserId: string;
   channelPluginId: string;
@@ -24,7 +24,7 @@ export interface ChannelSessionEntity {
   lastMessageAt: Date | null;
 }
 
-export interface CreateChannelSessionInput {
+interface CreateChannelSessionInput {
   channelUserId: string;
   channelPluginId: string;
   platformChatId: string;

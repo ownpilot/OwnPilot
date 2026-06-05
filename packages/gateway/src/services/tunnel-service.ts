@@ -17,20 +17,20 @@ const log = getLog('TunnelService');
 // Types
 // ============================================================================
 
-export interface TunnelConfig {
+interface TunnelConfig {
   port: number;
   password?: string;
   hostname?: string;
 }
 
-export interface TunnelStatus {
+interface TunnelStatus {
   status: 'stopped' | 'starting' | 'running' | 'error';
   url?: string | null;
   error?: string | null;
   startedAt?: Date | null;
 }
 
-export interface ITunnelService {
+interface ITunnelService {
   start(password?: string): Promise<TunnelStatus>;
   stop(): Promise<void>;
   getStatus(): TunnelStatus;

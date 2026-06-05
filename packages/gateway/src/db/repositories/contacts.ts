@@ -8,7 +8,7 @@ import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 
-export interface Contact {
+interface Contact {
   id: string;
   userId: string;
   name: string;
@@ -33,7 +33,7 @@ export interface Contact {
   updatedAt: Date;
 }
 
-export interface CreateContactInput {
+interface CreateContactInput {
   name: string;
   nickname?: string;
   email?: string;
@@ -53,7 +53,7 @@ export interface CreateContactInput {
   customFields?: Record<string, string>;
 }
 
-export interface UpdateContactInput {
+interface UpdateContactInput {
   name?: string;
   nickname?: string;
   email?: string;

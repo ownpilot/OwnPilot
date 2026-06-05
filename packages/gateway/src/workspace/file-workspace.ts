@@ -45,7 +45,7 @@ const log = getLog('FileWorkspace');
 // Workspace subdirectories
 const WORKSPACE_SUBDIRS: WorkspaceSubdir[] = ['scripts', 'output', 'temp', 'downloads'];
 
-export interface FileWorkspaceConfig {
+interface FileWorkspaceConfig {
   dataDir: string;
   workspaceDir: string;
   scriptsDir: string;
@@ -290,7 +290,7 @@ export function validateWritePath(filePath: string): {
 /**
  * Session workspace metadata
  */
-export interface SessionWorkspaceMeta {
+interface SessionWorkspaceMeta {
   id: string;
   name: string;
   createdAt: string;

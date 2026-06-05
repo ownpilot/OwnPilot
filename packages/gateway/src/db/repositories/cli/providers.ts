@@ -64,7 +64,7 @@ export interface CliProviderRecord {
   updatedAt: string;
 }
 
-export interface CreateCliProviderInput {
+interface CreateCliProviderInput {
   name: string;
   displayName: string;
   description?: string;
@@ -83,7 +83,7 @@ export interface CreateCliProviderInput {
   userId?: string;
 }
 
-export interface UpdateCliProviderInput {
+interface UpdateCliProviderInput {
   name?: string;
   displayName?: string;
   description?: string;

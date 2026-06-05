@@ -21,9 +21,9 @@ function secureRandom(): number {
   return Number.parseInt(randomBytes(4).toString('hex'), 16) / 0xffffffff;
 }
 
-export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
-export interface CircuitBreakerConfig {
+interface CircuitBreakerConfig {
   /** Number of failures before opening the circuit (default: 5) */
   failureThreshold: number;
   /** Time in ms before attempting to close (default: 30000) */

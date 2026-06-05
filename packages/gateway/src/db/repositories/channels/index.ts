@@ -6,17 +6,6 @@
 
 import { BaseRepository } from '../base.js';
 
-export interface ChannelRow {
-  id: string;
-  type: string;
-  name: string;
-  status: string;
-  config: string;
-  created_at: string;
-  connected_at: string | null;
-  last_activity_at: string | null;
-}
-
 export class ChannelsRepository extends BaseRepository {
   /**
    * Upsert a channel row — creates if missing, updates status/name if exists.

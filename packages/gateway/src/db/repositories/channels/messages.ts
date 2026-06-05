@@ -9,7 +9,7 @@ import { getLog } from '../../../services/log.js';
 
 const log = getLog('ChannelMessagesRepo');
 
-export interface ChannelMessage {
+interface ChannelMessage {
   id: string;
   channelId: string;
   externalId?: string;

@@ -11,19 +11,19 @@ import { validateCronExpression } from '@ownpilot/core';
 // Types
 // ============================================================================
 
-export interface ScheduleParseResult {
+interface ScheduleParseResult {
   cron: string;
   normalized: string; // Human-readable normalized form
 }
 
-export interface ParsedHeartbeatEntry {
+interface ParsedHeartbeatEntry {
   scheduleText: string;
   cron: string;
   taskDescription: string;
   normalized: string;
 }
 
-export interface ParseError {
+interface ParseError {
   scheduleText: string;
   error: string;
 }
