@@ -1,6 +1,6 @@
 # OwnPilot Architecture
 
-**Version:** 1.3 | **Date:** 2026-05-28 | **Stack:** TypeScript Monorepo · pnpm · Turborepo
+**Version:** 0.7.0
 
 ---
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-05
+
 ### Added
 
 - **Personal memory now has an always-on retention schedule.** Previously, personal-memory decay and cleanup ran only via manual REST calls or user-enabled triggers — there was no default daily enforcement (unlike the autonomous Claw runtime, which already trims its own tables daily). A new daily scheduler runs importance decay + dead-memory cleanup automatically. It is pure hygiene — no LLM calls, no conversation extraction, no semantic consolidation — and only removes already-dead entries (importance below 0.1, older than 90 days, and untouched for 90 days), so it runs by default while the LLM-driven `memory_extract` / `memory_consolidate` triggers stay opt-in. Cleanup (an idempotent delete) runs on startup and daily; the compounding decay step runs only on the daily tick, so it stays independent of how often the process restarts.
