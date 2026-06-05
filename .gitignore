@@ -113,8 +113,9 @@ docs/T4F-POC-*.md
 security-report/
 security-reports/
 security-reports/*
-# External tooling scratch dir (not OwnPilot source)
+# External tooling scratch dirs (not OwnPilot source)
 .wrongstack/
+.antigravitycli/
 # Root-level debug/scratch screenshots (brand assets like ownpilot_.jpeg stay tracked)
 /provider_screenshot.png
 /*_screenshot.png
