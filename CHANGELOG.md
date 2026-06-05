@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **UI shipped unstyled when the Tailwind native scanner fell back to WASM.** Tailwind v4 scans sources with the native `@tailwindcss/oxide` addon; when its platform binary fails to load (a corrupt `@tailwindcss/oxide-win32-x64-msvc` install — missing `package.json` — on Windows), oxide silently falls back to its WASM build, which scans nothing and emits a utility-less ~13 KB stylesheet instead of ~250 KB, with no error. A new build-only `css-size-guard` Vite plugin now **fails the build** if total emitted CSS is under 80 KB, so this can never silently ship (including in Docker images) again.
+- **Skills uninstall now hard-deletes files from disk.** Skills were stored both as a `user_extensions` row and as files in a scanned directory; uninstall only removed the row, so the boot scan re-imported them. Managed/personal/workspace-tier skills now have their directory removed on uninstall (bundled skills stay marker-only).
+- **Compiled `vite.config` no longer shadows the source.** `tsconfig.node.json` was emitting `vite.config.js`/`.d.ts` next to the source and both were committed; Vite resolves `.js` before `.ts`, so `pnpm dev` silently loaded the stale compiled config. The emit is redirected to a cache dir and the artifacts are gitignored — `vite.config.ts` is now the single source for both dev and build.
+
+### Changed
+
+- **Maintainability sweep (internal, no behavior change).** A Knip-driven pass removed 15 unused files, 4 dead functions, and a long tail of unused type/value exports across core, cli, gateway, ui, and the website; `knip.json` was made accurate across all workspaces (unused-files 63 → 0). Two genuine runtime import cycles were broken in core (costs, plugins). Several oversized files were split into focused co-located modules — `ChatPage`, `TemplateGallery` (1379 → 122 lines), `CodingAgentsPage`, `McpServersPage` (1425 → 1089), `SystemPage`, and `ProfilePage` (1641 → ~1270) — extracting pure data, constants, URL-safety helpers (with new tests), and self-contained presentational components.
+
 ## [0.6.0] - 2026-06-04
 
 ### Security
