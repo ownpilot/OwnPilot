@@ -5,7 +5,7 @@ import { useModalClose } from '../hooks';
 // Constants
 // ---------------------------------------------------------------------------
 
-export const eventTypeColors: Record<PlanEventType, string> = {
+const eventTypeColors: Record<PlanEventType, string> = {
   started: 'text-primary',
   step_started: 'text-primary',
   step_completed: 'text-success',
@@ -19,7 +19,7 @@ export const eventTypeColors: Record<PlanEventType, string> = {
   rollback: 'text-warning',
 };
 
-export const eventTypeLabels: Record<PlanEventType, string> = {
+const eventTypeLabels: Record<PlanEventType, string> = {
   started: 'Started',
   step_started: 'Step Started',
   step_completed: 'Step Completed',

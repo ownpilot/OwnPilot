@@ -15,7 +15,7 @@ export type HeaderItemConfig =
   | { type: 'item'; path: string }
   | { type: 'group'; id: string; label: string; items: string[] };
 
-export const MAX_HEADER_ITEMS = 8;
+const MAX_HEADER_ITEMS = 8;
 
 // --- Storage helpers ---
 

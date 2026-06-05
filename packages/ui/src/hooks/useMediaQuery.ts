@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
  * Hook that tracks a CSS media query match state.
  * Updates reactively when the viewport changes.
  */
-export function useMediaQuery(query: string): boolean {
+function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
   useEffect(() => {

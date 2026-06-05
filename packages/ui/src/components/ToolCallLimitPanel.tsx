@@ -157,6 +157,3 @@ export function ToolCallLimitPanel({ onChange }: ToolCallLimitPanelProps) {
  * Read the current max tool calls from localStorage.
  * Used by useChatStore to include in the request body.
  */
-export function getMaxToolCalls(): number {
-  return loadLimit();
-}

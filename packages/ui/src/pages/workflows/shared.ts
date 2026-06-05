@@ -63,14 +63,14 @@ export const defaultEdgeOptions = {
 };
 
 /** Edge label + color config for named source handles */
-export const HANDLE_EDGE_PROPS: Record<string, { label: string; style: Record<string, string> }> = {
+const HANDLE_EDGE_PROPS: Record<string, { label: string; style: Record<string, string> }> = {
   true: { label: 'True', style: { stroke: '#10b981' } }, // emerald
   false: { label: 'False', style: { stroke: '#ef4444' } }, // red
   each: { label: 'Each', style: { stroke: '#0ea5e9' } }, // sky
   done: { label: 'Done', style: { stroke: '#8b5cf6' } }, // violet
 };
 
-export const EDGE_LABEL_STYLE = {
+const EDGE_LABEL_STYLE = {
   fontSize: 10,
   fontWeight: 600,
   fill: 'var(--color-text-muted)',

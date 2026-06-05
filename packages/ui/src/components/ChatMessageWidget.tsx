@@ -679,7 +679,7 @@ function TimelineWidget({ data }: { data: unknown }) {
   );
 }
 
-function JsonWidget({ name, data }: ChatMessageWidgetProps) {
+export function JsonWidget({ name, data }: ChatMessageWidgetProps) {
   if (isRecord(data) && data.error === 'Invalid widget data') {
     const raw = typeof data.raw === 'string' ? data.raw : undefined;
     return (

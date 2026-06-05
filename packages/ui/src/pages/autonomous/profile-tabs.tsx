@@ -39,7 +39,7 @@ import type { Tool } from './components/ToolSelector';
 // Shared helpers
 // =============================================================================
 
-export function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="border border-border dark:border-dark-border rounded-lg p-4 text-center">
       <div className="text-xl font-bold text-text-primary dark:text-dark-text-primary">{value}</div>
@@ -48,7 +48,7 @@ export function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <>
       <span className="text-text-muted dark:text-dark-text-muted">{label}</span>

@@ -564,7 +564,7 @@ export const SECTION_GROUP_LABELS: Record<SidebarSectionGroup, string> = {
 };
 
 /** Which group each built-in static section belongs to */
-export const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
+const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
   search: 'core',
   scheduled: 'core',
   customize: 'core',
@@ -572,7 +572,7 @@ export const STATIC_SECTION_GROUPS: Record<string, SidebarSectionGroup> = {
 };
 
 /** Icons for static sections (not in the data registry) */
-export const STATIC_SECTION_ICONS: Record<string, IconComponent> = {
+const STATIC_SECTION_ICONS: Record<string, IconComponent> = {
   search: Search,
   scheduled: Calendar,
   customize: ChevronRight,
@@ -590,9 +590,6 @@ export function isNavItemSection(sectionId: string): boolean {
 }
 
 /** Check if a section ID is a registry-backed data section */
-export function isDataSection(sectionId: string): boolean {
-  return sectionId in SIDEBAR_DATA_SECTIONS;
-}
 
 /** Get the icon for any section — checks static, data registry, and NAV_ITEM_MAP */
 export function getSectionIcon(sectionId: string): IconComponent | undefined {
