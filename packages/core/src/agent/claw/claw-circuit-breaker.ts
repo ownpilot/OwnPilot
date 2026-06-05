@@ -14,7 +14,7 @@ import { getLog } from '../../services/get-log.js';
 
 const log = getLog('ClawCircuitBreaker');
 
-export interface ClawCircuitBreakerOptions {
+interface ClawCircuitBreakerOptions {
   /** Consecutive failures before opening circuit (default: 5) */
   failureThreshold?: number;
   /** Cooldown in ms before attempting half-open (default: 60_000) */

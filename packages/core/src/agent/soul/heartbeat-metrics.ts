@@ -8,7 +8,7 @@ import type { HeartbeatMetrics, HeartbeatTaskResult } from './types.js';
 import type { HeartbeatCircuitSnapshot } from './heartbeat-circuit-breaker.js';
 import { safeDuration, safeCost } from '../../utils/safe-value.js';
 
-export interface MetricsOptions {
+interface MetricsOptions {
   /** Window size for rolling averages (default: 10) */
   rollingWindowSize?: number;
 }

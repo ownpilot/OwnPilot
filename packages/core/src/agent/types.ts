@@ -82,7 +82,6 @@ export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 /**
  * Content types in messages
  */
-export type ContentType = 'text' | 'image' | 'audio' | 'file';
 
 /**
  * Text content part

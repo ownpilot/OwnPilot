@@ -9,7 +9,7 @@ import type { ClawMetrics, ClawCycleSummary } from './claw-types.js';
 import type { ClawCircuitSnapshot } from './claw-types.js';
 import { safeDuration, safeCost } from '../../utils/safe-value.js';
 
-export interface ClawMetricsOptions {
+interface ClawMetricsOptions {
   /** Window size for rolling averages (default: 10) */
   rollingWindowSize?: number;
 }

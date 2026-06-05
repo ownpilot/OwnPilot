@@ -73,7 +73,7 @@ export type {
 /**
  * Registration metadata for tools. Allows specifying source, trust level, and other metadata.
  */
-export interface ToolRegistrationMetadata {
+interface ToolRegistrationMetadata {
   source?: ToolSource;
   pluginId?: PluginId;
   customToolId?: string;
@@ -84,7 +84,7 @@ export interface ToolRegistrationMetadata {
 /**
  * Callback type for config auto-registration when tools with configRequirements are registered.
  */
-export type ConfigRegistrationHandler = (
+type ConfigRegistrationHandler = (
   toolName: string,
   toolId: string,
   source: ToolSource,

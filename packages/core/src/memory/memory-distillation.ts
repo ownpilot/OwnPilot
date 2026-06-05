@@ -15,8 +15,6 @@
  * importance-decaying, deduplicated). They complement each other.
  */
 
-export type CompleteFn = (prompt: string) => Promise<string>;
-
 /** Memory types the extractor is allowed to emit (subset of MemoryType). */
 export const EXTRACTABLE_MEMORY_TYPES = ['fact', 'preference', 'event'] as const;
 export type ExtractableMemoryType = (typeof EXTRACTABLE_MEMORY_TYPES)[number];

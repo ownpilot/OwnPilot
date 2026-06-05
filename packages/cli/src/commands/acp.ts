@@ -22,7 +22,7 @@ import { Readable, Writable } from 'node:stream';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
 import { runAcpServer, loadApiKeysToEnvironment } from '@ownpilot/gateway';
 
-export interface AcpServeOptions {
+interface AcpServeOptions {
   /**
    * Optional log line written to stderr just before the server starts
    * listening. Useful for spawning processes that want a "ready" marker
@@ -36,7 +36,7 @@ export interface AcpServeOptions {
  * shared `initializeAll()` here so we don't duplicate the repo bring-up
  * dance — and so tests can substitute a no-op.
  */
-export type AcpInitializer = () => Promise<void>;
+type AcpInitializer = () => Promise<void>;
 
 /**
  * Start the ACP server bound to the current process's stdio.

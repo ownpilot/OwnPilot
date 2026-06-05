@@ -55,7 +55,7 @@ export class ResourceCounter {
 /**
  * Sandbox console interface (subset of full Console)
  */
-export interface SandboxConsole {
+interface SandboxConsole {
   log: (...args: unknown[]) => void;
   info: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;

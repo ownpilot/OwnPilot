@@ -19,7 +19,7 @@ export function safeDuration(durationMs: unknown): number {
   return Math.floor(safeNumber(durationMs, 0));
 }
 
-export interface BackoffOptions {
+interface BackoffOptions {
   baseDelayMs?: number;
   multiplier?: number;
   maxDelayMs?: number;

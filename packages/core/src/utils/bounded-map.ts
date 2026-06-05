@@ -11,7 +11,7 @@
  * Thread-unsafe — use within single-threaded contexts only.
  */
 
-export type EvictionPolicy = 'lru' | 'fifo';
+type EvictionPolicy = 'lru' | 'fifo';
 
 interface Entry<V> {
   value: V;

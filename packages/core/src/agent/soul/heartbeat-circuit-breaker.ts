@@ -13,7 +13,7 @@ import { getLog } from '../../services/get-log.js';
 
 const log = getLog('HeartbeatCircuitBreaker');
 
-export interface HeartbeatCircuitBreakerOptions {
+interface HeartbeatCircuitBreakerOptions {
   /** Consecutive failures before opening circuit (default: 3) */
   failureThreshold?: number;
   /** Cooldown in ms before attempting half-open (default: 60000) */

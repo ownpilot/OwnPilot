@@ -101,7 +101,6 @@ export type HookHandler<T = unknown> = (context: HookContext<T>) => void | Promi
  * Extract the category (first segment) from a dot-delimited event type string.
  * e.g. 'agent.complete' → 'agent', 'channel.message.received' → 'channel'
  */
-export type CategoryOf<T extends string> = T extends `${infer Cat}.${string}` ? Cat : never;
 
 /**
  * Derive EventCategory from the first segment of a dot-delimited string.

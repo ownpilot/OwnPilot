@@ -48,7 +48,7 @@ export type TriggerConfig = ScheduleConfig | EventConfig | ConditionConfig | Web
  *     delivering `output` verbatim) — no tokens spent when state is unchanged.
  *   - otherwise `context` is merged into the action payload.
  */
-export interface TriggerPreRun {
+interface TriggerPreRun {
   readonly code: string;
   readonly timeoutMs?: number;
 }

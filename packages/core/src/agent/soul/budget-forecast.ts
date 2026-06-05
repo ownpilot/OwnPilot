@@ -8,7 +8,7 @@
 import type { BudgetForecast, SoulAutonomy } from './types.js';
 import { safeCost } from '../../utils/safe-value.js';
 
-export interface BudgetForecastOptions {
+interface BudgetForecastOptions {
   /** Warning threshold as fraction of daily budget (default: 0.8 = 80%) */
   warningThreshold?: number;
   /** Minimum ms between warnings (default: 5 minutes) */
