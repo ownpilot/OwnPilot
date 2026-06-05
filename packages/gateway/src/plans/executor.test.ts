@@ -936,6 +936,69 @@ describe('PlanExecutor', () => {
     });
   });
 
+  describe('wave execution abort', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('stops scheduling further steps and resolves cancelled when aborted during the slot-wait', async () => {
+      // Regression: with all concurrency slots full of slow steps, a cancelled
+      // plan used to spin the maxConcurrent slot-wait until a step finished
+      // (the wave-top abort check can't fire while the inner loop holds
+      // control). The slot-wait now re-checks signal.aborted and breaks; the
+      // scheduled steps are still awaited via Promise.all (no orphaned promise
+      // / unhandled rejection), then the abort is surfaced as 'cancelled'.
+      const waveExecutor = new PlanExecutor({
+        userId: 'user-1',
+        enableWaveExecution: true,
+        maxConcurrent: 1,
+      });
+      const stepA = makeStep({ id: 'step-a', config: { toolName: 'tool_a', toolArgs: {} } });
+      const stepB = makeStep({ id: 'step-b', config: { toolName: 'tool_b', toolArgs: {} } });
+
+      mockPlanService.getPlan.mockResolvedValue(makePlan());
+      mockPlanService.getSteps.mockResolvedValue([stepA, stepB]);
+      mockPlanService.getStepsByStatus.mockResolvedValue([stepA, stepB]);
+      mockPlanService.areDependenciesMet.mockResolvedValue(true);
+      (hasTool as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+
+      // Gate tool_a so stepA holds the only slot while stepB waits.
+      let releaseA!: () => void;
+      const calledTools: string[] = [];
+      (executeTool as ReturnType<typeof vi.fn>).mockImplementation(async (toolName: string) => {
+        calledTools.push(toolName);
+        if (toolName === 'tool_a') {
+          await new Promise<void>((resolve) => (releaseA = resolve));
+        }
+        return { success: true, result: {} };
+      });
+
+      const failedListener = vi.fn();
+      waveExecutor.on('plan:failed', failedListener);
+
+      const promise = waveExecutor.execute('plan-1');
+      // Schedule stepA (occupying the slot) and enter the slot-wait for stepB.
+      await vi.advanceTimersByTimeAsync(20);
+      expect(calledTools).toEqual(['tool_a']); // stepB blocked on the full slot
+
+      // Abort while stepB waits for a slot.
+      expect(await waveExecutor.abort('plan-1')).toBe(true);
+
+      // Release stepA and let the executor unwind.
+      releaseA();
+      await vi.advanceTimersByTimeAsync(50);
+      const result = await promise;
+
+      // stepB was never scheduled; the plan is cancelled, not failed.
+      expect(calledTools).toEqual(['tool_a']);
+      expect(result.status).toBe('cancelled');
+      expect(failedListener).not.toHaveBeenCalled();
+    });
+  });
+
   // ========================================================================
   // Resume after pause
   // ========================================================================

@@ -463,10 +463,21 @@ export class PlanExecutor extends EventEmitter {
       const stepPromises: Promise<void>[] = [];
 
       for (const step of readySteps) {
-        // Respect maxConcurrent
+        // Stop scheduling new steps if the plan was aborted mid-wave. We must
+        // NOT throw here — that would orphan the already-pushed stepPromises
+        // (Promise.all below is what attaches their rejection handlers), so a
+        // later-failing in-flight step would surface as an unhandled rejection.
+        // Instead break, let Promise.all await what was scheduled, then throw.
+        if (signal.aborted) break;
+
+        // Respect maxConcurrent. Re-check abort inside the slot-wait so a
+        // cancelled plan with every slot full of slow steps stops promptly
+        // rather than spinning this poll until a step happens to finish.
         while (executingSteps.size >= this.config.maxConcurrent) {
+          if (signal.aborted) break;
           await new Promise((r) => setTimeout(r, 10));
         }
+        if (signal.aborted) break;
 
         executingSteps.add(step.id);
         const promise = this.executeStep(planId, step, results, signal)
@@ -480,8 +491,16 @@ export class PlanExecutor extends EventEmitter {
         stepPromises.push(promise);
       }
 
-      // Wait for all steps in this wave to complete
+      // Wait for all steps in this wave to complete. Always awaited (even on
+      // the abort break above) so no scheduled promise is left unhandled.
       await Promise.all(stepPromises);
+
+      // Honor a mid-wave abort now that the scheduled steps have settled. The
+      // wave-top check would also catch it next iteration, but throwing here
+      // surfaces 'cancelled' immediately instead of looping once more.
+      if (signal.aborted) {
+        throw new Error('Plan execution aborted');
+      }
 
       // Update progress
       await this.planService.recalculateProgress(this.config.userId, planId);
