@@ -107,6 +107,6 @@ When v1 is deprecated:
 
 ## References
 
-- Gap 24.7 in `architecture.md`
+- Gap 24.7 in `docs/architecture.md`
 - `packages/gateway/src/routes/register-v2-routes.ts`
 - `packages/gateway/src/app.ts` — `registerV2Routes()` call

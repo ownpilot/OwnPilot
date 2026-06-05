@@ -30,8 +30,7 @@ export default tseslint.config(
       // `type` keywords (helps tree-shaking + ESM correctness).
       // `disallowTypeAnnotations: false` lets inline `import('./x').T`
       // type annotations through — those are circular-dep workarounds
-      // (see refactor.md §3.4) and should be removed by restructuring, not
-      // mechanical lint-fix.
+      // and should be removed by restructuring, not mechanical lint-fix.
       '@typescript-eslint/consistent-type-imports': [
         'warn',
         {

@@ -115,8 +115,12 @@ security-reports/
 security-reports/*
 # External tooling scratch dir (not OwnPilot source)
 .wrongstack/
-# Root-level debug screenshots
+# Root-level debug/scratch screenshots (brand assets like ownpilot_.jpeg stay tracked)
 /provider_screenshot.png
+/*_screenshot.png
+/claw-*.png
+/fleet-*.png
+/gw-*.png
 
 # UI vite config is authored in vite.config.ts; never commit compiled output
 packages/ui/vite.config.js
