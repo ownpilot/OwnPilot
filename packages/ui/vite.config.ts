@@ -4,6 +4,42 @@ import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import type { Plugin } from 'vite';
+
+/**
+ * Fail the build if the emitted CSS is suspiciously small.
+ *
+ * Tailwind v4 scans source files with the native `@tailwindcss/oxide` addon.
+ * If that native binary fails to load (e.g. a corrupt platform package on
+ * Windows), oxide silently falls back to its WASM build, which scans nothing
+ * and emits a utility-less stylesheet (~13 KB instead of ~250 KB) — with no
+ * error. That ships an entirely unstyled UI, including in Docker images.
+ * A healthy build is hundreds of KB; 80 KB is far above the broken case and
+ * far below any legitimate output, so it cleanly distinguishes the two.
+ */
+function cssSizeGuard(minBytes = 80_000): Plugin {
+  return {
+    name: 'css-size-guard',
+    apply: 'build',
+    writeBundle(_options, bundle) {
+      let total = 0;
+      for (const [name, asset] of Object.entries(bundle)) {
+        if (name.endsWith('.css') && asset.type === 'asset') {
+          const src = asset.source;
+          total += typeof src === 'string' ? Buffer.byteLength(src) : src.byteLength;
+        }
+      }
+      if (total < minBytes) {
+        throw new Error(
+          `[css-size-guard] Emitted CSS is only ${total} bytes (< ${minBytes}). ` +
+            `Tailwind likely generated no utilities — the native @tailwindcss/oxide ` +
+            `scanner probably failed and fell back to WASM. Repair the install ` +
+            `(pnpm install --force) before shipping.`
+        );
+      }
+    },
+  };
+}
 
 export default defineConfig(({ mode }) => {
   // Load env from monorepo root (two levels up from packages/ui)
@@ -37,6 +73,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      cssSizeGuard(),
       ...(enableVisualizer
         ? [
             visualizer({
