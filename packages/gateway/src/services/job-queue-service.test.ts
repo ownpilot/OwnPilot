@@ -129,3 +129,73 @@ describe('JobQueueService pollWorker concurrency', () => {
     await new Promise((r) => setTimeout(r, 0));
   });
 });
+
+describe('JobQueueService error resilience', () => {
+  type Svc = {
+    executeJob: (w: RunningWorkerLike, j: Record<string, unknown>) => Promise<void>;
+    pollWorker: (w: RunningWorkerLike) => Promise<void>;
+  };
+  interface RunningWorkerLike {
+    id: string;
+    queue: string;
+    concurrency: number;
+    handler: () => Promise<Record<string, unknown>>;
+    activeJobs: Set<string>;
+    stopped: boolean;
+    polling: boolean;
+  }
+  const makeWorker = (over: Partial<RunningWorkerLike> = {}): RunningWorkerLike => ({
+    id: 'w',
+    queue: 'q',
+    concurrency: 2,
+    handler: async () => ({}),
+    activeJobs: new Set<string>(),
+    stopped: false,
+    polling: false,
+    ...over,
+  });
+  const job = { id: 'job-x', name: 'test', queue: 'q', payload: {} };
+
+  it('executeJob does not reject when repo.complete throws', async () => {
+    mockRepo.complete.mockRejectedValueOnce(new Error('db down'));
+    const svc = new JobQueueService() as unknown as Svc;
+    // Resolves (not rejects); falls back to repo.fail for retry.
+    await expect(svc.executeJob(makeWorker(), job)).resolves.toBeUndefined();
+    expect(mockRepo.fail).toHaveBeenCalledWith('job-x', 'db down');
+  });
+
+  it('executeJob does not reject when repo.fail also throws (no unhandled rejection)', async () => {
+    mockRepo.complete.mockRejectedValueOnce(new Error('complete failed'));
+    mockRepo.fail.mockRejectedValueOnce(new Error('fail failed'));
+    const svc = new JobQueueService() as unknown as Svc;
+    await expect(svc.executeJob(makeWorker(), job)).resolves.toBeUndefined();
+  });
+
+  it('frees the slot via finally even when the job handler + persistence throw', async () => {
+    available = 1;
+    mockRepo.complete.mockRejectedValueOnce(new Error('complete failed'));
+    const svc = new JobQueueService() as unknown as Svc;
+    const worker = makeWorker({ concurrency: 2, handler: async () => ({}) });
+    await svc.pollWorker(worker);
+    // Let executeJob + its finally settle.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(worker.activeJobs.size).toBe(0);
+  });
+
+  it('startWorker immediate poll does not emit an unhandled rejection when claimJob throws', async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+    try {
+      mockRepo.claimJob.mockRejectedValueOnce(new Error('claim db error'));
+      const svc = new JobQueueService();
+      const stop = svc.startWorker(async () => ({}), { queue: 'q', name: 'w-claimthrow' });
+      // Drain microtasks + a macrotask so any rejection would have surfaced.
+      await new Promise((r) => setTimeout(r, 20));
+      stop();
+      expect(unhandled).toHaveLength(0);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+});

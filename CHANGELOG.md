@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Job-queue worker no longer leaks unhandled promise rejections on DB errors.** `JobQueueService` runs `executeJob` and `pollWorker` fire-and-forget from three callsites; only `pollAll` isolated rejections (via `allSettled`). A transient DB failure while finalizing a job (`repo.complete`/`repo.fail`) or claiming one (`repo.claimJob`) therefore surfaced as an unhandled rejection — a misleading "Unhandled Promise Rejection" log with no job context. `executeJob` now swallows + logs its own persistence errors (never rejects), and the immediate-start and per-job re-poll go through a `safePoll` wrapper that catches `pollWorker` rejections. The worker still frees the slot and re-polls in every case.
+
 ## [0.7.0] - 2026-06-05
 
 ### Added

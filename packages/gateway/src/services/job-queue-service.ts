@@ -7,6 +7,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { getErrorMessage } from '@ownpilot/core';
 import { getLog } from './log.js';
 import { getJobsRepository, type CreateJobInput, type JobRecord } from '../db/repositories/jobs.js';
 
@@ -134,7 +135,7 @@ export class JobQueueService {
     }
 
     // Trigger first poll immediately
-    this.pollWorker(worker);
+    this.safePoll(worker);
 
     // Return stop function
     return () => this.stopWorker(workerId);
@@ -160,6 +161,19 @@ export class JobQueueService {
     );
   }
 
+  /**
+   * Fire-and-forget pollWorker invocation. pollWorker rejects if claimJob
+   * throws (a transient DB error). The immediate-start poll and the per-job
+   * re-poll don't await it, so without this wrapper that rejection surfaces as
+   * an unhandled promise rejection. (pollAll already isolates rejections via
+   * allSettled — this brings the other two callsites in line.)
+   */
+  private safePoll(worker: RunningWorker): void {
+    this.pollWorker(worker).catch((err) => {
+      log.error('pollWorker error', { workerId: worker.id, error: getErrorMessage(err) });
+    });
+  }
+
   private async pollWorker(worker: RunningWorker): Promise<void> {
     if (worker.stopped || worker.polling) return;
     if (worker.activeJobs.size >= worker.concurrency) return;
@@ -176,9 +190,11 @@ export class JobQueueService {
         if (!job) break;
 
         worker.activeJobs.add(job.id);
+        // executeJob is guaranteed not to reject (it swallows + logs its own
+        // errors); the finally frees the slot and re-polls via safePoll.
         this.executeJob(worker, job).finally(() => {
           worker.activeJobs.delete(job.id);
-          this.pollWorker(worker);
+          this.safePoll(worker);
         });
       }
     } finally {
@@ -195,9 +211,21 @@ export class JobQueueService {
       await this.repo.complete(job.id, result);
       log.debug('Job completed', { ...logCtx });
     } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
+      const error = getErrorMessage(err);
       log.warn('Job failed', { ...logCtx, error });
-      await this.repo.fail(job.id, error);
+      // repo.fail is itself a DB write that can throw (e.g. transient
+      // connection loss). executeJob runs fire-and-forget from pollWorker, so
+      // a throw here would surface as an unhandled rejection. Swallow + log so
+      // executeJob never rejects and the slot is still freed by the caller's
+      // finally.
+      try {
+        await this.repo.fail(job.id, error);
+      } catch (failErr) {
+        log.error('Failed to persist job failure', {
+          ...logCtx,
+          error: getErrorMessage(failErr),
+        });
+      }
     }
   }
 
