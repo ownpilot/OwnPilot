@@ -16,7 +16,7 @@
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router": "^7.6.2",
+    "react-router": "^7.17.0",
     "tailwind-merge": "^3.3.0",
     "zustand": "^5.0.5"
   },
