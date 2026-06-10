@@ -39,6 +39,7 @@ import { ClawHomeTab } from './claws/ClawHomeTab';
 import { ClawManagementPanel, isDetailTab, type DetailTab } from './claws/ClawManagementPanel';
 import { ConcurrencyBar } from './claws/ConcurrencyBar';
 import { ignoreError } from '../utils/ignore-error';
+import { usePagination } from '../hooks/usePagination';
 
 // =============================================================================
 // Page
@@ -55,8 +56,7 @@ export function ClawsPage() {
   const [pageTab, setPageTab] = useState<PageTab>('claws');
   const [claws, setClaws] = useState<ClawConfig[]>([]);
   const [totalClaws, setTotalClaws] = useState(0);
-  const [page, setPage] = useState(0);
-  const [pageSize] = useState(24);
+  const { page, setPage, pageSize, offset } = usePagination(24);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedClaw, setSelectedClaw] = useState<ClawConfig | null>(null);
   const [selectedDetailTab, setSelectedDetailTab] = useState<DetailTab>('overview');
@@ -110,7 +110,7 @@ export function ClawsPage() {
   const fetchClaws = useCallback(async () => {
     try {
       const [data, recs, stats] = await Promise.all([
-        clawsApi.list(pageSize, page * pageSize),
+        clawsApi.list(pageSize, offset),
         clawsApi.recommendations().catch(() => ({ recommendations: [] })),
         clawsApi.stats().catch(() => ({ needsAttention: 0, llmConcurrency: null })),
       ]);
@@ -124,7 +124,7 @@ export function ClawsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, toast]);
+  }, [pageSize, offset, toast]);
 
   const updateLlmConcurrency = async (newMax: number) => {
     try {

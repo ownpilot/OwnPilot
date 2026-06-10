@@ -38,7 +38,7 @@ import {
 } from '../../workspace/file-workspace.js';
 import { getLog } from '../log.js';
 import { scaffoldClawDir, runRetentionCleanup, ensureConversationRow } from './manager-helpers.js';
-import { safeCost, safeDuration } from '../../utils/safe-value.js';
+import { safeCost, safeDuration } from '@ownpilot/core';
 // Extracted helpers — see sibling files
 import {
   extractSavedTasks,

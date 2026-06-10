@@ -170,15 +170,13 @@ export async function executeMemoryTool(
         const limit = Math.max(1, Math.min(30, rawLimit));
 
         // Build a one-shot, tool-less completion fn for summarization.
-        const { resolveProviderAndModel, createConfiguredAgent } =
-          await import('../services/agent/runner-utils.js');
+        const { createConfiguredAgent } = await import('../services/agent/runner-utils.js');
+        const { getLLMRouter } = await import('@ownpilot/core');
         const complete = async (prompt: string): Promise<string> => {
-          const { provider, model } = await resolveProviderAndModel(
-            undefined,
-            undefined,
-            'pulse',
-            'recall_memory'
-          );
+          const { provider, model } = await getLLMRouter().pick({
+            process: 'pulse',
+            errorContext: 'recall_memory',
+          });
           const agent = await createConfiguredAgent({
             name: 'memory-recall',
             provider,

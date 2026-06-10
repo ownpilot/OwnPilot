@@ -471,3 +471,6 @@ export {
   safeJsonStringify,
   isValidJson,
 } from '../utils/safe-json.js';
+
+// Safe Value Utilities (NaN/Infinity/negative guards for cost + duration fields)
+export { safeCost, safeDuration } from '../utils/safe-value.js';

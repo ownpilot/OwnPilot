@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { formatNumber } from '../utils/formatters';
 import { costsApi } from '../api';
-import type { CostSummary, BudgetStatus, ProviderBreakdown, DailyUsage } from '../api';
+import { usePageData } from '../hooks/usePageData';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/ToastProvider';
 import {
@@ -45,14 +45,6 @@ export function CostsPage() {
   });
 
   const [period, setPeriod] = useState<Period>('month');
-  const [summary, setSummary] = useState<CostSummary | null>(null);
-  const [budget, setBudget] = useState<BudgetStatus | null>(null);
-  const [breakdown, setBreakdown] = useState<{
-    byProvider: ProviderBreakdown[];
-    daily: DailyUsage[];
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'breakdown' | 'budget'>('home');
 
   // Budget form state
@@ -61,32 +53,28 @@ export function CostsPage() {
   const [monthlyLimit, setMonthlyLimit] = useState<string>('');
   const [savingBudget, setSavingBudget] = useState(false);
 
-  const fetchCosts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Fetch summary
+  const {
+    data: costs,
+    isLoading,
+    error,
+    refetch: fetchCosts,
+    setData: setCosts,
+  } = usePageData(
+    async () => {
       const summaryData = await costsApi.getSummary(period);
-      setSummary(summaryData.summary);
-      setBudget(summaryData.budget);
-
-      // Fetch breakdown
       const breakdownData = await costsApi.getBreakdown(period);
-      setBreakdown({
-        byProvider: breakdownData.byProvider,
-        daily: breakdownData.daily,
-      });
-    } catch {
-      setError('Failed to fetch cost data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [period]);
-
-  useEffect(() => {
-    fetchCosts();
-  }, [fetchCosts]);
+      return {
+        summary: summaryData.summary,
+        budget: summaryData.budget,
+        breakdown: { byProvider: breakdownData.byProvider, daily: breakdownData.daily },
+      };
+    },
+    [period],
+    { errorMessage: 'Failed to fetch cost data' }
+  );
+  const summary = costs?.summary ?? null;
+  const budget = costs?.budget ?? null;
+  const breakdown = costs?.breakdown ?? null;
 
   const saveBudget = useCallback(async () => {
     setSavingBudget(true);
@@ -97,14 +85,14 @@ export function CostsPage() {
       if (monthlyLimit) body.monthlyLimit = parseFloat(monthlyLimit);
 
       const data = await costsApi.setBudget(body);
-      setBudget(data.status);
+      setCosts((prev) => (prev ? { ...prev, budget: data.status } : prev));
       toast.success('Budget saved');
     } catch {
       toast.error('Failed to save budget');
     } finally {
       setSavingBudget(false);
     }
-  }, [dailyLimit, weeklyLimit, monthlyLimit, toast]);
+  }, [dailyLimit, weeklyLimit, monthlyLimit, toast, setCosts]);
 
   if (isLoading && !summary) {
     return <LoadingSpinner message="Loading cost data..." />;
