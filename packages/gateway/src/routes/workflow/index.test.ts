@@ -1670,13 +1670,71 @@ describe('Workflow Routes', () => {
       expect(json.error.message).toContain('error handler');
     });
 
-    it('returns 400 for llmNode missing provider, model, and userMessage', async () => {
+    it('returns 400 for llmNode missing userMessage', async () => {
       const res = await postWorkflow([{ id: 'n1', type: 'llmNode', data: {} }], []);
       expect(res.status).toBe(400);
       const json = await res.json();
-      expect(json.error.message).toContain('provider');
-      expect(json.error.message).toContain('model');
       expect(json.error.message).toContain('userMessage');
+    });
+
+    it('allows llmNode without provider/model (executor resolves defaults)', async () => {
+      const res = await postWorkflow(
+        [{ id: 'n1', type: 'llmNode', data: { userMessage: 'Hello' } }],
+        []
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('returns 400 for clawNode missing name and mission', async () => {
+      const res = await postWorkflow([{ id: 'n1', type: 'clawNode', data: {} }], []);
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('name');
+      expect(json.error.message).toContain('mission');
+    });
+
+    it('returns 400 for clawNode with invalid mode and sandbox', async () => {
+      const res = await postWorkflow(
+        [
+          {
+            id: 'n1',
+            type: 'clawNode',
+            data: { name: 'Agent', mission: 'Do things', mode: 'turbo', sandbox: 'vm' },
+          },
+        ],
+        []
+      );
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('mode');
+      expect(json.error.message).toContain('sandbox');
+    });
+
+    it('allows clawNode with valid config and a long timeout (claw exemption)', async () => {
+      const res = await postWorkflow(
+        [
+          {
+            id: 'n1',
+            type: 'clawNode',
+            data: {
+              name: 'Agent',
+              mission: 'Research a topic',
+              mode: 'single-shot',
+              sandbox: 'auto',
+              timeoutMs: 600000,
+            },
+          },
+        ],
+        []
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('returns 400 for unknown node types', async () => {
+      const res = await postWorkflow([{ id: 'n1', type: 'quantumNode', data: {} }], []);
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('Unknown node type "quantumNode"');
     });
 
     it('returns 400 for conditionNode missing expression', async () => {
@@ -2142,7 +2200,7 @@ describe('Workflow Routes', () => {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nodes: [{ id: 'n1', type: 'llmNode', data: {} }], // missing provider/model/userMessage
+          nodes: [{ id: 'n1', type: 'llmNode', data: {} }], // missing userMessage
           edges: [],
         }),
       });
@@ -2150,7 +2208,7 @@ describe('Workflow Routes', () => {
       expect(res.status).toBe(400);
       const json = await res.json();
       expect(json.error.code).toBe('VALIDATION_ERROR');
-      expect(json.error.message).toContain('provider');
+      expect(json.error.message).toContain('userMessage');
     });
   });
 

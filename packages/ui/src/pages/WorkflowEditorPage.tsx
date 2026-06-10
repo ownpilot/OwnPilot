@@ -179,10 +179,17 @@ function WorkflowEditorInner() {
       {editor.showTemplates && (
         <TemplateGallery
           onUseTemplate={(template) => {
-            const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(
+            const {
+              nodes: rfNodes,
+              edges: rfEdges,
+              skippedNodes,
+            } = convertDefinitionToReactFlow(
               template.definition as WorkflowDefinition,
               editor.toolNames
             );
+            if (skippedNodes.length > 0) {
+              editor.toast.error(`Skipped unknown node(s): ${skippedNodes.join(', ')}`);
+            }
             const styledEdges = rfEdges.map((e) => ({
               ...e,
               ...getEdgeLabelProps(e.sourceHandle),

@@ -145,4 +145,36 @@ describe('serializeWorkflowCanvas', () => {
     });
     expect(serialized.nodes[0]!.data).not.toHaveProperty('key');
   });
+
+  it('serializes claw nodes with their agent config', () => {
+    const serialized = serializeWorkflowCanvas(
+      [
+        makeNode('clawNode', {
+          label: 'Research Agent',
+          name: 'Market Research',
+          mission: 'Research the topic',
+          mode: 'single-shot',
+          sandbox: 'auto',
+          waitForCompletion: true,
+          timeoutMs: 600000,
+          outputAlias: 'research',
+        }),
+      ],
+      []
+    );
+
+    expect(serialized.nodes[0]).toMatchObject({
+      type: 'clawNode',
+      data: {
+        label: 'Research Agent',
+        name: 'Market Research',
+        mission: 'Research the topic',
+        mode: 'single-shot',
+        sandbox: 'auto',
+        waitForCompletion: true,
+        timeoutMs: 600000,
+        outputAlias: 'research',
+      },
+    });
+  });
 });

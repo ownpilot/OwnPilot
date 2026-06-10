@@ -2,7 +2,7 @@
  * Workflow Copilot — System prompt builder.
  *
  * Constructs a system prompt that teaches the AI how to generate valid
- * OwnPilot workflow JSON definitions (all 23 node types, edges, templates).
+ * OwnPilot workflow JSON definitions (all 24 node types, edges, templates).
  */
 
 interface WorkflowState {
@@ -459,6 +459,7 @@ Briefly explain what you built or changed before the JSON block.
 Most nodes support optional retry and timeout configuration:
 - \`retryCount\` (optional): 0-5, number of retries on failure (default: 0)
 - \`timeoutMs\` (optional): 0-300000, timeout in milliseconds (default: none)
+- Claw nodes are the exception: their \`timeoutMs\` is the max wait for the agent run (up to 86400000 = 24h, default 600000).
 Retry uses exponential backoff (100ms, 200ms, 400ms...). Supported by: toolNode, llmNode, conditionNode, codeNode, transformerNode, forEachNode, httpRequestNode, switchNode, notificationNode, filterNode, mapNode, schemaValidatorNode.
 Not supported by: triggerNode, delayNode, stickyNoteNode, approvalNode, parallelNode, mergeNode, errorHandlerNode, dataStoreNode, aggregateNode, webhookResponseNode.
 
@@ -597,7 +598,9 @@ Condition, Switch, Transformer, and Code nodes evaluate JavaScript expressions w
 14. Merge nodes should be placed downstream of Parallel nodes to collect branch results
 15. Approval nodes need a clear \`approvalMessage\` describing what needs to be approved
 16. Error handler nodes should be placed off the main flow — they only activate on errors
-17. Sub-workflow nodes MUST include \`subWorkflowId\` — the ID of the workflow to call`;
+17. Sub-workflow nodes MUST include \`subWorkflowId\` — the ID of the workflow to call
+18. Use ONLY the documented node types above — any other \`type\` value is rejected by validation
+19. Claw nodes MUST include both \`name\` and \`mission\``;
 
 /**
  * Build the full system prompt for the workflow copilot, optionally

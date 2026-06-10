@@ -65,3 +65,4 @@ export {
   type WebhookResponseNodeData,
   type WebhookResponseNodeType,
 } from './WebhookResponseNode';
+export { ClawNode, type ClawNodeData, type ClawNodeType } from './ClawNode';

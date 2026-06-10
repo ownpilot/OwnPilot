@@ -21,3 +21,4 @@ export { FilterConfigPanel } from './FilterConfigPanel';
 export { MapConfigPanel } from './MapConfigPanel';
 export { AggregateConfigPanel } from './AggregateConfigPanel';
 export { WebhookResponseConfigPanel } from './WebhookResponseConfigPanel';
+export { ClawConfigPanel } from './ClawConfigPanel';

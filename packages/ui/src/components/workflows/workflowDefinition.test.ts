@@ -163,4 +163,29 @@ describe('buildWorkflowDefinition', () => {
     });
     expect(definition.nodes[0]).not.toHaveProperty('key');
   });
+
+  it('exports claw nodes as portable claw definitions', () => {
+    const definition = buildWorkflowDefinition('Claw Flow', [
+      makeNode('clawNode', {
+        label: 'Research Agent',
+        name: 'Market Research',
+        mission: 'Research {{node_1.output.topic}}',
+        mode: 'single-shot',
+        sandbox: 'auto',
+        waitForCompletion: true,
+        timeoutMs: 600000,
+      }),
+    ]);
+
+    expect(definition.nodes[0]).toMatchObject({
+      type: 'claw',
+      label: 'Research Agent',
+      name: 'Market Research',
+      mission: 'Research {{node_1.output.topic}}',
+      mode: 'single-shot',
+      sandbox: 'auto',
+      waitForCompletion: true,
+      timeoutMs: 600000,
+    });
+  });
 });

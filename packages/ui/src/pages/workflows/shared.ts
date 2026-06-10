@@ -27,6 +27,7 @@ import {
   MapNode,
   AggregateNode,
   WebhookResponseNode,
+  ClawNode,
 } from '../../components/workflows';
 
 // Register custom node types
@@ -54,6 +55,7 @@ export const nodeTypes = {
   mapNode: MapNode,
   aggregateNode: AggregateNode,
   webhookResponseNode: WebhookResponseNode,
+  clawNode: ClawNode,
 };
 
 // Default edge options — arrow markers for flow direction

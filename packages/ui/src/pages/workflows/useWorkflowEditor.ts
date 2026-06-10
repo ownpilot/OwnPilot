@@ -207,7 +207,8 @@ export function useWorkflowEditor() {
             n.type === 'filterNode' ||
             n.type === 'mapNode' ||
             n.type === 'aggregateNode' ||
-            n.type === 'webhookResponseNode'
+            n.type === 'webhookResponseNode' ||
+            n.type === 'clawNode'
           ) {
             return {
               id: n.id,
@@ -313,7 +314,14 @@ export function useWorkflowEditor() {
         return;
 
       const def = json as unknown as WorkflowDefinition;
-      const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(def, toolNames);
+      const {
+        nodes: rfNodes,
+        edges: rfEdges,
+        skippedNodes,
+      } = convertDefinitionToReactFlow(def, toolNames);
+      if (skippedNodes.length > 0) {
+        toast.error(`Skipped unknown node(s): ${skippedNodes.join(', ')}`);
+      }
 
       const styledEdges = rfEdges.map((e) => ({
         ...e,
@@ -351,10 +359,14 @@ export function useWorkflowEditor() {
       )
         return;
 
-      const { nodes: rfNodes, edges: rfEdges } = convertDefinitionToReactFlow(
-        definition,
-        toolNames
-      );
+      const {
+        nodes: rfNodes,
+        edges: rfEdges,
+        skippedNodes,
+      } = convertDefinitionToReactFlow(definition, toolNames);
+      if (skippedNodes.length > 0) {
+        toast.error(`Skipped unknown node(s): ${skippedNodes.join(', ')}`);
+      }
 
       // Apply edge label styling
       const styledEdges = rfEdges.map((e) => ({

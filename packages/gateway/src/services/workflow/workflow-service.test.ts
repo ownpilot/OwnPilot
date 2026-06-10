@@ -970,6 +970,27 @@ function makeWorkflow(nodes: WorkflowNode[], edges = [], variables = {}) {
   return { id: 'wf-1', name: 'Test', nodes, edges, variables };
 }
 
+describe('unknown node types', () => {
+  it('fails the node instead of silently executing it as a tool node', async () => {
+    const nodes = [makeNode('x1', 'quantumNode', { foo: 'bar' })];
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'failed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e));
+
+    expect(mockExecuteNode).not.toHaveBeenCalled();
+    expect(
+      progressEvents.some(
+        (e) =>
+          e.type === 'node_error' &&
+          typeof e.error === 'string' &&
+          e.error.includes('Unknown node type "quantumNode"')
+      )
+    ).toBe(true);
+  });
+});
+
 describe('httpRequestNode', () => {
   it('executes httpRequestNode', async () => {
     const nodes = [

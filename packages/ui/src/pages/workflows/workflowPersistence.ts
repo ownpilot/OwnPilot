@@ -391,6 +391,30 @@ function serializeNode(node: Node): WorkflowNode {
     };
   }
 
+  if (node.type === 'clawNode') {
+    return {
+      ...base,
+      type: 'clawNode',
+      data: {
+        label: data.label ?? 'Claw Agent',
+        name: data.name ?? '',
+        mission: data.mission ?? '',
+        ...pickDefined(data, [
+          'mode',
+          'sandbox',
+          'waitForCompletion',
+          'timeoutMs',
+          'provider',
+          'model',
+          'codingAgentProvider',
+          'skills',
+          'description',
+        ]),
+        ...alias(data),
+      },
+    };
+  }
+
   if (node.type === 'webhookResponseNode') {
     const headers = parseHeaderLines(data.headers);
     return {

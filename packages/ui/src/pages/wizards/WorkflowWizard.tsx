@@ -381,6 +381,7 @@ Valid node types and their data fields:
 - "schemaValidatorNode": { "label", "schema": { "required": ["name"], "properties": { "name": { "type": "string" } } }, "strict"?: true }
 - "stickyNoteNode": { "label", "text": "...", "color"?: "yellow" } — annotation only, no connections
 - "webhookResponseNode": { "label", "statusCode"?: 200, "body": "{{node_3.output}}" }
+- "clawNode": { "label", "name": "Agent Name", "mission": "What the autonomous agent should accomplish", "mode"?: "single-shot", "sandbox"?: "auto" }
 
 Each edge: { "source": "node_1", "target": "node_2" }
 For conditionNode: add "sourceHandle": "true" or "false"
@@ -445,12 +446,18 @@ Return ONLY the JSON object, no explanations.`;
           edges = copilotGenerated.edges;
         }
 
+        // Backend edge schema requires an id — templates and AI output omit it
+        edges = (edges as Array<Record<string, unknown>>).map((e, i) => ({
+          ...e,
+          id: e.id ?? `edge_${e.source}_${e.target}_${i}`,
+        }));
+
         const workflow = await workflowsApi.create({
           name: name.trim(),
           description: description.trim() || undefined,
           nodes,
           edges,
-          status: 'draft',
+          status: 'inactive',
         });
         setResult({ ok: true, workflowId: workflow.id });
         setStep(3);

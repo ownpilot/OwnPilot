@@ -482,29 +482,69 @@ function SuggestionsList({ onSelect }: { onSelect: (s: string) => void }) {
 // Node conversion (AI JSON → ReactFlow nodes)
 // ============================================================================
 
+/** Definition (short) node types the converter understands. Keep in sync with the cases below. */
+const KNOWN_DEFINITION_TYPES = new Set([
+  'trigger',
+  'llm',
+  'condition',
+  'code',
+  'transformer',
+  'forEach',
+  'httpRequest',
+  'delay',
+  'switch',
+  'errorHandler',
+  'subWorkflow',
+  'approval',
+  'stickyNote',
+  'notification',
+  'parallel',
+  'merge',
+  'dataStore',
+  'schemaValidator',
+  'filter',
+  'map',
+  'aggregate',
+  'webhookResponse',
+  'claw',
+]);
+
 /**
  * Convert AI-generated workflow definition into ReactFlow nodes and edges.
  * This is the reverse of `buildWorkflowDefinition` in WorkflowSourceModal.
+ *
+ * Nodes with an unrecognized `type` (and no `tool` field) are skipped and
+ * reported via `skippedNodes` instead of being silently converted into
+ * broken tool nodes.
  */
 export function convertDefinitionToReactFlow(
   definition: WorkflowDefinition,
   availableToolNames?: string[]
-): { nodes: Node[]; edges: Edge[] } {
+): { nodes: Node[]; edges: Edge[]; skippedNodes: string[] } {
   // Build lookup for resolving AI-generated tool names that may be missing dots
   const resolveToolName = buildToolNameResolver(availableToolNames);
 
   // Deduplicate trigger nodes — only keep the first one (should be node_1).
   // AI sometimes generates multiple triggers when editing workflows.
   let seenTrigger = false;
+  const skippedNodes: string[] = [];
   const dedupedNodes = definition.nodes.filter((def) => {
     if (def.type === 'trigger') {
       if (seenTrigger) return false; // Drop duplicate trigger
       seenTrigger = true;
+      return true;
+    }
+    // A node is convertible if its type is known, or it is a tool node
+    // (tool nodes carry a `tool` field and usually no `type` field).
+    const hasKnownType = typeof def.type === 'string' && KNOWN_DEFINITION_TYPES.has(def.type);
+    if (!hasKnownType && def.tool == null) {
+      skippedNodes.push(`${(def.id as string) ?? '?'} (${(def.type as string) ?? 'no type'})`);
+      return false;
     }
     return true;
   });
 
-  // Remove edges that reference dropped trigger nodes
+  // Remove edges that reference dropped trigger/unknown nodes
   const keptNodeIds = new Set(dedupedNodes.map((n) => n.id as string));
   const dedupedEdges = definition.edges.filter(
     (e) => keptNodeIds.has(e.source) && keptNodeIds.has(e.target)
@@ -856,6 +896,30 @@ export function convertDefinitionToReactFlow(
       };
     }
 
+    if (def.type === 'claw') {
+      return {
+        id,
+        type: 'clawNode',
+        position,
+        data: {
+          label: def.label ?? 'Claw Agent',
+          name: (def.name as string) ?? '',
+          mission: (def.mission as string) ?? '',
+          ...(def.mode != null ? { mode: def.mode } : {}),
+          ...(def.sandbox != null ? { sandbox: def.sandbox } : {}),
+          ...(def.waitForCompletion != null ? { waitForCompletion: def.waitForCompletion } : {}),
+          ...(def.timeoutMs != null ? { timeoutMs: def.timeoutMs } : {}),
+          ...(def.provider != null ? { provider: def.provider } : {}),
+          ...(def.model != null ? { model: def.model } : {}),
+          ...(def.codingAgentProvider != null
+            ? { codingAgentProvider: def.codingAgentProvider }
+            : {}),
+          ...(def.skills != null ? { skills: def.skills } : {}),
+          ...(def.description != null ? { description: def.description } : {}),
+        },
+      };
+    }
+
     // Default: tool node (no type field, has "tool" field)
     const rawToolName = (def.tool as string) || 'unknown_tool';
     const toolName = resolveToolName(rawToolName);
@@ -880,7 +944,7 @@ export function convertDefinitionToReactFlow(
     ...(e.targetHandle ? { targetHandle: e.targetHandle } : {}),
   }));
 
-  return { nodes, edges: rfEdges };
+  return { nodes, edges: rfEdges, skippedNodes };
 }
 
 /**

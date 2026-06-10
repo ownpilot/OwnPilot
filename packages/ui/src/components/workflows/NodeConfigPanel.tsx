@@ -35,6 +35,7 @@ import {
   MapConfigPanel,
   AggregateConfigPanel,
   WebhookResponseConfigPanel,
+  ClawConfigPanel,
 } from './panels';
 
 // ============================================================================
@@ -276,6 +277,9 @@ export function NodeConfigPanel(props: NodeConfigPanelProps) {
   }
   if (props.node.type === 'webhookResponseNode') {
     return <WebhookResponseConfigPanel {...props} />;
+  }
+  if (props.node.type === 'clawNode') {
+    return <ClawConfigPanel {...props} />;
   }
   return <ToolConfigPanel {...props} />;
 }

@@ -308,6 +308,27 @@ function serializeNode(node: Node): Record<string, unknown> {
     };
   }
 
+  if (node.type === 'clawNode') {
+    return {
+      ...base,
+      type: 'claw',
+      label: data.label ?? 'Claw Agent',
+      name: data.name ?? '',
+      mission: data.mission ?? '',
+      ...pickDefined(data, [
+        'mode',
+        'sandbox',
+        'waitForCompletion',
+        'timeoutMs',
+        'provider',
+        'model',
+        'codingAgentProvider',
+        'skills',
+        'description',
+      ]),
+    };
+  }
+
   if (node.type === 'webhookResponseNode') {
     const headers = normalizeHeaders(data.headers);
     return {

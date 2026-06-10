@@ -7,5 +7,6 @@
  */
 
 export { topologicalSort } from './dag-utils.js';
+export { WORKFLOW_NODE_TYPES } from './node-types.js';
 export { resolveTemplates } from './template-resolver.js';
 export { WorkflowService, getWorkflowService } from './workflow-service.js';

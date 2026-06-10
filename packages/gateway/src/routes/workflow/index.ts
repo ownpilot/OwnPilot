@@ -22,6 +22,7 @@ import { ERROR_CODES } from '../error-codes.js';
 import { createWorkflowsRepository } from '../../db/repositories/workflows/index.js';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflows/approvals.js';
 import { topologicalSort, getWorkflowService } from '../../services/workflow/index.js';
+import { WORKFLOW_NODE_TYPES } from '../../services/workflow/node-types.js';
 import {
   detectCycle,
   type ValidationNode,
@@ -62,6 +63,11 @@ const AGGREGATE_OPERATIONS = new Set([
   'flatten',
   'unique',
 ]);
+const CLAW_MODES = new Set(['single-shot', 'continuous', 'interval', 'event']);
+const CLAW_SANDBOXES = new Set(['auto', 'docker', 'local']);
+/** Claw nodes wait on a full autonomous agent run, so they get a higher timeout ceiling (24h). */
+const CLAW_MAX_TIMEOUT_MS = 86_400_000;
+const DEFAULT_MAX_TIMEOUT_MS = 300_000;
 
 function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
   const errors: string[] = [];
@@ -87,10 +93,17 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
   // ── Per-node required fields ──
   for (const node of nodes) {
     const d = node.data;
+
+    // Unknown node types would silently execute as tool nodes — reject at save time
+    if (node.type && !WORKFLOW_NODE_TYPES.has(node.type)) {
+      errors.push(`Node "${node.id}": Unknown node type "${node.type}"`);
+      continue;
+    }
+
     switch (node.type) {
       case 'llmNode':
-        if (!d.provider) errors.push(`Node "${node.id}": LLM node requires "provider"`);
-        if (!d.model) errors.push(`Node "${node.id}": LLM node requires "model"`);
+        // provider/model are optional — the executor resolves the user's
+        // configured defaults when they are empty or "default"
         if (!d.userMessage) errors.push(`Node "${node.id}": LLM node requires "userMessage"`);
         break;
       case 'conditionNode':
@@ -194,6 +207,16 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
       case 'webhookResponseNode':
         // All fields are optional
         break;
+      case 'clawNode':
+        if (!d.name) errors.push(`Node "${node.id}": Claw node requires "name"`);
+        if (!d.mission) errors.push(`Node "${node.id}": Claw node requires "mission"`);
+        if (d.mode != null && !CLAW_MODES.has(String(d.mode))) {
+          errors.push(`Node "${node.id}": Claw node has invalid "mode"`);
+        }
+        if (d.sandbox != null && !CLAW_SANDBOXES.has(String(d.sandbox))) {
+          errors.push(`Node "${node.id}": Claw node has invalid "sandbox"`);
+        }
+        break;
     }
 
     // ── Common field range checks ──
@@ -201,8 +224,9 @@ function validateWorkflowSemantics(nodes: WfNode[], edges: WfEdge[]): string[] {
       if (typeof d.retryCount === 'number' && (d.retryCount < 0 || d.retryCount > 5)) {
         errors.push(`Node "${node.id}": retryCount must be between 0 and 5`);
       }
-      if (typeof d.timeoutMs === 'number' && (d.timeoutMs < 0 || d.timeoutMs > 300000)) {
-        errors.push(`Node "${node.id}": timeoutMs must be between 0 and 300000`);
+      const maxTimeoutMs = node.type === 'clawNode' ? CLAW_MAX_TIMEOUT_MS : DEFAULT_MAX_TIMEOUT_MS;
+      if (typeof d.timeoutMs === 'number' && (d.timeoutMs < 0 || d.timeoutMs > maxTimeoutMs)) {
+        errors.push(`Node "${node.id}": timeoutMs must be between 0 and ${maxTimeoutMs}`);
       }
     }
   }

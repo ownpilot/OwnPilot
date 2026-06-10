@@ -38,6 +38,7 @@ import {
   Filter,
   BarChart,
   Send,
+  Bot,
 } from '../icons';
 
 // ============================================================================
@@ -263,6 +264,15 @@ const NODE_TYPES: Array<{
     bg: 'bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30',
     text: 'text-rose-700 dark:text-rose-300',
     border: 'border-rose-300 dark:border-rose-700',
+  },
+  // --- Autonomous Agents ---
+  {
+    type: 'clawNode',
+    label: 'Claw Agent',
+    icon: Bot,
+    bg: 'bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30',
+    text: 'text-orange-700 dark:text-orange-300',
+    border: 'border-orange-300 dark:border-orange-700',
   },
 ];
 

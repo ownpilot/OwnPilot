@@ -394,6 +394,93 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
     setHasUnsavedChanges(true);
   }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
 
+  /** Add an Error Handler node (max 1 per workflow, mirrors backend rule) */
+  const addErrorHandlerNode = useCallback(() => {
+    if (nodes.some((n) => n.type === 'errorHandlerNode')) {
+      toast.warning('Only one error handler node per workflow');
+      return;
+    }
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'errorHandlerNode',
+        position: { x, y },
+        data: { label: 'Error Handler' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, toast, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Sub-Workflow node */
+  const addSubWorkflowNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'subWorkflowNode',
+        position: { x, y },
+        data: { label: 'Sub-Workflow' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add an Approval Gate node */
+  const addApprovalNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'approvalNode',
+        position: { x, y },
+        data: { label: 'Approval Gate', approvalMessage: '' },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
+  /** Add a Claw agent node */
+  const addClawNode = useCallback(() => {
+    nodeIdCounter.current += 1;
+    const newNodeId = `node_${nodeIdCounter.current}`;
+    const { x, y } = calcNewNodePosition(nodes);
+
+    setNodes((nds) => [
+      ...nds,
+      {
+        id: newNodeId,
+        type: 'clawNode',
+        position: { x, y },
+        data: {
+          label: 'Claw Agent',
+          name: '',
+          mission: '',
+          mode: 'single-shot',
+          sandbox: 'auto',
+          waitForCompletion: true,
+        },
+      },
+    ]);
+    setSelectedNodeId(newNodeId);
+    setHasUnsavedChanges(true);
+  }, [nodes, setNodes, nodeIdCounter, setSelectedNodeId, setHasUnsavedChanges]);
+
   /** Add a Sticky Note node from the toolbar button */
   const addStickyNoteNode = useCallback(() => {
     nodeIdCounter.current += 1;
@@ -532,6 +619,18 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
         case 'webhookResponseNode':
           addWebhookResponseNode();
           break;
+        case 'errorHandlerNode':
+          addErrorHandlerNode();
+          break;
+        case 'subWorkflowNode':
+          addSubWorkflowNode();
+          break;
+        case 'approvalNode':
+          addApprovalNode();
+          break;
+        case 'clawNode':
+          addClawNode();
+          break;
       }
     },
     [
@@ -554,6 +653,10 @@ export function useWorkflowNodes(params: WorkflowNodesParams) {
       addMapNode,
       addAggregateNode,
       addWebhookResponseNode,
+      addErrorHandlerNode,
+      addSubWorkflowNode,
+      addApprovalNode,
+      addClawNode,
     ]
   );
 

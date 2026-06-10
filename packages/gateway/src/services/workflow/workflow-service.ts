@@ -35,6 +35,7 @@ import {
   getForEachBodyNodes,
 } from './dag-utils.js';
 import { resolveTemplates } from './template-resolver.js';
+import { WORKFLOW_NODE_TYPES } from './node-types.js';
 import { enqueueWorkflowLevel } from './workflow-node-job-handler.js';
 import {
   executeNode,
@@ -1488,6 +1489,22 @@ export class WorkflowService implements IWorkflowService {
         },
         onProgress
       );
+    }
+
+    // ── Unknown node type guard ──
+    // Without this, any unrecognized type would silently execute as a tool
+    // node (treating its data as ToolNodeData) and fail with a confusing
+    // "tool not found" error — or worse, run an unintended tool.
+    if (node.type && !WORKFLOW_NODE_TYPES.has(node.type)) {
+      const now = new Date().toISOString();
+      return {
+        nodeId,
+        status: 'error',
+        error: `Unknown node type "${node.type}"`,
+        startedAt: now,
+        completedAt: now,
+        durationMs: 0,
+      };
     }
 
     // ── Default: toolNode ──

@@ -28,6 +28,7 @@ import {
   Filter,
   BarChart,
   Send,
+  Bot,
 } from '../icons';
 
 interface SearchableItem {
@@ -171,6 +172,13 @@ const NODE_ITEMS: SearchableItem[] = [
     label: 'Webhook Response',
     icon: Send,
     color: 'text-rose-500',
+  },
+  {
+    type: 'node',
+    nodeType: 'clawNode',
+    label: 'Claw Agent',
+    icon: Bot,
+    color: 'text-orange-500',
   },
 ];
 
