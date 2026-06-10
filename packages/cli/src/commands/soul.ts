@@ -4,22 +4,13 @@
  * These commands interact with the gateway REST API.
  */
 
-const API_BASE = process.env.OWNPILOT_API_URL || 'http://localhost:8080/api/v1';
+import { apiFetch } from './gateway-client.js';
 
+/** Thin wrapper over the shared gateway client preserving the local call shape. */
 async function api(path: string, method = 'GET', body?: unknown): Promise<unknown> {
-  const opts: RequestInit = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${API_BASE}${path}`, opts);
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`API ${method} ${path} failed (${res.status}): ${text}`);
-  }
-  const json = (await res.json()) as { success: boolean; data: unknown; error?: unknown };
-  if (!json.success) throw new Error(`API error: ${JSON.stringify(json.error)}`);
-  return json.data;
+  const options: RequestInit = { method };
+  if (body !== undefined) options.body = JSON.stringify(body);
+  return apiFetch<unknown>(path, options);
 }
 
 // ─── Soul commands ──────────────────────────────────────────────────────

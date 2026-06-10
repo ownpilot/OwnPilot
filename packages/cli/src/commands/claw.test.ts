@@ -14,8 +14,7 @@ function apiErr(status = 500) {
   return {
     ok: false,
     status,
-    text: async () => 'Server error',
-    statusText: 'Internal Server Error',
+    json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'Server error' } }),
   };
 }
 
@@ -489,7 +488,7 @@ describe('Claw CLI Commands', () => {
   describe('API failures', () => {
     it('throws when gateway returns an error', async () => {
       mockFetch.mockResolvedValueOnce(apiErr(500));
-      await expect(clawList()).rejects.toThrow(/failed.*500/);
+      await expect(clawList()).rejects.toThrow(/Server error/);
     });
   });
 });

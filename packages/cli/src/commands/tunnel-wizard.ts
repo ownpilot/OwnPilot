@@ -29,18 +29,7 @@ interface TunnelStartResponse {
 // ============================================================================
 // apiFetch + auth-header attachment lives in `./gateway-client.ts`.
 
-import { apiFetch, gatewayUnreachableMessage } from './gateway-client.js';
-
-function ensureGatewayError(error: unknown): never {
-  const hint = gatewayUnreachableMessage(error);
-  if (hint) {
-    console.error(hint);
-  } else {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error(`\nError: ${msg}\n`);
-  }
-  process.exit(1);
-}
+import { apiFetch, ensureGatewayError } from './gateway-client.js';
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

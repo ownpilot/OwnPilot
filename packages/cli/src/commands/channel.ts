@@ -38,18 +38,7 @@ interface SetupResponse {
 // Authorization header (OWNPILOT_API_KEY / OWNPILOT_JWT) is attached
 // consistently across every CLI subcommand that talks to the gateway.
 
-import { apiFetch, gatewayUnreachableMessage } from './gateway-client.js';
-
-function ensureGatewayError(error: unknown): never {
-  const hint = gatewayUnreachableMessage(error);
-  if (hint) {
-    console.error(hint);
-  } else {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error(`\nError: ${msg}\n`);
-  }
-  process.exit(1);
-}
+import { apiFetch, ensureGatewayError } from './gateway-client.js';
 
 // ============================================================================
 // Helpers

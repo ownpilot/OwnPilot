@@ -19,8 +19,7 @@ function apiErr(status = 500) {
   return {
     ok: false,
     status,
-    text: async () => 'Server error',
-    statusText: 'Internal Server Error',
+    json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'Server error' } }),
   };
 }
 
@@ -343,7 +342,7 @@ describe('Soul CLI Commands', () => {
   describe('API errors', () => {
     it('throws on non-ok response', async () => {
       mockFetch.mockResolvedValueOnce(apiErr(500));
-      await expect(soulList()).rejects.toThrow(/failed.*500/);
+      await expect(soulList()).rejects.toThrow(/Server error/);
     });
   });
 });

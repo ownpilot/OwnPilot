@@ -14,7 +14,7 @@
  * `ownpilot server` itself runs fine.
  */
 
-function getBaseUrl(): string {
+export function getBaseUrl(): string {
   return process.env.OWNPILOT_GATEWAY_URL ?? 'http://localhost:8080';
 }
 
@@ -77,4 +77,20 @@ export function gatewayUnreachableMessage(error: unknown): string | null {
     );
   }
   return null;
+}
+
+/**
+ * Print a user-facing error for a failed gateway call and exit(1). Shows the
+ * "is the gateway running?" hint for connection errors, otherwise the raw
+ * error message.
+ */
+export function ensureGatewayError(error: unknown): never {
+  const hint = gatewayUnreachableMessage(error);
+  if (hint) {
+    console.error(hint);
+  } else {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`\nError: ${msg}\n`);
+  }
+  process.exit(1);
 }

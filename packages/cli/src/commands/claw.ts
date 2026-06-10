@@ -2,26 +2,17 @@
  * Claw CLI commands — drive autonomous Claw runtimes from the terminal.
  *
  * These commands interact with the gateway REST API (/api/v1/claws). The
- * gateway must be running and reachable at OWNPILOT_API_URL (default
- * http://localhost:8080/api/v1).
+ * gateway must be running and reachable at OWNPILOT_GATEWAY_URL (default
+ * http://localhost:8080).
  */
 
-const API_BASE = process.env.OWNPILOT_API_URL || 'http://localhost:8080/api/v1';
+import { apiFetch, getBaseUrl } from './gateway-client.js';
 
+/** Thin wrapper over the shared gateway client preserving the local call shape. */
 async function api(path: string, method = 'GET', body?: unknown): Promise<unknown> {
-  const opts: RequestInit = {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${API_BASE}${path}`, opts);
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`API ${method} ${path} failed (${res.status}): ${text}`);
-  }
-  const json = (await res.json()) as { success: boolean; data: unknown; error?: unknown };
-  if (!json.success) throw new Error(`API error: ${JSON.stringify(json.error)}`);
-  return json.data;
+  const options: RequestInit = { method };
+  if (body !== undefined) options.body = JSON.stringify(body);
+  return apiFetch<unknown>(path, options);
 }
 
 interface ClawSummary {
@@ -239,17 +230,15 @@ export async function clawDenyEscalation(id: string, ...reasonParts: string[]): 
 // ─── Live event watch ───────────────────────────────────────────────────
 
 /**
- * Derive the WebSocket URL from `OWNPILOT_API_URL` (which is the HTTP
- * base, e.g. `http://localhost:8080/api/v1`). The gateway's WS endpoint
- * lives at `/ws` on the root, not under `/api/v1`, so we strip the API
- * prefix when present.
+ * Derive the WebSocket URL from the shared gateway base URL
+ * (`OWNPILOT_GATEWAY_URL`, e.g. `http://localhost:8080`). The gateway's WS
+ * endpoint lives at `/ws` on the server root.
  */
 function deriveWsUrl(): string {
   const explicit = process.env.OWNPILOT_WS_URL;
   if (explicit) return explicit;
-  const url = new URL(API_BASE);
+  const url = new URL(getBaseUrl());
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  // Strip the /api/v1 suffix so we land on /ws at the server root.
   url.pathname = '/ws';
   url.search = '';
   return url.toString();
