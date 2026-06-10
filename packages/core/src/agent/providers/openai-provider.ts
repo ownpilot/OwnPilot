@@ -29,6 +29,7 @@ import {
 import { getErrorMessage } from '../../services/error-utils.js';
 import { desanitizeToolName } from '../tool-namespace.js';
 import { getAuthHeader, type ResolvedAuth } from './configs/types.js';
+import { readSseData, runProviderHealthCheck } from './shared.js';
 
 /**
  * Build the Authorization header from either the new `resolvedAuth`
@@ -105,56 +106,20 @@ export class OpenAIProvider extends BaseProvider {
   }
 
   async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
-    const start = Date.now();
-    const timeoutMs = 5000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      if (!this.isReady()) {
-        clearTimeout(timeoutId);
-        return ok({
-          providerId: 'openai',
-          status: 'unavailable',
-          error: 'API key not configured',
-          checkedAt: new Date(),
-        });
-      }
-
-      const response = await fetch(`${this.config.baseUrl}/models`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader(this.config),
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        return ok({
-          providerId: 'openai',
-          status: 'ok',
-          latencyMs: Date.now() - start,
-          checkedAt: new Date(),
-        });
-      }
-
-      return ok({
-        providerId: 'openai',
-        status: 'unavailable',
-        error: `HTTP ${response.status}: ${response.statusText}`,
-        checkedAt: new Date(),
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return ok({
-        providerId: 'openai',
-        status: 'unavailable',
-        error: err instanceof Error ? err.message : String(err),
-        checkedAt: new Date(),
-      });
-    }
+    return runProviderHealthCheck({
+      providerId: 'openai',
+      ready: this.isReady(),
+      notConfiguredError: 'API key not configured',
+      request: (signal) =>
+        fetch(`${this.config.baseUrl}/models`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader(this.config),
+          },
+          signal,
+        }),
+    });
   }
 
   async complete(
@@ -360,65 +325,42 @@ export class OpenAIProvider extends BaseProvider {
       const bridgeConvId = response.headers?.get?.('x-conversation-id') ?? undefined;
       const bridgeSessionId = response.headers?.get?.('x-session-id') ?? undefined;
 
-      const reader = response.body!.getReader();
-      try {
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (data === '[DONE]') {
-              yield ok({
-                id: '',
-                done: true,
-                ...(bridgeConvId || bridgeSessionId
-                  ? {
-                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                    }
-                  : {}),
-              });
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data) as OpenAIResponse;
-              const choice = parsed.choices?.[0];
-              const delta = choice?.delta ?? {};
-
-              yield ok({
-                id: parsed.id ?? '',
-                content: delta.content,
-                toolCalls: delta.tool_calls?.map((tc) => ({
-                  id: tc.id,
-                  name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
-                  arguments: tc.function?.arguments,
-                  index: (tc as { index?: number }).index,
-                })),
-                done: choice?.finish_reason != null,
-                finishReason: choice?.finish_reason
-                  ? this.mapFinishReason(choice.finish_reason)
-                  : undefined,
-                usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
-              });
-            } catch {
-              // Skip malformed chunks
-            }
-          }
+      for await (const data of readSseData(response.body!)) {
+        if (data === '[DONE]') {
+          yield ok({
+            id: '',
+            done: true,
+            ...(bridgeConvId || bridgeSessionId
+              ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                }
+              : {}),
+          });
+          return;
         }
-      } finally {
+
         try {
-          await reader.cancel();
+          const parsed = JSON.parse(data) as OpenAIResponse;
+          const choice = parsed.choices?.[0];
+          const delta = choice?.delta ?? {};
+
+          yield ok({
+            id: parsed.id ?? '',
+            content: delta.content,
+            toolCalls: delta.tool_calls?.map((tc) => ({
+              id: tc.id,
+              name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
+              arguments: tc.function?.arguments,
+              index: (tc as { index?: number }).index,
+            })),
+            done: choice?.finish_reason != null,
+            finishReason: choice?.finish_reason
+              ? this.mapFinishReason(choice.finish_reason)
+              : undefined,
+            usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
+          });
         } catch {
-          /* already released */
+          // Skip malformed chunks
         }
       }
     } catch (error) {

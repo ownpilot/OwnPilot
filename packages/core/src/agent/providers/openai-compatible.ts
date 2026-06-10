@@ -36,6 +36,7 @@ import {
   type ResolvedProviderConfig,
 } from './configs/index.js';
 import { getAuthHeader, type ResolvedAuth } from './configs/types.js';
+import { readSseData, runProviderHealthCheck, approximateTokenCount } from './shared.js';
 
 /**
  * Build the Authorization header from either the new `resolvedAuth`
@@ -154,56 +155,20 @@ export class OpenAICompatibleProvider {
   }
 
   async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
-    const start = Date.now();
-    const timeoutMs = 5000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      if (!this.isReady()) {
-        clearTimeout(timeoutId);
-        return ok({
-          providerId: this.providerId,
-          status: 'unavailable',
-          error: 'API key or base URL not configured',
-          checkedAt: new Date(),
-        });
-      }
-
-      const response = await fetch(`${this.config.baseUrl}/models`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: authHeader(this.config),
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        return ok({
-          providerId: this.providerId,
-          status: 'ok',
-          latencyMs: Date.now() - start,
-          checkedAt: new Date(),
-        });
-      }
-
-      return ok({
-        providerId: this.providerId,
-        status: 'unavailable',
-        error: `HTTP ${response.status}: ${response.statusText}`,
-        checkedAt: new Date(),
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return ok({
-        providerId: this.providerId,
-        status: 'unavailable',
-        error: err instanceof Error ? err.message : String(err),
-        checkedAt: new Date(),
-      });
-    }
+    return runProviderHealthCheck({
+      providerId: this.providerId,
+      ready: this.isReady(),
+      notConfiguredError: 'API key or base URL not configured',
+      request: (signal) =>
+        fetch(`${this.config.baseUrl}/models`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader(this.config),
+          },
+          signal,
+        }),
+    });
   }
 
   async complete(
@@ -339,103 +304,81 @@ export class OpenAICompatibleProvider {
       const bridgeConvId = response.headers.get('x-conversation-id') ?? undefined;
       const bridgeSessionId = response.headers.get('x-session-id') ?? undefined;
 
-      const reader = response.body.getReader();
-      try {
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let reasoningBuffer = '';
-        let reasoningDone = false;
+      let reasoningBuffer = '';
+      let reasoningDone = false;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (process.env.OWNPILOT_DEBUG_STREAM) {
-              console.log(`[stream:${this.providerId}] ${data.slice(0, 500)}`);
-            }
-            if (data === '[DONE]') {
-              yield ok({
-                id: '',
-                done: true,
-                ...(bridgeConvId || bridgeSessionId
-                  ? {
-                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                    }
-                  : {}),
-              });
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data) as OpenAIResponse;
-              const choice = parsed.choices?.[0];
-              const delta = choice?.delta ?? {};
-
-              // Handle reasoning content streaming (DeepSeek R1, QwQ, MiniMax-M2)
-              if (delta.reasoning_content) {
-                reasoningBuffer += delta.reasoning_content;
-                yield ok({
-                  id: parsed.id ?? '',
-                  content: delta.reasoning_content,
-                  metadata: { type: 'reasoning' },
-                  done: false,
-                });
-                // Skip the rest of this iteration only when the chunk is
-                // reasoning-only. Some providers (notably MiniMax) bundle
-                // reasoning_content together with delta.content / tool_calls
-                // / finish_reason in the SAME chunk — `continue` here would
-                // silently drop the final answer or stop signal.
-                if (!delta.content && !delta.tool_calls && choice?.finish_reason == null) {
-                  continue;
+      for await (const data of readSseData(response.body)) {
+        if (process.env.OWNPILOT_DEBUG_STREAM) {
+          console.log(`[stream:${this.providerId}] ${data.slice(0, 500)}`);
+        }
+        if (data === '[DONE]') {
+          yield ok({
+            id: '',
+            done: true,
+            ...(bridgeConvId || bridgeSessionId
+              ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
                 }
-              }
+              : {}),
+          });
+          return;
+        }
 
-              // When switching from reasoning to content
-              if (reasoningBuffer && !reasoningDone && delta.content) {
-                reasoningDone = true;
-                yield ok({
-                  id: parsed.id ?? '',
-                  content: '\n\n',
-                  done: false,
-                });
-              }
+        try {
+          const parsed = JSON.parse(data) as OpenAIResponse;
+          const choice = parsed.choices?.[0];
+          const delta = choice?.delta ?? {};
 
-              yield ok({
-                id: parsed.id ?? '',
-                content: delta.content,
-                toolCalls: delta.tool_calls?.map((tc) => ({
-                  id: tc.id,
-                  name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
-                  arguments: tc.function?.arguments,
-                })),
-                done: choice?.finish_reason != null,
-                finishReason: choice?.finish_reason
-                  ? this.mapFinishReason(choice.finish_reason)
-                  : undefined,
-                usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
-                ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId)
-                  ? {
-                      responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
-                    }
-                  : {}),
-              });
-            } catch {
-              // Skip malformed chunks
+          // Handle reasoning content streaming (DeepSeek R1, QwQ, MiniMax-M2)
+          if (delta.reasoning_content) {
+            reasoningBuffer += delta.reasoning_content;
+            yield ok({
+              id: parsed.id ?? '',
+              content: delta.reasoning_content,
+              metadata: { type: 'reasoning' },
+              done: false,
+            });
+            // Skip the rest of this iteration only when the chunk is
+            // reasoning-only. Some providers (notably MiniMax) bundle
+            // reasoning_content together with delta.content / tool_calls
+            // / finish_reason in the SAME chunk — `continue` here would
+            // silently drop the final answer or stop signal.
+            if (!delta.content && !delta.tool_calls && choice?.finish_reason == null) {
+              continue;
             }
           }
-        }
-      } finally {
-        try {
-          await reader.cancel();
+
+          // When switching from reasoning to content
+          if (reasoningBuffer && !reasoningDone && delta.content) {
+            reasoningDone = true;
+            yield ok({
+              id: parsed.id ?? '',
+              content: '\n\n',
+              done: false,
+            });
+          }
+
+          yield ok({
+            id: parsed.id ?? '',
+            content: delta.content,
+            toolCalls: delta.tool_calls?.map((tc) => ({
+              id: tc.id,
+              name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
+              arguments: tc.function?.arguments,
+            })),
+            done: choice?.finish_reason != null,
+            finishReason: choice?.finish_reason
+              ? this.mapFinishReason(choice.finish_reason)
+              : undefined,
+            usage: parsed.usage ? this.mapUsage(parsed.usage) : undefined,
+            ...(choice?.finish_reason != null && (bridgeConvId || bridgeSessionId)
+              ? {
+                  responseMetadata: { bridgeConversationId: bridgeConvId, bridgeSessionId },
+                }
+              : {}),
+          });
         } catch {
-          /* already released */
+          // Skip malformed chunks
         }
       }
     } catch (error) {
@@ -489,19 +432,7 @@ export class OpenAICompatibleProvider {
    * Approximate token count
    */
   countTokens(messages: readonly Message[]): number {
-    let totalChars = 0;
-    for (const msg of messages) {
-      if (typeof msg.content === 'string') {
-        totalChars += msg.content.length;
-      } else {
-        for (const part of msg.content) {
-          if (part.type === 'text') {
-            totalChars += part.text.length;
-          }
-        }
-      }
-    }
-    return Math.ceil(totalChars / 4);
+    return approximateTokenCount(messages);
   }
 
   /**

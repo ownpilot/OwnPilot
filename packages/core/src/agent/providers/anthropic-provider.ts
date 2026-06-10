@@ -30,6 +30,7 @@ import {
 } from '../debug.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
+import { readSseData, runProviderHealthCheck } from './shared.js';
 
 /**
  * Anthropic API response types
@@ -104,62 +105,25 @@ export class AnthropicProvider extends BaseProvider {
   }
 
   async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
-    const start = Date.now();
-    const timeoutMs = 5000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      if (!this.isReady()) {
-        clearTimeout(timeoutId);
-        return ok({
-          providerId: 'anthropic',
-          status: 'unavailable',
-          error: 'API key not configured',
-          checkedAt: new Date(),
-        });
-      }
-
-      const response = await fetch(`${this.config.baseUrl}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.config.apiKey ?? '',
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 1, messages: [] }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        return ok({
-          providerId: 'anthropic',
-          status: 'ok',
-          latencyMs: Date.now() - start,
-          checkedAt: new Date(),
-        });
-      }
-
+    return runProviderHealthCheck({
+      providerId: 'anthropic',
+      ready: this.isReady(),
+      notConfiguredError: 'API key not configured',
       // 401 is auth error — still means the endpoint is reachable
-      const isAuthError = response.status === 401;
-      return ok({
-        providerId: 'anthropic',
-        status: isAuthError ? 'ok' : 'unavailable',
-        error: isAuthError ? undefined : `HTTP ${response.status}: ${response.statusText}`,
-        latencyMs: Date.now() - start,
-        checkedAt: new Date(),
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return ok({
-        providerId: 'anthropic',
-        status: 'unavailable',
-        error: err instanceof Error ? err.message : String(err),
-        checkedAt: new Date(),
-      });
-    }
+      authErrorIsOk: true,
+      request: (signal) =>
+        fetch(`${this.config.baseUrl}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.config.apiKey ?? '',
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 1, messages: [] }),
+          signal,
+        }),
+    });
   }
 
   async complete(
@@ -398,146 +362,120 @@ export class AnthropicProvider extends BaseProvider {
         return;
       }
 
-      const reader = response.body.getReader();
-      try {
-        const decoder = new TextDecoder();
-        let buffer = '';
-        // Track tool calls across content blocks
-        const toolCallBlocks: Array<{ id: string; name: string; arguments: string }> = [];
-        let currentToolBlockIndex = -1;
-        // Track input tokens from message_start
-        let inputTokens = 0;
-        // Track thinking blocks for tool use roundtrips
-        const thinkingBlocks: Record<string, unknown>[] = [];
-        // Current thinking block being streamed
-        let currentThinkingText = '';
-        let currentThinkingSignature = '';
-        // Track current content block type
-        let currentBlockType: string | undefined;
+      // Track tool calls across content blocks
+      const toolCallBlocks: Array<{ id: string; name: string; arguments: string }> = [];
+      let currentToolBlockIndex = -1;
+      // Track input tokens from message_start
+      let inputTokens = 0;
+      // Track thinking blocks for tool use roundtrips
+      const thinkingBlocks: Record<string, unknown>[] = [];
+      // Current thinking block being streamed
+      let currentThinkingText = '';
+      let currentThinkingSignature = '';
+      // Track current content block type
+      let currentBlockType: string | undefined;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (!data) continue;
-
-            try {
-              const parsed = JSON.parse(data) as AnthropicStreamEvent;
-
-              if (parsed.type === 'message_start') {
-                // Capture input token count from the initial message
-                inputTokens = parsed.message?.usage?.input_tokens ?? 0;
-              } else if (parsed.type === 'content_block_start') {
-                currentBlockType = parsed.content_block?.type;
-
-                if (currentBlockType === 'tool_use') {
-                  // Track tool_use blocks as they start
-                  currentToolBlockIndex = parsed.index ?? toolCallBlocks.length;
-                  toolCallBlocks[currentToolBlockIndex] = {
-                    id: parsed.content_block?.id ?? '',
-                    name: parsed.content_block?.name
-                      ? desanitizeToolName(parsed.content_block.name)
-                      : '',
-                    arguments: '',
-                  };
-                } else if (currentBlockType === 'thinking') {
-                  // Reset current thinking accumulator
-                  currentThinkingText = '';
-                  currentThinkingSignature = '';
-                } else if (currentBlockType === 'redacted_thinking') {
-                  // Capture redacted thinking block immediately
-                  thinkingBlocks.push({
-                    type: 'redacted_thinking',
-                    data: parsed.content_block?.data,
-                  });
-                }
-              } else if (parsed.type === 'content_block_delta') {
-                if (parsed.delta?.type === 'thinking_delta') {
-                  // Thinking content delta — stream to client
-                  const thinkingText = parsed.delta.thinking ?? '';
-                  currentThinkingText += thinkingText;
-                  yield ok({
-                    id: '',
-                    content: thinkingText,
-                    metadata: { type: 'thinking' },
-                    done: false,
-                  });
-                } else if (parsed.delta?.type === 'signature_delta') {
-                  // Capture thinking signature
-                  currentThinkingSignature += parsed.delta.signature ?? '';
-                } else if (
-                  parsed.delta?.type === 'input_json_delta' &&
-                  parsed.delta.partial_json != null
-                ) {
-                  // Accumulate tool call arguments
-                  const blockIdx = parsed.index ?? currentToolBlockIndex;
-                  if (blockIdx >= 0 && toolCallBlocks[blockIdx]) {
-                    toolCallBlocks[blockIdx].arguments += parsed.delta.partial_json;
-                  }
-                } else if (parsed.delta?.type === 'text_delta') {
-                  // Text delta
-                  yield ok({
-                    id: '',
-                    content: parsed.delta?.text,
-                    done: false,
-                  });
-                }
-              } else if (parsed.type === 'content_block_stop') {
-                // Finalize thinking block if we were in one
-                if (currentBlockType === 'thinking' && currentThinkingText) {
-                  thinkingBlocks.push({
-                    type: 'thinking',
-                    thinking: currentThinkingText,
-                    signature: currentThinkingSignature || undefined,
-                  });
-                }
-                currentBlockType = undefined;
-              } else if (parsed.type === 'message_stop') {
-                // Emit accumulated tool calls if any, then signal done
-                // Filter out sparse array holes (indices may skip non-tool content blocks)
-                const completedToolCalls = toolCallBlocks.filter(Boolean);
-                yield ok({
-                  id: '',
-                  toolCalls: completedToolCalls.length > 0 ? completedToolCalls : undefined,
-                  done: true,
-                  // Pass thinking blocks in metadata for tool use preservation
-                  ...(thinkingBlocks.length > 0 && {
-                    metadata: { thinkingBlocks },
-                  }),
-                });
-                return;
-              } else if (parsed.type === 'message_delta') {
-                const outputTokens = parsed.usage?.output_tokens ?? 0;
-                yield ok({
-                  id: '',
-                  done: false,
-                  finishReason: this.mapAnthropicStopReason(
-                    parsed.delta?.stop_reason ?? 'end_turn'
-                  ),
-                  usage: {
-                    promptTokens: inputTokens,
-                    completionTokens: outputTokens,
-                    totalTokens: inputTokens + outputTokens,
-                  },
-                });
-              }
-            } catch {
-              // Skip malformed chunks
-            }
-          }
-        }
-      } finally {
+      for await (const data of readSseData(response.body)) {
         try {
-          await reader.cancel();
+          const parsed = JSON.parse(data) as AnthropicStreamEvent;
+
+          if (parsed.type === 'message_start') {
+            // Capture input token count from the initial message
+            inputTokens = parsed.message?.usage?.input_tokens ?? 0;
+          } else if (parsed.type === 'content_block_start') {
+            currentBlockType = parsed.content_block?.type;
+
+            if (currentBlockType === 'tool_use') {
+              // Track tool_use blocks as they start
+              currentToolBlockIndex = parsed.index ?? toolCallBlocks.length;
+              toolCallBlocks[currentToolBlockIndex] = {
+                id: parsed.content_block?.id ?? '',
+                name: parsed.content_block?.name
+                  ? desanitizeToolName(parsed.content_block.name)
+                  : '',
+                arguments: '',
+              };
+            } else if (currentBlockType === 'thinking') {
+              // Reset current thinking accumulator
+              currentThinkingText = '';
+              currentThinkingSignature = '';
+            } else if (currentBlockType === 'redacted_thinking') {
+              // Capture redacted thinking block immediately
+              thinkingBlocks.push({
+                type: 'redacted_thinking',
+                data: parsed.content_block?.data,
+              });
+            }
+          } else if (parsed.type === 'content_block_delta') {
+            if (parsed.delta?.type === 'thinking_delta') {
+              // Thinking content delta — stream to client
+              const thinkingText = parsed.delta.thinking ?? '';
+              currentThinkingText += thinkingText;
+              yield ok({
+                id: '',
+                content: thinkingText,
+                metadata: { type: 'thinking' },
+                done: false,
+              });
+            } else if (parsed.delta?.type === 'signature_delta') {
+              // Capture thinking signature
+              currentThinkingSignature += parsed.delta.signature ?? '';
+            } else if (
+              parsed.delta?.type === 'input_json_delta' &&
+              parsed.delta.partial_json != null
+            ) {
+              // Accumulate tool call arguments
+              const blockIdx = parsed.index ?? currentToolBlockIndex;
+              if (blockIdx >= 0 && toolCallBlocks[blockIdx]) {
+                toolCallBlocks[blockIdx].arguments += parsed.delta.partial_json;
+              }
+            } else if (parsed.delta?.type === 'text_delta') {
+              // Text delta
+              yield ok({
+                id: '',
+                content: parsed.delta?.text,
+                done: false,
+              });
+            }
+          } else if (parsed.type === 'content_block_stop') {
+            // Finalize thinking block if we were in one
+            if (currentBlockType === 'thinking' && currentThinkingText) {
+              thinkingBlocks.push({
+                type: 'thinking',
+                thinking: currentThinkingText,
+                signature: currentThinkingSignature || undefined,
+              });
+            }
+            currentBlockType = undefined;
+          } else if (parsed.type === 'message_stop') {
+            // Emit accumulated tool calls if any, then signal done
+            // Filter out sparse array holes (indices may skip non-tool content blocks)
+            const completedToolCalls = toolCallBlocks.filter(Boolean);
+            yield ok({
+              id: '',
+              toolCalls: completedToolCalls.length > 0 ? completedToolCalls : undefined,
+              done: true,
+              // Pass thinking blocks in metadata for tool use preservation
+              ...(thinkingBlocks.length > 0 && {
+                metadata: { thinkingBlocks },
+              }),
+            });
+            return;
+          } else if (parsed.type === 'message_delta') {
+            const outputTokens = parsed.usage?.output_tokens ?? 0;
+            yield ok({
+              id: '',
+              done: false,
+              finishReason: this.mapAnthropicStopReason(parsed.delta?.stop_reason ?? 'end_turn'),
+              usage: {
+                promptTokens: inputTokens,
+                completionTokens: outputTokens,
+                totalTokens: inputTokens + outputTokens,
+              },
+            });
+          }
         } catch {
-          /* already released */
+          // Skip malformed chunks
         }
       }
     } catch (error) {

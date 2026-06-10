@@ -38,6 +38,7 @@ import {
   buildResponseDebugInfo,
   calculatePayloadBreakdown,
 } from '../debug.js';
+import { readSseData, runProviderHealthCheck, approximateTokenCount } from './shared.js';
 
 /**
  * Retry configuration
@@ -224,56 +225,17 @@ export class GoogleProvider {
   }
 
   async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
-    const start = Date.now();
-    const timeoutMs = 5000;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      if (!this.isReady()) {
-        clearTimeout(timeoutId);
-        return ok({
-          providerId: this.providerId,
-          status: 'unavailable',
-          error: 'API key not configured',
-          checkedAt: new Date(),
-        });
-      }
-
+    return runProviderHealthCheck({
+      providerId: this.providerId,
+      ready: this.isReady(),
+      notConfiguredError: 'API key not configured',
       // Gemini uses a different endpoint structure
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${this.config.apiKey}`,
-        {
+      request: (signal) =>
+        fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.config.apiKey}`, {
           method: 'GET',
-          signal: controller.signal,
-        }
-      );
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        return ok({
-          providerId: this.providerId,
-          status: 'ok',
-          latencyMs: Date.now() - start,
-          checkedAt: new Date(),
-        });
-      }
-
-      return ok({
-        providerId: this.providerId,
-        status: 'unavailable',
-        error: `HTTP ${response.status}: ${response.statusText}`,
-        checkedAt: new Date(),
-      });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      return ok({
-        providerId: this.providerId,
-        status: 'unavailable',
-        error: err instanceof Error ? err.message : String(err),
-        checkedAt: new Date(),
-      });
-    }
+          signal,
+        }),
+    });
   }
 
   async complete(
@@ -562,84 +524,59 @@ export class GoogleProvider {
         return;
       }
 
-      const reader = response.body.getReader();
-      try {
-        const decoder = new TextDecoder();
-        let buffer = '';
+      for await (const data of readSseData(response.body)) {
+        try {
+          const parsed = JSON.parse(data) as GeminiResponse;
+          const candidate = parsed.candidates?.[0];
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const data = line.slice(6).trim();
-            if (!data) continue;
-
-            try {
-              const parsed = JSON.parse(data) as GeminiResponse;
-              const candidate = parsed.candidates?.[0];
-
-              if (candidate?.content?.parts) {
-                for (const part of candidate.content.parts) {
-                  if (part.text) {
-                    yield ok({
-                      id: `gemini_${Date.now()}`,
-                      content: part.text,
-                      metadata: part.thought ? { type: 'thinking' } : undefined,
-                      done: false,
-                    });
-                  }
-                  if (part.functionCall) {
-                    yield ok({
-                      id: `call_${Date.now()}`,
-                      toolCalls: [
-                        {
-                          id: `call_${Date.now()}`,
-                          name: desanitizeToolName(part.functionCall.name),
-                          arguments: JSON.stringify(part.functionCall.args ?? {}),
-                          // Capture thoughtSignature for Gemini 3+ thinking models
-                          metadata: part.thoughtSignature
-                            ? { thoughtSignature: part.thoughtSignature }
-                            : undefined,
-                        },
-                      ],
-                      done: false,
-                    });
-                  }
-                }
-              }
-
-              if (candidate?.finishReason) {
+          if (candidate?.content?.parts) {
+            for (const part of candidate.content.parts) {
+              if (part.text) {
                 yield ok({
                   id: `gemini_${Date.now()}`,
-                  done: true,
-                  finishReason: this.mapFinishReason(candidate.finishReason),
-                  usage: parsed.usageMetadata
-                    ? {
-                        promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
-                        completionTokens:
-                          (parsed.usageMetadata.candidatesTokenCount ?? 0) +
-                          (parsed.usageMetadata.thoughtsTokenCount ?? 0),
-                        totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
-                      }
-                    : undefined,
+                  content: part.text,
+                  metadata: part.thought ? { type: 'thinking' } : undefined,
+                  done: false,
                 });
               }
-            } catch {
-              // Skip malformed chunks
+              if (part.functionCall) {
+                yield ok({
+                  id: `call_${Date.now()}`,
+                  toolCalls: [
+                    {
+                      id: `call_${Date.now()}`,
+                      name: desanitizeToolName(part.functionCall.name),
+                      arguments: JSON.stringify(part.functionCall.args ?? {}),
+                      // Capture thoughtSignature for Gemini 3+ thinking models
+                      metadata: part.thoughtSignature
+                        ? { thoughtSignature: part.thoughtSignature }
+                        : undefined,
+                    },
+                  ],
+                  done: false,
+                });
+              }
             }
           }
-        }
-      } finally {
-        try {
-          await reader.cancel();
+
+          if (candidate?.finishReason) {
+            yield ok({
+              id: `gemini_${Date.now()}`,
+              done: true,
+              finishReason: this.mapFinishReason(candidate.finishReason),
+              usage: parsed.usageMetadata
+                ? {
+                    promptTokens: parsed.usageMetadata.promptTokenCount ?? 0,
+                    completionTokens:
+                      (parsed.usageMetadata.candidatesTokenCount ?? 0) +
+                      (parsed.usageMetadata.thoughtsTokenCount ?? 0),
+                    totalTokens: parsed.usageMetadata.totalTokenCount ?? 0,
+                  }
+                : undefined,
+            });
+          }
         } catch {
-          /* already released */
+          // Skip malformed chunks
         }
       }
     } catch (error) {
@@ -660,19 +597,7 @@ export class GoogleProvider {
    * Approximate token count
    */
   countTokens(messages: readonly Message[]): number {
-    let totalChars = 0;
-    for (const msg of messages) {
-      if (typeof msg.content === 'string') {
-        totalChars += msg.content.length;
-      } else {
-        for (const part of msg.content) {
-          if (part.type === 'text') {
-            totalChars += part.text.length;
-          }
-        }
-      }
-    }
-    return Math.ceil(totalChars / 4);
+    return approximateTokenCount(messages);
   }
 
   /**

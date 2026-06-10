@@ -20,6 +20,7 @@ import type { IProvider, ProviderHealthResult } from './provider-types.js';
 import type { RetryConfig } from './retry.js';
 import { logRetry } from './debug.js';
 import { sanitizeToolName, desanitizeToolName, normalizeToolArguments } from './tool-namespace.js';
+import { approximateTokenCount } from './providers/shared.js';
 
 /**
  * Default retry configuration for AI provider calls
@@ -62,20 +63,7 @@ export abstract class BaseProvider implements IProvider {
    * Approximate token count (rough estimate: ~4 chars per token)
    */
   countTokens(messages: readonly Message[]): number {
-    let totalChars = 0;
-    for (const msg of messages) {
-      if (typeof msg.content === 'string') {
-        totalChars += msg.content.length;
-      } else {
-        for (const part of msg.content) {
-          if (part.type === 'text') {
-            totalChars += part.text.length;
-          }
-        }
-      }
-    }
-    // Rough approximation: ~4 characters per token
-    return Math.ceil(totalChars / 4);
+    return approximateTokenCount(messages);
   }
 
   abstract getModels(): Promise<Result<string[], InternalError>>;
