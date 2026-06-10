@@ -6,10 +6,11 @@
  * Accessible at /settings/coding-agents.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
 import { useSkipHome } from '../hooks/useSkipHome';
+import { usePageData } from '../hooks/usePageData';
 import {
   RefreshCw,
   Terminal,
@@ -43,26 +44,18 @@ export function CodingAgentSettingsPage() {
     pageName: 'codingagentsettings',
     defaultTab: 'providers',
   });
-  const [statuses, setStatuses] = useState<CodingAgentStatus[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, CodingAgentTestResult>>({});
 
-  const fetchStatuses = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const statusData = await codingAgentsApi.status();
-      setStatuses(statusData);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load provider status');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchStatuses();
-  }, [fetchStatuses]);
+  const {
+    data: statusesData,
+    isLoading,
+    refetch: fetchStatuses,
+  } = usePageData<CodingAgentStatus[]>(() => codingAgentsApi.status(), [], {
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : 'Failed to load provider status'),
+  });
+  const statuses = statusesData ?? [];
 
   const handleTest = useCallback(
     async (provider: string) => {
@@ -114,7 +107,7 @@ export function CodingAgentSettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={fetchStatuses}
+            onClick={() => void fetchStatuses()}
             disabled={isLoading}
             className="p-2 rounded-lg text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors disabled:opacity-50"
             title="Refresh"

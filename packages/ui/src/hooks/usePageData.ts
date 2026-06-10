@@ -31,6 +31,11 @@ export interface UsePageDataOptions {
    * is still unknown). Defaults to true.
    */
   enabled?: boolean;
+  /**
+   * Called with the raw thrown error (e.g. to toast). The `error` state is
+   * still set; pages that toast simply don't render it.
+   */
+  onError?: (error: unknown) => void;
 }
 
 export interface UsePageDataResult<T> {
@@ -51,18 +56,20 @@ export function usePageData<T>(
   deps: DependencyList = [],
   options: UsePageDataOptions = {}
 ): UsePageDataResult<T> {
-  const { errorMessage, enabled = true } = options;
+  const { errorMessage, enabled = true, onError } = options;
 
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
-  // Keep the latest fetcher/errorMessage in refs so the load function stays
-  // stable and only `deps` (plus refetch calls) trigger new requests.
+  // Keep the latest fetcher/errorMessage/onError in refs so the load function
+  // stays stable and only `deps` (plus refetch calls) trigger new requests.
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
   const errorMessageRef = useRef(errorMessage);
   errorMessageRef.current = errorMessage;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   // Generation counter: each load bumps it; a response only lands if it is
   // still the newest request. Covers both unmount and dep-change races.
@@ -80,6 +87,7 @@ export function usePageData<T>(
       if (generationRef.current !== generation) return;
       const message = errorMessageRef.current ?? (err instanceof Error ? err.message : String(err));
       setError(message);
+      onErrorRef.current?.(err);
     } finally {
       if (generationRef.current === generation && !silent) setIsLoading(false);
     }

@@ -12,6 +12,7 @@ import { ArtifactDetailModal } from '../components/ArtifactDetailModal';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/Skeleton';
 import { useSkipHome } from '../hooks/useSkipHome';
+import { usePageData } from '../hooks/usePageData';
 import {
   LayoutTemplate,
   Code2,
@@ -86,43 +87,31 @@ export function ArtifactsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const fetchArtifacts = useCallback(async () => {
+  const {
+    data: listData,
+    isLoading,
+    refetch,
+    setData: setListData,
+  } = usePageData(() => {
     const filter = FILTER_TABS.find((t) => t.key === activeTab)?.filter ?? {};
-    try {
-      const data = await artifactsApi.list({
-        ...filter,
-        search: searchQuery || undefined,
-        limit: 50,
-      });
-      setArtifacts(data?.artifacts ?? []);
-      setTotal(data?.total ?? 0);
-    } catch {
-      // API client handles error reporting
-    } finally {
-      setIsLoading(false);
-    }
+    return artifactsApi.list({ ...filter, search: searchQuery || undefined, limit: 50 });
   }, [activeTab, searchQuery]);
+  const artifacts = listData?.artifacts ?? [];
+  const total = listData?.total ?? 0;
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetchArtifacts();
-  }, [fetchArtifacts]);
-
-  // WS-driven refresh
+  // WS-driven refresh (silent — no spinner flash on background updates,
+  // matching the previous fetchArtifacts behavior outside dep changes)
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (payload) => {
       if (payload.entity === 'artifact') {
-        fetchArtifacts();
+        void refetch({ silent: true });
       }
     });
     return () => {
       unsub();
     };
-  }, [subscribe, fetchArtifacts]);
+  }, [subscribe, refetch]);
 
   // Debounced search
   useEffect(() => {
@@ -130,14 +119,31 @@ export function ArtifactsPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const handleDelete = useCallback((id: string) => {
-    setArtifacts((prev) => prev.filter((a) => a.id !== id));
-    setTotal((prev) => Math.max(0, prev - 1));
-  }, []);
+  const handleDelete = useCallback(
+    (id: string) => {
+      setListData((prev) =>
+        prev
+          ? {
+              ...prev,
+              artifacts: prev.artifacts.filter((a) => a.id !== id),
+              total: Math.max(0, prev.total - 1),
+            }
+          : prev
+      );
+    },
+    [setListData]
+  );
 
-  const handleUpdate = useCallback((updated: Artifact) => {
-    setArtifacts((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-  }, []);
+  const handleUpdate = useCallback(
+    (updated: Artifact) => {
+      setListData((prev) =>
+        prev
+          ? { ...prev, artifacts: prev.artifacts.map((a) => (a.id === updated.id ? updated : a)) }
+          : prev
+      );
+    },
+    [setListData]
+  );
 
   // Single artifact detail view
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
@@ -155,10 +161,7 @@ export function ArtifactsPage() {
           </p>
         </div>
         <button
-          onClick={() => {
-            setIsLoading(true);
-            fetchArtifacts();
-          }}
+          onClick={() => void refetch()}
           className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           title="Refresh"
         >

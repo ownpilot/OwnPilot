@@ -96,6 +96,19 @@ describe('usePageData', () => {
     expect(result.current.data).toBeNull();
   });
 
+  it('invokes onError with the raw error (error state still set)', async () => {
+    const onError = vi.fn();
+    const boom = new Error('boom');
+    const { result } = renderHook(
+      () => usePageData<string>(() => Promise.reject(boom), [], { onError }),
+      undefined
+    );
+    await flush();
+
+    expect(onError).toHaveBeenCalledWith(boom);
+    expect(result.current.error).toBe('boom');
+  });
+
   it('prefers the fixed errorMessage option over the thrown message', async () => {
     const { result } = renderHook(
       () =>

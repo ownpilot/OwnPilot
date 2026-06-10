@@ -30,6 +30,7 @@ import { edgeApi } from '../api/endpoints/edge';
 import type { EdgeDevice, EdgeDeviceType, EdgeDeviceStatus } from '../api/endpoints/edge';
 import { useGateway } from '../hooks/useWebSocket';
 import { useSkipHome } from '../hooks/useSkipHome';
+import { usePageData } from '../hooks/usePageData';
 
 type PageTabId = 'home' | 'devices';
 
@@ -75,29 +76,21 @@ export function EdgeDevicesPage() {
   const [filterTab, setFilterTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [devices, setDevices] = useState<EdgeDevice[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [mqttConnected, setMqttConnected] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<EdgeDevice | null>(null);
 
-  const fetchDevices = useCallback(async () => {
+  const {
+    data: listData,
+    isLoading,
+    refetch,
+    setData: setListData,
+  } = usePageData(() => {
     const filter = FILTER_TABS.find((t) => t.key === filterTab)?.filter ?? {};
-    try {
-      const data = await edgeApi.list({
-        ...filter,
-        search: searchQuery || undefined,
-        limit: 50,
-      });
-      setDevices(data?.devices ?? []);
-      setTotal(data?.total ?? 0);
-    } catch {
-      // API client handles error reporting
-    } finally {
-      setIsLoading(false);
-    }
+    return edgeApi.list({ ...filter, search: searchQuery || undefined, limit: 50 });
   }, [filterTab, searchQuery]);
+  const devices = listData?.devices ?? [];
+  const total = listData?.total ?? 0;
 
   const fetchMqttStatus = useCallback(async () => {
     try {
@@ -109,25 +102,20 @@ export function EdgeDevicesPage() {
   }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchDevices();
-  }, [fetchDevices]);
-
-  useEffect(() => {
     fetchMqttStatus();
   }, [fetchMqttStatus]);
 
-  // WS-driven refresh
+  // WS-driven refresh (silent — background update, no spinner flash)
   useEffect(() => {
     const unsub = subscribe<{ entity: string }>('data:changed', (payload) => {
       if (payload.entity === 'edge-device') {
-        fetchDevices();
+        void refetch({ silent: true });
       }
     });
     return () => {
       unsub();
     };
-  }, [subscribe, fetchDevices]);
+  }, [subscribe, refetch]);
 
   // Debounced search
   useEffect(() => {
@@ -137,26 +125,41 @@ export function EdgeDevicesPage() {
 
   const handleDelete = useCallback(
     (id: string) => {
-      setDevices((prev) => prev.filter((d) => d.id !== id));
-      setTotal((prev) => Math.max(0, prev - 1));
+      setListData((prev) =>
+        prev
+          ? {
+              ...prev,
+              devices: prev.devices.filter((d) => d.id !== id),
+              total: Math.max(0, prev.total - 1),
+            }
+          : prev
+      );
       if (selectedDevice?.id === id) setSelectedDevice(null);
     },
-    [selectedDevice]
+    [selectedDevice, setListData]
   );
 
   const handleUpdate = useCallback(
     (updated: EdgeDevice) => {
-      setDevices((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+      setListData((prev) =>
+        prev
+          ? { ...prev, devices: prev.devices.map((d) => (d.id === updated.id ? updated : d)) }
+          : prev
+      );
       if (selectedDevice?.id === updated.id) setSelectedDevice(updated);
     },
-    [selectedDevice]
+    [selectedDevice, setListData]
   );
 
-  const handleCreated = useCallback((device: EdgeDevice) => {
-    setDevices((prev) => [device, ...prev]);
-    setTotal((prev) => prev + 1);
-    setShowRegister(false);
-  }, []);
+  const handleCreated = useCallback(
+    (device: EdgeDevice) => {
+      setListData((prev) =>
+        prev ? { ...prev, devices: [device, ...prev.devices], total: prev.total + 1 } : prev
+      );
+      setShowRegister(false);
+    },
+    [setListData]
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -191,9 +194,8 @@ export function EdgeDevicesPage() {
           </div>
           <button
             onClick={() => {
-              setIsLoading(true);
-              fetchDevices();
-              fetchMqttStatus();
+              void refetch();
+              void fetchMqttStatus();
             }}
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
             title="Refresh"
