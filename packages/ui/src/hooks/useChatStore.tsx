@@ -22,6 +22,18 @@ import { STORAGE_KEYS } from '../constants/storage-keys';
 import { dispatchSessionChanged } from '../utils/session-events';
 import { stripChatInternalTags } from '../utils/chat-content';
 import { ignoreError } from '../utils/ignore-error';
+import { useAutoCompact, type AutoCompactPromptState } from './useAutoCompact';
+import { useChatSessions, type SessionTab } from './useChatSessions';
+
+// Auto-compact threshold logic + constants live in useAutoCompact.ts;
+// re-exported here so existing importers (tests) keep working.
+export {
+  AUTO_COMPACT_THRESHOLD,
+  AUTO_COMPACT_CLEAR_BELOW,
+  AUTO_COMPACT_MIN_MESSAGES,
+  computeAutoCompactPrompt,
+  type AutoCompactPromptState,
+} from './useAutoCompact';
 
 // Progress event types from the stream
 export interface ProgressEvent {
@@ -88,12 +100,7 @@ interface ChatState {
    * prompt to one conversation so dismissing here doesn't bleed into other
    * sessions.
    */
-  autoCompactPrompt: {
-    sessionId: string;
-    fillPercent: number;
-    estimatedTokens: number;
-    maxContextTokens: number;
-  } | null;
+  autoCompactPrompt: AutoCompactPromptState | null;
   /** Compact-in-progress flag (manual or auto). */
   isCompacting: boolean;
 }
@@ -116,85 +123,10 @@ interface ChatSessionSnapshot {
   pendingApproval: ApprovalRequest | null;
 }
 
-/** Tab entry for the session tab bar */
-interface SessionTab {
-  id: string;
-  title: string;
-  createdAt: number;
-}
-
 interface FailedChatRequest {
   content: string;
   directTools?: string[];
   imageAttachments?: MessageAttachment[];
-}
-
-const MAX_SESSIONS = 10;
-
-/**
- * Auto-compact threshold. Crossing this fill percent raises a one-time
- * suggestion to compact older messages into a summary. Kept at module scope
- * so tests can import and reason about it directly.
- */
-export const AUTO_COMPACT_THRESHOLD = 85;
-
-/** Hysteresis below the threshold — clear the prompt once we drop this far. */
-export const AUTO_COMPACT_CLEAR_BELOW = AUTO_COMPACT_THRESHOLD - 5;
-
-/**
- * Minimum messages required before the banner appears. The server requires
- * `messages.length > keepRecentMessages + 2` (default keepRecent = 6, so >8)
- * to actually compact — without this guard the user could accept the banner
- * and silently get `compacted: false`.
- */
-export const AUTO_COMPACT_MIN_MESSAGES = 9;
-
-export interface AutoCompactPromptState {
-  sessionId: string;
-  fillPercent: number;
-  estimatedTokens: number;
-  maxContextTokens: number;
-}
-
-/**
- * Pure decision function: given the new sessionInfo, the previous prompt
- * state, and whether the user has declined for this session, return the
- * prompt that should be shown (or null).
- *
- * Extracted as a standalone export so the threshold + hysteresis logic can be
- * tested without rendering the full ChatProvider tree.
- */
-export function computeAutoCompactPrompt(input: {
-  next: SessionInfo;
-  prev: AutoCompactPromptState | null;
-  declined: boolean;
-  isCompacting: boolean;
-}): AutoCompactPromptState | null {
-  const { next, prev, declined, isCompacting } = input;
-  const fill = next.contextFillPercent ?? 0;
-  const overThreshold =
-    fill >= AUTO_COMPACT_THRESHOLD &&
-    next.messageCount >= AUTO_COMPACT_MIN_MESSAGES &&
-    !declined &&
-    !isCompacting;
-
-  if (overThreshold) {
-    // Reuse the existing prompt when the fill percent hasn't moved
-    // meaningfully — prevents spurious re-renders on every stream chunk.
-    if (prev && prev.sessionId === next.sessionId && Math.abs(prev.fillPercent - fill) < 1) {
-      return prev;
-    }
-    return {
-      sessionId: next.sessionId,
-      fillPercent: fill,
-      estimatedTokens: next.estimatedTokens,
-      maxContextTokens: next.maxContextTokens,
-    };
-  }
-  // Below the clear point — drop the prompt entirely. Between threshold and
-  // clear point (hysteresis band), keep whatever was there.
-  if (fill < AUTO_COMPACT_CLEAR_BELOW) return null;
-  return prev;
 }
 
 interface ChatStore extends ChatState {
@@ -308,8 +240,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const sessionIdRef = useRef<string | null>(null);
   // Initialize ref from restored state
   sessionIdRef.current = sessionId;
-  // Wrapper: keep ref + localStorage in sync with state
-  const setSessionId = (id: string | null) => {
+  // Wrapper: keep ref + localStorage in sync with state. Stable identity —
+  // it sits in useChatSessions' dependency arrays.
+  const setSessionId = useCallback((id: string | null) => {
     sessionIdRef.current = id;
     setSessionIdState(id);
     try {
@@ -318,22 +251,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     } catch {
       /* */
     }
-  };
+  }, []);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-  const [isCompacting, setIsCompacting] = useState(false);
-  const [autoCompactPrompt, setAutoCompactPrompt] = useState<ChatState['autoCompactPrompt']>(null);
-  // Track which sessionIds the user has already declined an auto-compact for,
-  // so we don't re-prompt on every chunk after they say "not now".
-  const autoCompactSuppressedRef = useRef<Set<string>>(new Set());
-  // Persistent opt-out — survives page reloads. Read once at mount.
-  const [autoCompactDisabled, setAutoCompactDisabled] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.AUTO_COMPACT_DISABLED) === '1';
-    } catch {
-      return false;
-    }
-  });
-  const [lastCompactionSummary, setLastCompactionSummary] = useState<string | null>(null);
+
+  // Auto-compact concern (threshold prompt, decline tracking, opt-out,
+  // compactSession) — extracted to useAutoCompact; sessionInfo writes flow
+  // through its applySessionInfo so every code path gets the same treatment.
+  const {
+    isCompacting,
+    autoCompactPrompt,
+    autoCompactDisabled,
+    lastCompactionSummary,
+    applySessionInfo,
+    dismissAutoCompactPrompt,
+    disableAutoCompactPrompt,
+    clearLastCompactionSummary,
+    resetAutoCompactPrompt,
+    compactSession,
+  } = useAutoCompact({ provider, model, setSessionInfo });
+
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
   const [thinkingConfig, setThinkingConfig] = useState<ChatState['thinkingConfig']>(null);
@@ -344,11 +280,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Stream generation counter — orphaned streams (from New Chat) keep reading
   // so the backend can finish + persist, but their UI updates are suppressed.
   const streamGenRef = useRef(0);
-
-  // --- Multi-session management ---
-  const sessionsRef = useRef(new Map<string, ChatSessionSnapshot>());
-  const [activeSessionId, setActiveSessionId] = useState<string>(() => crypto.randomUUID());
-  const [sessionTabs, setSessionTabs] = useState<SessionTab[]>([]);
 
   // Refs for capturing current state without stale closures
   const messagesRef = useRef(messages);
@@ -403,56 +334,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [pendingApproval]);
 
   const clearSuggestions = useCallback(() => setSuggestions([]), []);
-
-  /**
-   * Apply a new sessionInfo and, if the fill % is past the threshold AND the
-   * user hasn't already declined for this session, raise an auto-compact
-   * prompt. Centralizes the behavior so every code path (stream done,
-   * non-stream done, refresh, compact result) gets the same treatment.
-   */
-  const applySessionInfo = useCallback(
-    (next: SessionInfo | null) => {
-      setSessionInfo(next);
-      if (!next) {
-        setAutoCompactPrompt(null);
-        return;
-      }
-      if (autoCompactDisabled) {
-        setAutoCompactPrompt(null);
-        return;
-      }
-      setAutoCompactPrompt((prev) =>
-        computeAutoCompactPrompt({
-          next,
-          prev,
-          declined: autoCompactSuppressedRef.current.has(next.sessionId),
-          isCompacting,
-        })
-      );
-    },
-    [isCompacting, autoCompactDisabled]
-  );
-
-  const dismissAutoCompactPrompt = useCallback(() => {
-    setAutoCompactPrompt((prev) => {
-      if (prev) autoCompactSuppressedRef.current.add(prev.sessionId);
-      return null;
-    });
-  }, []);
-
-  const disableAutoCompactPrompt = useCallback(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.AUTO_COMPACT_DISABLED, '1');
-    } catch {
-      /* localStorage might be blocked — in-memory toggle still applies */
-    }
-    setAutoCompactDisabled(true);
-    setAutoCompactPrompt(null);
-  }, []);
-
-  const clearLastCompactionSummary = useCallback(() => {
-    setLastCompactionSummary(null);
-  }, []);
 
   // Ref for auto-accept logic — keeps fresh reference without re-renders
   const extractedMemoriesRef = useRef(extractedMemories);
@@ -978,7 +859,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setPendingApproval(null);
       setSessionId(id);
       setSessionInfo(null);
-      setAutoCompactPrompt(null);
+      resetAutoCompactPrompt();
       // Fetch fresh context breakdown so the chip shows real fill, not an
       // empty bar, when the user opens an existing chat from the sidebar.
       ignoreError(
@@ -998,7 +879,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         'chatApi.getContextDetail:loadConversation'
       );
     },
-    [pendingApproval, provider, model, applySessionInfo]
+    [pendingApproval, provider, model, applySessionInfo, resetAutoCompactPrompt]
   );
 
   const refreshSessionInfo = useCallback(async () => {
@@ -1020,45 +901,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       /* ignore — bar will reconcile on next message */
     }
   }, [provider, model, applySessionInfo]);
-
-  const compactSession = useCallback(
-    async (keepRecentMessages?: number) => {
-      if (!provider || !model) {
-        return { compacted: false, removedMessages: 0, savedTokens: 0 };
-      }
-      setIsCompacting(true);
-      setAutoCompactPrompt(null);
-      try {
-        const d = await chatApi.compactContext(provider, model, keepRecentMessages);
-        if (d?.session) {
-          // Server returns post-compact SessionInfo — apply it directly so
-          // the bar reflects the new state without waiting for the next msg.
-          applySessionInfo(d.session);
-        }
-        if (d?.compacted && d.summary) {
-          setLastCompactionSummary(d.summary);
-        }
-        const saved = Math.max(0, (d?.previousTokenEstimate ?? 0) - (d?.newTokenEstimate ?? 0));
-        return {
-          compacted: !!d?.compacted,
-          removedMessages: d?.removedMessages ?? 0,
-          savedTokens: saved,
-          ...(d?.reason && { reason: d.reason }),
-          ...(d?.summary && { summary: d.summary }),
-        };
-      } catch {
-        return {
-          compacted: false,
-          removedMessages: 0,
-          savedTokens: 0,
-          reason: 'exception',
-        };
-      } finally {
-        setIsCompacting(false);
-      }
-    },
-    [provider, model, applySessionInfo]
-  );
 
   // --- Multi-session methods ---
 
@@ -1099,10 +941,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setPendingApproval(snap.pendingApproval);
   }, []);
 
-  /** Helper: clear all per-conversation state for a fresh session */
-  const clearAllState = useCallback(() => {
+  /** Orphan any running stream without clearing state (see useChatSessions). */
+  const orphanStream = useCallback(() => {
     streamGenRef.current++;
     abortControllerRef.current = null;
+  }, []);
+
+  /** Helper: clear all per-conversation state for a fresh session */
+  const clearAllState = useCallback(() => {
+    orphanStream();
     setMessages([]);
     setIsLoading(false);
     setError(null);
@@ -1117,104 +964,31 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setPendingApproval(null);
     setSessionId(null);
     setSessionInfo(null);
-  }, []);
+  }, [orphanStream]);
 
-  /** Create a new session — saves current to map, clears UI */
-  const createSession = useCallback((): string => {
-    const currentId = activeSessionId;
-    const snap = captureSnapshot();
-    // Only save if there are actual messages (sessionId is always set now via pre-generation)
-    if (snap.messages.length > 0) {
-      sessionsRef.current.set(currentId, snap);
-      const title =
-        snap.messages.find((m) => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
-      setSessionTabs((prev) => {
-        if (prev.find((t) => t.id === currentId)) return prev;
-        return [...prev, { id: currentId, title, createdAt: Date.now() }];
-      });
-    }
-    // Reject pending approval before switching
-    if (stateRefsForCapture.current.pendingApproval) {
+  /** Reject any pending execution approval so the backend doesn't hang. */
+  const rejectPendingApproval = useCallback(() => {
+    const approval = stateRefsForCapture.current.pendingApproval;
+    if (approval) {
       ignoreError(
-        executionPermissionsApi.resolveApproval(
-          stateRefsForCapture.current.pendingApproval.approvalId,
-          false
-        ),
+        executionPermissionsApi.resolveApproval(approval.approvalId, false),
         'resolveApproval:cleanup'
       );
     }
-    const newId = crypto.randomUUID();
-    setActiveSessionId(newId);
-    clearAllState();
-    // Pre-set sessionId so the first message includes conversationId in the request.
-    // This follows the client-generated ID pattern (NextChat, LobeChat, big-AGI).
-    // The backend accepts unknown IDs and auto-creates the conversation (FIX-1).
-    setSessionId(newId);
-    // Enforce max sessions — evict oldest
-    if (sessionsRef.current.size > MAX_SESSIONS) {
-      const entries = [...sessionsRef.current.entries()];
-      const oldestKey = entries[0]?.[0];
-      if (oldestKey) {
-        sessionsRef.current.delete(oldestKey);
-        setSessionTabs((prev) => prev.filter((t) => t.id !== oldestKey));
-      }
-    }
-    return newId;
-  }, [activeSessionId, captureSnapshot, clearAllState]);
+  }, []);
 
-  /** Switch to an existing session (from tab or sidebar) */
-  const switchSession = useCallback(
-    (targetId: string) => {
-      if (targetId === activeSessionId) return;
-      // Save current active session
-      const currentId = activeSessionId;
-      const snap = captureSnapshot();
-      sessionsRef.current.set(currentId, snap);
-      setSessionTabs((prev) => {
-        if (prev.find((t) => t.id === currentId)) return prev;
-        const title =
-          snap.messages.find((m) => m.role === 'user')?.content.slice(0, 60) || 'New Chat';
-        return [...prev, { id: currentId, title, createdAt: Date.now() }];
-      });
-      // Orphan current stream
-      streamGenRef.current++;
-      abortControllerRef.current = null;
-      // Restore target from map (if cached) or set sessionId for DB load
-      const target = sessionsRef.current.get(targetId);
-      if (target) {
-        restoreSnapshot(target);
-        sessionsRef.current.delete(targetId);
-      } else {
-        clearAllState();
-        setSessionId(targetId);
-      }
-      setActiveSessionId(targetId);
-    },
-    [activeSessionId, captureSnapshot, restoreSnapshot, clearAllState]
-  );
-
-  /** Close a session tab */
-  const closeSession = useCallback(
-    (targetId: string) => {
-      sessionsRef.current.delete(targetId);
-      setSessionTabs((prev) => {
-        const remaining = prev.filter((t) => t.id !== targetId);
-        if (targetId === activeSessionId) {
-          if (remaining.length > 0) {
-            const nearest = remaining[remaining.length - 1]!;
-            queueMicrotask(() => switchSession(nearest.id));
-          } else {
-            queueMicrotask(() => {
-              setActiveSessionId(crypto.randomUUID());
-              clearAllState();
-            });
-          }
-        }
-        return remaining;
-      });
-    },
-    [activeSessionId, switchSession, clearAllState]
-  );
+  // Multi-session (tab) lifecycle — snapshot map + tabs live in
+  // useChatSessions; this provider supplies the per-conversation state
+  // operations it orchestrates.
+  const { activeSessionId, sessionTabs, createSession, switchSession, closeSession } =
+    useChatSessions<ChatSessionSnapshot>({
+      capture: captureSnapshot,
+      restore: restoreSnapshot,
+      clear: clearAllState,
+      orphanStream,
+      setSessionId,
+      rejectPendingApproval,
+    });
 
   const value: ChatStore = {
     messages,
