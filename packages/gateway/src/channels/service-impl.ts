@@ -7,6 +7,7 @@
  */
 
 import { timingSafeEqual, randomInt } from 'node:crypto';
+import { InboundFloodGuard } from './flood-guard.js';
 import {
   type IChannelService,
   type ChannelOutgoingMessage,
@@ -117,68 +118,10 @@ export class ChannelServiceImpl implements IChannelService {
   private static readonly MAX_APPROVAL_ATTEMPTS = 3;
 
   /**
-   * Inbound flood guard. Tracks (channelPluginId, platformUserId) -> sliding
-   * window of recent message timestamps. Over-limit messages are dropped
-   * BEFORE user lookup / AI routing, so a flood cannot exhaust DB or LLM.
+   * Inbound flood guard — drops over-limit senders BEFORE user lookup / AI
+   * routing. Policy + sliding-window state live in channels/flood-guard.ts.
    */
-  private readonly inboundWindows = new Map<string, number[]>();
-  private readonly recentlyWarnedFlooders = new Set<string>();
-  private static readonly INBOUND_RATE_LIMIT_MAX = parseInt(
-    process.env.CHANNEL_INBOUND_RATE_LIMIT_MAX ?? '20',
-    10
-  );
-  private static readonly INBOUND_RATE_LIMIT_WINDOW_MS = parseInt(
-    process.env.CHANNEL_INBOUND_RATE_LIMIT_WINDOW_MS ?? '60000',
-    10
-  );
-  private static readonly INBOUND_RATE_LIMIT_MAX_TRACKED = 10_000;
-
-  /**
-   * Returns true if the message should be dropped due to sender flood.
-   * Records the timestamp on the allowed path so consecutive messages count
-   * toward the window.
-   */
-  private isFlooding(channelPluginId: string, platformUserId: string): boolean {
-    if (!platformUserId) return false;
-    const key = `${channelPluginId}::${platformUserId}`;
-    const now = Date.now();
-    const windowMs = ChannelServiceImpl.INBOUND_RATE_LIMIT_WINDOW_MS;
-    const limit = ChannelServiceImpl.INBOUND_RATE_LIMIT_MAX;
-
-    let stamps = this.inboundWindows.get(key);
-    if (!stamps) {
-      stamps = [];
-      this.inboundWindows.set(key, stamps);
-      if (this.inboundWindows.size > ChannelServiceImpl.INBOUND_RATE_LIMIT_MAX_TRACKED) {
-        const oldest = this.inboundWindows.keys().next().value;
-        if (oldest !== undefined && oldest !== key) this.inboundWindows.delete(oldest);
-      }
-    }
-
-    const cutoff = now - windowMs;
-    const filtered: number[] = [];
-    for (const t of stamps) if (t >= cutoff) filtered.push(t);
-    stamps = filtered;
-    this.inboundWindows.set(key, stamps);
-
-    if (stamps.length >= limit) {
-      if (!this.recentlyWarnedFlooders.has(key)) {
-        log.warn('Inbound message dropped: sender exceeded rate limit', {
-          channelPluginId,
-          platformUserId,
-          limit,
-          windowMs,
-        });
-        this.recentlyWarnedFlooders.add(key);
-        const timer = setTimeout(() => this.recentlyWarnedFlooders.delete(key), windowMs);
-        timer.unref?.();
-      }
-      return true;
-    }
-
-    stamps.push(now);
-    return false;
-  }
+  private readonly floodGuard = new InboundFloodGuard();
 
   constructor(
     pluginRegistry: PluginRegistry,
@@ -541,8 +484,8 @@ export class ChannelServiceImpl implements IChannelService {
     let progress: ChannelProgressManager | null = null;
     try {
       // 0. Drop floods before any DB/LLM work. A single sender cannot exhaust
-      //    resources by spamming — see isFlooding() for the sliding window.
-      if (this.isFlooding(message.channelPluginId, message.sender.platformUserId)) {
+      //    resources by spamming — see InboundFloodGuard for the sliding window.
+      if (this.floodGuard.shouldDrop(message.channelPluginId, message.sender.platformUserId)) {
         return;
       }
 

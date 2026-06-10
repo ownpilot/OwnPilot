@@ -12,7 +12,7 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
+import { getChannelService, hasChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
 import { ChannelMessagesRepository } from '../../db/repositories/channels/messages.js';
 import { channelUsersRepo } from '../../db/repositories/channels/users.js';
 import { configServicesRepo } from '../../db/repositories/config-services.js';
@@ -144,17 +144,16 @@ channelRoutes.post('/dm-pairing/approve', async (c) => {
     );
   }
 
-  const impl = await import('../../channels/service-impl.js');
-  const instance = impl.getChannelServiceImpl();
-  if (!instance) {
+  if (!hasChannelService()) {
     return apiError(
       c,
       { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
       503
     );
   }
+  const service = getChannelService();
 
-  const result = await instance.approvePendingSender(body.platform, body.code);
+  const result = await service.approvePendingSender(body.platform, body.code);
   if (!result.success) {
     return apiError(
       c,
@@ -192,17 +191,16 @@ channelRoutes.post('/dm-pairing/deny', async (c) => {
     );
   }
 
-  const impl = await import('../../channels/service-impl.js');
-  const instance = impl.getChannelServiceImpl();
-  if (!instance) {
+  if (!hasChannelService()) {
     return apiError(
       c,
       { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
       503
     );
   }
+  const service = getChannelService();
 
-  const result = await instance.denyPendingSender(body.platform, body.platformUserId);
+  const result = await service.denyPendingSender(body.platform, body.platformUserId);
   if (!result.success) {
     return apiError(
       c,
@@ -222,17 +220,16 @@ channelRoutes.post('/dm-pairing/deny', async (c) => {
 channelRoutes.get('/dm-pairing/pending/:platform', async (c) => {
   const platform = c.req.param('platform');
 
-  const impl = await import('../../channels/service-impl.js');
-  const instance = impl.getChannelServiceImpl();
-  if (!instance) {
+  if (!hasChannelService()) {
     return apiError(
       c,
       { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: 'Channel service not initialized' },
       503
     );
   }
+  const service = getChannelService();
 
-  const pending = await instance.listPendingSenders(platform);
+  const pending = await service.listPendingSenders(platform);
 
   return apiResponse(c, { pending, count: pending.length });
 });
@@ -564,10 +561,8 @@ channelRoutes.get('/:id/users', async (c) => {
     const pendingMap = new Map<string, { code: string; expiresAt: Date }>();
     if (channelUsers.length > 0) {
       try {
-        const impl = await import('../../channels/service-impl.js');
-        const instance = impl.getChannelServiceImpl();
-        if (instance) {
-          const pendingSenders = await instance.listPendingSenders(platform);
+        if (hasChannelService()) {
+          const pendingSenders = await getChannelService().listPendingSenders(platform);
           for (const sender of pendingSenders) {
             pendingMap.set(sender.platformUserId, {
               code: sender.code,

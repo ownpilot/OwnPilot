@@ -95,6 +95,35 @@ export interface IChannelService {
    * directly.
    */
   processIncomingMessage(message: ChannelIncomingMessage): Promise<void>;
+
+  /**
+   * Approve a pending DM sender by pairing code (owner dashboard action).
+   *
+   * DM-pairing management was previously only reachable via
+   * getChannelServiceImpl(); promoted to the contract (same rationale as
+   * processIncomingMessage) so the channel routes consume the capability
+   * accessor instead of the gateway impl module.
+   */
+  approvePendingSender(
+    platform: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string }>;
+
+  /** Deny (and block) a pending DM sender by platform + platform user id. */
+  denyPendingSender(
+    platform: string,
+    platformUserId: string
+  ): Promise<{ success: boolean; error?: string }>;
+
+  /** List pending DM pairing requests for a platform. */
+  listPendingSenders(platform: string): Promise<
+    Array<{
+      platformUserId: string;
+      displayName?: string;
+      code: string;
+      expiresAt: Date;
+    }>
+  >;
 }
 
 // ============================================================================
