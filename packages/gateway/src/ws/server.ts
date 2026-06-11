@@ -95,9 +95,56 @@ function getCookieValue(cookieHeader: string | undefined, name: string): string 
   return null;
 }
 
+/**
+ * Subprotocol-based bearer auth for clients that cannot set headers (the
+ * standard `WebSocket` constructor — browsers and Node's undici impl).
+ * Client offers `['ownpilot', 'ownpilot.auth.<base64url(token)>']`; the server
+ * extracts the token from the auth entry and selects the plain companion
+ * protocol in the handshake response so the token is never echoed back.
+ */
+const WS_AUTH_PROTOCOL_PREFIX = 'ownpilot.auth.';
+
+function tokenFromProtocols(protocolHeader: string | undefined): string | null {
+  if (!protocolHeader) return null;
+  for (const part of protocolHeader.split(',')) {
+    const candidate = part.trim();
+    if (candidate.startsWith(WS_AUTH_PROTOCOL_PREFIX)) {
+      try {
+        return Buffer.from(candidate.slice(WS_AUTH_PROTOCOL_PREFIX.length), 'base64url').toString(
+          'utf-8'
+        );
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Select the handshake subprotocol: prefer any non-auth protocol so the
+ * bearer token is never echoed back in `Sec-WebSocket-Protocol`. If the
+ * client offered only the auth protocol, echo it — spec-compliant clients
+ * abort the connection when the server picks none of their offers.
+ */
+function selectWsProtocol(protocols: Set<string>): string | false {
+  for (const p of protocols) {
+    if (!p.startsWith(WS_AUTH_PROTOCOL_PREFIX)) return p;
+  }
+  return protocols.values().next().value ?? false;
+}
+
 function getWsAuth(request: IncomingMessage, url: URL): WsAuth {
+  const authHeader = request.headers.authorization;
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
   return {
-    apiToken: url.searchParams.get('token'),
+    apiToken:
+      bearer ??
+      tokenFromProtocols(request.headers['sec-websocket-protocol']) ??
+      // Deprecated fallback: query-param tokens leak into access logs,
+      // browser history, and proxies. Prefer the Authorization header or
+      // the ownpilot.auth.* subprotocol.
+      url.searchParams.get('token'),
     uiSessionToken: getCookieValue(request.headers.cookie, UI_SESSION_COOKIE),
   };
 }
@@ -255,6 +302,7 @@ export class WSGateway {
     this.wss = new WebSocketServer({
       port: this.config.port,
       maxPayload: this.config.maxPayloadSize,
+      handleProtocols: selectWsProtocol,
     });
 
     this.setupServer();
@@ -273,6 +321,7 @@ export class WSGateway {
     this.wss = new WebSocketServer({
       noServer: true,
       maxPayload: this.config.maxPayloadSize,
+      handleProtocols: selectWsProtocol,
     });
 
     this.setupServer();
@@ -295,7 +344,8 @@ export class WSGateway {
           return;
         }
 
-        // Authenticate before upgrading: API key via query param or HttpOnly UI session cookie.
+        // Authenticate before upgrading: API key via Authorization header,
+        // ownpilot.auth.* subprotocol, deprecated query param, or HttpOnly UI session cookie.
         const auth = getWsAuth(request, url);
         if (!(await validateWsAuth(auth))) {
           log.warn('WebSocket connection rejected: invalid or missing token');

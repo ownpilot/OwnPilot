@@ -5,17 +5,17 @@
  * runs security audit, and installs via the existing ExtensionService.
  */
 
-import { mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync, rmSync, existsSync, readdirSync, readlinkSync } from 'node:fs';
+import { join, resolve, sep, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { get as httpsGet } from 'node:https';
 import { createWriteStream } from 'node:fs';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { getLog } from '../log.js';
 import { getErrorMessage } from '@ownpilot/core';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const log = getLog('NpmInstaller');
 
 const NPM_REGISTRY = 'https://registry.npmjs.org';
@@ -169,13 +169,22 @@ export class NpmSkillInstaller {
       log.info(`Downloading tarball from ${info.dist.tarball}`);
       await this.downloadFile(info.dist.tarball, tarballPath);
 
-      // 3. Extract tarball
+      // 3. Extract tarball — execFile with array args (no shell interpolation),
+      // then validate that nothing escaped the temp directory (path traversal
+      // or symlink members in a malicious package).
       const extractDir = join(tempDir, 'extracted');
       try {
-        await execAsync(`tar xzf "${tarballPath}" -C "${tempDir}"`);
+        await execFileAsync('tar', ['xzf', tarballPath, '-C', tempDir]);
         // npm tarballs extract to a "package/" subdirectory
       } catch {
         return { success: false, error: 'Failed to extract tarball (tar not available)' };
+      }
+      const escaped = this.findEscapingEntry(tempDir);
+      if (escaped) {
+        return {
+          success: false,
+          error: `Package rejected: extracted entry escapes install directory (${escaped})`,
+        };
       }
 
       // 4. Find the manifest file
@@ -238,6 +247,50 @@ export class NpmSkillInstaller {
   // ===========================================================================
   // Internal helpers
   // ===========================================================================
+
+  /**
+   * Walk an extraction directory (without following symlinks) and return the
+   * relative path of the first entry that escapes `root` — either a symlink
+   * whose target resolves outside the root, or a hardlink/path that normalizes
+   * out of it. Returns null when everything is contained.
+   */
+  private findEscapingEntry(root: string): string | null {
+    const rootResolved = resolve(root);
+    const prefix = rootResolved + sep;
+    const stack: string[] = [rootResolved];
+
+    while (stack.length > 0) {
+      const dir = stack.pop()!;
+      let entries;
+      try {
+        entries = readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        const resolved = resolve(fullPath);
+        if (resolved !== rootResolved && !resolved.startsWith(prefix)) {
+          return fullPath;
+        }
+        if (entry.isSymbolicLink()) {
+          let target: string;
+          try {
+            target = resolve(dirname(fullPath), readlinkSync(fullPath));
+          } catch {
+            // Unreadable symlink — treat as suspicious and reject.
+            return fullPath;
+          }
+          if (target !== rootResolved && !target.startsWith(prefix)) {
+            return fullPath;
+          }
+        } else if (entry.isDirectory()) {
+          stack.push(fullPath);
+        }
+      }
+    }
+    return null;
+  }
 
   private findManifest(dir: string): string | null {
     if (!existsSync(dir)) return null;

@@ -258,7 +258,7 @@ interface WatchOptions {
    * without standing up a real server. Production passes `undefined` and the
    * function falls back to the Node 22+ built-in global WebSocket.
    */
-  openWebSocket?: (url: string) => WebSocketLike;
+  openWebSocket?: (url: string, protocols?: string[]) => WebSocketLike;
 }
 
 /**
@@ -358,21 +358,29 @@ export async function clawWatch(idOrAll?: string, options: WatchOptions = {}): P
   const id = idOrAll && idOrAll !== 'all' ? idOrAll : undefined;
   const token = options.token ?? process.env.OWNPILOT_API_KEY;
   const baseUrl = deriveWsUrl();
-  const url = token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
+  // Auth travels via the ownpilot.auth.* subprotocol (the standard WebSocket
+  // constructor can't set headers) instead of a `?token=` query param, which
+  // would leak the API key into access logs, proxies, and shell history.
+  // The companion 'ownpilot' protocol is what the server selects in the
+  // handshake response, so the token is never echoed back.
+  const protocols = token
+    ? ['ownpilot', `ownpilot.auth.${Buffer.from(token, 'utf-8').toString('base64url')}`]
+    : undefined;
 
   const openWebSocket =
     options.openWebSocket ??
-    ((u: string): WebSocketLike => {
+    ((u: string, p?: string[]): WebSocketLike => {
       // Node 22+ exposes WebSocket as a global. We treat it as a WebSocketLike
       // shape to avoid pulling DOM lib types into this package.
-      const Ctor = (globalThis as { WebSocket?: new (u: string) => WebSocketLike }).WebSocket;
+      const Ctor = (globalThis as { WebSocket?: new (u: string, p?: string[]) => WebSocketLike })
+        .WebSocket;
       if (!Ctor) {
         throw new Error('Global WebSocket not available — requires Node 22+');
       }
-      return new Ctor(u);
+      return new Ctor(u, p);
     });
 
-  const ws = openWebSocket(url);
+  const ws = openWebSocket(baseUrl, protocols);
   let count = 0;
 
   return new Promise<void>((resolve, reject) => {

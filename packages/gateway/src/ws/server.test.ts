@@ -69,6 +69,9 @@ const mockCodingAgentSessions = {
   subscribe: vi.fn(),
 };
 
+/** Captures WebSocketServer constructor options (e.g. handleProtocols) per instantiation */
+const mockWssCtorOptions: unknown[] = [];
+
 // Use class mocks so `new` works correctly
 vi.mock('ws', () => {
   class MockWebSocketServer {
@@ -77,8 +80,8 @@ vi.mock('ws', () => {
     close = mockWss.close;
     handleUpgrade = mockWss.handleUpgrade;
     emit = mockWss.emit;
-    constructor() {
-      // constructor captured by vi.fn wrapper if needed
+    constructor(options?: unknown) {
+      mockWssCtorOptions.push(options);
     }
   }
   return { WebSocketServer: MockWebSocketServer };
@@ -233,6 +236,7 @@ describe('WSGateway', () => {
     mockClientHandler.process.mockReturnValue(Promise.resolve());
     mockWss.on.mockClear();
     mockWss.clients.clear();
+    mockWssCtorOptions.length = 0;
     mockWss.close.mockImplementation((cb?: (err?: Error) => void) => cb?.());
     delete process.env.API_KEYS;
     vi.mocked(isPasswordConfigured).mockReturnValue(false);
@@ -383,6 +387,91 @@ describe('WSGateway', () => {
 
       expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
       expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts connection with valid token in Authorization Bearer header', async () => {
+      process.env.API_KEYS = 'key-alpha,key-beta';
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/', { authorization: 'Bearer key-alpha' });
+
+      await handler(socket, request);
+
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('rejects connection with invalid Bearer token', async () => {
+      process.env.API_KEYS = 'key-alpha,key-beta';
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/', { authorization: 'Bearer wrong-key' });
+
+      await handler(socket, request);
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts connection with valid token via ownpilot.auth subprotocol', async () => {
+      process.env.API_KEYS = 'key-alpha,key-beta';
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const encoded = Buffer.from('key-beta', 'utf-8').toString('base64url');
+      const request = createMockRequest('/', {
+        'sec-websocket-protocol': `ownpilot, ownpilot.auth.${encoded}`,
+      });
+
+      await handler(socket, request);
+
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('rejects connection with wrong token via ownpilot.auth subprotocol', async () => {
+      process.env.API_KEYS = 'key-alpha,key-beta';
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const encoded = Buffer.from('wrong-key', 'utf-8').toString('base64url');
+      const request = createMockRequest('/', {
+        'sec-websocket-protocol': `ownpilot, ownpilot.auth.${encoded}`,
+      });
+
+      await handler(socket, request);
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+  });
+
+  // =========================================================================
+  // handleProtocols (subprotocol selection — never echo the auth token back)
+  // =========================================================================
+  describe('handleProtocols', () => {
+    it('selects the non-auth protocol so the bearer token is not echoed', () => {
+      const gw = new WSGateway();
+      gw.start();
+
+      const options = mockWssCtorOptions.at(-1) as {
+        handleProtocols: (protocols: Set<string>) => string | false;
+      };
+      expect(typeof options.handleProtocols).toBe('function');
+      expect(options.handleProtocols(new Set(['ownpilot', 'ownpilot.auth.abc']))).toBe('ownpilot');
+      // Auth-only offer: echo it so spec-compliant clients complete the handshake
+      expect(options.handleProtocols(new Set(['ownpilot.auth.abc']))).toBe('ownpilot.auth.abc');
+      expect(options.handleProtocols(new Set())).toBe(false);
     });
   });
 

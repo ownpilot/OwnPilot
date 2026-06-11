@@ -465,6 +465,54 @@ describe('Claw CLI Commands', () => {
       expect(out).toContain('"error": "boom"');
     });
 
+    it('passes the API token via subprotocols, never in the URL', async () => {
+      const fake = makeFakeWs();
+      let calledUrl = '';
+      let calledProtocols: string[] | undefined;
+      const promise = clawWatch(undefined, {
+        token: 'secret-key',
+        limit: 1,
+        openWebSocket: (u, p) => {
+          calledUrl = u;
+          calledProtocols = p;
+          return fake.socket;
+        },
+      });
+      fake.open();
+      fake.deliver(JSON.stringify({ event: 'claw:started', payload: { clawId: 'c1' } }));
+      await promise;
+
+      expect(calledUrl).not.toContain('token=');
+      expect(calledUrl).not.toContain('secret-key');
+      expect(calledProtocols).toEqual([
+        'ownpilot',
+        `ownpilot.auth.${Buffer.from('secret-key', 'utf-8').toString('base64url')}`,
+      ]);
+    });
+
+    it('omits protocols entirely when no token is configured', async () => {
+      const savedKey = process.env.OWNPILOT_API_KEY;
+      delete process.env.OWNPILOT_API_KEY;
+      try {
+        const fake = makeFakeWs();
+        let calledProtocols: string[] | undefined = ['sentinel'];
+        const promise = clawWatch(undefined, {
+          limit: 1,
+          openWebSocket: (_u, p) => {
+            calledProtocols = p;
+            return fake.socket;
+          },
+        });
+        fake.open();
+        fake.deliver(JSON.stringify({ event: 'claw:started', payload: { clawId: 'c1' } }));
+        await promise;
+
+        expect(calledProtocols).toBeUndefined();
+      } finally {
+        if (savedKey !== undefined) process.env.OWNPILOT_API_KEY = savedKey;
+      }
+    });
+
     it('rejects when the underlying socket fires error', async () => {
       const fake = makeFakeWs();
       const promise = clawWatch(undefined, { openWebSocket: () => fake.socket });

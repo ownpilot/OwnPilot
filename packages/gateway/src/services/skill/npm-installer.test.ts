@@ -18,6 +18,7 @@ const {
   mockRmSync,
   mockExistsSync,
   mockReaddirSync,
+  mockReadlinkSync,
   mockCreateWriteStream,
   mockExecAsync,
 } = vi.hoisted(() => ({
@@ -26,6 +27,7 @@ const {
   mockRmSync: vi.fn(),
   mockExistsSync: vi.fn(() => false),
   mockReaddirSync: vi.fn(() => []),
+  mockReadlinkSync: vi.fn(),
   mockCreateWriteStream: vi.fn(),
   mockExecAsync: vi.fn(),
 }));
@@ -50,6 +52,7 @@ vi.mock('node:fs', async (importOriginal) => {
     rmSync: (...args: unknown[]) => mockRmSync(...args),
     existsSync: (...args: unknown[]) => mockExistsSync(...args),
     readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
+    readlinkSync: (...args: unknown[]) => mockReadlinkSync(...args),
     createWriteStream: (...args: unknown[]) => mockCreateWriteStream(...args),
   };
 });
@@ -58,11 +61,11 @@ vi.mock('node:child_process', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
-    exec: vi.fn(),
+    execFile: vi.fn(),
   };
 });
 
-// Mock promisify to return mockExecAsync — used for module-level execAsync = promisify(exec)
+// Mock promisify to return mockExecAsync — used for module-level execFileAsync = promisify(execFile)
 vi.mock('node:util', () => ({
   promisify: vi.fn(() => mockExecAsync),
 }));
@@ -917,14 +920,80 @@ describe('NpmSkillInstaller', () => {
         .mockReturnValueOnce(false) // extension.md not at top level
         .mockReturnValueOnce(true); // SKILL.md found inside subdir entry
 
-      // readdirSync returns one directory entry
-      mockReaddirSync.mockReturnValue([{ name: 'subpkg', isDirectory: () => true }]);
+      // readdirSync call #1 is the post-extraction escape walk (empty dir),
+      // call #2 is findManifest's subdirectory scan
+      mockReaddirSync
+        .mockReturnValueOnce([])
+        .mockReturnValue([{ name: 'subpkg', isDirectory: () => true }]);
 
       const extSvc = makeExtensionService();
       const result = await installer.install('subdir-pkg', 'user-1', extSvc);
 
       expect(result.success).toBe(true);
       expect(result.extensionId).toBe('ext-abc123');
+    });
+
+    it('invokes tar via execFile-style arg array (no shell interpolation)', async () => {
+      setupHappyPath();
+      const extSvc = makeExtensionService();
+
+      await installer.install('my-skill', 'user-1', extSvc);
+
+      expect(mockExecAsync).toHaveBeenCalledWith('tar', [
+        'xzf',
+        expect.stringContaining('package.tgz'),
+        '-C',
+        expect.stringContaining('ownpilot-skill-test'),
+      ]);
+    });
+
+    it('rejects package whose extracted symlink escapes the temp dir', async () => {
+      setupFetchJsonResponse(200, makeTarballRegistryResponse());
+
+      const ws = createMockWriteStream();
+      mockCreateWriteStream.mockReturnValue(ws);
+      setupDownloadResponse(200);
+
+      mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+      // Escape walk finds a symlink pointing outside the extraction root
+      mockReaddirSync.mockReturnValueOnce([
+        { name: 'evil-link', isDirectory: () => false, isSymbolicLink: () => true },
+      ]);
+      mockReadlinkSync.mockReturnValue('../../../etc/passwd');
+
+      const extSvc = makeExtensionService();
+      const result = await installer.install('evil-pkg', 'user-1', extSvc);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('escapes install directory');
+      expect(extSvc.install).not.toHaveBeenCalled();
+    });
+
+    it('allows symlinks that stay inside the temp dir', async () => {
+      setupFetchJsonResponse(200, makeTarballRegistryResponse());
+
+      const ws = createMockWriteStream();
+      mockCreateWriteStream.mockReturnValue(ws);
+      setupDownloadResponse(200);
+
+      mockExecAsync.mockResolvedValueOnce({ stdout: '', stderr: '' });
+
+      // Escape walk finds a symlink whose relative target resolves inside the root
+      mockReaddirSync.mockReturnValueOnce([
+        { name: 'ok-link', isDirectory: () => false, isSymbolicLink: () => true },
+      ]);
+      mockReadlinkSync.mockReturnValue('package/SKILL.md');
+
+      mockExistsSync
+        .mockReturnValueOnce(true) // ternary: packageDir
+        .mockReturnValueOnce(true) // findManifest: dir exists
+        .mockReturnValueOnce(true); // SKILL.md found
+
+      const extSvc = makeExtensionService();
+      const result = await installer.install('ok-link-pkg', 'user-1', extSvc);
+
+      expect(result.success).toBe(true);
     });
 
     it('follows HTTP 301 redirect in downloadFile (lines 296-299)', async () => {

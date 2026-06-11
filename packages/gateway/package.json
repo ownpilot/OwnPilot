@@ -37,7 +37,7 @@
     "@ownpilot/core": "workspace:*",
     "@slack/socket-mode": "^2.0.6",
     "@slack/web-api": "^7.15.0",
-    "@whiskeysockets/baileys": "7.0.0-rc.9",
+    "@whiskeysockets/baileys": "7.0.0-rc13",
     "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",
     "discord.js": "^14.25.1",
