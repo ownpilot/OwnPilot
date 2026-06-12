@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { plansApi } from '../api';
-import { silentCatch } from '../utils/ignore-error';
+import { silentCatch, ignoreError } from '../utils/ignore-error';
 import type { Plan, PlanStep, PlanHistoryEntry } from '../api';
 import {
   ListChecks,
@@ -732,7 +732,7 @@ function StepDebugItem({ step, isActive }: StepDebugItemProps) {
         : 'border-border dark:border-dark-border';
 
   const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
+    ignoreError(navigator.clipboard.writeText(text), 'clipboard.copyStepData');
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };

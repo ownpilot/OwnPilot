@@ -142,6 +142,7 @@ export function QuickInstallModal({ onClose, onInstalled }: QuickInstallModalPro
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary rounded transition-colors"
           >
             <X className="w-5 h-5" />

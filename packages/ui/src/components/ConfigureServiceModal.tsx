@@ -145,6 +145,7 @@ export function ConfigureServiceModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 text-text-muted dark:text-dark-text-muted hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />

@@ -143,6 +143,7 @@ export function QuickAddModal({ type, onClose, onCreated }: QuickAddModalProps) 
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded-md hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted transition-colors"
           >
             <X className="w-4 h-4" />

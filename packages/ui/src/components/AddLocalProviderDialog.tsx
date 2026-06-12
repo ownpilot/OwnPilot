@@ -41,6 +41,7 @@ export function AddLocalProviderDialog({ templates, onAdd, onClose }: AddLocalPr
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted"
           >
             <X className="w-5 h-5" />

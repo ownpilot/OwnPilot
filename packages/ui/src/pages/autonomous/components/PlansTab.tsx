@@ -287,6 +287,7 @@ function CreatePlanModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
           >
             <X className="w-4 h-4 text-text-muted" />

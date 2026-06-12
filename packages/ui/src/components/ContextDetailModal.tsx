@@ -143,6 +143,7 @@ export function ContextDetailModal({
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary text-text-muted dark:text-dark-text-muted"
           >
             <X className="w-4 h-4" />

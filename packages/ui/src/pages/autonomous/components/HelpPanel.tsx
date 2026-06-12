@@ -27,6 +27,7 @@ export function HelpPanel({ onClose }: Props) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary"
           >
             <X className="w-5 h-5" />

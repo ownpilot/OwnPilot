@@ -17,6 +17,7 @@ import {
   Copy,
 } from './icons';
 import type { TraceInfo } from '../types';
+import { ignoreError } from '../utils/ignore-error';
 
 interface DebugInfoModalProps {
   trace: TraceInfo;
@@ -39,7 +40,7 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
   }, [onClose]);
 
   const copyToClipboard = useCallback((text: string, key: string) => {
-    navigator.clipboard.writeText(text);
+    ignoreError(navigator.clipboard.writeText(text), 'clipboard.copyDebugInfo');
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
   }, []);
@@ -102,6 +103,7 @@ export function DebugInfoModal({ trace, onClose }: DebugInfoModalProps) {
             </button>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors text-text-muted dark:text-dark-text-muted"
             >
               <X className="w-5 h-5" />

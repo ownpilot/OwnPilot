@@ -212,6 +212,7 @@ export function LlmConfigPanel({
         )}
         <button
           onClick={onClose}
+          aria-label="Close"
           className="p-1 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors shrink-0"
         >
           <X className="w-4 h-4" />

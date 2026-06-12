@@ -105,6 +105,7 @@ export function ForEachConfigPanel({
         </div>
         <button
           onClick={onClose}
+          aria-label="Close"
           className="p-1 text-text-muted hover:text-text-primary transition-colors"
         >
           <X className="w-4 h-4" />

@@ -366,6 +366,7 @@ Skills: ${selectedSkills.join(', ') || 'none selected'}`;
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary"
           >
             <X className="w-4 h-4" />

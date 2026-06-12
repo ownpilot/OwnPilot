@@ -438,6 +438,7 @@ export function DeviceDetailDrawer({ device, onClose, onUpdated }: Props) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           >
             <X className="w-4 h-4 text-text-muted" />

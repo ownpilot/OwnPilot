@@ -115,6 +115,7 @@ export function WorkflowVersionsPanel({
         </div>
         <button
           onClick={onClose}
+          aria-label="Close"
           className="p-0.5 text-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors"
         >
           <X className="w-3.5 h-3.5" />

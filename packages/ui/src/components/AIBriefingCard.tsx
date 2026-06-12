@@ -336,6 +336,7 @@ export function AIBriefingCard() {
           </div>
           <button
             onClick={handleRefresh}
+            aria-label="Refresh briefing"
             className="p-2 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           >
             <RefreshCw className="w-5 h-5 text-text-muted" />

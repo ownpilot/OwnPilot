@@ -352,6 +352,7 @@ export function ChannelSetupModal({ onClose, onSuccess }: ChannelSetupModalProps
           </h3>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           >
             <X className="w-5 h-5 text-text-muted" />

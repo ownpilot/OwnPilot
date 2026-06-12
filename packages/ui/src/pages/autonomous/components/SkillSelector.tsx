@@ -242,6 +242,7 @@ function SkillDetailModal({ skill, onClose, isSelected, onToggle }: SkillDetailM
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1.5 rounded-lg hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
           >
             <X className="w-5 h-5 text-text-muted" />

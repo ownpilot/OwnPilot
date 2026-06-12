@@ -725,6 +725,7 @@ export function ExtensionDetailModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="px-4 py-2 text-text-secondary dark:text-dark-text-secondary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary rounded-lg transition-colors flex items-center gap-2"
           >
             <X className="w-4 h-4" />

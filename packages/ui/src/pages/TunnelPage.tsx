@@ -11,6 +11,7 @@ import { Copy, RefreshCw, ExternalLink, Shield, Wifi, WifiOff } from 'lucide-rea
 import { tunnelApi } from '../api';
 import type { TunnelStatus } from '../api';
 import { useTunnelSubscription } from '../hooks/useTunnelSubscription';
+import { ignoreError } from '../utils/ignore-error';
 
 type WizardState = 'configure' | 'starting' | 'active' | 'stopped' | 'error';
 
@@ -117,7 +118,7 @@ export function TunnelPage() {
   };
 
   const handleCopyUrl = () => {
-    if (url) navigator.clipboard.writeText(url);
+    if (url) ignoreError(navigator.clipboard.writeText(url), 'clipboard.copyTunnelUrl');
   };
 
   // ---- Render helpers ----
