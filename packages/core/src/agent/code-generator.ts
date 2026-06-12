@@ -199,6 +199,13 @@ const DEFAULT_CONFIG: CodeGeneratorConfig = {
 };
 
 /**
+ * In-memory retention bounds — both stores live for the process lifetime,
+ * so without caps they grow without limit on long-running gateways.
+ */
+const MAX_EXECUTION_HISTORY = 1000;
+const MAX_SNIPPETS_PER_USER = 500;
+
+/**
  * Code Generator with Sandbox Execution
  */
 export class CodeGenerator {
@@ -355,7 +362,7 @@ export class CodeGenerator {
       const result = await sandbox.execute<unknown>(wrappedCode, options.inputData);
       const duration = Date.now() - startTime;
 
-      // Track execution
+      // Track execution (bounded: oldest entries roll off)
       if (options.userId) {
         this.executionHistory.push({
           userId: options.userId,
@@ -364,6 +371,9 @@ export class CodeGenerator {
           duration,
           timestamp: new Date().toISOString(),
         });
+        if (this.executionHistory.length > MAX_EXECUTION_HISTORY) {
+          this.executionHistory.splice(0, this.executionHistory.length - MAX_EXECUTION_HISTORY);
+        }
       }
 
       if (result.ok) {
@@ -546,6 +556,10 @@ export class CodeGenerator {
 
     const userSnippets = this.snippetStorage.get(userId) ?? [];
     userSnippets.push(newSnippet);
+    // Bounded per user: oldest snippets roll off (in-memory store only)
+    if (userSnippets.length > MAX_SNIPPETS_PER_USER) {
+      userSnippets.splice(0, userSnippets.length - MAX_SNIPPETS_PER_USER);
+    }
     this.snippetStorage.set(userId, userSnippets);
 
     return newSnippet;

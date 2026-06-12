@@ -850,6 +850,9 @@ export class MemoryCleaner {
     this.cleanupInterval = setInterval(() => {
       this.runCleanup().catch((e) => log.error('Cleanup failed:', e));
     }, intervalMs);
+    // Don't hold the process open just for this cleanup — matches the other
+    // background timers (scheduler, secure-store, communication-bus).
+    this.cleanupInterval.unref?.();
   }
 
   /**

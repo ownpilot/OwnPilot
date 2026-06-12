@@ -294,6 +294,13 @@ export function getHighestPermissionLevel(levels: readonly PermissionLevel[]): P
 // =============================================================================
 
 /**
+ * Once the counter map grows past this size, expired entries are swept
+ * on the next rate-limit check. Keeps the map bounded on long-running
+ * processes (keys are `userId:toolName`, so stale pairs accumulate).
+ */
+const RATE_LIMIT_PRUNE_THRESHOLD = 1000;
+
+/**
  * Permission checker class
  */
 export class PermissionChecker {
@@ -475,6 +482,17 @@ export class PermissionChecker {
    */
   private checkRateLimit(key: string, limit: number): PermissionCheckResult {
     const now = Date.now();
+
+    // Opportunistic sweep: drop expired counters once the map gets large,
+    // so the map stays bounded without a background timer.
+    if (this.rateLimitCounters.size > RATE_LIMIT_PRUNE_THRESHOLD) {
+      for (const [k, v] of this.rateLimitCounters) {
+        if (v.resetAt < now) {
+          this.rateLimitCounters.delete(k);
+        }
+      }
+    }
+
     const counter = this.rateLimitCounters.get(key);
 
     if (!counter || counter.resetAt < now) {

@@ -610,6 +610,29 @@ describe('CodeGenerator', () => {
       expect(stats.totalExecutions).toBe(0);
     });
 
+    it('should cap execution history at 1000 entries, rolling off the oldest', async () => {
+      const generator = new CodeGenerator();
+      const history = (generator as unknown as { executionHistory: Array<{ userId: string }> })
+        .executionHistory;
+
+      // Pre-fill to the cap, then execute once more
+      for (let i = 0; i < 1000; i++) {
+        history.push({
+          userId: `user-${i}`,
+          language: 'javascript',
+          success: true,
+          duration: 1,
+          timestamp: new Date().toISOString(),
+        } as never);
+      }
+      await generator.execute('1 + 1', 'javascript', { userId: 'newest-user' });
+
+      expect(history).toHaveLength(1000);
+      // Oldest rolled off; newest entry survives at the tail
+      expect(history[0]?.userId).toBe('user-1');
+      expect(history[999]?.userId).toBe('newest-user');
+    });
+
     it('should return memoryUsed from sandbox result', async () => {
       mockSandboxExecutor.execute.mockResolvedValue({
         ok: true,
@@ -888,6 +911,25 @@ describe('CodeGenerator', () => {
       });
 
       expect(snippet.createdAt).toBe(snippet.updatedAt);
+    });
+
+    it('should cap per-user snippets at 500, evicting the oldest', () => {
+      const generator = new CodeGenerator();
+      for (let i = 0; i < 501; i++) {
+        generator.saveSnippet('user-1', {
+          userId: 'user-1',
+          language: 'javascript',
+          code: `code-${i}`,
+          description: `desc-${i}`,
+          tags: [],
+        });
+      }
+
+      const snippets = generator.getSnippets('user-1');
+      expect(snippets).toHaveLength(500);
+      // Oldest snippet rolled off; newest survives
+      expect(snippets[0]?.code).toBe('code-1');
+      expect(snippets[499]?.code).toBe('code-500');
     });
   });
 

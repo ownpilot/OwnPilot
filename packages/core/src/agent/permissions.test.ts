@@ -731,6 +731,33 @@ describe('PermissionChecker', () => {
       expect(result.reason).toContain('Rate limit exceeded');
     });
 
+    it('prunes expired counters once the map grows past the threshold', () => {
+      const policy = makePolicy({
+        defaultLevel: 'admin',
+        defaultCategories: ['code_execute'],
+      });
+      const c = new PermissionChecker(policy);
+      const counters = (
+        c as unknown as { rateLimitCounters: Map<string, { count: number; resetAt: number }> }
+      ).rateLimitCounters;
+
+      vi.useFakeTimers();
+
+      // Grow the map past the 1000-entry prune threshold with distinct users
+      for (let i = 0; i < 1001; i++) {
+        c.check('execute_javascript', makeContext({ userId: `user-${i}` }));
+      }
+      expect(counters.size).toBe(1001);
+
+      // Expire every window, then trigger one more check — the sweep
+      // should drop all stale entries instead of accumulating forever
+      vi.advanceTimersByTime(61000);
+      c.check('execute_javascript', makeContext({ userId: 'fresh-user' }));
+      expect(counters.size).toBe(1);
+
+      vi.useRealTimers();
+    });
+
     it('includes rate limit context in denial', () => {
       const policy = makePolicy({
         defaultLevel: 'admin',
