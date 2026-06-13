@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 let idCounter = 0;
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', () => ({
   generateId: vi.fn((prefix: string) => `${prefix}_${String(++idCounter).padStart(4, '0')}`),
 }));
 
@@ -44,7 +44,7 @@ import {
   type ApprovalDecision,
 } from './types.js';
 import { assessRisk } from './risk.js';
-import { generateId } from '@ownpilot/core';
+import { generateId } from '@ownpilot/core/services';
 
 const mockedAssessRisk = assessRisk as ReturnType<typeof vi.fn>;
 const mockedGenerateId = generateId as ReturnType<typeof vi.fn>;

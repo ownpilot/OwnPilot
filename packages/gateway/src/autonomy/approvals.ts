@@ -5,7 +5,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { generateId } from '@ownpilot/core';
+import { generateId } from '@ownpilot/core/services';
 import {
   type PendingAction,
   type ApprovalRequest,
