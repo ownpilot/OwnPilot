@@ -10,7 +10,7 @@
  * from extension lifecycle management.
  */
 
-import { getTriggerService } from '@ownpilot/core';
+import { getTriggerService } from '@ownpilot/core/services';
 import type { ExtensionManifest } from './types.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';
 import { getLog } from '../log.js';

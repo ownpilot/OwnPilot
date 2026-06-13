@@ -23,7 +23,8 @@ import {
   type TaskNotificationEvent,
 } from '@ownpilot/core';
 import type { NotificationRequest } from '@ownpilot/core';
-import { getChannelService, getLLMRouter } from '@ownpilot/core';
+import { getChannelService } from '@ownpilot/core/channels';
+import { getLLMRouter } from '@ownpilot/core/services';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 import { getDataPaths } from '../paths/index.js';
 import { getLog } from '../services/log.js';

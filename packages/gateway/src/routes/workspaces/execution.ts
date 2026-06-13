@@ -15,7 +15,7 @@ import {
   isDockerAvailable,
   type ExecuteCodeRequest,
   type ContainerConfig,
-} from '@ownpilot/core';
+} from '@ownpilot/core/workspace';
 import {
   apiResponse,
   apiError,

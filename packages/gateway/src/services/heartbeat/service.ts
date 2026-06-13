@@ -5,7 +5,8 @@
  * Each heartbeat owns one backing trigger (schedule type, chat action).
  */
 
-import { getEventSystem, getTriggerService } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import { getTriggerService } from '@ownpilot/core/services';
 import {
   createHeartbeatsRepository,
   type Heartbeat,

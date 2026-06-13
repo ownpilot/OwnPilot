@@ -14,7 +14,7 @@ vi.mock('../../db/repositories/workspaces.js', () => ({
   WorkspacesRepository: vi.fn(function () {}),
 }));
 
-import { getOrchestrator, isDockerAvailable } from '@ownpilot/core';
+import { getOrchestrator, isDockerAvailable } from '@ownpilot/core/workspace';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import { workspaceContainerRoutes } from './container.js';
 

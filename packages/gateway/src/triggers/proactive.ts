@@ -6,7 +6,7 @@
  */
 
 import { type CreateTriggerInput } from '../db/repositories/triggers.js';
-import { getTriggerService } from '@ownpilot/core';
+import { getTriggerService } from '@ownpilot/core/services';
 import { getLog } from '../services/log.js';
 
 const log = getLog('Proactive');

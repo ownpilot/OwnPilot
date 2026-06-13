@@ -23,13 +23,9 @@ import {
   setToolGroupsSchema,
 } from '../middleware/validation.js';
 import { settingsRepo, localProvidersRepo } from '../db/repositories/index.js';
-import {
-  getAvailableProviders,
-  type SandboxSettings,
-  isDockerAvailable,
-  TOOL_GROUPS,
-  DEFAULT_ENABLED_GROUPS,
-} from '@ownpilot/core';
+import { getAvailableProviders } from '@ownpilot/core/agent';
+import { isDockerAvailable } from '@ownpilot/core/workspace';
+import { type SandboxSettings, TOOL_GROUPS, DEFAULT_ENABLED_GROUPS } from '@ownpilot/core/agent';
 import { getDataDirectoryInfo } from '../paths/index.js';
 import { getMigrationStatus } from '../paths/migration.js';
 import { getLlmSemaphore } from '../services/llm/semaphore.js';

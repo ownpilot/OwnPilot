@@ -5,7 +5,9 @@
  * Both HTTP routes and tool executors delegate here.
  */
 
-import { getEmbeddingService, getEventSystem, type IMemoryService } from '@ownpilot/core';
+import { getEmbeddingService } from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { IMemoryService } from '@ownpilot/core/services';
 import type { MemoriesRepository } from '../db/repositories/memories.js';
 import {
   createMemoriesRepository,

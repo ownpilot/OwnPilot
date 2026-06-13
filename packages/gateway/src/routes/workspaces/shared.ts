@@ -6,7 +6,7 @@
  */
 
 import path from 'node:path';
-import type { ContainerConfig } from '@ownpilot/core';
+import type { ContainerConfig } from '@ownpilot/core/workspace';
 import { clamp } from '../helpers.js';
 
 // ============================================

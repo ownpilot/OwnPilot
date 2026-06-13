@@ -11,7 +11,7 @@
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
-import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core';
+import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core/workspace';
 import {
   apiResponse,
   apiError,

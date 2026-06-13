@@ -19,7 +19,7 @@ vi.mock('../../db/repositories/workspaces.js', () => ({
   WorkspacesRepository: vi.fn(function () {}),
 }));
 
-import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core';
+import { getWorkspaceStorage, StorageSecurityError } from '@ownpilot/core/workspace';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
 import { workspaceFileRoutes } from './files.js';
 

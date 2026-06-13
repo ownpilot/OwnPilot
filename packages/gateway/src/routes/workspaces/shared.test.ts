@@ -9,7 +9,7 @@ import {
   CONTAINER_LIMITS,
   VALID_NETWORK_POLICIES,
 } from './shared.js';
-import type { ContainerConfig } from '@ownpilot/core';
+import type { ContainerConfig } from '@ownpilot/core/workspace';
 
 // ---------------------------------------------------------------------------
 // sanitizeFilePath

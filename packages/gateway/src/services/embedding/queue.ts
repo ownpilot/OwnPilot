@@ -6,7 +6,8 @@
  * without blocking memory creation.
  */
 
-import { getEmbeddingService, getEventSystem } from '@ownpilot/core';
+import { getEmbeddingService } from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getLog } from '../log.js';
 import { createMemoriesRepository } from '../../db/repositories/memories.js';
 import {

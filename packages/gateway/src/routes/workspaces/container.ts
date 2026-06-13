@@ -11,7 +11,7 @@
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { WorkspacesRepository } from '../../db/repositories/workspaces.js';
-import { getOrchestrator, isDockerAvailable, type ContainerConfig } from '@ownpilot/core';
+import { getOrchestrator, isDockerAvailable, type ContainerConfig } from '@ownpilot/core/workspace';
 import { apiResponse, apiError, ERROR_CODES, getIntParam, getErrorMessage } from '../helpers.js';
 
 const app = new Hono();
