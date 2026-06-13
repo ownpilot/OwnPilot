@@ -194,12 +194,12 @@
       "releaseDate": "2025-06-11"
     },
     {
-      "id": "mistral-7b-instruct-v0.3",
-      "name": "Mistral-7B-Instruct-v0.3",
-      "contextWindow": 65536,
-      "maxOutput": 65536,
-      "inputPrice": 0.11,
-      "outputPrice": 0.11,
+      "id": "meta-llama-3_3-70b-instruct",
+      "name": "Meta-Llama-3_3-70B-Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.74,
+      "outputPrice": 0.74,
       "capabilities": [
         "chat",
         "function_calling",
@@ -210,12 +210,12 @@
       "releaseDate": "2025-04-01"
     },
     {
-      "id": "meta-llama-3_3-70b-instruct",
-      "name": "Meta-Llama-3_3-70B-Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.74,
-      "outputPrice": 0.74,
+      "id": "mistral-7b-instruct-v0.3",
+      "name": "Mistral-7B-Instruct-v0.3",
+      "contextWindow": 65536,
+      "maxOutput": 65536,
+      "inputPrice": 0.11,
+      "outputPrice": 0.11,
       "capabilities": [
         "chat",
         "function_calling",

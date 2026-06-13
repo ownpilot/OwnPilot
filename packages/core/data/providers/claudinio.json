@@ -21,6 +21,7 @@
       "capabilities": [
         "chat",
         "vision",
+        "audio",
         "function_calling",
         "reasoning",
         "streaming"

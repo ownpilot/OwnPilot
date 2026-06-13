@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "claude-opus4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5.64,
+      "outputPrice": 28.198,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-28"
+    },
+    {
       "id": "deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1048576,
@@ -24,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
@@ -126,6 +143,24 @@
       ],
       "default": false,
       "releaseDate": "2026-03-11"
+    },
+    {
+      "id": "gpt-5.4",
+      "name": "GPT-5.4",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 3,
+      "outputPrice": 16.13,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
     },
     {
       "id": "qwen3.5-122b-a10b",
@@ -338,22 +373,6 @@
       "releaseDate": "2025-12-08"
     },
     {
-      "id": "deepseek-v3.2",
-      "name": "DeepSeek V3.2",
-      "contextWindow": 163840,
-      "maxOutput": 163840,
-      "inputPrice": 0.266,
-      "outputPrice": 0.444,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
-    },
-    {
       "id": "mistral-large-2512",
       "name": "Mistral Large 3 2512",
       "contextWindow": 256000,
@@ -364,6 +383,22 @@
         "chat",
         "vision",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.266,
+      "outputPrice": 0.444,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,

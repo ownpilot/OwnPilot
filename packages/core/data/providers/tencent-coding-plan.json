@@ -12,8 +12,8 @@
   },
   "models": [
     {
-      "id": "hunyuan-2.0-instruct",
-      "name": "Tencent HY 2.0 Instruct",
+      "id": "hunyuan-turbos",
+      "name": "Hunyuan-TurboS",
       "contextWindow": 131072,
       "maxOutput": 16384,
       "inputPrice": 0,
@@ -43,8 +43,8 @@
       "releaseDate": "2026-03-08"
     },
     {
-      "id": "hunyuan-turbos",
-      "name": "Hunyuan-TurboS",
+      "id": "tc-code-latest",
+      "name": "Auto",
       "contextWindow": 131072,
       "maxOutput": 16384,
       "inputPrice": 0,
@@ -58,8 +58,8 @@
       "releaseDate": "2026-03-08"
     },
     {
-      "id": "tc-code-latest",
-      "name": "Auto",
+      "id": "hunyuan-2.0-instruct",
+      "name": "Tencent HY 2.0 Instruct",
       "contextWindow": 131072,
       "maxOutput": 16384,
       "inputPrice": 0,

@@ -13,7 +13,7 @@
   "models": [
     {
       "id": "canopylabs/orpheus-v1-english",
-      "name": "Orpheus V1 English",
+      "name": "Canopy Labs Orpheus V1 English",
       "contextWindow": 4000,
       "maxOutput": 50000,
       "inputPrice": 0,
@@ -27,10 +27,10 @@
     },
     {
       "id": "canopylabs/orpheus-arabic-saudi",
-      "name": "Orpheus Arabic Saudi",
+      "name": "Canopy Labs Orpheus Arabic Saudi",
       "contextWindow": 4000,
       "maxOutput": 50000,
-      "inputPrice": 40,
+      "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
@@ -40,36 +40,21 @@
       "releaseDate": "2025-12-16"
     },
     {
-      "id": "moonshotai/kimi-k2-instruct-0905",
-      "name": "Kimi K2 Instruct 0905",
-      "contextWindow": 262144,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
+      "id": "openai/gpt-oss-safeguard-20b",
+      "name": "Safety GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
         "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-05"
-    },
-    {
-      "id": "groq/compound-mini",
-      "name": "Compound Mini",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-09-04"
+      "releaseDate": "2025-10-29"
     },
     {
       "id": "groq/compound",
@@ -80,8 +65,20 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-04"
+    },
+    {
+      "id": "groq/compound-mini",
+      "name": "Compound Mini",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
         "streaming"
       ],
       "default": false,
@@ -122,55 +119,52 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "moonshotai/kimi-k2-instruct",
-      "name": "Kimi K2 Instruct",
+      "id": "qwen/qwen3-32b",
+      "name": "Qwen3-32B",
       "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 1,
-      "outputPrice": 3,
+      "maxOutput": 40960,
+      "inputPrice": 0.29,
+      "outputPrice": 0.59,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-07-14"
+      "releaseDate": "2025-06-11"
     },
     {
-      "id": "meta-llama/llama-guard-4-12b",
-      "name": "Llama Guard 4 12B",
-      "contextWindow": 131072,
-      "maxOutput": 1024,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
+      "id": "meta-llama/llama-prompt-guard-2-86m",
+      "name": "Prompt Guard 2 86M",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
-        "vision",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-04-05"
+      "releaseDate": "2025-05-29"
     },
     {
-      "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
-      "name": "Llama 4 Maverick 17B",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
+      "id": "meta-llama/llama-prompt-guard-2-22m",
+      "name": "Llama Prompt Guard 2 22M",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.03,
+      "outputPrice": 0.03,
       "capabilities": [
         "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-04-05"
+      "releaseDate": "2025-05-29"
     },
     {
       "id": "meta-llama/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B",
+      "name": "Llama 4 Scout 17B 16E",
       "contextWindow": 131072,
       "maxOutput": 8192,
       "inputPrice": 0.11,
@@ -186,71 +180,8 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "openai/gpt-oss-safeguard-20b",
-      "name": "Safety GPT OSS 20B",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-05"
-    },
-    {
-      "id": "mistral-saba-24b",
-      "name": "Mistral Saba 24B",
-      "contextWindow": 32768,
-      "maxOutput": 32768,
-      "inputPrice": 0.79,
-      "outputPrice": 0.79,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-02-06"
-    },
-    {
-      "id": "deepseek-r1-distill-llama-70b",
-      "name": "DeepSeek R1 Distill Llama 70B",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.75,
-      "outputPrice": 0.99,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-20"
-    },
-    {
-      "id": "qwen/qwen3-32b",
-      "name": "Qwen3 32B",
-      "contextWindow": 131072,
-      "maxOutput": 40960,
-      "inputPrice": 0.29,
-      "outputPrice": 0.59,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-23"
-    },
-    {
       "id": "llama-3.3-70b-versatile",
-      "name": "Llama 3.3 70B Versatile",
+      "name": "Llama 3.3 70B",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0.59,
@@ -264,26 +195,10 @@
       "releaseDate": "2024-12-06"
     },
     {
-      "id": "qwen-qwq-32b",
-      "name": "Qwen QwQ 32B",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.29,
-      "outputPrice": 0.39,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-11-27"
-    },
-    {
       "id": "whisper-large-v3-turbo",
-      "name": "Whisper Large v3 Turbo",
-      "contextWindow": 448,
-      "maxOutput": 448,
+      "name": "Whisper Large V3 Turbo",
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -295,50 +210,8 @@
       "releaseDate": "2024-10-01"
     },
     {
-      "id": "meta-llama/llama-prompt-guard-2-86m",
-      "name": "Llama Prompt Guard 2 86M",
-      "contextWindow": 512,
-      "maxOutput": 512,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-10-01"
-    },
-    {
-      "id": "meta-llama/llama-prompt-guard-2-22m",
-      "name": "Llama Prompt Guard 2 22M",
-      "contextWindow": 512,
-      "maxOutput": 512,
-      "inputPrice": 0.03,
-      "outputPrice": 0.03,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-10-01"
-    },
-    {
-      "id": "allam-2-7b",
-      "name": "ALLaM-2-7b",
-      "contextWindow": 4096,
-      "maxOutput": 4096,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-09"
-    },
-    {
       "id": "llama-3.1-8b-instant",
-      "name": "Llama 3.1 8B Instant",
+      "name": "Llama 3.1 8B",
       "contextWindow": 131072,
       "maxOutput": 131072,
       "inputPrice": 0.05,
@@ -352,69 +225,10 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "llama-guard-3-8b",
-      "name": "Llama Guard 3 8B",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "gemma2-9b-it",
-      "name": "Gemma 2 9B",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.2,
-      "outputPrice": 0.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-06-27"
-    },
-    {
-      "id": "llama3-8b-8192",
-      "name": "Llama 3 8B",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.05,
-      "outputPrice": 0.08,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-18"
-    },
-    {
-      "id": "llama3-70b-8192",
-      "name": "Llama 3 70B",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 0.59,
-      "outputPrice": 0.79,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-04-18"
-    },
-    {
       "id": "whisper-large-v3",
-      "name": "Whisper Large V3",
-      "contextWindow": 448,
-      "maxOutput": 448,
+      "name": "Whisper",
+      "contextWindow": 0,
+      "maxOutput": 0,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

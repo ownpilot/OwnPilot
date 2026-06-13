@@ -12,6 +12,58 @@
   },
   "models": [
     {
+      "id": "claude-fable-5",
+      "name": "Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-09"
+    },
+    {
+      "id": "claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "openai-gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-23"
+    },
+    {
       "id": "claude-opus-4-7",
       "name": "Claude Opus 4.7",
       "contextWindow": 1000000,
@@ -25,7 +77,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-16"
     },
     {
@@ -45,6 +97,25 @@
       ],
       "default": false,
       "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "gemini-3.1-pro",
+      "name": "Gemini 3.1 Pro Preview",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-19"
     },
     {
       "id": "claude-sonnet-4-6",
@@ -152,10 +223,10 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "openai-gpt-5-mini",
-      "name": "GPT-5 Mini",
-      "contextWindow": 272000,
-      "maxOutput": 8192,
+      "id": "openai-gpt-5-nano",
+      "name": "GPT-5 Nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -170,10 +241,10 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "openai-gpt-5-nano",
-      "name": "GPT-5 Nano",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
+      "id": "openai-gpt-5-mini",
+      "name": "GPT-5 Mini",
+      "contextWindow": 272000,
+      "maxOutput": 8192,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -203,6 +274,53 @@
       ],
       "default": false,
       "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "deepseek-r1",
+      "name": "DeepSeek-R1",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-20"
+    },
+    {
+      "id": "snowflake-llama3.3-70b",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "mistral-large2",
+      "name": "Mistral Large (latest)",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
     }
   ],
   "baseUrl": "https://${SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/cortex/v1",

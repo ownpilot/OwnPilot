@@ -118,6 +118,24 @@
       "releaseDate": "2026-02-11"
     },
     {
+      "id": "gpt-5.3-codex-xhigh",
+      "name": "GPT-5.3 Codex XHigh",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "gpt-5.3-codex",
       "name": "GPT-5.3 Codex",
       "contextWindow": 400000,
@@ -146,24 +164,6 @@
         "chat",
         "vision",
         "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
-      "id": "gpt-5.3-codex-xhigh",
-      "name": "GPT-5.3 Codex XHigh",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -275,8 +275,8 @@
       "releaseDate": "2025-11-17"
     },
     {
-      "id": "gpt-5.1",
-      "name": "GPT-5.1",
+      "id": "gpt-5.1-codex",
+      "name": "GPT-5.1 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -285,6 +285,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -310,8 +311,8 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-codex",
-      "name": "GPT-5.1 Codex",
+      "id": "gpt-5.1-chat-latest",
+      "name": "GPT-5.1 Chat Latest",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -320,7 +321,6 @@
         "chat",
         "vision",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -328,8 +328,8 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "gpt-5.1-chat-latest",
-      "name": "GPT-5.1 Chat Latest",
+      "id": "gpt-5.1",
+      "name": "GPT-5.1",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.25,
@@ -430,12 +430,12 @@
       "releaseDate": "2025-09-01"
     },
     {
-      "id": "gpt-5-mini",
-      "name": "GPT-5 Mini",
+      "id": "gpt-5",
+      "name": "GPT-5",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
@@ -447,12 +447,12 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "gpt-5",
-      "name": "GPT-5",
+      "id": "gpt-5-mini",
+      "name": "GPT-5 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
       "capabilities": [
         "chat",
         "vision",
@@ -775,12 +775,12 @@
       "releaseDate": "2025-04-16"
     },
     {
-      "id": "gpt-4.1-mini",
-      "name": "GPT-4.1 Mini",
+      "id": "gpt-4.1-nano",
+      "name": "GPT-4.1 Nano",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -807,12 +807,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gpt-4.1-nano",
-      "name": "GPT-4.1 Nano",
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 Mini",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "vision",
@@ -907,12 +907,12 @@
       "releaseDate": "2025-02-19"
     },
     {
-      "id": "deepseek/deepseek-v3.1",
-      "name": "DeepSeek V3.1",
+      "id": "deepseek-ai/DeepSeek-R1",
+      "name": "DeepSeek R1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.55,
-      "outputPrice": 1.66,
+      "inputPrice": 3,
+      "outputPrice": 7,
       "capabilities": [
         "chat",
         "function_calling",
@@ -923,12 +923,12 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "deepseek-ai/DeepSeek-R1",
-      "name": "DeepSeek R1",
+      "id": "deepseek/deepseek-v3.1",
+      "name": "DeepSeek V3.1",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 3,
-      "outputPrice": 7,
+      "inputPrice": 0.55,
+      "outputPrice": 1.66,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1033,12 +1033,12 @@
       "releaseDate": "2024-09-19"
     },
     {
-      "id": "meta-llama/Meta-Llama-3.1-8B-Instruct",
-      "name": "Llama 3.1 8B Instruct",
+      "id": "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
+      "name": "Llama 3.1 405B Instruct Turbo",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.02,
-      "outputPrice": 0.05,
+      "inputPrice": 3.5,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1048,12 +1048,12 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo",
-      "name": "Llama 3.1 405B Instruct Turbo",
+      "id": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+      "name": "Llama 3.1 8B Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 3.5,
-      "outputPrice": 3.5,
+      "inputPrice": 0.02,
+      "outputPrice": 0.05,
       "capabilities": [
         "chat",
         "function_calling",

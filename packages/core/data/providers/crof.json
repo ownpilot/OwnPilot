@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "deepseek-v4-pro-lightning",
-      "name": "DeepSeek V4 Pro",
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0.8,
-      "outputPrice": 1.6,
+      "inputPrice": 0.12,
+      "outputPrice": 0.21,
       "capabilities": [
         "chat",
         "function_calling",
@@ -29,12 +29,12 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "deepseek-v4-flash",
-      "name": "DeepSeek V4 Flash",
+      "id": "deepseek-v4-pro-lightning",
+      "name": "DeepSeek V4 Pro",
       "contextWindow": 1000000,
       "maxOutput": 131072,
-      "inputPrice": 0.12,
-      "outputPrice": 0.21,
+      "inputPrice": 0.8,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -238,12 +238,12 @@
       "releaseDate": "2026-02-06"
     },
     {
-      "id": "greg-1",
-      "name": "Greg 1 Normal",
+      "id": "greg-1-super",
+      "name": "Greg 1 Super",
       "contextWindow": 229376,
       "maxOutput": 229376,
-      "inputPrice": 0.1,
-      "outputPrice": 0.3,
+      "inputPrice": 1,
+      "outputPrice": 5,
       "capabilities": [
         "chat",
         "streaming"
@@ -266,12 +266,12 @@
       "releaseDate": "2026-01-27"
     },
     {
-      "id": "greg-1-super",
-      "name": "Greg 1 Super",
+      "id": "greg-1",
+      "name": "Greg 1 Normal",
       "contextWindow": 229376,
       "maxOutput": 229376,
-      "inputPrice": 1,
-      "outputPrice": 5,
+      "inputPrice": 0.1,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "streaming"

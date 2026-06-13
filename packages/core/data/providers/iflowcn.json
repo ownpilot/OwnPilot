@@ -27,21 +27,6 @@
       "releaseDate": "2025-09-05"
     },
     {
-      "id": "qwen3-235b-a22b-instruct",
-      "name": "Qwen3-235B-A22B-Instruct",
-      "contextWindow": 256000,
-      "maxOutput": 64000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-01"
-    },
-    {
       "id": "qwen3-coder-plus",
       "name": "Qwen3-Coder-Plus",
       "contextWindow": 256000,
@@ -73,6 +58,21 @@
       "releaseDate": "2025-07-01"
     },
     {
+      "id": "qwen3-235b-a22b-instruct",
+      "name": "Qwen3-235B-A22B-Instruct",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-01"
+    },
+    {
       "id": "deepseek-r1",
       "name": "DeepSeek-R1",
       "contextWindow": 128000,
@@ -93,21 +93,6 @@
       "name": "Qwen3-Max-Preview",
       "contextWindow": 256000,
       "maxOutput": 32000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-01-01"
-    },
-    {
-      "id": "deepseek-v3.2",
-      "name": "DeepSeek-V3.2-Exp",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -150,6 +135,21 @@
       "releaseDate": "2025-01-01"
     },
     {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek-V3.2-Exp",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-01"
+    },
+    {
       "id": "deepseek-v3",
       "name": "DeepSeek-V3",
       "contextWindow": 128000,
@@ -165,16 +165,15 @@
       "releaseDate": "2024-12-26"
     },
     {
-      "id": "glm-4.6",
-      "name": "GLM-4.6",
-      "contextWindow": 200000,
-      "maxOutput": 128000,
+      "id": "kimi-k2",
+      "name": "Kimi-K2",
+      "contextWindow": 128000,
+      "maxOutput": 64000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -212,15 +211,16 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "kimi-k2",
-      "name": "Kimi-K2",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
+      "id": "glm-4.6",
+      "name": "GLM-4.6",
+      "contextWindow": 200000,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,

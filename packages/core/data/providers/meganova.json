@@ -254,21 +254,6 @@
       "releaseDate": "2025-05-28"
     },
     {
-      "id": "deepseek-ai/DeepSeek-V3-0324",
-      "name": "DeepSeek V3 0324",
-      "contextWindow": 163840,
-      "maxOutput": 163840,
-      "inputPrice": 0.25,
-      "outputPrice": 0.88,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-24"
-    },
-    {
       "id": "Qwen/Qwen2.5-VL-32B-Instruct",
       "name": "Qwen2.5 VL 32B Instruct",
       "contextWindow": 16384,
@@ -280,6 +265,21 @@
         "vision",
         "function_calling",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-24"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3-0324",
+      "name": "DeepSeek V3 0324",
+      "contextWindow": 163840,
+      "maxOutput": 163840,
+      "inputPrice": 0.25,
+      "outputPrice": 0.88,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "streaming"
       ],
       "default": false,

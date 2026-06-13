@@ -178,6 +178,22 @@
       "releaseDate": "2025-12-17"
     },
     {
+      "id": "gemini-3-pro-image-preview",
+      "name": "Nano Banana Pro",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 120,
+      "capabilities": [
+        "chat",
+        "vision",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-20"
+    },
+    {
       "id": "gemini-3-pro-preview",
       "name": "Gemini 3 Pro Preview",
       "contextWindow": 1048576,
@@ -350,12 +366,12 @@
       "releaseDate": "2025-03-20"
     },
     {
-      "id": "gemini-2.0-flash-lite",
-      "name": "Gemini 2.0 Flash-Lite",
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
       "contextWindow": 1048576,
       "maxOutput": 8192,
-      "inputPrice": 0.075,
-      "outputPrice": 0.3,
+      "inputPrice": 0.1,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "vision",
@@ -368,12 +384,12 @@
       "releaseDate": "2024-12-11"
     },
     {
-      "id": "gemini-2.0-flash",
-      "name": "Gemini 2.0 Flash",
+      "id": "gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash-Lite",
       "contextWindow": 1048576,
       "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.4,
+      "inputPrice": 0.075,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "vision",

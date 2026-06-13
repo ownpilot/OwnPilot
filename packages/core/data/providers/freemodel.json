@@ -1,0 +1,191 @@
+{
+  "id": "freemodel",
+  "name": "FreeModel",
+  "type": "openai-compatible",
+  "apiKeyEnv": "FREEMODEL_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "claude-fable-5",
+      "name": "Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 10,
+      "outputPrice": 50,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-09"
+    },
+    {
+      "id": "claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-23"
+    },
+    {
+      "id": "claude-opus-4-7",
+      "name": "Claude Opus 4.7",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.75,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-17"
+    },
+    {
+      "id": "gpt-5.4",
+      "name": "GPT-5.4",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 2.5,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "gpt-5.3-codex",
+      "name": "GPT-5.3 Codex",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "claude-opus-4-6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "name": "Claude Haiku 4.5",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    }
+  ],
+  "baseUrl": "https://cc.freemodel.dev/v1",
+  "docsUrl": "https://freemodel.dev"
+}

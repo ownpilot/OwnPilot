@@ -1,0 +1,107 @@
+{
+  "id": "llmtr",
+  "name": "LLMTR",
+  "type": "openai-compatible",
+  "apiKeyEnv": "LLMTR_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "trendyol-7b",
+      "name": "Trendyol 7B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-06"
+    },
+    {
+      "id": "magibu-11b-v8",
+      "name": "Magibu 11B v8",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-05"
+    },
+    {
+      "id": "sincap",
+      "name": "Sincap",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-05"
+    },
+    {
+      "id": "medgemma-4b",
+      "name": "MedGemma 4B",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 3,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-26"
+    },
+    {
+      "id": "gemma-4",
+      "name": "Gemma 4",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "qwen3-6-35b",
+      "name": "Qwen3.6 35B-A3B",
+      "contextWindow": 16384,
+      "maxOutput": 65536,
+      "inputPrice": 5,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    }
+  ],
+  "baseUrl": "https://llmtr.com/v1",
+  "docsUrl": "https://llmtr.com/docs"
+}

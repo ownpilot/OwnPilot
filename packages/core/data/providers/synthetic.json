@@ -133,8 +133,8 @@
       "releaseDate": "2026-01-18"
     },
     {
-      "id": "hf:nvidia/Kimi-K2.5-NVFP4",
-      "name": "Kimi K2.5 (NVFP4)",
+      "id": "hf:moonshotai/Kimi-K2.5",
+      "name": "Kimi K2.5",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.55,
@@ -150,8 +150,8 @@
       "releaseDate": "2026-01"
     },
     {
-      "id": "hf:moonshotai/Kimi-K2.5",
-      "name": "Kimi K2.5",
+      "id": "hf:nvidia/Kimi-K2.5-NVFP4",
+      "name": "Kimi K2.5 (NVFP4)",
       "contextWindow": 262144,
       "maxOutput": 65536,
       "inputPrice": 0.55,

@@ -45,6 +45,20 @@
       "releaseDate": "2026-03-10"
     },
     {
+      "id": "qwen-image",
+      "name": "Qwen-Image",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
+    },
+    {
       "id": "qwen3-coder-next",
       "name": "Qwen3-Coder-Next",
       "contextWindow": 262144,
@@ -77,26 +91,26 @@
       "releaseDate": "2026-03-01"
     },
     {
-      "id": "qwen-image",
-      "name": "Qwen-Image",
-      "contextWindow": 8192,
-      "maxOutput": 4096,
-      "inputPrice": 0.5,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-01"
-    },
-    {
       "id": "qwen3-reranker-4b",
       "name": "Qwen3-Reranker-4B",
       "contextWindow": 32768,
       "maxOutput": 8192,
       "inputPrice": 0.12,
       "outputPrice": 0.12,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-01"
+    },
+    {
+      "id": "qwen3-embedding-8b",
+      "name": "Qwen3-Embedding-8B",
+      "contextWindow": 32768,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
         "streaming"
@@ -133,20 +147,6 @@
         "vision",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-01"
-    },
-    {
-      "id": "qwen3-embedding-8b",
-      "name": "Qwen3-Embedding-8B",
-      "contextWindow": 32768,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,

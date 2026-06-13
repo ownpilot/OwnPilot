@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "mimo-v2.5-pro-ultraspeed",
+      "name": "MiMo-V2.5-Pro-UltraSpeed",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.305,
+      "outputPrice": 2.61,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-08"
+    },
+    {
       "id": "mimo-v2.5",
       "name": "MiMo-V2.5",
       "contextWindow": 1048576,
@@ -26,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-22"
     },
     {

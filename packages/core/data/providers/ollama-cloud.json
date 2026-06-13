@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "nemotron-3-ultra",
+      "name": "nemotron-3-ultra",
+      "contextWindow": 262144,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-04"
+    },
+    {
       "id": "minimax-m3",
       "name": "minimax-m3",
       "contextWindow": 512000,
@@ -25,7 +41,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-31"
     },
     {
@@ -392,6 +408,7 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -479,8 +496,8 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "gpt-oss:20b",
-      "name": "gpt-oss:20b",
+      "id": "gpt-oss:120b",
+      "name": "gpt-oss:120b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -495,8 +512,8 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "gpt-oss:120b",
-      "name": "gpt-oss:120b",
+      "id": "gpt-oss:20b",
+      "name": "gpt-oss:20b",
       "contextWindow": 131072,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -572,15 +589,16 @@
       "releaseDate": "2025-06-15"
     },
     {
-      "id": "gemma3:4b",
-      "name": "gemma3:4b",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
+      "id": "ministral-3:8b",
+      "name": "ministral-3:8b",
+      "contextWindow": 262144,
+      "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -603,24 +621,23 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "ministral-3:8b",
-      "name": "ministral-3:8b",
-      "contextWindow": 262144,
-      "maxOutput": 128000,
+      "id": "gemma3:12b",
+      "name": "gemma3:12b",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
-        "function_calling",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "gemma3:12b",
-      "name": "gemma3:12b",
+      "id": "gemma3:4b",
+      "name": "gemma3:4b",
       "contextWindow": 131072,
       "maxOutput": 131072,
       "inputPrice": 0,

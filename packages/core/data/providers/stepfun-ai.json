@@ -1,6 +1,6 @@
 {
   "id": "stepfun-ai",
-  "name": "StepFun",
+  "name": "StepFun AI",
   "type": "openai-compatible",
   "apiKeyEnv": "STEPFUN_API_KEY",
   "features": {
