@@ -9,7 +9,7 @@ import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:
 import { dirname, extname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { Hono, type Context } from 'hono';
-import { getExtensionService } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core/services';
 import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';

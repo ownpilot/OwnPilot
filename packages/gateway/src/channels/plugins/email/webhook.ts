@@ -12,7 +12,7 @@
 
 import { randomUUID } from 'node:crypto';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
-import { getChannelService, hasChannelService } from '@ownpilot/core';
+import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
 import { getLog } from '../../../services/log.js';
 
 const log = getLog('Email-Webhook');

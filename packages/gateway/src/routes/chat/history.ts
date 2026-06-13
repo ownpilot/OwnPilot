@@ -34,7 +34,7 @@ import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
 import { channelSessionsRepo } from '../../db/repositories/channels/sessions.js';
 import { channelMessagesRepo } from '../../db/repositories/channels/messages.js';
 import { channelUsersRepo } from '../../db/repositories/channels/users.js';
-import { getChannelService, hasChannelService } from '@ownpilot/core';
+import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
 import { wsGateway } from '../../ws/server.js';
 import { randomUUID } from 'node:crypto';
 import { getOwnerUserId, getOwnerChatId } from '../../services/pairing-service.js';

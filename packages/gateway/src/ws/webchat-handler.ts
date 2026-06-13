@@ -8,7 +8,7 @@
 
 import { randomUUID } from 'node:crypto';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
-import { getChannelService, hasChannelService } from '@ownpilot/core';
+import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
 import type { WebChatChannelAPI } from '../channels/plugins/webchat/webchat-api.js';
 import { sessionManager } from './session.js';
 // Lazy-imported to break circular dependency: ws/webchat-handler.ts ↔ ws/server.ts

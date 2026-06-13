@@ -20,7 +20,7 @@ import {
 import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getExtensionService } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core/services';
 import type { ExtensionService } from '../../services/extension/service.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { isWithinDirectory } from '../../utils/file-safety.js';

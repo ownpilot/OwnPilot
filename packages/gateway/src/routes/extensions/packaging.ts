@@ -8,7 +8,7 @@ import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { existsSync, readdirSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 import { Hono } from 'hono';
-import { getExtensionService } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core/services';
 import type { ExtensionService } from '../../services/extension/service.js';
 import { apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';

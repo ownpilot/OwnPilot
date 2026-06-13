@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService } from '@ownpilot/core/channels';
 import { apiResponse, apiError, ERROR_CODES, parseJsonBody } from './helpers.js';
 import {
   getChannelScopedRouting,

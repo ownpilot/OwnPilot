@@ -17,7 +17,7 @@ import {
 import type { ClientEvents, WSMessage, Channel } from './types.js';
 import { sessionManager } from './session.js';
 import { ClientEventHandler } from './events.js';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService } from '@ownpilot/core/channels';
 import { EventBusBridge, setEventBusBridge } from './event-bridge.js';
 import { setupLegacyEventForwarding } from './legacy-events.js';
 import {

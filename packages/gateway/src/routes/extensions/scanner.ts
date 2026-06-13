@@ -6,7 +6,7 @@
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
-import { getExtensionService } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core/services';
 import { type ExtensionService } from '../../services/extension/service.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 

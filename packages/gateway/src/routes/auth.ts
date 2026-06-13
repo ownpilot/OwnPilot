@@ -28,7 +28,7 @@ import {
   setProviderOAuthOverride,
   deleteProviderOAuthOverride,
 } from '../services/app-settings.js';
-import { getAvailableProviders } from '@ownpilot/core';
+import { getAvailableProviders } from '@ownpilot/core/agent';
 import {
   apiResponse,
   apiError,

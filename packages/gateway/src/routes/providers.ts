@@ -7,7 +7,7 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import { loadProviderConfig, getAvailableProviders } from '@ownpilot/core';
+import { loadProviderConfig, getAvailableProviders } from '@ownpilot/core/agent';
 import {
   apiResponse,
   apiError,

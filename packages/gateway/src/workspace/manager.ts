@@ -14,7 +14,7 @@ import type {
   WorkspaceAgentConfig,
 } from './types.js';
 import { gatewayEvents } from '../ws/events.js';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService } from '@ownpilot/core/channels';
 import type { IncomingMessage } from '../ws/types.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';

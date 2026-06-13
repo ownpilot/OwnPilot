@@ -12,7 +12,8 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService, hasChannelService, getDefaultPluginRegistry } from '@ownpilot/core';
+import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
+import { getDefaultPluginRegistry } from '@ownpilot/core/plugins';
 import { ChannelMessagesRepository } from '../../db/repositories/channels/messages.js';
 import { channelUsersRepo } from '../../db/repositories/channels/users.js';
 import { configServicesRepo } from '../../db/repositories/config-services.js';

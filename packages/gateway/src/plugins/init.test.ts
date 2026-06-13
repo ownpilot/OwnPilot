@@ -444,7 +444,7 @@ vi.mock('../utils/safe-fetch.js', () => ({
 // =============================================================================
 
 import { initializePlugins, refreshChannelApi } from './init.js';
-import { getDefaultPluginRegistry } from '@ownpilot/core';
+import { getDefaultPluginRegistry } from '@ownpilot/core/plugins';
 
 // =============================================================================
 // Helpers

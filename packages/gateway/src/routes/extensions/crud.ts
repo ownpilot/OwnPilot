@@ -7,7 +7,7 @@
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono, type Context } from 'hono';
-import { getExtensionService } from '@ownpilot/core';
+import { getExtensionService } from '@ownpilot/core/services';
 import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
 import {
   apiResponse,

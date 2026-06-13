@@ -13,7 +13,7 @@
 import { Hono } from 'hono';
 import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import type { ChannelIncomingMessage } from '@ownpilot/core';
-import { getChannelService, hasChannelService } from '@ownpilot/core';
+import { getChannelService, hasChannelService } from '@ownpilot/core/channels';
 import type { SmsChannelAPI } from './sms-api.js';
 import { getLog } from '../../../services/log.js';
 import { getRequestUrl } from '../../../utils/trusted-proxy.js';

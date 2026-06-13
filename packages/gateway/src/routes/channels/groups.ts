@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { getChannelService } from '@ownpilot/core';
+import { getChannelService } from '@ownpilot/core/channels';
 import { ChannelMessagesRepository } from '../../db/repositories/channels/messages.js';
 import {
   apiResponse,

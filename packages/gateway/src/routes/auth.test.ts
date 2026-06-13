@@ -24,7 +24,7 @@ import {
   setProviderOAuthOverride,
   deleteProviderOAuthOverride,
 } from '../services/app-settings.js';
-import { getAvailableProviders } from '@ownpilot/core';
+import { getAvailableProviders } from '@ownpilot/core/agent';
 import { uiSessionMiddleware } from '../middleware/ui-session.js';
 
 // Bypass session middleware — auth route tests don't care about session state.
