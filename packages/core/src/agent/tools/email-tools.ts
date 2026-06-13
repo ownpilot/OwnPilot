@@ -309,11 +309,11 @@ export const sendEmailExecutor: ToolExecutor = async (
         attachmentCount: attachments?.length || 0,
         priority,
       },
+      error: 'requiresSMTPConfig',
+      reason: 'SMTP transport is not yet wired. Email was queued as a draft but not sent.',
       requiresSMTPConfig: true,
       note: 'Email sending requires SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment.',
     },
-    error: 'requiresSMTPConfig',
-    reason: 'SMTP transport is not yet wired. Email was queued as a draft but not sent.',
     isError: true,
   };
 };
@@ -411,11 +411,11 @@ export const listEmailsExecutor: ToolExecutor = async (
         since,
         before,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. No emails could be listed.',
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration. Set IMAP_HOST, IMAP_PORT, IMAP_USER, IMAP_PASS in environment.',
     },
-    error: 'requiresIMAPConfig',
-    reason: 'IMAP transport is not yet wired. No emails could be listed.',
     isError: true,
   };
 };
@@ -477,11 +477,11 @@ export const readEmailExecutor: ToolExecutor = async (
         attachmentDir,
         markAsRead,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. Email could not be read.',
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration.',
     },
-    error: 'requiresIMAPConfig',
-    reason: 'IMAP transport is not yet wired. Email could not be read.',
     isError: true,
   };
 };
@@ -532,11 +532,11 @@ export const deleteEmailExecutor: ToolExecutor = async (
         folder,
         permanent,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. Email could not be deleted.',
       requiresIMAPConfig: true,
       note: 'Email deletion requires IMAP configuration.',
     },
-    error: 'requiresIMAPConfig',
-    reason: 'IMAP transport is not yet wired. Email could not be deleted.',
     isError: true,
   };
 };
@@ -591,6 +591,8 @@ export const searchEmailsExecutor: ToolExecutor = async (
   return {
     content: {
       status: 'prepared',
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. No emails could be searched.',
       query: {
         searchText: query,
         folder: folder || 'all',
@@ -601,8 +603,6 @@ export const searchEmailsExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email search requires IMAP configuration.',
     },
-    error: 'requiresIMAPConfig',
-    reason: 'IMAP transport is not yet wired. No emails could be searched.',
     isError: true,
   };
 };
@@ -658,6 +658,8 @@ export const replyEmailExecutor: ToolExecutor = async (
   return {
     content: {
       status: 'prepared',
+      error: 'requiresSMTPAndIMAPConfig',
+      reason: 'SMTP and IMAP transports are not yet wired. Reply could not be sent.',
       action: replyAll ? 'reply_all' : 'reply',
       details: {
         originalId: emailId,
@@ -669,8 +671,6 @@ export const replyEmailExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Replying requires both SMTP (to send) and IMAP (to fetch original) configuration.',
     },
-    error: 'requiresSMTPAndIMAPConfig',
-    reason: 'SMTP and IMAP transports are not yet wired. Reply could not be sent.',
     isError: true,
   };
 };
