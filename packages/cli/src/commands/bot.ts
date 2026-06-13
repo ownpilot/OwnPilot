@@ -5,7 +5,7 @@
  * Use --token flag to override the database setting (for testing).
  */
 
-import { createSimpleAgent } from '@ownpilot/core';
+import { createSimpleAgent } from '@ownpilot/core/agent';
 import { createTelegramBot, type TelegramConfig } from '../telegram/index.js';
 import {
   loadApiKeysToEnvironment,

@@ -4,7 +4,7 @@
  */
 
 import { Command } from 'commander';
-import { VERSION } from '@ownpilot/core';
+import { VERSION } from '@ownpilot/core/version';
 import { config as loadEnv } from 'dotenv';
 import { startServer } from './commands/server.js';
 import { startBot } from './commands/bot.js';

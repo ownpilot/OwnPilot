@@ -4,7 +4,7 @@
 
 import type { Context } from 'grammy';
 import { Bot, webhookCallback } from 'grammy';
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type { TelegramConfig, IncomingMessage, OutgoingMessage } from './types.js';
 
 const log = getLog('Telegram');
