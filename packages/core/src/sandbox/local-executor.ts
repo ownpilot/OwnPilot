@@ -59,6 +59,13 @@ const SENSITIVE_ENV_PREFIXES = [
   'SMTP_',
   'DATABASE_URL',
   'DB_',
+  // Cover common auth schemes — the match is substring-based so AUTH covers
+  // MYAUTH_TOKEN and AUTH_KEY, JWT covers JWT_SECRET, etc.
+  'AUTH',
+  'JWT',
+  'OAUTH',
+  'CUSTOMER',
+  'SESSION',
 ];
 
 /**
