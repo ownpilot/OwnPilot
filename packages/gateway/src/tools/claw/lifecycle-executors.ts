@@ -11,6 +11,7 @@
  * Each is a pure handler that returns a uniform { success, result?, error? }.
  */
 
+import { randomUUID } from 'node:crypto';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { validateToolCode } from '@ownpilot/core/sandbox';
 import { getClawContext } from '../../services/claw/context.js';
@@ -129,11 +130,13 @@ export async function executeRunScript(
   if (!wsPath) return { success: false, error: 'Workspace not found' };
 
   // Write script to workspace for Docker sandbox path mapping; will be cleaned up after execution.
-  // Add a random suffix so two scripts written in the same millisecond (rare
-  // but possible under concurrent claw cycles) don't collide.
+  // Use randomUUID for the suffix instead of Math.random().toString(36).slice(2,8):
+  // the suffix is part of a filesystem path and gets used as part of an
+  // identifier the runner's output/audit may reference. CSPRNG-backed IDs
+  // make accidental collisions across concurrent claw cycles essentially
+  // impossible.
   const ext: Record<string, string> = { python: 'py', javascript: 'js', shell: 'sh' };
-  const rand = Math.random().toString(36).slice(2, 8);
-  const scriptName = `script_${Date.now()}_${rand}.${ext[language] ?? 'js'}`;
+  const scriptName = `script_${Date.now()}_${randomUUID().slice(0, 8)}.${ext[language] ?? 'js'}`;
   const scriptRelPath = `scripts/${scriptName}`;
   writeSessionWorkspaceFile(ctx.workspaceId, scriptRelPath, Buffer.from(script, 'utf-8'));
 

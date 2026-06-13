@@ -1424,9 +1424,10 @@ export class ChannelServiceImpl implements IChannelService {
     senderUserId: string,
     _ownerUserId: string
   ): Promise<string> {
-    // Generate 6-digit code. SECURITY (EXPOSE-004): use a CSPRNG — Math.random()
-    // is a non-cryptographic PRNG whose internal state can be recovered from a
-    // few observed outputs, making pairing codes predictable/brute-forceable.
+    // SECURITY (EXPOSE-004): the 6-digit code is a one-time pairing
+    // credential — an attacker who can predict it gains DM access. Use
+    // crypto.randomInt (CSPRNG); Math.random() would be predictable from
+    // a few observed outputs.
     const code = String(randomInt(100000, 1000000));
 
     // Store in verification_tokens

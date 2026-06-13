@@ -10,6 +10,7 @@
  * get_audio_info already works via music-metadata (not a stub).
  */
 
+import { randomBytes } from 'node:crypto';
 import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core/agent';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { configServicesRepo } from '../../db/repositories/config-services.js';
@@ -481,7 +482,13 @@ export async function callLocalPiperTTS(
   const path = await import('node:path');
   const { spawn } = await import('node:child_process');
 
-  const outputPath = path.join(os.tmpdir(), `ownpilot_piper_${Date.now()}_${Math.random()}.wav`);
+  const outputPath = path.join(
+    os.tmpdir(),
+    // randomBytes (CSPRNG) for the temp-file suffix — Math.random() is a
+    // non-cryptographic PRNG and the suffix is part of a filesystem path
+    // an attacker could try to predict.
+    `ownpilot_piper_${Date.now()}_${randomBytes(8).toString('hex')}.wav`
+  );
   const command = config.localTtsCommand || 'piper';
   const args = ['--model', config.localTtsModel, '--output_file', outputPath];
 

@@ -71,7 +71,13 @@ async function convertAudioToOggOpus(audio: Buffer): Promise<Buffer> {
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execFileAsync = promisify(execFile);
-  const base = path.join(os.tmpdir(), `ownpilot_tg_voice_${Date.now()}_${Math.random()}`);
+  // randomBytes (CSPRNG) for the temp-file suffix — Math.random() is a
+  // non-cryptographic PRNG and the suffix is part of a filesystem path
+  // that an attacker could try to predict.
+  const base = path.join(
+    os.tmpdir(),
+    `ownpilot_tg_voice_${Date.now()}_${randomBytes(8).toString('hex')}`
+  );
   const inputPath = `${base}.wav`;
   const outputPath = `${base}.ogg`;
 
