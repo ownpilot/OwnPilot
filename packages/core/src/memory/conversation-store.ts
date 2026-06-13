@@ -8,6 +8,7 @@
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { getLog } from '../services/get-log.js';
 
 import type {
   MemoryEntry,
@@ -734,7 +735,26 @@ export class ConversationMemoryStore {
       const content = await fs.readFile(filePath, 'utf-8');
       const memories = JSON.parse(content) as MemoryEntry[];
       this.memories = new Map(memories.map((m) => [m.id, m]));
-    } catch {
+    } catch (err) {
+      // Distinguish "first run, file doesn't exist" from "file exists but is
+      // corrupt". On corruption, rename the file out of the way so the user
+      // can recover it manually and we don't silently drop all memories.
+      const isFirstRun = (err as NodeJS.ErrnoException)?.code === 'ENOENT';
+      if (!isFirstRun) {
+        const corruptPath = `${filePath}.corrupt-${Date.now()}`;
+        try {
+          await fs.rename(filePath, corruptPath);
+        } catch {
+          // best-effort — log and continue with empty store
+        }
+        const log = getLog('ConversationStore');
+        log.error(
+          'memories.json was corrupt; renamed to ' +
+            corruptPath +
+            ' and starting with an empty store. Original error:',
+          err
+        );
+      }
       this.memories = new Map();
     }
   }
