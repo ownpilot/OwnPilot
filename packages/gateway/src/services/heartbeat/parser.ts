@@ -5,7 +5,7 @@
  * Also parses markdown format where ## headings are schedules and body is task description.
  */
 
-import { validateCronExpression } from '@ownpilot/core';
+import { validateCronExpression } from '@ownpilot/core/scheduler';
 
 // ============================================================================
 // Types

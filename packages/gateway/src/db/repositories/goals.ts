@@ -8,7 +8,8 @@
 import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement } from './query-helpers.js';
 import type { StandardQuery } from './interfaces.js';
-import { getEventSystem, generateId } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import { generateId } from '@ownpilot/core/services';
 
 // ============================================================================
 // Types

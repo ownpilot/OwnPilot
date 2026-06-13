@@ -8,7 +8,7 @@
 
 import { Hono } from 'hono';
 import { createHmac } from 'node:crypto';
-import { getWorkflowService } from '@ownpilot/core';
+import { getWorkflowService } from '@ownpilot/core/services';
 import { getLog } from '../services/log.js';
 import { safeKeyCompare, apiError, apiResponse, ERROR_CODES, getErrorMessage } from './helpers.js';
 import { TriggersRepository, type WebhookConfig } from '../db/repositories/triggers.js';

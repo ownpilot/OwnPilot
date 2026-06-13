@@ -18,7 +18,7 @@ import type {
   CodingAgentSessionState,
   CreateCodingSessionInput,
 } from '@ownpilot/core';
-import { isBuiltinProvider } from '@ownpilot/core';
+import { isBuiltinProvider } from '@ownpilot/core/services';
 import type { PtyHandle } from './pty.js';
 import { spawnStreamingPty, spawnStreamingProcess, type PtyOptions } from './pty.js';
 import { sessionManager as wsSessionManager } from '../../ws/session.js';

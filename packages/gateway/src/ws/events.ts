@@ -9,7 +9,12 @@
  * so they flow through the global bus as gateway.channel.connected.
  */
 
-import { getEventSystem, type IScopedBus, type IHookBus, type TypedEvent } from '@ownpilot/core';
+import {
+  getEventSystem,
+  type IScopedBus,
+  type IHookBus,
+  type TypedEvent,
+} from '@ownpilot/core/events';
 import type { ServerEvents, ClientEvents } from './types.js';
 
 type EventHandler<T = unknown> = (data: T) => void | Promise<void>;

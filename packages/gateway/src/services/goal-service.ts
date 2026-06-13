@@ -6,7 +6,8 @@
  * eliminating duplicated validation and logic.
  */
 
-import { getEventSystem, type IGoalService } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { IGoalService } from '@ownpilot/core/services';
 import type { GoalsRepository } from '../db/repositories/goals.js';
 import {
   createGoalsRepository,

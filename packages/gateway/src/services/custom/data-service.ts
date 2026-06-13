@@ -5,7 +5,8 @@
  * Handles protection enforcement and plugin ownership.
  */
 
-import { getEventSystem, type IDatabaseService, type DatabaseTableStats } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { IDatabaseService, DatabaseTableStats } from '@ownpilot/core/services';
 import type { CustomDataRepository } from '../../db/repositories/custom/data.js';
 import {
   createCustomDataRepository,

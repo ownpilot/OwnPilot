@@ -11,7 +11,12 @@ import type {
   ToolProvider,
   ToolContext,
 } from '@ownpilot/core';
-import { MEMORY_TOOLS, GOAL_TOOLS, CUSTOM_DATA_TOOLS, PERSONAL_DATA_TOOLS } from '@ownpilot/core';
+import {
+  MEMORY_TOOLS,
+  GOAL_TOOLS,
+  CUSTOM_DATA_TOOLS,
+  PERSONAL_DATA_TOOLS,
+} from '@ownpilot/core/agent';
 // Route executor imports are lazy to break the circular dependency:
 // tool-providers/index.ts → routes/*.ts → tool-executor.ts → provider-manifest.ts → tool-providers/index.ts
 import {

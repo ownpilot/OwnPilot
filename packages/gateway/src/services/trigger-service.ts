@@ -6,7 +6,8 @@
  * Complex scheduling/execution logic lives in TriggerEngine.
  */
 
-import { getEventSystem, type ITriggerService } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { ITriggerService } from '@ownpilot/core/services';
 import type { TriggersRepository } from '../db/repositories/triggers.js';
 import {
   createTriggersRepository,

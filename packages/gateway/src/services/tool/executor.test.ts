@@ -224,7 +224,7 @@ import {
   resetSharedToolRegistry,
   waitForToolSync,
 } from './executor.js';
-import { ToolRegistry, registerAllTools, registerCoreTools } from '@ownpilot/core';
+import { ToolRegistry, registerAllTools, registerCoreTools } from '@ownpilot/core/agent';
 import {
   createMemoryToolProvider,
   createGoalToolProvider,

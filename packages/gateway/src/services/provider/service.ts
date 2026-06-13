@@ -13,7 +13,7 @@ import {
   setDefaultProvider,
   setDefaultModel,
 } from '../app-settings.js';
-import { loadProviderConfig } from '@ownpilot/core';
+import { loadProviderConfig } from '@ownpilot/core/agent';
 
 // ============================================================================
 // Implementation

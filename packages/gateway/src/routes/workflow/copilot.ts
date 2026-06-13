@@ -16,7 +16,7 @@ import {
 } from '../../services/agent/cache.js';
 import { resolveDefaultProviderAndModel } from '../settings.js';
 import { validateBody, workflowCopilotSchema } from '../../middleware/validation.js';
-import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
+import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core/agent';
 import { buildCopilotSystemPrompt } from '../../services/workflow/copilot-prompt.js';
 import { getLog } from '../../services/log.js';
 

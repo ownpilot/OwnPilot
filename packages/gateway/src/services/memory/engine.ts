@@ -24,7 +24,7 @@ import {
   buildRecallSummaryPrompt,
   cosineSimilarity,
 } from '@ownpilot/core';
-import { getMemoryService } from '@ownpilot/core';
+import { getMemoryService } from '@ownpilot/core/services';
 import { createMemoriesRepository } from '../../db/repositories/memories.js';
 
 const log = getLog('MemoryEngine');

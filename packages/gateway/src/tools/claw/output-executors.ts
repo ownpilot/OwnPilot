@@ -9,7 +9,8 @@
  *  - claw_emit_event          — emit a custom event onto the EventBus
  */
 
-import { getErrorMessage, generateId, getEventSystem, getLog } from '@ownpilot/core';
+import { getErrorMessage, generateId, getLog } from '@ownpilot/core/services';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getClawContext } from '../../services/claw/context.js';
 
 const log = getLog('ClawOutputExecutors');

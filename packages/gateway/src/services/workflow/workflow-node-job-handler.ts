@@ -14,7 +14,8 @@
  */
 
 import type { JobRecord } from '../../db/repositories/jobs.js';
-import { getToolService, type IToolService } from '@ownpilot/core';
+import { getToolService } from '@ownpilot/core/services';
+import type { IToolService } from '@ownpilot/core/services';
 import type {
   NodeResult,
   WorkflowNode,

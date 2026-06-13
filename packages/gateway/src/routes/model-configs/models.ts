@@ -12,7 +12,7 @@ import {
   type CreateModelConfigInput,
   type UpdateModelConfigInput,
 } from '../../db/repositories/index.js';
-import { type ModelCapability } from '@ownpilot/core';
+import { type ModelCapability } from '@ownpilot/core/services';
 import { getLog } from '../../services/log.js';
 import {
   apiResponse,

@@ -7,7 +7,8 @@
  * lives in PlanExecutor.
  */
 
-import { getEventSystem, type IPlanService } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { IPlanService } from '@ownpilot/core/services';
 import type { PlansRepository } from '../db/repositories/plans.js';
 import {
   createPlansRepository,

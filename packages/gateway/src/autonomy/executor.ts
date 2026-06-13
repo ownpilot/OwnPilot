@@ -6,7 +6,7 @@
  * under the current AutonomyConfig.
  */
 
-import { getErrorMessage, getMemoryService, getGoalService } from '@ownpilot/core';
+import { getErrorMessage, getMemoryService, getGoalService } from '@ownpilot/core/services';
 import type { PulseActionResult } from '@ownpilot/core/services';
 import { assessRisk } from './risk.js';
 import { DEFAULT_AUTONOMY_CONFIG, type AutonomyConfig } from './types.js';

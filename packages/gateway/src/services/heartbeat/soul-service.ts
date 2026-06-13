@@ -37,7 +37,7 @@ import type {
   IHeartbeatLogRepository,
   RuntimeContext,
 } from '@ownpilot/core';
-import { buildCrewContextSection } from '@ownpilot/core';
+import { buildCrewContextSection } from '@ownpilot/core/agent';
 import type { CrewContextInfo } from '@ownpilot/core';
 import { getAdapterSync } from '../../db/adapters/index.js';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
@@ -47,8 +47,7 @@ import { getCrewsRepository } from '../../db/repositories/crew/index.js';
 import { runInHeartbeatContext } from './context.js';
 import { getSessionWorkspacePath } from '../../workspace/file-workspace.js';
 import { getLog } from '@ownpilot/core/services';
-import { HeartbeatCircuitBreaker } from '@ownpilot/core';
-import { HeartbeatMetricsCollector } from '@ownpilot/core';
+import { HeartbeatCircuitBreaker, HeartbeatMetricsCollector } from '@ownpilot/core/agent';
 import type { BudgetForecaster } from '@ownpilot/core';
 import { HEARTBEAT_CREW_CONTEXT_CACHE_TTL_MS } from '../../config/defaults.js';
 import { TTLCache } from '../../utils/ttl-cache.js';

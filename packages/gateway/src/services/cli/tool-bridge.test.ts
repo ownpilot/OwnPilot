@@ -21,8 +21,8 @@ import {
   appendToolResults,
   runToolBridgeLoop,
 } from './tool-bridge.js';
-import type { ToolDefinition, Message, ToolResult } from '@ownpilot/core';
-import { ToolRegistry } from '@ownpilot/core';
+import type { ToolDefinition, Message, ToolResult } from '@ownpilot/core/agent';
+import { ToolRegistry } from '@ownpilot/core/agent';
 
 // =============================================================================
 // Test Data

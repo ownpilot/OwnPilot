@@ -12,8 +12,13 @@
  * Architecture: event-driven, fully decoupled from ClawManager and HeartbeatRunner.
  */
 
-import { getEventSystem, type EventHandler } from '@ownpilot/core';
-import { ClawCircuitBreaker, ClawMetricsCollector, type ClawCycleSummary } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { EventHandler } from '@ownpilot/core/events';
+import {
+  ClawCircuitBreaker,
+  ClawMetricsCollector,
+  type ClawCycleSummary,
+} from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import type { ClawState } from '@ownpilot/core';
 

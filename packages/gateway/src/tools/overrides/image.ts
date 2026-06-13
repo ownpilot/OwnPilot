@@ -6,8 +6,8 @@
  *   - generate_image: Provider-agnostic image generation via Config Center
  */
 
-import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core';
-import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core';
+import type { ToolRegistry, ToolExecutor, ToolExecutionResult } from '@ownpilot/core/agent';
+import { createProvider, type ProviderConfig, type Message } from '@ownpilot/core/agent';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { resolveDefaultProviderAndModel } from '../../services/app-settings.js';
 import {

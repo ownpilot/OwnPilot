@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getEventSystem, resetEventSystem } from '@ownpilot/core';
+import { getEventSystem, resetEventSystem } from '@ownpilot/core/events';
 import type { Trigger } from '../db/repositories/triggers.js';
 
 // ---------------------------------------------------------------------------

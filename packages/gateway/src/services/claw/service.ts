@@ -371,7 +371,7 @@ export class ClawServiceImpl implements IClawService {
 // Singleton
 // ============================================================================
 
-import { setClawService as setCoreClawService } from '@ownpilot/core';
+import { setClawService as setCoreClawService } from '@ownpilot/core/services';
 
 let _service: ClawServiceImpl | null = null;
 

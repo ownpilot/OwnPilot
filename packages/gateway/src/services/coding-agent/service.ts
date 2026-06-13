@@ -30,7 +30,7 @@ import {
   getCustomProviderName,
   getErrorMessage,
 } from '@ownpilot/core';
-import { tryImport } from '@ownpilot/core';
+import { tryImport } from '@ownpilot/core/agent';
 import { cliProvidersRepo, type CliProviderRecord } from '../../db/repositories/cli/providers.js';
 import {
   isBinaryInstalled,

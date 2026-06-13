@@ -10,9 +10,9 @@
  *   const tool = plugins.getTool('my_tool');
  */
 
-import type { IPluginService, PluginInfo, PluginToolEntry } from '@ownpilot/core';
-import type { Plugin, PluginManifest, PluginRegistry } from '@ownpilot/core';
-import { getDefaultPluginRegistry } from '@ownpilot/core';
+import type { IPluginService, PluginInfo, PluginToolEntry } from '@ownpilot/core/plugins';
+import type { Plugin, PluginManifest, PluginRegistry } from '@ownpilot/core/plugins';
+import { getDefaultPluginRegistry } from '@ownpilot/core/plugins';
 
 // ============================================================================
 // PluginServiceImpl Adapter

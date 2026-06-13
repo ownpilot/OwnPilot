@@ -447,6 +447,10 @@ export type { CrewMemberInfo, CrewContextInfo } from './soul/index.js';
 // Crew Orchestrator helpers (values — not types)
 export { buildCrewContextSection, COORDINATION_GUIDANCE } from './soul/index.js';
 
+// Tool registry & module resolver (for sub-path consumers)
+export { ToolRegistry, createToolRegistry } from './tools.js';
+export { tryImport } from './tools/module-resolver.js';
+
 // Debug logging for AI interactions
 export {
   // Types

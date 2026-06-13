@@ -17,7 +17,8 @@
  * closure from the resolved provider/model.
  */
 
-import { getErrorMessage, type AIProvider, type ClawConfig } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
+import type { AIProvider, ClawConfig } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import { getExtensionService, type ExtensionService } from '../extension/service.js';
 import type { ExtensionManifest } from '../extension/types.js';

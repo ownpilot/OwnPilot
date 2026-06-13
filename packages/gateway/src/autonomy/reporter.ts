@@ -6,7 +6,7 @@
  * send_user_notification tool that the pulse agent calls directly.
  */
 
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getLog } from '../services/log.js';
 import type { PulseResult } from '@ownpilot/core/services';
 

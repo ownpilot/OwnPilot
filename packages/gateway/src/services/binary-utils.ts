@@ -11,7 +11,7 @@
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, isAbsolute } from 'node:path';
-import { isBuiltinProvider } from '@ownpilot/core';
+import { isBuiltinProvider } from '@ownpilot/core/services';
 
 // =============================================================================
 // CONSTANTS

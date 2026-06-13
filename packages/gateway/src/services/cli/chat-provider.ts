@@ -17,17 +17,17 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import type { IProvider, ProviderHealthResult } from '@ownpilot/core';
+import type { IProvider, ProviderHealthResult } from '@ownpilot/core/agent';
 import type {
   AIProvider,
   CompletionRequest,
   CompletionResponse,
   StreamChunk,
   Message,
-} from '@ownpilot/core';
-import type { Result } from '@ownpilot/core';
-import { ok, err } from '@ownpilot/core';
-import { InternalError } from '@ownpilot/core';
+} from '@ownpilot/core/agent';
+import type { Result } from '@ownpilot/core/types';
+import { ok, err } from '@ownpilot/core/types';
+import { InternalError } from '@ownpilot/core/types';
 import { createSanitizedEnv, isBinaryInstalled, MAX_OUTPUT_SIZE } from '../binary-utils.js';
 import { getLog } from '../log.js';
 import {

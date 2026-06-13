@@ -7,7 +7,8 @@
 
 import { readFileSync, existsSync, rmSync } from 'fs';
 import { resolve } from 'path';
-import { getEventSystem, type IExtensionService } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { IExtensionService } from '@ownpilot/core/services';
 import { extensionsRepo, type ExtensionRecord } from '../../db/repositories/extensions.js';
 import {
   validateManifest,

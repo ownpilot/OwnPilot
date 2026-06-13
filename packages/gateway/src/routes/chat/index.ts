@@ -41,7 +41,7 @@ import { getLLMRouter } from '@ownpilot/core/services';
 import { ChatRepository } from '../../db/repositories/index.js';
 import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
-import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core';
+import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core/agent';
 import { getOrCreateSessionWorkspace } from '../../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../../db/repositories/execution-permissions.js';
 import {
@@ -54,7 +54,8 @@ import { PUBLIC_BASE_URL, MS_PER_MINUTE } from '../../config/defaults.js';
 import { createLoginThrottle } from '../../utils/login-throttle.js';
 import { getClientIp } from '../../utils/client-ip.js';
 import { budgetManager } from '../../services/usage-tracking.js';
-import { estimateCost, formatCost, type AIProvider } from '@ownpilot/core';
+import { estimateCost, formatCost } from '@ownpilot/core/costs';
+import type { AIProvider } from '@ownpilot/core/agent';
 
 // RATE-003: per-IP throttle for the chat endpoint. /chat is the single
 // most expensive endpoint — every request hits a paid LLM provider

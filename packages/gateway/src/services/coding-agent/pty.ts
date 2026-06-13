@@ -10,7 +10,7 @@
  */
 
 import { spawn as nodeSpawn, type ChildProcess } from 'node:child_process';
-import { tryImport } from '@ownpilot/core';
+import { tryImport } from '@ownpilot/core/agent';
 import { getLog } from '../log.js';
 
 const log = getLog('CodingAgentPty');

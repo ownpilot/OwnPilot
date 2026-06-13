@@ -19,7 +19,11 @@ import {
 } from '../config/defaults.js';
 
 const log = getLog('SessionManager');
-import { hasSessionService, getSessionService, type ISessionService } from '@ownpilot/core';
+import {
+  hasSessionService,
+  getSessionService,
+  type ISessionService,
+} from '@ownpilot/core/services';
 
 /**
  * Token bucket state for per-session rate limiting

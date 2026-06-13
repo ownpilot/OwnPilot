@@ -9,7 +9,8 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
-import { getErrorMessage, getExtensionService } from '@ownpilot/core';
+import { getErrorMessage } from '@ownpilot/core/services';
+import { getExtensionService } from '@ownpilot/core/services';
 import { getNpmInstaller } from '../services/skill/npm-installer.js';
 import {
   getAllPermissions,
