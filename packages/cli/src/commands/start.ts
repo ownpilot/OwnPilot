@@ -6,13 +6,12 @@
  */
 
 import { serve } from '@hono/node-server';
+import { createApp, type GatewayConfig } from '@ownpilot/gateway/app';
 import {
-  createApp,
-  type GatewayConfig,
   loadApiKeysToEnvironment,
   getDefaultProvider,
   isDemoModeFromSettings,
-} from '@ownpilot/gateway';
+} from '@ownpilot/gateway/config';
 
 interface StartOptions {
   port: string;

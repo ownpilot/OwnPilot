@@ -6,7 +6,7 @@
  */
 
 import { createInterface } from 'node:readline';
-import { initializeAdapter, settingsRepo, getDatabasePath } from '@ownpilot/gateway';
+import { initializeAdapter, settingsRepo, getDatabasePath } from '@ownpilot/gateway/db';
 
 // Database key prefixes
 const API_KEY_PREFIX = 'api_key:';

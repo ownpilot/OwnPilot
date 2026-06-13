@@ -20,7 +20,8 @@
 
 import { Readable, Writable } from 'node:stream';
 import { ndJsonStream } from '@agentclientprotocol/sdk';
-import { runAcpServer, loadApiKeysToEnvironment } from '@ownpilot/gateway';
+import { runAcpServer } from '@ownpilot/gateway/acp';
+import { loadApiKeysToEnvironment } from '@ownpilot/gateway/config';
 
 interface AcpServeOptions {
   /**

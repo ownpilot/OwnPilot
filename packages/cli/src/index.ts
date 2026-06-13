@@ -25,7 +25,7 @@ import {
   initializeLocalProvidersRepo,
   initializePluginsRepo,
   seedConfigServices,
-} from '@ownpilot/gateway';
+} from '@ownpilot/gateway/db';
 
 /**
  * Initialize database adapter and all repository caches.

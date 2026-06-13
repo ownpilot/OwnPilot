@@ -9,6 +9,30 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./app": {
+      "import": "./dist/app-exports.js",
+      "types": "./dist/app-exports.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config-exports.js",
+      "types": "./dist/config-exports.d.ts"
+    },
+    "./db": {
+      "import": "./dist/db-exports.js",
+      "types": "./dist/db-exports.d.ts"
+    },
+    "./scheduler": {
+      "import": "./dist/scheduler-exports.js",
+      "types": "./dist/scheduler-exports.d.ts"
+    },
+    "./plugins": {
+      "import": "./dist/plugins-exports.js",
+      "types": "./dist/plugins-exports.d.ts"
+    },
+    "./acp": {
+      "import": "./dist/acp-exports.js",
+      "types": "./dist/acp-exports.d.ts"
     }
   },
   "scripts": {

@@ -12,8 +12,8 @@ import {
   getDefaultProvider,
   getApiKey,
   getDefaultModel,
-  settingsRepo,
-} from '@ownpilot/gateway';
+} from '@ownpilot/gateway/config';
+import { settingsRepo } from '@ownpilot/gateway/db';
 
 interface BotOptions {
   token?: string;

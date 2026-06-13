@@ -5,16 +5,15 @@
  */
 
 import { serve } from '@hono/node-server';
+import { createApp, type GatewayConfig } from '@ownpilot/gateway/app';
+import { initializeScheduler } from '@ownpilot/gateway/scheduler';
+import { initializePlugins } from '@ownpilot/gateway/plugins';
 import {
-  createApp,
-  type GatewayConfig,
-  initializeScheduler,
   loadApiKeysToEnvironment,
-  settingsRepo,
-  initializePlugins,
   RATE_LIMIT_MAX_REQUESTS,
   RATE_LIMIT_WINDOW_MS,
-} from '@ownpilot/gateway';
+} from '@ownpilot/gateway/config';
+import { settingsRepo } from '@ownpilot/gateway/db';
 
 // Database settings keys for gateway config
 const GATEWAY_API_KEYS_KEY = 'gateway_api_keys';
