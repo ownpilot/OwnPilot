@@ -113,3 +113,7 @@ export {
   withTimeout,
   retry,
 } from './utility.js';
+
+// Execution permission types (re-exported from agent/types.ts for granular imports)
+export type { ExecutionPermissions, PermissionMode } from '../agent/types.js';
+export { DEFAULT_EXECUTION_PERMISSIONS } from '../agent/types.js';
