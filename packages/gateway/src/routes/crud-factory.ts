@@ -288,9 +288,9 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
       }
 
       // Schema validation
-      let validatedBody: unknown = body;
+      let validatedBody = body as TCreate;
       if (schemas.create) {
-        const validation = validateWithSchema(schemas.create, body);
+        const validation = validateWithSchema<TCreate>(schemas.create, body);
         if (validation.error) {
           return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
@@ -299,7 +299,7 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
 
       // Pre-create hook
       if (hooks.beforeCreate) {
-        validatedBody = hooks.beforeCreate(validatedBody, c);
+        validatedBody = await hooks.beforeCreate(validatedBody, c);
       }
 
       try {
@@ -350,9 +350,9 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
       }
 
       // Schema validation
-      let validatedBody: unknown = body;
+      let validatedBody = body as TUpdate;
       if (schemas.update) {
-        const validation = validateWithSchema(schemas.update, body);
+        const validation = validateWithSchema<TUpdate>(schemas.update, body);
         if (validation.error) {
           return apiError(c, { code: ERROR_CODES.INVALID_INPUT, message: validation.error }, 400);
         }
@@ -361,7 +361,7 @@ export function createCrudRoutes<TService = unknown, TCreate = unknown, TUpdate 
 
       // Pre-update hook
       if (hooks.beforeUpdate) {
-        validatedBody = hooks.beforeUpdate(validatedBody, c);
+        validatedBody = await hooks.beforeUpdate(validatedBody, c);
       }
 
       try {
