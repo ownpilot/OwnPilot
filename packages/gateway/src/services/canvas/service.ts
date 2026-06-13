@@ -6,7 +6,7 @@
  * renders agent-driven canvas changes live.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type {
   ICanvasService,
   CanvasElement,

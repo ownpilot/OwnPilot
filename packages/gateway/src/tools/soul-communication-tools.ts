@@ -5,8 +5,9 @@
  * using the AgentMessagesRepository.
  */
 
-import { generateId, getErrorMessage, SOUL_COMMUNICATION_TOOLS } from '@ownpilot/core';
-import type { AgentMessage } from '@ownpilot/core';
+import { generateId, getErrorMessage } from '@ownpilot/core/services';
+import { SOUL_COMMUNICATION_TOOLS } from '@ownpilot/core/agent';
+import type { AgentMessage } from '@ownpilot/core/agent';
 import { getAgentMessagesRepository } from '../db/repositories/agents/messages.js';
 import { getHeartbeatContext } from '../services/heartbeat/context.js';
 import type { ToolExecutionResult } from '../services/tool/executor.js';

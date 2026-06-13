@@ -7,7 +7,7 @@
 
 import { BaseRepository, parseJsonField } from './base.js';
 import type { StandardQuery } from './interfaces.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { RRF_K } from '../../config/defaults.js';
 
 export type MemoryType = 'fact' | 'preference' | 'conversation' | 'event' | 'skill';

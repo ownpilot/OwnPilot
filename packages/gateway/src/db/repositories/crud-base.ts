@@ -16,7 +16,7 @@
  * All queries are scoped to the user_id set in the constructor.
  */
 
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { BaseRepository } from './base.js';
 import { buildUpdateStatement, type UpdateField } from './query-helpers.js';
 

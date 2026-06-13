@@ -8,7 +8,7 @@
  * The `custom` binding source type is deferred to v2.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type { DataBinding, DataBindingSource } from '@ownpilot/core';
 import {
   TasksRepository,

@@ -26,7 +26,7 @@ import { pluginsRepo } from '../db/repositories/plugins.js';
 import { getLog } from '../services/log.js';
 import { wsGateway } from '../ws/server.js';
 import { hasConfiguredData } from '../services/config/entry-validation.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getClientIp } from '../utils/client-ip.js';
 
 const log = getLog('Plugins');

@@ -14,7 +14,7 @@
 
 import { settingsRepo } from '../../db/repositories/settings/index.js';
 import { getLog } from '../log.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 
 const log = getLog('LlmSemaphore');
 

@@ -14,7 +14,7 @@
  * injected by the caller (trigger handler / tool) so this stays provider-agnostic.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type { CompleteFn } from '@ownpilot/core';
 import {
   buildMemoryExtractionPrompt,

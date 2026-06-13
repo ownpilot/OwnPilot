@@ -37,7 +37,7 @@ import {
 } from '../agents/index.js';
 import { runInSessionLane } from '../../services/agent/session-lane.js';
 import { onMcpToolEvents } from '../../mcp/mcp-events.js';
-import { getLLMRouter } from '@ownpilot/core';
+import { getLLMRouter } from '@ownpilot/core/services';
 import { ChatRepository } from '../../db/repositories/index.js';
 import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';

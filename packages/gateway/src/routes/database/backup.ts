@@ -19,7 +19,7 @@ import { getLog } from '../../services/log.js';
 import { operationStatus, setOperationStatus, getBackupDir } from './shared.js';
 import { attachmentDisposition } from '../../utils/file-safety.js';
 import { validateBody } from '../../middleware/validation.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getClientIp } from '../../utils/client-ip.js';
 
 const log = getLog('Database');

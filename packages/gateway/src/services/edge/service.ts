@@ -5,7 +5,7 @@
  * EdgeMqttClient for device communication, and WS broadcasts on mutations.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type {
   IEdgeService,
   EdgeDevice,

@@ -11,7 +11,7 @@ import type { WorkflowNode, NodeResult } from '../../../db/repositories/workflow
 import { getErrorMessage } from '../../../utils/common.js';
 import { resolveTemplates } from '../template-resolver.js';
 import { log } from './utils.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 
 export async function executeClawNode(
   node: WorkflowNode,

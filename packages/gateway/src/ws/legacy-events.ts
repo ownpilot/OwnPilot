@@ -12,7 +12,7 @@
  * service); update the interface here when an emitter's payload changes.
  */
 
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import type { ServerEvents } from './types.js';
 
 /** Broadcast fn shape — matches WSGatewayServer.broadcast. */

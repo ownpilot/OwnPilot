@@ -19,7 +19,7 @@ import {
 } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { getClientIp } from '../../utils/client-ip.js';
 
 export const crudRoutes = new Hono();

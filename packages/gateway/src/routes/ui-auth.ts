@@ -26,7 +26,7 @@ import {
   getUiSessionToken,
   setUiSessionCookie,
 } from '../utils/ui-session-cookie.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 import { MS_PER_MINUTE } from '../config/defaults.js';
 
 const MIN_PASSWORD_LENGTH = 8;

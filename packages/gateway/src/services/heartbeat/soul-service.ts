@@ -46,7 +46,7 @@ import { getAgentMessagesRepository } from '../../db/repositories/agents/message
 import { getCrewsRepository } from '../../db/repositories/crew/index.js';
 import { runInHeartbeatContext } from './context.js';
 import { getSessionWorkspacePath } from '../../workspace/file-workspace.js';
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import { HeartbeatCircuitBreaker } from '@ownpilot/core';
 import { HeartbeatMetricsCollector } from '@ownpilot/core';
 import type { BudgetForecaster } from '@ownpilot/core';

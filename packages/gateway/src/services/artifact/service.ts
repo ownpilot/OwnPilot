@@ -6,7 +6,7 @@
  * Broadcasts data:changed events via WS on mutations.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 import type {
   IArtifactService,
   Artifact,

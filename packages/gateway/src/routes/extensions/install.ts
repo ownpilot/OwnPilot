@@ -24,7 +24,7 @@ import { getAllScanDirectories } from '../../services/extension/scanner.js';
 import { createLoginThrottle } from '../../utils/login-throttle.js';
 import { getClientIp } from '../../utils/client-ip.js';
 import { MS_PER_MINUTE } from '../../config/defaults.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 
 export const installRoutes = new Hono();
 

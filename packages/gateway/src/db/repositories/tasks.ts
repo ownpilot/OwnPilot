@@ -8,7 +8,7 @@ import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement, type RawSetClause } from './query-helpers.js';
 import { MS_PER_DAY } from '../../config/defaults.js';
 import type { StandardQuery } from './interfaces.js';
-import { getEventSystem } from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
 
 export interface Task {
   id: string;

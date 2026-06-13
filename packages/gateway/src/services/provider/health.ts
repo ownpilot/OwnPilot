@@ -5,7 +5,7 @@
  * providers early. Logs warnings but does NOT fail boot.
  */
 
-import { getLog } from '@ownpilot/core';
+import { getLog } from '@ownpilot/core/services';
 
 const log = getLog('ProviderHealth');
 
