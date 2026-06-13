@@ -17,7 +17,7 @@ import {
   type TypedEvent,
   type Unsubscribe,
   type EventCategory,
-} from '@ownpilot/core';
+} from '@ownpilot/core/events';
 import type { SessionManager } from './session.js';
 import { getLog } from '../services/log.js';
 

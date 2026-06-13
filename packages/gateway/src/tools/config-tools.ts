@@ -6,7 +6,7 @@
  * on behalf of the user through conversation.
  */
 
-import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core';
+import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core/agent';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { maskSecret, getErrorMessage } from '../utils/common.js';
 import {

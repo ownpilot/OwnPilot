@@ -10,7 +10,7 @@ import {
   type SwitchNodeData,
   type NodeResult,
 } from '../../db/repositories/workflows/index.js';
-import type { IToolService } from '@ownpilot/core';
+import type { IToolService } from '@ownpilot/core/services';
 import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';
 import { topologicalSort, getForEachBodyNodes, computeSkippedNodes } from './dag-utils.js';

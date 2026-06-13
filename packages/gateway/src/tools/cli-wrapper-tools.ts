@@ -17,7 +17,7 @@
  * exotic falls back to run_cli_tool with hand-rolled args.
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { getCliToolService } from '../services/cli/tool-service.js';
 

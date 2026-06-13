@@ -11,7 +11,7 @@
  * So audit runs first (wrapping everything), and agent-execution runs last (innermost).
  */
 
-import type { IMessageBus } from '@ownpilot/core';
+import type { IMessageBus } from '@ownpilot/core/services';
 import { createContextInjectionMiddleware } from './context-injection.js';
 import { createAgentExecutionMiddleware } from './agent-execution.js';
 import { createPostProcessingMiddleware } from './post-processing.js';

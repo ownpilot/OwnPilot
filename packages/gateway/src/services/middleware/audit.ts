@@ -4,8 +4,8 @@
  * Records usage tracking and request logging after message processing.
  */
 
-import type { MessageMiddleware } from '@ownpilot/core';
-import type { AIProvider } from '@ownpilot/core';
+import type { MessageMiddleware } from '@ownpilot/core/services';
+import type { AIProvider } from '@ownpilot/core/agent';
 import { usageTracker } from '../usage-tracking.js';
 import { LogsRepository } from '../../db/repositories/index.js';
 import { logChatEvent } from '../../audit/index.js';

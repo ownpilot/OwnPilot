@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import type { ChannelAttachment } from '@ownpilot/core';
+import type { ChannelAttachment } from '@ownpilot/core/channels';
 import {
   channelAssetsRepo,
   type ChannelAssetsRepository,

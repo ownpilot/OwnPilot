@@ -20,13 +20,11 @@ import {
   createPluginId,
   qualifyToolName,
   isCallToolHardBlocked,
-} from '@ownpilot/core';
-import type {
-  ToolDefinition,
-  ToolContext,
-  DynamicToolDefinition,
-  ExecutionPermissions,
-} from '@ownpilot/core';
+  type ToolDefinition,
+  type ToolContext,
+  type DynamicToolDefinition,
+  type ExecutionPermissions,
+} from '@ownpilot/core/agent';
 import { registerToolConfigRequirements } from '../api-service-registrar.js';
 import { registerAllGatewayProviders } from '../../tools/provider-manifest.js';
 import { createCustomToolsRepo } from '../../db/repositories/custom/tools.js';

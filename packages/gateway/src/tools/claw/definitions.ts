@@ -9,7 +9,7 @@
  * in `claw-tools.ts` as well.
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 
 const clawInstallPackageDef: ToolDefinition = {
   name: 'claw_install_package',

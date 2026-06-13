@@ -3,7 +3,7 @@
  */
 
 import { BaseRepository, parseJsonField } from '../base.js';
-import type { HeartbeatLogEntry } from '@ownpilot/core';
+import type { HeartbeatLogEntry } from '@ownpilot/core/agent';
 
 // ── DB Row Types ────────────────────────────────────
 

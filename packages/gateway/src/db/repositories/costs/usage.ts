@@ -6,7 +6,7 @@
  */
 
 import { BaseRepository } from '../base.js';
-import type { UsageRecord } from '@ownpilot/core';
+import type { UsageRecord } from '@ownpilot/core/services';
 
 // ── Row Type ────────────────────────────────────────────────────────────────
 

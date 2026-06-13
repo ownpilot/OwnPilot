@@ -15,7 +15,7 @@ import type {
   ResourceCapabilities,
   ResourceTypeDefinition,
   ResourceSummaryEntry,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { getResourceRegistry } from './registry.js';
 
 // ============================================================================

@@ -19,7 +19,7 @@ import type {
   UpdateDeviceInput,
   EdgeDeviceQuery,
   EdgeCommandInput,
-} from '@ownpilot/core';
+} from '@ownpilot/core/edge';
 import { BaseRepository, parseJsonField } from './base.js';
 import { buildUpdateStatement } from './query-helpers.js';
 

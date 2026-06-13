@@ -12,7 +12,7 @@
  * gpt(tool-call)/tool(result) pairs, then the cycle's final gpt message.
  */
 
-import type { ClawConfig, ClawHistoryEntry } from '@ownpilot/core';
+import type { ClawConfig, ClawHistoryEntry } from '@ownpilot/core/services';
 
 type ShareGPTRole = 'system' | 'human' | 'gpt' | 'tool';
 

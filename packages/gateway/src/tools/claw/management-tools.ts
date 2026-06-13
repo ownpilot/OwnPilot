@@ -6,7 +6,7 @@
  * communicate with Claw agents on behalf of the user.
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { getClawService } from '../../services/claw/service.js';
 

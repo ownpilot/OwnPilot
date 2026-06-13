@@ -12,7 +12,7 @@ import type {
   ConfigFieldDefinition,
   ToolSource,
   ToolConfigRequirement,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 
 /**
  * Unified config service registration for ALL tool sources (core, custom, plugin).

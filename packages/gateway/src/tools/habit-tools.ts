@@ -8,7 +8,7 @@
  *        log_habit, get_today_habits, get_habit_stats, archive_habit
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 import { HabitsRepository } from '../db/repositories/habits.js';
 import type { ToolExecutionResult } from '../services/tool/executor.js';

@@ -8,12 +8,8 @@
  * (Gmail, GitHub, Slack, Notion, Jira, and 500+ more).
  */
 
-import {
-  createPlugin,
-  type PluginCapability,
-  type PluginPermission,
-  type ConfigFieldDefinition,
-} from '@ownpilot/core';
+import { createPlugin, type PluginCapability, type PluginPermission } from '@ownpilot/core/plugins';
+import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 import { composioService } from '../services/composio-service.js';
 import { getLog } from '../services/log.js';
 

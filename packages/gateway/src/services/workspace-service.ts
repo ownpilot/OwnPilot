@@ -15,7 +15,7 @@ import type {
   WorkspaceInfo,
   CreateWorkspaceInput,
   WorkspaceAgentInput,
-} from '@ownpilot/core';
+} from '@ownpilot/core/workspace';
 import type { Workspace } from '../workspace/types.js';
 import { workspaceManager } from '../workspace/manager.js';
 

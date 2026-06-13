@@ -21,7 +21,7 @@ import {
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
   DYNAMIC_TOOL_DEFINITIONS,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import {
   TRIGGER_TOOLS,
   PLAN_TOOLS,

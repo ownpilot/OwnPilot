@@ -14,12 +14,12 @@
  */
 
 import {
-  getErrorMessage,
   CLAW_MAX_TASKS,
   CLAW_NEXT_INTENT_MAX,
   type ClawTask,
   type ClawTaskStatus,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getClawContext } from '../../services/claw/context.js';
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };

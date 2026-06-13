@@ -10,7 +10,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { NormalizedMessage } from '@ownpilot/core';
+import type { NormalizedMessage } from '@ownpilot/core/services';
 import type { TriggerEngine } from './engine.js';
 import { getErrorMessage } from '../utils/common.js';
 

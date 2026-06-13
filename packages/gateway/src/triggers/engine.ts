@@ -27,7 +27,7 @@ import {
   type IGoalService,
   type IMemoryService,
   type Unsubscribe,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission/utils.js';
 import { getLog } from '../services/log.js';

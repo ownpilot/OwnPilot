@@ -10,7 +10,7 @@
  *   <!--SUGGESTIONS#START-->[{"title":"A","detail":"B"}]<!--SUGGESTIONS#END-->
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 import { getErrorMessage } from '@ownpilot/core/services';
 
 // =============================================================================

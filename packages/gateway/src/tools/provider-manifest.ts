@@ -6,7 +6,7 @@
  * Used by registerAllGatewayProviders() to register them in bulk.
  */
 
-import type { ToolProvider } from '@ownpilot/core';
+import type { ToolProvider } from '@ownpilot/core/agent';
 import {
   createMemoryToolProvider,
   createGoalToolProvider,

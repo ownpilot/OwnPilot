@@ -3,7 +3,12 @@
  */
 
 import { BaseRepository } from '../base.js';
-import type { AgentCrew, CrewMember, CrewCoordinationPattern, CrewStatus } from '@ownpilot/core';
+import type {
+  AgentCrew,
+  CrewMember,
+  CrewCoordinationPattern,
+  CrewStatus,
+} from '@ownpilot/core/agent';
 
 // ── DB Row Types ────────────────────────────────────
 

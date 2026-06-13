@@ -7,7 +7,7 @@
 
 import { BaseRepository, parseJsonField } from './base.js';
 import { randomUUID } from 'node:crypto';
-import type { ModelCapability } from '@ownpilot/core';
+import type { ModelCapability } from '@ownpilot/core/agent';
 
 // ============================================================================
 // Types

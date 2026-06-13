@@ -4,7 +4,7 @@
  * Shared helpers for tool permission enforcement across execution contexts.
  */
 
-import type { ExecutionPermissions } from '@ownpilot/core';
+import type { ExecutionPermissions } from '@ownpilot/core/agent';
 
 /**
  * Downgrade 'prompt' permissions to 'blocked' for non-interactive contexts.

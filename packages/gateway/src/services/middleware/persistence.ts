@@ -5,7 +5,7 @@
  * agent execution completes successfully.
  */
 
-import type { MessageMiddleware } from '@ownpilot/core';
+import type { MessageMiddleware } from '@ownpilot/core/services';
 import { ChatRepository } from '../../db/repositories/index.js';
 import { truncate } from '../../utils/common.js';
 import { wsGateway } from '../../ws/server.js';

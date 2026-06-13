@@ -6,7 +6,7 @@
  */
 
 import { BaseRepository } from '../base.js';
-import type { CliToolPolicy } from '@ownpilot/core';
+import type { CliToolPolicy } from '@ownpilot/core/services';
 
 // =============================================================================
 // ROW TYPE

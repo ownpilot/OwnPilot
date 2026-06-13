@@ -5,14 +5,14 @@
  * send commands, read sensors, and control actuators.
  */
 
+import { type ToolDefinition } from '@ownpilot/core/agent';
 import {
-  type ToolDefinition,
   type EdgeDeviceStatus,
   type EdgeDeviceType,
   type EdgeSensor,
   type EdgeActuator,
-  getErrorMessage,
-} from '@ownpilot/core';
+} from '@ownpilot/core/edge';
+import { getErrorMessage } from '@ownpilot/core/services';
 import { getEdgeService } from '../services/edge/service.js';
 
 // =============================================================================

@@ -23,7 +23,7 @@ import {
   type SandboxSettings,
   DEFAULT_ENABLED_GROUPS,
   type ResolvedAuth,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getLog } from './log.js';
 
 const settingsLog = getLog('AppSettings');

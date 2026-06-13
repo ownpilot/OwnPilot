@@ -2,7 +2,7 @@
  * Gateway types
  */
 
-import type { ToolDefinition } from '@ownpilot/core';
+import type { ToolDefinition } from '@ownpilot/core/agent';
 
 /**
  * API response wrapper

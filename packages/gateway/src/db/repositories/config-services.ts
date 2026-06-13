@@ -16,7 +16,7 @@ import type {
   ConfigServiceRequiredBy,
   ConfigServiceDefinition,
   ConfigEntry,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import {
   deserializeEncryptedJson,
   isDataEncryptionEnabled,

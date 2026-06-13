@@ -11,15 +11,15 @@ import {
   getDefaultPluginRegistry,
   createPlugin,
   buildCorePlugin,
-  getDatabaseService,
-  getConfigCenter,
   type PluginManifest,
   type PluginCapability,
   type PluginPermission,
   type PluginStatus,
-  type ConfigFieldDefinition,
-} from '@ownpilot/core';
-import type { Plugin, PluginPublicAPI } from '@ownpilot/core';
+  type Plugin,
+  type PluginPublicAPI,
+} from '@ownpilot/core/plugins';
+import { getDatabaseService, getConfigCenter } from '@ownpilot/core/services';
+import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 import { pluginsRepo } from '../db/repositories/plugins.js';
 import { pomodoroRepo } from '../db/repositories/pomodoro.js';
 import { registerToolConfigRequirements } from '../services/api-service-registrar.js';

@@ -27,8 +27,8 @@ import type {
   ProcessOptions,
   PipelineContext,
   StreamCallbacks,
-} from '@ownpilot/core';
-import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core';
+} from '@ownpilot/core/services';
+import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core/services';
 
 // ============================================================================
 // Pipeline Context Implementation

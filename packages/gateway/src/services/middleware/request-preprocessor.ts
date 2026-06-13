@@ -18,13 +18,9 @@
  * Pipeline position: post-processing → [request-preprocessor] → context-injection
  */
 
-import type { MessageMiddleware, IMcpClientService } from '@ownpilot/core';
-import {
-  getExtensionService,
-  getMcpClientService,
-  type IExtensionService,
-  TOOL_SEARCH_TAGS,
-} from '@ownpilot/core';
+import type { MessageMiddleware, IMcpClientService } from '@ownpilot/core/services';
+import { type IExtensionService, TOOL_SEARCH_TAGS } from '@ownpilot/core/agent';
+import { getExtensionService, getMcpClientService } from '@ownpilot/core/services';
 import { getSharedToolRegistry } from '../tool/executor.js';
 import { CustomDataRepository } from '../../db/repositories/index.js';
 import { getLog } from '../log.js';

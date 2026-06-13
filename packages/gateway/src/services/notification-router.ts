@@ -13,7 +13,7 @@ import {
   type NotificationResult,
   type NotificationPreferences,
   type INotificationRouter,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { getLog } from './log.js';
 
 const log = getLog('NotificationRouter');

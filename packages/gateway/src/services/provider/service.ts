@@ -5,7 +5,12 @@
  * and provider config data into a unified service interface.
  */
 
-import type { IProviderService, ProviderInfo, ModelInfo, ResolvedProvider } from '@ownpilot/core';
+import type {
+  IProviderService,
+  ProviderInfo,
+  ModelInfo,
+  ResolvedProvider,
+} from '@ownpilot/core/agent';
 import {
   resolveDefaultProviderAndModel,
   getDefaultProvider,
