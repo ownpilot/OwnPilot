@@ -3,9 +3,21 @@
  * Send and read emails via SMTP/IMAP
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
 import { isPathAllowedAsync } from './file-security.js';
+
+/**
+ * Short-circuit a tool call when the caller's AbortSignal has fired. The
+ * agent cancel() flow plumbs the per-turn signal into ToolContext.signal;
+ * this helper lets each executor bail out before starting work.
+ */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // ============================================================================
 // SEND EMAIL TOOL
@@ -170,6 +182,9 @@ export const sendEmailExecutor: ToolExecutor = async (
   params,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const to = params.to as string[];
   const subject = params.subject as string;
   const body = params.body as string;
@@ -368,6 +383,9 @@ export const listEmailsExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const folder = (params.folder as string) || 'INBOX';
   const limit = Math.min((params.limit as number) || 20, 100);
   const unreadOnly = params.unreadOnly === true;
@@ -461,6 +479,9 @@ export const readEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const downloadAttachments = params.downloadAttachments === true;
@@ -519,6 +540,9 @@ export const deleteEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const permanent = params.permanent === true;
@@ -582,6 +606,9 @@ export const searchEmailsExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const hasAttachment = params.hasAttachment as boolean | undefined;
@@ -649,6 +676,9 @@ export const replyEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const body = params.body as string;
   const isHtml = params.html === true;

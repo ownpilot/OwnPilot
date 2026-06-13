@@ -6,11 +6,25 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
+import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { isBlockedUrl } from './web-fetch.js';
 import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-security.js';
+
+/**
+ * Short-circuit a file-system tool call when the caller's AbortSignal has
+ * fired. The agent cancel() flow plumbs the per-turn signal into
+ * ToolContext.signal; this helper lets each executor bail out before
+ * starting work. Returns the tool result to return if cancelled, or null
+ * if the caller should proceed.
+ */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // Path security (allow-list, symlink resolution, self-protection) lives in
 // file-security.ts; re-exported here so existing import paths keep working.
@@ -72,6 +86,9 @@ export const readFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const encoding = (args.encoding as BufferEncoding) ?? 'utf-8';
   const startLine = args.startLine as number | undefined;
@@ -161,6 +178,9 @@ export const writeFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const content = args.content as string;
   const append = args.append as boolean | undefined;
@@ -274,6 +294,9 @@ export const listDirectoryExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const recursive = args.recursive as boolean | undefined;
   const pattern = args.pattern as string | undefined;
@@ -427,6 +450,9 @@ export const searchFilesExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const query = args.query as string;
   const filePattern = args.filePattern as string | undefined;
@@ -568,6 +594,9 @@ export const downloadFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const url = args.url as string;
   const rawPath = args.path as string;
   const overwrite = args.overwrite as boolean | undefined;
@@ -671,6 +700,9 @@ export const fileInfoExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
 
   // Resolve relative paths to workspace directory
@@ -729,6 +761,9 @@ export const deleteFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const recursive = args.recursive as boolean | undefined;
 
@@ -798,6 +833,9 @@ export const copyFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawSource = args.source as string;
   const rawDestination = args.destination as string;
   const move = args.move as boolean | undefined;
@@ -884,6 +922,9 @@ export const createDirectoryExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const dirPath = resolveFilePath(rawPath, context.workspaceDir);
 
@@ -933,6 +974,9 @@ export const moveFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   // Delegate to copy_file with move:true — keeps the path/scope/overwrite
   // semantics identical to the existing copy/move so behaviour can't diverge.
   return copyFileExecutor(
@@ -1101,6 +1145,9 @@ export const editFileExecutor: ToolExecutor = async (
   args,
   context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const rawPath = args.path as string;
   const oldText = args.oldText as string;
   const newText = args.newText as string;

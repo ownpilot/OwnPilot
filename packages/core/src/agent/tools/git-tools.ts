@@ -3,11 +3,23 @@
  * Version control operations
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+
+/**
+ * Short-circuit a tool call when the caller's AbortSignal has fired. The
+ * agent cancel() flow plumbs the per-turn signal into ToolContext.signal;
+ * this helper lets each executor bail out before starting work.
+ */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 /**
  * Safely run a git command using execFile (no shell interpolation).
@@ -73,6 +85,9 @@ export const gitStatusExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const short = params.short === true;
 
@@ -207,6 +222,9 @@ export const gitDiffExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const file = params.file as string | undefined;
   const staged = params.staged === true;
@@ -309,6 +327,8 @@ export const gitLogExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
   const repoPath = (params.path as string) || process.cwd();
   const limit = (params.limit as number) || 10;
   const oneline = params.oneline === true;
@@ -410,6 +430,9 @@ export const gitCommitExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const message = params.message as string;
   const all = params.all === true;
@@ -486,6 +509,9 @@ export const gitAddExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const files = params.files as string[] | undefined;
   const all = params.all === true;
@@ -565,6 +591,9 @@ export const gitBranchExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const action = (params.action as string) || 'list';
   const name = params.name as string | undefined;
@@ -674,6 +703,8 @@ export const gitCheckoutExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
   const repoPath = (params.path as string) || process.cwd();
   const branch = params.branch as string | undefined;
   const file = params.file as string | undefined;
@@ -754,6 +785,9 @@ export const gitShowExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const file = params.file as string | undefined;
   const statOnly = params.statOnly === true;
@@ -824,6 +858,9 @@ export const gitBlameExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   let file: string;
   let ref: string | undefined;
@@ -897,6 +934,9 @@ export const gitStashExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const repoPath = (params.path as string) || process.cwd();
   const action = (params.action as string) || 'save';
   const message = params.message as string | undefined;

@@ -3,8 +3,20 @@
  * HTTP requests, web scraping, and API interactions
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
+
+/**
+ * Short-circuit a tool call when the caller's AbortSignal has fired. The
+ * agent cancel() flow plumbs the per-turn signal into ToolContext.signal;
+ * this helper lets each executor bail out before starting work.
+ */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 /**
  * Escape HTML entities to prevent XSS
@@ -324,8 +336,11 @@ export const httpRequestTool: ToolDefinition = {
 
 export const httpRequestExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const url = params.url as string;
   const method = (params.method as string) || 'GET';
   const headers = (params.headers as Record<string, string>) || {};
@@ -475,8 +490,11 @@ export const fetchWebPageTool: ToolDefinition = {
 
 export const fetchWebPageExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const url = params.url as string;
   const shouldExtractText = params.extractText !== false;
   const shouldExtractLinks = params.extractLinks === true;
@@ -608,8 +626,11 @@ export const searchWebTool: ToolDefinition = {
 
 export const searchWebExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const query = params.query as string;
   const maxResults = (params.maxResults as number) || 10;
   const region = (params.region as string) || 'wt-wt';
@@ -727,8 +748,11 @@ export const jsonApiTool: ToolDefinition = {
 
 export const jsonApiExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const url = params.url as string;
   const method = (params.method as string) || 'GET';
   const data = params.data as Record<string, unknown> | undefined;
