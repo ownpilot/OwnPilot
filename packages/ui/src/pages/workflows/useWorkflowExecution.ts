@@ -1,6 +1,9 @@
 /**
  * useWorkflowExecution — save, execute (SSE streaming), cancel, and related
  * helpers for the workflow editor.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useCallback, useState } from 'react';

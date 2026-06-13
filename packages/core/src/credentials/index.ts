@@ -11,6 +11,7 @@
 
 import { createHash, randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from 'node:crypto';
 import { getLog } from '../services/get-log.js';
+import { getErrorMessage } from '../services/error-utils.js';
 
 const log = getLog('Credentials');
 
@@ -373,13 +374,22 @@ export class UserCredentialStore {
       return null;
     }
 
-    // Decrypt
-    const value = decryptValue(
-      entry.encryptedValue,
-      entry.iv,
-      this.config.encryptionKey,
-      entry.salt
-    );
+    // Decrypt — wrapped because a wrong encryption key or tampered ciphertext
+    // throws synchronously, which would otherwise escape out of get() and take
+    // down the caller. Surface as a null result with an audit event instead.
+    let value: string;
+    try {
+      value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
+    } catch (err) {
+      log.error('Decrypt failed for credential', {
+        userId,
+        provider,
+        id: entry.id,
+        err: getErrorMessage(err),
+      });
+      this.auditLog('decrypt_failed', userId, provider, entry.id);
+      return null;
+    }
 
     // CRYPTO-004: upgrade legacy no-salt entries on read.
     await this.migrateLegacyEntryIfNeeded(entry, value);
@@ -411,13 +421,19 @@ export class UserCredentialStore {
       return null;
     }
 
-    // Decrypt
-    const value = decryptValue(
-      entry.encryptedValue,
-      entry.iv,
-      this.config.encryptionKey,
-      entry.salt
-    );
+    // Decrypt — same guard as get() above
+    let value: string;
+    try {
+      value = decryptValue(entry.encryptedValue, entry.iv, this.config.encryptionKey, entry.salt);
+    } catch (err) {
+      log.error('Decrypt failed for credential', {
+        userId,
+        provider: entry.provider,
+        id,
+        err: getErrorMessage(err),
+      });
+      return null;
+    }
 
     // CRYPTO-004: upgrade legacy no-salt entries on read.
     await this.migrateLegacyEntryIfNeeded(entry, value);

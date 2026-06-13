@@ -2,6 +2,11 @@
  * LLM Config Panel — configuration for LLM-type workflow nodes.
  * Supports provider/model selection, system prompt, user message with templates,
  * temperature/max tokens, and custom API key/base URL.
+ *
+ * Trust boundary: the three 'as unknown as' casts in this file bridge
+ * between the generic node-data blob (Record<string, unknown>) and the
+ * form-typed config shape. The DB row is the source of truth and is
+ * sound at runtime; the casts are local assertions, not type holes.
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';

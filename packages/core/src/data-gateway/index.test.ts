@@ -651,8 +651,8 @@ describe('Task Operations', () => {
     vi.clearAllMocks();
     uuidCounter = 0;
     gw = new DataGateway();
-    // Tasks use 'calendar' permission
-    gw.grantAccess('agent-1', ['calendar']);
+    // Tasks use 'tasks' permission
+    gw.grantAccess('agent-1', ['tasks']);
   });
 
   describe('createTask', () => {
@@ -695,9 +695,9 @@ describe('Task Operations', () => {
       expect(task.tags).toEqual([]);
     });
 
-    it('throws when agent lacks calendar permission', async () => {
+    it('throws when agent lacks tasks permission', async () => {
       await expect(gw.createTask('agent-x', { title: 'Task' })).rejects.toThrow(
-        'does not have access to calendar'
+        'does not have access to tasks'
       );
     });
   });
@@ -721,9 +721,9 @@ describe('Task Operations', () => {
       expect(result).toBeNull();
     });
 
-    it('throws when agent lacks calendar permission', async () => {
+    it('throws when agent lacks tasks permission', async () => {
       await expect(gw.completeTask('agent-x', 'some-id')).rejects.toThrow(
-        'does not have access to calendar'
+        'does not have access to tasks'
       );
     });
   });
@@ -775,8 +775,8 @@ describe('Task Operations', () => {
       expect(results).toHaveLength(0);
     });
 
-    it('throws when agent lacks calendar permission', async () => {
-      await expect(gw.listTasks('agent-x')).rejects.toThrow('does not have access to calendar');
+    it('throws when agent lacks tasks permission', async () => {
+      await expect(gw.listTasks('agent-x')).rejects.toThrow('does not have access to tasks');
     });
   });
 
@@ -801,9 +801,9 @@ describe('Task Operations', () => {
       expect(results).toHaveLength(1);
     });
 
-    it('throws when agent lacks calendar permission', async () => {
+    it('throws when agent lacks tasks permission', async () => {
       await expect(gw.searchTasks('agent-x', 'query')).rejects.toThrow(
-        'does not have access to calendar'
+        'does not have access to tasks'
       );
     });
   });
@@ -827,9 +827,9 @@ describe('Task Operations', () => {
       expect(list).toHaveLength(0);
     });
 
-    it('throws when agent lacks calendar permission', async () => {
+    it('throws when agent lacks tasks permission', async () => {
       await expect(gw.deleteTask('agent-x', 'some-id')).rejects.toThrow(
-        'does not have access to calendar'
+        'does not have access to tasks'
       );
     });
   });

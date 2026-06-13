@@ -723,9 +723,26 @@ export class SecureMemoryStore {
       const data = JSON.parse(content) as EncryptedMemoryEntry[];
       this.entries = new Map(data.map((e) => [e.id, e]));
     } catch (error) {
-      // File may not exist on first run - this is expected
+      // Distinguish first-run (ENOENT — expected, debug is fine) from a
+      // corruption event (which would silently lose all encrypted
+      // credentials). On corruption, rename the file out of the way so the
+      // user can recover it manually.
+      const isFirstRun = (error as NodeJS.ErrnoException)?.code === 'ENOENT';
       const log = getLog('SecureStore');
-      log.debug('Failed to load entries, starting with empty store:', error);
+      if (isFirstRun) {
+        log.debug('Failed to load entries, starting with empty store:', error);
+      } else {
+        const corruptPath = `${filePath}.corrupt-${Date.now()}`;
+        try {
+          await fs.rename(filePath, corruptPath);
+        } catch {
+          // best-effort
+        }
+        log.error(
+          `entries.encrypted.json was corrupt; renamed to ${corruptPath} and starting with empty store. Original error:`,
+          error
+        );
+      }
       this.entries = new Map();
     }
 

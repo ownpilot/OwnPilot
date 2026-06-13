@@ -2,6 +2,8 @@
  * Browser Routes
  *
  * REST API for headless browser automation and workflow management.
+ *
+ * Trust boundary: Browser automation tasks carry a flexible task config payload; casts below read typed fields off the validated body. Zod schema validation is the trust boundary above these casts.
  */
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';

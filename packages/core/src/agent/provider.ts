@@ -30,12 +30,19 @@ export function createProvider(config: ProviderConfig): IProvider {
       // Use native Google/Gemini provider for proper thoughtSignature support
       const googleProvider = GoogleProvider.withApiKey(config.apiKey ?? '');
       if (googleProvider) {
+        // trust boundary: withApiKey returns IProvider | null, but the
+        // GoogleProvider class declared its return type more narrowly in
+        // an older signature. The non-null branch is type-safe at runtime.
         return googleProvider as unknown as IProvider;
       }
       // Fallback to OpenAI-compatible if Google provider can't be created
       return new OpenAIProvider(config);
     }
     case 'openai-compatible':
+      // trust boundary: ProviderConfig is a wider type than
+      // ResolvedProviderConfig (id is required on the latter). The
+      // `id: config.id ?? config.provider` line above resolves the gap;
+      // the cast documents that the wider type is sound in this factory.
       return new OpenAICompatibleProvider({
         ...config,
         id: config.id ?? config.provider,

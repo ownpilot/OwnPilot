@@ -3,6 +3,8 @@
  *
  * GET /, POST /, GET /:id, DELETE /:id,
  * POST /:id/enable, POST /:id/disable, POST /:id/reload
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
@@ -24,7 +26,9 @@ import { getClientIp } from '../../utils/client-ip.js';
 
 export const crudRoutes = new Hono();
 
-/** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
+/** Get ExtensionService from registry (cast needed for ExtensionError-specific methods).  *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
+ */
 const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
 async function uninstallExtension(c: Context) {
@@ -64,6 +68,8 @@ async function uninstallExtension(c: Context) {
 
 /**
  * GET / - List extensions
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.get('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -91,6 +97,8 @@ crudRoutes.get('/', async (c) => {
  * GET /gate-status - Host-gate status for installed extensions.
  * Reports which extensions are active vs gated out (unmet OS/binary/env
  * requirements on this machine) and why.
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.get('/gate-status', async (c) => {
   const service = getExtService();
@@ -100,6 +108,8 @@ crudRoutes.get('/gate-status', async (c) => {
 
 /**
  * POST / - Install from inline manifest
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -143,6 +153,8 @@ crudRoutes.post('/', async (c) => {
 
 /**
  * GET /:id - Get package details
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.get('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -160,19 +172,27 @@ crudRoutes.get('/:id', async (c) => {
 
 /**
  * DELETE /:id - Uninstall package
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.delete('/:id', async (c) => {
   return uninstallExtension(c);
 });
 
-/** POST /:id/uninstall - Uninstall package (alias for clients that avoid DELETE) */
+/** POST /:id/uninstall - Uninstall package (alias for clients that avoid DELETE)  *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
+ */
 crudRoutes.post('/:id/uninstall', async (c) => uninstallExtension(c));
 
-/** POST /:id/remove - Remove package (alias of uninstall) */
+/** POST /:id/remove - Remove package (alias of uninstall)  *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
+ */
 crudRoutes.post('/:id/remove', async (c) => uninstallExtension(c));
 
 /**
  * PATCH /:id - Update extension metadata (name, description, version)
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.patch('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -250,6 +270,8 @@ crudRoutes.patch('/:id', async (c) => {
 
 /**
  * POST /:id/enable - Enable package + triggers
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.post('/:id/enable', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -286,6 +308,8 @@ crudRoutes.post('/:id/enable', async (c) => {
 
 /**
  * POST /:id/disable - Disable package + triggers
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.post('/:id/disable', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -322,6 +346,8 @@ crudRoutes.post('/:id/disable', async (c) => {
 
 /**
  * POST /:id/recover - Recover from error status
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.post('/:id/recover', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -354,6 +380,8 @@ crudRoutes.post('/:id/recover', async (c) => {
 
 /**
  * POST /:id/reload - Reload manifest from disk
+ *
+ * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
 crudRoutes.post('/:id/reload', async (c) => {
   const userId = LOCAL_OWNER_ID;

@@ -3,6 +3,8 @@
  *
  * CRUD + execution endpoints for visual DAG tool pipelines.
  * Execution streams progress via SSE for real-time node visualization.
+ *
+ * Trust boundary: Workflow execution results are typed at the boundary; the casts below adapt stored node-data blobs to the typed node config. The DB row is the source of truth.
  */
 
 import { Hono } from 'hono';
@@ -49,6 +51,8 @@ type WfEdge = ValidationEdge;
 /**
  * Validate workflow-level semantic constraints that Zod can't express.
  * Returns an array of error messages (empty = valid).
+ *
+ * Trust boundary: Workflow execution results are typed at the boundary; the casts below adapt stored node-data blobs to the typed node config. The DB row is the source of truth.
  */
 const MAX_WORKFLOW_NODES = 500;
 const DATA_STORE_OPERATIONS = new Set(['get', 'set', 'delete', 'list', 'has']);
@@ -64,7 +68,9 @@ const AGGREGATE_OPERATIONS = new Set([
 ]);
 const CLAW_MODES = new Set(['single-shot', 'continuous', 'interval', 'event']);
 const CLAW_SANDBOXES = new Set(['auto', 'docker', 'local']);
-/** Claw nodes wait on a full autonomous agent run, so they get a higher timeout ceiling (24h). */
+/** Claw nodes wait on a full autonomous agent run, so they get a higher timeout ceiling (24h).  *
+ * Trust boundary: Workflow execution results are typed at the boundary; the casts below adapt stored node-data blobs to the typed node config. The DB row is the source of truth.
+ */
 const CLAW_MAX_TIMEOUT_MS = 86_400_000;
 const DEFAULT_MAX_TIMEOUT_MS = 300_000;
 

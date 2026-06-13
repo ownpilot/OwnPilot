@@ -1,6 +1,9 @@
 /**
  * Condition Config Panel — configuration for condition/branch workflow nodes.
  * Supports JS expressions that return truthy/falsy for branching logic.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';

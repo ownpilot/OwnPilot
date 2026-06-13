@@ -1,6 +1,12 @@
 /**
  * HTTP Request Config Panel — configuration for HTTP request workflow nodes.
  * Supports GET/POST/PUT/PATCH/DELETE with auth, headers, query params, and body.
+ *
+ * Trust boundary: the four 'as unknown as' casts in this file all bridge
+ * between DB-stored shapes (Record<string, string>, the generic node data
+ * blob) and the form-typed shapes (KeyValuePair[], NodeConfigPanelProps).
+ * The DB row is the source of truth and is sound at runtime; the casts
+ * are local assertions, not type-system holes.
  */
 
 import { useState, useCallback, useEffect } from 'react';

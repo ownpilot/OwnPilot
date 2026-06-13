@@ -414,13 +414,17 @@ describe('Encryption roundtrip (via store + get)', () => {
     expect(result!.value).toBe('shared-value');
   });
 
-  it('a store with the wrong key fails to decrypt (throws)', async () => {
+  it('a store with the wrong key fails to decrypt (returns null and audits)', async () => {
     const backend = makeBackend();
     const storeA = makeStore('correct-key-exactly-32chars-long!', backend);
     const storeB = makeStore('wrong-key-exactly-32-chars-longxx', backend);
 
     await storeA.store(USER_A, 'openai', 'api_key', 'secret');
-    await expect(storeB.get(USER_A, 'openai')).rejects.toThrow();
+    // get() must not throw on decrypt failure — it should surface a null result
+    // and emit a 'decrypt_failed' audit event so the caller can distinguish
+    // "wrong key" from "no entry".
+    const result = await storeB.get(USER_A, 'openai');
+    expect(result).toBeNull();
   });
 
   it('two encryptions of the same value produce different ciphertexts (random IV + salt)', async () => {

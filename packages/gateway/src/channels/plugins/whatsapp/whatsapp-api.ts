@@ -4,6 +4,8 @@
  * Implements ChannelPluginAPI using @whiskeysockets/baileys.
  * Connects via WhatsApp Web's WebSocket protocol using QR code authentication.
  * No Meta Business account needed — works with personal WhatsApp accounts.
+ *
+ * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The casts below read those optional fields; the runtime object is documented upstream to have them when relevant. The cast is a documented trust boundary with the upstream type.
  */
 
 import makeWASocket, {
@@ -43,7 +45,9 @@ import { channelAssetStore } from '../../../services/channel-asset-store.js';
 const log = getLog('WhatsApp');
 const WHATSAPP_MAX_LENGTH = 4096;
 
-/** Simple TTL cache (replaces node-cache dependency). */
+/** Simple TTL cache (replaces node-cache dependency).  *
+ * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The casts below read those optional fields; the runtime object is documented upstream to have them when relevant. The cast is a documented trust boundary with the upstream type.
+ */
 class SimpleTTLCache<V> {
   private data = new Map<string, { value: V; expires: number }>();
   private pruneTimer: ReturnType<typeof setInterval> | null = null;
@@ -94,6 +98,8 @@ const MAX_CONSECUTIVE_440 = 3;
  * within 5–15s of each reconnect, so 2 minutes gives a comfortable margin
  * for separating "we're actually stable" from "we briefly reconnected before
  * the next displace event."
+ *
+ * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The casts below read those optional fields; the runtime object is documented upstream to have them when relevant. The cast is a documented trust boundary with the upstream type.
  */
 const STABLE_CONNECTION_MS = 2 * 60_000;
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute

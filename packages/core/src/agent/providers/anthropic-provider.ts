@@ -578,24 +578,29 @@ export class AnthropicProvider extends BaseProvider {
         };
       }
 
-      const contentParts: unknown[] =
-        typeof msg.content === 'string'
-          ? msg.content
-            ? [{ type: 'text', text: msg.content }]
-            : []
-          : msg.content.map((part) => {
-              if (part.type === 'text') {
-                return { type: 'text', text: part.text };
-              } else if (part.type === 'image') {
-                return {
-                  type: 'image',
-                  source: part.isUrl
-                    ? { type: 'url', url: part.data }
-                    : { type: 'base64', media_type: part.mediaType, data: part.data },
-                };
-              }
-              return { type: 'text', text: '[Unsupported content]' };
+      // Build contentParts as an array from the start. The previous ternary
+      // assigned a string to contentParts when msg.content was a string,
+      // which then crashed with "is not a function" at the .unshift() call
+      // below for assistant messages carrying thinking blocks.
+      const contentParts: unknown[] = [];
+      if (typeof msg.content === 'string') {
+        if (msg.content) contentParts.push({ type: 'text', text: msg.content });
+      } else {
+        for (const part of msg.content) {
+          if (part.type === 'text') {
+            contentParts.push({ type: 'text', text: part.text });
+          } else if (part.type === 'image') {
+            contentParts.push({
+              type: 'image',
+              source: part.isUrl
+                ? { type: 'url', url: part.data }
+                : { type: 'base64', media_type: part.mediaType, data: part.data },
             });
+          } else {
+            contentParts.push({ type: 'text', text: '[Unsupported content]' });
+          }
+        }
+      }
 
       // Assistant messages: include thinking blocks before text/tool_use if present
       if (msg.role === 'assistant') {

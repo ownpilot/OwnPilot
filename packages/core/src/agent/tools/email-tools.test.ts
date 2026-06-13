@@ -12,6 +12,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockTryImport = vi.hoisted(() => vi.fn());
 const mockAccess = vi.hoisted(() => vi.fn());
 const mockBasename = vi.hoisted(() => vi.fn((p: string) => p.split('/').pop() || p));
+// Default: allow all paths. Tests that need to simulate a workspace rejection
+// override per-call with mockIsPathAllowedAsync.mockResolvedValueOnce(false).
+const mockIsPathAllowedAsync = vi.hoisted(() => vi.fn(async () => true));
 
 vi.mock('./module-resolver.js', () => ({
   tryImport: (...args: unknown[]) => mockTryImport(...args),
@@ -23,6 +26,10 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('node:path', () => ({
   basename: (...args: unknown[]) => mockBasename(...args),
+}));
+
+vi.mock('./file-security.js', () => ({
+  isPathAllowedAsync: (...args: unknown[]) => mockIsPathAllowedAsync(...args),
 }));
 
 // ============================================================================
@@ -46,7 +53,7 @@ const {
   EMAIL_TOOL_NAMES,
 } = await import('./email-tools.js');
 
-const ctx = {} as any;
+const ctx = { workspaceDir: '/workspace' } as any;
 
 // ============================================================================
 // sendEmailExecutor
@@ -144,7 +151,9 @@ describe('sendEmailExecutor', () => {
       { to: ['user@example.com'], subject: 'S', body: 'B' },
       ctx
     );
-    expect(result.isError).toBe(false);
+    // Email tools return isError: true until SMTP is wired (see email-tools.ts).
+    // The agent loop should not report success to the user.
+    expect(result.isError).toBe(true);
   });
 
   it('accepts email with subdomains', async () => {
@@ -152,7 +161,7 @@ describe('sendEmailExecutor', () => {
       { to: ['user@mail.example.co.uk'], subject: 'S', body: 'B' },
       ctx
     );
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('accepts email with plus addressing', async () => {
@@ -160,7 +169,7 @@ describe('sendEmailExecutor', () => {
       { to: ['user+tag@example.com'], subject: 'S', body: 'B' },
       ctx
     );
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   // ---------- CC/BCC validation ----------
@@ -229,7 +238,7 @@ describe('sendEmailExecutor', () => {
       { to: ['a@b.com'], subject: 'S', body: 'B', replyTo: 'reply@example.com' },
       ctx
     );
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
     expect((result.content as Record<string, unknown>).status).toBe('prepared');
   });
 
@@ -348,38 +357,51 @@ describe('sendEmailExecutor', () => {
   // ---------- attachments ----------
 
   it('returns error when attachment file not found', async () => {
+    // Pretend isPathAllowedAsync lets everything through for this test.
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
     mockAccess.mockRejectedValueOnce(new Error('ENOENT'));
 
     const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/missing.txt'] },
+      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/workspace/missing.txt'] },
       ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe(
-      'Attachment not found: /tmp/missing.txt'
-    );
+    // Error no longer leaks the requested path.
+    expect((result.content as Record<string, unknown>).error).toBe('Attachment not accessible.');
   });
 
   it('stops at first missing attachment in the list', async () => {
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
     mockAccess.mockResolvedValueOnce(undefined); // first OK
     mockAccess.mockRejectedValueOnce(new Error('ENOENT')); // second missing
 
     const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/ok.txt', '/tmp/bad.txt'] },
+      {
+        to: ['a@b.com'],
+        subject: 'S',
+        body: 'B',
+        attachments: ['/workspace/ok.txt', '/workspace/bad.txt'],
+      },
       ctx
     );
     expect(result.isError).toBe(true);
-    expect((result.content as Record<string, unknown>).error).toBe(
-      'Attachment not found: /tmp/bad.txt'
-    );
+    expect((result.content as Record<string, unknown>).error).toBe('Attachment not accessible.');
   });
 
   it('includes attachment count in success result', async () => {
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
     const result = await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/tmp/a.pdf', '/tmp/b.pdf'] },
+      {
+        to: ['a@b.com'],
+        subject: 'S',
+        body: 'B',
+        attachments: ['/workspace/a.pdf', '/workspace/b.pdf'],
+      },
       ctx
     );
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
     const msg = (result.content as Record<string, unknown>).message as Record<string, unknown>;
     expect(msg.attachmentCount).toBe(2);
   });
@@ -391,11 +413,26 @@ describe('sendEmailExecutor', () => {
   });
 
   it('calls path.basename for each attachment filename', async () => {
+    mockIsPathAllowedAsync.mockResolvedValueOnce(true);
     await sendEmailExecutor(
-      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/home/user/doc.pdf'] },
+      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/workspace/sub/doc.pdf'] },
       ctx
     );
-    expect(mockBasename).toHaveBeenCalledWith('/home/user/doc.pdf');
+    expect(mockBasename).toHaveBeenCalledWith('/workspace/sub/doc.pdf');
+  });
+
+  it('rejects attachments outside the workspace', async () => {
+    // isPathAllowedAsync returns false → executor short-circuits with the
+    // workspace-rejection error before fs.access is even called.
+    mockIsPathAllowedAsync.mockResolvedValueOnce(false);
+    const result = await sendEmailExecutor(
+      { to: ['a@b.com'], subject: 'S', body: 'B', attachments: ['/etc/passwd'] },
+      ctx
+    );
+    expect(result.isError).toBe(true);
+    expect((result.content as Record<string, unknown>).error).toBe(
+      'Attachment path is not within the allowed workspace.'
+    );
   });
 
   // ---------- success response shape ----------
@@ -405,7 +442,7 @@ describe('sendEmailExecutor', () => {
       { to: ['a@b.com'], subject: 'Test subject', body: 'Test body' },
       ctx
     );
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
     const content = result.content as Record<string, unknown>;
     expect(content.status).toBe('prepared');
     expect(content.requiresSMTPConfig).toBe(true);
@@ -531,7 +568,7 @@ describe('listEmailsExecutor', () => {
     const content = result.content as Record<string, unknown>;
     expect(content.status).toBe('prepared');
     expect(content.requiresIMAPConfig).toBe(true);
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('returns error when imapflow is not installed', async () => {
@@ -571,7 +608,7 @@ describe('readEmailExecutor', () => {
     const content = result.content as Record<string, unknown>;
     expect(content.status).toBe('prepared');
     expect(content.requiresIMAPConfig).toBe(true);
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('defaults folder to INBOX', async () => {
@@ -640,7 +677,7 @@ describe('deleteEmailExecutor', () => {
     expect(content.status).toBe('prepared');
     expect(content.action).toBe('move_to_trash');
     expect(content.requiresIMAPConfig).toBe(true);
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('sets action to permanent_delete when permanent=true', async () => {
@@ -690,7 +727,7 @@ describe('searchEmailsExecutor', () => {
     const content = result.content as Record<string, unknown>;
     expect(content.status).toBe('prepared');
     expect(content.requiresIMAPConfig).toBe(true);
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('defaults folder to "all" when not specified', async () => {
@@ -768,7 +805,7 @@ describe('replyEmailExecutor', () => {
     expect(content.action).toBe('reply');
     expect(content.requiresSMTPConfig).toBe(true);
     expect(content.requiresIMAPConfig).toBe(true);
-    expect(result.isError).toBe(false);
+    expect(result.isError).toBe(true);
   });
 
   it('sets action to reply_all when replyAll=true', async () => {

@@ -231,6 +231,11 @@ export function validateToolCall(
 function validateParams(def: ToolDefinition, args: Record<string, unknown>): ToolValidationError[] {
   if (!def.parameters) return [];
 
+  // trust boundary: ToolParameterSchema is a deliberately wider shape than
+  // ToolDefinition.parameters (it accepts any Record<string, unknown> per
+  // property), and the validator below operates on Record-shaped accessors.
+  // The wider shape is sound because the validator's read paths do not
+  // assume any specific sub-property type.
   const schema = def.parameters as unknown as ToolParameterSchema;
   if (!schema.properties) return [];
 
@@ -452,6 +457,8 @@ export function buildExampleValue(schema: Record<string, unknown>, name: string)
 export function buildToolHelpText(registry: ToolRegistry, toolName: string): string {
   const def = registry.getDefinition(toolName);
   if (!def?.parameters) return '';
+  // trust boundary: see validateParams() — ToolParameterSchema is the
+  // validator-friendly shape; ToolDefinition.parameters is the typed shape.
   const params = def.parameters as unknown as ToolParameterSchema;
   if (!params.properties) return '';
 
@@ -481,6 +488,8 @@ export function formatFullToolHelp(registry: ToolRegistry, toolName: string): st
   const def = registry.getDefinition(toolName);
   if (!def) return `Tool '${toolName}' not found.`;
 
+  // trust boundary: see validateParams() — ToolParameterSchema is the
+  // validator-friendly shape; ToolDefinition.parameters is the typed shape.
   const params = def.parameters as unknown as ToolParameterSchema;
 
   const lines = [`## ${def.name}`, def.description, ''];

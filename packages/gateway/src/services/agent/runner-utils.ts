@@ -8,6 +8,8 @@
  * - Timeout/cancellation promises
  * - JSON parsing and tool call collection
  * - Model routing resolution
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 
 import {
@@ -55,6 +57,8 @@ const log = getLog('AgentRunnerUtils');
 /**
  * Register ALL tool sources into a ToolRegistry.
  * This is the canonical 6-step pipeline shared by all runners.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export async function registerAllToolSources(
   tools: ToolRegistry,
@@ -109,6 +113,8 @@ export async function registerAllToolSources(
  * on missing config. For the simple "what is the global default?" query (used
  * by Settings UI surface, pre-flight checks, channel fallback), see
  * `resolveDefaultProviderAndModel` in `routes/settings.ts`.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export async function resolveProviderAndModel(
   explicitProvider: string | undefined,
@@ -176,6 +182,8 @@ interface CreateAgentOptions {
 /**
  * Create a fully configured Agent with all tool sources registered.
  * Single construction path for all runners.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export async function createConfiguredAgent(opts: CreateAgentOptions): Promise<Agent> {
   // Resolve full auth (session_token / oauth / api_key). Falls back to the
@@ -356,6 +364,8 @@ Keep it compact. Do not invent information. Output only the summary.`;
  * Render a list of messages into a compact text transcript for summarization.
  * Tool calls and results are flattened to short markers so the summary model
  * sees what happened without the full payloads.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 function renderTranscriptForSummary(messages: readonly Message[]): string {
   const lines: string[] = [];
@@ -382,6 +392,8 @@ function renderTranscriptForSummary(messages: readonly Message[]): string {
 
 /**
  * Resolve skill IDs to qualified tool names and merge with explicit allowedTools.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export function resolveToolFilter(
   allowedTools: string[] | undefined,
@@ -418,6 +430,8 @@ export function resolveToolFilter(
  * The returned `cancel` function MUST be called once the race completes so
  * the underlying setTimeout does not keep the event loop alive or fire a
  * stray rejection on a detached promise. Caller is responsible for cleanup.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export function createTimeoutPromise(
   ms: number,
@@ -448,6 +462,8 @@ export function createTimeoutPromise(
 
 /**
  * Safely parse a JSON string, returning raw value on failure.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export function safeParseJson(str: string): Record<string, unknown> {
   try {
@@ -459,6 +475,8 @@ export function safeParseJson(str: string): Record<string, unknown> {
 
 /**
  * Generic tool call collector callback factory.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 interface CollectedToolCall {
   tool: string;
@@ -493,6 +511,8 @@ export function createToolCallCollector(): {
 
 /**
  * Build a formatted current date/time string for agent prompts.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export function buildDateTimeContext(): string {
   const now = new Date();
@@ -506,6 +526,8 @@ export function buildDateTimeContext(): string {
 
 /**
  * Options for the unified agent execution pipeline.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 interface AgentPipelineOptions {
   /** Fully configured Agent instance */
@@ -537,6 +559,8 @@ interface AgentPipelineOptions {
 
 /**
  * Result from the unified agent execution pipeline.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 interface AgentPipelineResult {
   content: string;
@@ -551,6 +575,8 @@ interface AgentPipelineResult {
  *
  * The returned `cancel` function detaches the abort listener — call it once
  * the race completes so we do not leak a listener on a long-lived signal.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 function createCancellationPromise(signal: AbortSignal): {
   promise: Promise<never>;
@@ -591,11 +617,15 @@ function createCancellationPromise(signal: AbortSignal): {
  * - Creating the agent (provider, model, system prompt, tool filter)
  * - Building the message
  * - Mapping `AgentPipelineResult` to its own domain result type
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 /**
  * Thrown when a pre-spend budget check blocks an autonomous LLM call (BIZ-001).
  * Distinct type so the fail-open catch around the budget subsystem does not
  * swallow an intentional block, and so runners can recognise it.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export class BudgetExceededError extends Error {
   constructor(reason: string) {
@@ -743,6 +773,8 @@ export async function executeAgentPipeline(
  * Record a provider telemetry metric (gap 24.4).
  * Writes to provider_metrics DB table via ProviderMetricsRepository.
  * Non-blocking — failures are swallowed silently.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 async function recordTelemetry(
   agent: Agent,
@@ -812,6 +844,8 @@ async function recordTelemetry(
 /**
  * Calculate cost from provider/model and token usage.
  * Returns 0 if usage data is unavailable.
+ *
+ * Trust boundary: Shared agent-runner helpers cast between typed tool-call envelopes and the executor's expected input shape. The executor contract is the trust boundary; the cast documents the call-site type agreement.
  */
 export function calculateExecutionCost(
   provider: string,

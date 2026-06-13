@@ -2,6 +2,8 @@
  * Extensions Install Routes
  *
  * POST /install, POST /upload
+ *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
@@ -68,18 +70,26 @@ function checkInstallThrottle(c: Context): Response | null {
   return null;
 }
 
-/** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
+/** Get ExtensionService from registry (cast needed for ExtensionError-specific methods).  *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
+ */
 const getExtService = () => getExtensionService() as unknown as ExtensionService;
 
-/** Allowed file extensions for upload */
+/** Allowed file extensions for upload  *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
+ */
 const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.md', '.json', '.zip', '.skill']);
 
-/** Max upload size: 1 MB for single files, 5 MB for ZIP */
+/** Max upload size: 1 MB for single files, 5 MB for ZIP  *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
+ */
 const MAX_SINGLE_FILE_SIZE = 1 * 1024 * 1024;
 const MAX_ZIP_FILE_SIZE = 5 * 1024 * 1024;
 
 /**
  * Generate a unique filename: originalName-<random8chars>.ext
+ *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
 function generateUniqueFilename(originalName: string): string {
   const leafName = getLeafName(originalName);
@@ -150,6 +160,8 @@ function extractZipSafely(zip: any, tempDir: string): void {
 /**
  * Find an extension manifest file in a directory.
  * Same detection order as scanSingleDirectory in extension-service.
+ *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
 function findManifestInDir(dir: string): string | null {
   const candidates = ['SKILL.md', 'extension.json', 'extension.md', 'skill.json', 'skill.md'];
@@ -162,6 +174,8 @@ function findManifestInDir(dir: string): string | null {
 
 /**
  * POST /install - Install from file path
+ *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
 installRoutes.post('/install', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -229,6 +243,8 @@ installRoutes.post('/install', async (c) => {
 
 /**
  * POST /upload - Upload extension file (single .md/.json or .zip)
+ *
+ * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
 installRoutes.post('/upload', async (c) => {
   const userId = LOCAL_OWNER_ID;

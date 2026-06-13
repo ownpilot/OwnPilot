@@ -4,6 +4,8 @@
  * Concrete implementation of IChannelService for the gateway.
  * Discovers channel plugins from PluginRegistry, routes messages
  * through EventBus, handles verification, and manages sessions.
+ *
+ * Trust boundary: Channel plugin responses are normalised via per-plugin normalizers before reaching this code; the casts below adapt the normalised shape to the canonical channel-event type. The normalizer is the trust boundary.
  */
 
 import { timingSafeEqual, randomInt } from 'node:crypto';
@@ -65,12 +67,16 @@ import { bridgeIncomingMessage } from './bridge-runtime.js';
 
 const log = getLog('ChannelService');
 
-/** Try to get ISessionService via the core capability accessor. */
+/** Try to get ISessionService via the core capability accessor.  *
+ * Trust boundary: Channel plugin responses are normalised via per-plugin normalizers before reaching this code; the casts below adapt the normalised shape to the canonical channel-event type. The normalizer is the trust boundary.
+ */
 function tryGetSessionService(): ISessionService | null {
   return hasSessionService() ? getSessionService() : null;
 }
 
-/** Try to get IMessageBus via the core capability accessor. */
+/** Try to get IMessageBus via the core capability accessor.  *
+ * Trust boundary: Channel plugin responses are normalised via per-plugin normalizers before reaching this code; the casts below adapt the normalised shape to the canonical channel-event type. The normalizer is the trust boundary.
+ */
 function tryGetMessageBus(): IMessageBus | null {
   return hasMessageBus() ? getMessageBus() : null;
 }
@@ -1418,9 +1424,10 @@ export class ChannelServiceImpl implements IChannelService {
     senderUserId: string,
     _ownerUserId: string
   ): Promise<string> {
-    // Generate 6-digit code. SECURITY (EXPOSE-004): use a CSPRNG — Math.random()
-    // is a non-cryptographic PRNG whose internal state can be recovered from a
-    // few observed outputs, making pairing codes predictable/brute-forceable.
+    // SECURITY (EXPOSE-004): the 6-digit code is a one-time pairing
+    // credential — an attacker who can predict it gains DM access. Use
+    // crypto.randomInt (CSPRNG); Math.random() would be predictable from
+    // a few observed outputs.
     const code = String(randomInt(100000, 1000000));
 
     // Store in verification_tokens

@@ -3,6 +3,8 @@
  *
  * All settings are loaded from the PostgreSQL database.
  * Data is stored in platform-specific application data directory.
+ *
+ * Trust boundary: The HTTP server reads request bodies as unknown and passes them through zod validation at the route handler; the casts below are server-startup-only config reads where the source is a hardcoded schema. Config files are the trust boundary.
  */
 
 // Load .env file FIRST before any other imports
@@ -94,6 +96,8 @@ const GATEWAY_AUTH_TYPE_KEY = 'gateway_auth_type';
 
 /**
  * Load configuration from database (with ENV fallback for backward compatibility)
+ *
+ * Trust boundary: The HTTP server reads request bodies as unknown and passes them through zod validation at the route handler; the casts below are server-startup-only config reads where the source is a hardcoded schema. Config files are the trust boundary.
  */
 function loadConfig(): Partial<GatewayConfig> {
   // Get auth settings from database
@@ -147,6 +151,8 @@ function loadConfig(): Partial<GatewayConfig> {
 
 /**
  * Start the server
+ *
+ * Trust boundary: The HTTP server reads request bodies as unknown and passes them through zod validation at the route handler; the casts below are server-startup-only config reads where the source is a hardcoded schema. Config files are the trust boundary.
  */
 async function main() {
   // ── Config Validation (fail-fast before any heavy initialization) ─────────

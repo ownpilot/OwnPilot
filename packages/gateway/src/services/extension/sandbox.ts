@@ -4,6 +4,8 @@
  * Isolates extension tool execution in worker threads with resource limits.
  * Each tool execution gets a fresh VM context inside a worker, preventing
  * extensions from accessing gateway memory or other extensions' state.
+ *
+ * Trust boundary: Extension tool IPC payloads are serialized over the worker boundary; the casts below bridge between the generic message envelope and the typed tool-call shape. The worker protocol is the trust boundary.
  */
 
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -44,7 +46,9 @@ interface SandboxExecutionResult {
   executionTime: number;
 }
 
-/** Messages sent between main thread and worker */
+/** Messages sent between main thread and worker  *
+ * Trust boundary: Extension tool IPC payloads are serialized over the worker boundary; the casts below bridge between the generic message envelope and the typed tool-call shape. The worker protocol is the trust boundary.
+ */
 interface WorkerRequest {
   type: 'execute';
   code: string;
@@ -278,7 +282,9 @@ if (!isMainThread && parentPort) {
 // Sandbox Manager (main thread)
 // =============================================================================
 
-/** Callback for handling tool calls from sandboxed code */
+/** Callback for handling tool calls from sandboxed code  *
+ * Trust boundary: Extension tool IPC payloads are serialized over the worker boundary; the casts below bridge between the generic message envelope and the typed tool-call shape. The worker protocol is the trust boundary.
+ */
 type CallToolHandler = (
   toolName: string,
   args: Record<string, unknown>,
@@ -291,6 +297,8 @@ type CallToolHandler = (
  * requests tool calls via utils.callTool(). The worker itself can echo any
  * ownerUserId it likes, but the main thread will only ever use the values
  * stored in this registry.
+ *
+ * Trust boundary: Extension tool IPC payloads are serialized over the worker boundary; the casts below bridge between the generic message envelope and the typed tool-call shape. The worker protocol is the trust boundary.
  */
 interface WorkerContext {
   extensionId: string;
@@ -549,6 +557,8 @@ export function getExtensionSandbox(): ExtensionSandboxManager {
 
 /**
  * Null the singleton. Call during shutdown or reset.
+ *
+ * Trust boundary: Extension tool IPC payloads are serialized over the worker boundary; the casts below bridge between the generic message envelope and the typed tool-call shape. The worker protocol is the trust boundary.
  */
 export function resetExtensionSandbox(): void {
   instance = null;

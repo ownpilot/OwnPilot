@@ -688,11 +688,21 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
         break;
       }
       case 'flatten':
-        result = array.flat(Infinity);
+        // Cap depth at 100 to avoid blowing the call stack on deeply nested input.
+        result = array.flat(100);
         break;
       case 'sample': {
         const sampleSize = Math.min((options.sampleSize as number) || 1, array.length);
-        const shuffledForSample = [...array].sort(() => Math.random() - 0.5);
+        // Fisher-Yates: unbiased shuffle (the previous sort with random
+        // comparator is mathematically biased under V8's TimSort).
+        const shuffledForSample = [...array];
+        for (let i = shuffledForSample.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffledForSample[i], shuffledForSample[j]] = [
+            shuffledForSample[j]!,
+            shuffledForSample[i]!,
+          ];
+        }
         result = shuffledForSample.slice(0, sampleSize);
         break;
       }
@@ -717,13 +727,31 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
         break;
       }
       case 'min': {
+        // Manual loop: Math.min(...arr) spreads the full array as arguments and
+        // throws RangeError on 10k+ numeric inputs.
         const numsMin = array.filter((x): x is number => typeof x === 'number');
-        result = numsMin.length > 0 ? Math.min(...numsMin) : null;
+        if (numsMin.length === 0) {
+          result = null;
+        } else {
+          let min = numsMin[0]!;
+          for (let i = 1; i < numsMin.length; i++) {
+            if (numsMin[i]! < min) min = numsMin[i]!;
+          }
+          result = min;
+        }
         break;
       }
       case 'max': {
         const numsMax = array.filter((x): x is number => typeof x === 'number');
-        result = numsMax.length > 0 ? Math.max(...numsMax) : null;
+        if (numsMax.length === 0) {
+          result = null;
+        } else {
+          let max = numsMax[0]!;
+          for (let i = 1; i < numsMax.length; i++) {
+            if (numsMax[i]! > max) max = numsMax[i]!;
+          }
+          result = max;
+        }
         break;
       }
       case 'count':

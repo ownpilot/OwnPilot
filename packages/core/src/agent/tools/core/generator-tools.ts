@@ -181,7 +181,12 @@ export const GENERATOR_EXECUTORS: Record<string, ToolExecutor> = {
 
     let result = '';
     for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      // CSPRNG: random_string is a generator tool the LLM may use to mint
+      // passwords, tokens, or any value the user later relies on for
+      // security. Math.random() is a non-cryptographic PRNG; the casts
+      // here keep the result unpredictable. The per-char cost (length
+      // calls to randomInt) is fine for typical lengths (≤128).
+      result += chars.charAt(randomInt(chars.length));
     }
 
     return { content: result };

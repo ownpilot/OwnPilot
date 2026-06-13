@@ -23,7 +23,8 @@ export type DataStoreType =
   | 'preferences'
   | 'files'
   | 'calendar'
-  | 'contacts';
+  | 'contacts'
+  | 'tasks';
 
 /**
  * Data access operation types
@@ -487,7 +488,7 @@ export class DataGateway {
       projectId?: string;
     }
   ): Promise<Task> {
-    return this.access(agentId, 'calendar', 'write', async () => {
+    return this.access(agentId, 'tasks', 'write', async () => {
       return this.tasks.create({
         title: data.title,
         description: data.description,
@@ -504,7 +505,7 @@ export class DataGateway {
   }
 
   async completeTask(agentId: string, id: string): Promise<Task | null> {
-    return this.access(agentId, 'calendar', 'write', async () => {
+    return this.access(agentId, 'tasks', 'write', async () => {
       return this.tasks.update(id, {
         status: 'completed',
         completedAt: new Date().toISOString(),
@@ -516,7 +517,7 @@ export class DataGateway {
     agentId: string,
     filter?: { status?: string; priority?: string; dueDate?: string }
   ): Promise<Task[]> {
-    return this.access(agentId, 'calendar', 'list', async () => {
+    return this.access(agentId, 'tasks', 'list', async () => {
       let tasks = await this.tasks.list();
       if (filter?.status) {
         tasks = tasks.filter((t) => t.status === filter.status);
@@ -532,13 +533,13 @@ export class DataGateway {
   }
 
   async searchTasks(agentId: string, query: string): Promise<Task[]> {
-    return this.access(agentId, 'calendar', 'search', async () => {
+    return this.access(agentId, 'tasks', 'search', async () => {
       return this.tasks.search(query);
     });
   }
 
   async deleteTask(agentId: string, id: string): Promise<boolean> {
-    return this.access(agentId, 'calendar', 'delete', async () => {
+    return this.access(agentId, 'tasks', 'delete', async () => {
       return this.tasks.delete(id);
     });
   }

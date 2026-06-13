@@ -725,6 +725,11 @@ export class Scheduler {
       const timeoutMs = task.timeout ?? this.config.defaultTimeout;
       const executionPromise = this.taskExecutor(task);
 
+      // Suppress unhandled rejection on the race loser: if the timeout wins,
+      // the still-in-flight executionPromise rejection must not escape as unhandledRejection.
+      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+      executionPromise.catch(() => {});
+
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('Task execution timeout')), timeoutMs);
@@ -824,8 +829,23 @@ export class Scheduler {
       const tasks = JSON.parse(content) as ScheduledTask[];
       this.tasks = new Map(tasks.map((t) => [t.id, t]));
       log.info(`Loaded ${this.tasks.size} tasks`);
-    } catch {
-      // File doesn't exist or is invalid
+    } catch (err) {
+      // Distinguish first-run (ENOENT — expected) from corruption: on
+      // corruption, rename the file out of the way so the user can
+      // recover the schedule rather than losing every scheduled task.
+      const isFirstRun = (err as NodeJS.ErrnoException)?.code === 'ENOENT';
+      if (!isFirstRun) {
+        const corruptPath = `${this.config.tasksFilePath}.corrupt-${Date.now()}`;
+        try {
+          await fs.rename(this.config.tasksFilePath, corruptPath);
+        } catch {
+          // best-effort
+        }
+        log.error(
+          `tasks file was corrupt; renamed to ${corruptPath} and starting with empty task list. Original error:`,
+          err
+        );
+      }
       this.tasks = new Map();
     }
   }

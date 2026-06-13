@@ -6,6 +6,12 @@
  *
  * Storage: localStorage[STORAGE_KEYS.LAYOUT_CONFIG] as LayoutConfig.
  * Version field enables forward-compatible migrations.
+ *
+ * Trust boundary: the 8 'as unknown as' casts below bridge the localStorage
+ * blob to the typed LayoutConfig shape across version migrations. The
+ * version field is checked at every step; an old or unknown version falls
+ * through to defaults rather than being asserted. The cast is a
+ * documented trust boundary with the storage layer.
  */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { STORAGE_KEYS } from '../constants/storage-keys';

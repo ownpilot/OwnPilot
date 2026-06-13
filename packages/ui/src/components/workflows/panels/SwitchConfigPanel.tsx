@@ -1,6 +1,9 @@
 /**
  * Switch Config Panel — configuration for switch/case workflow nodes.
  * Evaluates an expression and routes to a matching case branch.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';

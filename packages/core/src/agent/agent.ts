@@ -43,6 +43,13 @@ export class Agent {
   private readonly tools: ToolRegistry;
   private readonly memory: ConversationMemory;
   private state: AgentState;
+  /**
+   * Per-turn AbortController. Created in processConversation, aborted by
+   * cancel(). The signal is passed to tool calls so a tool that is
+   * currently running (or about to start) can short-circuit when the
+   * user cancels. Reset to null when the turn ends.
+   */
+  private abortController: AbortController | null = null;
   /** Additional tool names exposed to the LLM (for direct tool calls from picker) */
   private additionalToolNames: string[] = [];
   /** Per-request override for max tool calls (0 = unlimited, undefined = use config) */
@@ -262,6 +269,32 @@ export class Agent {
     onProgress?: (message: string, data?: Record<string, unknown>) => void;
     thinking?: CompletionRequest['thinking'];
   }): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
+    // Per-turn AbortController: cancel() aborts it; the signal is plumbed
+    // into every tool call so a tool that is currently running (or about to
+    // start) can short-circuit when the user cancels mid-turn.
+    this.abortController = new AbortController();
+    try {
+      return await this.runConversationLoop(this.abortController.signal, options);
+    } finally {
+      this.abortController = null;
+    }
+  }
+
+  private async runConversationLoop(
+    signal: AbortSignal,
+    options?: {
+      stream?: boolean;
+      onChunk?: (chunk: StreamChunk) => void;
+      onBeforeToolCall?: (toolCall: ToolCall) => Promise<{ approved: boolean; reason?: string }>;
+      onToolStart?: (toolCall: ToolCall) => void;
+      onToolEnd?: (
+        toolCall: ToolCall,
+        result: { content: string; isError: boolean; durationMs: number }
+      ) => void;
+      onProgress?: (message: string, data?: Record<string, unknown>) => void;
+      thinking?: CompletionRequest['thinking'];
+    }
+  ): Promise<Result<CompletionResponse, InternalError | ValidationError | TimeoutError>> {
     let turnCount = 0;
     const maxTurns = this.config.maxTurns ?? 10;
     const maxToolCalls = this.maxToolCallsOverride ?? this.config.maxToolCalls ?? 200;
@@ -411,6 +444,12 @@ export class Agent {
               {
                 requestApproval: this.config.requestApproval,
                 executionPermissions: this.config.executionPermissions,
+                // Propagate the per-turn abort signal so cancel() can stop
+                // tools that are about to start. The signal is plumbed
+                // through ToolRegistry.execute() into the executor's
+                // ToolContext.signal — tools that take a long time
+                // should honour it (e.g. forward to fetch/db aborts).
+                signal,
               }
             );
 
@@ -764,6 +803,11 @@ export class Agent {
     if ('cancel' in this.provider && typeof this.provider.cancel === 'function') {
       this.provider.cancel();
     }
+    // Abort the per-turn controller so any in-flight or about-to-start
+    // tool call sees its signal trigger. The signal is plumbed into
+    // executeToolCall() and forwarded to the executor's ToolContext;
+    // tools that take a long time should check it and unwind.
+    this.abortController?.abort();
     this.state = { ...this.state, isProcessing: false };
   }
 }

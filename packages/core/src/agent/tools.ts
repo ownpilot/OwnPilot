@@ -686,7 +686,7 @@ export class ToolRegistry {
     toolCall: ToolCall,
     conversationId: string,
     userId?: string,
-    extraContext?: Partial<Pick<ToolContext, 'requestApproval' | 'executionPermissions'>>
+    extraContext?: Partial<Pick<ToolContext, 'requestApproval' | 'executionPermissions' | 'signal'>>
   ): Promise<ToolResult> {
     const startTime = Date.now();
     let args: Record<string, unknown>;
@@ -763,6 +763,11 @@ export class ToolRegistry {
       userId,
       requestApproval: extraContext?.requestApproval,
       executionPermissions: extraContext?.executionPermissions,
+      // Propagate the caller's AbortSignal so the tool executor (and any
+      // async APIs it calls) can short-circuit on cancel(). The signal
+      // is plumbed but not checked here — individual tool executors
+      // (especially long-running ones) decide whether to honour it.
+      signal: extraContext?.signal,
     });
 
     const durationMs = Date.now() - startTime;

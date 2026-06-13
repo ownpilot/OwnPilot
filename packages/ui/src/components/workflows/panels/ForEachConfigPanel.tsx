@@ -2,6 +2,9 @@
  * ForEach Config Panel — configuration for for-each loop workflow nodes.
  * Iterates over an array expression with configurable item variable,
  * max iterations, and error handling mode.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';

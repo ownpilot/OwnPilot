@@ -3,6 +3,8 @@
  *
  * REST API for skill discovery (npm search), npm-based installation,
  * permission management, and update checking.
+ *
+ * Trust boundary: Skill discovery results (npm registry responses) are typed loosely; the casts below narrow them to the skill DTO. The npm registry is the trust boundary; the cast documents the expected shape.
  */
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';

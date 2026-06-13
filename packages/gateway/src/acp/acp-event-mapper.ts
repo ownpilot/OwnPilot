@@ -40,6 +40,19 @@ export interface MappedAcpEvent {
 }
 
 /**
+ * Trust boundary: build a MappedAcpEvent whose payload is the typed event
+ * spread into a plain Record. Emitters own the shape (this file is the
+ * single source of truth for what the UI receives), so the spread is
+ * sound at runtime. The cast localises 'as unknown as' to one helper.
+ */
+function toMappedEvent<T extends { type: AcpEventType }>(
+  type: AcpEventType,
+  event: Omit<T, 'type'>
+): MappedAcpEvent {
+  return { type, payload: { ...event } as unknown as Record<string, unknown> };
+}
+
+/**
  * Map an ACP SessionNotification to zero or more OwnPilot events.
  */
 export function mapSessionNotification(
@@ -150,10 +163,7 @@ function mapToolCall(
   };
 
   const event: AcpToolCallEvent = { ...base, toolCall };
-  return {
-    type: 'coding-agent:acp:tool-call',
-    payload: event as unknown as Record<string, unknown>,
-  };
+  return toMappedEvent<AcpToolCallEvent>('coding-agent:acp:tool-call', event);
 }
 
 function mapToolCallUpdate(
@@ -169,10 +179,7 @@ function mapToolCallUpdate(
     title: update.title ?? undefined,
   };
 
-  return {
-    type: 'coding-agent:acp:tool-update',
-    payload: event as unknown as Record<string, unknown>,
-  };
+  return toMappedEvent<AcpToolUpdateEvent>('coding-agent:acp:tool-update', event);
 }
 
 function mapPlan(update: Plan, base: { sessionId: string; timestamp: string }): MappedAcpEvent {
@@ -186,7 +193,7 @@ function mapPlan(update: Plan, base: { sessionId: string; timestamp: string }): 
   };
 
   const event: AcpPlanEvent = { ...base, plan };
-  return { type: 'coding-agent:acp:plan', payload: event as unknown as Record<string, unknown> };
+  return toMappedEvent<AcpPlanEvent>('coding-agent:acp:plan', event);
 }
 
 function mapMessage(
@@ -199,7 +206,7 @@ function mapMessage(
     content: update.content,
     role,
   };
-  return { type: 'coding-agent:acp:message', payload: event as unknown as Record<string, unknown> };
+  return toMappedEvent<AcpMessageEvent>('coding-agent:acp:message', event);
 }
 
 function mapThought(
@@ -210,7 +217,7 @@ function mapThought(
     ...base,
     content: update.content,
   };
-  return { type: 'coding-agent:acp:thought', payload: event as unknown as Record<string, unknown> };
+  return toMappedEvent<AcpThoughtEvent>('coding-agent:acp:thought', event);
 }
 
 // =============================================================================

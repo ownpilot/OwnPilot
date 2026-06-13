@@ -1,6 +1,9 @@
 /**
  * useWorkflowEditor — main composition hook that imports and orchestrates
  * the focused sub-hooks: history, canvas, nodes, execution, and keyboard.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';

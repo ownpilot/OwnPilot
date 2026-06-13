@@ -3,8 +3,21 @@
  * Send and read emails via SMTP/IMAP
  */
 
-import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
+import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
 import { tryImport } from './module-resolver.js';
+import { isPathAllowedAsync } from './file-security.js';
+
+/**
+ * Short-circuit a tool call when the caller's AbortSignal has fired. The
+ * agent cancel() flow plumbs the per-turn signal into ToolContext.signal;
+ * this helper lets each executor bail out before starting work.
+ */
+function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
+  if (context?.signal?.aborted) {
+    return { content: { error: 'Tool execution cancelled' }, isError: true };
+  }
+  return null;
+}
 
 // ============================================================================
 // SEND EMAIL TOOL
@@ -167,8 +180,11 @@ export const sendEmailTool: ToolDefinition = {
 
 export const sendEmailExecutor: ToolExecutor = async (
   params,
-  _context
+  context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(context);
+  if (cancelled) return cancelled;
+
   const to = params.to as string[];
   const subject = params.subject as string;
   const body = params.body as string;
@@ -266,6 +282,15 @@ export const sendEmailExecutor: ToolExecutor = async (
     const attachmentList: Array<{ filename: string; path: string }> = [];
 
     for (const filePath of attachments) {
+      // Guard against path traversal: attachments come from LLM-controlled
+      // args. Without isPathAllowedAsync, an attacker could exfiltrate
+      // arbitrary host files (/etc/passwd, ~/.ssh/id_rsa, etc.).
+      if (!(await isPathAllowedAsync(filePath, context.workspaceDir))) {
+        return {
+          content: { error: 'Attachment path is not within the allowed workspace.' },
+          isError: true,
+        };
+      }
       try {
         await fs.access(filePath);
         attachmentList.push({
@@ -273,8 +298,9 @@ export const sendEmailExecutor: ToolExecutor = async (
           path: filePath,
         });
       } catch {
+        // Do not leak the requested path back to the caller.
         return {
-          content: { error: `Attachment not found: ${filePath}` },
+          content: { error: 'Attachment not accessible.' },
           isError: true,
         };
       }
@@ -283,7 +309,8 @@ export const sendEmailExecutor: ToolExecutor = async (
     message.attachments = attachmentList;
   }
 
-  // Return placeholder - actual sending requires SMTP configuration
+  // Return placeholder - actual sending requires SMTP configuration.
+  // Mark as error so the agent loop does not report success to the user.
   return {
     content: {
       status: 'prepared',
@@ -297,10 +324,12 @@ export const sendEmailExecutor: ToolExecutor = async (
         attachmentCount: attachments?.length || 0,
         priority,
       },
+      error: 'requiresSMTPConfig',
+      reason: 'SMTP transport is not yet wired. Email was queued as a draft but not sent.',
       requiresSMTPConfig: true,
       note: 'Email sending requires SMTP configuration. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment.',
     },
-    isError: false,
+    isError: true,
   };
 };
 
@@ -354,6 +383,9 @@ export const listEmailsExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const folder = (params.folder as string) || 'INBOX';
   const limit = Math.min((params.limit as number) || 20, 100);
   const unreadOnly = params.unreadOnly === true;
@@ -397,10 +429,12 @@ export const listEmailsExecutor: ToolExecutor = async (
         since,
         before,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. No emails could be listed.',
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration. Set IMAP_HOST, IMAP_PORT, IMAP_USER, IMAP_PASS in environment.',
     },
-    isError: false,
+    isError: true,
   };
 };
 
@@ -445,6 +479,9 @@ export const readEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const downloadAttachments = params.downloadAttachments === true;
@@ -461,10 +498,12 @@ export const readEmailExecutor: ToolExecutor = async (
         attachmentDir,
         markAsRead,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. Email could not be read.',
       requiresIMAPConfig: true,
       note: 'Email reading requires IMAP configuration.',
     },
-    isError: false,
+    isError: true,
   };
 };
 
@@ -501,6 +540,9 @@ export const deleteEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const folder = (params.folder as string) || 'INBOX';
   const permanent = params.permanent === true;
@@ -514,10 +556,12 @@ export const deleteEmailExecutor: ToolExecutor = async (
         folder,
         permanent,
       },
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. Email could not be deleted.',
       requiresIMAPConfig: true,
       note: 'Email deletion requires IMAP configuration.',
     },
-    isError: false,
+    isError: true,
   };
 };
 
@@ -562,6 +606,9 @@ export const searchEmailsExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const query = params.query as string;
   const folder = params.folder as string | undefined;
   const hasAttachment = params.hasAttachment as boolean | undefined;
@@ -571,6 +618,8 @@ export const searchEmailsExecutor: ToolExecutor = async (
   return {
     content: {
       status: 'prepared',
+      error: 'requiresIMAPConfig',
+      reason: 'IMAP transport is not yet wired. No emails could be searched.',
       query: {
         searchText: query,
         folder: folder || 'all',
@@ -581,7 +630,7 @@ export const searchEmailsExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Email search requires IMAP configuration.',
     },
-    isError: false,
+    isError: true,
   };
 };
 
@@ -627,6 +676,9 @@ export const replyEmailExecutor: ToolExecutor = async (
   params,
   _context
 ): Promise<ToolExecutionResult> => {
+  const cancelled = cancelledResult(_context);
+  if (cancelled) return cancelled;
+
   const emailId = params.id as string;
   const body = params.body as string;
   const isHtml = params.html === true;
@@ -636,6 +688,8 @@ export const replyEmailExecutor: ToolExecutor = async (
   return {
     content: {
       status: 'prepared',
+      error: 'requiresSMTPAndIMAPConfig',
+      reason: 'SMTP and IMAP transports are not yet wired. Reply could not be sent.',
       action: replyAll ? 'reply_all' : 'reply',
       details: {
         originalId: emailId,
@@ -647,7 +701,7 @@ export const replyEmailExecutor: ToolExecutor = async (
       requiresIMAPConfig: true,
       note: 'Replying requires both SMTP (to send) and IMAP (to fetch original) configuration.',
     },
-    isError: false,
+    isError: true,
   };
 };
 

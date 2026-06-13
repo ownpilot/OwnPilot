@@ -60,6 +60,32 @@ import type { WorkflowProgressEvent } from './types.js';
 
 const log = getLog('WorkflowService');
 
+/**
+ * Read a generic field off a WorkflowNode's data. WorkflowNodeData is a
+ * discriminated union (one variant per node type — LlmNodeData, CodeNodeData,
+ * ToolNodeData, SwitchNodeData, ...), and many call sites need to read a
+ * field that is not present on every variant (outputAlias, url, method,
+ * continueOnSuccess, branchCount, ...). The switch on node.type has
+ * already narrowed the variant at the call site; this helper just makes
+ * the runtime field read type-safe.
+ *
+ * This is the only place in the file that uses 'as unknown as'; every
+ * other access goes through this helper.
+ */
+function nodeDataField(node: WorkflowNode, field: string): unknown {
+  return (node.data as unknown as Record<string, unknown>)[field];
+}
+
+/**
+ * Variant of nodeDataField for call sites that need to read several
+ * unrelated fields off node.data in one block. Returns the same
+ * Record-shaped view as a single cast; using this keeps the
+ * 'as unknown as' localised to the helper.
+ */
+function nodeDataRecord(node: WorkflowNode): Record<string, unknown> {
+  return node.data as unknown as Record<string, unknown>;
+}
+
 interface WorkflowServiceOptions {
   /** Poll interval for the jobified-level wait loop (ms). */
   jobifiedPollIntervalMs?: number;
@@ -183,9 +209,7 @@ export class WorkflowService implements IWorkflowService {
       // Build alias map: nodeId → alias name (from outputAlias field on any node)
       const aliasToNodeId = new Map<string, string>();
       for (const node of executableNodes) {
-        const alias = (node.data as unknown as Record<string, unknown>).outputAlias as
-          | string
-          | undefined;
+        const alias = nodeDataField(node, 'outputAlias') as string | undefined;
         if (alias && typeof alias === 'string' && alias.trim()) {
           aliasToNodeId.set(alias.trim(), node.id);
         }
@@ -194,8 +218,7 @@ export class WorkflowService implements IWorkflowService {
       // Find global error handler node (max 1, validated at save time)
       const errorHandlerNode = executableNodes.find((n) => n.type === 'errorHandlerNode');
       const errorHandlerContinueOnSuccess =
-        errorHandlerNode &&
-        (errorHandlerNode.data as unknown as Record<string, unknown>).continueOnSuccess === true;
+        errorHandlerNode && nodeDataField(errorHandlerNode, 'continueOnSuccess') === true;
 
       const toolService = this.getToolService();
 
@@ -652,9 +675,7 @@ export class WorkflowService implements IWorkflowService {
       // Build alias map
       const aliasToNodeId = new Map<string, string>();
       for (const node of executableNodes) {
-        const alias = (node.data as unknown as Record<string, unknown>).outputAlias as
-          | string
-          | undefined;
+        const alias = nodeDataField(node, 'outputAlias') as string | undefined;
         if (alias && typeof alias === 'string' && alias.trim()) {
           aliasToNodeId.set(alias.trim(), node.id);
         }
@@ -663,8 +684,7 @@ export class WorkflowService implements IWorkflowService {
       // Find global error handler node
       const errorHandlerNode = executableNodes.find((n) => n.type === 'errorHandlerNode');
       const errorHandlerContinueOnSuccess =
-        errorHandlerNode &&
-        (errorHandlerNode.data as unknown as Record<string, unknown>).continueOnSuccess === true;
+        errorHandlerNode && nodeDataField(errorHandlerNode, 'continueOnSuccess') === true;
 
       const toolService = this.getToolService();
 
@@ -1089,8 +1109,8 @@ export class WorkflowService implements IWorkflowService {
       if (dryRun) {
         const args = resolveTemplates(
           {
-            url: (node.data as unknown as Record<string, unknown>).url,
-            method: (node.data as unknown as Record<string, unknown>).method,
+            url: nodeDataField(node, 'url'),
+            method: nodeDataField(node, 'method'),
           },
           nodeOutputs,
           workflow.variables
@@ -1109,8 +1129,8 @@ export class WorkflowService implements IWorkflowService {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'delay' });
       if (dryRun) {
         return dryRunResult(node, {
-          duration: (node.data as unknown as Record<string, unknown>).duration,
-          unit: (node.data as unknown as Record<string, unknown>).unit,
+          duration: nodeDataField(node, 'duration'),
+          unit: nodeDataField(node, 'unit'),
         });
       }
       return await this.executeWithRetryAndTimeout(
@@ -1135,13 +1155,13 @@ export class WorkflowService implements IWorkflowService {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'notification' });
       if (dryRun) {
         const args = resolveTemplates(
-          { message: (node.data as unknown as Record<string, unknown>).message },
+          { message: nodeDataField(node, 'message') },
           nodeOutputs,
           workflow.variables
         );
         return dryRunResult(node, {
           ...args,
-          severity: (node.data as unknown as Record<string, unknown>).severity,
+          severity: nodeDataField(node, 'severity'),
         });
       }
       return await this.executeWithRetryAndTimeout(
@@ -1155,8 +1175,7 @@ export class WorkflowService implements IWorkflowService {
     if (node.type === 'parallelNode') {
       onProgress?.({ type: 'node_start', nodeId, toolName: 'parallel' });
       const parallelStart = Date.now();
-      const branchCount =
-        ((node.data as unknown as Record<string, unknown>).branchCount as number) || 2;
+      const branchCount = (nodeDataField(node, 'branchCount') as number) || 2;
 
       if (dryRun) return dryRunResult(node, { branchCount });
 
@@ -1282,16 +1301,16 @@ export class WorkflowService implements IWorkflowService {
       if (dryRun) {
         const args = resolveTemplates(
           {
-            name: (node.data as unknown as Record<string, unknown>).name,
-            mission: (node.data as unknown as Record<string, unknown>).mission,
+            name: nodeDataField(node, 'name'),
+            mission: nodeDataField(node, 'mission'),
           },
           nodeOutputs,
           workflow.variables
         );
         return dryRunResult(node, {
           ...args,
-          mode: (node.data as unknown as Record<string, unknown>).mode,
-          sandbox: (node.data as unknown as Record<string, unknown>).sandbox,
+          mode: nodeDataField(node, 'mode'),
+          sandbox: nodeDataField(node, 'sandbox'),
         });
       }
       return await this.executeWithRetryAndTimeout(
@@ -1315,7 +1334,7 @@ export class WorkflowService implements IWorkflowService {
 
     // ── approvalNode ──
     if (node.type === 'approvalNode') {
-      const apData = node.data as unknown as Record<string, unknown>;
+      const apData = nodeDataRecord(node);
       onProgress?.({ type: 'node_start', nodeId, toolName: 'approval' });
 
       if (dryRun) {
@@ -1363,7 +1382,7 @@ export class WorkflowService implements IWorkflowService {
 
     // ── subWorkflowNode ──
     if (node.type === 'subWorkflowNode') {
-      const swData = node.data as unknown as Record<string, unknown>;
+      const swData = nodeDataRecord(node);
       const subWorkflowId = swData.subWorkflowId as string | undefined;
       onProgress?.({
         type: 'node_start',
@@ -1596,7 +1615,7 @@ export class WorkflowService implements IWorkflowService {
     executeFn: () => Promise<NodeResult>,
     onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<NodeResult> {
-    const data = node.data as unknown as Record<string, unknown>;
+    const data = nodeDataRecord(node);
     const retryCount = typeof data.retryCount === 'number' ? data.retryCount : 0;
     const timeoutMs = typeof data.timeoutMs === 'number' ? data.timeoutMs : 0;
     const isVmNode =

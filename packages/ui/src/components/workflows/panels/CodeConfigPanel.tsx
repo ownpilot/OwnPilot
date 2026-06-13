@@ -1,6 +1,9 @@
 /**
  * Code Config Panel — configuration for code-type workflow nodes.
  * Supports JavaScript, Python, and Shell languages with template expressions.
+ *
+ * Trust boundary: the 'as unknown as' casts bridge the generic node-data
+ * blob to the form-typed config shape. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';

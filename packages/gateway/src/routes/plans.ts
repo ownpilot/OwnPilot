@@ -2,6 +2,8 @@
  * Plans Routes
  *
  * API for managing and executing autonomous plans.
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
@@ -37,6 +39,8 @@ export const plansRoutes = new Hono();
 
 /**
  * GET /plans - List plans
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/', pagination(), async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -69,6 +73,8 @@ plansRoutes.get('/', pagination(), async (c) => {
 
 /**
  * POST /plans - Create a new plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -93,6 +99,8 @@ plansRoutes.post('/', async (c) => {
 
 /**
  * GET /plans/stats - Get plan statistics
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/stats', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -104,6 +112,8 @@ plansRoutes.get('/stats', async (c) => {
 
 /**
  * GET /plans/active - Get active plans
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/active', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -118,6 +128,8 @@ plansRoutes.get('/active', async (c) => {
 
 /**
  * GET /plans/pending - Get pending plans
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/pending', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -132,6 +144,8 @@ plansRoutes.get('/pending', async (c) => {
 
 /**
  * GET /plans/:id - Get a specific plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -157,6 +171,8 @@ plansRoutes.get('/:id', async (c) => {
 
 /**
  * PATCH /plans/:id - Update a plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.patch('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -196,6 +212,8 @@ plansRoutes.route('/', planCrudRoutes);
  * Query params:
  *   - waveExecution: Enable parallel wave execution for dependency-aware plans (default: false)
  *   - maxConcurrent: Maximum concurrent steps in wave mode (default: 5)
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/execute', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -256,6 +274,8 @@ plansRoutes.post('/:id/execute', async (c) => {
 
 /**
  * POST /plans/:id/pause - Pause a running plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/pause', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -286,6 +306,8 @@ plansRoutes.post('/:id/pause', async (c) => {
 
 /**
  * POST /plans/:id/resume - Resume a paused plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/resume', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -331,6 +353,8 @@ plansRoutes.post('/:id/resume', async (c) => {
 
 /**
  * POST /plans/:id/abort - Abort a running plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/abort', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -361,6 +385,8 @@ plansRoutes.post('/:id/abort', async (c) => {
 
 /**
  * POST /plans/:id/checkpoint - Create a checkpoint
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/checkpoint', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -403,6 +429,8 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
 
 /**
  * POST /plans/:id/start - Start a plan (alias for /execute)
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/start', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -460,6 +488,8 @@ plansRoutes.post('/:id/start', async (c) => {
 
 /**
  * POST /plans/:id/rollback - Rollback plan to last checkpoint
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/rollback', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -529,6 +559,8 @@ plansRoutes.post('/:id/rollback', async (c) => {
 
 /**
  * GET /plans/:id/steps - Get all steps for a plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/:id/steps', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -552,6 +584,8 @@ plansRoutes.get('/:id/steps', async (c) => {
 
 /**
  * POST /plans/:id/steps - Add a step to a plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.post('/:id/steps', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -582,6 +616,8 @@ plansRoutes.post('/:id/steps', async (c) => {
 
 /**
  * GET /plans/:id/steps/:stepId - Get a specific step
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/:id/steps/:stepId', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -599,6 +635,8 @@ plansRoutes.get('/:id/steps/:stepId', async (c) => {
 
 /**
  * PATCH /plans/:id/steps/:stepId - Update a step
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.patch('/:id/steps/:stepId', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -627,6 +665,8 @@ plansRoutes.patch('/:id/steps/:stepId', async (c) => {
 
 /**
  * GET /plans/:id/history - Get history for a plan
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/:id/history', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -655,6 +695,8 @@ plansRoutes.get('/:id/history', async (c) => {
 
 /**
  * GET /plans/executor/status - Get executor status
+ *
+ * Trust boundary: Plan step records are stored as a flexible JSON blob; the casts below read typed fields off the blob after the request body has been parsed and validated. The DB row is the source of truth.
  */
 plansRoutes.get('/executor/status', (c) => {
   const userId = LOCAL_OWNER_ID;

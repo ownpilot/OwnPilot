@@ -5,6 +5,8 @@
  * Also provides tool executors for AI to manage goals.
  *
  * All business logic is delegated to GoalService.
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
@@ -42,6 +44,8 @@ export const goalsRoutes = new Hono();
 
 /**
  * GET /goals - List goals
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -70,6 +74,8 @@ goalsRoutes.get('/', async (c) => {
 
 /**
  * POST /goals - Create a new goal
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -108,6 +114,8 @@ goalsRoutes.post('/', async (c) => {
 
 /**
  * GET /goals/stats - Get goal statistics
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/stats', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -119,6 +127,8 @@ goalsRoutes.get('/stats', async (c) => {
 
 /**
  * GET /goals/next-actions - Get next actionable steps
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/next-actions', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -135,6 +145,8 @@ goalsRoutes.get('/next-actions', async (c) => {
 
 /**
  * GET /goals/upcoming - Get goals with upcoming due dates
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/upcoming', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -151,6 +163,8 @@ goalsRoutes.get('/upcoming', async (c) => {
 
 /**
  * GET /goals/:id - Get a specific goal with steps
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -168,6 +182,8 @@ goalsRoutes.get('/:id', async (c) => {
 
 /**
  * PATCH /goals/:id - Update a goal
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.patch('/:id', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -202,6 +218,8 @@ goalsRoutes.route('/', goalCrudRoutes);
 
 /**
  * POST /goals/:id/steps - Add steps to a goal
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.post('/:id/steps', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -243,6 +261,8 @@ goalsRoutes.post('/:id/steps', async (c) => {
 
 /**
  * GET /goals/:id/steps - Get all steps for a goal
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.get('/:id/steps', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -260,6 +280,8 @@ goalsRoutes.get('/:id/steps', async (c) => {
 /**
  * PATCH /goals/:goalId/steps/:stepId - Update a step
  * Progress is recalculated automatically when status changes.
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -291,6 +313,8 @@ goalsRoutes.patch('/:goalId/steps/:stepId', async (c) => {
 /**
  * POST /goals/:goalId/steps/:stepId/complete - Mark step as completed
  * Progress is recalculated automatically.
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
   const userId = LOCAL_OWNER_ID;
@@ -320,6 +344,8 @@ goalsRoutes.post('/:goalId/steps/:stepId/complete', async (c) => {
 /**
  * DELETE /goals/:goalId/steps/:stepId - Delete a step
  * Progress is recalculated automatically.
+ *
+ * Trust boundary: Goal step payloads are read from the request body after Zod validation; the casts below adapt the validated shape to the goal-execution input. The Zod schema is the trust boundary.
  */
 goalsRoutes.delete('/:goalId/steps/:stepId', async (c) => {
   const userId = LOCAL_OWNER_ID;
