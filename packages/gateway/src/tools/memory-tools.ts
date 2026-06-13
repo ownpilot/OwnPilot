@@ -9,7 +9,7 @@
  * keeps the REST API for human-facing CRUD; this module is the agent path.
  */
 
-import { getMemoryService } from '@ownpilot/core';
+import { getMemoryService } from '@ownpilot/core/services';
 import type { MemoryType } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { sanitizeId, truncate, getErrorMessage } from '../utils/common.js';

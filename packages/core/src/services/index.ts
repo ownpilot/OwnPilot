@@ -461,6 +461,34 @@ export { getEdgeService, setEdgeService, hasEdgeService, EdgeToken } from './edg
 // Config Center
 export * from './config-center.js';
 
+// Extension Service
+export {
+  getExtensionService,
+  setExtensionService,
+  hasExtensionService,
+  ExtensionToken,
+  type IExtensionService,
+  type ExtensionInfo,
+} from './extension-service.js';
+
+// MCP Client Service
+export {
+  getMcpClientService,
+  setMcpClientService,
+  hasMcpClientService,
+  type IMcpClientService,
+} from './mcp-client-service.js';
+
+// Audit Service
+export {
+  getAuditService,
+  setAuditService,
+  hasAuditService,
+  type IAuditService,
+  type RequestType,
+  type RequestLogEntry,
+} from './audit-service.js';
+
 // Weather Service
 export * from './weather-service.js';
 

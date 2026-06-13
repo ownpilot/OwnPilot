@@ -9,7 +9,7 @@
  * to reach back into the routes/ layer for executors.
  */
 
-import { getDatabaseService } from '@ownpilot/core';
+import { getDatabaseService } from '@ownpilot/core/services';
 import type { ColumnDefinition } from '../db/repositories/custom/data.js';
 import { CustomDataServiceError } from '../services/custom/data-service.js';
 import { sanitizeId, sanitizeText, getErrorMessage } from '../utils/common.js';

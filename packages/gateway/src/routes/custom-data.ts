@@ -22,7 +22,7 @@ import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom/data.js';
 import { UnknownFilterKeyError } from '../db/repositories/custom/data.js';
 import { CustomDataServiceError } from '../services/custom/data-service.js';
-import { getDatabaseService } from '@ownpilot/core';
+import { getDatabaseService } from '@ownpilot/core/services';
 import { wsGateway } from '../ws/server.js';
 
 export const customDataRoutes = new Hono();

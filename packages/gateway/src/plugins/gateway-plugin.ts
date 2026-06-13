@@ -9,8 +9,8 @@
  * with `source: 'core'` and `trustLevel: 'trusted'`.
  */
 
-import { createPlugin } from '@ownpilot/core';
-import type { PluginManifest, Plugin } from '@ownpilot/core';
+import { createPlugin } from '@ownpilot/core/plugins';
+import type { PluginManifest, Plugin } from '@ownpilot/core/plugins';
 import {
   createMemoryToolProvider,
   createGoalToolProvider,

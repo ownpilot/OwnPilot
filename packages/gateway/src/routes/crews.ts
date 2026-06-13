@@ -8,7 +8,7 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('CrewsRoute');
 import { randomUUID } from 'node:crypto';
-import { listCrewTemplates, getCrewTemplate } from '@ownpilot/core';
+import { listCrewTemplates, getCrewTemplate } from '@ownpilot/core/agent';
 import { getCrewsRepository } from '../db/repositories/crew/index.js';
 import { getSoulsRepository } from '../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../db/repositories/heartbeats/log.js';

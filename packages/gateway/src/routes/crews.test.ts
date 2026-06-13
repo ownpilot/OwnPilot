@@ -108,7 +108,7 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
 
 import { crewRoutes } from './crews.js';
 import { errorHandler } from '../middleware/error-handler.js';
-import { listCrewTemplates, getCrewTemplate } from '@ownpilot/core';
+import { listCrewTemplates, getCrewTemplate } from '@ownpilot/core/agent';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

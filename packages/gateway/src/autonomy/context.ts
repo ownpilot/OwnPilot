@@ -6,7 +6,7 @@
  * zero-values rather than aborting the entire gather.
  */
 
-import { getMemoryService, getGoalService } from '@ownpilot/core';
+import { getMemoryService, getGoalService } from '@ownpilot/core/services';
 import { MS_PER_DAY } from '../config/defaults.js';
 import { getLog } from '../services/log.js';
 

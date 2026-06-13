@@ -6,7 +6,7 @@
  */
 
 import type { MiddlewareHandler } from 'hono';
-import { hasAuditService, getAuditService } from '@ownpilot/core';
+import { hasAuditService, getAuditService } from '@ownpilot/core/services';
 import { recordHttpRequest } from '../services/metric/service.js';
 
 /**

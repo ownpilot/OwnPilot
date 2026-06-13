@@ -8,7 +8,8 @@
  */
 
 import { Hono } from 'hono';
-import { getMemoryService, getGoalService, type SoulFeedback } from '@ownpilot/core';
+import { getMemoryService, getGoalService } from '@ownpilot/core/services';
+import type { SoulFeedback } from '@ownpilot/core/agent';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../../db/repositories/heartbeats/log.js';
 import { getSharedToolRegistry } from '../../services/tool/executor.js';

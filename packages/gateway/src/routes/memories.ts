@@ -11,7 +11,7 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import type { CreateMemoryInput } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
-import { getMemoryService } from '@ownpilot/core';
+import { getMemoryService } from '@ownpilot/core/services';
 import {
   apiResponse,
   apiError,
