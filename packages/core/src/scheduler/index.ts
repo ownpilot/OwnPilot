@@ -725,6 +725,11 @@ export class Scheduler {
       const timeoutMs = task.timeout ?? this.config.defaultTimeout;
       const executionPromise = this.taskExecutor(task);
 
+      // Suppress unhandled rejection on the race loser: if the timeout wins,
+      // the still-in-flight executionPromise rejection must not escape as unhandledRejection.
+      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
+      executionPromise.catch(() => {});
+
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('Task execution timeout')), timeoutMs);
