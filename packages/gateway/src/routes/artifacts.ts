@@ -7,7 +7,7 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import type { ArtifactType, DataBinding, DashboardSize } from '@ownpilot/core';
+import type { ArtifactType, DataBinding, DashboardSize } from '@ownpilot/core/data-gateway';
 import { getArtifactService } from '../services/artifact/service.js';
 import {
   apiResponse,

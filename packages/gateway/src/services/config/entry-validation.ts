@@ -1,4 +1,4 @@
-import type { ConfigFieldDefinition } from '@ownpilot/core';
+import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 
 type LegacyConfigFieldDefinition = Omit<ConfigFieldDefinition, 'type'> & {
   type: ConfigFieldDefinition['type'] | 'text';

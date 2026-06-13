@@ -3,13 +3,13 @@
  */
 
 import { Hono } from 'hono';
+import { VERSION } from '@ownpilot/core';
 import {
-  VERSION,
   getSandboxStatus,
   resetSandboxCache,
   ensureImage,
   getExecutionMode,
-} from '@ownpilot/core';
+} from '@ownpilot/core/sandbox';
 import type { HealthCheck } from '../types/index.js';
 import { getAdapter } from '../db/adapters/index.js';
 import { getDatabaseConfig } from '../db/adapters/types.js';

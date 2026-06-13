@@ -19,7 +19,7 @@ import type {
   ConfigEntry,
   ConfigFieldDefinition,
   ConfigServiceRequiredBy,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import {
   apiResponse,
   apiError,

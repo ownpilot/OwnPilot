@@ -15,7 +15,7 @@
  */
 
 import { getLog } from '@ownpilot/core/services';
-import type { CompleteFn } from '@ownpilot/core';
+import type { CompleteFn } from '@ownpilot/core/agent';
 import {
   buildMemoryExtractionPrompt,
   parseMemoryCandidates,
@@ -23,7 +23,7 @@ import {
   parseConsolidation,
   buildRecallSummaryPrompt,
   cosineSimilarity,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getMemoryService } from '@ownpilot/core/services';
 import { createMemoriesRepository } from '../../db/repositories/memories.js';
 

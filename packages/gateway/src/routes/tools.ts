@@ -13,10 +13,10 @@ import {
   CUSTOM_DATA_TOOLS,
   PERSONAL_DATA_TOOLS,
   TOOL_GROUPS,
-  getPluginService,
-  getConfigCenter,
   type ToolDefinition,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
+import { getPluginService } from '@ownpilot/core/plugins';
+import { getConfigCenter } from '@ownpilot/core/services';
 import type { ToolInfo } from '../types/index.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from './helpers.js';
 import {

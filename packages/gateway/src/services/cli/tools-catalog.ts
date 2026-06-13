@@ -8,7 +8,7 @@
  * custom providers (cli_providers table) can be executed.
  */
 
-import type { CliToolCatalogEntry } from '@ownpilot/core';
+import type { CliToolCatalogEntry } from '@ownpilot/core/services';
 
 // =============================================================================
 // CATALOG

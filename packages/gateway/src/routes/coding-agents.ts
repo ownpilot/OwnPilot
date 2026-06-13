@@ -7,7 +7,7 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import type { CodingAgentProvider } from '@ownpilot/core';
+import type { CodingAgentProvider } from '@ownpilot/core/services';
 import { getCodingAgentService } from '../services/coding-agent/service.js';
 import {
   startOrchestration,

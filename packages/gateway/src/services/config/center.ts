@@ -10,7 +10,7 @@ import type {
   ApiServiceConfig,
   ConfigServiceDefinition,
   ConfigEntry,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { configServicesRepo } from '../../db/repositories/config-services.js';
 import { getLog } from '../log.js';
 

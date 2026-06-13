@@ -16,7 +16,7 @@ import type {
   EdgeDeviceQuery,
   EdgeCommandInput,
   EdgeDeviceStatus,
-} from '@ownpilot/core';
+} from '@ownpilot/core/edge';
 import {
   EdgeDevicesRepository,
   EdgeCommandsRepository,

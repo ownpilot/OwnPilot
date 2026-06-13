@@ -11,13 +11,9 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import {
-  getEventSystem,
-  type ToolDefinition,
-  type ToolExecutionResult,
-  type ToolExecutor,
-  type IMcpClientService,
-} from '@ownpilot/core';
+import { getEventSystem } from '@ownpilot/core/events';
+import type { ToolDefinition, ToolExecutionResult, ToolExecutor } from '@ownpilot/core/agent';
+import type { IMcpClientService } from '@ownpilot/core/services';
 import { getMcpServersRepo, type McpServerRecord } from '../../db/repositories/mcp-servers.js';
 import { getSharedToolRegistry } from '../tool/executor.js';
 import { getLog } from '../log.js';

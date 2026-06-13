@@ -10,7 +10,7 @@ import {
   getAggregatorProvider,
   isAggregatorProvider,
   type ModelCapability,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { hasApiKey, getConfiguredProviderIds } from '../settings.js';
 
 // =============================================================================

@@ -27,7 +27,7 @@ import {
   calculateCost,
   getRuntimeContext,
   runInExecContext,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import type {
   AIProvider,
   HeartbeatToolCallRecord,
@@ -36,9 +36,9 @@ import type {
   ISoulRepository,
   IHeartbeatLogRepository,
   RuntimeContext,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { buildCrewContextSection } from '@ownpilot/core/agent';
-import type { CrewContextInfo } from '@ownpilot/core';
+import type { CrewContextInfo } from '@ownpilot/core/agent';
 import { getAdapterSync } from '../../db/adapters/index.js';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../../db/repositories/heartbeats/log.js';

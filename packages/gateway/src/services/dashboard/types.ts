@@ -14,7 +14,7 @@ import type {
   Note,
   Plan,
 } from '../../db/repositories/index.js';
-import type { ServiceMemoryEntry } from '@ownpilot/core';
+import type { ServiceMemoryEntry } from '@ownpilot/core/services';
 
 export interface TasksSummary {
   pending: Task[];

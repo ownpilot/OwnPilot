@@ -12,8 +12,8 @@
  * Actual cycle execution is delegated to ClawRunner.
  */
 
+import { getEventSystem } from '@ownpilot/core/events';
 import {
-  getEventSystem,
   getErrorMessage,
   generateId,
   CLAW_RECENT_FAILURES_MAX,
@@ -21,7 +21,7 @@ import {
   CLAW_NEXT_INTENT_MAX,
   CLAW_TASK_STALL_AUTO_ESCALATE,
   CLAW_TASK_STALL_FORCE_BLOCK,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import type {
   ClawSession,
   ClawCycleResult,

@@ -14,9 +14,8 @@ import type {
   StreamChunk,
   ToolCall,
   ToolEndResult,
-  NormalizedMessage,
-  IMessageBus,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
+import type { NormalizedMessage, IMessageBus } from '@ownpilot/core/services';
 import { checkToolCallApproval } from '../../assistant/index.js';
 import { getSessionInfo } from '../agent/service.js';
 import { usageTracker } from '../usage-tracking.js';

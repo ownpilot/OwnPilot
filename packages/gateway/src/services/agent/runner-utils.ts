@@ -14,16 +14,19 @@ import {
   Agent,
   ToolRegistry,
   registerAllTools,
-  getErrorMessage,
   qualifyToolName,
-  getExtensionService,
   calculateCost,
   type IProvider,
   createProvider,
   createFallbackProvider,
   type ProviderConfig,
-} from '@ownpilot/core';
-import type { AIProvider, ToolCall, ToolId, Message } from '@ownpilot/core';
+  type AIProvider,
+  type ToolCall,
+  type ToolId,
+  type Message,
+} from '@ownpilot/core/agent';
+import { getErrorMessage } from '@ownpilot/core/services';
+import { getExtensionService } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';

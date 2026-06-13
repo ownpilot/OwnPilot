@@ -9,7 +9,7 @@ import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { getCliToolService } from '../../services/cli/tool-service.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
-import type { CliToolPolicy, CliInstallMethod } from '@ownpilot/core';
+import type { CliToolPolicy, CliInstallMethod } from '@ownpilot/core/services';
 import { CLI_TOOLS_BY_NAME } from '../../services/cli/tools-catalog.js';
 import { cliProvidersRepo } from '../../db/repositories/cli/providers.js';
 import { cliToolPoliciesRepo } from '../../db/repositories/cli/tool-policies.js';

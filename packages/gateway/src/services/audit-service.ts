@@ -11,7 +11,7 @@ import type {
   AuditLogEvent,
   LogFilter,
   LogStats,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { createLogsRepository, type LogsRepository } from '../db/repositories/logs.js';
 import { getAuditLogger } from '../audit/index.js';
 import { getLog } from './log.js';

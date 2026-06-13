@@ -6,7 +6,7 @@
  * Now: chat-history.ts → chat-state.ts (leaf, no cycle)
  */
 
-import type { ExecutionPermissions } from '@ownpilot/core';
+import type { ExecutionPermissions } from '@ownpilot/core/agent';
 
 /** Add value to a Set, evicting the oldest entry when at capacity (insertion-order LRU). */
 export function boundedSetAdd<T>(set: Set<T>, value: T, maxSize: number): void {

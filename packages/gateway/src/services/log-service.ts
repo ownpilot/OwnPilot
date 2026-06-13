@@ -15,7 +15,7 @@
  *   // Prod: {"level":"info","ts":"...","module":"Chat","msg":"Processing message"}
  */
 
-import type { ILogService, LogLevel } from '@ownpilot/core';
+import type { ILogService, LogLevel } from '@ownpilot/core/services';
 
 export interface LogServiceOptions {
   level?: LogLevel;

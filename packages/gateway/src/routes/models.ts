@@ -16,7 +16,7 @@ import {
   syncProviders,
   listModelsDevProviders,
   clearConfigCache,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { modelConfigsRepo } from '../db/repositories/model-configs.js';
 import { localProvidersRepo } from '../db/repositories/index.js';
 import { detectCliChatProviders } from '../services/cli/chat-provider.js';

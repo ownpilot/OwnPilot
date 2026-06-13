@@ -4,7 +4,7 @@
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
-import type { AgentMessageType } from '@ownpilot/core';
+import type { AgentMessageType } from '@ownpilot/core/agent';
 import { getAgentMessagesRepository } from '../../db/repositories/agents/messages.js';
 import {
   apiResponse,

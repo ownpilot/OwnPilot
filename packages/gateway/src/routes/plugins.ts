@@ -4,15 +4,15 @@
  */
 
 import { Hono } from 'hono';
-import {
-  getPluginService,
-  getConfigCenter,
-  type Plugin,
-  type PluginCapability,
-  type PluginPermission,
-  type PluginStatus,
-} from '@ownpilot/core';
-import type { ConfigFieldDefinition } from '@ownpilot/core';
+import type {
+  Plugin,
+  PluginCapability,
+  PluginPermission,
+  PluginStatus,
+} from '@ownpilot/core/plugins';
+import { getConfigCenter } from '@ownpilot/core/services';
+import { getPluginService } from '@ownpilot/core/plugins';
+import type { ConfigFieldDefinition } from '@ownpilot/core/services';
 import {
   apiResponse,
   apiError,

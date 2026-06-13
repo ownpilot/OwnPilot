@@ -5,7 +5,7 @@
  * Uses EmbeddingCacheRepository for LRU caching to avoid redundant API calls.
  */
 
-import type { IEmbeddingService } from '@ownpilot/core';
+import type { IEmbeddingService } from '@ownpilot/core/services';
 import { getConfigCenter } from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 import {

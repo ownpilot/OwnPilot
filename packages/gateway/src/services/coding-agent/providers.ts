@@ -13,7 +13,7 @@ import {
   type CodingAgentSkill,
   DEFAULT_CODING_AGENT_PERMISSIONS,
   getErrorMessage,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { tryImport, getConfigCenter } from '@ownpilot/core/services';
 import { type CliProviderRecord } from '../../db/repositories/cli/providers.js';
 import { validateCwd, createSanitizedEnv, spawnCliProcess } from '../binary-utils.js';

@@ -18,7 +18,7 @@ import {
   type UpdateWorkspaceRequest,
   type ContainerConfig,
   DEFAULT_CONTAINER_CONFIG,
-} from '@ownpilot/core';
+} from '@ownpilot/core/workspace';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { sanitizeContainerConfig } from './shared.js';

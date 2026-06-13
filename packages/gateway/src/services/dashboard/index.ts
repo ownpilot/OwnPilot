@@ -35,7 +35,7 @@ import {
   getPlanService,
   type IDatabaseService,
   type ServiceMemoryEntry,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { getLog } from '../log.js';
 
 // Re-export types and briefing utilities for backward compatibility

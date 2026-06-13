@@ -7,7 +7,7 @@
  */
 
 import { platform } from 'node:os';
-import type { Message } from '@ownpilot/core';
+import type { Message } from '@ownpilot/core/agent';
 
 export type CliChatBinary = 'claude' | 'codex' | 'gemini';
 

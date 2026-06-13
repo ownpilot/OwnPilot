@@ -24,7 +24,7 @@ import {
   type ProviderConfig,
   type ResolvedAuth,
   buildSoulPrompt,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import type { SessionInfo } from '../../types/index.js';
 import { agentsRepo, type AgentRecord } from '../../db/repositories/index.js';
 import { ChatRepository } from '../../db/repositories/chat/index.js';

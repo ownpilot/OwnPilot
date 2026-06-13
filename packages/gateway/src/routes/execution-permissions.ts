@@ -10,7 +10,7 @@ import { Hono } from 'hono';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { resolveApproval } from '../services/permission/execution-approval.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError } from './helpers.js';
-import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core';
+import type { ExecutionPermissions, PermissionMode } from '@ownpilot/core/agent';
 
 const VALID_PERM_MODES: ReadonlySet<string> = new Set(['blocked', 'prompt', 'allowed']);
 const VALID_EXEC_MODES: ReadonlySet<string> = new Set(['local', 'docker', 'auto']);

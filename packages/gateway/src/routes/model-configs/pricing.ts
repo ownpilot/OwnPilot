@@ -13,7 +13,7 @@ import {
   syncAllProviders,
   syncProviders,
   clearConfigCache,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getLog } from '../../services/log.js';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, notFoundError } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';

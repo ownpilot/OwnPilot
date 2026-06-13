@@ -13,7 +13,7 @@
  */
 
 import { Hono } from 'hono';
-import type { AgentSoul } from '@ownpilot/core';
+import type { AgentSoul } from '@ownpilot/core/agent';
 import { getSoulsRepository } from '../../db/repositories/souls.js';
 import { getHeartbeatLogRepository } from '../../db/repositories/heartbeats/log.js';
 import {

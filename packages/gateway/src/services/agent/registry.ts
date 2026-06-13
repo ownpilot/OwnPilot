@@ -9,7 +9,7 @@
  * and resource budgeting.
  */
 
-import type { AgentType, UnifiedAgentState, ResourceMetrics } from '@ownpilot/core';
+import type { AgentType, UnifiedAgentState, ResourceMetrics } from '@ownpilot/core/agent';
 import { getLog } from '../log.js';
 
 const log = getLog('AgentRegistry');

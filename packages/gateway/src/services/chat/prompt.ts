@@ -5,16 +5,14 @@
  * buildToolCatalog, generateDemoResponse, tryGetMessageBus.
  */
 
+import { getBaseName, type ToolDefinition, type ExecutionPermissions } from '@ownpilot/core/agent';
 import {
-  getBaseName,
   hasDatabaseService,
   getDatabaseService,
   hasMessageBus,
   getMessageBus,
-  type ToolDefinition,
-  type ExecutionPermissions,
   type IMessageBus,
-} from '@ownpilot/core';
+} from '@ownpilot/core/services';
 import { AI_META_TOOL_NAMES } from '../../config/defaults.js';
 
 export const PERM_LABELS: Record<string, string> = {

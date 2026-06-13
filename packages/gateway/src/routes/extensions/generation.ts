@@ -9,7 +9,7 @@ import {
   createProvider,
   getProviderConfig as coreGetProviderConfig,
   type AIProvider,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { validateManifest, type ExtensionManifest } from '../../services/extension/types.js';
 import { serializeExtensionMarkdown } from '../../services/extension/markdown.js';
 import { parseAgentSkillsMd } from '../../services/skill/agentskills-parser.js';

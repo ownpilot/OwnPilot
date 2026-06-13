@@ -22,7 +22,7 @@ import {
   useToolDefinition,
   batchUseToolDefinition,
   debugLog,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
 import { getSharedToolRegistry } from '../tool/executor.js';
 import { getLog } from '../log.js';
 import { emitMcpToolEvent } from '../../mcp/mcp-events.js';

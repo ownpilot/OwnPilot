@@ -13,13 +13,14 @@ import {
   getModelPricing,
   type AIProvider,
   TOOL_GROUPS,
-} from '@ownpilot/core';
+} from '@ownpilot/core/agent';
+import { generateId as _genId } from '@ownpilot/core/services';
 import { localProvidersRepo } from '../../db/repositories/index.js';
 import { getApiKey } from '../app-settings.js';
 import { toHostPath } from '../../utils/host-path.js';
 import { getApprovalManager, checkAutonomy, AutonomyLevel } from '../../autonomy/index.js';
 import type { ActionCategory } from '../../autonomy/index.js';
-import type { SoulAutonomy } from '@ownpilot/core';
+import type { SoulAutonomy } from '@ownpilot/core/agent';
 import {
   MAX_AGENT_CACHE_SIZE,
   MAX_CHAT_AGENT_CACHE_SIZE,
