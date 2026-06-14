@@ -62,7 +62,9 @@ vi.mock('hono/streaming', () => ({
   streamSSE: vi.fn(),
 }));
 
-vi.mock('@ownpilot/core', () => ({}));
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+}));
 
 // ---------------------------------------------------------------------------
 // Dynamic import AFTER vi.mock

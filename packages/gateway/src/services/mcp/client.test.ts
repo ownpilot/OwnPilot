@@ -59,7 +59,7 @@ vi.mock('../tool/executor.js', () => ({
 }));
 
 const mockEventSystemEmit = vi.fn();
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...actual,

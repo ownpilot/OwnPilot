@@ -4,7 +4,7 @@ import type { ToolDefinition } from '@ownpilot/core/agent';
 const hasEmbeddingMock = vi.fn();
 const getEmbeddingMock = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

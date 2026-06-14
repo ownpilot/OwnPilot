@@ -32,7 +32,7 @@ vi.mock('node:child_process', async (importOriginal) => {
 });
 
 // Mock @ownpilot/core — only resetServiceRegistrySync is needed in afterEach
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   resetServiceRegistrySync: vi.fn(),
 }));

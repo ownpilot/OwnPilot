@@ -42,7 +42,7 @@ vi.mock('../db/repositories/agents/messages.js', () => ({
 }));
 
 // Mock core functions
-vi.mock('@ownpilot/core', async () => {
+vi.mock('@ownpilot/core/services', async () => {
   const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
   return {
     ...actual,
