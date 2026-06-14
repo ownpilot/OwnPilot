@@ -27,7 +27,7 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

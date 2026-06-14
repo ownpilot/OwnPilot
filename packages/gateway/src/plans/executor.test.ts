@@ -32,7 +32,7 @@ vi.mock('../services/plan-service.js', () => ({
   getPlanService: () => mockPlanService,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

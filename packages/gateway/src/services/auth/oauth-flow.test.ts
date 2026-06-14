@@ -19,7 +19,8 @@ const mockSetResolvedAuth = vi.fn();
 const mockDeleteResolvedAuth = vi.fn();
 const mockGetProviderOAuthOverride = vi.fn();
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   startDeviceAuthorization: (...args: unknown[]) => mockStart(...args),
   pollForToken: (...args: unknown[]) => mockPoll(...args),
   refreshAccessToken: (...args: unknown[]) => mockRefresh(...args),

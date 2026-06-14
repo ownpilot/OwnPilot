@@ -21,7 +21,7 @@ vi.mock('../adapters/index.js', () => ({
 }));
 
 // Mock generateId to return predictable IDs
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return { ...actual, generateId: vi.fn(() => 'bwf-test-id') };
 });

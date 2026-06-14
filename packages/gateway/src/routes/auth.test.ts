@@ -48,7 +48,8 @@ vi.mock('../services/app-settings.js', () => ({
   deleteProviderOAuthOverride: vi.fn(),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getAvailableProviders: vi.fn(() => []),
 }));
 

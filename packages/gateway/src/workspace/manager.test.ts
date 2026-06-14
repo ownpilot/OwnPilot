@@ -47,7 +47,7 @@ vi.mock('../ws/events.js', () => {
 const mockGetChannel = vi.fn(() => null);
 const mockChannelSend = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/channels', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

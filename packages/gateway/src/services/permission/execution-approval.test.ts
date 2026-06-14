@@ -11,7 +11,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock @ownpilot/core — provide a deterministic generateId
 // ---------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   generateId: vi.fn((prefix: string) => `${prefix}_test_123`),
 }));
 

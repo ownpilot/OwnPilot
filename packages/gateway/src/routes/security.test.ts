@@ -78,7 +78,7 @@ vi.mock('../services/security-scanner.js', () => ({
   scanSingleWorkflow: mockScanSingleWorkflow,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

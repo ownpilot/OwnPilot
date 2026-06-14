@@ -40,7 +40,7 @@ vi.mock('./settings.js', () => ({
   getApiKeySource: vi.fn(async () => null),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

@@ -20,7 +20,7 @@ const mockChannelService = vi.hoisted(() => ({
 // Module mocks
 // ============================================================================
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/channels', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   getChannelService: () => mockChannelService,
 }));

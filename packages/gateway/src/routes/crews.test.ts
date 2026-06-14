@@ -95,7 +95,7 @@ vi.mock('../db/repositories/index.js', () => ({
   settingsRepo: mockSettingsRepo,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

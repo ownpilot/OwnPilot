@@ -23,7 +23,7 @@ const { mockGetChannel, mockGetStatus, mockListGroups, mockGetGroup, mockFetchGr
     mockFetchGroupHistory: vi.fn(),
   }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/channels', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getChannelService: vi.fn().mockReturnValue({
     getChannel: mockGetChannel,

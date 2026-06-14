@@ -21,7 +21,8 @@ vi.mock('../log.js', () => ({
   getLog: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }));
 

@@ -42,7 +42,7 @@ vi.mock('../utils/login-throttle.js', () => ({
   })),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
   const original = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...original,

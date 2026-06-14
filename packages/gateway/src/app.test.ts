@@ -112,7 +112,7 @@ vi.mock('./config/defaults.js', async (importOriginal) => {
 });
 
 // Mock core VERSION
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/version', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

@@ -31,7 +31,7 @@ vi.mock('../../ws/server.js', () => ({
   wsGateway: { broadcast: vi.fn() },
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return { ...actual, getLog: vi.fn(() => ({ info: vi.fn(), error: vi.fn(), debug: vi.fn() })) };
 });

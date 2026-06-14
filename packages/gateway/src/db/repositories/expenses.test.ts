@@ -18,7 +18,7 @@ vi.mock('../adapters/index.js', () => ({
   getAdapterSync: () => mockAdapter,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return { ...actual, generateId: vi.fn(() => 'exp-test-id') };
 });

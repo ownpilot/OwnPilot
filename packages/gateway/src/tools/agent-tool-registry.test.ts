@@ -22,7 +22,7 @@ const mockGetServiceRegistry = vi.fn().mockReturnValue({
 const mockGetPluginService = vi.fn(() => mockGetServiceRegistry().get({ name: 'plugin' }));
 const mockGetExtensionService = vi.fn(() => mockGetServiceRegistry().get({ name: 'extension' }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', () => ({
   ToolRegistry: vi.fn(),
   registerAllTools: vi.fn(),
   getToolDefinitions: vi.fn().mockReturnValue([]),
@@ -93,6 +93,9 @@ vi.mock('@ownpilot/core', () => ({
   qualifyToolName: mockQualifyToolName,
   getBaseName: mockGetBaseName,
   getGroupForTool: vi.fn().mockReturnValue(undefined),
+}));
+
+vi.mock('@ownpilot/core/services', () => ({
   getServiceRegistry: mockGetServiceRegistry,
   getPluginService: mockGetPluginService,
   getExtensionService: mockGetExtensionService,

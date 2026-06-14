@@ -5,7 +5,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/workspace', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getWorkspaceStorage: vi.fn(),
   StorageSecurityError: class StorageSecurityError extends Error {
     constructor(message: string) {

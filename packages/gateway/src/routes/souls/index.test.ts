@@ -84,7 +84,7 @@ vi.mock('../../services/heartbeat/soul-service.js', () => ({
   runAgentHeartbeat: vi.fn(),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getServiceRegistry: () => ({
     get: (token: unknown) => {

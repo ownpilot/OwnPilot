@@ -73,7 +73,7 @@ vi.mock('../../services/heartbeat/service.js', () => ({
   HeartbeatServiceError: MockHeartbeatServiceError,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ownpilot/core')>();
   return {
     ...actual,

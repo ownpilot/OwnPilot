@@ -15,7 +15,8 @@ const { mockLogger } = vi.hoisted(() => ({
   mockLogger: { log: vi.fn().mockResolvedValue(undefined) },
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/audit', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   createAuditLogger: vi.fn(() => mockLogger),
 }));
 

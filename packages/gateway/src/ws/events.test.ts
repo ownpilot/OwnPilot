@@ -28,7 +28,8 @@ const { mockScopedBus, mockHookBus, mockUnsub, mockLog } = vi.hoisted(() => {
   };
 });
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/events', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getEventSystem: vi.fn(() => ({
     scoped: vi.fn(() => mockScopedBus),
     hooks: mockHookBus,

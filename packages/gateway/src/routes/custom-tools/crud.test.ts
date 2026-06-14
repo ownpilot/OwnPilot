@@ -75,7 +75,7 @@ vi.mock('../../db/repositories/custom/tools.js', () => ({
   createCustomToolsRepo: mockCreateCustomToolsRepo,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

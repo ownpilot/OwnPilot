@@ -8,7 +8,7 @@ const mockTriggerService = {
   deleteTrigger: vi.fn(async () => true),
 };
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
   ...(await importOriginal()),
   getServiceRegistry: vi.fn(() => ({
     get: vi.fn(() => mockTriggerService),

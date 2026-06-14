@@ -30,7 +30,7 @@ vi.mock('../services/trigger-service.js', () => ({
   getTriggerService: () => mockTriggerService,
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

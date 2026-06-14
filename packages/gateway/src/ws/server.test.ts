@@ -101,11 +101,18 @@ vi.mock('./events.js', () => {
   return { ClientEventHandler: MockClientEventHandler };
 });
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/channels', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getChannelService: vi.fn(() => mockChannelServiceInst),
+  };
+});
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     getEventSystem: vi.fn(() => mockEventSystem),
   };
 });
