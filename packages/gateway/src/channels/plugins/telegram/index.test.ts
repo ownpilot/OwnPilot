@@ -65,13 +65,14 @@ const {
 // legacy `vi.mock('../../../db/repositories/config-services.js', ...)` below is
 // kept so existing assertions on mockGetFieldValue still pass — both paths
 // resolve to the same mock function.
-vi.mock('@ownpilot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@ownpilot/core')>();
-  return {
-    ...actual,
-    getChannelService: mockGetChannelService,
-    getConfigCenter: () => ({ getFieldValue: mockGetFieldValue }),
-  };
+vi.mock('@ownpilot/core/channels', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getChannelService: mockGetChannelService };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getConfigCenter: () => ({ getFieldValue: mockGetFieldValue }) };
 });
 
 vi.mock('./telegram-api.js', () => ({

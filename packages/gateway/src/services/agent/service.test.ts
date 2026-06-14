@@ -27,12 +27,8 @@ const mockGetEventSystem = vi.fn(() => ({
   })),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
-  class MockToolRegistry {
-    has = vi.fn(() => true);
-    setConfigCenter = vi.fn();
-  }
   return {
     ...actual,
     hasServiceRegistry: (...args: unknown[]) => mockHasServiceRegistry(...args),
@@ -40,15 +36,6 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     hasProviderService: (...args: unknown[]) => mockHasProviderService(...args),
     getProviderService: (...args: unknown[]) => mockGetProviderService(...args),
     Services: { Provider: 'provider' },
-    createAgent: (...args: unknown[]) => mockCreateAgent(...args),
-    ToolRegistry: MockToolRegistry,
-    injectMemoryIntoPrompt: (...args: unknown[]) => mockInjectMemoryIntoPrompt(...args),
-    unsafeToolId: vi.fn((name: string) => name),
-    getBaseName: vi.fn((name: string) => name),
-    createProvider: (...args: unknown[]) => mockCreateProvider(...args),
-    buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
-    createFallbackProvider: vi.fn(() => ({})),
-    getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
     // agent-service.ts now consumes the LLMRouter capability for context
     // window / max output / memory budget lookups. Route the router calls
     // back through the same mocks the test already drives via the
@@ -81,6 +68,34 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getConfigCenter: () => ({}),
   };
 });
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  class MockToolRegistry {
+    has = vi.fn(() => true);
+    setConfigCenter = vi.fn();
+  }
+  return {
+    ...actual,
+    createAgent: (...args: unknown[]) => mockCreateAgent(...args),
+    ToolRegistry: MockToolRegistry,
+    injectMemoryIntoPrompt: (...args: unknown[]) => mockInjectMemoryIntoPrompt(...args),
+    getBaseName: vi.fn((name: string) => name),
+    createProvider: (...args: unknown[]) => mockCreateProvider(...args),
+    buildSoulPrompt: (...args: unknown[]) => mockBuildSoulPrompt(...args),
+    createFallbackProvider: vi.fn(() => ({})),
+  };
+});
+
+vi.mock('@ownpilot/core/types', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  unsafeToolId: vi.fn((name: string) => name),
+}));
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
+}));
 
 const mockAgentsRepo = {
   getById: vi.fn(),

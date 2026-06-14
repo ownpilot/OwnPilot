@@ -17,12 +17,19 @@ import { errorHandler } from '../../middleware/error-handler.js';
 
 const mockComplete = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     createProvider: vi.fn(() => ({ complete: mockComplete })),
     getProviderConfig: vi.fn(() => null),
+  };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     getServiceRegistry: vi.fn(() => ({
       get: vi.fn(() => mockExtService),
     })),

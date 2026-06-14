@@ -75,7 +75,7 @@ vi.mock('../agent/cache.js', () => ({
   NATIVE_PROVIDERS: new Set(['openai', 'anthropic', 'google']),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

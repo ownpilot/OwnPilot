@@ -34,11 +34,15 @@ const {
   };
 });
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getConfigCenter: () => mockConfigServicesRepo };
+});
+
+vi.mock('@ownpilot/core/channels', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getConfigCenter: () => mockConfigServicesRepo,
     createChannelPlugin: vi.fn(() => {
       const b: any = {
         meta: vi.fn((m: any) => {

@@ -68,8 +68,8 @@ const mockExtensionService = {
   getToolDefinitions: vi.fn(() => [] as unknown[]),
 };
 
-vi.mock('@ownpilot/core', async () => {
-  const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
+vi.mock('@ownpilot/core/agent', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/agent');
   return {
     ...actual,
     ToolRegistry: vi.fn(function () {
@@ -77,6 +77,14 @@ vi.mock('@ownpilot/core', async () => {
     }),
     registerAllTools: vi.fn(),
     registerCoreTools: vi.fn(),
+    qualifyToolName: vi.fn((name: string, ns: string, extId: string) => `${ns}.${extId}.${name}`),
+  };
+});
+
+vi.mock('@ownpilot/core/services', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/services');
+  return {
+    ...actual,
     hasServiceRegistry: vi.fn(() => true),
     getServiceRegistry: vi.fn(() => ({
       get: vi.fn((token: { name: string }) => {
@@ -91,11 +99,8 @@ vi.mock('@ownpilot/core', async () => {
     hasPluginService: vi.fn(() => true),
     getExtensionService: vi.fn(() => mockExtensionService),
     hasExtensionService: vi.fn(() => true),
-    getEventSystem: vi.fn(() => mockEventSystem),
     getAuditService: vi.fn(() => undefined),
     hasAuditService: vi.fn(() => false),
-    createPluginId: vi.fn((id: string) => id),
-    qualifyToolName: vi.fn((name: string, ns: string, extId: string) => `${ns}.${extId}.${name}`),
     // tool-executor now reads ConfigCenter through the capability accessor
     // instead of importing the gateway impl directly.
     getConfigCenter: () => ({ mocked: true }),
@@ -107,6 +112,16 @@ vi.mock('@ownpilot/core', async () => {
       Extension: { name: 'extension' },
     },
   };
+});
+
+vi.mock('@ownpilot/core/events', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/events');
+  return { ...actual, getEventSystem: vi.fn(() => mockEventSystem) };
+});
+
+vi.mock('@ownpilot/core/types', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/types');
+  return { ...actual, createPluginId: vi.fn((id: string) => id) };
 });
 
 const mockDynamicRegistry = {

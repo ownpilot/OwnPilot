@@ -39,20 +39,26 @@ const mockRegistryGet = vi.fn((service: string) => {
 
 const mockEventSystemEmit = vi.fn();
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getServiceRegistry: vi.fn(() => ({ get: mockRegistryGet })),
-    getEventSystem: vi.fn(() => ({ emit: mockEventSystemEmit })),
-    // MemoryService is now resolved through the capability accessor
-    // directly instead of via the service registry indirection.
     getMemoryService: vi.fn(() => mockMemoryService),
     getGoalService: vi.fn(() => mockGoalService),
     getTriggerService: vi.fn(() => mockTriggerService),
     Services: { Memory: 'memory', Goal: 'goal', Trigger: 'trigger' },
-    getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name),
   };
+});
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getEventSystem: vi.fn(() => ({ emit: mockEventSystemEmit })) };
+});
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getBaseName: vi.fn((name: string) => name.split('.').pop() ?? name) };
 });
 
 const mockResourceSummary = vi.fn(() => []);

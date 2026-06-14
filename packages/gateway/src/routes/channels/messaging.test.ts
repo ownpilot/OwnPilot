@@ -17,14 +17,21 @@ const mockGetChannel = vi.fn();
 const mockGetStatus = vi.fn();
 const mockGetPlatform = vi.fn();
 
-vi.mock('@ownpilot/core', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core');
+vi.mock('@ownpilot/core/channels', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/channels');
   return {
     ...actual,
     getChannelService: vi.fn().mockReturnValue({
       send: mockSend,
       getChannel: mockGetChannel,
     }),
+  };
+});
+
+vi.mock('@ownpilot/core/plugins', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/plugins');
+  return {
+    ...actual,
     getDefaultPluginRegistry: vi.fn().mockReturnValue({
       get: vi.fn().mockReturnValue({
         manifest: {
@@ -32,6 +39,13 @@ vi.mock('@ownpilot/core', async () => {
         },
       }),
     }),
+  };
+});
+
+vi.mock('@ownpilot/core/services', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/services');
+  return {
+    ...actual,
     // chatId fallback resolution now goes through ConfigCenter; route to the
     // same mockGetFieldValue the repo mock already drives.
     getConfigCenter: () => ({

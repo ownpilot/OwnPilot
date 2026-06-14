@@ -229,7 +229,7 @@ const {
 // Module mocks
 // =============================================================================
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/plugins', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   // Minimal PluginBuilder implementation to capture tool registrations
   class FakePluginBuilder {
@@ -354,6 +354,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
     getDefaultPluginRegistry: vi.fn().mockResolvedValue(mockRegistry),
     createPlugin: vi.fn(() => new FakePluginBuilder()),
     buildCorePlugin: mockBuildCorePlugin,
+  };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     getServiceRegistry: mockGetServiceRegistry,
     getDatabaseService: vi.fn(() => mockDatabaseRepo),
     // init.ts migrated channel-api config lookups from

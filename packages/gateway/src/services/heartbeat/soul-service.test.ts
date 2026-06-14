@@ -148,7 +148,19 @@ const {
 // Module mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  HeartbeatRunner: MockHeartbeatRunner,
+  AgentCommunicationBus: MockAgentCommunicationBus,
+  BudgetTracker: MockBudgetTracker,
+}));
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getEventSystem: mockGetEventSystem,
+}));
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const mockLLMRouter = {
     pick: async (opts: { explicitProvider?: string; explicitModel?: string }) => {
       if (opts.explicitProvider && opts.explicitModel) {
@@ -169,10 +181,6 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
   };
   return {
     ...(await importOriginal<Record<string, unknown>>()),
-    HeartbeatRunner: MockHeartbeatRunner,
-    AgentCommunicationBus: MockAgentCommunicationBus,
-    BudgetTracker: MockBudgetTracker,
-    getEventSystem: mockGetEventSystem,
     getServiceRegistry: mockGetServiceRegistry,
     getLog: vi.fn().mockReturnValue({
       info: vi.fn(),

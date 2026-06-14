@@ -43,7 +43,7 @@ const mockSetWorkspaceDir = vi.hoisted(() => vi.fn());
 // Module mocks
 // ============================================================================
 
-vi.mock('@ownpilot/core', async (importOriginal) => ({
+vi.mock('@ownpilot/core/agent', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ownpilot/core')>()),
   Agent: vi.fn().mockImplementation(function () {
     return { setDirectToolMode: vi.fn(), setPreflightCompactor: vi.fn() };
@@ -52,6 +52,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
     return { setConfigCenter: vi.fn(), setWorkspaceDir: mockSetWorkspaceDir };
   }),
   registerAllTools: mockRegisterAllTools,
+  qualifyToolName: mockQualifyToolName,
+}));
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   getServiceRegistry: mockGetServiceRegistry,
   getExtensionService: vi.fn(() => ({
     getToolDefinitions: vi.fn(() => [
@@ -59,8 +64,6 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
       { name: 'review', extensionId: 'code-review', format: 'agentskills' },
     ]),
   })),
-  qualifyToolName: mockQualifyToolName,
-  calculateCost: mockCalculateCost,
   getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
   resetServiceRegistrySync: vi.fn(),
   // Cap helpers now live on the LLMRouter capability. Mirror production
@@ -93,6 +96,11 @@ vi.mock('@ownpilot/core', async (importOriginal) => ({
   // agent-runner-utils now reads ConfigCenter through the capability
   // accessor instead of importing the gateway impl directly.
   getConfigCenter: () => mockGatewayConfigCenter,
+}));
+
+vi.mock('@ownpilot/core/costs', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  calculateCost: mockCalculateCost,
 }));
 
 vi.mock('../llm/model-routing.js', () => ({

@@ -12,7 +12,7 @@ const mockChannelService = {
   send: vi.fn().mockResolvedValue(undefined),
 };
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -23,9 +23,13 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
         return {};
       },
     }),
-    getChannelService: () => mockChannelService,
     Services: { Channel: { name: 'channel' } },
   };
+});
+
+vi.mock('@ownpilot/core/channels', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getChannelService: () => mockChannelService };
 });
 
 const mockChannelUsersRepo = {

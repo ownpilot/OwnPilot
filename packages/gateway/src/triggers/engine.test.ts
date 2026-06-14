@@ -72,8 +72,8 @@ vi.mock('../db/repositories/execution-permissions.js', () => ({
   },
 }));
 
-vi.mock('@ownpilot/core', async () => {
-  const actual = await vi.importActual<typeof import('@ownpilot/core')>('@ownpilot/core');
+vi.mock('@ownpilot/core/services', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/services');
   return {
     ...actual,
     getServiceRegistry: vi.fn(() => ({
@@ -86,12 +86,15 @@ vi.mock('@ownpilot/core', async () => {
         return services[token.name];
       }),
     })),
-    // Memory, Goal, and Trigger now resolve through the capability accessor.
     getMemoryService: vi.fn(() => mockMemoryService),
     getGoalService: vi.fn(() => mockGoalService),
     getTriggerService: vi.fn(() => mockTriggerService),
-    getNextRunTime: vi.fn(() => new Date('2025-01-01T09:00:00Z')),
   };
+});
+
+vi.mock('@ownpilot/core/scheduler', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@ownpilot/core/scheduler');
+  return { ...actual, getNextRunTime: vi.fn(() => new Date('2025-01-01T09:00:00Z')) };
 });
 
 import { TriggerEngine } from './engine.js';

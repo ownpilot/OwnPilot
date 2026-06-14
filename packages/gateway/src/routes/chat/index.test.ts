@@ -208,7 +208,7 @@ vi.mock('../../db/seeds/default-agents.js', () => ({
   getDefaultAgents: vi.fn(() => []),
 }));
 
-vi.mock('@ownpilot/core', () => ({
+vi.mock('@ownpilot/core/agent', () => ({
   debugLog: {
     getRecent: vi.fn(() => []),
   },
@@ -221,22 +221,6 @@ vi.mock('@ownpilot/core', () => ({
     compile_code: 'blocked',
     package_manager: 'blocked',
   },
-  hasServiceRegistry: vi.fn(() => true),
-  getServiceRegistry: vi.fn(() => ({
-    tryGet: vi.fn(() => null),
-    get: vi.fn((token: { name: string }) => {
-      const services: Record<string, unknown> = {
-        database: { listTables: vi.fn(async () => []) },
-      };
-      return services[token.name];
-    }),
-  })),
-  Services: {
-    MessageBus: { name: 'messageBus' },
-    Provider: { name: 'provider' },
-    Database: { name: 'database' },
-  },
-  getDefaultPluginRegistry: vi.fn(async () => ({ getAllTools: () => [] })),
   createDynamicToolRegistry: vi.fn(() => ({
     register: vi.fn(),
     execute: vi.fn(),
@@ -268,6 +252,24 @@ vi.mock('@ownpilot/core', () => ({
   applyToolLimits: vi.fn((_n: string, a: unknown) => a),
   getProviderConfig: vi.fn(() => null),
   Agent: vi.fn(),
+}));
+
+vi.mock('@ownpilot/core/services', () => ({
+  hasServiceRegistry: vi.fn(() => true),
+  getServiceRegistry: vi.fn(() => ({
+    tryGet: vi.fn(() => null),
+    get: vi.fn((token: { name: string }) => {
+      const services: Record<string, unknown> = {
+        database: { listTables: vi.fn(async () => []) },
+      };
+      return services[token.name];
+    }),
+  })),
+  Services: {
+    MessageBus: { name: 'messageBus' },
+    Provider: { name: 'provider' },
+    Database: { name: 'database' },
+  },
   // routes/chat.ts migrated from resolveForProcess() to
   // getLLMRouter().pick({ process }). Route the new accessor through the
   // existing mockResolveForProcess so test overrides via
@@ -279,6 +281,13 @@ vi.mock('@ownpilot/core', () => ({
     computeMemoryMaxTokens: vi.fn(() => 8192),
     calculateCost: vi.fn(() => 0),
   }),
+}));
+
+vi.mock('@ownpilot/core/plugins', () => ({
+  getDefaultPluginRegistry: vi.fn(async () => ({ getAllTools: () => [] })),
+}));
+
+vi.mock('@ownpilot/core/costs', () => ({
   // BUDGET-001: chat route's pre-spend check uses these from @ownpilot/core.
   // Returning a tiny positive cost keeps the budget check on the happy path
   // in the pre-existing tests; the dedicated budget tests mock canSpend

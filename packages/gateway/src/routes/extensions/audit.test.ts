@@ -31,12 +31,19 @@ const mockProvider = {
 // Mocks — declared before dynamic import so vi.mock hoisting applies
 // ---------------------------------------------------------------------------
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
     getServiceRegistry: vi.fn(() => ({ get: vi.fn(() => mockExtService) })),
     getExtensionService: vi.fn(() => mockExtService),
+  };
+});
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     createProvider: vi.fn(() => mockProvider),
     getProviderConfig: vi.fn(() => null),
   };

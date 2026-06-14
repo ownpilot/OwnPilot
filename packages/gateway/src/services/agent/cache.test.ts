@@ -29,16 +29,28 @@ const mockGetEventSystem = vi.fn(() => ({
   })),
 }));
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, generateId: (...args: unknown[]) => mockGenerateId(...args) };
+});
+
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    generateId: (...args: unknown[]) => mockGenerateId(...args),
     getProviderConfig: (...args: unknown[]) => mockGetProviderConfig(...args),
-    getModelPricing: (...args: unknown[]) => mockGetModelPricing(...args),
-    getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
     TOOL_GROUPS: mockToolGroups,
   };
+});
+
+vi.mock('@ownpilot/core/costs', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getModelPricing: (...args: unknown[]) => mockGetModelPricing(...args) };
+});
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args) };
 });
 
 vi.mock('../../db/repositories/index.js', () => ({

@@ -99,12 +99,16 @@ const mockResolveForProcess = vi.hoisted(() =>
 // vi.mock declarations
 // ============================================================================
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@ownpilot/core')>();
+vi.mock('@ownpilot/core/events', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getEventBus: mockGetEventBus,
+  createEvent: mockCreateEvent,
+}));
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    getEventBus: mockGetEventBus,
-    createEvent: mockCreateEvent,
     hasServiceRegistry: mockHasServiceRegistry,
     getServiceRegistry: mockGetServiceRegistry,
     // channels/service-impl.ts migrated from resolveForProcess() to

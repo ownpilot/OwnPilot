@@ -77,7 +77,7 @@ const {
   };
 });
 
-vi.mock('@ownpilot/core', async (importOriginal) => {
+vi.mock('@ownpilot/core/agent', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -97,7 +97,18 @@ vi.mock('@ownpilot/core', async (importOriginal) => {
       clear = vi.fn();
     },
     registerAllTools: vi.fn(),
-    getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args),
+  };
+});
+
+vi.mock('@ownpilot/core/events', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, getEventSystem: (...args: unknown[]) => mockGetEventSystem(...args) };
+});
+
+vi.mock('@ownpilot/core/services', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
     getErrorMessage: (e: unknown) => String(e instanceof Error ? e.message : e),
     // ClawRunner now takes a RuntimeContext bundle in its constructor
     // (defaulting to getRuntimeContext()). Provide a fully-stubbed bundle
