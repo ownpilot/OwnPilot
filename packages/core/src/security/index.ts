@@ -315,6 +315,15 @@ export const CRITICAL_PATTERNS: readonly CriticalPattern[] = [
   { pattern: /\bcrontab\s+-r\b/i, description: 'Remove all cron jobs' },
   // World-writable root
   { pattern: /\bchmod\s+777\s+\//i, description: 'World-writable root directory' },
+  // Shell metacharacter injection — prevents piping/substitution in exec()
+  // Blocked: | $(cmd) >file >>file <file
+  // Note: && and ; are excluded — chaining is not catastrophic on its own;
+  //       the existing curl|wget piped-to-shell pattern covers the real danger.
+  // Note: & alone is allowed (appears in URLs: curl?foo=bar&baz=qux)
+  {
+    pattern: /\||\$\(|>{1,2}(?:\s|$)|<(?:\s|$)/,
+    description: 'Shell metacharacter injection (piping, substitution, redirection)',
+  },
 ];
 
 /**

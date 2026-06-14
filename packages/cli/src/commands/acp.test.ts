@@ -26,8 +26,11 @@ vi.mock('@agentclientprotocol/sdk', () => ({
   ndJsonStream: (...args: unknown[]) => mockNdJsonStream(...args),
 }));
 
-vi.mock('@ownpilot/gateway', () => ({
+vi.mock('@ownpilot/gateway/acp', () => ({
   runAcpServer: (...args: unknown[]) => mockRunAcpServer(...args),
+}));
+
+vi.mock('@ownpilot/gateway/config', () => ({
   loadApiKeysToEnvironment: (...args: unknown[]) => mockLoadApiKeys(...args),
 }));
 

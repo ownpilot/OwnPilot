@@ -192,6 +192,30 @@ describe('Security Module', () => {
     it('returns false for safe commands', () => {
       expect(isCommandBlocked('echo hello')).toBe(false);
     });
+
+    it('blocks command chaining with &&', () => {
+      expect(isCommandBlocked('echo hello && cat /etc/passwd')).toBe(true);
+    });
+
+    it('blocks command chaining with ;', () => {
+      expect(isCommandBlocked('echo hello; cat /etc/passwd')).toBe(true);
+    });
+
+    it('blocks piping with |', () => {
+      expect(isCommandBlocked('echo hello | cat')).toBe(true);
+    });
+
+    it('blocks command substitution with $(', () => {
+      expect(isCommandBlocked('echo $(whoami)')).toBe(true);
+    });
+
+    it('blocks output redirection with >', () => {
+      expect(isCommandBlocked('echo hello > /tmp/pwned')).toBe(true);
+    });
+
+    it('allows & in URLs (not a command separator alone)', () => {
+      expect(isCommandBlocked('curl http://example.com/api?foo=bar&baz=qux')).toBe(false);
+    });
   });
 
   // =========================================================================

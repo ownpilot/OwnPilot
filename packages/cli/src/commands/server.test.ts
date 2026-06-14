@@ -34,14 +34,26 @@ vi.mock('@hono/node-server', () => ({
   serve: mockServe,
 }));
 
-vi.mock('@ownpilot/gateway', () => ({
+vi.mock('@ownpilot/gateway/app', () => ({
   createApp: mockCreateApp,
+}));
+
+vi.mock('@ownpilot/gateway/config', () => ({
   loadApiKeysToEnvironment: mockLoadApiKeysToEnvironment,
-  settingsRepo: mockSettingsRepo,
-  initializePlugins: mockInitializePlugins,
-  initializeScheduler: mockInitializeScheduler,
   RATE_LIMIT_MAX_REQUESTS: 100,
   RATE_LIMIT_WINDOW_MS: 60000,
+}));
+
+vi.mock('@ownpilot/gateway/db', () => ({
+  settingsRepo: mockSettingsRepo,
+}));
+
+vi.mock('@ownpilot/gateway/scheduler', () => ({
+  initializeScheduler: mockInitializeScheduler,
+}));
+
+vi.mock('@ownpilot/gateway/plugins', () => ({
+  initializePlugins: mockInitializePlugins,
 }));
 
 // ============================================================================

@@ -169,9 +169,21 @@ export function createScopedFs(workspaceDir: string): ScopedFs {
 export function createScopedExec(workspaceDir: string): ScopedExec {
   return {
     async exec(command: string, timeout?: number) {
-      // Security: block dangerous commands
+      // Security: block dangerous commands (blocklist — critical patterns)
       if (isCommandBlocked(command)) {
         throw new Error('Command blocked for security reasons.');
+      }
+
+      // Security: block shell metacharacter injection as a defense-in-depth layer.
+      // These are also covered by isCommandBlocked() via CRITICAL_PATTERNS, but
+      // an explicit check here ensures the intent is clear and the block survives
+      // any future refactoring of isCommandBlocked().
+      // Blocked: | $(cmd) >file >>file <file
+      // Note: && and ; are excluded from CRITICAL_PATTERNS (not catastrophic alone;
+      //       scoped-apis keeps its own defense-in-depth layer).
+      // Note: & alone is allowed (appears in URLs like curl?foo=bar&baz=qux).
+      if (/\||\$\(|>{1,2}(?:\s|$)|<(?:\s|$)/.test(command)) {
+        throw new Error('Command blocked: shell metacharacters (| $( ) > >> <) are not permitted.');
       }
 
       const execTimeout = timeout ?? 30000;

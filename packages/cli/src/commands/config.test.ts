@@ -35,7 +35,7 @@ const mockRlOn = vi.hoisted(() => vi.fn().mockReturnThis());
 // Module mocks
 // ============================================================================
 
-vi.mock('@ownpilot/gateway', () => ({
+vi.mock('@ownpilot/gateway/db', () => ({
   initializeAdapter: mockInitializeAdapter,
   settingsRepo: mockSettingsRepo,
   getDatabasePath: mockGetDatabasePath,

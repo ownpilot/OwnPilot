@@ -30,8 +30,11 @@ vi.mock('@hono/node-server', () => ({
   serve: mockServe,
 }));
 
-vi.mock('@ownpilot/gateway', () => ({
+vi.mock('@ownpilot/gateway/app', () => ({
   createApp: mockCreateApp,
+}));
+
+vi.mock('@ownpilot/gateway/config', () => ({
   loadApiKeysToEnvironment: mockLoadApiKeysToEnvironment,
   getDefaultProvider: mockGetDefaultProvider,
   isDemoModeFromSettings: mockIsDemoModeFromSettings,
