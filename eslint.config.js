@@ -59,6 +59,85 @@ export default tseslint.config(
     },
   },
   {
+    // Gateway source files: prevent importing tool symbols from
+    // '@ownpilot/core/agent'. These are now re-exported from
+    // '@ownpilot/core/tools' and should be imported from there.
+    // Non-tool symbols (Message, Agent, createProvider, etc.) are still
+    // allowed from '@ownpilot/core/agent'.
+    files: ['packages/gateway/src/**/*.ts', 'packages/gateway/src/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          paths: [
+            {
+              name: '@ownpilot/core/agent',
+              importNames: [
+                'ToolDefinition',
+                'ToolExecutor',
+                'RegisteredTool',
+                'ToolContext',
+                'ToolExecutionResult',
+                'ToolCall',
+                'ToolResult',
+                'ToolProvider',
+                'ToolMiddleware',
+                'ToolSource',
+                'ToolConfigRequirement',
+                'ExecutionPermissions',
+                'ExecutionCategory',
+                'PermissionMode',
+                'ToolRegistry',
+                'createToolRegistry',
+                'registerCoreTools',
+                'DEFAULT_EXECUTION_PERMISSIONS',
+                'qualifyToolName',
+                'getBaseName',
+                'getNamespace',
+                'isQualifiedName',
+                'sanitizeToolName',
+                'desanitizeToolName',
+                'TOOL_GROUPS',
+                'DEFAULT_ENABLED_GROUPS',
+                'getGroupForTool',
+                'findSimilarToolNames',
+                'formatFullToolHelp',
+                'buildToolHelpText',
+                'validateRequiredParams',
+                'createPluginSecurityMiddleware',
+                'setModuleResolver',
+                'tryImport',
+                'isCallToolHardBlocked',
+                'isToolCallAllowed',
+                'TOOL_SEARCH_TAGS',
+                'TOOL_MAX_LIMITS',
+                'applyToolLimits',
+                'isPathAllowedAsync',
+                'createDynamicToolRegistry',
+                'searchToolsDefinition',
+                'getToolHelpDefinition',
+                'useToolDefinition',
+                'batchUseToolDefinition',
+                'registerAllTools',
+                'ALL_TOOLS',
+                'MEMORY_TOOLS',
+                'GOAL_TOOLS',
+                'CUSTOM_DATA_TOOLS',
+                'PERSONAL_DATA_TOOLS',
+                'FILE_SYSTEM_TOOLS',
+                'CODE_EXECUTION_TOOLS',
+                'WEB_FETCH_TOOLS',
+                'DYNAMIC_TOOL_DEFINITIONS',
+              ],
+              message:
+                "Import tool symbols from '@ownpilot/core/tools' instead of '@ownpilot/core/agent'. See packages/core/src/agent/tools/index.ts for the full export surface.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Test files: relax `no-explicit-any` so production warnings stay visible
     // in the noise floor. Mock typing is rarely worth the ergonomic cost.
     // Silent catches are still allowed in tests (e.g. seed cleanup) — the
