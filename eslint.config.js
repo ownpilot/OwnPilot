@@ -63,10 +63,24 @@ export default tseslint.config(
     // in the noise floor. Mock typing is rarely worth the ergonomic cost.
     // Silent catches are still allowed in tests (e.g. seed cleanup) — the
     // ban is on production behaviour.
+    //
+    // no-restricted-syntax is overridden for tests with a narrower rule:
+    // flag `vi.mock('@ownpilot/core', ...)` without a sub-path. Source code
+    // imports from sub-paths (e.g. '@ownpilot/core/services'), so mocking the
+    // bare entry point silently fails — the mock factory is never applied.
+    // See docs/ADR/vi-mock-sub-path-alignment.md for details.
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx', '**/test-helpers.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "CallExpression[callee.object.name='vi'][callee.property.name='mock'][arguments.0.value='@ownpilot/core']",
+          message:
+            "vi.mock('@ownpilot/core') doesn't intercept sub-path imports (e.g. '@ownpilot/core/services'). Use vi.mock('@ownpilot/core/<sub-path>', ...) instead. Run: node scripts/detect-mock-mismatch.mjs",
+        },
+      ],
     },
   }
 );
