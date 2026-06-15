@@ -40,6 +40,7 @@ import {
   auditRoutes,
   heartbeatsRoutes,
   clawRoutes,
+  agenticRoutes,
   // Data
   personalDataRoutes,
   customDataRoutes,
@@ -140,6 +141,9 @@ export function registerV2Routes(app: Hono): void {
 
   // Claws
   app.route('/api/v2/claws', clawRoutes);
+
+  // Agentic (unified task execution across all agent types)
+  app.route('/api/v2/agentic', agenticRoutes);
 
   // ── Data Domain ──────────────────────────────────────────────────────────────
 

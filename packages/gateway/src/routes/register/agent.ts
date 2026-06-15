@@ -18,6 +18,7 @@ import {
   auditRoutes,
   heartbeatsRoutes,
   clawRoutes,
+  agenticRoutes,
 } from '../index.js';
 
 export function registerAgentRoutes(app: Hono): void {
@@ -42,4 +43,7 @@ export function registerAgentRoutes(app: Hono): void {
 
   // Claws (unified autonomous agent runtime)
   app.route('/api/v1/claws', clawRoutes);
+
+  // Agentic (unified task execution across all agent types)
+  app.route('/api/v1/agentic', agenticRoutes);
 }

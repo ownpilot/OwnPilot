@@ -63,5 +63,6 @@ export { agentCommandCenterRoutes } from './agents/command-center.js';
 export { cliChatRoutes } from './cli/chat.js';
 export { notificationRoutes } from './notifications.js';
 export { clawRoutes } from './claws.js';
+export { agenticRoutes } from './agentic.js';
 export { pulseRoutes } from './pulse.js';
 export { tunnelRoutes } from './tunnel.js';
