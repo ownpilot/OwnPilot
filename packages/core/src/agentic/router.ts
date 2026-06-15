@@ -356,6 +356,7 @@ export class AgenticRouter implements IAgenticRouter {
     const extraParams: Record<string, unknown> = {};
     if (task.providerPreference?.providerId) extraParams.provider = task.providerPreference.providerId;
     if (task.providerPreference?.modelId) extraParams.model = task.providerPreference.modelId;
+    if (task.prompt) extraParams.prompt = task.prompt;
 
     if (trigger && trigger.type !== 'immediate') {
       // Trigger-based plan: set up trigger, then execute

@@ -213,6 +213,7 @@ export class AgenticGatewayExecutor {
     // Resolve provider/model — explicit params > env vars > system defaults.
     const explicitProvider = params.provider as string | undefined;
     const explicitModel = params.model as string | undefined;
+    const systemPrompt = params.prompt as string | undefined;
     let provider = explicitProvider || process.env.DEFAULT_PROVIDER || '';
     let model = explicitModel || process.env.DEFAULT_MODEL || '';
 
@@ -239,7 +240,11 @@ export class AgenticGatewayExecutor {
 
     const agent = await getOrCreateChatAgent(provider, model);
 
-    // Build a system prompt that gives the agent access to tools
+    // Apply custom system prompt if provided
+    if (systemPrompt) {
+      agent.updateSystemPrompt(systemPrompt);
+    }
+
     const result = await agent.chat(taskDesc);
 
     if (!result.ok) {

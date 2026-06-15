@@ -94,6 +94,7 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
   const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
@@ -154,11 +155,12 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
       };
       if (provider) input.provider = provider;
       if (model) input.model = model;
+      if (prompt) input.prompt = prompt;
       if (triggerType === 'interval') input.trigger = { type: 'interval', intervalMs: parseInt(intervalMs, 10) || 300000 };
       else if (triggerType === 'continuous') input.trigger = { type: 'continuous' };
       if (timeoutMs) input.constraints = { timeoutMs: parseInt(timeoutMs, 10) || 60000 };
       await agenticApi.execute(input);
-      setName(''); setDescription(''); setProvider(''); setModel(''); setExpanded(false);
+      setName(''); setDescription(''); setPrompt(''); setProvider(''); setModel(''); setExpanded(false);
       onExecute();
     } finally { setRunning(false); }
   };
@@ -179,6 +181,8 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-generated from description if empty" className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50" /></div>
           <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Task Description *</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Research the latest AI trends and compile a report..." rows={3} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none" /></div>
+          <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">System Prompt (optional)</label>
+          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="You are a helpful AI assistant..." rows={2} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none" /></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Priority</label>
             <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50">

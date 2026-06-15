@@ -127,6 +127,8 @@ export interface AgenticTask {
   readonly name: string;
   /** Full natural language task description. */
   readonly description: string;
+  /** Optional system prompt override for the agent. */
+  readonly prompt?: string;
   /** Expected output format/type. */
   readonly expectedOutput?: string;
   /** Priority level. */

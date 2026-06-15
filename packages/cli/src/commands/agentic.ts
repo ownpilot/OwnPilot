@@ -66,6 +66,7 @@ export async function agenticRun(taskDescription: string[], options: {
   output?: string;
   provider?: string;
   model?: string;
+  prompt?: string;
 }): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
@@ -91,6 +92,7 @@ export async function agenticRun(taskDescription: string[], options: {
   };
   if (options.provider) body.provider = options.provider;
   if (options.model) body.model = options.model;
+  if (options.prompt) body.prompt = options.prompt;
 
   // Add trigger config
   const triggerType = options.trigger ?? 'immediate';
@@ -492,6 +494,7 @@ OPTIONS
   --timeout    Step timeout in ms (default: 60000)
   --provider   AI provider (e.g. anthropic, openai — uses system default if not set)
   --model      Model name (e.g. claude-sonnet-4-20250514 — uses system default if not set)
+  --prompt     Custom system prompt for the agent (default: generic assistant)
   --output     Save execution result to file
   --json       JSON output format
   --limit      Max results (default: 20)
@@ -511,6 +514,9 @@ EXAMPLES
 
   # Use specific provider/model
   ownpilot agentic run --provider anthropic --model claude-sonnet-4-20250514 "Research task"
+
+  # Custom system prompt
+  ownpilot agentic run --prompt "You are a senior software engineer. Write production-grade code." "Build a REST API"
 
   # Plan without executing
   ownpilot agentic plan "Refactor the authentication module"

@@ -369,6 +369,7 @@ agenticCmd
   .option('--output <path>', 'Save results to file')
   .option('--provider <provider>', 'AI provider (e.g. anthropic, openai)')
   .option('--model <model>', 'Model name (e.g. claude-sonnet-4-20250514)')
+  .option('--prompt <text>', 'System prompt override for the agent')
   .action(agenticRun);
 
 agenticCmd

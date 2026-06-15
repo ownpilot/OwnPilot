@@ -109,6 +109,7 @@ export interface AgenticPlan {
 export interface ExecuteTaskInput {
   name: string;
   description: string;
+  prompt?: string;
   provider?: string;
   model?: string;
   expectedOutput?: string;
