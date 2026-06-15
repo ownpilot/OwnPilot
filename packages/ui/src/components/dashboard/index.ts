@@ -9,3 +9,4 @@ export { SkillsWidget } from './SkillsWidget';
 export { HeartbeatLogsWidget } from './HeartbeatLogsWidget';
 export { CrewsWidget } from './CrewsWidget';
 export { ClawsWidget } from './ClawsWidget';
+export { AgenticExecutionsWidget } from './AgenticExecutionsWidget';
