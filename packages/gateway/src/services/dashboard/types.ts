@@ -97,6 +97,16 @@ export interface PlansSummary {
   pendingApproval: Plan[];
 }
 
+export interface AgenticSummary {
+  totalExecutions: number;
+  activeExecutions: number;
+  todayExecutions: number;
+  todayCostUsd: number;
+  successRate: number;
+  lastExecutionStatus: string | null;
+  lastExecutionSummary: string | null;
+}
+
 export interface DailyBriefingData {
   tasks: TasksSummary;
   calendar: CalendarSummary;
@@ -108,6 +118,7 @@ export interface DailyBriefingData {
   costs: CostsSummary;
   customData: CustomDataSummary;
   plans: PlansSummary;
+  agentic: AgenticSummary;
   generatedAt: string;
 }
 

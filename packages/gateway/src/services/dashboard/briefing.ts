@@ -10,6 +10,13 @@ import { getLog } from '../log.js';
 
 const log = getLog('DashboardBriefing');
 
+/** Safe default when agentic data is unavailable in test/migration scenarios. */
+const agenticDefault = {
+  totalExecutions: 0, activeExecutions: 0, todayExecutions: 0,
+  todayCostUsd: 0, successRate: 0,
+  lastExecutionStatus: null, lastExecutionSummary: null,
+};
+
 // ============================================================================
 // Cache Implementation with Smart Invalidation
 // ============================================================================
@@ -25,6 +32,7 @@ interface CacheEntry {
  * Changes when the underlying data changes significantly.
  */
 export function calculateDataHash(data: DailyBriefingData): string {
+  const a = data.agentic ?? agenticDefault;
   const hashParts = [
     `t:${data.tasks.counts.pending},${data.tasks.counts.dueToday},${data.tasks.counts.overdue}`,
     `c:${data.calendar.counts.today}`,
@@ -32,6 +40,7 @@ export function calculateDataHash(data: DailyBriefingData): string {
     `h:${data.habits.todayProgress.completed}/${data.habits.todayProgress.total}`,
     `tr:${data.triggers.counts.scheduledToday}`,
     `p:${data.plans.running.length},${data.plans.pendingApproval.length}`,
+    `a:${a.totalExecutions},${a.activeExecutions},${a.todayExecutions}`,
   ];
 
   return hashParts.join('|');
@@ -263,6 +272,13 @@ ${streaksAtRiskList || '  (no streaks at risk)'}
 ### Running Automations
 - ${data.triggers.counts.scheduledToday} triggers scheduled for today
 - ${data.plans.running.length} plans currently running
+
+### Autonomous Agents
+- ${(data.agentic ?? agenticDefault).totalExecutions} total task executions
+- ${(data.agentic ?? agenticDefault).activeExecutions} currently active
+- ${(data.agentic ?? agenticDefault).todayExecutions} executions today (${(data.agentic ?? agenticDefault).todayCostUsd.toFixed(4)} cost)
+- Success rate: ${((data.agentic ?? agenticDefault).successRate * 100).toFixed(0)}%
+- Last execution: ${(data.agentic ?? agenticDefault).lastExecutionStatus ?? 'none'}${data.agentic?.lastExecutionSummary ? ` - ${data.agentic.lastExecutionSummary.slice(0, 100)}` : ''}
 
 Generate a daily briefing with:
 1. A natural language SUMMARY (2-3 sentences) of the day ahead

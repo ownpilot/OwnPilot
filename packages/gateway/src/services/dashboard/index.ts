@@ -74,6 +74,7 @@ import type {
   CostSummaryData,
   CustomDataSummary,
   CustomTableSummaryItem,
+  AgenticSummary,
 } from './types.js';
 import { generateAIBriefing, generateAIBriefingStreaming, briefingCache } from './briefing.js';
 
@@ -244,6 +245,40 @@ export class DashboardService {
     const runningPlans = allPlans.filter((p) => p.status === 'running');
     const pendingApprovalPlans = allPlans.filter((p) => p.status === 'pending');
 
+    // Agentic Executions
+    let agenticSummary: AgenticSummary = {
+      totalExecutions: 0,
+      activeExecutions: 0,
+      todayExecutions: 0,
+      todayCostUsd: 0,
+      successRate: 0,
+      lastExecutionStatus: null,
+      lastExecutionSummary: null,
+    };
+    try {
+      const { AgenticOrchestrator } = await import('@ownpilot/core/agentic');
+      const orchestrator = new AgenticOrchestrator();
+      const [stats, executions] = await Promise.all([
+        orchestrator.getStats(),
+        orchestrator.listExecutions(5, 0),
+      ]);
+      const today = new Date().toISOString().split('T')[0] ?? '';
+      const todayExecs = executions.filter((e) =>
+        e.startedAt.toISOString().startsWith(today)
+      );
+      agenticSummary = {
+        totalExecutions: stats.totalExecutions,
+        activeExecutions: stats.activeExecutions,
+        todayExecutions: todayExecs.length,
+        todayCostUsd: todayExecs.reduce((sum, e) => sum + e.totalCostUsd, 0),
+        successRate: stats.successRate,
+        lastExecutionStatus: executions[0]?.status ?? null,
+        lastExecutionSummary: executions[0]?.summary ?? null,
+      };
+    } catch (err) {
+      log.error('[DashboardService] Failed to load agentic data:', err);
+    }
+
     return {
       tasks: {
         pending: pendingTasks.slice(0, 10),
@@ -277,6 +312,7 @@ export class DashboardService {
       costs: { daily: dailyCosts, monthly: monthlyCosts },
       customData: customDataSummary,
       plans: { running: runningPlans, pendingApproval: pendingApprovalPlans },
+      agentic: agenticSummary,
       generatedAt: new Date().toISOString(),
     };
   }
