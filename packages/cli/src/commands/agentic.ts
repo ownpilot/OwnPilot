@@ -296,6 +296,61 @@ export async function agenticCancel(id: string): Promise<void> {
 }
 
 // ============================================================================
+// ─── RERUN ───
+// ============================================================================
+
+export async function agenticRerun(executionId: string, options: { provider?: string; model?: string; prompt?: string; priority?: string }): Promise<void> {
+  if (!executionId) {
+    console.error('Usage: ownpilot agentic rerun <id> [options]');
+    console.error('\nOptions:');
+    console.error('  --provider <id>   Override AI provider');
+    console.error('  --model <name>    Override model name');
+    console.error('  --prompt <text>   Override system prompt');
+    console.error('  --priority <lvl>  Override priority');
+    process.exit(1);
+  }
+
+  try {
+    const detail = (await api(`/agentic/executions/${executionId}`)) as Record<string, unknown>;
+    const task = detail.task as Record<string, unknown> | undefined;
+    if (!task || !task.description) {
+      console.error(`\n  ✗ Execution ${executionId} has no task description to rerun.\n`);
+      return;
+    }
+
+    const name = `${String(task.name ?? 'Rerun')} (rerun)`;
+    const body: Record<string, unknown> = {
+      name,
+      description: task.description,
+      priority: options.priority ?? task.priority ?? 'normal',
+    };
+    if (options.provider) body.provider = options.provider;
+    else if (detail.provider) body.provider = detail.provider;
+    if (options.model) body.model = options.model;
+    else if (detail.model) body.model = detail.model;
+    if (options.prompt) body.prompt = options.prompt;
+
+    console.log(`\n  ↻ Re-running: ${String(task.name ?? 'unknown')}`);
+    if (body.provider) console.log(`    Provider: ${body.provider}`);
+    if (body.model) console.log(`    Model:    ${body.model}`);
+    console.log('');
+
+    const result = (await api('/agentic/execute', 'POST', body)) as Record<string, unknown>;
+    const id = result.id as string;
+    const status = result.status as string;
+    const summary = result.summary as string;
+    const icon = status === 'completed' ? '✓' : status === 'failed' ? '✗' : '◌';
+    console.log(`  ${icon}  ${name}`);
+    console.log(`  ID:     ${id}`);
+    console.log(`  Status: ${status}`);
+    console.log(`  Result: ${summary ?? '—'}`);
+    console.log('');
+  } catch (err) {
+    ensureGatewayError(err);
+  }
+}
+
+// ============================================================================
 // ─── PLAN ───
 // ============================================================================
 

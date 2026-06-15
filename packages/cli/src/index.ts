@@ -83,6 +83,7 @@ import {
   agenticList,
   agenticStatus,
   agenticCancel,
+  agenticRerun,
   agenticPlan,
   agenticCapabilities,
   agenticStats,
@@ -391,6 +392,15 @@ agenticCmd
   .command('cancel <id>')
   .description('Cancel a running execution')
   .action(agenticCancel);
+
+agenticCmd
+  .command('rerun <id>')
+  .description('Re-run a previous execution (same task, new settings)')
+  .option('--provider <id>', 'Override AI provider')
+  .option('--model <name>', 'Override model name')
+  .option('--prompt <text>', 'Override system prompt')
+  .option('--priority <lvl>', 'Override priority')
+  .action(agenticRerun);
 
 agenticCmd
   .command('plan <task...>')
