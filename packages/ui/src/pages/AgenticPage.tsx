@@ -238,6 +238,7 @@ function ExecutionRow({ exec, onSelect, onCancel }: { exec: AgenticExecution; on
         <div className="flex items-center gap-1"><ListChecks className="w-3.5 h-3.5" /><span>{exec.completedSteps}/{exec.stepCount} steps</span></div>
         <div className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" /><span>${exec.totalCostUsd.toFixed(4)}</span></div>
         <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /><span>{dur}</span></div>
+        {exec.provider && <span className="text-purple-400">{exec.provider}{exec.model ? `/${exec.model}` : ''}</span>}
       </div>
       <div className="text-xs text-text-muted dark:text-dark-text-muted hidden lg:block">{new Date(exec.startedAt).toLocaleString()}</div>
       {(exec.status === 'running' || exec.status === 'pending') && (

@@ -51,6 +51,8 @@ interface ExecutionSummary {
   stepCount: number;
   startedAt: string;
   completedAt: string | null;
+  provider?: string | null;
+  model?: string | null;
 }
 
 // ============================================================================
@@ -204,10 +206,12 @@ export async function agenticList(options: { limit?: number; offset?: number; js
 
     for (const e of executions) {
       const statusIcon = e.status === 'completed' ? '✓' : e.status === 'failed' ? '✗' : e.status === 'running' ? '▶' : '◌';
-      const cost = e.totalCostUsd ? ` $${e.totalCostUsd.toFixed(4)}` : '';
+      const cost = e.totalCostUsd ? ` ${e.totalCostUsd.toFixed(4)}` : '';
       const duration = e.totalDurationMs ? ` ${e.totalDurationMs.toLocaleString()}ms` : '';
+      const providerTag = e.provider ? `  ${e.provider}` : '';
+      const modelTag = e.model ? `/${e.model}` : '';
 
-      console.log(`  ${statusIcon} ${e.taskName.padEnd(50)}  ${e.status.padEnd(18)}${duration}${cost}`);
+      console.log(`  ${statusIcon} ${e.taskName.padEnd(45)}  ${e.status.padEnd(15)}${duration}${cost}${providerTag}${modelTag}`);
       const shortTime = new Date(e.startedAt).toLocaleString();
       console.log(`     ${e.id}`);
       console.log(`     ${shortTime}  ${e.summary.slice(0, 90)}`);
