@@ -409,11 +409,13 @@ agenticCmd
   .option('--kind <kind>', 'Filter by executor kind (comma-separated)')
   .option('--search <keywords>', 'Search by keywords (comma-separated)')
   .option('--provider <id>', 'Filter by provider ID')
+  .option('--json', 'Output as JSON')
   .action(agenticCapabilities);
 
 agenticCmd
   .command('stats')
   .description('Show aggregated execution statistics')
+  .option('--json', 'Output as JSON')
   .action(agenticStats);
 
 agenticCmd

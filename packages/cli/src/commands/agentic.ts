@@ -374,7 +374,7 @@ export async function agenticPlan(taskDescription: string[], options: { name?: s
 // ─── CAPABILITIES ───
 // ============================================================================
 
-export async function agenticCapabilities(options: { kind?: string; search?: string; provider?: string }): Promise<void> {
+export async function agenticCapabilities(options: { kind?: string; search?: string; provider?: string; json?: boolean }): Promise<void> {
   try {
     const params = new URLSearchParams();
     if (options.kind) params.set('kind', options.kind);
@@ -387,7 +387,12 @@ export async function agenticCapabilities(options: { kind?: string; search?: str
       total: number;
     };
 
-    const { capabilities } = data;
+    const { capabilities, total } = data;
+
+    if (options.json) {
+      console.log(JSON.stringify({ capabilities, total, filters: { kind: options.kind, search: options.search, provider: options.provider } }, null, 2));
+      return;
+    }
 
     if (options.kind) {
       console.log(`\nCapabilities (filtered by kind="${options.kind}", ${capabilities.length}):`);
@@ -432,9 +437,14 @@ export async function agenticCapabilities(options: { kind?: string; search?: str
 // ─── STATS ───
 // ============================================================================
 
-export async function agenticStats(): Promise<void> {
+export async function agenticStats(options: { json?: boolean } = {}): Promise<void> {
   try {
     const data = (await api('/agentic/stats')) as Record<string, unknown>;
+
+    if (options.json) {
+      console.log(JSON.stringify(data, null, 2));
+      return;
+    }
 
     console.log('\nAgentic Runtime Stats');
     console.log('─'.repeat(50));
