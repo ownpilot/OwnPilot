@@ -174,24 +174,30 @@ function Start-DevMode {
 
     Write-Info "Gateway API: http://localhost:$Port"
     if (-not $NoUI) {
-        Write-Info "UI: http://localhost:$UIPort"
+        Write-Info "UI Dev Server: http://localhost:$UIPort"
     }
     Write-Info "Press Ctrl+C to stop`n"
 
     Set-Location $ScriptDir
 
-    # Run dev servers in the FOREGROUND via turbo so that:
-    #   - the .env vars loaded into this process are inherited by the children
-    #     (Start-Job spawns a separate process that does NOT inherit Process-scope env vars)
-    #   - tsx-watch / vite live output streams directly to the console
-    #   - Ctrl+C propagates to the child processes and shuts them down cleanly
     $env:PORT = $Port
     $env:UI_PORT = $UIPort
 
     if ($NoUI) {
-        pnpm exec turbo dev --filter=@ownpilot/gateway
+        pnpm --filter @ownpilot/gateway dev
     } else {
-        pnpm exec turbo dev --filter=@ownpilot/gateway --filter=@ownpilot/ui
+        # Start gateway in background, wait for it, then start UI in foreground
+        $job = Start-Job -ScriptBlock { param($d,$p) cd $d; $env:PORT=$p; pnpm --filter @ownpilot/gateway dev } -ArgumentList $ScriptDir, $Port
+        Write-Info "Waiting for gateway to start..."
+        $ready = $false
+        for ($i = 0; $i -lt 20; $i++) {
+            Start-Sleep -Seconds 1
+            try { $r = Invoke-WebRequest -Uri "http://localhost:$Port/health" -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { $ready = $true; break } } catch {}
+        }
+        if (-not $ready) { Write-Err "Gateway didn't start in 20s"; Stop-Job $job; Remove-Job $job; return }
+        Write-Success "Gateway ready on http://localhost:$Port"
+        pnpm --filter @ownpilot/ui dev
+        Stop-Job $job; Remove-Job $job
     }
 }
 
