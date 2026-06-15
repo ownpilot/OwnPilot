@@ -11,6 +11,7 @@ import {
   Terminal, Send, Code, Wrench, Cpu, CheckCircle2,
 } from '../components/icons';
 import { agenticApi, type AgenticExecution, type AgenticStats, type ExecuteTaskInput } from '../api/endpoints/agentic';
+import { providersApi } from '../api/endpoints/providers';
 
 const POLL_MS = 5_000;
 const EXECUTOR_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -96,10 +97,51 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
   const [provider, setProvider] = useState('');
   const [model, setModel] = useState('');
+  const [providers, setProviders] = useState<Array<{ id: string; name?: string }>>([]);
+  const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingProviders, setLoadingProviders] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [triggerType, setTriggerType] = useState('immediate');
   const [intervalMs, setIntervalMs] = useState('300000');
   const [timeoutMs, setTimeoutMs] = useState('60000');
   const [running, setRunning] = useState(false);
+
+  // Fetch providers on mount
+  useEffect(() => {
+    let cancelled = false;
+    const fetch = async () => {
+      setLoadingProviders(true);
+      try {
+        const data = await providersApi.list();
+        if (!cancelled) {
+          const list = (data.providers ?? []).map((p: { id?: string; name?: string }) => ({
+            id: p.id ?? '',
+            name: p.name ?? '',
+          })).filter((p) => p.id);
+          setProviders(list);
+        }
+      } catch { /* ignore */ }
+      finally { if (!cancelled) setLoadingProviders(false); }
+    };
+    fetch();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch models when provider changes
+  useEffect(() => {
+    if (!provider) { setModels([]); return; }
+    let cancelled = false;
+    const fetch = async () => {
+      setLoadingModels(true);
+      try {
+        const data = await providersApi.models(provider);
+        if (!cancelled) setModels(data.models ?? []);
+      } catch { setModels([]); }
+      finally { if (!cancelled) setLoadingModels(false); }
+    };
+    fetch();
+    return () => { cancelled = true; };
+  }, [provider]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -110,8 +152,8 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
         name: name.trim() || description.trim().slice(0, 60),
         description: description.trim(), priority,
       };
-      if (provider.trim()) input.provider = provider.trim();
-      if (model.trim()) input.model = model.trim();
+      if (provider) input.provider = provider;
+      if (model) input.model = model;
       if (triggerType === 'interval') input.trigger = { type: 'interval', intervalMs: parseInt(intervalMs, 10) || 300000 };
       else if (triggerType === 'continuous') input.trigger = { type: 'continuous' };
       if (timeoutMs) input.constraints = { timeoutMs: parseInt(timeoutMs, 10) || 60000 };
@@ -143,9 +185,18 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
               <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option>
             </select></div>
             <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Provider</label>
-            <input type="text" value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="default" className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50" /></div>
+            <select value={provider} onChange={(e) => { setProvider(e.target.value); setModel(''); }} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+              <option value="">System default</option>
+              {loadingProviders && <option value="" disabled>Loading...</option>}
+              {providers.map((p) => <option key={p.id} value={p.id}>{p.name || p.id}</option>)}
+            </select></div>
             <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Model</label>
-            <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="default" className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50" /></div>
+            <select value={model} onChange={(e) => setModel(e.target.value)} disabled={!provider || loadingModels} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-40">
+              {!provider && <option value="">Select provider first</option>}
+              {provider && <option value="">Provider default</option>}
+              {loadingModels && <option value="" disabled>Loading...</option>}
+              {models.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select></div>
             <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Trigger</label>
             <select value={triggerType} onChange={(e) => setTriggerType(e.target.value)} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50">
               <option value="immediate">Immediate</option><option value="interval">Interval</option><option value="continuous">Continuous</option>
