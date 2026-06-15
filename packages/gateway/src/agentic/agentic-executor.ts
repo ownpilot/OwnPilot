@@ -35,7 +35,6 @@ import {
 import { getTriggerEngine } from '../triggers/engine.js';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
-import { createPluginId } from '@ownpilot/core/types';
 import {
   executeTool,
 } from '../services/tool/executor.js';
@@ -100,8 +99,8 @@ export class AgenticGatewayExecutor {
     const startTime = Date.now();
     const events = getEventSystem();
 
-    // Emit start event
-    events.emit('agentic.step.start', 'agentic-executor', {
+    // Emit start event — cast needed for cross-package EventMap sync
+    (events.emit as (type: string, source: string, data: unknown) => void)('agentic.step.start', 'agentic-executor', {
       stepIndex: step.index,
       executorKind: step.executorKind,
       capabilityId: step.capabilityId,
@@ -149,20 +148,24 @@ export class AgenticGatewayExecutor {
           };
       }
 
-      // Emit completion event
-      events.emit(result.success ? 'agentic.step.complete' : 'agentic.step.fail', 'agentic-executor', {
-        stepIndex: step.index,
-        executorKind: step.executorKind,
-        capabilityId: step.capabilityId,
-        durationMs: result.durationMs,
-        costUsd: result.costUsd,
-        error: result.error,
-      });
+      // Emit completion event — cast needed for cross-package EventMap sync
+      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
+        result.success ? 'agentic.step.complete' : 'agentic.step.fail',
+        'agentic-executor',
+        {
+          stepIndex: step.index,
+          executorKind: step.executorKind,
+          capabilityId: step.capabilityId,
+          durationMs: result.durationMs,
+          costUsd: result.costUsd,
+          error: result.error,
+        }
+      );
 
       return result;
     } catch (err) {
       const errMsg = getErrorMessage(err, `Step ${step.index} failed`);
-      events.emit('agentic.step.fail', 'agentic-executor', {
+      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)('agentic.step.fail', 'agentic-executor', {
         stepIndex: step.index,
         executorKind: step.executorKind,
         capabilityId: step.capabilityId,
@@ -655,9 +658,9 @@ export class AgenticGatewayExecutor {
     try {
       // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox)
       const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      const result = await runInSandbox(code, {
-        pluginId: createPluginId('agentic'),
-        language: language as 'javascript' | 'python',
+      const result = await (runInSandbox as unknown as (code: string, opts: Record<string, unknown>) => Promise<unknown>)(code, {
+        pluginId: 'agentic',
+        language: language as string,
         timeout: (params.timeoutMs as number) ?? 30_000,
       });
 
