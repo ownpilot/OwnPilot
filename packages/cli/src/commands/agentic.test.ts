@@ -22,6 +22,7 @@ import {
   agenticList,
   agenticStatus,
   agenticCancel,
+  agenticRerun,
   agenticPlan,
   agenticCapabilities,
   agenticStats,
@@ -414,6 +415,82 @@ describe('Agentic CLI Commands', () => {
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('3'));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('85.7'));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('claw'));
+    });
+  });
+
+  // ─── agenticRerun ───
+
+  describe('agenticRerun', () => {
+    it('shows usage when no id provided', async () => {
+      await agenticRerun('', {});
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Usage'));
+    });
+
+    it('fetches execution and re-runs it', async () => {
+      // First call: GET execution detail
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-1', task: { name: 'Research AI', description: 'Research topic', priority: 'normal' },
+          status: 'failed', provider: 'openai', model: 'gpt-4o',
+          totalCostUsd: 0.01, totalDurationMs: 100, startedAt: '', completedAt: null, steps: [],
+        })
+      );
+      // Second call: POST execute
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-2', status: 'completed', summary: 'Completed successfully',
+          totalCostUsd: 0.02, totalDurationMs: 200, steps: [],
+        })
+      );
+
+      await agenticRerun('exec-1', {});
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Re-running'));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('exec-2'));
+    });
+
+    it('passes override options', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ id: 'exec-1', task: { name: 'Test', description: 'Desc' }, status: 'failed', steps: [] })
+      );
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ id: 'exec-3', status: 'completed', summary: 'Done', totalCostUsd: 0, totalDurationMs: 0, steps: [] })
+      );
+
+      await agenticRerun('exec-1', { provider: 'anthropic', model: 'claude-3', priority: 'high' });
+      const body = JSON.parse((mockFetch.mock.calls[1][1] as RequestInit).body as string);
+      expect(body.provider).toBe('anthropic');
+      expect(body.model).toBe('claude-3');
+      expect(body.priority).toBe('high');
+    });
+  });
+
+  // ─── agenticList --json ───
+
+  describe('agenticList --json', () => {
+    it('outputs JSON instead of formatted table', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({ executions: [], total: 0, limit: 20, offset: 0 })
+      );
+
+      await agenticList({ json: true });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"executions"'));
+    });
+  });
+
+  // ─── agenticStats --json ───
+
+  describe('agenticStats --json', () => {
+    it('outputs JSON when --json flag set', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          totalExecutions: 10, activeExecutions: 2, totalCostUsd: 0.05,
+          successRate: 0.8, byExecutorKind: { claw: 8 },
+        })
+      );
+
+      await agenticStats({ json: true });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"totalExecutions"'));
     });
   });
 
