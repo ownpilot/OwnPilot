@@ -41,6 +41,7 @@ import {
   HeartbeatLogsWidget,
   CrewsWidget,
   ClawsWidget,
+  AgenticExecutionsWidget,
 } from '../components/dashboard';
 
 type TabId = 'overview' | 'agents' | 'automation' | 'extensions';
@@ -392,6 +393,9 @@ export function DashboardPage() {
 
       {/* Claws Overview */}
       <ClawsWidget limit={4} />
+
+      {/* Agentic Executions */}
+      <AgenticExecutionsWidget />
 
       {/* Two-column: Timeline + Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-2">
