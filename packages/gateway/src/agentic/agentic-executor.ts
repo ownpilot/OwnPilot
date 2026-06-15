@@ -25,10 +25,14 @@ import {
   getWorkflowService,
   getCodingAgentService,
   getTriggerEngine,
+  getTriggerService,
   getLog,
   getErrorMessage,
   getRuntimeContext,
+  generateId,
   type RuntimeContext,
+  type CreateTriggerInput,
+  type TriggerAction,
 } from '@ownpilot/core/services';
 import type { ExecutionStep, ExecutorKind } from '@ownpilot/core/agentic';
 import { ClawRunner } from '../services/claw/runner.js';
@@ -40,6 +44,31 @@ import {
 import type { ClawConfig, ClawSession } from '@ownpilot/core/services';
 
 const log = getLog('AgenticExecutor');
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Convert an interval in milliseconds to a cron expression.
+ * Rounds to the nearest natural unit (minutes, hours, days).
+ */
+function convertIntervalToCron(intervalMs: number | undefined): string | null {
+  if (!intervalMs || intervalMs < 1000) return null;
+
+  const minutes = Math.round(intervalMs / 60_000);
+  if (minutes < 60) {
+    return `*/${Math.max(1, minutes)} * * * *`;
+  }
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `0 */${Math.max(1, hours)} * * *`;
+  }
+
+  const days = Math.round(hours / 24);
+  return `0 0 */${Math.max(1, days)} * *`;
+}
 
 // ============================================================================
 // Result envelope
@@ -304,6 +333,8 @@ export class AgenticGatewayExecutor {
 
     const triggerConfig = params.trigger as Record<string, unknown> | undefined;
     const action = params.action as Record<string, unknown> | undefined;
+    const userId = (params.userId as string) || 'local';
+    const taskName = (params.taskName as string) || 'agentic-trigger';
 
     if (!triggerConfig || !action) {
       return {
@@ -314,24 +345,193 @@ export class AgenticGatewayExecutor {
       };
     }
 
-    // Register a temporary trigger action handler via the trigger engine
-    const engine = getTriggerEngine();
-    const actionType = (action.type as string) || 'chat';
-    const actionPayload = (action.payload as Record<string, unknown>) || {};
+    const triggerType = triggerConfig.type as string;
 
-    // Execute the action directly through the trigger engine's executeAction path
-    // by firing a synthetic event
-    await engine.emit('agentic:trigger', {
-      triggerType: triggerConfig.type as string,
-      actionType,
-      ...actionPayload,
-    });
+    // Map agentic trigger types to actual persistent triggers or Claw sessions.
+    switch (triggerType) {
+      case 'scheduled':
+      case 'interval': {
+        // Create a persistent scheduled trigger via ITriggerService.
+        const cron =
+          (triggerConfig.cron as string) ??
+          convertIntervalToCron(triggerConfig.intervalMs as number | undefined);
+        if (!cron) {
+          return {
+            success: false,
+            output: null,
+            error: 'scheduled/interval trigger requires cron or intervalMs',
+            durationMs: Date.now() - startTime,
+          };
+        }
 
-    return {
-      success: true,
-      output: { triggered: true, triggerConfig, action },
-      durationMs: Date.now() - startTime,
-    };
+        const triggerAction: TriggerAction = {
+          type: 'chat',
+          payload: {
+            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
+            expectedOutput: (action.payload as Record<string, unknown>)?.expectedOutput as string ?? '',
+          },
+        };
+
+        const input: CreateTriggerInput = {
+          name: taskName,
+          description: `Auto-created by Agentic layer: ${triggerType} trigger`,
+          type: 'schedule',
+          config: {
+            cron,
+            timezone: (triggerConfig.timezone as string) ?? 'UTC',
+          },
+          action: triggerAction,
+          enabled: true,
+          priority: 3,
+        };
+
+        const trigger = await getTriggerService().createTrigger(userId, input);
+
+        log.info('Created scheduled trigger from agentic plan', {
+          triggerId: trigger.id,
+          cron,
+        });
+
+        return {
+          success: true,
+          output: {
+            triggerId: trigger.id,
+            type: 'schedule',
+            cron,
+            nextFire: trigger.nextFire?.toISOString() ?? null,
+          },
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      case 'event': {
+        // Create a persistent event trigger.
+        const eventType = (triggerConfig.eventType as string) || 'custom';
+        const filters = triggerConfig.filters as Record<string, unknown> | undefined;
+
+        const triggerAction: TriggerAction = {
+          type: 'chat',
+          payload: {
+            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
+            expectedOutput: (action.payload as Record<string, unknown>)?.expectedOutput as string ?? '',
+          },
+        };
+
+        const input: CreateTriggerInput = {
+          name: taskName,
+          description: `Auto-created by Agentic layer: event trigger on ${eventType}`,
+          type: 'event',
+          config: {
+            eventType,
+            ...(filters ? { filters } : {}),
+          },
+          action: triggerAction,
+          enabled: true,
+        };
+
+        const trigger = await getTriggerService().createTrigger(userId, input);
+
+        log.info('Created event trigger from agentic plan', {
+          triggerId: trigger.id,
+          eventType,
+        });
+
+        return {
+          success: true,
+          output: {
+            triggerId: trigger.id,
+            type: 'event',
+            eventType,
+          },
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      case 'condition': {
+        // Create a persistent condition trigger.
+        const condition = (triggerConfig.condition as string) || '';
+        if (!condition) {
+          return {
+            success: false,
+            output: null,
+            error: 'condition trigger requires condition expression',
+            durationMs: Date.now() - startTime,
+          };
+        }
+
+        const triggerAction: TriggerAction = {
+          type: 'chat',
+          payload: {
+            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
+          },
+        };
+
+        const input: CreateTriggerInput = {
+          name: taskName,
+          description: `Auto-created by Agentic layer: condition trigger`,
+          type: 'condition',
+          config: {
+            condition,
+            threshold: (triggerConfig.threshold as number) ?? undefined,
+            checkInterval: (triggerConfig.checkIntervalMs as number) ?? undefined,
+          },
+          action: triggerAction,
+          enabled: true,
+        };
+
+        const trigger = await getTriggerService().createTrigger(userId, input);
+
+        return {
+          success: true,
+          output: {
+            triggerId: trigger.id,
+            type: 'condition',
+            condition,
+          },
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      case 'continuous': {
+        // Continuous mode is not a persistent trigger — create a Claw in continuous mode.
+        const taskDesc = (action.payload as Record<string, unknown>)?.task as string ?? '';
+        const service = getClawService();
+        const claw = await service.createClaw({
+          userId,
+          name: taskName,
+          mission: taskDesc,
+          mode: 'continuous',
+          createdBy: 'claw',
+        });
+        const session = await service.startClaw(claw.id, userId);
+
+        return {
+          success: true,
+          output: {
+            clawId: claw.id,
+            type: 'continuous',
+            state: session.state,
+          },
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      default: {
+        // Unsupported trigger type — fall back to immediate execution via emit.
+        const engine = getTriggerEngine();
+        await engine.emit('agentic:trigger', {
+          triggerType,
+          actionType: (action.type as string) || 'chat',
+          ...((action.payload as Record<string, unknown>) || {}),
+        });
+
+        return {
+          success: true,
+          output: { triggered: true, type: triggerType, note: 'emitted as one-shot event' },
+          durationMs: Date.now() - startTime,
+        };
+      }
+    }
   }
 
   // ── Channel ───────────────────────────────────────────────────────────

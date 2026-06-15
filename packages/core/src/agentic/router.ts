@@ -370,6 +370,7 @@ export class AgenticRouter implements IAgenticRouter {
         providerId: 'ownpilot:trigger',
         params: {
           trigger,
+          taskName: task.name,
           action: {
             type: 'chat',
             payload: {
