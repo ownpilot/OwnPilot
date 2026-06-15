@@ -370,6 +370,7 @@ agenticCmd
   .option('--provider <provider>', 'AI provider (e.g. anthropic, openai)')
   .option('--model <model>', 'Model name (e.g. claude-sonnet-4-20250514)')
   .option('--prompt <text>', 'System prompt override for the agent')
+  .option('--json', 'Output as JSON')
   .action(agenticRun);
 
 agenticCmd

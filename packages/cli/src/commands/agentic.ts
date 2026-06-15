@@ -67,6 +67,7 @@ export async function agenticRun(taskDescription: string[], options: {
   provider?: string;
   model?: string;
   prompt?: string;
+  json?: boolean;
 }): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
@@ -125,15 +126,23 @@ export async function agenticRun(taskDescription: string[], options: {
     const steps = result.steps as Array<Record<string, unknown>> | undefined;
     const error = result.error as string | undefined;
 
+    // JSON output mode
+    if (options.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+
     // Print results
     const icon = status === 'completed' ? '✓' : status === 'failed' ? '✗' : '◌';
-    console.log(`  ${icon} Task: ${name}`);
-    console.log(`    ID:     ${id}`);
-    console.log(`    Status: ${status}`);
-    console.log(`    Result: ${summary}`);
-    if (error) console.log(`    Error:  ${error}`);
-    console.log(`    Cost:   $${(cost ?? 0).toFixed(4)}`);
-    console.log(`    Time:   ${(duration ?? 0).toLocaleString()}ms`);
+    console.log(`\n  ${icon}  ${name}`);
+    console.log('  ' + '─'.repeat(50));
+    console.log(`  ID:       ${id}`);
+    console.log(`  Status:   ${status}`);
+    console.log(`  Result:   ${summary ?? '—'}`);
+    if (error) console.log(`  Error:    ${error}`);
+    console.log(`  Cost:     ${(cost ?? 0).toFixed(4)}`);
+    const durStr = (duration ?? 0) >= 1000 ? `${((duration ?? 0) / 1000).toFixed(1)}s` : `${(duration ?? 0)}ms`;
+    console.log(`  Time:     ${durStr}`);
 
     if (steps && steps.length > 0) {
       console.log('');
@@ -495,8 +504,8 @@ OPTIONS
   --provider   AI provider (e.g. anthropic, openai — uses system default if not set)
   --model      Model name (e.g. claude-sonnet-4-20250514 — uses system default if not set)
   --prompt     Custom system prompt for the agent (default: generic assistant)
+  --json       Output as JSON (for run/status commands)
   --output     Save execution result to file
-  --json       JSON output format
   --limit      Max results (default: 20)
   --kind       Filter capabilities by executor kind
   --search     Search capabilities by keyword
