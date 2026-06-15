@@ -12,9 +12,13 @@ const log = getLog('DashboardBriefing');
 
 /** Safe default when agentic data is unavailable in test/migration scenarios. */
 const agenticDefault = {
-  totalExecutions: 0, activeExecutions: 0, todayExecutions: 0,
-  todayCostUsd: 0, successRate: 0,
-  lastExecutionStatus: null, lastExecutionSummary: null,
+  totalExecutions: 0,
+  activeExecutions: 0,
+  todayExecutions: 0,
+  todayCostUsd: 0,
+  successRate: 0,
+  lastExecutionStatus: null,
+  lastExecutionSummary: null,
 };
 
 // ============================================================================
@@ -112,6 +116,16 @@ export const briefingCache = new BriefingCache();
 // ============================================================================
 
 /**
+ * In-flight briefing generations, keyed by userId. Concurrent requests for the
+ * same user (e.g. initial page load racing a poll/refresh, or a StrictMode
+ * double-invoke) dedup onto a single promise. Without this the second request
+ * would hit the shared chat agent's single-flight guard
+ * ("Agent is already processing a request") and silently fall back to the
+ * non-AI briefing — and we'd pay for two identical LLM calls.
+ */
+const inFlightBriefings = new Map<string, Promise<AIBriefing>>();
+
+/**
  * Generate AI briefing from aggregated data (non-streaming).
  */
 export async function generateAIBriefing(
@@ -126,28 +140,47 @@ export async function generateAIBriefing(
     if (cached) return cached;
   }
 
-  const prompt = buildBriefingPrompt(data);
+  // Dedup concurrent generations for the same user.
+  const existing = inFlightBriefings.get(userId);
+  if (existing) return existing;
 
-  const { getDefaultProvider, getDefaultModel } = await import('../app-settings.js');
-  const provider = options?.provider ?? (await getDefaultProvider()) ?? 'openai';
-  const model = options?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
+  const promise = (async (): Promise<AIBriefing> => {
+    const prompt = buildBriefingPrompt(data);
 
-  try {
-    const { getOrCreateChatAgent } = await import('../agent/service.js');
-    const agent = await getOrCreateChatAgent(provider, model);
-    const result = await agent.chat(prompt, { stream: false });
+    const { getDefaultProvider, getDefaultModel } = await import('../app-settings.js');
+    const provider = options?.provider ?? (await getDefaultProvider()) ?? 'openai';
+    const model = options?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o-mini';
 
-    if (!result.ok) {
-      throw new Error(result.error.message);
+    try {
+      const { getOrCreateChatAgent } = await import('../agent/service.js');
+      // Dedicated conversationId so the briefing gets its own agent instance,
+      // isolated from user chat sessions and the streaming briefing path.
+      const agent = await getOrCreateChatAgent(
+        provider,
+        model,
+        undefined,
+        null,
+        'dashboard-briefing'
+      );
+      const result = await agent.chat(prompt, { stream: false });
+
+      if (!result.ok) {
+        throw new Error(result.error.message);
+      }
+
+      const briefing = parseAIResponse(result.value.content, model);
+      briefingCache.set(userId, briefing, dataHash);
+      return briefing;
+    } catch (error) {
+      log.error('[DashboardBriefing] AI briefing generation failed:', error);
+      return generateFallbackBriefing(data);
     }
+  })().finally(() => {
+    inFlightBriefings.delete(userId);
+  });
 
-    const briefing = parseAIResponse(result.value.content, model);
-    briefingCache.set(userId, briefing, dataHash);
-    return briefing;
-  } catch (error) {
-    log.error('[DashboardBriefing] AI briefing generation failed:', error);
-    return generateFallbackBriefing(data);
-  }
+  inFlightBriefings.set(userId, promise);
+  return promise;
 }
 
 /**
@@ -167,7 +200,15 @@ export async function generateAIBriefingStreaming(
 
   try {
     const { getOrCreateChatAgent } = await import('../agent/service.js');
-    const agent = await getOrCreateChatAgent(options.provider, model);
+    // Dedicated conversationId, distinct from the non-streaming briefing path,
+    // so the two never share a single-flight agent instance.
+    const agent = await getOrCreateChatAgent(
+      options.provider,
+      model,
+      undefined,
+      null,
+      'dashboard-briefing-stream'
+    );
 
     let fullContent = '';
 
