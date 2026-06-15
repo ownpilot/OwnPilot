@@ -172,33 +172,70 @@ function Build-Project {
 function Start-DevMode {
     Write-Header "Starting Development Mode"
 
-    Write-Info "Gateway API: http://localhost:$Port"
-    if (-not $NoUI) {
-        Write-Info "UI Dev Server: http://localhost:$UIPort"
+    if ($NoUI) {
+        Write-Info "Gateway API: http://localhost:$Port`n"
+        Set-Location $ScriptDir
+        $env:PORT = $Port
+        $env:NODE_ENV = "development"
+        pnpm --filter @ownpilot/gateway dev
+        return
     }
-    Write-Info "Press Ctrl+C to stop`n"
+
+    Write-Info "Gateway API: http://localhost:$Port"
+    Write-Info "UI Dev Server: http://localhost:$UIPort"
+    Write-Info ""
+
+    # Check PostgreSQL first (most common startup failure)
+    try {
+        $pgPort = if ($env:POSTGRES_PORT) { $env:POSTGRES_PORT } else { 25432 }
+        $pgCheck = curl.exe -s -o nul -w "%{http_code}" "http://localhost:$pgPort" 2>$null
+        # PostgreSQL doesn't speak HTTP, so any response means something is listening
+        # A connection refused means PG isn't running
+    } catch {
+        Write-Err "PostgreSQL doesn't seem to be running on port $pgPort."
+        Write-Info "Start PostgreSQL first:"
+        Write-Info "  docker compose -f docker-compose.db.yml up -d"
+        Write-Info "  (or use your local PostgreSQL instance)"
+        Write-Info "`nThen run this script again.`n"
+        return
+    }
 
     Set-Location $ScriptDir
-
     $env:PORT = $Port
     $env:UI_PORT = $UIPort
+    $env:NODE_ENV = "development"
 
-    if ($NoUI) {
-        pnpm --filter @ownpilot/gateway dev
-    } else {
-        # Start gateway in background, wait for it, then start UI in foreground
-        $job = Start-Job -ScriptBlock { param($d,$p) cd $d; $env:PORT=$p; pnpm --filter @ownpilot/gateway dev } -ArgumentList $ScriptDir, $Port
-        Write-Info "Waiting for gateway to start..."
-        $ready = $false
-        for ($i = 0; $i -lt 20; $i++) {
-            Start-Sleep -Seconds 1
-            try { $r = Invoke-WebRequest -Uri "http://localhost:$Port/health" -UseBasicParsing -TimeoutSec 1; if ($r.StatusCode -eq 200) { $ready = $true; break } } catch {}
-        }
-        if (-not $ready) { Write-Err "Gateway didn't start in 20s"; Stop-Job $job; Remove-Job $job; return }
-        Write-Success "Gateway ready on http://localhost:$Port"
-        pnpm --filter @ownpilot/ui dev
-        Stop-Job $job; Remove-Job $job
+    # Start gateway in a NEW terminal window so its output is visible
+    $gwTitle = "OwnPilot Gateway (port $Port)"
+    Write-Info "Starting gateway in a new window (\"$gwTitle\")..."
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$ScriptDir'; `$env:PORT=$Port; `$env:NODE_ENV='development'; pnpm --filter @ownpilot/gateway dev" -WindowStyle Normal -Title $gwTitle
+
+    Write-Info "Waiting for gateway to start (check the new window for errors)..."
+    $ready = $false
+    for ($i = 0; $i -lt 30; $i++) {
+        Start-Sleep -Seconds 1
+        # Use curl.exe for faster health checks on Windows
+        try {
+            $r = curl.exe -s -o nul -w "%{http_code}" "http://localhost:$Port/health" 2>$null
+            if ($r -eq 200) { $ready = $true; break }
+        } catch {}
+        if ($i -eq 10) { Write-Info "Still waiting... (gateway compiling TypeScript)" }
+        if ($i -eq 20) { Write-Info "Still waiting... (check the gateway window for errors)" }
     }
+
+    if (-not $ready) {
+        Write-Err "Gateway didn't start within 30 seconds."
+        Write-Info "Check the gateway terminal window for compilation errors."
+        Write-Info "Common fixes:"
+        Write-Info "  1. Ensure PostgreSQL is running (docker compose -f docker-compose.db.yml up -d)"
+        Write-Info "  2. Run 'pnpm --filter @ownpilot/core build' to ensure core is built"
+        Write-Info "  3. Open a terminal and run gateway manually: pnpm --filter @ownpilot/gateway dev"
+        return
+    }
+
+    Write-Success "Gateway ready on http://localhost:$Port"
+    Write-Info "Starting UI dev server...`n"
+    pnpm --filter @ownpilot/ui dev
 }
 
 # Start in production mode
