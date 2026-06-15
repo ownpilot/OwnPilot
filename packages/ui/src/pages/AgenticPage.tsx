@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import {
   Play, Square, AlertCircle, Clock, DollarSign, RefreshCw,
   Brain, ListChecks, Target, Zap, X, ChevronDown, ChevronRight,
-  Terminal, Send, Code, Wrench, Cpu, Loader2, CheckCircle2, HelpCircle,
+  Terminal, Send, Code, Wrench, Cpu, CheckCircle2,
 } from '../components/icons';
 import { agenticApi, type AgenticExecution, type AgenticStats, type ExecuteTaskInput } from '../api/endpoints/agentic';
 
@@ -30,7 +30,7 @@ function GitBranchIcon(props: { className?: string }) {
 function StatusIcon({ status, className }: { status: string; className?: string }) {
   switch (status) {
     case 'completed': return <CheckCircle2 className={`text-green-500 ${className ?? ''}`} />;
-    case 'running': return <Loader2 className={`text-blue-500 animate-spin ${className ?? ''}`} />;
+    case 'running': return <RefreshCw className={`text-blue-500 animate-spin ${className ?? ''}`} />;
     case 'failed': return <X className={`text-red-500 ${className ?? ''}`} />;
     case 'cancelled': return <Square className={`text-gray-400 ${className ?? ''}`} />;
     case 'partially_completed': return <AlertCircle className={`text-amber-500 ${className ?? ''}`} />;
@@ -66,7 +66,7 @@ function StatsBar({ stats }: { stats: AgenticStats | null }) {
   );
   const cards = [
     { icon: Play, label: 'Total Executions', value: stats.totalExecutions, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { icon: Loader2, label: 'Active Now', value: stats.activeExecutions, color: 'text-green-500', bg: 'bg-green-500/10' },
+    { icon: RefreshCw, label: 'Active Now', value: stats.activeExecutions, color: 'text-green-500', bg: 'bg-green-500/10' },
     { icon: DollarSign, label: 'Total Cost', value: `$${stats.totalCostUsd.toFixed(4)}`, color: 'text-amber-500', bg: 'bg-amber-500/10' },
     { icon: Target, label: 'Success Rate', value: `${(stats.successRate * 100).toFixed(1)}%`, color: stats.successRate > 0.8 ? 'text-green-500' : stats.successRate > 0.5 ? 'text-amber-500' : 'text-red-500', bg: 'bg-purple-500/10' },
   ];
@@ -94,6 +94,8 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
+  const [provider, setProvider] = useState('');
+  const [model, setModel] = useState('');
   const [triggerType, setTriggerType] = useState('immediate');
   const [intervalMs, setIntervalMs] = useState('300000');
   const [timeoutMs, setTimeoutMs] = useState('60000');
@@ -108,11 +110,13 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
         name: name.trim() || description.trim().slice(0, 60),
         description: description.trim(), priority,
       };
+      if (provider.trim()) input.provider = provider.trim();
+      if (model.trim()) input.model = model.trim();
       if (triggerType === 'interval') input.trigger = { type: 'interval', intervalMs: parseInt(intervalMs, 10) || 300000 };
       else if (triggerType === 'continuous') input.trigger = { type: 'continuous' };
       if (timeoutMs) input.constraints = { timeoutMs: parseInt(timeoutMs, 10) || 60000 };
       await agenticApi.execute(input);
-      setName(''); setDescription(''); setExpanded(false);
+      setName(''); setDescription(''); setProvider(''); setModel(''); setExpanded(false);
       onExecute();
     } finally { setRunning(false); }
   };
@@ -138,6 +142,10 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
             <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50">
               <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option>
             </select></div>
+            <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Provider</label>
+            <input type="text" value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="default" className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50" /></div>
+            <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Model</label>
+            <input type="text" value={model} onChange={(e) => setModel(e.target.value)} placeholder="default" className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50" /></div>
             <div><label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted mb-1">Trigger</label>
             <select value={triggerType} onChange={(e) => setTriggerType(e.target.value)} className="w-full px-3 py-2 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg border border-border dark:border-dark-border text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50">
               <option value="immediate">Immediate</option><option value="interval">Interval</option><option value="continuous">Continuous</option>
@@ -150,7 +158,7 @@ function CommandBar({ onExecute }: { onExecute: () => void }) {
           <div className="flex justify-end gap-3">
             <button type="button" onClick={() => setExpanded(false)} className="px-4 py-2 text-sm text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary transition-colors">Cancel</button>
             <button type="submit" disabled={!description.trim() || running} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-              {running ? <><Loader2 className="w-4 h-4 animate-spin" /> Executing...</> : <><Play className="w-4 h-4" /> Execute</>}
+              {running ? <><RefreshCw className="w-4 h-4 animate-spin" /> Executing...</> : <><Play className="w-4 h-4" /> Execute</>}
             </button>
           </div>
         </form>
@@ -210,7 +218,7 @@ function ExecutionDetailModal({ executionId, onClose }: { executionId: string; o
       <div className="bg-bg-primary dark:bg-dark-bg-primary rounded-2xl border border-border dark:border-dark-border shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden m-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
           <div className="flex items-center gap-3">
-            {exec ? <StatusIcon status={exec.status} className="w-6 h-6" /> : <Loader2 className="w-6 h-6 animate-spin text-purple-500" />}
+            {exec ? <StatusIcon status={exec.status} className="w-6 h-6" /> : <RefreshCw className="w-6 h-6 animate-spin text-purple-500" />}
             <div><div className="font-semibold text-text-primary dark:text-dark-text-primary">{exec?.taskName ?? 'Loading...'}</div>{exec && <StatusBadge status={exec.status} />}</div>
           </div>
           <div className="flex items-center gap-2">
@@ -222,7 +230,7 @@ function ExecutionDetailModal({ executionId, onClose }: { executionId: string; o
         </div>
         <div className="overflow-y-auto p-6 space-y-6 max-h-[calc(85vh-80px)]">
           {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
+            <div className="flex items-center justify-center py-12"><RefreshCw className="w-8 h-8 animate-spin text-purple-500" /></div>
           ) : !exec ? (
             <div className="text-center py-12 text-text-muted">Execution not found</div>
           ) : (
@@ -238,7 +246,7 @@ function ExecutionDetailModal({ executionId, onClose }: { executionId: string; o
               <div><h3 className="text-sm font-semibold text-text-primary dark:text-dark-text-primary mb-3">Execution Steps</h3>
               <div className="space-y-2">
                 {exec.steps?.map((s) => {
-                  const SI = EXECUTOR_ICONS[s.executorKind] ?? HelpCircle;
+                  const SI = EXECUTOR_ICONS[s.executorKind] ?? AlertCircle;
                   const ds = s.durationMs >= 1000 ? `${(s.durationMs / 1000).toFixed(1)}s` : `${s.durationMs}ms`;
                   return (
                     <div key={s.index} className="p-3 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
@@ -310,7 +318,7 @@ function CapabilitiesPanel() {
         <span className="text-xs text-text-muted dark:text-dark-text-muted">{caps.length} capabilities</span>
       </div>
       {loading ? (
-        <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-purple-500" /></div>
+        <div className="flex items-center justify-center py-8"><RefreshCw className="w-6 h-6 animate-spin text-purple-500" /></div>
       ) : caps.length === 0 ? (
         <div className="text-center py-8 text-text-muted text-sm">No capabilities found</div>
       ) : (
@@ -413,7 +421,7 @@ export function AgenticPage() {
             <div className="w-36 text-right hidden lg:block">Started</div><div className="w-8" />
           </div>
           {loading ? (
-            <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>
+            <div className="flex items-center justify-center py-16"><RefreshCw className="w-8 h-8 animate-spin text-purple-500" /></div>
           ) : executions.length === 0 ? (
             <div className="text-center py-16">
               <Brain className="w-12 h-12 mx-auto text-text-muted/30 mb-3" />
