@@ -84,4 +84,4 @@ export {
   createCodePipeline,
 } from './composer.js';
 
-export type { OptimizationSuggestion } from './composer.js';
+export type { OptimizationSuggestion, StepDispatchFn } from './composer.js';

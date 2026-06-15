@@ -145,14 +145,26 @@ function expandDependencies(
 // Orchestrator Implementation
 // ============================================================================
 
+/**
+ * Signature for a step dispatch function.
+ * Gateway implementations provide this to route steps to real services
+ * (ClawService, WorkflowService, CodingAgentService, TriggerEngine, etc.).
+ */
+export type StepDispatchFn = (
+  step: ExecutionStep,
+  signal?: AbortSignal
+) => Promise<{ success: boolean; output: unknown; error?: string; costUsd?: number }>;
+
 export class AgenticOrchestrator implements IAgenticOrchestrator {
   private readonly executions = new Map<string, ExecutionState>();
   private readonly router: AgenticRouter;
   private readonly registry: CapabilityRegistry;
+  private readonly stepHandler: StepDispatchFn | null;
 
-  constructor(registry?: CapabilityRegistry) {
+  constructor(registry?: CapabilityRegistry, stepHandler?: StepDispatchFn) {
     this.registry = registry ?? getCapabilityRegistry();
     this.router = new AgenticRouter(this.registry);
+    this.stepHandler = stepHandler ?? null;
   }
 
   /**
@@ -413,25 +425,28 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
 
   /**
    * Dispatch a step to the actual executor.
-   * This is a placeholder that will be implemented by the gateway layer
-   * to actually invoke ClawRunner, HeartbeatRunner, WorkflowService, etc.
+   *
+   * When a `stepHandler` was provided to the constructor (e.g. the gateway
+   * passed its AgenticGatewayExecutor), this delegates to it — the gateway
+   * routes to ClawService, WorkflowService, CodingAgentService, etc.
+   *
+   * When no handler is set (vanilla core usage), returns the params as a
+   * placeholder so the orchestration logic can still be tested without
+   * any gateway services running.
    */
   private async dispatchStep(
     step: ExecutionStep,
-    _signal?: AbortSignal
+    signal?: AbortSignal
   ): Promise<unknown> {
-    // This is the integration point where the gateway would route to:
-    // - ClawRunner.runCycle() for claw steps
-    // - HeartbeatRunner.executeCycle() for soul steps
-    // - WorkflowService.executeWorkflow() for workflow steps
-    // - TriggerEngine for trigger steps
-    // - ChannelService for channel steps
-    // - CodingAgentOrchestrator for coding agent steps
-    // - Direct provider.complete() for direct LLM steps
-    //
-    // For now, returns the params as the result — the gateway layer
-    // will implement the actual routing.
+    if (this.stepHandler) {
+      const result = await this.stepHandler(step, signal);
+      if (!result.success) {
+        throw new Error(result.error ?? `Step ${step.index} (${step.executorKind}) failed`);
+      }
+      return result.output;
+    }
 
+    // Default placeholder — no gateway handler wired
     return {
       executorKind: step.executorKind,
       capabilityId: step.capabilityId,
