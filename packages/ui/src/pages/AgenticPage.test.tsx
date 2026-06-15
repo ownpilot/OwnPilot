@@ -26,6 +26,13 @@ vi.mock('../api/endpoints/agentic', () => ({
   },
 }));
 
+vi.mock('../api/endpoints/providers', () => ({
+  providersApi: {
+    list: () => Promise.resolve({ providers: [] }),
+    models: () => Promise.resolve({ models: [] }),
+  },
+}));
+
 // Mock icons (they're SVG components — just return null to keep tests fast)
 vi.mock('../components/icons', () => {
   function makeIcon(name: string) {
