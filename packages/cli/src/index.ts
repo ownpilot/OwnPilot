@@ -79,6 +79,16 @@ import {
 } from './commands/soul.js';
 import { startAcpServe } from './commands/acp.js';
 import {
+  agenticRun,
+  agenticList,
+  agenticStatus,
+  agenticCancel,
+  agenticPlan,
+  agenticCapabilities,
+  agenticStats,
+  agenticHelp,
+} from './commands/agentic.js';
+import {
   clawList,
   clawGet,
   clawStats,
@@ -341,6 +351,64 @@ heartbeatCmd
   .command('agent <agentId>')
   .description('Show heartbeat logs for a specific agent')
   .action(heartbeatAgent);
+
+// Agentic commands — unified task execution across all agent types
+const agenticCmd = program
+  .command('agentic')
+  .description('Unified task execution across all agent types (run/list/status/cancel/plan/capabilities/stats)');
+
+agenticCmd
+  .command('run <task...>')
+  .description('Execute an autonomous agentic task')
+  .option('--name <name>', 'Task name (auto-generated from description if not set)')
+  .option('--priority <level>', 'Priority: low, normal, high, critical')
+  .option('--trigger <type>', 'Trigger: immediate, interval, continuous (default: immediate)')
+  .option('--interval <ms>', 'Interval in ms for interval trigger (default: 300000)')
+  .option('--timeout <ms>', 'Step timeout in ms (default: 60000)')
+  .option('--output <path>', 'Save results to file')
+  .action(agenticRun);
+
+agenticCmd
+  .command('list')
+  .description('List recent executions')
+  .option('-l, --limit <n>', 'Max results (default: 20)', (v) => Number(v))
+  .option('-o, --offset <n>', 'Offset for pagination', (v) => Number(v))
+  .action(agenticList);
+
+agenticCmd
+  .command('status <id>')
+  .description('Show detailed execution report')
+  .option('--json', 'JSON output format')
+  .action(agenticStatus);
+
+agenticCmd
+  .command('cancel <id>')
+  .description('Cancel a running execution')
+  .action(agenticCancel);
+
+agenticCmd
+  .command('plan <task...>')
+  .description('Analyze a task and show execution plan (no execution)')
+  .option('--name <name>', 'Task name')
+  .option('--trigger <type>', 'Trigger: immediate, interval, continuous')
+  .option('--interval <ms>', 'Interval in ms for interval trigger')
+  .action(agenticPlan);
+
+agenticCmd
+  .command('capabilities')
+  .description('List registered agent capabilities')
+  .option('--kind <kind>', 'Filter by executor kind (comma-separated)')
+  .option('--search <keywords>', 'Search by keywords (comma-separated)')
+  .option('--provider <id>', 'Filter by provider ID')
+  .action(agenticCapabilities);
+
+agenticCmd
+  .command('stats')
+  .description('Show aggregated execution statistics')
+  .action(agenticStats);
+
+// Default: no subcommand → show help
+agenticCmd.action(agenticHelp);
 
 // Claw commands — drive the unified autonomous agent runtime
 const clawCmd = program
