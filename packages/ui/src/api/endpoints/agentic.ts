@@ -48,6 +48,8 @@ export interface AgenticExecution {
   taskName: string;
   status: ExecutionStatus;
   summary: string;
+  provider?: string | null;
+  model?: string | null;
   totalCostUsd: number;
   totalDurationMs: number;
   stepCount: number;
