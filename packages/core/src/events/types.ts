@@ -33,7 +33,8 @@ export type EventCategory =
   | 'soul'
   | 'edge'
   | 'workflow'
-  | 'coding-agent';
+  | 'coding-agent'
+  | 'agentic';
 
 // ============================================================================
 // Event Types
@@ -129,6 +130,7 @@ export function deriveCategory(type: string): EventCategory {
     'edge',
     'workflow',
     'coding-agent',
+    'agentic',
   ];
   if (validCategories.includes(firstSegment as EventCategory)) {
     return firstSegment as EventCategory;

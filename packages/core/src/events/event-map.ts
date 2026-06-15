@@ -660,6 +660,33 @@ export interface ClawUpdateData {
 }
 
 // ============================================================================
+// Agentic Event Data
+// ============================================================================
+
+export interface AgenticStepStartData {
+  stepIndex: number;
+  executorKind: string;
+  capabilityId: string;
+}
+
+export interface AgenticStepCompleteData {
+  stepIndex: number;
+  executorKind: string;
+  capabilityId: string;
+  durationMs: number;
+  costUsd?: number;
+  error?: string;
+}
+
+export interface AgenticStepFailData {
+  stepIndex: number;
+  executorKind: string;
+  capabilityId: string;
+  durationMs: number;
+  error: string;
+}
+
+// ============================================================================
 // Master Event Map
 // ============================================================================
 
@@ -805,6 +832,11 @@ export interface EventMap {
   // --- Claw Events ---
   'claw.output': ClawOutputData;
   'claw.update': ClawUpdateData;
+
+  // --- Agentic Events ---
+  'agentic.step.start': AgenticStepStartData;
+  'agentic.step.complete': AgenticStepCompleteData;
+  'agentic.step.fail': AgenticStepFailData;
 }
 
 // ============================================================================

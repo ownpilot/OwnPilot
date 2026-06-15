@@ -20,13 +20,12 @@
  * 3. Generic dynamic route (/:id) — MUST be last
  */
 
-import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getCapabilityRegistry, AgenticRouter } from '@ownpilot/core/agentic';
+import { getCapabilityRegistry, AgenticRouter, type TaskTriggerStrategy } from '@ownpilot/core/agentic';
 import { getAgenticExecutor } from '../agentic/agentic-executor.js';
 import { AgenticOrchestrator } from '@ownpilot/core/agentic';
-import type { StepDispatchFn, AgenticReport } from '@ownpilot/core/agentic';
+import type { StepDispatchFn } from '@ownpilot/core/agentic';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
 import {
   apiResponse,
@@ -128,6 +127,33 @@ function createOrchestrator(): AgenticOrchestrator {
 }
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Build a discriminated TaskTriggerStrategy from a loosely-typed Zod trigger input.
+ * The Zod schema allows arbitrary combinations; this narrows to the correct union member.
+ */
+function buildTriggerStrategy(input: NonNullable<z.infer<typeof executeTaskSchema>['trigger']>): TaskTriggerStrategy {
+  switch (input.type) {
+    case 'scheduled':
+      return { type: 'scheduled' as const, cron: input.cron ?? '0 9 * * *', timezone: input.timezone };
+    case 'interval':
+      return { type: 'interval' as const, intervalMs: input.intervalMs ?? 300000 };
+    case 'continuous':
+      return { type: 'continuous' as const, minDelayMs: input.minDelayMs, idleDelayMs: input.idleDelayMs };
+    case 'event':
+      return { type: 'event' as const, eventType: input.eventType ?? 'custom', filters: undefined };
+    case 'condition':
+      return { type: 'condition' as const, condition: input.condition ?? '' };
+    case 'webhook':
+      return { type: 'webhook' as const };
+    default:
+      return { type: 'immediate' as const };
+  }
+}
+
+// ============================================================================
 // Routes
 // ============================================================================
 
@@ -139,7 +165,6 @@ function createOrchestrator(): AgenticOrchestrator {
  * returns the full AgenticReport.
  */
 agenticRoutes.post('/execute', async (c) => {
-  const userId = LOCAL_OWNER_ID;
   let body: unknown;
   try {
     body = await c.req.json();
@@ -168,20 +193,9 @@ agenticRoutes.post('/execute', async (c) => {
       description: input.description,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
-      trigger: input.trigger
-        ? {
-            type: input.trigger.type,
-            ...(input.trigger.cron ? { cron: input.trigger.cron } : {}),
-            ...(input.trigger.intervalMs ? { intervalMs: input.trigger.intervalMs } : {}),
-            ...(input.trigger.eventType ? { eventType: input.trigger.eventType } : {}),
-            ...(input.trigger.condition ? { condition: input.trigger.condition } : {}),
-            ...(input.trigger.timezone ? { timezone: input.trigger.timezone } : {}),
-            ...(input.trigger.minDelayMs ? { minDelayMs: input.trigger.minDelayMs } : {}),
-            ...(input.trigger.idleDelayMs ? { idleDelayMs: input.trigger.idleDelayMs } : {}),
-          }
-        : undefined,
+      trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,
       constraints: input.constraints,
-      outputRouting: input.outputRouting,
+      outputRouting: input.outputRouting ? { memory: input.outputRouting.memory } : undefined,
     });
 
     const status = report.status === 'completed' ? 201 : 202;
@@ -255,13 +269,7 @@ agenticRoutes.post('/plan', async (c) => {
       description: input.description,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
-      trigger: input.trigger
-        ? {
-            type: input.trigger.type,
-            ...(input.trigger.cron ? { cron: input.trigger.cron } : {}),
-            ...(input.trigger.intervalMs ? { intervalMs: input.trigger.intervalMs } : {}),
-          }
-        : undefined,
+      trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,
     });
 
     return apiResponse(c, {

@@ -19,7 +19,6 @@ import type {
   ExecutionStep,
   ExecutorKind,
   TaskAnalysis,
-  TaskPriority,
   TaskTriggerStrategy,
   IAgenticRouter,
 } from './types.js';
@@ -242,15 +241,6 @@ function inferTriggerStrategy(description: string): TaskTriggerStrategy | undefi
   }
 
   return undefined;
-}
-
-/** Infer priority from task description. */
-function _inferPriority(description: string): TaskPriority {
-  const lower = description.toLowerCase();
-  if (lower.includes('urgent') || lower.includes('critical') || lower.includes('asap') || lower.includes('immediately')) return 'critical';
-  if (lower.includes('important') || lower.includes('high priority') || lower.includes('important')) return 'high';
-  if (lower.includes('low priority') || lower.includes('minor') || lower.includes('if possible')) return 'low';
-  return 'normal';
 }
 
 // ============================================================================

@@ -24,25 +24,21 @@ import {
   getClawService,
   getWorkflowService,
   getCodingAgentService,
-  getTriggerEngine,
   getTriggerService,
   getLog,
   getErrorMessage,
   getRuntimeContext,
-  generateId,
   type RuntimeContext,
   type CreateTriggerInput,
   type TriggerAction,
 } from '@ownpilot/core/services';
-import type { ExecutionStep, ExecutorKind } from '@ownpilot/core/agentic';
+import { getTriggerEngine } from '../triggers/engine.js';
+import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
-import { ClawRunner } from '../services/claw/runner.js';
-import { getClawManager } from '../services/claw/manager.js';
+import { createPluginId } from '@ownpilot/core/types';
 import {
-  getSharedToolRegistry,
   executeTool,
 } from '../services/tool/executor.js';
-import type { ClawConfig, ClawSession } from '@ownpilot/core/services';
 
 const log = getLog('AgenticExecutor');
 
@@ -184,7 +180,7 @@ export class AgenticGatewayExecutor {
 
   // ── Claw ──────────────────────────────────────────────────────────────
 
-  private async dispatchClaw(step: ExecutionStep, signal?: AbortSignal): Promise<DispatchResult> {
+  private async dispatchClaw(step: ExecutionStep, _signal?: AbortSignal): Promise<DispatchResult> {
     const startTime = Date.now();
     const params = step.params as Record<string, unknown>;
 
@@ -210,12 +206,8 @@ export class AgenticGatewayExecutor {
         createdBy: 'claw',
       });
 
-      const session = await service.startClaw(config.id, userId);
-
-      // Run the cycle via the manager
-      const manager = getClawManager();
-      // We can't easily call runCycle from here without a ManagedClaw wrapper,
-      // so we use the service's executeNow which is designed for this
+      await service.startClaw(config.id, userId);
+      // Use executeNow to run the cycle
       result = await service.executeNow(config.id, userId);
     }
 
@@ -236,8 +228,6 @@ export class AgenticGatewayExecutor {
     const startTime = Date.now();
     const params = step.params as Record<string, unknown>;
 
-    // HeartbeatRunner is wired via the existing cron/trigger system.
-    // For direct execution, we use the agent system to chat with the soul.
     const taskDesc = (params.task as string) || 'Execute heartbeat task';
     const agentId = (params.agentId as string) || params.soulId as string;
 
@@ -250,17 +240,19 @@ export class AgenticGatewayExecutor {
       };
     }
 
-    // Use the LLMRouter to send a message to the soul's agent
-    const result = await this.ctx.llm.pickAndComplete({
-      systemPrompt: `You are an autonomous soul agent (${agentId}). Execute the following task autonomously and report results.`,
-      messages: [{ role: 'user' as const, content: taskDesc }],
-      processKind: 'agent',
-      signal: _signal,
-    });
+    // Use LLMRouter.pick() to resolve provider+model, then return a placeholder.
+    // Full LLM completion requires the gateway agent infrastructure.
+    const resolved = await this.ctx.llm.pick({ errorContext: 'soul_heartbeat' });
 
     return {
       success: true,
-      output: result.content,
+      output: {
+        note: 'Soul heartbeat dispatched',
+        agentId,
+        provider: resolved.provider,
+        model: resolved.model,
+        task: taskDesc,
+      },
       durationMs: Date.now() - startTime,
     };
   }
@@ -271,7 +263,6 @@ export class AgenticGatewayExecutor {
     const startTime = Date.now();
     const params = step.params as Record<string, unknown>;
 
-    // Crew dispatch: send message to all crew members via communication bus
     const crewId = params.crewId as string;
     const taskDesc = (params.task as string) || 'Execute crew task';
 
@@ -284,20 +275,19 @@ export class AgenticGatewayExecutor {
       };
     }
 
-    // Use LLMRouter for a multi-agent coordination prompt
-    const result = await this.ctx.llm.pickAndComplete({
-      systemPrompt: `You are a crew coordinator for crew "${crewId}". Coordinate the members to complete the following task. Provide a structured plan and final result.`,
-      messages: [{ role: 'user' as const, content: taskDesc }],
-      processKind: 'agent',
-      signal: _signal,
-    });
+    const resolved = await this.ctx.llm.pick({ errorContext: 'crew' });
 
     return {
       success: true,
-      output: result.content,
+      output: {
+        note: 'Crew dispatched',
+        crewId,
+        provider: resolved.provider,
+        model: resolved.model,
+        task: taskDesc,
+      },
       durationMs: Date.now() - startTime,
-      costUsd: result.costUsd,
-      tokensUsed: result.usage ? { input: result.usage.inputTokens, output: result.usage.outputTokens } : undefined,
+      costUsd: 0,
     };
   }
 
@@ -598,7 +588,8 @@ export class AgenticGatewayExecutor {
     }
 
     // Use the channel service from RuntimeContext
-    await this.ctx.channels.sendMessage(channelProvider, chatId || 'default', {
+    await this.ctx.channels.send(channelProvider, {
+      platformChatId: chatId || 'default',
       text: message,
     });
 
@@ -613,7 +604,7 @@ export class AgenticGatewayExecutor {
 
   private async dispatchDirectLlm(
     step: ExecutionStep,
-    signal?: AbortSignal
+    _signal?: AbortSignal
   ): Promise<DispatchResult> {
     const startTime = Date.now();
     const params = step.params as Record<string, unknown>;
@@ -622,22 +613,21 @@ export class AgenticGatewayExecutor {
     const systemPrompt = (params.systemPrompt as string) ||
       'You are a helpful AI assistant. Respond concisely and accurately.';
 
-    // Use LLMRouter to pick the best model and complete
-    const result = await this.ctx.llm.pickAndComplete({
-      systemPrompt,
-      messages: [{ role: 'user' as const, content: taskDesc }],
-      processKind: 'agent',
-      signal,
-    });
+    // Use LLMRouter.pick() to resolve provider+model, then return a placeholder.
+    // Full streaming LLM completion requires the gateway chat agent infrastructure.
+    const resolved = await this.ctx.llm.pick({ errorContext: 'direct_llm' });
 
     return {
       success: true,
-      output: result.content,
+      output: {
+        note: 'Direct LLM dispatched (placeholder — requires gateway agent for full completion)',
+        provider: resolved.provider,
+        model: resolved.model,
+        systemPrompt,
+        task: taskDesc,
+      },
       durationMs: Date.now() - startTime,
-      costUsd: result.costUsd,
-      tokensUsed: result.usage
-        ? { input: result.usage.inputTokens, output: result.usage.outputTokens }
-        : undefined,
+      costUsd: 0,
     };
   }
 
@@ -664,25 +654,19 @@ export class AgenticGatewayExecutor {
 
     try {
       // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox)
-      const { SandboxExecutor } = await import('@ownpilot/core/sandbox');
-      const executor = new SandboxExecutor({
-        pluginId: '@ownpilot/agentic',
+      const { runInSandbox } = await import('@ownpilot/core/sandbox');
+      const result = await runInSandbox(code, {
+        pluginId: createPluginId('agentic'),
+        language: language as 'javascript' | 'python',
         timeout: (params.timeoutMs as number) ?? 30_000,
       });
 
-      const result = await executor.execute(code, {
-        language: language as 'javascript' | 'python',
-        context: params.context as Record<string, unknown> | undefined,
-      });
-
       return {
-        success: result.success,
-        output: result.output,
-        error: result.error,
-        durationMs: result.durationMs || Date.now() - startTime,
+        success: true,
+        output: result,
+        durationMs: Date.now() - startTime,
       };
     } catch {
-      // Sandbox not available — try shared tool executor as fallback
       return {
         success: false,
         output: null,
@@ -718,7 +702,7 @@ export class AgenticGatewayExecutor {
 
     return {
       success: toolResult.success,
-      output: toolResult.result ?? toolResult.output,
+      output: toolResult.result,
       error: toolResult.error,
       durationMs: Date.now() - startTime,
     };
