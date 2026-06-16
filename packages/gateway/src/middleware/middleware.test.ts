@@ -1,5 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Hono } from 'hono';
+
+// Rate-limit middleware skips local/direct connections. Without proxy trust
+// configured, getClientIp() returns 'direct' and the middleware short-circuits
+// before setting any headers or counting requests. Set TRUSTED_PROXY before
+// the module evaluates so the rate limit code path is exercised.
+vi.hoisted(() => {
+  process.env.TRUSTED_PROXY = 'true';
+  process.env.TRUSTED_PROXY_IPS = '127.0.0.1';
+});
+
 import { requestId } from './request-id.js';
 import { timing } from './timing.js';
 import { createAuthMiddleware } from './auth.js';
