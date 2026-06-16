@@ -253,11 +253,12 @@ export const SIDEBAR_DATA_SECTIONS: Record<string, SidebarDataSectionDef> = {
             id: e.id,
             label: e.taskName,
             route: '/agentic',
-            badge: e.status === 'running'
-              ? ({ tone: 'running', title: 'running' } as SidebarItemBadge)
-              : e.status === 'failed'
-              ? ({ tone: 'failed', title: e.error ?? 'failed' } as SidebarItemBadge)
-              : undefined,
+            badge:
+              e.status === 'running'
+                ? ({ tone: 'running', title: 'running' } as SidebarItemBadge)
+                : e.status === 'failed'
+                  ? ({ tone: 'failed', title: e.error ?? 'failed' } as SidebarItemBadge)
+                  : undefined,
           }))
         )
       ),

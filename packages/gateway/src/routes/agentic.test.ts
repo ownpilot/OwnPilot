@@ -69,13 +69,20 @@ vi.mock('@ownpilot/core/agentic', () => {
         plan: {
           steps: [
             {
-              index: 1, executorKind: 'claw', capabilityId: 'claw:single-shot',
-              providerId: 'ownpilot:claw', params: { task: 'Mock task' },
-              dependsOn: [], timeoutMs: 60000, retryOnFailure: true,
+              index: 1,
+              executorKind: 'claw',
+              capabilityId: 'claw:single-shot',
+              providerId: 'ownpilot:claw',
+              params: { task: 'Mock task' },
+              dependsOn: [],
+              timeoutMs: 60000,
+              retryOnFailure: true,
             },
           ],
-          estimatedCostUsd: 0.05, estimatedDurationMs: 60000,
-          requiresApproval: false, fallbackStrategy: 'escalate',
+          estimatedCostUsd: 0.05,
+          estimatedDurationMs: 60000,
+          requiresApproval: false,
+          fallbackStrategy: 'escalate',
           createdAt: new Date(),
         },
       });
@@ -84,23 +91,41 @@ vi.mock('@ownpilot/core/agentic', () => {
       execute = vi.fn().mockResolvedValue({
         id: 'agentic_exec_test',
         task: { name: 'Test task', description: 'Test task description' },
-        plan: { steps: [], requiresApproval: false, fallbackStrategy: 'abort', createdAt: new Date() },
-        stepResults: [], status: 'completed',
-        totalCostUsd: 0.005, totalDurationMs: 42,
+        plan: {
+          steps: [],
+          requiresApproval: false,
+          fallbackStrategy: 'abort',
+          createdAt: new Date(),
+        },
+        stepResults: [],
+        status: 'completed',
+        totalCostUsd: 0.005,
+        totalDurationMs: 42,
         totalTokens: { input: 100, output: 50 },
         summary: 'Completed successfully',
-        startedAt: new Date(), completedAt: new Date(),
+        startedAt: new Date(),
+        completedAt: new Date(),
       });
       listExecutions = vi.fn().mockResolvedValue([]);
       getReport = vi.fn().mockImplementation((id: string) => {
         if (id === 'test-id-123') {
           return Promise.resolve({
-            id: 'test-id-123', task: { name: 'Test task', description: 'Test desc' },
-            plan: { steps: [], requiresApproval: false, fallbackStrategy: 'abort', createdAt: new Date() },
-            stepResults: [], status: 'completed',
-            totalCostUsd: 0.01, totalDurationMs: 100,
+            id: 'test-id-123',
+            task: { name: 'Test task', description: 'Test desc' },
+            plan: {
+              steps: [],
+              requiresApproval: false,
+              fallbackStrategy: 'abort',
+              createdAt: new Date(),
+            },
+            stepResults: [],
+            status: 'completed',
+            totalCostUsd: 0.01,
+            totalDurationMs: 100,
             totalTokens: { input: 50, output: 25 },
-            summary: 'Completed', startedAt: new Date(), completedAt: new Date(),
+            summary: 'Completed',
+            startedAt: new Date(),
+            completedAt: new Date(),
           });
         }
         return Promise.resolve(null);
@@ -108,8 +133,11 @@ vi.mock('@ownpilot/core/agentic', () => {
       getStatus = vi.fn().mockResolvedValue('completed');
       cancel = vi.fn().mockResolvedValue(true);
       getStats = vi.fn().mockResolvedValue({
-        totalExecutions: 10, activeExecutions: 2, totalCostUsd: 0.05,
-        successRate: 0.85, byExecutorKind: { claw: 8, direct_llm: 2 },
+        totalExecutions: 10,
+        activeExecutions: 2,
+        totalCostUsd: 0.05,
+        successRate: 0.85,
+        byExecutorKind: { claw: 8, direct_llm: 2 },
       });
     } as unknown as new (...args: unknown[]) => unknown,
   };

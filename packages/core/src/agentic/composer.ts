@@ -118,10 +118,7 @@ export function optimizePlan(plan: ExecutionPlan): OptimizationSuggestion[] {
   return suggestions;
 }
 
-function expandDependencies(
-  step: ExecutionStep,
-  stepMap: Map<number, ExecutionStep>
-): number[] {
+function expandDependencies(step: ExecutionStep, stepMap: Map<number, ExecutionStep>): number[] {
   const deps: number[] = [];
   const queue = [...step.dependsOn];
   const seen = new Set<number>();
@@ -213,8 +210,8 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
       state.status = state.stepResults.every((r) => r.status === 'completed')
         ? 'completed'
         : state.stepResults.some((r) => r.status === 'failed')
-        ? 'failed'
-        : 'partially_completed';
+          ? 'failed'
+          : 'partially_completed';
     } catch {
       state.status = 'failed';
     } finally {
@@ -229,7 +226,8 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
    * Cancel a running execution. Checks both local and shared stores.
    */
   async cancel(executionId: string): Promise<boolean> {
-    const state = this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId);
+    const state =
+      this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId);
     if (!state) return false;
     if (state.status !== 'running') return false;
 
@@ -243,14 +241,18 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
    * Get execution status. Checks both local and shared stores.
    */
   async getStatus(executionId: string): Promise<ExecutionStatus | null> {
-    return (this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId))?.status ?? null;
+    return (
+      (this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId))
+        ?.status ?? null
+    );
   }
 
   /**
    * Get full execution report. Checks both local and shared stores.
    */
   async getReport(executionId: string): Promise<AgenticReport | null> {
-    const state = this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId);
+    const state =
+      this.executions.get(executionId) ?? AgenticOrchestrator.sharedStore.get(executionId);
     if (!state) return null;
     return this.buildReport(state);
   }
@@ -347,9 +349,7 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
 
       if (ready.length === 0) {
         // No steps ready but not all done → stuck (likely circular dep or failed prerequisite)
-        const stuck = steps.filter(
-          (s) => !completed.has(s.index) && !failed.has(s.index)
-        );
+        const stuck = steps.filter((s) => !completed.has(s.index) && !failed.has(s.index));
         for (const s of stuck) {
           const missingDeps = s.dependsOn.filter((d) => !completed.has(d));
           this.recordStepResult(state, s, 'skipped', null, {
@@ -453,7 +453,10 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
     const result = await Promise.race([
       this.dispatchStep(step, signal),
       new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Step ${step.index} timed out after ${timeoutMs}ms`)), timeoutMs);
+        setTimeout(
+          () => reject(new Error(`Step ${step.index} timed out after ${timeoutMs}ms`)),
+          timeoutMs
+        );
       }),
     ]);
 
@@ -471,10 +474,7 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
    * placeholder so the orchestration logic can still be tested without
    * any gateway services running.
    */
-  private async dispatchStep(
-    step: ExecutionStep,
-    signal?: AbortSignal
-  ): Promise<unknown> {
+  private async dispatchStep(step: ExecutionStep, signal?: AbortSignal): Promise<unknown> {
     if (this.stepHandler) {
       const result = await this.stepHandler(step, signal);
       if (!result.success) {
@@ -533,8 +533,8 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
     const costMap: Record<string, number> = {
       claw: 0.05,
       soul_heartbeat: 0.01,
-      crew: 0.10,
-      coding_agent: 0.20,
+      crew: 0.1,
+      coding_agent: 0.2,
       workflow: 0.05,
       trigger: 0.001,
       channel: 0.001,
@@ -555,15 +555,16 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
 
     const successCount = state.stepResults.filter((r) => r.status === 'completed').length;
     const totalSteps = state.plan.steps.length;
-    const summary = state.status === 'completed'
-      ? `Completed ${successCount}/${totalSteps} steps successfully`
-      : state.status === 'failed'
-      ? `Failed after ${successCount}/${totalSteps} steps — ${state.stepResults.find((r) => r.status === 'failed')?.error ?? 'Unknown error'}`
-      : state.status === 'cancelled'
-      ? `Cancelled after ${successCount}/${totalSteps} steps`
-      : state.status === 'partially_completed'
-      ? `Partially completed (${successCount}/${totalSteps} steps)`
-      : `Execution is ${state.status}`;
+    const summary =
+      state.status === 'completed'
+        ? `Completed ${successCount}/${totalSteps} steps successfully`
+        : state.status === 'failed'
+          ? `Failed after ${successCount}/${totalSteps} steps — ${state.stepResults.find((r) => r.status === 'failed')?.error ?? 'Unknown error'}`
+          : state.status === 'cancelled'
+            ? `Cancelled after ${successCount}/${totalSteps} steps`
+            : state.status === 'partially_completed'
+              ? `Partially completed (${successCount}/${totalSteps} steps)`
+              : `Execution is ${state.status}`;
 
     return {
       id: state.id,
@@ -597,11 +598,12 @@ export function createResearchPipeline(
   }
 ): Omit<AgenticTask, 'id'> {
   const depth = options?.depth ?? 'standard';
-  const depthDesc = depth === 'quick'
-    ? 'Do a quick overview — spend no more than 5 minutes on research.'
-    : depth === 'deep'
-    ? 'Do a thorough deep-dive. Use web search, browse multiple sources, cross-reference findings.'
-    : 'Do standard research — gather key facts, verify sources, produce a concise report.';
+  const depthDesc =
+    depth === 'quick'
+      ? 'Do a quick overview — spend no more than 5 minutes on research.'
+      : depth === 'deep'
+        ? 'Do a thorough deep-dive. Use web search, browse multiple sources, cross-reference findings.'
+        : 'Do standard research — gather key facts, verify sources, produce a concise report.';
 
   return {
     name: `Research: ${topic}`,
@@ -610,13 +612,16 @@ export function createResearchPipeline(
     priority: 'normal',
     trigger: { type: 'immediate' },
     constraints: {
-      maxCostUsd: depth === 'deep' ? 0.50 : depth === 'standard' ? 0.20 : 0.10,
+      maxCostUsd: depth === 'deep' ? 0.5 : depth === 'standard' ? 0.2 : 0.1,
       allowNetwork: true,
       allowCodeExecution: false,
     },
     outputRouting: {
       memory: true,
-      artifact: { name: `research-${topic.toLowerCase().replace(/\s+/g, '-')}`, tags: ['research', topic.toLowerCase()] },
+      artifact: {
+        name: `research-${topic.toLowerCase().replace(/\s+/g, '-')}`,
+        tags: ['research', topic.toLowerCase()],
+      },
     },
   };
 }
@@ -637,14 +642,16 @@ export function createMonitoringPipeline(
     priority: 'normal',
     trigger: { type: 'interval', intervalMs },
     constraints: {
-      maxCostUsd: 0.10,
+      maxCostUsd: 0.1,
       timeoutMs: 60_000,
       allowNetwork: true,
       allowCodeExecution: false,
     },
     outputRouting: {
       memory: true,
-      channel: outputChannel ? { provider: outputChannel.provider, chatId: outputChannel.chatId } : undefined,
+      channel: outputChannel
+        ? { provider: outputChannel.provider, chatId: outputChannel.chatId }
+        : undefined,
     },
   };
 }

@@ -345,7 +345,8 @@ function migrateConfig(raw: unknown): LayoutConfig {
     const existingIds = new Set(oldSections.map((s) => s.id));
     const additions: SidebarSectionConfig[] = [];
     if (!existingIds.has('/agentic')) additions.push({ id: '/agentic', order: 0 });
-    if (!existingIds.has('agentic-executions')) additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
+    if (!existingIds.has('agentic-executions'))
+      additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
     if (additions.length === 0) {
       // Chain to V10→V11 even when nothing to add
       return migrateConfig({ ...config, version: 10 });
@@ -385,7 +386,8 @@ function migrateConfig(raw: unknown): LayoutConfig {
     const existingIds = new Set(oldSections.map((s) => s.id));
     const additions: SidebarSectionConfig[] = [];
     if (!existingIds.has('/agentic')) additions.push({ id: '/agentic', order: 0 });
-    if (!existingIds.has('agentic-executions')) additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
+    if (!existingIds.has('agentic-executions'))
+      additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
     if (additions.length === 0) {
       return { ...config, version: LAYOUT_CONFIG_VERSION };
     }
@@ -456,7 +458,9 @@ function readConfig(): LayoutConfig {
         }
         // Ensure /agentic and agentic-executions exist even at the same version,
         // in case a previous run saved version 11 without these sections.
-        const sectionIds = new Set((parsed.sidebar?.sections ?? []).map((s: { id: string }) => s.id));
+        const sectionIds = new Set(
+          (parsed.sidebar?.sections ?? []).map((s: { id: string }) => s.id)
+        );
         if (!sectionIds.has('/agentic') || !sectionIds.has('agentic-executions')) {
           const migrated = migrateConfig({ ...parsed, version: 10 });
           persistConfig(migrated);

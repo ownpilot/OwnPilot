@@ -156,12 +156,10 @@ export interface PlanTaskInput {
 
 export const agenticApi = {
   /** Execute a task */
-  execute: (input: ExecuteTaskInput) =>
-    apiClient.post<AgenticExecution>('/agentic/execute', input),
+  execute: (input: ExecuteTaskInput) => apiClient.post<AgenticExecution>('/agentic/execute', input),
 
   /** Plan a task without executing */
-  plan: (input: PlanTaskInput) =>
-    apiClient.post<AgenticPlan>('/agentic/plan', input),
+  plan: (input: PlanTaskInput) => apiClient.post<AgenticPlan>('/agentic/plan', input),
 
   /** List recent executions */
   list: (limit = 20, offset = 0) =>
@@ -170,16 +168,14 @@ export const agenticApi = {
     ),
 
   /** Get a single execution report */
-  get: (id: string) =>
-    apiClient.get<AgenticExecution>(`/agentic/executions/${id}`),
+  get: (id: string) => apiClient.get<AgenticExecution>(`/agentic/executions/${id}`),
 
   /** Cancel a running execution */
   cancel: (id: string) =>
     apiClient.post<{ id: string; status: string }>(`/agentic/executions/${id}/cancel`),
 
   /** Get execution stats */
-  stats: () =>
-    apiClient.get<AgenticStats>('/agentic/stats'),
+  stats: () => apiClient.get<AgenticStats>('/agentic/stats'),
 
   /** List capabilities */
   capabilities: (params?: { kind?: string; search?: string; provider?: string }) => {

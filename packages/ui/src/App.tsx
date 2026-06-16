@@ -177,7 +177,9 @@ const EdgeDevicesPage = lazy(() =>
   import('./pages/EdgeDevicesPage').then((m) => ({ default: m.EdgeDevicesPage }))
 );
 const ClawsPage = lazy(() => import('./pages/ClawsPage').then((m) => ({ default: m.ClawsPage })));
-const AgenticPage = lazy(() => import('./pages/AgenticPage').then((m) => ({ default: m.AgenticPage })));
+const AgenticPage = lazy(() =>
+  import('./pages/AgenticPage').then((m) => ({ default: m.AgenticPage }))
+);
 const MissionControlPage = lazy(() =>
   import('./pages/MissionControlPage').then((m) => ({ default: m.MissionControlPage }))
 );

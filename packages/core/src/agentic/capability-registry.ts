@@ -325,7 +325,7 @@ export function getBuiltInCapabilities(): CapabilityEntry[] {
       name: 'Direct LLM Conversation',
       description:
         'Direct LLM chat without tool orchestration. Simple question answering, ' +
-        'content generation, analysis, and creative tasks that don\'t need ' +
+        "content generation, analysis, and creative tasks that don't need " +
         'external tool access.',
       executorKind: 'direct_llm',
       providerId: 'ownpilot:llm',
@@ -430,9 +430,7 @@ export class CapabilityRegistry implements ICapabilityRegistry {
     }
 
     if (query.executorKind) {
-      const kinds = Array.isArray(query.executorKind)
-        ? query.executorKind
-        : [query.executorKind];
+      const kinds = Array.isArray(query.executorKind) ? query.executorKind : [query.executorKind];
       results = results.filter((e) => kinds.includes(e.executorKind));
     }
 

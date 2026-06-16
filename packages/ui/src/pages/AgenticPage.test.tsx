@@ -45,9 +45,27 @@ vi.mock('../components/icons', () => {
     };
   }
   const icons = [
-    'Play', 'Square', 'AlertCircle', 'Clock', 'DollarSign', 'RefreshCw',
-    'Brain', 'ListChecks', 'Target', 'Zap', 'X', 'ChevronDown', 'ChevronRight',
-    'Terminal', 'Send', 'Code', 'Wrench', 'Cpu', 'Loader2', 'CheckCircle2', 'HelpCircle',
+    'Play',
+    'Square',
+    'AlertCircle',
+    'Clock',
+    'DollarSign',
+    'RefreshCw',
+    'Brain',
+    'ListChecks',
+    'Target',
+    'Zap',
+    'X',
+    'ChevronDown',
+    'ChevronRight',
+    'Terminal',
+    'Send',
+    'Code',
+    'Wrench',
+    'Cpu',
+    'Loader2',
+    'CheckCircle2',
+    'HelpCircle',
   ];
   const result: Record<string, ReturnType<typeof makeIcon>> = {};
   for (const name of icons) result[name] = makeIcon(name);
@@ -97,28 +115,64 @@ const defaultStats = {
 
 const defaultExecutions = [
   {
-    id: 'exec-1', taskName: 'Research AI', status: 'completed',
-    summary: 'Completed 1/1 steps', totalCostUsd: 0.005, totalDurationMs: 150,
-    stepCount: 1, completedSteps: 1,
-    startedAt: '2026-06-15T10:00:00Z', completedAt: '2026-06-15T10:01:00Z',
-    steps: [{ index: 1, executorKind: 'claw', capabilityId: 'c1', status: 'completed', durationMs: 150 }],
+    id: 'exec-1',
+    taskName: 'Research AI',
+    status: 'completed',
+    summary: 'Completed 1/1 steps',
+    totalCostUsd: 0.005,
+    totalDurationMs: 150,
+    stepCount: 1,
+    completedSteps: 1,
+    startedAt: '2026-06-15T10:00:00Z',
+    completedAt: '2026-06-15T10:01:00Z',
+    steps: [
+      { index: 1, executorKind: 'claw', capabilityId: 'c1', status: 'completed', durationMs: 150 },
+    ],
   },
   {
-    id: 'exec-2', taskName: 'Fix login bug', status: 'running',
-    summary: 'In progress', totalCostUsd: 0.01, totalDurationMs: 3000,
-    stepCount: 2, completedSteps: 1,
-    startedAt: '2026-06-15T10:05:00Z', completedAt: null,
+    id: 'exec-2',
+    taskName: 'Fix login bug',
+    status: 'running',
+    summary: 'In progress',
+    totalCostUsd: 0.01,
+    totalDurationMs: 3000,
+    stepCount: 2,
+    completedSteps: 1,
+    startedAt: '2026-06-15T10:05:00Z',
+    completedAt: null,
     steps: [
       { index: 1, executorKind: 'claw', capabilityId: 'c1', status: 'completed', durationMs: 100 },
-      { index: 2, executorKind: 'coding_agent', capabilityId: 'c2', status: 'running', durationMs: 2900 },
+      {
+        index: 2,
+        executorKind: 'coding_agent',
+        capabilityId: 'c2',
+        status: 'running',
+        durationMs: 2900,
+      },
     ],
   },
 ];
 
 const defaultCapabilities = {
   capabilities: [
-    { id: 'claw:test', name: 'Test Claw', description: 'A claw', executorKind: 'claw', providerId: 'p1', tags: ['a'], requiresApproval: false },
-    { id: 'llm:test', name: 'Test LLM', description: 'An LLM', executorKind: 'direct_llm', providerId: 'p2', tags: ['b'], requiresApproval: false },
+    {
+      id: 'claw:test',
+      name: 'Test Claw',
+      description: 'A claw',
+      executorKind: 'claw',
+      providerId: 'p1',
+      tags: ['a'],
+      requiresApproval: false,
+    },
+    {
+      id: 'llm:test',
+      name: 'Test LLM',
+      description: 'An LLM',
+      executorKind: 'direct_llm',
+      providerId: 'p2',
+      tags: ['b'],
+      requiresApproval: false,
+    },
   ],
   total: 2,
 };
@@ -155,7 +209,9 @@ describe('AgenticPage', () => {
   it('renders stats cards after loading', async () => {
     const container = render(<AgenticPage />);
     // Wait for stats to render
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
     expect(findByText(container, '42')).toBeTruthy();
     expect(findByText(container, '3')).toBeTruthy();
     expect(findByText(container, '$0.1500')).toBeTruthy();
@@ -166,7 +222,9 @@ describe('AgenticPage', () => {
 
   it('renders execution rows after loading', async () => {
     const container = render(<AgenticPage />);
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
     expect(findByText(container, 'Research AI')).toBeTruthy();
     expect(findByText(container, 'Fix login bug')).toBeTruthy();
     expect(findByText(container, 'completed')).toBeTruthy();
@@ -175,7 +233,9 @@ describe('AgenticPage', () => {
 
   it('shows progress and cost for each execution', async () => {
     const container = render(<AgenticPage />);
-    await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
     // Check cost values appear somewhere in the DOM (they're inside nested elements)
     expect(container.textContent).toContain('1/1 steps');
     expect(container.textContent).toContain('$0.0050');
@@ -185,7 +245,9 @@ describe('AgenticPage', () => {
   it('shows empty state when no executions', async () => {
     mockList.mockResolvedValue({ executions: [], total: 0, limit: 20, offset: 0 });
     const container = render(<AgenticPage />);
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
     expect(findByText(container, 'No executions yet')).toBeTruthy();
   });
 
@@ -214,14 +276,22 @@ describe('AgenticPage', () => {
 
   it('shows form fields and execute button when expanded', async () => {
     mockExecute.mockResolvedValue({
-      id: 'exec-3', status: 'completed', summary: 'Done', totalCostUsd: 0, totalDurationMs: 50,
+      id: 'exec-3',
+      status: 'completed',
+      summary: 'Done',
+      totalCostUsd: 0,
+      totalDurationMs: 50,
       steps: [],
     });
 
     const container = render(<AgenticPage />);
     const header = findByText(container, 'Execute Agentic Task');
-    await act(async () => { header!.click(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      header!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
 
     // Form should have textarea, priority select, trigger select, and submit button
     expect(container.querySelector('textarea')).toBeTruthy();
@@ -236,7 +306,9 @@ describe('AgenticPage', () => {
   it('disables execute button when description is empty', async () => {
     const container = render(<AgenticPage />);
     const header = findByText(container, 'Execute Agentic Task');
-    await act(async () => { header!.click(); });
+    await act(async () => {
+      header!.click();
+    });
 
     const submitBtn = container.querySelector('button[type="submit"]')! as HTMLButtonElement;
     expect(submitBtn.disabled).toBe(true);
@@ -246,13 +318,19 @@ describe('AgenticPage', () => {
 
   it('switches to capabilities tab and loads data', async () => {
     const container = render(<AgenticPage />);
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
 
     // Find and click Capabilities tab
     const capsTab = findByText(container, 'Capabilities');
     expect(capsTab).toBeTruthy();
-    await act(async () => { capsTab!.click(); });
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
 
     expect(mockCapabilities).toHaveBeenCalled();
     expect(findByText(container, 'Test Claw')).toBeTruthy();
@@ -275,7 +353,9 @@ describe('AgenticPage', () => {
     mockList.mockRejectedValue(new Error('Network error'));
     mockStats.mockRejectedValue(new Error('Network error'));
     const container = render(<AgenticPage />);
-    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
     // Should still show the page without crashing
     expect(findByText(container, 'Agentic Command Center')).toBeTruthy();
   });

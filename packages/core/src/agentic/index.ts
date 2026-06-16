@@ -71,9 +71,7 @@ export {
 } from './capability-registry.js';
 
 // ── Task Router ──
-export {
-  AgenticRouter,
-} from './router.js';
+export { AgenticRouter } from './router.js';
 
 // ── Orchestration Composer ──
 export {

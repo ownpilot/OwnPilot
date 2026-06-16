@@ -389,10 +389,7 @@ agenticCmd
   .option('--json', 'JSON output format')
   .action(agenticStatus);
 
-agenticCmd
-  .command('cancel <id>')
-  .description('Cancel a running execution')
-  .action(agenticCancel);
+agenticCmd.command('cancel <id>').description('Cancel a running execution').action(agenticCancel);
 
 agenticCmd
   .command('delete <id>')

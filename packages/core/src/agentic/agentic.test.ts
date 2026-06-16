@@ -58,10 +58,12 @@ describe('CapabilityRegistry', () => {
     const registry = new CapabilityRegistry(true);
     const results = registry.query({ keywords: ['research', 'web'] });
     expect(results.entries.length).toBeGreaterThan(0);
-    expect(results.entries.every((e) => {
-      const text = `${e.name} ${e.description} ${e.tags.join(' ')}`.toLowerCase();
-      return text.includes('research') || text.includes('web');
-    })).toBe(true);
+    expect(
+      results.entries.every((e) => {
+        const text = `${e.name} ${e.description} ${e.tags.join(' ')}`.toLowerCase();
+        return text.includes('research') || text.includes('web');
+      })
+    ).toBe(true);
   });
 
   it('supports query by executor kind', () => {
@@ -107,7 +109,9 @@ describe('CapabilityRegistry', () => {
   it('supports event listeners', () => {
     const registry = new CapabilityRegistry(false);
     let registered: CapabilityEntry | null = null;
-    const unsub = registry.on('register', (e) => { registered = e; });
+    const unsub = registry.on('register', (e) => {
+      registered = e;
+    });
 
     const cap: CapabilityEntry = {
       id: 'test:event',
@@ -144,7 +148,8 @@ describe('AgenticRouter', () => {
     const router = new AgenticRouter();
     const { analysis, plan } = await router.route({
       name: 'Research AI trends',
-      description: 'Investigate the latest AI trends and produce a thorough report with verified sources.',
+      description:
+        'Investigate the latest AI trends and produce a thorough report with verified sources.',
       expectedOutput: 'Research report',
     });
 
@@ -302,8 +307,26 @@ describe('optimizePlan', () => {
     const plan: ExecutionPlan = {
       task: { id: 'test', name: 'Test', description: 'Test' },
       steps: [
-        { index: 1, executorKind: 'claw', capabilityId: 'c1', providerId: 'p1', params: {}, dependsOn: [], timeoutMs: 30_000, retryOnFailure: true },
-        { index: 2, executorKind: 'channel', capabilityId: 'c2', providerId: 'p2', params: {}, dependsOn: [], timeoutMs: 10_000, retryOnFailure: false },
+        {
+          index: 1,
+          executorKind: 'claw',
+          capabilityId: 'c1',
+          providerId: 'p1',
+          params: {},
+          dependsOn: [],
+          timeoutMs: 30_000,
+          retryOnFailure: true,
+        },
+        {
+          index: 2,
+          executorKind: 'channel',
+          capabilityId: 'c2',
+          providerId: 'p2',
+          params: {},
+          dependsOn: [],
+          timeoutMs: 10_000,
+          retryOnFailure: false,
+        },
       ],
       requiresApproval: false,
       fallbackStrategy: 'abort',
@@ -318,16 +341,22 @@ describe('optimizePlan', () => {
 
 describe('Pipeline Templates', () => {
   it('createResearchPipeline produces valid tasks', () => {
-    const task = createResearchPipeline('Quantum Computing', { depth: 'deep', outputFormat: 'markdown' });
+    const task = createResearchPipeline('Quantum Computing', {
+      depth: 'deep',
+      outputFormat: 'markdown',
+    });
     expect(task.name).toContain('Research');
     expect(task.description).toContain('Quantum Computing');
-    expect(task.constraints?.maxCostUsd).toBe(0.50);
+    expect(task.constraints?.maxCostUsd).toBe(0.5);
     expect(task.outputRouting?.memory).toBe(true);
     expect(task.outputRouting?.artifact?.tags).toContain('quantum computing');
   });
 
   it('createMonitoringPipeline produces valid tasks', () => {
-    const task = createMonitoringPipeline('API Health', 'check api.example.com/health', 300_000, { provider: 'telegram', chatId: '123' });
+    const task = createMonitoringPipeline('API Health', 'check api.example.com/health', 300_000, {
+      provider: 'telegram',
+      chatId: '123',
+    });
     expect(task.name).toContain('Monitor');
     expect(task.trigger).toBeDefined();
     expect(task.trigger?.type).toBe('interval');
@@ -338,7 +367,10 @@ describe('Pipeline Templates', () => {
   });
 
   it('createCodePipeline produces valid tasks', () => {
-    const task = createCodePipeline('Build a REST API', { language: 'TypeScript', includeTests: true });
+    const task = createCodePipeline('Build a REST API', {
+      language: 'TypeScript',
+      includeTests: true,
+    });
     expect(task.name).toContain('Code');
     expect(task.constraints?.allowCodeExecution).toBe(true);
     expect(task.constraints?.maxCostUsd).toBe(1.0);
@@ -387,18 +419,32 @@ describe('Edge Cases', () => {
   it('registry event unsub works correctly', () => {
     const registry = new CapabilityRegistry(false);
     let count = 0;
-    const unsub = registry.on('register', () => { count++; });
+    const unsub = registry.on('register', () => {
+      count++;
+    });
 
     registry.register({
-      id: 'a', name: 'A', description: '', executorKind: 'direct_llm',
-      providerId: 't', tags: [], requiresApproval: false, registeredAt: new Date(),
+      id: 'a',
+      name: 'A',
+      description: '',
+      executorKind: 'direct_llm',
+      providerId: 't',
+      tags: [],
+      requiresApproval: false,
+      registeredAt: new Date(),
     });
     expect(count).toBe(1);
 
     unsub();
     registry.register({
-      id: 'b', name: 'B', description: '', executorKind: 'direct_llm',
-      providerId: 't', tags: [], requiresApproval: false, registeredAt: new Date(),
+      id: 'b',
+      name: 'B',
+      description: '',
+      executorKind: 'direct_llm',
+      providerId: 't',
+      tags: [],
+      requiresApproval: false,
+      registeredAt: new Date(),
     });
     expect(count).toBe(1); // no increment after unsub
   });

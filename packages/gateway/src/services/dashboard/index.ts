@@ -263,9 +263,7 @@ export class DashboardService {
         orchestrator.listExecutions(5, 0),
       ]);
       const today = new Date().toISOString().split('T')[0] ?? '';
-      const todayExecs = executions.filter((e) =>
-        e.startedAt.toISOString().startsWith(today)
-      );
+      const todayExecs = executions.filter((e) => e.startedAt.toISOString().startsWith(today));
       agenticSummary = {
         totalExecutions: stats.totalExecutions,
         activeExecutions: stats.activeExecutions,

@@ -19,16 +19,16 @@
 
 /** What kind of executor can handle a capability. */
 export type ExecutorKind =
-  | 'claw'           // Autonomous claw agent (cyclic/single-shot)
+  | 'claw' // Autonomous claw agent (cyclic/single-shot)
   | 'soul_heartbeat' // Soul heartbeat with scheduled tasks
-  | 'crew'           // Multi-agent crew orchestration
-  | 'coding_agent'   // External coding agent (Claude Code, Codex, Gemini CLI)
-  | 'workflow'       // Visual DAG workflow
-  | 'trigger'        // Proactive trigger (schedule/event/condition/webhook)
-  | 'channel'        // Communication channel (Telegram/Discord/Slack/Email/etc.)
-  | 'direct_llm'     // Direct LLM call without tool orchestration
-  | 'sandbox_code'   // Isolated code execution sandbox
-  | 'tool_catalog';  // Single tool call from the 250+ tool registry
+  | 'crew' // Multi-agent crew orchestration
+  | 'coding_agent' // External coding agent (Claude Code, Codex, Gemini CLI)
+  | 'workflow' // Visual DAG workflow
+  | 'trigger' // Proactive trigger (schedule/event/condition/webhook)
+  | 'channel' // Communication channel (Telegram/Discord/Slack/Email/etc.)
+  | 'direct_llm' // Direct LLM call without tool orchestration
+  | 'sandbox_code' // Isolated code execution sandbox
+  | 'tool_catalog'; // Single tool call from the 250+ tool registry
 
 /**
  * Registered capability on the capability bus.

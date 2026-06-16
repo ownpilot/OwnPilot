@@ -32,10 +32,7 @@ import type { ExecutionStep } from '@ownpilot/core/agentic';
  * This is the main entry point for running agentic tasks from the gateway.
  */
 export function createGatewayOrchestrator(): AgenticOrchestrator {
-  const handler: StepDispatchFn = async (
-    step: ExecutionStep,
-    signal?: AbortSignal
-  ) => {
+  const handler: StepDispatchFn = async (step: ExecutionStep, signal?: AbortSignal) => {
     const result = await getAgenticExecutor().dispatch(step, signal);
     return {
       success: result.success,

@@ -59,25 +59,32 @@ interface ExecutionSummary {
 // ─── RUN ───
 // ============================================================================
 
-export async function agenticRun(taskDescription: string[], options: {
-  name?: string;
-  priority?: string;
-  trigger?: string;
-  interval?: string;
-  timeout?: number;
-  output?: string;
-  provider?: string;
-  model?: string;
-  prompt?: string;
-  json?: boolean;
-}): Promise<void> {
+export async function agenticRun(
+  taskDescription: string[],
+  options: {
+    name?: string;
+    priority?: string;
+    trigger?: string;
+    interval?: string;
+    timeout?: number;
+    output?: string;
+    provider?: string;
+    model?: string;
+    prompt?: string;
+    json?: boolean;
+  }
+): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
     console.error('Usage: ownpilot agentic run [options] <task description...>');
     console.error('\nOptions:');
     console.error('  --name <name>          Task name (default: auto-generated from description)');
-    console.error('  --priority <level>     Priority: low, normal, high, critical (default: normal)');
-    console.error('  --trigger <type>       Trigger: immediate, interval, continuous (default: immediate)');
+    console.error(
+      '  --priority <level>     Priority: low, normal, high, critical (default: normal)'
+    );
+    console.error(
+      '  --trigger <type>       Trigger: immediate, interval, continuous (default: immediate)'
+    );
     console.error('  --interval <ms>        Interval in ms for interval trigger (default: 300000)');
     console.error('  --timeout <ms>         Step timeout in ms (default: 60000)');
     console.error('  --output <path>        Save results to file');
@@ -85,7 +92,8 @@ export async function agenticRun(taskDescription: string[], options: {
   }
 
   // Build task name from description
-  const name = options.name ?? (description.length > 60 ? description.slice(0, 57) + '...' : description);
+  const name =
+    options.name ?? (description.length > 60 ? description.slice(0, 57) + '...' : description);
 
   // Build request body
   const body: Record<string, unknown> = {
@@ -143,7 +151,8 @@ export async function agenticRun(taskDescription: string[], options: {
     console.log(`  Result:   ${summary ?? '—'}`);
     if (error) console.log(`  Error:    ${error}`);
     console.log(`  Cost:     ${(cost ?? 0).toFixed(4)}`);
-    const durStr = (duration ?? 0) >= 1000 ? `${((duration ?? 0) / 1000).toFixed(1)}s` : `${(duration ?? 0)}ms`;
+    const durStr =
+      (duration ?? 0) >= 1000 ? `${((duration ?? 0) / 1000).toFixed(1)}s` : `${duration ?? 0}ms`;
     console.log(`  Time:     ${durStr}`);
 
     if (steps && steps.length > 0) {
@@ -152,8 +161,12 @@ export async function agenticRun(taskDescription: string[], options: {
       for (const step of steps) {
         const stepIcon = step.status === 'completed' ? '✓' : step.status === 'failed' ? '✗' : '◌';
         const stepCost = step.costUsd ? ` $${(step.costUsd as number).toFixed(4)}` : '';
-        const stepDuration = step.durationMs ? ` ${(step.durationMs as number).toLocaleString()}ms` : '';
-        console.log(`    ${stepIcon} #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.status).padEnd(12)}${stepDuration}${stepCost}`);
+        const stepDuration = step.durationMs
+          ? ` ${(step.durationMs as number).toLocaleString()}ms`
+          : '';
+        console.log(
+          `    ${stepIcon} #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.status).padEnd(12)}${stepDuration}${stepCost}`
+        );
         if (step.error) console.log(`       error: ${step.error}`);
       }
     }
@@ -179,7 +192,11 @@ export async function agenticRun(taskDescription: string[], options: {
 // ─── LIST ───
 // ============================================================================
 
-export async function agenticList(options: { limit?: number; offset?: number; json?: boolean }): Promise<void> {
+export async function agenticList(options: {
+  limit?: number;
+  offset?: number;
+  json?: boolean;
+}): Promise<void> {
   const limit = options.limit ?? 20;
   const offset = options.offset ?? 0;
 
@@ -205,13 +222,22 @@ export async function agenticList(options: { limit?: number; offset?: number; js
     }
 
     for (const e of executions) {
-      const statusIcon = e.status === 'completed' ? '✓' : e.status === 'failed' ? '✗' : e.status === 'running' ? '▶' : '◌';
+      const statusIcon =
+        e.status === 'completed'
+          ? '✓'
+          : e.status === 'failed'
+            ? '✗'
+            : e.status === 'running'
+              ? '▶'
+              : '◌';
       const cost = e.totalCostUsd ? ` ${e.totalCostUsd.toFixed(4)}` : '';
       const duration = e.totalDurationMs ? ` ${e.totalDurationMs.toLocaleString()}ms` : '';
       const providerTag = e.provider ? `  ${e.provider}` : '';
       const modelTag = e.model ? `/${e.model}` : '';
 
-      console.log(`  ${statusIcon} ${e.taskName.padEnd(45)}  ${e.status.padEnd(15)}${duration}${cost}${providerTag}${modelTag}`);
+      console.log(
+        `  ${statusIcon} ${e.taskName.padEnd(45)}  ${e.status.padEnd(15)}${duration}${cost}${providerTag}${modelTag}`
+      );
       const shortTime = new Date(e.startedAt).toLocaleString();
       console.log(`     ${e.id}`);
       console.log(`     ${shortTime}  ${e.summary.slice(0, 90)}`);
@@ -250,7 +276,8 @@ export async function agenticStatus(id: string, options: { json?: boolean }): Pr
     const startedAt = result.startedAt as string;
     const completedAt = result.completedAt as string | null;
 
-    const icon = status === 'completed' ? '✓' : status === 'failed' ? '✗' : status === 'running' ? '▶' : '◌';
+    const icon =
+      status === 'completed' ? '✓' : status === 'failed' ? '✗' : status === 'running' ? '▶' : '◌';
     const taskName = (task?.name as string) ?? 'Unknown';
 
     console.log(`\n  ${icon} ${taskName}`);
@@ -268,10 +295,21 @@ export async function agenticStatus(id: string, options: { json?: boolean }): Pr
       console.log('');
       console.log('  Steps:');
       for (const step of steps) {
-        const stepIcon = step.status === 'completed' ? '✓' : step.status === 'failed' ? '✗' : step.status === 'running' ? '▶' : '◌';
-        const stepDuration = step.durationMs ? ` ${(step.durationMs as number).toLocaleString()}ms` : '';
+        const stepIcon =
+          step.status === 'completed'
+            ? '✓'
+            : step.status === 'failed'
+              ? '✗'
+              : step.status === 'running'
+                ? '▶'
+                : '◌';
+        const stepDuration = step.durationMs
+          ? ` ${(step.durationMs as number).toLocaleString()}ms`
+          : '';
         const stepCost = step.costUsd ? ` $${(step.costUsd as number).toFixed(4)}` : '';
-        console.log(`    ${stepIcon} #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.status).padEnd(12)}${stepDuration}${stepCost}`);
+        console.log(
+          `    ${stepIcon} #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.status).padEnd(12)}${stepDuration}${stepCost}`
+        );
         if (step.error) console.log(`       error: ${step.error}`);
       }
     }
@@ -320,7 +358,10 @@ export async function agenticDelete(id: string): Promise<void> {
 // ─── RERUN ───
 // ============================================================================
 
-export async function agenticRerun(executionId: string, options: { provider?: string; model?: string; prompt?: string; priority?: string }): Promise<void> {
+export async function agenticRerun(
+  executionId: string,
+  options: { provider?: string; model?: string; prompt?: string; priority?: string }
+): Promise<void> {
   if (!executionId) {
     console.error('Usage: ownpilot agentic rerun <id> [options]');
     console.error('\nOptions:');
@@ -375,7 +416,17 @@ export async function agenticRerun(executionId: string, options: { provider?: st
 // ─── PLAN ───
 // ============================================================================
 
-export async function agenticPlan(taskDescription: string[], options: { name?: string; trigger?: string; interval?: string; provider?: string; model?: string; prompt?: string }): Promise<void> {
+export async function agenticPlan(
+  taskDescription: string[],
+  options: {
+    name?: string;
+    trigger?: string;
+    interval?: string;
+    provider?: string;
+    model?: string;
+    prompt?: string;
+  }
+): Promise<void> {
   const description = taskDescription.join(' ').trim();
   if (!description) {
     console.error('Usage: ownpilot agentic plan [options] <task description...>');
@@ -386,7 +437,8 @@ export async function agenticPlan(taskDescription: string[], options: { name?: s
     process.exit(1);
   }
 
-  const name = options.name ?? (description.length > 60 ? description.slice(0, 57) + '...' : description);
+  const name =
+    options.name ?? (description.length > 60 ? description.slice(0, 57) + '...' : description);
   const body: Record<string, unknown> = { name, description };
   if (options.provider) body.provider = options.provider;
   if (options.model) body.model = options.model;
@@ -413,22 +465,27 @@ export async function agenticPlan(taskDescription: string[], options: { name?: s
 
     // Analysis section
     console.log('\n  Analysis:');
-    console.log(`    Suggested executor: ${(analysis.suggestedKinds as string[] ?? []).join(', ')}`);
+    console.log(
+      `    Suggested executor: ${((analysis.suggestedKinds as string[]) ?? []).join(', ')}`
+    );
     console.log(`    Needs orchestration: ${String(analysis.requiresOrchestration)}`);
     console.log(`    Requires code execution: ${String(analysis.likelyNeedsCodeExecution)}`);
-    console.log(`    Confidence: ${((analysis.confidence as number ?? 0) * 100).toFixed(0)}%`);
-    console.log(`    Reasoning: ${(analysis.reasoning as string ?? '').slice(0, 200)}`);
+    console.log(`    Confidence: ${(((analysis.confidence as number) ?? 0) * 100).toFixed(0)}%`);
+    console.log(`    Reasoning: ${((analysis.reasoning as string) ?? '').slice(0, 200)}`);
 
     // Steps section
     if (steps && steps.length > 0) {
       console.log('\n  Execution Steps:');
       for (const step of steps) {
-        const deps = (step.dependsOn as number[] ?? []).length > 0
-          ? `  (after step ${(step.dependsOn as number[]).join(', ')})`
-          : '';
+        const deps =
+          ((step.dependsOn as number[]) ?? []).length > 0
+            ? `  (after step ${(step.dependsOn as number[]).join(', ')})`
+            : '';
         const retry = step.retryOnFailure ? '  retry' : '';
         const timeout = step.timeoutMs ? `  ${(step.timeoutMs as number).toLocaleString()}ms` : '';
-        console.log(`    #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.capabilityId).padEnd(25)}${timeout}${retry}${deps}`);
+        console.log(
+          `    #${String(step.index).padEnd(3)} ${String(step.executorKind).padEnd(16)} ${String(step.capabilityId).padEnd(25)}${timeout}${retry}${deps}`
+        );
       }
     }
 
@@ -450,7 +507,12 @@ export async function agenticPlan(taskDescription: string[], options: { name?: s
 // ─── CAPABILITIES ───
 // ============================================================================
 
-export async function agenticCapabilities(options: { kind?: string; search?: string; provider?: string; json?: boolean }): Promise<void> {
+export async function agenticCapabilities(options: {
+  kind?: string;
+  search?: string;
+  provider?: string;
+  json?: boolean;
+}): Promise<void> {
   try {
     const params = new URLSearchParams();
     if (options.kind) params.set('kind', options.kind);
@@ -466,7 +528,17 @@ export async function agenticCapabilities(options: { kind?: string; search?: str
     const { capabilities, total } = data;
 
     if (options.json) {
-      console.log(JSON.stringify({ capabilities, total, filters: { kind: options.kind, search: options.search, provider: options.provider } }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            capabilities,
+            total,
+            filters: { kind: options.kind, search: options.search, provider: options.provider },
+          },
+          null,
+          2
+        )
+      );
       return;
     }
 
@@ -500,7 +572,9 @@ export async function agenticCapabilities(options: { kind?: string; search?: str
         const approvalTag = cap.requiresApproval ? '  ⚠ requires approval' : '';
         console.log(`    ${cap.id.padEnd(30)} ${cap.name.slice(0, 40)}`);
         console.log(`    ${' '.repeat(30)} ${cap.description.slice(0, 80)}`);
-        console.log(`    ${' '.repeat(30)} tags: ${cap.tags.slice(0, 6).join(', ')}${costTag}${latencyTag}${approvalTag}`);
+        console.log(
+          `    ${' '.repeat(30)} tags: ${cap.tags.slice(0, 6).join(', ')}${costTag}${latencyTag}${approvalTag}`
+        );
       }
     }
     console.log('');
@@ -526,8 +600,10 @@ export async function agenticStats(options: { json?: boolean } = {}): Promise<vo
     console.log('─'.repeat(50));
     console.log(`  Total executions:    ${String(data.totalExecutions)}`);
     console.log(`  Active executions:   ${String(data.activeExecutions)}`);
-    console.log(`  Total cost:          $${(data.totalCostUsd as number ?? 0).toFixed(4)}`);
-    console.log(`  Success rate:        ${((data.successRate as number ?? 0) * 100).toFixed(1)}%`);
+    console.log(`  Total cost:          $${((data.totalCostUsd as number) ?? 0).toFixed(4)}`);
+    console.log(
+      `  Success rate:        ${(((data.successRate as number) ?? 0) * 100).toFixed(1)}%`
+    );
 
     const byKind = data.byExecutorKind as Record<string, number> | undefined;
     if (byKind && Object.keys(byKind).length > 0) {
@@ -644,11 +720,7 @@ EXAMPLES
 // ─── WATCH (WebSocket live events) ───
 // ============================================================================
 
-const AGENTIC_WS_TOPICS = [
-  'agentic.step.start',
-  'agentic.step.complete',
-  'agentic.step.fail',
-];
+const AGENTIC_WS_TOPICS = ['agentic.step.start', 'agentic.step.complete', 'agentic.step.fail'];
 
 function agenticDeriveWsUrl(): string {
   const explicit = process.env.OWNPILOT_WS_URL;
@@ -685,7 +757,8 @@ function formatAgenticEvent(type: string, payload: Record<string, unknown>): str
       return `${ts}  → start    ${String(payload.executorKind ?? '').padEnd(16)}  step #${String(payload.stepIndex ?? '')}  ${String(payload.capabilityId ?? '')}`;
     case 'agentic.step.complete': {
       const dur = typeof payload.durationMs === 'number' ? ` ${payload.durationMs}ms` : '';
-      const cost = typeof payload.costUsd === 'number' ? ` ${(payload.costUsd as number).toFixed(4)}` : '';
+      const cost =
+        typeof payload.costUsd === 'number' ? ` ${(payload.costUsd as number).toFixed(4)}` : '';
       return `${ts}  ✓ done     ${String(payload.executorKind ?? '').padEnd(16)}  step #${String(payload.stepIndex ?? '')}${dur}${cost}`;
     }
     case 'agentic.step.fail':
@@ -709,7 +782,8 @@ export async function agenticWatch(options: AgenticWatchOptions = {}): Promise<v
   const openWebSocket =
     options.openWebSocket ??
     ((u: string, p?: string[]): WebSocketLike => {
-      const Ctor = (globalThis as { WebSocket?: new (u: string, p?: string[]) => WebSocketLike }).WebSocket;
+      const Ctor = (globalThis as { WebSocket?: new (u: string, p?: string[]) => WebSocketLike })
+        .WebSocket;
       if (!Ctor) throw new Error('Global WebSocket not available — requires Node 22+');
       return new Ctor(u, p);
     });
@@ -722,7 +796,11 @@ export async function agenticWatch(options: AgenticWatchOptions = {}): Promise<v
     const finish = (err?: Error): void => {
       if (resolved) return;
       resolved = true;
-      try { ws.close(); } catch { /* ignore */ }
+      try {
+        ws.close();
+      } catch {
+        /* ignore */
+      }
       if (err) reject(err);
       else resolve();
     };
@@ -730,7 +808,7 @@ export async function agenticWatch(options: AgenticWatchOptions = {}): Promise<v
     ws.addEventListener('open', () => {
       console.log(
         `Connected to ${baseUrl} — watching agentic execution events` +
-        ` (${AGENTIC_WS_TOPICS.length} topics).`
+          ` (${AGENTIC_WS_TOPICS.length} topics).`
       );
       console.log('Press Ctrl-C to stop.\n');
       for (const topic of AGENTIC_WS_TOPICS) {
@@ -743,7 +821,9 @@ export async function agenticWatch(options: AgenticWatchOptions = {}): Promise<v
       let msg: { type?: string; event?: string; data?: unknown; payload?: unknown };
       try {
         msg = JSON.parse(String(evt.data));
-      } catch { return; }
+      } catch {
+        return;
+      }
       const type = (msg.event ?? msg.type) as string | undefined;
       if (!type || !type.startsWith('agentic.step')) return;
       const payload = (msg.payload ?? msg.data ?? {}) as Record<string, unknown>;

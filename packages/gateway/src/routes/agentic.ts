@@ -305,9 +305,10 @@ agenticRoutes.post('/plan', async (c) => {
       name: input.name,
       description: input.description,
       prompt: input.prompt,
-      providerPreference: input.provider || input.model
-        ? { providerId: input.provider, modelId: input.model }
-        : undefined,
+      providerPreference:
+        input.provider || input.model
+          ? { providerId: input.provider, modelId: input.model }
+          : undefined,
       expectedOutput: input.expectedOutput,
       priority: input.priority,
       trigger: input.trigger ? buildTriggerStrategy(input.trigger) : undefined,
@@ -587,6 +588,13 @@ agenticRoutes.delete('/executions/:id', async (c) => {
     }
     return apiResponse(c, { id, deleted: true });
   } catch (err) {
-    return apiError(c, { code: ERROR_CODES.INTERNAL_ERROR, message: getErrorMessage(err, 'Failed to delete execution') }, 500);
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INTERNAL_ERROR,
+        message: getErrorMessage(err, 'Failed to delete execution'),
+      },
+      500
+    );
   }
 });

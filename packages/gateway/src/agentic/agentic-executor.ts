@@ -37,9 +37,7 @@ import {
 import { getTriggerEngine } from '../triggers/engine.js';
 import type { ExecutionStep } from '@ownpilot/core/agentic';
 import { getEventSystem } from '@ownpilot/core/events';
-import {
-  executeTool,
-} from '../services/tool/executor.js';
+import { executeTool } from '../services/tool/executor.js';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 
 const log = getLog('AgenticExecutor');
@@ -103,11 +101,15 @@ export class AgenticGatewayExecutor {
     const events = getEventSystem();
 
     // Emit start event — cast needed for cross-package EventMap sync
-    (events.emit as (type: string, source: string, data: unknown) => void)('agentic.step.start', 'agentic-executor', {
-      stepIndex: step.index,
-      executorKind: step.executorKind,
-      capabilityId: step.capabilityId,
-    });
+    (events.emit as (type: string, source: string, data: unknown) => void)(
+      'agentic.step.start',
+      'agentic-executor',
+      {
+        stepIndex: step.index,
+        executorKind: step.executorKind,
+        capabilityId: step.capabilityId,
+      }
+    );
 
     try {
       let result: DispatchResult;
@@ -168,13 +170,17 @@ export class AgenticGatewayExecutor {
       return result;
     } catch (err) {
       const errMsg = getErrorMessage(err, `Step ${step.index} failed`);
-      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)('agentic.step.fail', 'agentic-executor', {
-        stepIndex: step.index,
-        executorKind: step.executorKind,
-        capabilityId: step.capabilityId,
-        durationMs: Date.now() - startTime,
-        error: errMsg,
-      });
+      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
+        'agentic.step.fail',
+        'agentic-executor',
+        {
+          stepIndex: step.index,
+          executorKind: step.executorKind,
+          capabilityId: step.capabilityId,
+          durationMs: Date.now() - startTime,
+          error: errMsg,
+        }
+      );
       return {
         success: false,
         output: null,
@@ -199,7 +205,7 @@ export class AgenticGatewayExecutor {
     if (clawId) {
       // Execute on an existing persistent claw
       const service = getClawService();
-      const userId = params.userId as string || 'local';
+      const userId = (params.userId as string) || 'local';
       const result = await service.executeNow(clawId, userId);
       return {
         success: true,
@@ -224,7 +230,9 @@ export class AgenticGatewayExecutor {
         const resolved = await svc.resolve({});
         provider = resolved.provider ?? '';
         model = resolved.model ?? model;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
 
     // If still no provider, return a clear error instead of failing
@@ -273,7 +281,7 @@ export class AgenticGatewayExecutor {
     const params = step.params as Record<string, unknown>;
 
     const taskDesc = (params.task as string) || 'Execute heartbeat task';
-    const agentId = (params.agentId as string) || params.soulId as string;
+    const agentId = (params.agentId as string) || (params.soulId as string);
 
     if (!agentId) {
       return {
@@ -442,8 +450,9 @@ export class AgenticGatewayExecutor {
         const triggerAction: TriggerAction = {
           type: 'chat',
           payload: {
-            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
-            expectedOutput: (action.payload as Record<string, unknown>)?.expectedOutput as string ?? '',
+            task: ((action.payload as Record<string, unknown>)?.task as string) ?? '',
+            expectedOutput:
+              ((action.payload as Record<string, unknown>)?.expectedOutput as string) ?? '',
           },
         };
 
@@ -487,8 +496,9 @@ export class AgenticGatewayExecutor {
         const triggerAction: TriggerAction = {
           type: 'chat',
           payload: {
-            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
-            expectedOutput: (action.payload as Record<string, unknown>)?.expectedOutput as string ?? '',
+            task: ((action.payload as Record<string, unknown>)?.task as string) ?? '',
+            expectedOutput:
+              ((action.payload as Record<string, unknown>)?.expectedOutput as string) ?? '',
           },
         };
 
@@ -537,7 +547,7 @@ export class AgenticGatewayExecutor {
         const triggerAction: TriggerAction = {
           type: 'chat',
           payload: {
-            task: (action.payload as Record<string, unknown>)?.task as string ?? '',
+            task: ((action.payload as Record<string, unknown>)?.task as string) ?? '',
           },
         };
 
@@ -569,7 +579,7 @@ export class AgenticGatewayExecutor {
 
       case 'continuous': {
         // Continuous mode is not a persistent trigger — create a Claw in continuous mode.
-        const taskDesc = (action.payload as Record<string, unknown>)?.task as string ?? '';
+        const taskDesc = ((action.payload as Record<string, unknown>)?.task as string) ?? '';
         const service = getClawService();
         const claw = await service.createClaw({
           userId,
@@ -654,7 +664,8 @@ export class AgenticGatewayExecutor {
     const params = step.params as Record<string, unknown>;
 
     const taskDesc = (params.task as string) || '';
-    const systemPrompt = (params.systemPrompt as string) ||
+    const systemPrompt =
+      (params.systemPrompt as string) ||
       'You are a helpful AI assistant. Respond concisely and accurately.';
 
     // Use LLMRouter.pick() to resolve provider+model, then return a placeholder.
@@ -699,7 +710,9 @@ export class AgenticGatewayExecutor {
     try {
       // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox)
       const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      const result = await (runInSandbox as unknown as (code: string, opts: Record<string, unknown>) => Promise<unknown>)(code, {
+      const result = await (
+        runInSandbox as unknown as (code: string, opts: Record<string, unknown>) => Promise<unknown>
+      )(code, {
         pluginId: 'agentic',
         language: language as string,
         timeout: (params.timeoutMs as number) ?? 30_000,
@@ -722,10 +735,7 @@ export class AgenticGatewayExecutor {
 
   // ── Tool Catalog ──────────────────────────────────────────────────────
 
-  private async dispatchTool(
-    step: ExecutionStep,
-    _signal?: AbortSignal
-  ): Promise<DispatchResult> {
+  private async dispatchTool(step: ExecutionStep, _signal?: AbortSignal): Promise<DispatchResult> {
     const startTime = Date.now();
     const params = step.params as Record<string, unknown>;
 

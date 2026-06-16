@@ -39,9 +39,19 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Claw: Single-Shot ──
   {
     keywords: [
-      'research', 'investigate', 'analyze', 'report', 'write a report',
-      'deep dive', 'explore', 'examine', 'study', 'evaluate', 'assess',
-      'comprehensive analysis', 'thorough investigation',
+      'research',
+      'investigate',
+      'analyze',
+      'report',
+      'write a report',
+      'deep dive',
+      'explore',
+      'examine',
+      'study',
+      'evaluate',
+      'assess',
+      'comprehensive analysis',
+      'thorough investigation',
     ],
     kind: 'claw',
     weight: 0.85,
@@ -49,8 +59,17 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   },
   {
     keywords: [
-      'build', 'create', 'develop', 'implement', 'write code', 'generate',
-      'scaffold', 'prototype', 'refactor', 'migrate', 'port',
+      'build',
+      'create',
+      'develop',
+      'implement',
+      'write code',
+      'generate',
+      'scaffold',
+      'prototype',
+      'refactor',
+      'migrate',
+      'port',
     ],
     kind: 'claw',
     weight: 0.8,
@@ -58,8 +77,16 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   },
   {
     keywords: [
-      'debug', 'fix', 'repair', 'troubleshoot', 'resolve', 'diagnose',
-      'root cause', 'bug', 'issue', 'problem',
+      'debug',
+      'fix',
+      'repair',
+      'troubleshoot',
+      'resolve',
+      'diagnose',
+      'root cause',
+      'bug',
+      'issue',
+      'problem',
     ],
     kind: 'claw',
     weight: 0.75,
@@ -67,8 +94,13 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   },
   {
     keywords: [
-      'complex', 'multi-step', 'in-depth', 'thorough', 'comprehensive',
-      'end-to-end', 'full',
+      'complex',
+      'multi-step',
+      'in-depth',
+      'thorough',
+      'comprehensive',
+      'end-to-end',
+      'full',
     ],
     kind: 'claw',
     weight: 0.6,
@@ -78,8 +110,14 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Claw: Continuous ──
   {
     keywords: [
-      'continuously', 'constantly', 'always', 'monitor in background',
-      'watch', 'keep running', 'long-running', 'persistent',
+      'continuously',
+      'constantly',
+      'always',
+      'monitor in background',
+      'watch',
+      'keep running',
+      'long-running',
+      'persistent',
     ],
     kind: 'claw',
     weight: 0.9,
@@ -89,8 +127,13 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Coding Agent ──
   {
     keywords: [
-      'complex code', 'large refactor', 'codebase-wide', 'multi-file edit',
-      'rewrite module', 'architecture change', 'dependency update',
+      'complex code',
+      'large refactor',
+      'codebase-wide',
+      'multi-file edit',
+      'rewrite module',
+      'architecture change',
+      'dependency update',
     ],
     kind: 'coding_agent',
     weight: 0.85,
@@ -100,8 +143,15 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Direct LLM ──
   {
     keywords: [
-      'quick question', 'explain', 'summarize', 'translate', 'paraphrase',
-      'rewrite this', 'proofread', 'grammar check', 'spelling',
+      'quick question',
+      'explain',
+      'summarize',
+      'translate',
+      'paraphrase',
+      'rewrite this',
+      'proofread',
+      'grammar check',
+      'spelling',
     ],
     kind: 'direct_llm',
     weight: 0.9,
@@ -109,8 +159,15 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   },
   {
     keywords: [
-      'brainstorm', 'idea', 'suggest', 'recommend', 'opinion',
-      'think', 'creative', 'write a poem', 'story',
+      'brainstorm',
+      'idea',
+      'suggest',
+      'recommend',
+      'opinion',
+      'think',
+      'creative',
+      'write a poem',
+      'story',
     ],
     kind: 'direct_llm',
     weight: 0.8,
@@ -120,9 +177,19 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Soul Heartbeat ──
   {
     keywords: [
-      'every day', 'daily', 'every hour', 'every week', 'weekly',
-      'on schedule', 'periodically', 'regularly', 'recurring', 'cron',
-      'heartbeat', 'routine check', 'scheduled task',
+      'every day',
+      'daily',
+      'every hour',
+      'every week',
+      'weekly',
+      'on schedule',
+      'periodically',
+      'regularly',
+      'recurring',
+      'cron',
+      'heartbeat',
+      'routine check',
+      'scheduled task',
     ],
     kind: 'soul_heartbeat',
     weight: 0.85,
@@ -132,9 +199,17 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Workflow ──
   {
     keywords: [
-      'workflow', 'pipeline', 'multi-stage', 'sequential steps',
-      'if this then', 'conditional', 'branch', 'parallel', 'foreach',
-      'for each item', 'batch process',
+      'workflow',
+      'pipeline',
+      'multi-stage',
+      'sequential steps',
+      'if this then',
+      'conditional',
+      'branch',
+      'parallel',
+      'foreach',
+      'for each item',
+      'batch process',
     ],
     kind: 'workflow',
     weight: 0.8,
@@ -144,9 +219,17 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Trigger ──
   {
     keywords: [
-      'when event', 'on event', 'whenever', 'trigger', 'webhook',
-      'if condition', 'when condition', 'notify me when', 'alert me when',
-      'send notification', 'fire when',
+      'when event',
+      'on event',
+      'whenever',
+      'trigger',
+      'webhook',
+      'if condition',
+      'when condition',
+      'notify me when',
+      'alert me when',
+      'send notification',
+      'fire when',
     ],
     kind: 'trigger',
     weight: 0.85,
@@ -156,8 +239,14 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
   // ── Channel ──
   {
     keywords: [
-      'send message', 'send to telegram', 'send to discord', 'send to slack',
-      'post to', 'notify via', 'message channel', 'broadcast to',
+      'send message',
+      'send to telegram',
+      'send to discord',
+      'send to slack',
+      'post to',
+      'notify via',
+      'message channel',
+      'broadcast to',
     ],
     kind: 'channel',
     weight: 0.9,
@@ -167,16 +256,37 @@ const ROUTING_PATTERNS: RoutingPattern[] = [
 
 // Patterns that indicate the task needs code execution
 const CODE_EXECUTION_PATTERNS = [
-  'run code', 'execute script', 'run this', 'execute', 'shell command',
-  'npm install', 'pip install', 'compile', 'build', 'run tests',
-  'run command', 'bash', 'terminal', 'cli',
+  'run code',
+  'execute script',
+  'run this',
+  'execute',
+  'shell command',
+  'npm install',
+  'pip install',
+  'compile',
+  'build',
+  'run tests',
+  'run command',
+  'bash',
+  'terminal',
+  'cli',
 ];
 
 // Patterns that indicate the task needs external data access
 const EXTERNAL_DATA_PATTERNS = [
-  'fetch', 'download', 'scrape', 'crawl', 'api call',
-  'web search', 'search the web', 'look up', 'find online',
-  'get data from', 'pull from', 'import from', 'connect to',
+  'fetch',
+  'download',
+  'scrape',
+  'crawl',
+  'api call',
+  'web search',
+  'search the web',
+  'look up',
+  'find online',
+  'get data from',
+  'pull from',
+  'import from',
+  'connect to',
 ];
 
 // ============================================================================
@@ -184,24 +294,97 @@ const EXTERNAL_DATA_PATTERNS = [
 // ============================================================================
 
 /** Default task constraints for different executor kinds. */
-const DEFAULT_CONSTRAINTS: Record<ExecutorKind, {
-  maxCostUsd?: number;
-  timeoutMs: number;
-  maxTurns: number;
-  maxToolCalls: number;
-  allowCodeExecution: boolean;
-  allowNetwork: boolean;
-}> = {
-  claw: { maxCostUsd: 1.0, timeoutMs: 600_000, maxTurns: 50, maxToolCalls: 500, allowCodeExecution: true, allowNetwork: true },
-  soul_heartbeat: { maxCostUsd: 0.1, timeoutMs: 120_000, maxTurns: 10, maxToolCalls: 50, allowCodeExecution: false, allowNetwork: false },
-  crew: { maxCostUsd: 2.0, timeoutMs: 1_800_000, maxTurns: 100, maxToolCalls: 1000, allowCodeExecution: true, allowNetwork: true },
-  coding_agent: { maxCostUsd: 3.0, timeoutMs: 3_600_000, maxTurns: 200, maxToolCalls: 2000, allowCodeExecution: true, allowNetwork: true },
-  workflow: { maxCostUsd: 1.0, timeoutMs: 600_000, maxTurns: 10, maxToolCalls: 100, allowCodeExecution: true, allowNetwork: true },
-  trigger: { maxCostUsd: 0.05, timeoutMs: 30_000, maxTurns: 5, maxToolCalls: 20, allowCodeExecution: true, allowNetwork: true },
-  channel: { maxCostUsd: 0.01, timeoutMs: 10_000, maxTurns: 1, maxToolCalls: 0, allowCodeExecution: false, allowNetwork: true },
-  direct_llm: { maxCostUsd: 0.02, timeoutMs: 30_000, maxTurns: 1, maxToolCalls: 0, allowCodeExecution: false, allowNetwork: false },
-  sandbox_code: { maxCostUsd: 0.01, timeoutMs: 60_000, maxTurns: 1, maxToolCalls: 0, allowCodeExecution: true, allowNetwork: false },
-  tool_catalog: { maxCostUsd: 0.01, timeoutMs: 30_000, maxTurns: 1, maxToolCalls: 1, allowCodeExecution: false, allowNetwork: false },
+const DEFAULT_CONSTRAINTS: Record<
+  ExecutorKind,
+  {
+    maxCostUsd?: number;
+    timeoutMs: number;
+    maxTurns: number;
+    maxToolCalls: number;
+    allowCodeExecution: boolean;
+    allowNetwork: boolean;
+  }
+> = {
+  claw: {
+    maxCostUsd: 1.0,
+    timeoutMs: 600_000,
+    maxTurns: 50,
+    maxToolCalls: 500,
+    allowCodeExecution: true,
+    allowNetwork: true,
+  },
+  soul_heartbeat: {
+    maxCostUsd: 0.1,
+    timeoutMs: 120_000,
+    maxTurns: 10,
+    maxToolCalls: 50,
+    allowCodeExecution: false,
+    allowNetwork: false,
+  },
+  crew: {
+    maxCostUsd: 2.0,
+    timeoutMs: 1_800_000,
+    maxTurns: 100,
+    maxToolCalls: 1000,
+    allowCodeExecution: true,
+    allowNetwork: true,
+  },
+  coding_agent: {
+    maxCostUsd: 3.0,
+    timeoutMs: 3_600_000,
+    maxTurns: 200,
+    maxToolCalls: 2000,
+    allowCodeExecution: true,
+    allowNetwork: true,
+  },
+  workflow: {
+    maxCostUsd: 1.0,
+    timeoutMs: 600_000,
+    maxTurns: 10,
+    maxToolCalls: 100,
+    allowCodeExecution: true,
+    allowNetwork: true,
+  },
+  trigger: {
+    maxCostUsd: 0.05,
+    timeoutMs: 30_000,
+    maxTurns: 5,
+    maxToolCalls: 20,
+    allowCodeExecution: true,
+    allowNetwork: true,
+  },
+  channel: {
+    maxCostUsd: 0.01,
+    timeoutMs: 10_000,
+    maxTurns: 1,
+    maxToolCalls: 0,
+    allowCodeExecution: false,
+    allowNetwork: true,
+  },
+  direct_llm: {
+    maxCostUsd: 0.02,
+    timeoutMs: 30_000,
+    maxTurns: 1,
+    maxToolCalls: 0,
+    allowCodeExecution: false,
+    allowNetwork: false,
+  },
+  sandbox_code: {
+    maxCostUsd: 0.01,
+    timeoutMs: 60_000,
+    maxTurns: 1,
+    maxToolCalls: 0,
+    allowCodeExecution: true,
+    allowNetwork: false,
+  },
+  tool_catalog: {
+    maxCostUsd: 0.01,
+    timeoutMs: 30_000,
+    maxTurns: 1,
+    maxToolCalls: 1,
+    allowCodeExecution: false,
+    allowNetwork: false,
+  },
 };
 
 /** Parse a trigger strategy from task text. */
@@ -209,7 +392,11 @@ function inferTriggerStrategy(description: string): TaskTriggerStrategy | undefi
   const lower = description.toLowerCase();
 
   // Continuous
-  if (lower.includes('continuously') || lower.includes('constantly') || lower.includes('always run')) {
+  if (
+    lower.includes('continuously') ||
+    lower.includes('constantly') ||
+    lower.includes('always run')
+  ) {
     return { type: 'continuous' };
   }
 
@@ -218,9 +405,11 @@ function inferTriggerStrategy(description: string): TaskTriggerStrategy | undefi
   if (intervalMatch) {
     const num = parseInt(intervalMatch[1]!, 10);
     const unit = intervalMatch[2]!;
-    const ms = unit.startsWith('s') ? num * 1000
-      : unit.startsWith('m') ? num * 60_000
-      : num * 3_600_000;
+    const ms = unit.startsWith('s')
+      ? num * 1000
+      : unit.startsWith('m')
+        ? num * 60_000
+        : num * 3_600_000;
     return { type: 'interval', intervalMs: ms };
   }
 
@@ -297,8 +486,7 @@ export class AgenticRouter implements IAgenticRouter {
     }
 
     // Sort by score descending
-    const sorted = Array.from(scores.entries())
-      .sort((a, b) => b[1].score - a[1].score);
+    const sorted = Array.from(scores.entries()).sort((a, b) => b[1].score - a[1].score);
 
     const topKinds = sorted
       .filter(([, s]) => s.score > 0)
@@ -312,9 +500,9 @@ export class AgenticRouter implements IAgenticRouter {
 
     // Find matching capabilities
     const allCaps = this.registry.getAll();
-    const requiredCapabilities = allCaps.filter(
-      (c) => topKinds.includes(c.executorKind) && !c.requiresApproval
-    ).slice(0, 5);
+    const requiredCapabilities = allCaps
+      .filter((c) => topKinds.includes(c.executorKind) && !c.requiresApproval)
+      .slice(0, 5);
 
     // Determine if orchestration is needed (multiple steps with dependencies)
     const requiresOrchestration = topKinds.length > 1 || hasTrigger || likelyNeedsCodeExecution;
@@ -354,7 +542,8 @@ export class AgenticRouter implements IAgenticRouter {
 
     // Extra params shared across all step types
     const extraParams: Record<string, unknown> = {};
-    if (task.providerPreference?.providerId) extraParams.provider = task.providerPreference.providerId;
+    if (task.providerPreference?.providerId)
+      extraParams.provider = task.providerPreference.providerId;
     if (task.providerPreference?.modelId) extraParams.model = task.providerPreference.modelId;
     if (task.prompt) extraParams.prompt = task.prompt;
 
@@ -434,21 +623,30 @@ export class AgenticRouter implements IAgenticRouter {
       }
     } else {
       // Single-step plan
-      const capId = kinds[0]! === 'claw' ? 'claw:single-shot'
-        : kinds[0]! === 'direct_llm' ? 'direct-llm:chat'
-        : kinds[0]! === 'soul_heartbeat' ? 'soul:heartbeat'
-        : kinds[0]! === 'coding_agent' ? 'coding-agent:claude-code'
-        : kinds[0]! === 'workflow' ? 'workflow:dag'
-        : 'claw:single-shot';
+      const capId =
+        kinds[0]! === 'claw'
+          ? 'claw:single-shot'
+          : kinds[0]! === 'direct_llm'
+            ? 'direct-llm:chat'
+            : kinds[0]! === 'soul_heartbeat'
+              ? 'soul:heartbeat'
+              : kinds[0]! === 'coding_agent'
+                ? 'coding-agent:claude-code'
+                : kinds[0]! === 'workflow'
+                  ? 'workflow:dag'
+                  : 'claw:single-shot';
 
       steps.push({
         index: 1,
         executorKind: kinds[0]!,
         capabilityId: capId,
-        providerId: capId.startsWith('claw') ? 'ownpilot:claw'
-          : capId.startsWith('direct') ? 'ownpilot:llm'
-          : capId.startsWith('coding') ? 'ownpilot:coding-agent'
-          : 'ownpilot:claw',
+        providerId: capId.startsWith('claw')
+          ? 'ownpilot:claw'
+          : capId.startsWith('direct')
+            ? 'ownpilot:llm'
+            : capId.startsWith('coding')
+              ? 'ownpilot:coding-agent'
+              : 'ownpilot:claw',
         params: {
           task: task.description,
           expectedOutput: task.expectedOutput,
@@ -470,8 +668,8 @@ export class AgenticRouter implements IAgenticRouter {
         const costMap: Record<string, number> = {
           claw: 0.05,
           soul_heartbeat: 0.01,
-          crew: 0.10,
-          coding_agent: 0.20,
+          crew: 0.1,
+          coding_agent: 0.2,
           workflow: 0.05,
           trigger: 0.001,
           channel: 0.001,
@@ -491,7 +689,9 @@ export class AgenticRouter implements IAgenticRouter {
   /**
    * Route a task: analyze it, then generate an execution plan.
    */
-  async route(task: Omit<AgenticTask, 'id'>): Promise<{ analysis: TaskAnalysis; plan: ExecutionPlan }> {
+  async route(
+    task: Omit<AgenticTask, 'id'>
+  ): Promise<{ analysis: TaskAnalysis; plan: ExecutionPlan }> {
     const taskWithId: AgenticTask = { ...task, id: generateId('agentic') };
     const analysis = await this.analyze(taskWithId);
     const plan = await this.plan(taskWithId);
