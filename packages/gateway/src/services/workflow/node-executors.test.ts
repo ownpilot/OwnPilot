@@ -107,6 +107,14 @@ vi.mock('../log.js', () => ({
   }),
 }));
 
+// Mock ws/server so executeNotificationNode's dynamic import resolves to our
+// controllable mock. vi.doMock in individual tests doesn't work because the
+// module is already cached from prior tests that call executeNotificationNode.
+const mockWsBroadcast = vi.fn();
+vi.mock('../../ws/server.js', () => ({
+  wsGateway: { broadcast: mockWsBroadcast },
+}));
+
 // Mock the agent-cache import used by executeLlmNode
 vi.mock('../agent/cache.js', () => ({
   getProviderApiKey: vi.fn(async () => 'mock-api-key'),
@@ -1351,10 +1359,7 @@ describe('executeDelayNode', () => {
 
 describe('executeNotificationNode', () => {
   beforeEach(() => {
-    // Mock the wsGateway import
-    vi.doMock('../../ws/server.js', () => ({
-      wsGateway: { broadcast: vi.fn().mockResolvedValue(undefined) },
-    }));
+    mockWsBroadcast.mockResolvedValue(undefined);
   });
 
   it('returns success with notification metadata after broadcast', async () => {
@@ -1407,9 +1412,7 @@ describe('executeNotificationNode', () => {
   });
 
   it('returns success with warning when broadcast fails', async () => {
-    vi.doMock('../../ws/server.js', () => ({
-      wsGateway: { broadcast: vi.fn().mockRejectedValue(new Error('WS down')) },
-    }));
+    mockWsBroadcast.mockRejectedValue(new Error('WS down'));
     vi.mocked(resolveTemplates).mockReturnValue({ _msg: 'Notify!' });
 
     const node = makeNode('notif1', 'notificationNode', {
