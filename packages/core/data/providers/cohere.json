@@ -153,6 +153,21 @@
       "releaseDate": "2025-02-27"
     },
     {
+      "id": "command-r7b-12-2024",
+      "name": "Command R7B",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 0.0375,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-02"
+    },
+    {
       "id": "c4ai-aya-expanse-32b",
       "name": "Aya Expanse 32B",
       "contextWindow": 128000,
@@ -209,21 +224,6 @@
       ],
       "default": false,
       "releaseDate": "2024-08-30"
-    },
-    {
-      "id": "command-r7b-12-2024",
-      "name": "Command R7B",
-      "contextWindow": 128000,
-      "maxOutput": 4000,
-      "inputPrice": 0.0375,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-27"
     }
   ],
   "baseUrl": "https://api.cohere.ai/v1",

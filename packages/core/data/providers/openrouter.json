@@ -12,12 +12,26 @@
   },
   "models": [
     {
+      "id": "openrouter/fusion",
+      "name": "Fusion",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
       "id": "moonshotai/kimi-k2.7-code",
       "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.95,
-      "outputPrice": 4,
+      "inputPrice": 0.75,
+      "outputPrice": 3.5,
       "capabilities": [
         "chat",
         "vision",
@@ -26,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-12"
     },
     {
@@ -161,6 +175,7 @@
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -287,20 +302,6 @@
         "function_calling",
         "json_mode",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-12"
-    },
-    {
-      "id": "openrouter/fusion",
-      "name": "Fusion",
-      "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
         "streaming"
       ],
       "default": false,
@@ -625,10 +626,10 @@
     {
       "id": "deepseek/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
-      "contextWindow": 1048575,
-      "maxOutput": 131072,
-      "inputPrice": 0.098,
-      "outputPrice": 0.196,
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0.09,
+      "outputPrice": 0.18,
       "capabilities": [
         "chat",
         "function_calling",
@@ -4771,6 +4772,21 @@
       "releaseDate": "2024-12-05"
     },
     {
+      "id": "cohere/command-r7b-12-2024",
+      "name": "Command R7B",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 0.0375,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-02"
+    },
+    {
       "id": "openai/gpt-4o-2024-11-20",
       "name": "GPT-4o (2024-11-20)",
       "contextWindow": 128000,
@@ -5376,21 +5392,6 @@
       ],
       "default": false,
       "releaseDate": "2024-03-13"
-    },
-    {
-      "id": "cohere/command-r7b-12-2024",
-      "name": "Command R7B",
-      "contextWindow": 128000,
-      "maxOutput": 4000,
-      "inputPrice": 0.0375,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-27"
     },
     {
       "id": "mistralai/mistral-large",

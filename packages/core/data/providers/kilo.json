@@ -4461,6 +4461,21 @@
       "releaseDate": "2024-12-03"
     },
     {
+      "id": "cohere/command-r7b-12-2024",
+      "name": "Cohere: Command R7B (12-2024)",
+      "contextWindow": 128000,
+      "maxOutput": 4000,
+      "inputPrice": 0.0375,
+      "outputPrice": 0.15,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-02"
+    },
+    {
       "id": "qwen/qwen3-32b",
       "name": "Qwen: Qwen3 32B",
       "contextWindow": 40960,
@@ -5241,21 +5256,6 @@
       ],
       "default": false,
       "releaseDate": "2024-03-07"
-    },
-    {
-      "id": "cohere/command-r7b-12-2024",
-      "name": "Cohere: Command R7B (12-2024)",
-      "contextWindow": 128000,
-      "maxOutput": 4000,
-      "inputPrice": 0.0375,
-      "outputPrice": 0.15,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-02-27"
     },
     {
       "id": "openai/gpt-4-turbo-preview",

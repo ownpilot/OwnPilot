@@ -12,6 +12,40 @@
   },
   "models": [
     {
+      "id": "kimi-k2.7-code",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "nemotron-3-ultra-550b",
+      "name": "Nemotron 3 Ultra 550B A55B",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0.5,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-04"
+    },
+    {
       "id": "qwen3.7-plus",
       "name": "Qwen3.7 Plus",
       "contextWindow": 1000000,
@@ -25,7 +59,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-02"
     },
     {
@@ -309,6 +343,24 @@
       "releaseDate": "2026-04-16"
     },
     {
+      "id": "grok-build-0-1",
+      "name": "Grok Build 0.1",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 1,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
       "id": "qwen3.6-plus",
       "name": "Qwen3.6 Plus",
       "contextWindow": 1000000,
@@ -386,7 +438,6 @@
         "vision",
         "audio",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

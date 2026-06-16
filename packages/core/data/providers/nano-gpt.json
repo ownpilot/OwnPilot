@@ -2453,6 +2453,7 @@
         "vision",
         "audio",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -3884,6 +3885,7 @@
       "outputPrice": 0.306,
       "capabilities": [
         "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -3898,6 +3900,7 @@
       "outputPrice": 0.306,
       "capabilities": [
         "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -3912,6 +3915,7 @@
       "outputPrice": 0.306,
       "capabilities": [
         "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -3926,6 +3930,7 @@
       "outputPrice": 0.306,
       "capabilities": [
         "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,

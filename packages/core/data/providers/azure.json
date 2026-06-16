@@ -33,8 +33,8 @@
       "name": "DeepSeek-V4-Flash",
       "contextWindow": 1000000,
       "maxOutput": 384000,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
+      "inputPrice": 0.19,
+      "outputPrice": 0.51,
       "capabilities": [
         "chat",
         "json_mode",
@@ -49,8 +49,8 @@
       "name": "DeepSeek-V4-Pro",
       "contextWindow": 1000000,
       "maxOutput": 384000,
-      "inputPrice": 0.19,
-      "outputPrice": 0.51,
+      "inputPrice": 1.74,
+      "outputPrice": 3.48,
       "capabilities": [
         "chat",
         "json_mode",

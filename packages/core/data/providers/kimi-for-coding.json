@@ -3,7 +3,6 @@
   "name": "Kimi For Coding",
   "type": "openai-compatible",
   "apiKeyEnv": "KIMI_API_KEY",
-  "clientPersona": "claude-code",
   "features": {
     "streaming": true,
     "toolUse": true,
@@ -85,5 +84,6 @@
     }
   ],
   "baseUrl": "https://api.kimi.com/coding/v1",
-  "docsUrl": "https://www.kimi.com/code/docs/en/third-party-tools/other-coding-agents.html"
+  "docsUrl": "https://www.kimi.com/code/docs/en/third-party-tools/other-coding-agents.html",
+  "clientPersona": "claude-code"
 }
