@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned for v0.8.0 — Structural Refactor Release
+
+> **Theme**: Break up oversized files, harden type safety, expand test coverage.
+> Target: no public API changes — all splits preserve barrel re-exports.
+> See `refactor-next.md` §2 for full dependency graphs and rollout plan.
+
+#### Phase 2A — Large file splits (6 targets)
+
+Each split leaves a thin `index.ts` re-export so all call sites work unchanged.
+Test files migrate to the new import paths.
+
+- [ ] `services/claw/manager.ts` (1739 LOC) → `manager/{index,registry,lifecycle,permissions,scheduler-sync}.ts`
+- [ ] `services/workflow/workflow-service.ts` (1704 LOC) → `workflow/{service,runtime,job-dispatch,persistence,index}.ts`
+- [ ] `services/agent/service.ts` (1200 LOC) → `agent/{service,runs,prompts,tools-bridge,index}.ts`
+- [ ] `services/tool/templates.ts` (914 LOC) → `templates/{registry,builtin,user,render,index}.ts`
+- [ ] `services/claw/runner.ts` (895 LOC) → `runner/{index,execution,context,errors}.ts`
+- [ ] `db/repositories/workflows/index.ts` (959 LOC) → `workflows/{repo,queries,migrations,index}.ts`
+
+**Exit criteria**: No file > 800 LOC in `gateway/src/services/` and `gateway/src/db/repositories/`.
+
+#### Phase 2B — Barrel export cleanup
+
+- [ ] Split `core/services/index.ts` (73 exports) into domain-specific sub-barrels
+- [ ] Split `core/agent/tools/index.ts` (34 exports) into category sub-barrels
+- [ ] Verify no sub-path barrel exceeds 35 exports
+
+#### Type safety hardening
+
+- [ ] Audit `as unknown as` in production (non-test) source — add trust-boundary comments or replace with type guards
+- [ ] Audit remaining `as any` in production source — target ≤5 occurrences
+- [ ] Investigate 4 `eval()` calls in production code (refactor-next.md §0 risk signals)
+- [ ] Resolve 4 TODO and 1 FIXME in source code
+
+#### Test coverage expansion
+
+- [ ] Add tests for 10 highest-priority untested gateway services (refactor-next.md Appendix A):
+  - `services/log.ts`, `orphan-reconciliation.ts`, `retention-service.ts`, `shutdown-cleanup.ts`
+  - `services/claw/manager-*.ts` (3 files)
+  - `services/workflow/executors/*.ts` (remaining untested)
+- [ ] Add integration test suite for agent → tool → LLM → response pipeline
+
+#### Agentic Capability Layer hardening
+
+- [ ] Add integration tests for AgenticGatewayExecutor dispatch to real services
+- [ ] Add cancellation propagation through AgenticOrchestrator → step executors
+- [ ] Add cost tracking persistence to database (currently in-memory only)
+- [ ] WebSocket event delivery verification tests
+
 ## [0.7.3] - 2026-06-16
 
 ### Security
