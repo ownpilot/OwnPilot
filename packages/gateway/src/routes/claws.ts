@@ -20,7 +20,7 @@ import type {
   ClawMode,
   ClawSession,
   UpdateClawInput,
-} from '@ownpilot/core/services';
+} from '@ownpilot/core/services/claw';
 import { getClawService } from '../services/claw/service.js';
 import { getLlmSemaphore } from '../services/llm/semaphore.js';
 import {

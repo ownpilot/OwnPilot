@@ -13,12 +13,12 @@
  * early, skipping the remaining cycle-ops), or false to continue.
  */
 
+import { generateId } from '@ownpilot/core/services';
 import {
-  generateId,
   CLAW_TASK_STALL_AUTO_ESCALATE,
   CLAW_TASK_STALL_FORCE_BLOCK,
-} from '@ownpilot/core/services';
-import type { ClawEscalation, ClawPlanHistoryEntry } from '@ownpilot/core/services';
+} from '@ownpilot/core/services/claw';
+import type { ClawEscalation, ClawPlanHistoryEntry } from '@ownpilot/core/services/claw';
 import { getLog } from '../log.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import type { ManagedClaw } from './manager-types.js';

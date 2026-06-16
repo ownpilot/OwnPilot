@@ -5,7 +5,7 @@
  * should terminate based on its cycle result and configuration.
  */
 
-import type { ClawCycleResult } from '@ownpilot/core/services';
+import type { ClawCycleResult } from '@ownpilot/core/services/claw';
 import type { ManagedClaw } from './manager-types.js';
 
 const MISSION_COMPLETE_SENTINEL = 'MISSION_COMPLETE';

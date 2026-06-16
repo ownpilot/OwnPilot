@@ -11,7 +11,7 @@
 import { getEventSystem } from '@ownpilot/core/events';
 import { getErrorMessage } from '@ownpilot/core/services';
 import type { EventHandler } from '@ownpilot/core/events';
-import type { ClawSession } from '@ownpilot/core/services';
+import type { ClawSession } from '@ownpilot/core/services/claw';
 import type { ManagedClaw } from './manager-types.js';
 import { PRIORITY_DELAY_MULTIPLIER } from './manager-task-plan.js';
 import { getLog } from '../log.js';

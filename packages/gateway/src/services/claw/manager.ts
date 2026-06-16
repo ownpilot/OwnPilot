@@ -13,19 +13,19 @@
  */
 
 import { getEventSystem } from '@ownpilot/core/events';
+import { getErrorMessage } from '@ownpilot/core/services';
 import {
-  getErrorMessage,
   CLAW_RECENT_FAILURES_MAX,
   CLAW_PLAN_HISTORY_MAX,
   CLAW_NEXT_INTENT_MAX,
-} from '@ownpilot/core/services';
+} from '@ownpilot/core/services/claw';
 import type {
   ClawSession,
   ClawCycleResult,
   ClawEscalation,
   ClawTask,
   ClawPlanHistoryEntry,
-} from '@ownpilot/core/services';
+} from '@ownpilot/core/services/claw';
 import { ClawRunner } from './runner.js';
 import { getClawsRepository } from '../../db/repositories/claws.js';
 import {
