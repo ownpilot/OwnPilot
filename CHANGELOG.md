@@ -71,7 +71,12 @@ Each split leaves a thin re-export so all call sites work unchanged.
 
 #### Agentic Capability Layer hardening
 
-- [ ] Add integration tests for AgenticGatewayExecutor dispatch to real services
+- [x] Added 28 integration tests for AgenticGatewayExecutor dispatch covering:
+      claw (persistent, single-shot, chat agent fallback, system prompt, error propagation),
+      workflow (executeWorkflow params, failure propagation), coding-agent (runTask, defaults,
+      failure propagation), trigger (scheduled/interval, event, condition, continuous Claw,
+      one-shot fallback), tool_catalog (executeTool params, error propagation), sandbox_code,
+      unknown executor kind, singleton access, event emission (start/complete/fail).
 - [ ] Add cancellation propagation through AgenticOrchestrator → step executors
 - [ ] Add cost tracking persistence to database (currently in-memory only)
 - [ ] WebSocket event delivery verification tests
