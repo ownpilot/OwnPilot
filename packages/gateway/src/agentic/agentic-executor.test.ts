@@ -628,6 +628,58 @@ describe('AgenticGatewayExecutor', () => {
     });
   });
 
+  // ── Cancellation ───────────────────────────────────────────────────────────
+
+  describe('cancellation via AbortSignal', () => {
+    it('returns cancelled result when signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('tool_catalog', { tool: 'get_weather', args: { city: 'Tokyo' } }),
+        controller.signal
+      );
+
+      expect(result.cancelled).toBe(true);
+      expect(result.success).toBe(false);
+    });
+
+    it('emits cancelled flag in the step.fail WebSocket event', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const executor = new AgenticGatewayExecutor();
+      await executor.dispatch(
+        makeStep('tool_catalog', { tool: 'get_weather', args: { city: 'Tokyo' } }),
+        controller.signal
+      );
+
+      // Find the event system mock call — it's the last one
+      const emitCall = mockGetEventSystem.mock.results.at(-1)?.value.emit as ReturnType<
+        typeof vi.fn
+      >;
+      const eventName = emitCall.mock.calls.at(-1)?.[0];
+      const eventData = emitCall.mock.calls.at(-1)?.[2] as Record<string, unknown>;
+
+      expect(eventName).toBe('agentic.step.fail');
+      expect(eventData.cancelled).toBe(true);
+      expect(eventData.error).toBe('Cancelled');
+    });
+
+    it('dispatches normally when no signal is provided', async () => {
+      mockExecuteTool.mockResolvedValueOnce({ success: true, result: { rows: 5 } });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('tool_catalog', { tool: 'send_email', args: { to: 'a@b.com' } })
+      );
+
+      expect(result.cancelled).toBeUndefined();
+      expect(result.success).toBe(true);
+    });
+  });
+
   // ── Event emission ────────────────────────────────────────────────────────
 
   describe('event emission', () => {

@@ -72,7 +72,7 @@ function convertIntervalToCron(intervalMs: number | undefined): string | null {
  * Uses Promise.race so cancellation is cooperative — the underlying operation
  * may still run to completion; we just discard the result.
  */
-async function withCancellation<T extends { durationMs: number }>(
+async function _withCancellation<T extends { durationMs: number }>(
   p: Promise<T>,
   signal?: AbortSignal
 ): Promise<T> {
@@ -139,6 +139,30 @@ export class AgenticGatewayExecutor {
     const startTime = Date.now();
     const events = getEventSystem();
 
+    // Pre-flight abort check: if the signal is already cancelled before we start,
+    // return immediately without doing any work.
+    if (signal?.aborted) {
+      const result: DispatchResult = {
+        success: false,
+        output: null,
+        cancelled: true,
+        durationMs: Date.now() - startTime,
+      };
+      (events.emit as (type: string, source: string, data: Record<string, unknown>) => void)(
+        'agentic.step.fail',
+        'agentic-executor',
+        {
+          stepIndex: step.index,
+          executorKind: step.executorKind,
+          capabilityId: step.capabilityId,
+          durationMs: result.durationMs,
+          error: 'Cancelled',
+          cancelled: true,
+        }
+      );
+      return result;
+    }
+
     // Emit start event — cast needed for cross-package EventMap sync
     (events.emit as (type: string, source: string, data: unknown) => void)(
       'agentic.step.start',
@@ -150,10 +174,10 @@ export class AgenticGatewayExecutor {
       }
     );
 
-    // Run the dispatch, wrapped in cancellation awareness.
-    // If the signal fires during execution, withCancellation returns a
-    // { cancelled: true } result instead of a real result.
-    const result = await withCancellation(this.runDispatch(step, startTime), signal);
+    // Run the dispatch.
+    // Note: the signal parameter is accepted for future co-operative cancellation
+    // but the underlying executor methods do not yet check it during execution.
+    const result = await this.runDispatch(step, startTime);
 
     // Emit completion event — cancelled steps emit 'agentic.step.fail' with the cancelled flag.
     const eventType = result.cancelled
