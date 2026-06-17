@@ -1,6 +1,6 @@
 # OwnPilot Architecture
 
-**Version:** 0.7.4
+**Version:** 0.8.1
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "@ownpilot/cli",
-  "version": "0.7.4",
+  "version": "0.8.1",
   "description": "CLI for OwnPilot",
   "type": "module",
   "bin": {
