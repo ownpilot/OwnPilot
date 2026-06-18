@@ -247,6 +247,39 @@ describe('AgenticOrchestrator', () => {
     expect(cancelled).toBe(false);
   });
 
+  it('preserves cancelled status when cancelled mid-execution', async () => {
+    // Gate the step so the execution is still in-flight when we cancel it.
+    let releaseStep!: () => void;
+    const stepGate = new Promise<void>((resolve) => {
+      releaseStep = resolve;
+    });
+    const orchestrator = new AgenticOrchestrator(undefined, async () => {
+      await stepGate;
+      return { success: true, output: {} };
+    });
+
+    const execPromise = orchestrator.execute({
+      name: 'Cancel mid-flight',
+      description: 'Cancel while the step is still running.',
+    });
+
+    // Wait until the execution is registered and running (its step is gated).
+    let running: { id: string } | undefined;
+    for (let i = 0; i < 50 && !running; i++) {
+      await new Promise((r) => setTimeout(r, 5));
+      running = (await orchestrator.listExecutions()).find((e) => e.status === 'running');
+    }
+    expect(running).toBeDefined();
+
+    expect(await orchestrator.cancel(running!.id)).toBe(true);
+    releaseStep(); // let the in-flight step finish
+
+    const report = await execPromise;
+    // Regression: without the guard in execute(), the post-run status recompute
+    // overwrote 'cancelled' with 'completed'/'partially_completed'.
+    expect(report.status).toBe('cancelled');
+  });
+
   it('getStatus returns correct status', async () => {
     const orchestrator = new AgenticOrchestrator();
     const report = await orchestrator.execute({

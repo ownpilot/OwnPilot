@@ -207,13 +207,20 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
 
     try {
       await this.executePlan(state);
-      state.status = state.stepResults.every((r) => r.status === 'completed')
-        ? 'completed'
-        : state.stepResults.some((r) => r.status === 'failed')
-          ? 'failed'
-          : 'partially_completed';
+      // Don't clobber a terminal status reached DURING execution — cancel() sets
+      // 'cancelled' and a fallbackStrategy:'escalate' step sets 'escalated'.
+      // Only derive the final status from step results when the run actually ran
+      // to its natural end (still 'running' here). Without this guard a user
+      // cancel was overwritten with completed/failed/partially_completed.
+      if (state.status === 'running') {
+        state.status = state.stepResults.every((r) => r.status === 'completed')
+          ? 'completed'
+          : state.stepResults.some((r) => r.status === 'failed')
+            ? 'failed'
+            : 'partially_completed';
+      }
     } catch {
-      state.status = 'failed';
+      if (state.status === 'running') state.status = 'failed';
     } finally {
       state.completedAt = new Date();
       state.abortController = null;
