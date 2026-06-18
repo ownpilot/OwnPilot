@@ -588,6 +588,41 @@ describe('AgenticGatewayExecutor', () => {
       expect(result.error).toMatch(/code/i);
     });
 
+    it('blocks code when Execution Security master switch is off', async () => {
+      const { executionPermissionsRepo } =
+        await import('../db/repositories/execution-permissions.js');
+      (executionPermissionsRepo.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        enabled: false,
+        mode: 'local',
+      });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('sandbox_code', { code: 'console.log(1)', language: 'javascript' })
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/blocked|disabled/i);
+    });
+
+    it('blocks code when the language category is blocked', async () => {
+      const { executionPermissionsRepo } =
+        await import('../db/repositories/execution-permissions.js');
+      (executionPermissionsRepo.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        enabled: true,
+        mode: 'local',
+        execute_python: 'blocked',
+      });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('sandbox_code', { code: 'print(1)', language: 'python' })
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/blocked|disabled/i);
+    });
+
     it('calls runInSandbox with correct params', async () => {
       vi.resetModules();
       // Re-import to get fresh module with our dynamic mock

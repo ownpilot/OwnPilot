@@ -730,6 +730,24 @@ export class AgenticGatewayExecutor {
       };
     }
 
+    // Honor the user's Execution Security settings. The sandbox is isolated, but
+    // it is still code execution — so a disabled master switch or a 'blocked'
+    // language category must block it, matching the code-execution tools and
+    // dispatchTool. 'system' is non-interactive, so 'prompt' downgrades to
+    // 'blocked'.
+    const category =
+      language === 'python' || language === 'py' ? 'execute_python' : 'execute_javascript';
+    const userId = (params.userId as string) || LOCAL_OWNER_ID;
+    const perms = downgradePromptToBlocked(await executionPermissionsRepo.get(userId));
+    if (!perms.enabled || perms[category] === 'blocked') {
+      return {
+        success: false,
+        output: null,
+        error: `Sandbox code execution blocked: ${category} is disabled in Execution Security settings`,
+        durationMs: Date.now() - startTime,
+      };
+    }
+
     try {
       // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox)
       const { runInSandbox } = await import('@ownpilot/core/sandbox');
