@@ -280,6 +280,26 @@ describe('AgenticOrchestrator', () => {
     expect(report.status).toBe('cancelled');
   });
 
+  it('records the executor-reported cost, not the per-kind estimate', async () => {
+    const REAL_COST = 0.4242;
+    const orchestrator = new AgenticOrchestrator(undefined, async () => ({
+      success: true,
+      output: {},
+      costUsd: REAL_COST,
+    }));
+    const report = await orchestrator.execute({
+      name: 'Cost test',
+      description: 'A simple task to check cost accounting.',
+    });
+
+    const completed = report.stepResults.filter((r) => r.status === 'completed');
+    expect(completed.length).toBeGreaterThanOrEqual(1);
+    // Each completed step carries the real cost (not estimateStepCost), and the
+    // total is their sum.
+    for (const r of completed) expect(r.costUsd).toBe(REAL_COST);
+    expect(report.totalCostUsd).toBeCloseTo(REAL_COST * completed.length, 6);
+  });
+
   it('getStatus returns correct status', async () => {
     const orchestrator = new AgenticOrchestrator();
     const report = await orchestrator.execute({

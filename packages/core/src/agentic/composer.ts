@@ -414,13 +414,14 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
       const startTime = Date.now();
 
       try {
-        // Simulate step execution (actual execution will be implemented by gateway)
-        const output = await this.executeStepWithTimeout(step, signal);
+        const { output, costUsd } = await this.executeStepWithTimeout(step, signal);
 
         const durationMs = Date.now() - startTime;
         this.recordStepResult(state, step, 'completed', output, {
           durationMs,
-          costUsd: this.estimateStepCost(step),
+          // Prefer the real cost reported by the executor; fall back to the
+          // per-kind estimate only when the handler didn't report one.
+          costUsd: costUsd ?? this.estimateStepCost(step),
         });
         return;
       } catch (err) {
@@ -453,7 +454,7 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
   private async executeStepWithTimeout(
     step: ExecutionStep,
     signal?: AbortSignal
-  ): Promise<unknown> {
+  ): Promise<{ output: unknown; costUsd?: number }> {
     const timeoutMs = step.timeoutMs ?? 60_000;
 
     // Race the step execution against the timeout
@@ -481,22 +482,29 @@ export class AgenticOrchestrator implements IAgenticOrchestrator {
    * placeholder so the orchestration logic can still be tested without
    * any gateway services running.
    */
-  private async dispatchStep(step: ExecutionStep, signal?: AbortSignal): Promise<unknown> {
+  private async dispatchStep(
+    step: ExecutionStep,
+    signal?: AbortSignal
+  ): Promise<{ output: unknown; costUsd?: number }> {
     if (this.stepHandler) {
       const result = await this.stepHandler(step, signal);
       if (!result.success) {
         throw new Error(result.error ?? `Step ${step.index} (${step.executorKind}) failed`);
       }
-      return result.output;
+      // Carry the executor's real cost through so executeStep records it instead
+      // of the per-kind estimate (the previous code dropped result.costUsd).
+      return { output: result.output, costUsd: result.costUsd };
     }
 
     // Default placeholder — no gateway handler wired
     return {
-      executorKind: step.executorKind,
-      capabilityId: step.capabilityId,
-      params: step.params,
-      dispatched: true,
-      timestamp: new Date().toISOString(),
+      output: {
+        executorKind: step.executorKind,
+        capabilityId: step.capabilityId,
+        params: step.params,
+        dispatched: true,
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 
