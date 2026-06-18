@@ -41,6 +41,7 @@ import { executeTool } from '../services/tool/executor.js';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission/utils.js';
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
+import { createPluginId } from '@ownpilot/core/types';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 
 const log = getLog('AgenticExecutor');
@@ -749,26 +750,37 @@ export class AgenticGatewayExecutor {
     }
 
     try {
-      // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox)
+      // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox).
+      // Signature is runInSandbox(pluginId, code, options) returning a Result —
+      // the previous `as unknown as (code, opts)` cast inverted the arguments
+      // (passing `code` as the pluginId and the options object as the code), so
+      // the user's code never actually ran.
       const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      const result = await (
-        runInSandbox as unknown as (code: string, opts: Record<string, unknown>) => Promise<unknown>
-      )(code, {
-        pluginId: 'agentic',
-        language: language as string,
-        timeout: (params.timeoutMs as number) ?? 30_000,
+      const outcome = await runInSandbox(createPluginId('agentic'), code, {
+        limits: { maxExecutionTime: (params.timeoutMs as number) ?? 30_000 },
       });
 
+      if (!outcome.ok) {
+        return {
+          success: false,
+          output: null,
+          error: outcome.error.message,
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      const exec = outcome.value;
       return {
-        success: true,
-        output: result,
+        success: exec.success,
+        output: exec.success ? exec.value : null,
+        error: exec.success ? undefined : exec.error,
         durationMs: Date.now() - startTime,
       };
-    } catch {
+    } catch (err) {
       return {
         success: false,
         output: null,
-        error: `Sandbox execution not available for language: ${language}`,
+        error: `Sandbox execution failed for language '${language}': ${err instanceof Error ? err.message : String(err)}`,
         durationMs: Date.now() - startTime,
       };
     }

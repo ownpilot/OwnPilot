@@ -623,11 +623,16 @@ describe('AgenticGatewayExecutor', () => {
       expect(result.error).toMatch(/blocked|disabled/i);
     });
 
-    it('calls runInSandbox with correct params', async () => {
+    it('calls runInSandbox with correct args and unwraps the Result', async () => {
       vi.resetModules();
       // Re-import to get fresh module with our dynamic mock
       const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      (runInSandbox as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ stdout: '42' });
+      // runInSandbox returns Result<ExecutionResult> — ok wrapper around the
+      // sandbox's own success/value envelope.
+      (runInSandbox as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        value: { success: true, value: { stdout: '42' }, executionTime: 1 },
+      });
 
       const executor = new AgenticGatewayExecutor();
       const result = await executor.dispatch(
@@ -638,6 +643,12 @@ describe('AgenticGatewayExecutor', () => {
         })
       );
 
+      // pluginId, code, options — NOT the old inverted (code, opts) order.
+      expect(runInSandbox).toHaveBeenCalledWith(
+        'agentic',
+        'console.log(21 * 2)',
+        expect.objectContaining({ limits: { maxExecutionTime: 5_000 } })
+      );
       expect(result.success).toBe(true);
       expect(result.output).toEqual({ stdout: '42' });
     });
