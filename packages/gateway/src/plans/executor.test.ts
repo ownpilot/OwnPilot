@@ -1248,7 +1248,13 @@ describe('PlanExecutor', () => {
       await vi.advanceTimersByTimeAsync(200);
       const _result = await resultPromise;
 
-      expect(executeTool).toHaveBeenCalledWith('tool_string', {}, 'user-1');
+      expect(executeTool).toHaveBeenCalledWith(
+        'tool_string',
+        {},
+        'user-1',
+        expect.any(Object),
+        expect.objectContaining({ source: 'plan' })
+      );
     });
 
     it('returns not-found error for missing parallel tools', async () => {
@@ -1315,9 +1321,28 @@ describe('PlanExecutor', () => {
       // Tool called 3 times (maxIterations)
       expect(executeTool).toHaveBeenCalledTimes(3);
       // Each call should include iteration number
-      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 0 }, 'user-1');
-      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 1 }, 'user-1');
-      expect(executeTool).toHaveBeenCalledWith('loop_tool', { x: 1, iteration: 2 }, 'user-1');
+      const loopCtx = expect.objectContaining({ source: 'plan' });
+      expect(executeTool).toHaveBeenCalledWith(
+        'loop_tool',
+        { x: 1, iteration: 0 },
+        'user-1',
+        expect.any(Object),
+        loopCtx
+      );
+      expect(executeTool).toHaveBeenCalledWith(
+        'loop_tool',
+        { x: 1, iteration: 1 },
+        'user-1',
+        expect.any(Object),
+        loopCtx
+      );
+      expect(executeTool).toHaveBeenCalledWith(
+        'loop_tool',
+        { x: 1, iteration: 2 },
+        'user-1',
+        expect.any(Object),
+        loopCtx
+      );
     });
 
     it('stops loop on tool failure', async () => {

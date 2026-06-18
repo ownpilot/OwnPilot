@@ -933,12 +933,22 @@ export class PlanExecutor extends EventEmitter {
         result?: unknown;
       }> = [];
 
+      // Resolve the same execution-permission context the tool_call handler
+      // uses, so parallel steps pass through the ToolPermissionService gate
+      // (tool-group enable, CLI policy, custom-tool approval). Without it,
+      // parallel steps silently bypass the permission checks tool_call enforces.
+      const userPerms = await executionPermissionsRepo.get(this.config.userId);
+      const planPerms = downgradePromptToBlocked(userPerms);
+
       // Process in batches to respect maxConcurrent
       for (let i = 0; i < steps.length; i += batchSize) {
         const batch = steps.slice(i, i + batchSize);
         const promises = batch.map(async (step) => {
           if (step.toolName && (await hasTool(step.toolName))) {
-            return executeTool(step.toolName, step.toolArgs ?? {}, this.config.userId);
+            return executeTool(step.toolName, step.toolArgs ?? {}, this.config.userId, planPerms, {
+              source: 'plan',
+              executionPermissions: planPerms,
+            });
           }
           return { success: false, error: `Tool '${step.toolName}' not found` };
         });
@@ -974,11 +984,19 @@ export class PlanExecutor extends EventEmitter {
       this.log(`Starting loop: ${toolName} (max ${maxIterations} iterations)`);
       const iterationResults: unknown[] = [];
 
+      // Same plan execution-permission context as the tool_call handler so loop
+      // iterations pass through the ToolPermissionService gate rather than
+      // bypassing it.
+      const userPerms = await executionPermissionsRepo.get(this.config.userId);
+      const planPerms = downgradePromptToBlocked(userPerms);
+
       for (let i = 0; i < maxIterations; i++) {
         const result = await executeTool(
           toolName,
           { ...toolArgs, iteration: i },
-          this.config.userId
+          this.config.userId,
+          planPerms,
+          { source: 'plan', executionPermissions: planPerms }
         );
         iterationResults.push(result.result);
 
