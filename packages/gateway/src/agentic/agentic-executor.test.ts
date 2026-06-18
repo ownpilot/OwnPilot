@@ -417,7 +417,7 @@ describe('AgenticGatewayExecutor', () => {
       );
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
-        'local',
+        'default',
         expect.objectContaining({
           type: 'schedule',
           config: expect.objectContaining({ cron: '0 */1 * * *' }),
@@ -442,7 +442,7 @@ describe('AgenticGatewayExecutor', () => {
       );
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
-        'local',
+        'default',
         expect.objectContaining({
           type: 'event',
           config: expect.objectContaining({ eventType: 'user.signup' }),
@@ -471,7 +471,7 @@ describe('AgenticGatewayExecutor', () => {
       );
 
       expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
-        'local',
+        'default',
         expect.objectContaining({
           type: 'condition',
           config: expect.objectContaining({
@@ -499,7 +499,7 @@ describe('AgenticGatewayExecutor', () => {
       );
 
       expect(mockClawService.createClaw).toHaveBeenCalledWith({
-        userId: 'local',
+        userId: 'default',
         name: 'always-on',
         mission: 'Monitor system',
         mode: 'continuous',
@@ -554,7 +554,7 @@ describe('AgenticGatewayExecutor', () => {
       expect(mockExecuteTool).toHaveBeenCalledWith(
         'list_emails',
         { since: '2026-01-01', limit: 10 },
-        'local',
+        'default',
         expect.any(Object),
         expect.objectContaining({ source: 'system' })
       );

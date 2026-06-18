@@ -40,6 +40,7 @@ import { calculateCost, type AIProvider } from '@ownpilot/core/costs';
 import { executeTool } from '../services/tool/executor.js';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
 import { downgradePromptToBlocked } from '../services/permission/utils.js';
+import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { getOrCreateChatAgent } from '../services/agent/service.js';
 
 const log = getLog('AgenticExecutor');
@@ -219,7 +220,7 @@ export class AgenticGatewayExecutor {
     if (clawId) {
       // Execute on an existing persistent claw
       const service = getClawService();
-      const userId = (params.userId as string) || 'local';
+      const userId = (params.userId as string) || LOCAL_OWNER_ID;
       const result = await service.executeNow(clawId, userId);
       return {
         success: true,
@@ -404,7 +405,7 @@ export class AgenticGatewayExecutor {
 
     const service = getWorkflowService();
     const workflowId = params.workflowId as string;
-    const userId = (params.userId as string) || 'local';
+    const userId = (params.userId as string) || LOCAL_OWNER_ID;
 
     if (!workflowId) {
       return {
@@ -438,7 +439,7 @@ export class AgenticGatewayExecutor {
 
     const triggerConfig = params.trigger as Record<string, unknown> | undefined;
     const action = params.action as Record<string, unknown> | undefined;
-    const userId = (params.userId as string) || 'local';
+    const userId = (params.userId as string) || LOCAL_OWNER_ID;
     const taskName = (params.taskName as string) || 'agentic-trigger';
 
     if (!triggerConfig || !action) {
@@ -779,7 +780,7 @@ export class AgenticGatewayExecutor {
     // custom-tool approval). 'system' is non-interactive, so 'prompt' code-exec
     // permissions downgrade to 'blocked'. Without this the tool_catalog step
     // bypassed the gate entirely.
-    const userId = (params.userId as string) || 'local';
+    const userId = (params.userId as string) || LOCAL_OWNER_ID;
     const userPerms = await executionPermissionsRepo.get(userId);
     const execPerms = downgradePromptToBlocked(userPerms);
     const toolResult = await executeTool(toolName, toolArgs, userId, execPerms, {
