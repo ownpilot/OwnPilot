@@ -121,7 +121,9 @@ Each split leaves a thin re-export so all call sites work unchanged.
   inverting cast (agentic `runInSandbox`, fixed; see Fixed above); no other
   signature-inverting `as unknown as (fn)` casts remain. Remaining casts are ordinary
   object/type narrowing.
-- [ ] Audit remaining `as any` in production source — target ≤5 occurrences
+- [x] Audited `as any` in production source — 5 occurrences, at the ≤5 target. All
+      justified: ESM↔CJS default-interop (`pdf-parse`, `DOMPurify`) and a
+      `crypto.randomUUID` global polyfill (`ui/main.tsx`). No unsafe casts to remove.
 - [ ] Resolve 4 TODO and 1 FIXME in source code
 
 #### Test coverage expansion
