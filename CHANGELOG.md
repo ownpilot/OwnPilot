@@ -38,6 +38,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added 3 cancellation tests to `agentic-executor.test.ts` (pre-flight abort, WS event, normal dispatch).
 - `dispatchDirectLlm` now populates `costUsd` and `tokensUsed` in `DispatchResult`
   by extracting usage from `CompletionResponse` and computing cost via `calculateCost()`.
+- Real-VM integration test for agentic `sandbox_code` (runs the actual core sandbox
+  through `dispatchSandbox`, not a mock) and 13 tests for the secure-memory encryption
+  primitives (`encryption.ts`) — both previously uncovered.
+
+#### Fixed
+
+- **Claw lifecycle wired into server boot/shutdown** — `ClawManager.start()` was never
+  invoked, so `autoStart` claws never started and running claws never resumed after a
+  restart; `stop()` (graceful session persist) was a dead no-op. Now started after the
+  Autonomy Engine and stopped (awaited) in `gracefulShutdown`.
+- **Plan `parallel`/`loop` steps now enforce the tool permission gate** — they called
+  `executeTool` without an execution context, bypassing the tool-group, CLI-policy, and
+  custom-tool-approval checks the `tool_call` step enforces.
+- **Agentic `dispatchTool` now enforces the tool permission gate** (same class as the
+  plan fix; the `tool_catalog` step previously bypassed it).
+- **Agentic executor now uses the correct single-tenant owner** (`LOCAL_OWNER_ID`)
+  instead of a stray `'local'` — agentic-dispatched claws/workflows could not find
+  resources owned by `default`, and triggers were created orphaned.
+- **Agentic `sandbox_code` now honors Execution Security settings** (master switch +
+  `execute_javascript`/`execute_python` category) — it previously ran code regardless.
+- **Agentic `sandbox_code` now actually executes the submitted code** — an
+  `as unknown as` cast inverted `runInSandbox`'s `(pluginId, code, options)` signature,
+  so the code was passed as the pluginId and never ran.
+- **Core `AgenticOrchestrator` preserves a `cancelled` status** — the post-run status
+  recompute clobbered a mid-execution cancel (and `escalated`) to
+  `completed`/`partially_completed`.
+- **Core `AgenticOrchestrator` records the executor's real cost** instead of a per-kind
+  estimate (`dispatchStep` dropped the reported `costUsd`).
+- **Bounded the `AgenticOrchestrator` shared execution store** — a process-wide static
+  Map that grew unbounded; capped to the most recent 500 executions.
 
 > **Theme**: Break up oversized files, harden type safety, expand test coverage.
 > Target: no public API changes — all splits preserve barrel re-exports.
@@ -76,7 +106,9 @@ Each split leaves a thin re-export so all call sites work unchanged.
 - [x] Added ESLint `no-restricted-imports` rule flagging claw/coding-agent symbol imports
       from bare `@ownpilot/core/services` (105 warnings → migration enforced per-file via
       pre-commit hook).
-- [ ] Migrate remaining ~99 flagged files to narrow sub-paths (gradual, per-file as touched).
+- [x] Migrated all flagged files to narrow sub-paths — gateway `no-restricted-imports`
+      warnings 82 → 0 (claw + coding-agent symbols now import from
+      `@ownpilot/core/services/{claw,coding-agent}`); `detect-mock-mismatch` clean.
 - [ ] Split `core/agent/tools/index.ts` (34 exports) into category sub-barrels.
 
 #### Type safety hardening
@@ -85,8 +117,10 @@ Each split leaves a thin re-export so all call sites work unchanged.
       `page.$eval()` (Puppeteer DOM API) — not JavaScript's `eval()`. All real eval() usage
       is correctly blocked by the security layer (`code-validator.ts`, `code-analyzer.ts`).
       Updated `refactor-next.md` §0 accordingly.
-- [ ] Audit `as unknown as` in production (non-test) source — add trust-boundary comments
-      or replace with type guards
+- [~] Audited `as unknown as` casts in production source — found one function-signature
+  inverting cast (agentic `runInSandbox`, fixed; see Fixed above); no other
+  signature-inverting `as unknown as (fn)` casts remain. Remaining casts are ordinary
+  object/type narrowing.
 - [ ] Audit remaining `as any` in production source — target ≤5 occurrences
 - [ ] Resolve 4 TODO and 1 FIXME in source code
 
