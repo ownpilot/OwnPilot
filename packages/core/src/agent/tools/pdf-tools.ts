@@ -7,6 +7,17 @@ import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } f
 import { tryImport } from './module-resolver.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-system.js';
 
+/** Return type of the pdf-parse library (dynamically imported, no type declarations) */
+interface PdfParseResult {
+  text: string;
+  numpages: number;
+  info?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+/** Accepts ArrayBuffer (browser) or Uint8Array/Buffer (Node.js fs.readFile) */
+type PdfParseBuffer = ArrayBuffer | Uint8Array;
+
 /** Short-circuit when the caller's AbortSignal has fired */
 function cancelledResult(context: ToolContext | undefined): ToolExecutionResult | null {
   if (context?.signal?.aborted) {
@@ -81,15 +92,20 @@ export const readPdfExecutor: ToolExecutor = async (
 
     const fileBuffer = await fs.readFile(filePath);
 
-    // pdf-parse type for dynamic import
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    type PdfParseFunction = any;
-
     // Use pdf-parse library if available, otherwise basic extraction
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pdfParse: any = null;
+    let pdfParse:
+      | ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>)
+      | null = null;
     try {
-      pdfParse = ((await tryImport('pdf-parse')) as PdfParseFunction)?.default ?? null;
+      pdfParse =
+        (
+          (await tryImport('pdf-parse')) as {
+            default?: (
+              buffer: PdfParseBuffer,
+              options?: { max: number }
+            ) => Promise<PdfParseResult>;
+          }
+        )?.default ?? null;
     } catch {
       // pdf-parse not installed, use basic extraction
     }
@@ -411,12 +427,20 @@ export const pdfInfoExecutor: ToolExecutor = async (
     const fileBuffer = await fs.readFile(pdfPath);
 
     // Try to use pdf-parse for metadata
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let pdfParse: any = null;
+    let pdfParse:
+      | ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>)
+      | null = null;
     try {
       const imported = await tryImport('pdf-parse');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      pdfParse = (imported as any)?.default ?? null;
+      pdfParse =
+        (
+          imported as {
+            default?: (
+              buffer: PdfParseBuffer,
+              options?: { max: number }
+            ) => Promise<PdfParseResult>;
+          }
+        )?.default ?? null;
     } catch {
       // pdf-parse not installed
     }
