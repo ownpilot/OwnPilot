@@ -9,7 +9,6 @@
 import {
   createWorkflowsRepository,
   type WorkflowNode,
-  type WorkflowEdge,
   type SwitchNodeData,
   type NodeResult,
   type WorkflowLog,
@@ -20,7 +19,6 @@ import {
   type IWorkflowService,
   type IToolService,
 } from '@ownpilot/core/services';
-import { sleep } from '@ownpilot/core/types';
 import { getErrorMessage } from '../../utils/common.js';
 import {
   topologicalSort,
@@ -28,7 +26,7 @@ import {
   computeSkippedNodes,
   getForEachBodyNodes,
 } from './dag-utils.js';
-import { enqueueWorkflowLevel } from './workflow-node-job-handler.js';
+import { runJobifiedLevel } from './jobified-level-runner.js';
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
 import {
@@ -291,16 +289,17 @@ export class WorkflowService implements IWorkflowService {
         const jobifiedResults: Record<string, NodeResult> = {};
         if (jobifiedNodeIds.length > 0 && !dryRun) {
           const levelNodeMap = new Map(level.map((id) => [id, nodeMap.get(id)!]));
-          await this.jobifiedExecuteLevel(
+          await runJobifiedLevel(
             workflowId,
             jobifiedNodeIds,
             levelNodeMap,
             workflow,
             userId,
             abortController.signal,
-            repo,
             wfLog.id,
-            nodeOutputs
+            nodeOutputs,
+            { repo },
+            { pollIntervalMs: this.jobifiedPollIntervalMs, maxWaitMs: this.jobifiedMaxWaitMs }
           );
           // Read back results from the log (persisted by job handler)
           const updatedLog = await repo.getLog(wfLog.id);
@@ -978,66 +977,6 @@ export class WorkflowService implements IWorkflowService {
     onProgress?: (event: WorkflowProgressEvent) => void
   ): Promise<NodeResult> {
     return executeWithRetryAndTimeout(node, executeFn, onProgress);
-  }
-
-  /**
-   * Execute a batch of nodes at the same topological level via the persistent job queue.
-   */
-  private async jobifiedExecuteLevel(
-    workflowId: string,
-    levelNodeIds: string[],
-    nodeMap: Map<string, WorkflowNode>,
-    workflow: { edges: WorkflowEdge[]; variables: Record<string, unknown> },
-    userId: string,
-    abortSignal: AbortSignal,
-    repo: ReturnType<typeof createWorkflowsRepository>,
-    logId: string,
-    nodeOutputs: Record<string, NodeResult>
-  ): Promise<void> {
-    const wfRunId = logId;
-    await enqueueWorkflowLevel(
-      workflowId,
-      wfRunId,
-      userId,
-      levelNodeIds,
-      nodeMap,
-      workflow.edges,
-      workflow.variables,
-      nodeOutputs
-    );
-
-    // Poll until all level nodes appear in nodeResults (or abort, or timeout).
-    const pollIntervalMs = this.jobifiedPollIntervalMs;
-    const maxWaitMs = this.jobifiedMaxWaitMs;
-    const start = Date.now();
-    while (true) {
-      if (abortSignal.aborted) {
-        throw new Error('Workflow execution cancelled');
-      }
-      const wfLog = await repo.getLog(logId);
-      const results = wfLog?.nodeResults ?? {};
-      const allDone = levelNodeIds.every(
-        (id) =>
-          results[id]?.output !== undefined ||
-          results[id]?.status === 'success' ||
-          results[id]?.status === 'error' ||
-          results[id]?.status === 'skipped'
-      );
-      if (allDone) break;
-      if (Date.now() - start >= maxWaitMs) {
-        const pending = levelNodeIds.filter(
-          (id) =>
-            results[id]?.output === undefined &&
-            results[id]?.status !== 'success' &&
-            results[id]?.status !== 'error' &&
-            results[id]?.status !== 'skipped'
-        );
-        throw new Error(
-          `Jobified workflow level timed out after ${maxWaitMs}ms waiting for ${pending.length} node(s): ${pending.join(', ')}`
-        );
-      }
-      await sleep(pollIntervalMs);
-    }
   }
 }
 
