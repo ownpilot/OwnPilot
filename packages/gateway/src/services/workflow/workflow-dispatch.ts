@@ -9,6 +9,9 @@
  * - retryFn: executeWithRetryAndTimeout (for wrapping executor calls)
  * - subWorkflowExecutor: executeWorkflow (for subWorkflowNode recursion)
  * - subWorkflowCancel: cancelExecution (for sub-workflow abort cleanup)
+ *
+ * DispatchNodeContext and DispatchCallbacks are defined in workflow-context.ts
+ * and re-exported here for backward compatibility.
  */
 
 import type {
@@ -17,12 +20,11 @@ import type {
   LlmNodeData,
   CodeNodeData,
   ToolNodeData,
-  WorkflowLog,
 } from '../../db/repositories/workflows/index.js';
 import { createWorkflowsRepository } from '../../db/repositories/workflows/index.js';
 import { createWorkflowApprovalsRepository } from '../../db/repositories/workflows/approvals.js';
-import type { IToolService } from '@ownpilot/core/services';
 import { sleep, withTimeout } from '@ownpilot/core/types';
+import type { DispatchNodeContext, DispatchCallbacks } from './workflow-context.js';
 import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../log.js';
 import { resolveTemplates } from './template-resolver.js';
@@ -168,42 +170,11 @@ export async function executeWithRetryAndTimeout(
 
 // ============================================================================
 // Dispatch context and callbacks
+// (Moved to workflow-context.ts as part of Phase 2 extraction)
+// Re-export here for backward compatibility
 // ============================================================================
 
-export interface DispatchNodeContext {
-  node: WorkflowNode;
-  nodeId: string;
-  nodeOutputs: Record<string, NodeResult>;
-  workflow: {
-    variables: Record<string, unknown>;
-    edges: { source: string; target: string; sourceHandle?: string }[];
-  };
-  nodeMap: Map<string, WorkflowNode>;
-  userId: string;
-  toolService: IToolService;
-  abortSignal: AbortSignal;
-  onProgress?: (event: WorkflowProgressEvent) => void;
-  dryRun: boolean;
-  repo: ReturnType<typeof createWorkflowsRepository>;
-  logId: string;
-  workflowId: string;
-  depth: number;
-}
-
-export interface DispatchCallbacks {
-  retryFn: (
-    node: WorkflowNode,
-    executeFn: () => Promise<NodeResult>,
-    onProgress?: (event: WorkflowProgressEvent) => void
-  ) => Promise<NodeResult>;
-  subWorkflowExecutor: (
-    workflowId: string,
-    userId: string,
-    onProgress?: (event: WorkflowProgressEvent) => void,
-    options?: { dryRun?: boolean; depth?: number; inputs?: Record<string, unknown> }
-  ) => Promise<WorkflowLog>;
-  subWorkflowCancel: (workflowId: string) => void;
-}
+export type { DispatchNodeContext, DispatchCallbacks } from './workflow-context.js';
 
 // ============================================================================
 // Node dispatch (the giant switch)
