@@ -1,22 +1,24 @@
 # OwnPilot — Next Refactor Plan (Round 9+)
 
 **Generated**: 2026-06-13
+**Metrics refreshed**: 2026-06-22 via `node scripts/report-code-health.mjs`.
 **Previous**: Round 8 (28 commits) — barrel-to-subpath migration. tsc/test/build all green.
-**Round 9 progress**: 24 commits on `round-9/bugfixes` branch — see "Round 9 Status" below.
+**Round 9 progress**: merged to `main`; see "Round 9 Status" below.
 **Goal**: This document is the canonical roadmap for the **next** round of structural improvement.
 
 ---
 
 ## 0. Where we are
 
-| Package             | LOC (largest file)                                  | Source files > 500 LOC | Source files > 1000 LOC | Barrel exports | Sub-paths |
-| ------------------- | --------------------------------------------------- | ---------------------- | ----------------------- | -------------- | --------- |
-| `@ownpilot/core`    | 1114 (`agent/tools/file-system.ts`)                 | 17                     | 2                       | 21 (main)      | 23        |
-| `@ownpilot/gateway` | 1572 (`services/claw/manager.ts`)                   | 34                     | 7                       | 20 (main)      | 6         |
-| `@ownpilot/cli`     | 805 (`services/cli/chat-provider.ts`)               | 1                      | 0                       | 0              | 0         |
-| `@ownpilot/ui`      | 1266 (`components/workflows/workflow-templates.ts`) | 1                      | 1                       | n/a            | n/a       |
+| Package             | Prod LOC | Prod files | Test files | Largest production file             | Prod files > 500 LOC | Prod files > 1000 LOC | Barrel exports | Sub-paths |
+| ------------------- | -------: | ---------: | ---------: | ----------------------------------- | -------------------: | --------------------: | -------------- | --------- |
+| `@ownpilot/core`    |   79,670 |        268 |        147 | 1277 (`agent/tools/file-system.ts`) |    included in total |     included in total | 21 (main)      | 23        |
+| `@ownpilot/gateway` |  171,333 |        577 |        440 | 1553 (`channels/service-impl.ts`)   |    included in total |     included in total | 20 (main)      | 6         |
+| `@ownpilot/cli`     |    4,993 |         18 |         13 | 511 (`commands/agentic.ts`)         |    included in total |     included in total | 0              | 0         |
+| `@ownpilot/ui`      |  145,858 |        464 |         33 | 1701 (`pages/ChatPage.tsx`)         |    included in total |     included in total | n/a            | n/a       |
+| **Total**           |  401,854 |      1,327 |        633 | 1701 (`ui/src/pages/ChatPage.tsx`)  |              **249** |                **37** | n/a            | n/a       |
 
-## Round 9 Status (branch: `round-9/bugfixes`, 25 commits)
+## Round 9 Status (merged to `main`)
 
 **Bugs fixed (14 of 15 from §1)**:
 
@@ -37,7 +39,7 @@
 | §1.14 | security-sensitive `Math.random` (5 sites)          | `1f22eb0b`, `e528227c`                         | `generator-tools.ts`, claw, telegram, audio, service-impl |
 | §1.15 | agent cancel aborts in-flight tool calls (plumbing) | `413f3763`                                     | `agent.ts`, `tools.ts`                                    |
 
-**Refactors (§1.10 — `as unknown as` from 162 → 142; 67 casts documented)**:
+**Refactors (§1.10 — historical manual count `as unknown as` 162 → 142; current script count: 150 production / 265 test; 67 casts documented)**:
 
 | Commit     | Title                                                                                                    | Reduction   |
 | ---------- | -------------------------------------------------------------------------------------------------------- | ----------- |
@@ -49,32 +51,29 @@
 | `f4fb662f` | add trust-boundary notes to 13 gateway route/service files                                               | docs        |
 | `dbb1a408` | add trust-boundary note to useLayoutConfig                                                               | docs        |
 
-**Documentation pattern**: For the remaining 142 casts, the pattern is now: one `Trust boundary:` line in the file's JSDoc header explaining the source of untyped data (DB row, HTTP body, npm registry, worker IPC). The cast sites themselves are unchanged — they are real bridges between generic payloads and typed consumers. Further reduction to ≤40 requires architectural changes (typed DB rows, post-validation typed handler args).
+**Documentation pattern**: For the remaining typed-boundary casts (current script count: 150 production), the pattern is now: one `Trust boundary:` line in the file's JSDoc header explaining the source of untyped data (DB row, HTTP body, npm registry, worker IPC). The cast sites themselves are unchanged — they are real bridges between generic payloads and typed consumers. Further reduction to ≤40 requires architectural changes (typed DB rows, post-validation typed handler args).
 
 **Test status**: core 9441/9441 ✅, gateway 17297/17297 ✅, ui 414/414 ✅, **`pnpm -r typecheck` clean** (caught and fixed two tsc regressions — `DataStoreType: 'tasks'` missing and `error`/`reason` fields on `ToolExecutionResult`). Zero regressions across all 25 commits. Note: gateway has a pre-existing flaky test in `src/tools/skill/tools.test.ts` (~1/3 runs fail on different test cases). It is not caused by round-9 changes — running the same suite 3 times in a row gives varying pass/fail counts.
 
 **Remaining from §1**: §1.10 (142 → ≤40, mostly docs now, needs architectural work — typed DB rows or post-validation typed handler args). §1.15 plumbing is done; follow-up is per-tool adoption (each long-running tool executor checking `ctx.signal` and forwarding to its own async APIs).
 
-**Risk signal counts** (excludes `tests/`, `dist/`, `node_modules/`):
+**Risk signal counts** from `node scripts/report-code-health.mjs` (production/test separated; excludes `dist`, `coverage`, `node_modules`):
 
-| Pattern                           | Count | Interpretation                                                                                                                                                                          |
-| --------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `as any`                          | 5     | Low — only 5, mostly legacy                                                                                                                                                             |
-| `as unknown as` (real)            | 142   | Down from 162. 67 cast sites are now documented via trust-boundary headers; 21 removed via helper extraction; remaining are typed-shape bridges that need architectural work to remove. |
-| `eval(`                           | 4     | **False positive (resolved)** — all 4 are Puppeteer `page.$eval()`, not `globalThis.eval()`. Verified: `browser-service.ts:435,461,759`. Zero actual `eval()` in production code.       |
-| `new Function`                    | 4     | **Investigate** — only acceptable in template engines                                                                                                                                   |
-| `exec(\`...\`` (template literal) | 2     | **HIGH** — shell injection candidates                                                                                                                                                   |
-| `innerHTML` (non-React)           | 3     | Review for XSS                                                                                                                                                                          |
-| `dangerouslySetInnerHTML`         | 1     | Review for XSS                                                                                                                                                                          |
-| `child_process` imports           | 42    | Centralize through `services/permission/gate.ts`                                                                                                                                        |
-| `Math.random()` (real)            | 10    | Down from 22 (call sites only; comments don't count). 5 security-sensitive sites switched to `crypto.randomInt`/`randomBytes`/`randomUUID`; remaining 10 are sampling/jitter.           |
-| `eslint-disable`                  | 38    | Audit — most are line-level exceptions                                                                                                                                                  |
-| `@ts-expect-error`                | 1     | Review — should be < 5                                                                                                                                                                  |
-| `@ts-ignore`                      | 0     | ✅ Good                                                                                                                                                                                 |
-| `TODO`                            | 4     | Resolve or convert to issues                                                                                                                                                            |
-| `FIXME`                           | 1     | Resolve                                                                                                                                                                                 |
+| Pattern                             | Production | Tests | Interpretation                                                                    |
+| ----------------------------------- | ---------: | ----: | --------------------------------------------------------------------------------- | --- | --- | ----------------------------------------------------------------- |
+| `as any`                            |          5 |   494 | Production remains low; tests intentionally use mock casts.                       |
+| `as unknown as`                     |        150 |   265 | Still the main typed-boundary debt; reduce via validators/typed DB rows.          |
+| `TODO                               |      FIXME |  HACK | XXX`                                                                              | 5   | 8   | Low; visible production hits include generated/default task text. |
+| `dangerouslySetInnerHTML/innerHTML` |          1 |     2 | Production hit is `HtmlWidget` and is sanitized; keep allowlisted.                |
+| `eval/new Function`                 |          8 |    49 | Mostly validators/comments/Puppeteer `$eval`; audit before changing.              |
+| `child_process/spawn/exec`          |        110 |   354 | Centralize or document through permission gates and sandbox boundaries.           |
+| `Math.random()`                     |         22 |     9 | Mostly jitter/sampling; replace ID/shuffle uses first.                            |
+| `eslint-disable`                    |         40 |     0 | Audit line-level exceptions.                                                      |
+| `@ts-expect-error`                  |          1 |     5 | Good production count; keep under 5.                                              |
+| `console.*`                         |        554 |    71 | CLI/test noise expected, but gateway/core runtime should move to structured logs. |
+| `JSON.parse()`                      |        213 |   260 | Ensure untrusted parse sites use safe parse/validation.                           |
 
-**Test coverage gap**: 46 source files in `packages/gateway/src/services/` have NO corresponding test file (see Appendix A).
+**Test coverage gap**: 41 source files in `packages/gateway/src/services/` have no direct colocated test by the health script heuristic (see Appendix A).
 
 ---
 
@@ -190,19 +189,19 @@ Each phase is independent, gated by tsc + `pnpm -r test`. Use the `git-flow` ski
 
 > No behavior change, tests already pass, quick wins.
 
-| #   | Task                                                                                                                                                                                                           | Files                                                                 | Effort | Risk | Why                                                                   |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------ | ---- | --------------------------------------------------------------------- |
-| 1.1 | Fix all 15 critical/high bugs from §1                                                                                                                                                                          | (listed above)                                                        | M      | low  | Correctness first — refactor on a known-good base                     |
-| 1.2 | Add proper type guards — cut `as unknown as` from 162 → ≤80                                                                                                                                                    | `core/agent/providers/*`, `core/memory/*`, `gateway/services/agent/*` | L      | low  | Big leverage: enforces `strict + noUncheckedIndexedAccess` discipline |
-| 1.3 | Add `clear()` + LRU to module-level `Map` caches (personalStoreCache, secure-store, conversation-store)                                                                                                        | `core/memory/*.ts`                                                    | S      | low  | Prevents production memory leak                                       |
-| 1.4 | Replace `Math.random` in security paths with `crypto.randomInt`/`randomUUID`                                                                                                                                   | grep-driven, 8-10 spots                                               | S      | low  | Security hygiene                                                      |
-| 1.5 | Centralize `child_process.exec` calls through a thin wrapper in `services/permission/gate.ts` (no template literals allowed)                                                                                   | `agent/tools/code-execution.ts`, `core/sandbox/*`                     | S      | low  | One audit point for shell-injection                                   |
-| 1.6 | Add the 10 missing test files for the 46 untested gateway services — start with `services/log.ts`, `orphan-reconciliation.ts`, `retention-service.ts`, `shutdown-cleanup.ts` (these run at gateway start/stop) | `packages/gateway/tests/services/*.test.ts` (new)                     | M      | low  | Phase-1 baseline coverage                                             |
+| #   | Task                                                                                                                                                                            | Files                                                                 | Effort | Risk | Why                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------ | ---- | --------------------------------------------------------------------- |
+| 1.1 | Fix all 15 critical/high bugs from §1                                                                                                                                           | (listed above)                                                        | M      | low  | Correctness first — refactor on a known-good base                     |
+| 1.2 | Add proper type guards — cut production `as unknown as` from 150 → ≤80                                                                                                          | `core/agent/providers/*`, `core/memory/*`, `gateway/services/agent/*` | L      | low  | Big leverage: enforces `strict + noUncheckedIndexedAccess` discipline |
+| 1.3 | Add/verify `clear()` + LRU to module-level `Map` caches (personalStoreCache, secure-store, conversation-store)                                                                  | `core/memory/*.ts`                                                    | S      | low  | Prevents production memory leak                                       |
+| 1.4 | Replace `Math.random` in security/ID/shuffle paths with `crypto.randomInt`/`randomUUID` or Fisher-Yates                                                                         | grep-driven, 22 production hits                                       | S      | low  | Security and correctness hygiene                                      |
+| 1.5 | Centralize/document `child_process`/`spawn`/`exec` through permission gates and sandbox boundaries                                                                              | `core/sandbox/*`, `gateway/services/permission/*`, tool executors     | M      | low  | One audit point for shell-execution risk                              |
+| 1.6 | Add missing tests for the 41 gateway services without direct colocated tests — start with manager lifecycle helpers, workflow dispatch, metric pulse, and orphan reconciliation | `packages/gateway/src/services/**/*.test.ts`                          | M      | low  | Phase-1 baseline coverage                                             |
 
 **Phase 1 exit criteria**:
 
 - [ ] All 15 bugs in §1 fixed
-- [ ] `as unknown as` count ≤ 80
+- [ ] Production `as unknown as` count ≤ 80 via `node scripts/report-code-health.mjs`
 - [ ] `pnpm -r test` still green
 - [ ] `pnpm -r typecheck` still green
 - [ ] No new `Math.random` in security paths
@@ -217,14 +216,14 @@ Each phase is independent, gated by tsc + `pnpm -r test`. Use the `git-flow` ski
 
 Each split should leave the public barrel re-export everything so call sites don't change. Test files for the new modules come first (TDD).
 
-| #   | Source                                  | LOC  | Target structure                                                                 | Why                                                                                                          |
-| --- | --------------------------------------- | ---- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 2.1 | `services/claw/manager.ts`              | 1572 | `services/claw/manager/{index,registry,lifecycle,permissions,scheduler-sync}.ts` | Manager mixes 5 concerns. Files in `services/claw/manager-*.ts` already suggest a partial split — finish it. |
-| 2.2 | `services/workflow/workflow-service.ts` | 1531 | `services/workflow/{service,runtime,job-dispatch,persistence,index}.ts`          | Workflow service mixes runtime, persistence, and template loading.                                           |
-| 2.3 | `services/agent/service.ts`             | 1054 | `services/agent/{service,runs,prompts,tools,index}.ts`                           | Service already has `cache.ts`, `prompt.ts`, `runner-utils.ts` siblings — pull in the rest.                  |
-| 2.4 | `services/tool/templates.ts`            | 853  | `services/tool/templates/{registry,builtin,user,render}.ts`                      | Template engine has 4 phases mixed together.                                                                 |
-| 2.5 | `services/claw/runner.ts`               | 813  | `services/claw/runner/{index,execution,context,errors}.ts`                       | Runner mixes the execution loop with context management.                                                     |
-| 2.6 | `db/repositories/workflows/index.ts`    | 859  | `db/repositories/workflows/{repo,queries,migrations,index}.ts`                   | DB repo mixes SQL with domain logic.                                                                         |
+| #   | Source                                  | LOC  | Target structure                                                                               | Why                                                                           |
+| --- | --------------------------------------- | ---- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 2.1 | `services/claw/manager/manager.ts`      | 1314 | `services/claw/manager/{index,lifecycle,tasks,escalation,inbox,persistence,scheduler-sync}.ts` | Manager mixes lifecycle, task state, escalation, persistence, and scheduling. |
+| 2.2 | `services/workflow/workflow-service.ts` | 1068 | `services/workflow/{service,runtime,resume-runtime,error-handling,persistence,dispatch}.ts`    | Workflow service mixes runtime, resume, persistence, and DAG execution.       |
+| 2.3 | `channels/service-impl.ts`              | 1553 | `channels/{service,plugin-registry,outbound,inbound,pairing,ownership,session-bridge}.ts`      | Channel service mixes plugin, send, receive, pairing, ownership, persistence. |
+| 2.4 | `ws/server.ts`                          | 1189 | `ws/{server,auth,subscriptions,event-bridge,session}.ts`                                       | WebSocket server mixes auth, event routing, sessions, and transport.          |
+| 2.5 | `routes/claws.ts`                       | 1305 | `routes/claws.ts` + `services/claw/{health,recommendations,serialization}.ts`                  | Route contains domain scoring/recommendation logic.                           |
+| 2.6 | `services/tool/templates.ts`            | 853  | `services/tool/templates/{registry,builtin,user,render}.ts`                                    | Template engine has multiple phases mixed together.                           |
 
 **Phase 2A exit criteria**:
 
@@ -248,19 +247,19 @@ Each split should leave the public barrel re-export everything so call sites don
 - [ ] `pnpm -r typecheck` green
 - [ ] `pnpm -r test` green
 
-#### 2C. Add tests for the next 30 of 46 untested gateway services
+#### 2C. Add tests for the next high-risk files among 41 gateway services without direct colocated tests
 
 Priority order (highest blast-radius first):
 
-1. `services/claw/manager-*.ts` (3 files) — they support the largest file
-2. `services/workflow/executors/*.ts` (5 files) — node executors run user code
-3. `services/metric/{pulse,service}.ts` — observability
-4. `services/provider/health.ts` — used by router
-5. `services/llm/semaphore.ts` — concurrency gate
+1. `services/claw/manager/**/*.ts` — supports the ClawManager split and lifecycle behavior
+2. `services/workflow/executors/*.ts` — node executors run user-controlled workflow data
+3. `services/workflow/{workflow-dispatch,workflow-node-job-handler}.ts` — dispatch and job handling are high blast-radius
+4. `services/metric/pulse.ts` — observability/runtime signal path
+5. `services/orphan-reconciliation.ts` and `services/log.ts` — startup/shutdown operational safety
 
 **Phase 2C exit criteria**:
 
-- [ ] 30+ of the 46 untested services have at least 1 happy-path test
+- [ ] At least 20 of the 41 listed services have direct colocated tests, prioritizing high blast-radius files
 - [ ] `pnpm --filter @ownpilot/gateway test` green
 
 ---
@@ -445,32 +444,52 @@ For Phase 3.1 (channel plugins), one subagent per plugin — 8 sequential PRs.
 
 ---
 
-## Appendix A — Untested gateway services (46 files)
+## Appendix A — Gateway services without direct colocated tests (41 files)
+
+Generated by `node scripts/report-code-health.mjs`. This is a heuristic: shared integration tests may still cover some files.
 
 ```
-services/log.ts
-services/orphan-reconciliation.ts
-services/retention-service.ts
-services/shutdown-cleanup.ts
-services/streaming-types.ts
-services/usage-tracking.ts
-services/claw/manager-failure.ts
-services/claw/manager-helpers.ts
-services/claw/manager-task-plan.ts
-services/claw/manager-types.ts
+services/agent/agent-context.ts
+services/agent/session-info.ts
+services/claw/manager-cycle-ops.ts
+services/claw/manager-scheduling.ts
+services/claw/manager-stop-conditions.ts
+services/claw/manager/constants.ts
+services/claw/manager/events.ts
+services/claw/manager/manager.ts
+services/claw/manager/singleton.ts
 services/config/entry-validation.ts
-services/dashboard/types.ts
-services/llm/semaphore.ts
+services/log.ts
 services/metric/pulse.ts
-services/metric/service.ts
-services/page-prompts/*.ts (11 files — all prompt templates)
-services/provider/health.ts
-services/workflow/node-types.ts
+services/orphan-reconciliation.ts
+services/page-prompts/agent-copilot-prompt.ts
+services/page-prompts/autonomous-copilot-prompt.ts
+services/page-prompts/claw-copilot-prompt.ts
+services/page-prompts/cli-tools-copilot-prompt.ts
+services/page-prompts/coding-agent-copilot-prompt.ts
+services/page-prompts/mcp-copilot-prompt.ts
+services/page-prompts/skill-copilot-prompt.ts
+services/page-prompts/tool-copilot-prompt.ts
+services/page-prompts/tool-groups-copilot-prompt.ts
+services/page-prompts/workflow-tools-copilot-prompt.ts
+services/page-prompts/workspace-copilot-prompt.ts
+services/workflow/executors/claw.ts
+services/workflow/executors/control-flow.ts
+services/workflow/executors/data.ts
+services/workflow/executors/io.ts
+services/workflow/executors/tool-llm-code.ts
 services/workflow/template-ideas.ts
-services/workflow/types.ts
+services/workflow/templates/api.ts
+services/workflow/templates/business.ts
+services/workflow/templates/content.ts
+services/workflow/templates/data.ts
+services/workflow/templates/devops.ts
+services/workflow/templates/monitoring.ts
+services/workflow/templates/personal.ts
+services/workflow/templates/research.ts
+services/workflow/templates/security.ts
+services/workflow/workflow-dispatch.ts
 services/workflow/workflow-node-job-handler.ts
-services/workflow/executors/{claw,control-flow,data,io,tool-llm-code}.ts (5 files)
-services/workflow/templates/*.ts (10 files)
 ```
 
 ## Appendix B — Barrel export counts (sub-paths with > 10 exports)
@@ -490,27 +509,34 @@ services/workflow/templates/*.ts (10 files)
 | `core/sandbox/index.ts`                 | 11      |
 | `core/agent/providers/configs/index.ts` | 19      |
 
-## Appendix C — Top 20 source files by LOC (excluding tests)
+## Appendix C — Top 25 production files by LOC
 
-| LOC  | File                                                    |
-| ---- | ------------------------------------------------------- |
-| 1572 | `gateway/src/services/claw/manager.ts`                  |
-| 1535 | `gateway/src/services/workflow/workflow-service.ts`     |
-| 1405 | `gateway/src/channels/service-impl.ts`                  |
-| 1327 | `gateway/src/channels/plugins/whatsapp/whatsapp-api.ts` |
-| 1266 | `ui/src/components/workflows/workflow-templates.ts`     |
-| 1177 | `gateway/src/routes/claws.ts`                           |
-| 1114 | `core/src/agent/tools/file-system.ts`                   |
-| 1075 | `gateway/src/utils/chat-widgets.ts`                     |
-| 1068 | `gateway/src/services/agent/service.ts`                 |
-| 1050 | `gateway/src/ws/server.ts`                              |
-| 1029 | `core/src/agent/tools/expense-tracker.ts`               |
-| 995  | `gateway/src/routes/chat/index.ts`                      |
-| 964  | `gateway/src/channels/plugins/telegram/telegram-api.ts` |
-| 962  | `gateway/src/routes/workflow/index.ts`                  |
-| 958  | `gateway/src/routes/chat/history.ts`                    |
-| 946  | `core/src/agent/tools.ts`                               |
-| 943  | `core/src/agent/tools/personal-data.ts`                 |
-| 917  | `gateway/src/plans/executor.ts`                         |
-| 905  | `core/src/plugins/marketplace.ts`                       |
-| 902  | `gateway/src/db/repositories/claws.ts`                  |
+Generated by `node scripts/report-code-health.mjs`.
+
+|  LOC | File                                                    |
+| ---: | ------------------------------------------------------- |
+| 1701 | `ui/src/pages/ChatPage.tsx`                             |
+| 1553 | `gateway/src/channels/service-impl.ts`                  |
+| 1502 | `gateway/src/channels/plugins/whatsapp/whatsapp-api.ts` |
+| 1388 | `ui/src/components/MarkdownContent.tsx`                 |
+| 1380 | `ui/src/pages/ProfilePage.tsx`                          |
+| 1379 | `ui/src/pages/SystemPage.tsx`                           |
+| 1314 | `gateway/src/services/claw/manager/manager.ts`          |
+| 1305 | `gateway/src/routes/claws.ts`                           |
+| 1286 | `ui/src/pages/CodingAgentsPage.tsx`                     |
+| 1277 | `core/src/agent/tools/file-system.ts`                   |
+| 1269 | `ui/src/components/workflows/workflow-templates.ts`     |
+| 1248 | `ui/src/components/ToolPicker.tsx`                      |
+| 1227 | `gateway/src/utils/chat-widgets.ts`                     |
+| 1204 | `ui/src/pages/ClawsPage.tsx`                            |
+| 1189 | `gateway/src/ws/server.ts`                              |
+| 1172 | `ui/src/pages/LogsPage.tsx`                             |
+| 1118 | `core/src/agent/tools/expense-tracker.ts`               |
+| 1112 | `gateway/src/routes/workflow/index.ts`                  |
+| 1109 | `ui/src/pages/MissionControlPage.tsx`                   |
+| 1104 | `ui/src/pages/coding-agent-settings-tabs.tsx`           |
+| 1095 | `gateway/src/channels/plugins/telegram/telegram-api.ts` |
+| 1084 | `ui/src/pages/McpServersPage.tsx`                       |
+| 1078 | `gateway/src/routes/chat/index.ts`                      |
+| 1077 | `ui/src/pages/TriggersPage.tsx`                         |
+| 1072 | `gateway/src/plans/executor.ts`                         |

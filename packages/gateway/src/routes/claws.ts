@@ -12,16 +12,14 @@
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type {
-  ClawAutonomyPolicy,
-  ClawConfig,
-  ClawHealthStatus,
-  ClawMissionContract,
-  ClawMode,
-  ClawSession,
-  UpdateClawInput,
-} from '@ownpilot/core/services/claw';
+import type { ClawMode, UpdateClawInput } from '@ownpilot/core/services/claw';
 import { getClawService } from '../services/claw/service.js';
+import {
+  buildHealthStatus,
+  getHealthForConfig,
+  serializeSession,
+} from '../services/claw/health.js';
+import { buildSafeFixPatch } from '../services/claw/recommendations.js';
 import { getLlmSemaphore } from '../services/llm/semaphore.js';
 import {
   apiResponse,
@@ -163,256 +161,6 @@ function mapUpdateBody(body: UpdateClawBody): UpdateClawInput {
   return updates as UpdateClawInput;
 }
 
-/**
- * lastCycleError values that represent an infrastructure event (process restart
- * reconciliation) rather than a genuine cycle fault. See orphan-reconciliation.ts —
- * these are stamped by reconcileOrphanedSessions(), not by a failing tool/LLM call,
- * so the health scorer must not treat them as "needs attention".
- */
-const INFRA_RECOVERY_MARKERS = new Set<string>(['orphan_recovery']);
-
-function scoreContract(config: ClawConfig): number {
-  let score = 0;
-  if (config.missionContract?.successCriteria?.length) score += 35;
-  if (config.missionContract?.deliverables?.length) score += 25;
-  if (config.missionContract?.constraints?.length) score += 15;
-  if (config.missionContract?.evidenceRequired) score += 15;
-  if (config.stopCondition) score += 10;
-  return Math.min(score, 100);
-}
-
-/**
- * Build the public session DTO. Single source of truth for what the UI sees —
- * both the list and the detail endpoint use this so adding a new field
- * surfaces everywhere automatically. Includes the structured plan, focus
- * task, reflection state (consecutiveErrors + recentFailures) so the UI can
- * visualise what the agent is actually doing without scraping logs.
- */
-function serializeSession(session: ClawSession | null) {
-  if (!session) return null;
-  return {
-    state: session.state,
-    cyclesCompleted: session.cyclesCompleted,
-    totalToolCalls: session.totalToolCalls,
-    totalCostUsd: session.totalCostUsd,
-    lastCycleAt: session.lastCycleAt,
-    lastCycleDurationMs: session.lastCycleDurationMs,
-    lastCycleError: session.lastCycleError,
-    startedAt: session.startedAt,
-    stoppedAt: session.stoppedAt,
-    artifacts: session.artifacts,
-    pendingEscalation: session.pendingEscalation,
-    tasks: session.tasks,
-    consecutiveErrors: session.consecutiveErrors,
-    recentFailures: session.recentFailures,
-    nextIntent: session.nextIntent,
-    planHistory: session.planHistory ?? [],
-  };
-}
-
-function buildHealthStatus(config: ClawConfig, session: ClawSession | null): ClawHealthStatus {
-  const contractScore = scoreContract(config);
-  const signals: string[] = [];
-  const recommendations: string[] = [];
-  const policyWarnings: string[] = [];
-
-  if (contractScore < 60) {
-    signals.push('weak mission contract');
-    recommendations.push('Add success criteria, deliverables, constraints, and a stop condition');
-  }
-  if (config.autonomyPolicy?.destructiveActionPolicy === 'allow') {
-    policyWarnings.push('destructive actions are allowed');
-    recommendations.push('Use ask or block for destructive actions unless this claw is trusted');
-  }
-  if (config.autonomyPolicy?.allowSelfModify) {
-    policyWarnings.push('self-modification is enabled');
-  }
-  if (config.mode === 'event' && (config.eventFilters?.length ?? 0) === 0) {
-    signals.push('event mode without filters');
-    recommendations.push('Add event filters or switch to interval mode');
-  }
-
-  if (!session) {
-    return {
-      score: Math.max(35, Math.min(80, 65 + Math.floor((contractScore - 60) / 4))),
-      status: contractScore < 60 ? 'watch' : 'idle',
-      signals: signals.length ? signals : ['not running'],
-      recommendations: recommendations.length ? recommendations : ['Start the claw when ready'],
-      contractScore,
-      policyWarnings,
-    };
-  }
-  // Infrastructure markers are not cycle faults. A claw orphaned by a process
-  // restart (deploy / crash / SIGKILL) did nothing wrong — the reconciler stamps
-  // `orphan_recovery` into lastCycleError and the next successful cycle clears it.
-  // Surface it as a soft signal instead of dropping to 'watch' with a misleading
-  // "adjust tools, model, or permissions" recommendation.
-  const isInfraRecovery =
-    session.lastCycleError != null && INFRA_RECOVERY_MARKERS.has(session.lastCycleError);
-  if (isInfraRecovery) {
-    signals.push('recovered from restart');
-  }
-  if (session.state === 'failed') {
-    return {
-      score: 10,
-      status: 'failed',
-      signals: ['failed', ...signals],
-      recommendations: [
-        'Open history and fix the last failure before restarting',
-        ...recommendations,
-      ],
-      contractScore,
-      policyWarnings,
-    };
-  }
-  if (session.lastCycleError && !isInfraRecovery) {
-    return {
-      score: 35,
-      status: 'watch',
-      signals: [`last error: ${session.lastCycleError}`, ...signals],
-      recommendations: ['Inspect the last cycle error and adjust tools, model, or permissions'],
-      contractScore,
-      policyWarnings,
-    };
-  }
-  if (session.totalCostUsd >= (session.config.limits?.totalBudgetUsd ?? Infinity)) {
-    return {
-      score: 25,
-      status: 'expensive',
-      signals: ['budget cap reached', ...signals],
-      recommendations: ['Raise the budget, narrow the mission, or stop the claw'],
-      contractScore,
-      policyWarnings,
-    };
-  }
-  if (session.state === 'waiting') {
-    return {
-      score: contractScore < 60 ? 55 : 75,
-      status: contractScore < 60 ? 'watch' : 'idle',
-      signals: ['waiting for event', ...signals],
-      recommendations: recommendations.length ? recommendations : ['No action needed'],
-      contractScore,
-      policyWarnings,
-    };
-  }
-  if (session.cyclesCompleted > 0 && session.totalToolCalls === 0) {
-    return {
-      score: 45,
-      status: 'stuck',
-      signals: ['cycles completed without tool calls', ...signals],
-      recommendations: ['Review tool access, mission clarity, and model routing'],
-      contractScore,
-      policyWarnings,
-    };
-  }
-
-  return {
-    score: contractScore < 60 ? 68 : 92,
-    status: contractScore < 60 ? 'watch' : 'healthy',
-    signals: signals.length ? signals : ['active'],
-    recommendations: recommendations.length ? recommendations : ['No action needed'],
-    contractScore,
-    policyWarnings,
-  };
-}
-
-function getHealthForConfig(config: ClawConfig, sessions: ClawSession[]): ClawHealthStatus {
-  return buildHealthStatus(config, sessions.find((s) => s.config.id === config.id) ?? null);
-}
-
-function arraysEqual(a: string[] | undefined, b: string[] | undefined): boolean {
-  const left = a ?? [];
-  const right = b ?? [];
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
-function findPreset(config: ClawConfig): (typeof CLAW_PRESETS)[number] | undefined {
-  return CLAW_PRESETS.find((preset) => preset.id === config.preset);
-}
-
-function buildSafeFixPatch(config: ClawConfig): {
-  patch: UpdateClawInput;
-  applied: string[];
-  skipped: string[];
-} {
-  const patch: UpdateClawInput = {};
-  const applied: string[] = [];
-  const skipped: string[] = [];
-  const preset = findPreset(config);
-  const currentContract = config.missionContract;
-
-  const missionContract: ClawMissionContract = {
-    successCriteria: currentContract?.successCriteria?.length
-      ? currentContract.successCriteria
-      : (preset?.successCriteria ?? ['Mission outcome is complete, specific, and verifiable']),
-    deliverables: currentContract?.deliverables?.length
-      ? currentContract.deliverables
-      : (preset?.deliverables ?? ['Final artifact or report with decisions and evidence']),
-    constraints: currentContract?.constraints?.length
-      ? currentContract.constraints
-      : (preset?.constraints ?? ['Do not perform destructive actions without approval']),
-    escalationRules: currentContract?.escalationRules?.length
-      ? currentContract.escalationRules
-      : [
-          'Escalate when permissions, budget, missing context, or destructive actions block progress',
-        ],
-    evidenceRequired: true,
-    minConfidence: Math.max(currentContract?.minConfidence ?? 0.8, 0.8),
-  };
-
-  const contractChanged =
-    !currentContract ||
-    !arraysEqual(currentContract.successCriteria, missionContract.successCriteria) ||
-    !arraysEqual(currentContract.deliverables, missionContract.deliverables) ||
-    !arraysEqual(currentContract.constraints, missionContract.constraints) ||
-    !arraysEqual(currentContract.escalationRules, missionContract.escalationRules) ||
-    currentContract.evidenceRequired !== missionContract.evidenceRequired ||
-    currentContract.minConfidence !== missionContract.minConfidence;
-
-  if (contractChanged) {
-    patch.missionContract = missionContract;
-    applied.push('mission_contract');
-  }
-
-  if (!config.stopCondition) {
-    patch.stopCondition = config.mode === 'single-shot' ? 'on_report' : 'idle:3';
-    applied.push('stop_condition');
-  }
-
-  const currentPolicy = config.autonomyPolicy;
-  const autonomyPolicy: ClawAutonomyPolicy = {
-    allowSelfModify: false,
-    allowSubclaws: currentPolicy?.allowSubclaws ?? true,
-    requireEvidence: true,
-    destructiveActionPolicy:
-      currentPolicy?.destructiveActionPolicy === 'allow'
-        ? 'ask'
-        : (currentPolicy?.destructiveActionPolicy ?? 'ask'),
-    filesystemScopes: currentPolicy?.filesystemScopes ?? [],
-    maxCostUsdBeforePause: currentPolicy?.maxCostUsdBeforePause,
-  };
-
-  const policyChanged =
-    !currentPolicy ||
-    currentPolicy.allowSelfModify !== autonomyPolicy.allowSelfModify ||
-    currentPolicy.allowSubclaws !== autonomyPolicy.allowSubclaws ||
-    currentPolicy.requireEvidence !== autonomyPolicy.requireEvidence ||
-    currentPolicy.destructiveActionPolicy !== autonomyPolicy.destructiveActionPolicy ||
-    !arraysEqual(currentPolicy.filesystemScopes, autonomyPolicy.filesystemScopes) ||
-    currentPolicy.maxCostUsdBeforePause !== autonomyPolicy.maxCostUsdBeforePause;
-
-  if (policyChanged) {
-    patch.autonomyPolicy = autonomyPolicy;
-    applied.push('autonomy_policy');
-  }
-
-  if (config.mode === 'event' && (config.eventFilters?.length ?? 0) === 0) {
-    skipped.push('event_filters requires a project-specific event source');
-  }
-
-  return { patch, applied, skipped };
-}
-
 // =============================================================================
 // 1. STATIC ROUTES
 // =============================================================================
@@ -482,7 +230,7 @@ clawRoutes.post('/recommendations/apply', async (c) => {
       skipped: string[];
     }> = [];
     for (const config of targets) {
-      const fixes = buildSafeFixPatch(config);
+      const fixes = buildSafeFixPatch(config, CLAW_PRESETS);
       if (fixes.applied.length === 0) {
         results.push({
           clawId: config.id,
@@ -539,7 +287,7 @@ clawRoutes.get('/', async (c) => {
       const session = sessions.find((s) => s.config.id === config.id);
       return {
         ...config,
-        health: buildHealthStatus(config, session ?? null),
+        health: getHealthForConfig(config, sessions),
         session: serializeSession(session ?? null),
       };
     });
@@ -570,7 +318,7 @@ clawRoutes.get('/stats', async (c) => {
       byMode[c.mode] = (byMode[c.mode] ?? 0) + 1;
       const state = sessions.find((s) => s.config.id === c.id)?.state ?? 'stopped';
       byState[state] = (byState[state] ?? 0) + 1;
-      const health = getHealthForConfig(c as ClawConfig, sessions).status;
+      const health = getHealthForConfig(c, sessions).status;
       byHealth[health] = (byHealth[health] ?? 0) + 1;
     }
 
@@ -746,7 +494,7 @@ clawRoutes.get('/:id/doctor', async (c) => {
 
     const session = service.getSession(id, userId);
     const health = buildHealthStatus(config, session);
-    const fixes = buildSafeFixPatch(config);
+    const fixes = buildSafeFixPatch(config, CLAW_PRESETS);
 
     return apiResponse(c, {
       health,
@@ -771,7 +519,7 @@ clawRoutes.post('/:id/apply-recommendations', async (c) => {
       return apiError(c, { code: ERROR_CODES.NOT_FOUND, message: 'Claw not found' }, 404);
     }
 
-    const fixes = buildSafeFixPatch(config);
+    const fixes = buildSafeFixPatch(config, CLAW_PRESETS);
     if (fixes.applied.length === 0) {
       return apiResponse(c, {
         applied: [],
