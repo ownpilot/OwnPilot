@@ -38,6 +38,7 @@ import {
   ApprovalPauseError,
   type DispatchCallbacks,
 } from './workflow-dispatch.js';
+import { WorkflowExecutionLocks } from './execution-locks.js';
 
 interface WorkflowServiceOptions {
   /** Poll interval for the jobified-level wait loop (ms). */
@@ -58,10 +59,7 @@ interface WorkflowServiceOptions {
 }
 
 export class WorkflowService implements IWorkflowService {
-  // Mutex lock: stores a resolve function for each in-progress workflow.
-  // If a workflowId is in the map, that workflow is currently running.
-  // The AbortController is stored so we can abort a running workflow.
-  private activeExecutions = new Map<string, AbortController>();
+  private readonly locks = new WorkflowExecutionLocks();
 
   private readonly jobifiedPollIntervalMs: number;
   private readonly jobifiedMaxWaitMs: number;
@@ -100,12 +98,7 @@ export class WorkflowService implements IWorkflowService {
    * Must call releaseExecutionLock(workflowId) when done.
    */
   private tryAcquireExecutionLock(workflowId: string): AbortController | null {
-    if (this.activeExecutions.has(workflowId)) {
-      return null;
-    }
-    const abortController = new AbortController();
-    this.activeExecutions.set(workflowId, abortController);
-    return abortController;
+    return this.locks.tryAcquire(workflowId);
   }
 
   /**
@@ -149,7 +142,7 @@ export class WorkflowService implements IWorkflowService {
       // Emit started event so consumers (e.g. API endpoint) can capture the logId
       onProgress?.({ type: 'started', logId: wfLog.id });
     } catch (setupError) {
-      this.activeExecutions.delete(workflowId);
+      this.locks.release(workflowId);
       throw setupError;
     }
 
@@ -548,7 +541,7 @@ export class WorkflowService implements IWorkflowService {
       const finalLog = await repo.getLog(wfLog.id);
       return finalLog ?? wfLog;
     } finally {
-      this.activeExecutions.delete(workflowId);
+      this.locks.release(workflowId);
     }
   }
 
@@ -617,7 +610,7 @@ export class WorkflowService implements IWorkflowService {
       await repo.updateLog(logId, { status: 'running', nodeResults: savedNodeOutputs });
       onProgress?.({ type: 'started', logId });
     } catch (setupError) {
-      this.activeExecutions.delete(workflowId);
+      this.locks.release(workflowId);
       throw setupError;
     }
 
@@ -947,7 +940,7 @@ export class WorkflowService implements IWorkflowService {
       const finalLog = await repo.getLog(logId);
       return finalLog ?? pausedLog;
     } finally {
-      this.activeExecutions.delete(workflowId);
+      this.locks.release(workflowId);
     }
   }
 
@@ -955,19 +948,14 @@ export class WorkflowService implements IWorkflowService {
    * Cancel a running workflow execution.
    */
   cancelExecution(workflowId: string): boolean {
-    const controller = this.activeExecutions.get(workflowId);
-    if (controller) {
-      controller.abort();
-      return true;
-    }
-    return false;
+    return this.locks.cancel(workflowId);
   }
 
   /**
    * Check if a workflow is currently executing.
    */
   isRunning(workflowId: string): boolean {
-    return this.activeExecutions.has(workflowId);
+    return this.locks.isRunning(workflowId);
   }
 
   // ==========================================================================

@@ -61,12 +61,42 @@ const mockApprovalsRepo = vi.hoisted(() => ({
   create: vi.fn(),
 }));
 
+// Shared test locks map — used to seed active executions in tests that need to
+// bypass executeWorkflow's normal lock acquisition.
+const { testLocks } = vi.hoisted(() => {
+  const locks = new Map<string, AbortController>();
+  return { testLocks: locks };
+});
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
 vi.mock('../../db/repositories/workflows/index.js', () => ({
   createWorkflowsRepository: vi.fn(() => mockRepo),
+}));
+
+vi.mock('./execution-locks.js', () => ({
+  WorkflowExecutionLocks: class MockWorkflowExecutionLocks {
+    tryAcquire(id: string) {
+      if (testLocks.has(id)) return null;
+      const c = new AbortController();
+      testLocks.set(id, c);
+      return c;
+    }
+    release(id: string) {
+      testLocks.delete(id);
+    }
+    cancel(id: string) {
+      const c = testLocks.get(id);
+      if (!c) return false;
+      c.abort();
+      return true; // does NOT delete from map (matches original semantics)
+    }
+    isRunning(id: string) {
+      return testLocks.has(id);
+    }
+  },
 }));
 
 vi.mock('@ownpilot/core/services', async (importOriginal) => {
@@ -202,6 +232,7 @@ function makeNodeResult(
 let service: WorkflowService;
 
 beforeEach(() => {
+  testLocks.clear();
   vi.clearAllMocks();
   // Run in inline mode so node execution flows through dispatchNode and the
   // mocked executor functions (no JobQueueService worker running in tests).
@@ -255,26 +286,33 @@ describe('cancelExecution', () => {
   });
 
   it('aborts an active execution and returns true', () => {
+    // Seed the mock locks map directly (bypassing executeWorkflow)
     const controller = new AbortController();
-    const map = (service as unknown as { activeExecutions: Map<string, AbortController> })
-      .activeExecutions;
-    map.set('wf-1', controller);
+    testLocks.set('wf-1', controller);
 
+    expect(service.isRunning('wf-1')).toBe(true);
     expect(service.cancelExecution('wf-1')).toBe(true);
     expect(controller.signal.aborted).toBe(true);
+    // Entry remains in map until release() is called by the finally block
+    expect(service.isRunning('wf-1')).toBe(true);
   });
 
   it('does not affect other workflows', () => {
-    const map = (service as unknown as { activeExecutions: Map<string, AbortController> })
-      .activeExecutions;
-    const c1 = new AbortController();
-    const c2 = new AbortController();
-    map.set('wf-a', c1);
-    map.set('wf-b', c2);
+    // Seed two concurrent executions directly in the mock locks map
+    const controllerA = new AbortController();
+    const controllerB = new AbortController();
+    testLocks.set('wf-a', controllerA);
+    testLocks.set('wf-b', controllerB);
+
+    expect(service.isRunning('wf-a')).toBe(true);
+    expect(service.isRunning('wf-b')).toBe(true);
 
     service.cancelExecution('wf-a');
-    expect(c1.signal.aborted).toBe(true);
-    expect(c2.signal.aborted).toBe(false);
+
+    expect(controllerA.signal.aborted).toBe(true);
+    expect(controllerB.signal.aborted).toBe(false);
+    // wf-a entry still in map (only release() in finally removes it)
+    expect(service.isRunning('wf-a')).toBe(true);
     expect(service.isRunning('wf-b')).toBe(true);
   });
 });
@@ -307,9 +345,8 @@ describe('executeWorkflow', () => {
   });
 
   it('throws when workflow is already running', async () => {
-    const map = (service as unknown as { activeExecutions: Map<string, AbortController> })
-      .activeExecutions;
-    map.set('wf-1', new AbortController());
+    // Seed the mock locks map directly to simulate an already-running workflow
+    testLocks.set('wf-1', new AbortController());
 
     mockRepo.get.mockResolvedValue({ id: 'wf-1', nodes: [makeNode('n1', 'toolNode')], edges: [] });
     await expect(service.executeWorkflow('wf-1', 'user1')).rejects.toThrow(

@@ -13,6 +13,37 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mocks — must come before dynamic import
 // ---------------------------------------------------------------------------
 
+// Test-shared lock map so tests can seed active executions without the
+// private activeExecutions map. Each test gets its own mock instance.
+// vi.hoisted ensures testLocks is initialized before the vi.mock factory runs.
+const { testLocks } = vi.hoisted(() => {
+  const locks = new Map<string, AbortController>();
+  return { testLocks: locks };
+});
+
+vi.mock('./execution-locks.js', () => ({
+  WorkflowExecutionLocks: class MockWorkflowExecutionLocks {
+    tryAcquire(id: string) {
+      if (testLocks.has(id)) return null;
+      const c = new AbortController();
+      testLocks.set(id, c);
+      return c;
+    }
+    release(id: string) {
+      testLocks.delete(id);
+    }
+    cancel(id: string) {
+      const c = testLocks.get(id);
+      if (!c) return false;
+      c.abort();
+      return true; // does NOT remove from map (matches original semantics)
+    }
+    isRunning(id: string) {
+      return testLocks.has(id);
+    }
+  },
+}));
+
 vi.mock('../../db/repositories/workflows/index.js', () => ({
   createWorkflowsRepository: vi.fn(),
 }));
@@ -506,6 +537,7 @@ describe('WorkflowService', () => {
   let service: InstanceType<typeof WorkflowService>;
 
   beforeEach(() => {
+    testLocks.clear();
     service = new WorkflowService();
   });
 
@@ -531,11 +563,9 @@ describe('WorkflowService', () => {
 
   describe('isRunning + cancelExecution integration via activeExecutions', () => {
     it('reflects state after manual map manipulation', () => {
-      // Access private map to simulate an active execution
+      // Seed the mock locks map to simulate an active execution
       const controller = new AbortController();
-      (
-        service as unknown as { activeExecutions: Map<string, AbortController> }
-      ).activeExecutions.set('wf-test', controller);
+      testLocks.set('wf-test', controller);
 
       expect(service.isRunning('wf-test')).toBe(true);
       expect(service.isRunning('wf-other')).toBe(false);
@@ -551,22 +581,17 @@ describe('WorkflowService', () => {
 
     it('cancelling a second time still returns true (controller is still in map)', () => {
       const controller = new AbortController();
-      (
-        service as unknown as { activeExecutions: Map<string, AbortController> }
-      ).activeExecutions.set('wf-x', controller);
+      testLocks.set('wf-x', controller);
 
       expect(service.cancelExecution('wf-x')).toBe(true);
       expect(service.cancelExecution('wf-x')).toBe(true);
     });
 
     it('does not affect other workflows when cancelling one', () => {
-      const map = (service as unknown as { activeExecutions: Map<string, AbortController> })
-        .activeExecutions;
-
       const c1 = new AbortController();
       const c2 = new AbortController();
-      map.set('wf-a', c1);
-      map.set('wf-b', c2);
+      testLocks.set('wf-a', c1);
+      testLocks.set('wf-b', c2);
 
       service.cancelExecution('wf-a');
       expect(c1.signal.aborted).toBe(true);
