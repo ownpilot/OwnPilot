@@ -210,6 +210,61 @@ async function checkRedirectTarget(finalUrl: string, originalUrl: string): Promi
   return null;
 }
 
+/** Maximum redirect hops followed by `safeFetch` before giving up. */
+const MAX_REDIRECTS = 5;
+
+/**
+ * SSRF-safe `fetch` that follows redirects MANUALLY, re-validating every
+ * intermediate hop against the block-list — not just the final URL.
+ *
+ * The platform `fetch` follows 3xx transparently and exposes only the final
+ * `response.url`, so a URL that 302-redirects to 169.254.169.254 or an RFC1918
+ * host is connected to before any post-fetch check can run (CWE-918). Here each
+ * `Location` is resolved relative to the current hop, checked with
+ * `isBlockedUrl` + DNS-rebinding-aware `isPrivateUrlAsync`, and only then
+ * followed. A blocked hop (or exceeding MAX_REDIRECTS) throws a plain Error
+ * whose message is surfaced by the caller's existing catch as a tool error.
+ *
+ * Redirect method/body rewriting mirrors the Fetch spec: 303 (and 301/302 for
+ * non-GET/HEAD) downgrade to GET with the body dropped; 307/308 preserve both.
+ */
+export async function safeFetch(initialUrl: string, init: RequestInit = {}): Promise<Response> {
+  let currentUrl = initialUrl;
+  let method = (init.method ?? 'GET').toUpperCase();
+  let body = init.body;
+
+  for (let hops = 0; ; hops++) {
+    const response = await fetch(currentUrl, { ...init, method, body, redirect: 'manual' });
+
+    // Not a redirect (or a 3xx with no Location) → terminal response.
+    if (response.status < 300 || response.status >= 400) return response;
+    const location = response.headers.get('location');
+    if (!location) return response;
+
+    if (hops >= MAX_REDIRECTS) {
+      throw new Error(`Too many redirects (>${MAX_REDIRECTS}) starting from ${initialUrl}`);
+    }
+
+    const nextUrl = new URL(location, currentUrl).href;
+    if (isBlockedUrl(nextUrl) || (await isPrivateUrlAsync(nextUrl))) {
+      throw new Error(
+        `Request was redirected to a blocked internal address (${nextUrl}). Original URL: ${initialUrl}`
+      );
+    }
+
+    if (
+      response.status === 303 ||
+      ((response.status === 301 || response.status === 302) &&
+        method !== 'GET' &&
+        method !== 'HEAD')
+    ) {
+      method = 'GET';
+      body = undefined;
+    }
+    currentUrl = nextUrl;
+  }
+}
+
 /**
  * Parse HTML and extract text content
  */
@@ -372,7 +427,7 @@ export const httpRequestExecutor: ToolExecutor = async (
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await safeFetch(url, {
         method,
         headers: requestHeaders,
         body: requestBody,
@@ -515,7 +570,7 @@ export const fetchWebPageExecutor: ToolExecutor = async (
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await safeFetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; OwnPilot/1.0; +https://github.com/ownpilot)',
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -783,7 +838,7 @@ export const jsonApiExecutor: ToolExecutor = async (
 
     let response: Response;
     try {
-      response = await fetch(url, {
+      response = await safeFetch(url, {
         method,
         headers: requestHeaders,
         body: data ? JSON.stringify(data) : undefined,

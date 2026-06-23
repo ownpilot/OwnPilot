@@ -197,6 +197,28 @@ describe('Expenses Routes', () => {
       });
       expect(res.status).toBe(400);
     });
+
+    it('returns 400 for a non-numeric amount', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 'abc', description: 'Bad amount' }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for a negative amount', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: -5, description: 'Negative' }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('PUT /expenses/:id', () => {
@@ -212,6 +234,17 @@ describe('Expenses Routes', () => {
         'exp-1',
         expect.objectContaining({ amount: 99 })
       );
+    });
+
+    it('returns 400 for a negative amount on update', async () => {
+      const app = createApp();
+      const res = await app.request('/expenses/exp-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: -1 }),
+      });
+      expect(res.status).toBe(400);
+      expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
     it('returns 404 for missing', async () => {

@@ -10,7 +10,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // Mock middleware modules
 const mockRequestId = vi.fn().mockImplementation((c, next) => next());
 const mockTiming = vi.fn().mockImplementation((c, next) => next());
-const mockCreateAuthMiddleware = vi.fn().mockImplementation(() => (c, next) => next());
+// Records every request path the auth middleware actually runs on, so tests can
+// assert which routes are covered by authentication (regression guard for the
+// /api/v2/* auth-bypass fix — auth must cover all /api/* versions, not just v1).
+const authSeenPaths: string[] = [];
+const mockCreateAuthMiddleware = vi.fn().mockImplementation(() => (c, next) => {
+  authSeenPaths.push(c.req.path);
+  return next();
+});
 const mockCreateRateLimitMiddleware = vi.fn().mockImplementation(() => (c, next) => next());
 const mockErrorHandler = vi.fn().mockImplementation((err, c) => c.json({ error: 'test' }, 500));
 const mockNotFoundHandler = vi.fn().mockImplementation((c) => c.json({ error: 'Not found' }, 404));
@@ -126,6 +133,7 @@ const { createApp } = await import('./app.js');
 describe('createApp', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authSeenPaths.length = 0;
     delete process.env.NODE_ENV;
     delete process.env.UI_PORT;
     delete process.env.CORS_ORIGINS;
@@ -154,6 +162,37 @@ describe('createApp', () => {
       const app = createApp(customConfig);
       const res = await app.request('/api/v1/agents');
       expect(res.status).toBe(200);
+    });
+  });
+
+  // Regression guard: the auth + UI-session middleware must cover the entire
+  // /api/* surface. Previously they were scoped to /api/v1/* only, leaving the
+  // identical handlers mirrored at /api/v2/* (registerV2Routes) completely
+  // unauthenticated (CWE-306). The unprefixed /health route must stay public.
+  describe('API authentication coverage (v2 bypass regression)', () => {
+    it('applies authentication to /api/v2/* routes', async () => {
+      const app = createApp();
+      const res = await app.request('/api/v2/agents');
+      expect(res.status).toBe(200);
+      expect(authSeenPaths).toContain('/api/v2/agents');
+    });
+
+    it('still applies authentication to /api/v1/* routes', async () => {
+      const app = createApp();
+      await app.request('/api/v1/agents');
+      expect(authSeenPaths).toContain('/api/v1/agents');
+    });
+
+    it('does not apply authentication to the public /health route', async () => {
+      const app = createApp();
+      await app.request('/health');
+      expect(authSeenPaths).not.toContain('/health');
+    });
+
+    it('does not mount authentication when auth.type is none', async () => {
+      const app = createApp({ auth: { type: 'none' } });
+      await app.request('/api/v2/agents');
+      expect(authSeenPaths).toHaveLength(0);
     });
   });
 

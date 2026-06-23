@@ -155,12 +155,14 @@ schemaRoutes.post('/migrate', async (c) => {
   if (body.truncate) args.push('--truncate');
   if (body.skipSchema) args.push('--skip-schema');
 
-  // Run migration script in background
+  // Run migration script in background. Spawn npx.cmd directly on Windows
+  // instead of going through `shell: true` — the args are all static literals
+  // today, but a shell-less spawn removes the latent injection footgun entirely
+  // if a future arg ever becomes dynamic.
   const cwd = join(process.cwd(), 'packages', 'gateway');
-  // shell: true needed on Windows for npx.cmd resolution
-  const migration = spawn('npx', args, {
+  const npxBin = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const migration = spawn(npxBin, args, {
     cwd,
-    shell: process.platform === 'win32',
     env: {
       ...process.env,
       SQLITE_PATH: sqlitePath,

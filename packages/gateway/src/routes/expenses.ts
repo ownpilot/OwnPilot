@@ -282,9 +282,23 @@ expensesRoutes.post('/', async (c) => {
       );
     }
 
+    // Reject NaN / Infinity / negative amounts — `Number('abc')` is NaN and a
+    // negative spend corrupts budget/aggregation math downstream.
+    const amountNum = Number(amount);
+    if (!Number.isFinite(amountNum) || amountNum < 0) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: 'amount must be a finite, non-negative number',
+        },
+        400
+      );
+    }
+
     const expense = await repo.create({
       date: (date as string) ?? new Date().toISOString().split('T')[0]!,
-      amount: Number(amount),
+      amount: amountNum,
       currency: (currency as string) ?? 'TRY',
       category: (category as string) ?? 'other',
       description: description as string,
@@ -315,7 +329,24 @@ expensesRoutes.put('/:id', async (c) => {
     if (!body)
       return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'Invalid JSON body' }, 400);
 
-    const updated = await repo.update(c.req.param('id'), body as Record<string, unknown>);
+    // Validate amount on update too (when present) — same rule as create.
+    const updateFields = body as Record<string, unknown>;
+    if (updateFields.amount !== undefined) {
+      const amountNum = Number(updateFields.amount);
+      if (!Number.isFinite(amountNum) || amountNum < 0) {
+        return apiError(
+          c,
+          {
+            code: ERROR_CODES.VALIDATION_ERROR,
+            message: 'amount must be a finite, non-negative number',
+          },
+          400
+        );
+      }
+      updateFields.amount = amountNum;
+    }
+
+    const updated = await repo.update(c.req.param('id'), updateFields);
     if (!updated) return notFoundError(c, 'Expense', c.req.param('id'));
 
     wsGateway.broadcast(

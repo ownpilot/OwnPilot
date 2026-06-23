@@ -48,6 +48,23 @@ OwnPilot implements multiple layers of security:
 
 - Tamper-evident hash chain logging for audit trail verification
 
+## Deployment Hardening (exposed gateways)
+
+The defaults target a localhost, single-tenant deployment. When exposing the
+gateway beyond localhost (e.g. via a tunnel or `0.0.0.0` bind), also set:
+
+- **`TRUSTED_PROXY=true` + `TRUSTED_PROXY_IPS`** — required for the rate limiter
+  and TLS detection to trust `X-Forwarded-*`. Without it, external clients can
+  collapse into the local-exempt bucket and the global limiter becomes
+  ineffective.
+- **`UI_SESSION_COOKIE_SECURE=true`** (or **`HTTPS_ONLY=true`**) — ensures the UI
+  session cookie carries the `Secure` flag when TLS is terminated upstream.
+- **MQTT (edge)** — the bundled Mosquitto broker allows anonymous connections and
+  is bound to loopback behind the optional `mqtt` compose profile. Configure
+  broker credentials before binding it to any non-loopback interface.
+- **API auth** — set `auth.type` to `api-key` or `jwt` (with a strong key/secret);
+  authentication covers the entire `/api/*` surface (all versions).
+
 ## Dependency Management
 
 - Dependencies are pinned and audited regularly.

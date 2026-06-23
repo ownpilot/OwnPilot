@@ -5,9 +5,11 @@ on:
     tags:
       - 'v*'
 
+# Least privilege: the default token is read-only. The write scopes are granted
+# at the job level (below) so they apply only to the release job, not to any
+# job added to this workflow later.
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -16,6 +18,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Create GitHub Release (softprops/action-gh-release)
+      packages: write # Push image to GHCR
 
     steps:
       - name: Checkout

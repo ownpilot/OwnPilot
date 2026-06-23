@@ -194,8 +194,8 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
     c.header('Server', '');
   });
 
-  // Prevent caching of sensitive API responses
-  app.use('/api/v1/*', async (c, next) => {
+  // Prevent caching of sensitive API responses (all API versions)
+  app.use('/api/*', async (c, next) => {
     await next();
     // Only add cache control if not already set
     if (!c.res.headers.get('Cache-Control')) {
@@ -272,11 +272,14 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Do not reorder - session auth must come before API auth to enable bypass
 
   // UI session authentication (before API auth — valid session bypasses api-key/jwt)
-  app.use('/api/v1/*', uiSessionMiddleware);
+  // Scoped to ALL versioned API paths (/api/*), not just /api/v1/*, so the v2
+  // mirror (registerV2Routes) is covered too. The unprefixed /health route is
+  // not under /api/* and stays public for container health checks.
+  app.use('/api/*', uiSessionMiddleware);
 
   // Authentication (skip health routes)
   if (fullConfig.auth && fullConfig.auth.type !== 'none') {
-    app.use('/api/v1/*', createAuthMiddleware(fullConfig.auth));
+    app.use('/api/*', createAuthMiddleware(fullConfig.auth));
   }
 
   // Audit logging (fire-and-forget, logs method/path/status/duration)

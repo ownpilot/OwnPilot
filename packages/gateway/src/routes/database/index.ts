@@ -19,13 +19,16 @@ export const databaseRoutes = new Hono();
 // All routes under /database require X-Admin-Key header.
 // GET routes are read-only but still sensitive (expose schema, size, config).
 databaseRoutes.use('*', async (c, next) => {
-  const adminKey = process.env.ADMIN_KEY;
+  // Canonical name is ADMIN_API_KEY (shared with the debug routes); the legacy
+  // ADMIN_KEY is still honored as a deprecated fallback so existing deployments
+  // keep working.
+  const adminKey = process.env.ADMIN_API_KEY ?? process.env.ADMIN_KEY;
   if (!adminKey) {
     return apiError(
       c,
       {
         code: ERROR_CODES.UNAUTHORIZED,
-        message: 'ADMIN_KEY environment variable must be set.',
+        message: 'ADMIN_API_KEY environment variable must be set.',
       },
       403
     );

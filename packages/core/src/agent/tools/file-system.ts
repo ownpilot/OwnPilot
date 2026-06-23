@@ -8,7 +8,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult, ToolContext } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
-import { isBlockedUrl } from './web-fetch.js';
+import { isBlockedUrl, safeFetch } from './web-fetch.js';
 import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-security.js';
 
@@ -630,9 +630,11 @@ export const downloadFileExecutor: ToolExecutor = async (
       };
     }
 
-    // Download file with size limit (100 MB)
+    // Download file with size limit (100 MB). safeFetch re-validates every
+    // redirect hop against the SSRF block-list (plain fetch would follow a 3xx
+    // to an internal address before any check could run).
     const MAX_DOWNLOAD_SIZE = 100 * 1024 * 1024;
-    const response = await fetch(url);
+    const response = await safeFetch(url);
     if (!response.ok) {
       return {
         content: `Error: Failed to download: ${response.status} ${response.statusText}`,

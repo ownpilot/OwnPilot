@@ -346,6 +346,48 @@ describe('SSRF redirect protection', () => {
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(false);
   });
+
+  it('blocks an intermediate 3xx hop to a private IP before following it', async () => {
+    // First (and only) hop returns a 302 whose Location points at an internal
+    // address. With manual redirect following, the next hop must be rejected
+    // BEFORE the second fetch is issued — the platform fetch would have
+    // connected to 169.254.169.254 transparently.
+    fetchMock.mockResolvedValueOnce(
+      mockResponse({
+        ok: false,
+        status: 302,
+        statusText: 'Found',
+        url: 'https://example.com/redirect',
+        headers: { location: 'http://169.254.169.254/latest/meta-data/' },
+      })
+    );
+    const result = await httpRequestExecutor({ url: 'https://example.com/redirect' }, ctx);
+    expect(result.isError).toBe(true);
+    expect((result.content as any).error).toContain('blocked internal address');
+    // The redirect target was never fetched.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://example.com/redirect');
+  });
+
+  it('follows an intermediate 3xx hop to a public URL and returns the final body', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        mockResponse({
+          ok: false,
+          status: 302,
+          statusText: 'Found',
+          url: 'https://example.com/start',
+          headers: { location: 'https://cdn.example.com/final' },
+        })
+      )
+      .mockResolvedValueOnce(
+        mockResponse({ url: 'https://cdn.example.com/final', body: 'final-body' })
+      );
+    const result = await httpRequestExecutor({ url: 'https://example.com/start' }, ctx);
+    expect(result.isError).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://cdn.example.com/final');
+  });
 });
 
 // =============================================================================

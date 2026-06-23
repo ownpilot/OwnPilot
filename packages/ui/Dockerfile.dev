@@ -1,6 +1,8 @@
 FROM node:22-alpine
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Pin pnpm to the same version as the production images (reproducible builds;
+# avoids silently pulling a new pnpm major into the dev image).
+RUN corepack enable && corepack prepare pnpm@10.29.3 --activate
 
 WORKDIR /app
 

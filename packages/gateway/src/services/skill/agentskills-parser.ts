@@ -54,6 +54,12 @@ export function parseSkillMdFrontmatter(content: string): {
   return { frontmatter, body };
 }
 
+// Keys that must never be written into a parsed object — assigning them can
+// reparent the object's prototype (prototype pollution). Skipped defensively
+// even though untrusted SKILL.md frontmatter only ever reaches a single object
+// instance here.
+const RESERVED_YAML_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /**
  * Parse simple YAML (flat key-value pairs, one level of nesting).
  * Supports: strings, quoted strings, arrays (flow/block), nested maps (one level).
@@ -101,8 +107,9 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
       if (currentMap) {
         const match = trimmed.match(/^([^:]+):\s*(.*)$/);
         if (match) {
+          const mapKey = match[1]!.trim();
           const val = unquote(match[2]!.trim());
-          currentMap[match[1]!.trim()] = val;
+          if (!RESERVED_YAML_KEYS.has(mapKey)) currentMap[mapKey] = val;
         }
       }
       continue;
@@ -117,6 +124,9 @@ function parseSimpleYaml(yaml: string): Record<string, unknown> {
 
     const key = kvMatch[1]!.trim();
     const rawValue = kvMatch[2]!.trim();
+
+    // Drop prototype-polluting keys (and any nested block they would open).
+    if (RESERVED_YAML_KEYS.has(key)) continue;
 
     if (!rawValue) {
       // Start of a nested map or block sequence

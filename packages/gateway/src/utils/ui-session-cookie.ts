@@ -16,6 +16,12 @@ interface UiSessionAuthOptions {
 function isSecureCookie(c: Context): boolean {
   if (process.env.UI_SESSION_COOKIE_SECURE === 'true') return true;
   if (process.env.UI_SESSION_COOKIE_SECURE === 'false') return false;
+  // When the operator has opted into HTTPS-only mode, the session cookie must
+  // always carry the Secure flag — even if TLS is terminated by an upstream
+  // proxy and this hop looks like plain HTTP. Without this, a deployment that
+  // sets HTTPS_ONLY but forgets TRUSTED_PROXY would silently ship the session
+  // cookie without Secure, allowing capture on the plain-HTTP leg (CWE-614).
+  if (process.env.HTTPS_ONLY === 'true') return true;
   // H-S8: X-Forwarded-Proto trusted only behind TRUSTED_PROXY config.
   return isSecureRequest(c.req);
 }
