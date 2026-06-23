@@ -27,9 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v0.8.2 (in progress)
+## [0.8.3] - 2026-06-23
 
-#### Added
+### Security
+
+- **Authenticated the entire `/api/v2/*` API surface (CWE-306)** — the auth and UI-session middleware were scoped to `/api/v1/*`, while the v2 router mounts the same handlers at `/api/v2/*`, leaving the full v2 API (memories, config/credentials, chat, claws/agentic, coding-agents, MCP, extensions, browser) reachable without credentials when the gateway is network-exposed. Broadened both middlewares to `/api/*`; the unprefixed `/health` route stays public. (#105)
+- **SSRF: web tools re-validate every redirect hop** — `http_request`, `fetch_web_page`, `call_json_api`, and `download_file` now follow redirects manually via a new `safeFetch()` that checks each hop against the private-IP/metadata block-list, instead of validating only the final URL. (#105)
+- **XSS: `FileWidget` download URL is protocol-gated** — LLM/tool-controlled file URLs pass through a new `safeDownloadHref()` (allows http/https/blob and same-origin relative paths; rejects `javascript:`/`data:`/`vbscript:`/`file:` and control-char smuggling), so a malicious URL can no longer execute on click. (#106)
+- **Additional hardening** — expense amount validation (rejects NaN/Infinity/negative on create and update), session cookie `Secure` forced under `HTTPS_ONLY`, prototype-pollution-safe SKILL.md frontmatter parsing (`__proto__`/`constructor`/`prototype` skipped), shell-less migration spawn on Windows, unified `ADMIN_API_KEY` (with `ADMIN_KEY` fallback), least-privilege `release.yml` token, pinned dev-image pnpm, and a new "Deployment Hardening" section in `SECURITY.md`. (#105)
+- **Dependencies** — patched undici 8.0.0 → 8.5.0, nodemailer 8 → 9.0.1, dompurify 3.4.0 → 3.4.11.
+
+### Added
 
 - Agentic cancellation propagation: `DispatchResult` now has `cancelled?: boolean` field.
   `dispatch()` does a pre-flight abort check — returns `{ cancelled: true }` immediately
@@ -42,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through `dispatchSandbox`, not a mock) and 13 tests for the secure-memory encryption
   primitives (`encryption.ts`) — both previously uncovered.
 
-#### Fixed
+### Fixed
 
 - **Claw lifecycle wired into server boot/shutdown** — `ClawManager.start()` was never
   invoked, so `autoStart` claws never started and running claws never resumed after a
@@ -73,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > Target: no public API changes — all splits preserve barrel re-exports.
 > See `refactor-next.md` §2 for full dependency graphs and rollout plan.
 
-#### Phase 2A — Large file splits (6 targets)
+### Phase 2A — Large file splits (6 targets)
 
 Each split leaves a thin re-export so all call sites work unchanged.
 
@@ -99,7 +107,7 @@ Each split leaves a thin re-export so all call sites work unchanged.
 **Progress**: 5 targets complete (−3213 LOC), 1 skipped, 1 deferred.
 **Exit criteria**: No file > 800 LOC in `gateway/src/services/` and `gateway/src/db/repositories/`.
 
-#### Phase 2B — Barrel export cleanup
+### Phase 2B — Barrel export cleanup
 
 - [x] Added sub-path exports to `core/package.json`: `@ownpilot/core/services/claw`,
       `@ownpilot/core/services/coding-agent`, `@ownpilot/core/services/registry`.
@@ -111,7 +119,7 @@ Each split leaves a thin re-export so all call sites work unchanged.
       `@ownpilot/core/services/{claw,coding-agent}`); `detect-mock-mismatch` clean.
 - [ ] Split `core/agent/tools/index.ts` (34 exports) into category sub-barrels.
 
-#### Type safety hardening
+### Type safety hardening
 
 - [x] **False positive resolved**: The flagged "4 eval() calls in production" were all
       `page.$eval()` (Puppeteer DOM API) — not JavaScript's `eval()`. All real eval() usage
@@ -130,7 +138,7 @@ Each split leaves a thin re-export so all call sites work unchanged.
       prompt that teaches the agent to grep for them. Same false-positive class as the
       eval() item above.
 
-#### Test coverage expansion
+### Test coverage expansion
 
 - [x] Added 63 tests across 9 new test files for previously untested services:
       `manager-failure.ts`, `manager-helpers.ts`, `retention-service.ts`, `provider/health.ts`,
@@ -139,7 +147,7 @@ Each split leaves a thin re-export so all call sites work unchanged.
 - [ ] Add tests for remaining untested gateway services (refactor-next.md Appendix A).
 - [ ] Add integration test suite for agent → tool → LLM → response pipeline.
 
-#### Agentic Capability Layer hardening
+### Agentic Capability Layer hardening
 
 - [x] Added 28 integration tests for AgenticGatewayExecutor dispatch covering:
       claw (persistent, single-shot, chat agent fallback, system prompt, error propagation),
