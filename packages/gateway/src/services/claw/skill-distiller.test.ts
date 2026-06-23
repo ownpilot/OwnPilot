@@ -129,17 +129,15 @@ describe('findLearnedSkills', () => {
 
   it('filters out skills without the LEARNED_SKILL_TAG', () => {
     const svc = {
-      getEnabledMetadata: vi
-        .fn()
-        .mockReturnValue([
-          {
-            id: 's1',
-            name: 'Deploy webapp',
-            description: 'How to deploy',
-            keywords: [],
-            instructions: '',
-          },
-        ]),
+      getEnabledMetadata: vi.fn().mockReturnValue([
+        {
+          id: 's1',
+          name: 'Deploy webapp',
+          description: 'How to deploy',
+          keywords: [],
+          instructions: '',
+        },
+      ]),
       getById: vi.fn(),
     };
     const result = findLearnedSkills(svc, 'deploy webapp');
@@ -171,16 +169,14 @@ describe('findLearnedSkills', () => {
           instructions: 'Step 1',
         },
       ]),
-      getById: vi
-        .fn()
-        .mockImplementation((id: string) => ({
-          id,
-          name: '',
-          description: '',
-          keywords: [],
-          instructions: '',
-          manifest: { instructions: 'Step 1' },
-        })),
+      getById: vi.fn().mockImplementation((id: string) => ({
+        id,
+        name: '',
+        description: '',
+        keywords: [],
+        instructions: '',
+        manifest: { instructions: 'Step 1' },
+      })),
     };
     const result = findLearnedSkills(svc, 'deploy to production');
     expect(result.length).toBeGreaterThan(0);
@@ -206,27 +202,23 @@ describe('findLearnedSkills', () => {
   it('excludes short tokens and deduplicates', () => {
     // 'ab' (len=2) is filtered out, 'xyz' (len=3) remains and appears in name
     const svc = {
-      getEnabledMetadata: vi
-        .fn()
-        .mockReturnValue([
-          {
-            id: 's1',
-            name: 'ab xyz ef',
-            description: 'gh ij',
-            keywords: [LEARNED_SKILL_TAG],
-            instructions: 'Step 1',
-          },
-        ]),
-      getById: vi
-        .fn()
-        .mockReturnValue({
+      getEnabledMetadata: vi.fn().mockReturnValue([
+        {
           id: 's1',
-          name: '',
-          description: '',
-          keywords: [],
-          instructions: '',
-          manifest: { instructions: '' },
-        }),
+          name: 'ab xyz ef',
+          description: 'gh ij',
+          keywords: [LEARNED_SKILL_TAG],
+          instructions: 'Step 1',
+        },
+      ]),
+      getById: vi.fn().mockReturnValue({
+        id: 's1',
+        name: '',
+        description: '',
+        keywords: [],
+        instructions: '',
+        manifest: { instructions: '' },
+      }),
     };
     const result = findLearnedSkills(svc, 'ab ab xyz');
     expect(result).toHaveLength(1);
