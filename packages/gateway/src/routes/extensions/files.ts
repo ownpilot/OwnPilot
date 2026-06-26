@@ -20,8 +20,7 @@ import {
 import { join, dirname, basename } from 'node:path';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getExtensionService } from '@ownpilot/core/services';
-import type { ExtensionService } from '../../services/extension/service.js';
+import { getGatewayExtensionService } from '../../services/extension/accessor.js';
 import { apiResponse, apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { isWithinDirectory } from '../../utils/file-safety.js';
 import { validateBody } from '../../middleware/validation.js';
@@ -32,7 +31,7 @@ const writeFileSchema = z.object({
 
 export const fileRoutes = new Hono();
 
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
 
 /** Resolve the skill directory from a package's sourcePath */
 function getSkillDir(sourcePath: string | undefined): string | null {

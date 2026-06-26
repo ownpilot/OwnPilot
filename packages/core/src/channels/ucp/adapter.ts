@@ -122,6 +122,9 @@ export abstract class UCPChannelAdapter implements ChannelPluginAPI {
   /** Logout and clear session (optional) */
   logout?(): Promise<void>;
 
+  /** Return basic bot/account info (optional) */
+  getBotInfo?(): { username?: string; firstName?: string } | null;
+
   // --------------------------------------------------------------------------
   // Framework methods (don't override)
   // --------------------------------------------------------------------------

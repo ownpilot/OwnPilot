@@ -344,10 +344,7 @@ export function resolveMaxOutput(provider: string, model: string): number {
   if (modelConfig?.maxOutput) return modelConfig.maxOutput;
 
   const pricing = getModelPricing(provider as AIProvider, model);
-  // The pricing record uses `maxOutput` in some variants; fall back to 4K.
-  type PricingMaybeMaxOutput = { maxOutput?: number };
-  const maybe = pricing as unknown as PricingMaybeMaxOutput;
-  return maybe?.maxOutput ?? 4096;
+  return pricing?.maxOutput ?? 4096;
 }
 
 /**

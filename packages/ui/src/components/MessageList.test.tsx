@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { MessageList } from './MessageList';
+import { MessageList, resolveAttachmentImageSrc } from './MessageList';
 
 describe('MessageList', () => {
   it('renders metadata-only user image attachments as chips', () => {
@@ -57,6 +57,17 @@ describe('MessageList', () => {
     expect(html).toContain('diagram.png');
   });
 
+  it('blocks unsafe inline image attachment data', () => {
+    expect(
+      resolveAttachmentImageSrc({
+        type: 'image',
+        mimeType: 'image/svg+xml',
+        filename: 'xss.svg',
+        data: 'PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+',
+      })
+    ).toBeUndefined();
+  });
+
   it('resolves saved image attachment paths through the file workspace route', () => {
     const html = renderToStaticMarkup(
       <MessageList
@@ -83,5 +94,28 @@ describe('MessageList', () => {
     expect(html).toContain('<img');
     expect(html).toContain('/api/v1/file-workspaces/ws-1/file/outputs/chart.png?raw=true');
     expect(html).not.toContain('/api/v1/files/workspace');
+  });
+
+  it('blocks traversal in saved image attachment paths', () => {
+    expect(
+      resolveAttachmentImageSrc(
+        {
+          type: 'image',
+          mimeType: 'image/png',
+          filename: 'secret.png',
+          path: '../../../secret.png',
+        },
+        'ws-1'
+      )
+    ).toBeUndefined();
+
+    expect(
+      resolveAttachmentImageSrc({
+        type: 'image',
+        mimeType: 'image/png',
+        filename: 'secret.png',
+        path: '..\\..\\secret.png',
+      })
+    ).toBeUndefined();
   });
 });

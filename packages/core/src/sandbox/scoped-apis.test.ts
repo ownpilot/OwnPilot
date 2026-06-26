@@ -16,10 +16,10 @@ vi.mock('fs/promises', () => ({
   realpath: vi.fn(),
 }));
 
-// Note: mocking child_process.exec is required here because scoped-apis.ts
+// Note: mocking child_process.execFile is required here because scoped-apis.ts
 // uses it internally — this test validates the security wrapper around it.
 vi.mock('child_process', () => ({
-  exec: vi.fn(),
+  execFile: vi.fn(),
 }));
 
 vi.mock('../security/index.js', () => ({
@@ -31,7 +31,7 @@ vi.mock('../security/index.js', () => ({
 // =============================================================================
 
 import * as fsPromises from 'fs/promises';
-import { exec as execRaw } from 'child_process';
+import { execFile as execFileRaw } from 'child_process';
 import { isCommandBlocked } from '../security/index.js';
 import { createScopedFs, createScopedExec } from './scoped-apis.js';
 
@@ -47,7 +47,7 @@ const mockMkdir = fsPromises.mkdir as unknown as Mock;
 const mockUnlink = fsPromises.unlink as unknown as Mock;
 const mockAccess = fsPromises.access as unknown as Mock;
 const mockRealpath = fsPromises.realpath as unknown as Mock;
-const mockExec = execRaw as unknown as Mock;
+const mockExecFile = execFileRaw as unknown as Mock;
 const mockIsCommandBlocked = isCommandBlocked as unknown as Mock;
 
 // =============================================================================
@@ -64,8 +64,8 @@ function makeStdinEnd() {
 
 function setupExecSuccess(stdout = '', stderr = '') {
   const stdin = makeStdinEnd();
-  mockExec.mockImplementation(
-    (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+  mockExecFile.mockImplementation(
+    (_file: string, _args: string[], _opts: unknown, callback: (...args: unknown[]) => void) => {
       callback(null, stdout, stderr);
       return { stdin };
     }
@@ -75,8 +75,8 @@ function setupExecSuccess(stdout = '', stderr = '') {
 
 function setupExecError(error: { killed?: boolean; code?: number }, stdout = '', stderr = '') {
   const stdin = makeStdinEnd();
-  mockExec.mockImplementation(
-    (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+  mockExecFile.mockImplementation(
+    (_file: string, _args: string[], _opts: unknown, callback: (...args: unknown[]) => void) => {
       callback(error, stdout, stderr);
       return { stdin };
     }
@@ -835,8 +835,13 @@ describe('scoped-apis', () => {
       it('returns empty strings for null stdout/stderr', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback(null, null, null);
             return { stdin };
           }
@@ -851,8 +856,13 @@ describe('scoped-apis', () => {
       it('returns empty strings for undefined stdout/stderr', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback(null, undefined, undefined);
             return { stdin };
           }
@@ -899,8 +909,13 @@ describe('scoped-apis', () => {
       it('handles null stdout/stderr on error', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback({ killed: false, code: 2 }, null, null);
             return { stdin };
           }
@@ -918,8 +933,13 @@ describe('scoped-apis', () => {
       it('rejects with timeout error when command is killed', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback({ killed: true }, '', '');
             return { stdin };
           }
@@ -936,7 +956,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('cmd');
 
-        const opts = mockExec.mock.calls[0]![1] as { timeout: number };
+        const opts = mockExecFile.mock.calls[0]![2] as { timeout: number };
         expect(opts.timeout).toBe(30000);
       });
 
@@ -946,15 +966,20 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('cmd', 5000);
 
-        const opts = mockExec.mock.calls[0]![1] as { timeout: number };
+        const opts = mockExecFile.mock.calls[0]![2] as { timeout: number };
         expect(opts.timeout).toBe(5000);
       });
 
       it('includes custom timeout in error message', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         const stdin = makeStdinEnd();
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback({ killed: true }, '', '');
             return { stdin };
           }
@@ -971,7 +996,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('cmd');
 
-        const opts = mockExec.mock.calls[0]![1] as { maxBuffer: number };
+        const opts = mockExecFile.mock.calls[0]![2] as { maxBuffer: number };
         expect(opts.maxBuffer).toBe(MAX_OUTPUT_SIZE);
       });
     });
@@ -984,7 +1009,7 @@ describe('scoped-apis', () => {
         await expect(scopedExec.exec('rm -rf /')).rejects.toThrow(
           'Command blocked for security reasons.'
         );
-        expect(mockExec).not.toHaveBeenCalled();
+        expect(mockExecFile).not.toHaveBeenCalled();
       });
 
       it('calls isCommandBlocked with the command string', async () => {
@@ -1007,6 +1032,76 @@ describe('scoped-apis', () => {
         expect(mockIsCommandBlocked).toHaveBeenCalledWith('ls -la');
       });
 
+      it.each([
+        ['pipe', 'echo safe | whoami'],
+        ['command chaining with &&', 'echo safe && whoami'],
+        ['command fallback with ||', 'echo safe || whoami'],
+        ['semicolon chaining', 'echo safe; whoami'],
+        ['subshell expansion', 'echo $(whoami)'],
+        ['backtick expansion', 'echo `whoami`'],
+        ['stdout redirection', 'echo safe > out.txt'],
+        ['stdin redirection', 'cat < input.txt'],
+        ['line break chaining', 'echo safe\nwhoami'],
+        ['carriage-return chaining', 'echo safe\rwhoami'],
+      ])('blocks scoped shell metacharacter injection: %s', async (_caseName, command) => {
+        const scopedExec = createScopedExec(WORKSPACE);
+        mockIsCommandBlocked.mockReturnValue(false);
+
+        await expect(scopedExec.exec(command)).rejects.toThrow('shell metacharacters');
+        expect(mockIsCommandBlocked).toHaveBeenCalledWith(command);
+        expect(mockExecFile).not.toHaveBeenCalled();
+      });
+
+      it('passes a URL with an ampersand as a single literal arg (no shell)', async () => {
+        const scopedExec = createScopedExec(WORKSPACE);
+        mockIsCommandBlocked.mockReturnValue(false);
+        setupExecSuccess('ok');
+
+        const command = 'curl "http://example.com/api?foo=bar&baz=qux"';
+        const result = await scopedExec.exec(command);
+
+        expect(result.exitCode).toBe(0);
+        // The quotes are consumed by tokenization and the `&` rides inside the
+        // single URL argument — execFile never invokes a shell, so it can't act
+        // as a command separator.
+        expect(mockExecFile).toHaveBeenCalledWith(
+          'curl',
+          ['http://example.com/api?foo=bar&baz=qux'],
+          expect.objectContaining({ cwd: WORKSPACE }),
+          expect.any(Function)
+        );
+      });
+
+      it('neutralizes a bare `&` command separator (no second process spawned)', async () => {
+        const scopedExec = createScopedExec(WORKSPACE);
+        mockIsCommandBlocked.mockReturnValue(false);
+        setupExecSuccess('ok');
+
+        // A bare `&` passes the metachar blocklist, but with execFile it is just
+        // a literal argument to the first program — `whoami` is never executed.
+        await scopedExec.exec('echo hi & whoami');
+
+        expect(mockExecFile).toHaveBeenCalledTimes(1);
+        expect(mockExecFile.mock.calls[0]![0]).toBe('echo');
+        expect(mockExecFile.mock.calls[0]![1]).toEqual(['hi', '&', 'whoami']);
+      });
+
+      it('throws on an empty command', async () => {
+        const scopedExec = createScopedExec(WORKSPACE);
+        mockIsCommandBlocked.mockReturnValue(false);
+
+        await expect(scopedExec.exec('   ')).rejects.toThrow('Command is empty.');
+        expect(mockExecFile).not.toHaveBeenCalled();
+      });
+
+      it('throws on unbalanced quotes', async () => {
+        const scopedExec = createScopedExec(WORKSPACE);
+        mockIsCommandBlocked.mockReturnValue(false);
+
+        await expect(scopedExec.exec('echo "unterminated')).rejects.toThrow('unbalanced quotes');
+        expect(mockExecFile).not.toHaveBeenCalled();
+      });
+
       it('checks blocking before spawning process', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         mockIsCommandBlocked.mockReturnValue(true);
@@ -1018,7 +1113,7 @@ describe('scoped-apis', () => {
         }
 
         // exec should never be called if command is blocked
-        expect(mockExec).not.toHaveBeenCalled();
+        expect(mockExecFile).not.toHaveBeenCalled();
       });
     });
 
@@ -1105,7 +1200,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('cmd');
 
-        const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+        const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
         const passedEnvKeys = Object.keys(opts.env);
 
         // All passed keys must be in the safe list
@@ -1156,7 +1251,7 @@ describe('scoped-apis', () => {
           setupExecSuccess('ok');
           await scopedExec.exec('cmd');
 
-          const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+          const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
           expect(opts.env.API_KEY).toBeUndefined();
           expect(opts.env.OPENAI_API_KEY).toBeUndefined();
           expect(opts.env.DATABASE_URL).toBeUndefined();
@@ -1180,7 +1275,7 @@ describe('scoped-apis', () => {
           setupExecSuccess('ok');
           await scopedExec.exec('cmd');
 
-          const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+          const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
           expect(opts.env.SECRET_TOKEN).toBeUndefined();
         } finally {
           if (originalSecret === undefined) delete process.env.SECRET_TOKEN;
@@ -1194,7 +1289,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('cmd');
 
-        const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+        const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
         // PATH should be present if it's in process.env (which it almost always is)
         if (process.env.PATH) {
           expect(opts.env.PATH).toBe(process.env.PATH);
@@ -1210,7 +1305,7 @@ describe('scoped-apis', () => {
           setupExecSuccess('ok');
           await scopedExec.exec('cmd');
 
-          const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+          const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
           expect(opts.env.NODE_ENV).toBe('test');
         } finally {
           if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
@@ -1228,7 +1323,7 @@ describe('scoped-apis', () => {
           setupExecSuccess('ok');
           await scopedExec.exec('cmd');
 
-          const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+          const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
           expect(opts.env.TMPDIR).toBeUndefined();
         } finally {
           if (originalTmpdir !== undefined) process.env.TMPDIR = originalTmpdir;
@@ -1244,7 +1339,7 @@ describe('scoped-apis', () => {
           setupExecSuccess('ok');
           await scopedExec.exec('cmd');
 
-          const opts = mockExec.mock.calls[0]![1] as { env: Record<string, string> };
+          const opts = mockExecFile.mock.calls[0]![2] as { env: Record<string, string> };
           expect(opts.env.HOME).toBe('/custom/home/path');
         } finally {
           if (originalHome === undefined) delete process.env.HOME;
@@ -1260,7 +1355,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('pwd');
 
-        const opts = mockExec.mock.calls[0]![1] as { cwd: string };
+        const opts = mockExecFile.mock.calls[0]![2] as { cwd: string };
         expect(opts.cwd).toBe(WORKSPACE);
       });
 
@@ -1271,7 +1366,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('ls');
 
-        const opts = mockExec.mock.calls[0]![1] as { cwd: string };
+        const opts = mockExecFile.mock.calls[0]![2] as { cwd: string };
         expect(opts.cwd).toBe(customWorkspace);
       });
     });
@@ -1288,8 +1383,13 @@ describe('scoped-apis', () => {
 
       it('handles missing stdin gracefully (optional chaining)', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback(null, 'output', '');
             return { stdin: null };
           }
@@ -1302,8 +1402,13 @@ describe('scoped-apis', () => {
 
       it('handles undefined stdin gracefully', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
-        mockExec.mockImplementation(
-          (_cmd: string, _opts: unknown, callback: (...args: unknown[]) => void) => {
+        mockExecFile.mockImplementation(
+          (
+            _file: string,
+            _args: string[],
+            _opts: unknown,
+            callback: (...args: unknown[]) => void
+          ) => {
             callback(null, 'output', '');
             return { stdin: undefined };
           }
@@ -1315,13 +1420,14 @@ describe('scoped-apis', () => {
     });
 
     describe('exec options', () => {
-      it('passes command as first argument', async () => {
+      it('passes the tokenized program and args (execFile, no shell)', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         setupExecSuccess('ok');
 
         await scopedExec.exec('node --version');
 
-        expect(mockExec.mock.calls[0]![0]).toBe('node --version');
+        expect(mockExecFile.mock.calls[0]![0]).toBe('node');
+        expect(mockExecFile.mock.calls[0]![1]).toEqual(['--version']);
       });
 
       it('passes all expected options together', async () => {
@@ -1330,7 +1436,7 @@ describe('scoped-apis', () => {
 
         await scopedExec.exec('test-cmd', 15000);
 
-        const opts = mockExec.mock.calls[0]![1] as Record<string, unknown>;
+        const opts = mockExecFile.mock.calls[0]![2] as Record<string, unknown>;
         expect(opts.cwd).toBe(WORKSPACE);
         expect(opts.timeout).toBe(15000);
         expect(opts.maxBuffer).toBe(MAX_OUTPUT_SIZE);
@@ -1338,13 +1444,13 @@ describe('scoped-apis', () => {
         expect(typeof opts.env).toBe('object');
       });
 
-      it('passes callback as third argument', async () => {
+      it('passes callback as the fourth argument (execFile signature)', async () => {
         const scopedExec = createScopedExec(WORKSPACE);
         setupExecSuccess('ok');
 
         await scopedExec.exec('cmd');
 
-        expect(typeof mockExec.mock.calls[0]![2]).toBe('function');
+        expect(typeof mockExecFile.mock.calls[0]![3]).toBe('function');
       });
     });
 
@@ -1362,14 +1468,14 @@ describe('scoped-apis', () => {
 
         setupExecSuccess('ok');
         await exec1.exec('cmd1');
-        const opts1 = mockExec.mock.calls[0]![1] as { cwd: string };
+        const opts1 = mockExecFile.mock.calls[0]![2] as { cwd: string };
         expect(opts1.cwd).toBe(ws1);
 
         vi.clearAllMocks();
         mockIsCommandBlocked.mockReturnValue(false);
         setupExecSuccess('ok');
         await exec2.exec('cmd2');
-        const opts2 = mockExec.mock.calls[0]![1] as { cwd: string };
+        const opts2 = mockExecFile.mock.calls[0]![2] as { cwd: string };
         expect(opts2.cwd).toBe(ws2);
       });
     });

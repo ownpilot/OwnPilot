@@ -179,6 +179,30 @@ describe('Triggers Routes', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.data.trigger.id).toBe('t1');
+      expect(mockTriggerService.createTrigger).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          action: { type: 'notification', payload: { message: 'Time to check!' } },
+        })
+      );
+    });
+
+    it('rejects unsupported action types before create', async () => {
+      const res = await app.request('/triggers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Bad Action',
+          type: 'event',
+          config: { event: 'message.received' },
+          action: { type: 'run_shell', payload: {} },
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('INVALID_INPUT');
+      expect(mockTriggerService.createTrigger).not.toHaveBeenCalled();
     });
 
     it('rejects schedule trigger without cron', async () => {

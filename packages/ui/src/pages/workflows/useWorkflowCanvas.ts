@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react';
 
 import { formatToolName } from '../../utils/formatters';
-import { autoArrangeNodes } from '../../components/workflows';
+import { autoArrangeNodes } from '../../components/workflows/auto-arrange';
 import { getEdgeLabelProps } from './shared';
 
 interface WorkflowCanvasParams {

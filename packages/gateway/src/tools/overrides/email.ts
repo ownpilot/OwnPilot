@@ -147,6 +147,70 @@ interface ImapConfig {
   tls: boolean;
 }
 
+interface ImapMailboxLock {
+  release(): void;
+}
+
+interface ImapEnvelope {
+  from?: EmailAddress | EmailAddress[];
+  to?: EmailAddress | EmailAddress[];
+  cc?: EmailAddress | EmailAddress[];
+  subject?: string;
+  date?: Date;
+  messageId?: string;
+  inReplyTo?: string;
+}
+
+interface ImapFetchMessage {
+  uid: number;
+  envelope?: ImapEnvelope;
+  flags?: Set<string>;
+}
+
+interface ImapDownload {
+  content: AsyncIterable<Buffer | Uint8Array | string>;
+}
+
+interface ImapSearchCriteria {
+  unseen?: boolean;
+  from?: string;
+  subject?: string;
+  since?: Date;
+  before?: Date;
+  text?: string;
+  flagged?: boolean;
+  [key: string]: unknown;
+}
+
+interface ImapClientLike {
+  mailbox?: { exists?: number };
+  connect(): Promise<void>;
+  getMailboxLock(folder: string): Promise<ImapMailboxLock>;
+  logout(): Promise<void>;
+  search(criteria: ImapSearchCriteria, options: { uid: boolean }): Promise<number[]>;
+  fetch(range: string, query: Record<string, boolean>): AsyncIterable<ImapFetchMessage>;
+  download(range: string, part?: unknown, options?: { uid: boolean }): Promise<ImapDownload>;
+  messageFlagsAdd(range: string, flags: string[], options: { uid: boolean }): Promise<unknown>;
+  messageDelete(range: string, options: { uid: boolean }): Promise<unknown>;
+  messageMove(range: string, destination: string, options: { uid: boolean }): Promise<unknown>;
+}
+
+interface OutgoingEmailMessage {
+  from: string;
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  cc?: string;
+  bcc?: string;
+  replyTo?: string;
+  priority?: 'high' | 'low';
+  headers?: Record<string, string>;
+  attachments?: Array<{ filename: string; path: string }>;
+  inReplyTo?: string;
+  references?: string;
+}
+
 function getSmtpConfig(): SmtpConfig | null {
   const config = getConfigCenter();
   const host = config.getFieldValue('smtp', 'host') as string | undefined;
@@ -183,8 +247,10 @@ const IMAP_NOT_CONFIGURED =
 // IMAP Client Helper
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function withImapClient<T>(folder: string, fn: (client: any) => Promise<T>): Promise<T> {
+async function withImapClient<T>(
+  folder: string,
+  fn: (client: ImapClientLike) => Promise<T>
+): Promise<T> {
   const config = getImapConfig();
   if (!config) throw new Error(IMAP_NOT_CONFIGURED);
 
@@ -195,7 +261,7 @@ async function withImapClient<T>(folder: string, fn: (client: any) => Promise<T>
     secure: config.tls,
     auth: { user: config.user, pass: config.pass },
     logger: false,
-  });
+  }) as ImapClientLike;
 
   await client.connect();
   const lock = await client.getMailboxLock(folder);
@@ -234,6 +300,7 @@ function formatAddress(addr: unknown): string {
 }
 
 function formatAddressList(addr: string[] | undefined): string[];
+function formatAddressList(addr: EmailAddress | EmailAddress[] | undefined): string[];
 function formatAddressList(addr: unknown): string[] {
   if (!addr) return [];
   if (!Array.isArray(addr)) {
@@ -349,8 +416,7 @@ const sendEmailOverride: ToolExecutor = async (params, _context): Promise<ToolEx
 
     // Build message
     const sanitize = (v: string) => v.replace(/[\r\n]/g, '');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const message: Record<string, any> = {
+    const message: OutgoingEmailMessage = {
       from: smtpConfig.from,
       to: to.join(', '),
       subject: sanitize(subject),
@@ -424,8 +490,7 @@ const listEmailsOverride: ToolExecutor = async (params, _context): Promise<ToolE
   try {
     return await withImapClient(folder, async (client) => {
       // Build search criteria
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const criteria: Record<string, any> = {};
+      const criteria: ImapSearchCriteria = {};
       if (unreadOnly) criteria.unseen = true;
       if (fromFilter) criteria.from = fromFilter;
       if (subjectFilter) criteria.subject = subjectFilter;
@@ -691,14 +756,13 @@ const replyEmailOverride: ToolExecutor = async (params, _context): Promise<ToolE
       ? original.subject
       : `Re: ${original.subject ?? ''}`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const message: Record<string, any> = {
+    const message: OutgoingEmailMessage = {
       from: smtpConfig.from,
       to: allRecipients.join(', '),
       subject: replySubject.replace(/[\r\n]/g, ''),
       [isHtml ? 'html' : 'text']: body,
-      inReplyTo: original.messageId,
-      references: original.messageId,
+      inReplyTo: original.messageId ?? undefined,
+      references: original.messageId ?? undefined,
     };
 
     // Attachments

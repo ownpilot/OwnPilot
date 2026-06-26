@@ -11,8 +11,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { TEMPLATES } from './workflow-templates';
-import { convertDefinitionToReactFlow } from './WorkflowCopilotPanel';
-import type { WorkflowDefinition } from './workflowDefinition';
+import { convertDefinitionToReactFlow, type WorkflowDefinition } from './workflowDefinition';
 import { nodeTypes } from '../../pages/workflows/shared';
 
 const REGISTERED_TYPES = new Set(Object.keys(nodeTypes));

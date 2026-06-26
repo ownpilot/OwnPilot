@@ -278,11 +278,7 @@ export function DelayConfigPanel({
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
 
-            <OutputAliasField
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Delete button */}

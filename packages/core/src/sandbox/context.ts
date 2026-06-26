@@ -205,8 +205,7 @@ export function buildTimers(allowed: boolean, onTimeout: () => void) {
  *    leak back to host Function.prototype via the stub's own prototype chain)
  *  - throws on call so dynamic-code attempts fail loudly.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let SANDBOX_FUNCTION_STUB: any;
+let SANDBOX_FUNCTION_STUB: (...args: unknown[]) => never;
 {
   const stubTarget = function FunctionConstructorDisabled(): never {
     throw new Error('Function constructor is disabled in the sandbox');
@@ -283,8 +282,7 @@ function toRealArg(a: unknown): unknown {
     : unwrap(a);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const membraneHandler: ProxyHandler<any> = {
+const membraneHandler: ProxyHandler<object> = {
   get(target, prop) {
     if (prop === MEMBRANE_TARGET) return target;
     if (prop === 'constructor') return SANDBOX_FUNCTION_STUB;
@@ -304,10 +302,14 @@ const membraneHandler: ProxyHandler<any> = {
     return false;
   },
   apply(target, thisArg, args) {
-    return harden(Reflect.apply(target, unwrap(thisArg), args.map(toRealArg)));
+    return harden(
+      Reflect.apply(target as (...args: unknown[]) => unknown, unwrap(thisArg), args.map(toRealArg))
+    );
   },
   construct(target, args) {
-    return harden(Reflect.construct(target, args.map(toRealArg)));
+    return harden(
+      Reflect.construct(target as new (...args: unknown[]) => object, args.map(toRealArg))
+    );
   },
   has(target, prop) {
     return prop === MEMBRANE_TARGET ? false : Reflect.has(target, prop);
@@ -346,7 +348,7 @@ function harden<T>(value: T): T {
   const t = typeof value;
   if (t !== 'object' && t !== 'function') return value;
   if ((value as unknown) === SANDBOX_FUNCTION_STUB) return value;
-  const obj = value as unknown as object;
+  const obj = value as object;
   const cached = membraneCache.get(obj);
   if (cached) return cached as T;
   // Already a membrane proxy? (its get trap answers MEMBRANE_TARGET)

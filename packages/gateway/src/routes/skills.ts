@@ -12,7 +12,7 @@ import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, getIntParam } from './helpers.js';
 import { getErrorMessage } from '@ownpilot/core/services';
-import { getExtensionService } from '@ownpilot/core/services';
+import { getGatewayExtensionService } from '../services/extension/accessor.js';
 import { getNpmInstaller } from '../services/skill/npm-installer.js';
 import {
   getAllPermissions,
@@ -46,9 +46,7 @@ async function uninstallSkill(c: Context) {
     );
   }
 
-  const service = getExtensionService() as unknown as {
-    uninstall: (id: string, userId: string) => Promise<boolean>;
-  };
+  const service = getGatewayExtensionService();
 
   const deleted = await service.uninstall(id, userId);
   if (!deleted) {
@@ -109,9 +107,7 @@ skillsRoutes.post('/install-npm', async (c) => {
     const { packageName } = body;
 
     const installer = getNpmInstaller();
-    const service = getExtensionService() as unknown as {
-      install: (path: string, userId: string) => Promise<{ id: string }>;
-    };
+    const service = getGatewayExtensionService();
 
     const result = await installer.install(packageName, userId, service);
 

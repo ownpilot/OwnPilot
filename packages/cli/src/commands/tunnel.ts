@@ -7,6 +7,7 @@
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { replaceShutdownSignalHandlers } from './shutdown-signals.js';
 
 /**
  * Validate a port argument from the CLI. Must be a finite integer in the
@@ -83,6 +84,8 @@ interface TunnelState {
 }
 
 let activeTunnel: TunnelState | null = null;
+let resolveTunnelWait: (() => void) | null = null;
+let unregisterTunnelSignals: (() => void) | null = null;
 
 // ============================================================================
 // Public Commands
@@ -137,16 +140,7 @@ export async function tunnelStartNgrok(options: { token?: string; port?: string 
 
     console.log('\nTunnel is running. Press Ctrl+C to stop.');
 
-    // Keep process alive
-    await new Promise<void>((resolve) => {
-      const shutdown = async () => {
-        console.log('\nStopping tunnel...');
-        await doTunnelStop();
-        resolve();
-      };
-      process.once('SIGINT', () => void shutdown());
-      process.once('SIGTERM', () => void shutdown());
-    });
+    await waitForTunnelShutdown();
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`ngrok tunnel failed: ${msg}`);
@@ -234,16 +228,7 @@ export async function tunnelStartCloudflare(options: {
 
     console.log('\nTunnel is running. Press Ctrl+C to stop.');
 
-    // Keep process alive
-    await new Promise<void>((resolve) => {
-      const shutdown = async () => {
-        console.log('\nStopping tunnel...');
-        await doTunnelStop();
-        resolve();
-      };
-      process.once('SIGINT', () => void shutdown());
-      process.once('SIGTERM', () => void shutdown());
-    });
+    await waitForTunnelShutdown();
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     if (msg.includes('ENOENT') || msg.includes('spawn cloudflared')) {
@@ -291,16 +276,34 @@ async function doTunnelStop(): Promise<void> {
   if (!tunnel) return;
   activeTunnel = null; // Clear immediately to prevent re-entrant calls
 
-  if (tunnel.ngrokListener) {
-    try {
-      await tunnel.ngrokListener.close();
-    } catch {
-      /* best effort */
+  try {
+    if (tunnel.ngrokListener) {
+      try {
+        await tunnel.ngrokListener.close();
+      } catch {
+        /* best effort */
+      }
     }
+    if (tunnel.process) {
+      tunnel.process.kill('SIGTERM');
+    }
+  } finally {
+    unregisterTunnelSignals?.();
+    unregisterTunnelSignals = null;
+    const resolve = resolveTunnelWait;
+    resolveTunnelWait = null;
+    resolve?.();
   }
-  if (tunnel.process) {
-    tunnel.process.kill('SIGTERM');
-  }
+}
+
+async function waitForTunnelShutdown(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    resolveTunnelWait = resolve;
+    unregisterTunnelSignals = replaceShutdownSignalHandlers('tunnel', async () => {
+      console.log('\nStopping tunnel...');
+      await doTunnelStop();
+    });
+  });
 }
 
 // Auth-header builder lives in `./gateway-client.ts` so every CLI subcommand

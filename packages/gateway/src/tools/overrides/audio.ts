@@ -484,7 +484,7 @@ export async function callLocalPiperTTS(
 
   const outputPath = path.join(
     os.tmpdir(),
-    // randomBytes (CSPRNG) for the temp-file suffix — Math.random() is a
+    // randomBytes (CSPRNG) for the temp-file suffix — non-cryptographic PRNGs are
     // non-cryptographic PRNG and the suffix is part of a filesystem path
     // an attacker could try to predict.
     `ownpilot_piper_${Date.now()}_${randomBytes(8).toString('hex')}.wav`

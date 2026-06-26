@@ -23,6 +23,56 @@ import { getLog } from '../log.js';
 
 const log = getLog('AgentSkillsParser');
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function requiredFrontmatterString(
+  frontmatter: Record<string, unknown>,
+  key: 'name' | 'description'
+): string {
+  const value = frontmatter[key];
+  if (typeof value !== 'string') {
+    throw new Error(`Invalid SKILL.md frontmatter: missing "${key}"`);
+  }
+  return value;
+}
+
+function frontmatterMetadata(value: unknown): Record<string, string> | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const entries = Object.entries(value)
+    .filter(([key]) => key.length > 0)
+    .map(([key, metadataValue]) => [key, String(metadataValue)] as const);
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function validatedFrontmatter(frontmatter: Record<string, unknown>): AgentSkillsFrontmatter {
+  const fm: AgentSkillsFrontmatter = {
+    name: requiredFrontmatterString(frontmatter, 'name'),
+    description: requiredFrontmatterString(frontmatter, 'description'),
+  };
+
+  const license = optionalString(frontmatter.license);
+  if (license) fm.license = license;
+
+  const compatibility = optionalString(frontmatter.compatibility);
+  if (compatibility) fm.compatibility = compatibility;
+
+  const metadata = frontmatterMetadata(frontmatter.metadata);
+  if (metadata) fm.metadata = metadata;
+
+  const allowedTools = optionalString(frontmatter['allowed-tools']);
+  if (allowedTools) fm['allowed-tools'] = allowedTools;
+
+  return fm;
+}
+
 // =============================================================================
 // YAML frontmatter parser (lightweight, no dependency)
 // =============================================================================
@@ -244,7 +294,7 @@ export function parseAgentSkillsMd(content: string, skillDir?: string): Extensio
     throw new Error(`Invalid SKILL.md frontmatter: ${validation.errors.join('; ')}`);
   }
 
-  const fm = frontmatter as unknown as AgentSkillsFrontmatter;
+  const fm = validatedFrontmatter(frontmatter);
   const metadata = fm.metadata ?? {};
 
   // Scan directory for scripts/references/assets

@@ -44,6 +44,44 @@ function verifyTimestampFreshness(timestamp: string | undefined): string | null 
 
 export const webhookRoutes = new Hono();
 
+interface SlackEventBody extends Record<string, unknown> {
+  type?: string;
+  subtype?: string;
+}
+
+interface SlackWebhookBody {
+  type?: string;
+  challenge?: string;
+  event?: SlackEventBody;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseSlackWebhookBody(rawBody: string): SlackWebhookBody | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawBody);
+  } catch {
+    return null;
+  }
+  if (!isRecord(parsed)) return null;
+
+  let event: SlackEventBody | undefined;
+  if (isRecord(parsed.event)) {
+    event = Object.fromEntries(Object.entries(parsed.event));
+    if (event.type !== undefined && typeof event.type !== 'string') delete event.type;
+    if (event.subtype !== undefined && typeof event.subtype !== 'string') delete event.subtype;
+  }
+
+  return {
+    type: typeof parsed.type === 'string' ? parsed.type : undefined,
+    challenge: typeof parsed.challenge === 'string' ? parsed.challenge : undefined,
+    event,
+  };
+}
+
 /**
  * POST /webhooks/telegram/:secret
  *
@@ -191,15 +229,8 @@ webhookRoutes.post('/slack/events', async (c) => {
     // happened to round-trip to the same string. Read the raw text first,
     // verify, THEN parse.
     const rawBody = await c.req.text();
-    interface SlackWebhookBody {
-      type?: string;
-      challenge?: string;
-      event?: { type?: string; subtype?: string };
-    }
-    let body: SlackWebhookBody;
-    try {
-      body = JSON.parse(rawBody) as unknown as SlackWebhookBody;
-    } catch {
+    const body = parseSlackWebhookBody(rawBody);
+    if (!body) {
       return apiError(c, { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid JSON body' }, 400);
     }
 

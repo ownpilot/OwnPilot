@@ -500,6 +500,48 @@ describe('Browser Routes', () => {
       expect(json.success).toBe(true);
       expect(json.data.id).toBe('bwf-new');
       expect(json.data.name).toBe('My Flow');
+      expect(mockWorkflowRepo.create).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          steps: [{ type: 'navigate', url: 'https://example.com' }],
+        })
+      );
+    });
+
+    it('normalizes legacy parameter records', async () => {
+      const workflow = makeWorkflow({ id: 'bwf-new', name: 'My Flow' });
+      mockWorkflowRepo.create.mockResolvedValue(workflow);
+
+      const res = await app.request('/browser/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'My Flow',
+          steps: [{ type: 'navigate', url: 'https://example.com' }],
+          parameters: { username: { type: 'string', description: 'Login user' } },
+        }),
+      });
+
+      expect(res.status).toBe(201);
+      expect(mockWorkflowRepo.create).toHaveBeenCalledWith(
+        'default',
+        expect.objectContaining({
+          parameters: [{ name: 'username', type: 'string', description: 'Login user' }],
+        })
+      );
+    });
+
+    it('returns 400 when a workflow step has an unsupported action type', async () => {
+      const res = await app.request('/browser/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'My Flow', steps: [{ type: 'fill_form' }] }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.code).toBe('VALIDATION_ERROR');
+      expect(mockWorkflowRepo.create).not.toHaveBeenCalled();
     });
 
     it('returns 400 when name is missing', async () => {

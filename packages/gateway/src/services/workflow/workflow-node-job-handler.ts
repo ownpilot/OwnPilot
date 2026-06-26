@@ -55,6 +55,44 @@ function isSuccessfulDependency(result: NodeResult | undefined): boolean {
   return result?.status === 'success' || result?.output !== undefined;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseWorkflowNodePayload(payload: Record<string, unknown>): WorkflowNodePayload {
+  const snapshot = payload.workflowSnapshot;
+  if (
+    typeof payload.workflowId !== 'string' ||
+    typeof payload.nodeId !== 'string' ||
+    typeof payload.workflowRunId !== 'string' ||
+    typeof payload.userId !== 'string' ||
+    !isRecord(payload.nodeOutputs) ||
+    !isRecord(snapshot) ||
+    !Array.isArray(snapshot.nodes) ||
+    !Array.isArray(snapshot.edges) ||
+    !isRecord(snapshot.variables)
+  ) {
+    throw new Error('Invalid workflow node job payload');
+  }
+
+  return {
+    workflowId: payload.workflowId,
+    nodeId: payload.nodeId,
+    workflowRunId: payload.workflowRunId,
+    nodeOutputs: payload.nodeOutputs as Record<string, NodeResult>,
+    workflowSnapshot: {
+      nodes: snapshot.nodes as WorkflowNode[],
+      edges: snapshot.edges as WorkflowEdge[],
+      variables: snapshot.variables,
+    },
+    userId: payload.userId,
+    orchestrateDownstream:
+      typeof payload.orchestrateDownstream === 'boolean'
+        ? payload.orchestrateDownstream
+        : undefined,
+  };
+}
+
 /**
  * Register the workflow node job handler with the JobQueueService.
  * Called once at server boot.
@@ -123,7 +161,7 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
     workflowSnapshot,
     userId,
     orchestrateDownstream,
-  } = job.payload as unknown as WorkflowNodePayload;
+  } = parseWorkflowNodePayload(job.payload);
 
   const repo = createWorkflowsRepository(userId);
 
@@ -177,7 +215,7 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
 
   log.debug('Workflow node job completed', { jobId: job.id, nodeId, status: result.status });
 
-  return result as unknown as Record<string, unknown>;
+  return Object.fromEntries(Object.entries(result));
 }
 
 /**

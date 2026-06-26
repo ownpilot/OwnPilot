@@ -2,8 +2,8 @@
  * useWorkflowEditor — main composition hook that imports and orchestrates
  * the focused sub-hooks: history, canvas, nodes, execution, and keyboard.
  *
- * Trust boundary: the 'as unknown as' casts bridge the generic node-data
- * blob to the form-typed config shape. DB row is the source of truth.
+ * Trust boundary: generic node-data blobs are narrowed at the workflow API
+ * boundary. DB row is the source of truth.
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -12,11 +12,8 @@ import { useNodesState, useEdgesState, type Edge, type Node } from '@xyflow/reac
 
 import { workflowsApi, toolsApi } from '../../api';
 import type { Workflow } from '../../api';
-import {
-  convertDefinitionToReactFlow,
-  type ToolNodeType,
-  type WorkflowDefinition,
-} from '../../components/workflows';
+import type { ToolNodeType } from '../../components/workflows/ToolNode';
+import type { WorkflowDefinition } from '../../components/workflows/workflowDefinition';
 import { useToast } from '../../components/ToastProvider';
 import { useDialog } from '../../components/ConfirmDialog';
 import { getEdgeLabelProps } from './shared';
@@ -217,7 +214,7 @@ export function useWorkflowEditor() {
               id: n.id,
               type: n.type,
               position: n.position,
-              data: n.data as unknown as Record<string, unknown>,
+              data: n.data as Record<string, unknown>,
             };
           }
           const td = n.data as import('../../api/types').WorkflowToolNodeData;
@@ -316,7 +313,13 @@ export function useWorkflowEditor() {
       )
         return;
 
-      const def = json as unknown as WorkflowDefinition;
+      const { convertDefinitionToReactFlow, parseWorkflowDefinition } =
+        await import('../../components/workflows/workflowDefinition');
+      const def = parseWorkflowDefinition(json);
+      if (!def) {
+        toast.error('Invalid workflow file');
+        return;
+      }
       const {
         nodes: rfNodes,
         edges: rfEdges,
@@ -340,8 +343,8 @@ export function useWorkflowEditor() {
       setNodes(rfNodes);
       setEdges(styledEdges);
       if (def.name) setWorkflowName(def.name);
-      if ((json as Record<string, unknown>).variables) {
-        setVariables((json as Record<string, unknown>).variables as Record<string, unknown>);
+      if (def.variables) {
+        setVariables(def.variables);
       }
       setHasUnsavedChanges(true);
       setSelectedNodeId(null);
@@ -362,6 +365,8 @@ export function useWorkflowEditor() {
       )
         return;
 
+      const { convertDefinitionToReactFlow } =
+        await import('../../components/workflows/workflowDefinition');
       const {
         nodes: rfNodes,
         edges: rfEdges,

@@ -85,6 +85,27 @@ describe('isRetryableError', () => {
   it('returns true for Error with "Google request failed"', () => {
     expect(isRetryableError(new Error('Google request failed with status 500'))).toBe(true);
   });
+
+  it('returns false for a 4xx whose body contains a status-like number', () => {
+    // Permanent 400 — must NOT retry just because the body mentions "500".
+    expect(
+      isRetryableError(
+        new Error('OpenAI API error: 400 - maximum context length exceeded, reduce to 500 tokens')
+      )
+    ).toBe(false);
+  });
+
+  it('returns false for other permanent 4xx (401/403/404)', () => {
+    expect(isRetryableError(new Error('Anthropic API error: 401 - invalid x-api-key'))).toBe(false);
+    expect(isRetryableError(new Error('OpenAI API error: 403 - forbidden'))).toBe(false);
+    expect(isRetryableError(new Error('Google API error: 404 - model not found'))).toBe(false);
+  });
+
+  it('returns true for a real provider 5xx / 429 in "API error" form', () => {
+    expect(isRetryableError(new Error('OpenAI API error: 500 - internal'))).toBe(true);
+    expect(isRetryableError(new Error('groq API error: 429 - slow down'))).toBe(true);
+    expect(isRetryableError(new Error('Anthropic stream error: 503'))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -409,7 +430,7 @@ describe('withRetry', () => {
 
     it('respects maxDelayMs cap on backoff', async () => {
       const onRetry = vi.fn();
-      const retryableError = new Error('503');
+      const retryableError = new Error('API error: 503');
       const operation = vi.fn().mockResolvedValue(err(retryableError));
 
       const promise = withRetry(operation, {

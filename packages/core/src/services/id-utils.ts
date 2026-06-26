@@ -2,7 +2,7 @@
  * ID Generation Utility
  *
  * Generates unique prefixed IDs using cryptographically secure randomness.
- * Replaces the `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` pattern
+ * Replaces the old timestamp-plus-PRNG suffix pattern
  * found across 23+ locations in the codebase.
  *
  * Plan 15 Step 1 (ID-001): the previous format embedded `Date.now()` in

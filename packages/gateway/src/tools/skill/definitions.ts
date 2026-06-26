@@ -8,8 +8,7 @@
  * `learning-executors.ts`.
  */
 
-// eslint-disable-next-line no-restricted-imports -- Type-only import; @ownpilot/core/tools breaks vitest module graph mocking in tools.test.ts
-import type { ToolDefinition } from '@ownpilot/core/agent';
+import type { ToolDefinition } from '@ownpilot/core/tools';
 
 const searchSkillsTool: ToolDefinition = {
   name: 'skill_search',

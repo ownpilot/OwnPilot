@@ -379,7 +379,7 @@ soulAgentRoutes.get('/:agentId/tools', async (c) => {
     const allowedTools = new Set(soul.autonomy.allowedActions ?? []);
     const blockedTools = new Set(soul.autonomy.blockedActions ?? []);
 
-    const tools = allTools.map(({ definition }) => {
+    const tools = allTools.map(({ definition, providerName }) => {
       const name = definition.name;
       let category = 'core';
       if (name.startsWith('mcp.')) category = 'mcp';
@@ -400,7 +400,7 @@ soulAgentRoutes.get('/:agentId/tools', async (c) => {
         description: definition.description,
         category,
         status,
-        provider: (definition as unknown as { providerName?: string }).providerName,
+        provider: providerName,
       };
     });
 

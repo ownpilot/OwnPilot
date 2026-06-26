@@ -66,7 +66,7 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
  * `null` if the error is unrelated. Callers decide whether to `console.error`
  * + `process.exit(1)` or re-throw.
  */
-export function gatewayUnreachableMessage(error: unknown): string | null {
+function gatewayUnreachableMessage(error: unknown): string | null {
   const msg = error instanceof Error ? error.message : String(error);
   if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
     return (

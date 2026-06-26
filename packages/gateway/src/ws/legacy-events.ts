@@ -19,6 +19,7 @@ import type { ServerEvents } from './types.js';
 type Broadcast = <K extends keyof ServerEvents>(event: K, payload: ServerEvents[K]) => void;
 
 type Unsubscribe = () => void;
+type EventWithData = { data: unknown };
 
 // ---------------------------------------------------------------------------
 // Emitter payload contracts (one cast per handler instead of one per field)
@@ -86,6 +87,10 @@ interface ChannelUserEventData {
   user?: { platformUserId?: string; displayName?: string };
 }
 
+function eventPayload<T>(event: EventWithData): T {
+  return event.data as T;
+}
+
 // ---------------------------------------------------------------------------
 // Forwarding setup
 // ---------------------------------------------------------------------------
@@ -102,7 +107,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   unsubs.push(
     eventSystem.onPattern('trigger.*', (event) => {
       if (event.type === 'trigger.success' || event.type === 'trigger.failed') {
-        const d = event.data as unknown as TriggerExecutionData;
+        const d = eventPayload<TriggerExecutionData>(event);
         broadcast('trigger:executed', {
           triggerId: d.triggerId,
           triggerName: d.triggerName,
@@ -117,7 +122,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   // pulse.* → pulse:activity
   unsubs.push(
     eventSystem.onPattern('pulse.*', (event) => {
-      const d = event.data as unknown as PulseEventData;
+      const d = eventPayload<PulseEventData>(event);
       const stageMap: Record<string, string> = {
         'pulse.started': 'started',
         'pulse.stage': 'stage',
@@ -152,7 +157,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
     eventSystem.onAny('soul.heartbeat.completed', (event) => {
       broadcast(
         'soul:heartbeat:completed',
-        event.data as unknown as ServerEvents['soul:heartbeat:completed']
+        eventPayload<ServerEvents['soul:heartbeat:completed']>(event)
       );
     })
   );
@@ -160,7 +165,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   // claw.* → claw:* (11 events from ClawManager)
   unsubs.push(
     eventSystem.onPattern('claw.*', (event) => {
-      const d = event.data as unknown as ClawEventData;
+      const d = eventPayload<ClawEventData>(event);
       const clawId = d.clawId ?? '';
 
       switch (event.type) {
@@ -211,7 +216,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
           broadcast('claw:update', { clawId, state: d.state });
           break;
         case 'claw.plan.updated':
-          broadcast('claw:plan:updated', d as unknown as ServerEvents['claw:plan:updated']);
+          broadcast('claw:plan:updated', eventPayload<ServerEvents['claw:plan:updated']>(event));
           break;
       }
     })
@@ -220,7 +225,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   // claw.output → claw:output (live output feed for UI)
   unsubs.push(
     eventSystem.onAny('claw.output', (event) => {
-      const d = event.data as unknown as ClawOutputData;
+      const d = eventPayload<ClawOutputData>(event);
       broadcast('claw:output', {
         clawId: d.clawId,
         message: d.message,
@@ -233,7 +238,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   // crew.task.* → crew:task:* (task lifecycle events from crew-tools)
   unsubs.push(
     eventSystem.onAny('crew.task.created', (event) => {
-      const d = event.data as unknown as CrewTaskData;
+      const d = eventPayload<CrewTaskData>(event);
       broadcast('crew:task:created', {
         crewId: d.crewId,
         taskId: d.taskId,
@@ -246,7 +251,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   );
   unsubs.push(
     eventSystem.onAny('crew.task.claimed', (event) => {
-      const d = event.data as unknown as CrewTaskData;
+      const d = eventPayload<CrewTaskData>(event);
       broadcast('crew:task:claimed', {
         crewId: d.crewId,
         taskId: d.taskId,
@@ -257,7 +262,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   );
   unsubs.push(
     eventSystem.onAny('crew.task.completed', (event) => {
-      const d = event.data as unknown as CrewTaskData;
+      const d = eventPayload<CrewTaskData>(event);
       broadcast('crew:task:completed', {
         crewId: d.crewId,
         taskId: d.taskId,
@@ -268,7 +273,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   );
   unsubs.push(
     eventSystem.onAny('crew.task.failed', (event) => {
-      const d = event.data as unknown as CrewTaskData;
+      const d = eventPayload<CrewTaskData>(event);
       broadcast('crew:task:failed', {
         crewId: d.crewId,
         taskId: d.taskId,
@@ -281,7 +286,7 @@ export function setupLegacyEventForwarding(broadcast: Broadcast): Unsubscribe[] 
   // channel.user.* → channel:user:* (pending, blocked, unblocked, verified, first_seen)
   unsubs.push(
     eventSystem.onPattern('channel.user.*', (event) => {
-      const d = event.data as unknown as ChannelUserEventData;
+      const d = eventPayload<ChannelUserEventData>(event);
 
       switch (event.type) {
         case 'channel.user.pending':

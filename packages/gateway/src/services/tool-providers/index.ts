@@ -99,8 +99,7 @@ function wrapGatewayExecutor(
 // ============================================================================
 
 function lazyRouteExecutor(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  importFn: () => Promise<any>,
+  importFn: () => Promise<Record<string, unknown>>,
   exportName: string
 ): GatewayExecutor {
   let importPromise: Promise<GatewayExecutor> | undefined;

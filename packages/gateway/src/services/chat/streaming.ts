@@ -330,41 +330,44 @@ export function createStreamCallbacks(config: StreamingConfig): {
       // streamedContent stores the CLEAN version (used for memory/suggestion extraction + persistence)
       state.streamedContent = cleanContent;
 
-      const data: StreamChunkResponse & { trace?: Record<string, unknown>; session?: SessionInfo } =
-        {
-          id: chunk.id,
-          conversationId,
-          delta: cleanDelta,
-          thinking: state.isThinking || undefined,
-          // StreamChunk.toolCalls is Partial<ToolCall>[] — id/name may not be
-          // present on partial deltas (args can stream before the header).
-          // Skip those: UI dedupes on id, and emitting id:null would collapse
-          // every in-flight partial into one bogus entry.
-          toolCalls: chunk.toolCalls
-            ?.filter(
-              (tc): tc is { id: string; name: string; arguments?: string } =>
-                typeof tc.id === 'string' && typeof tc.name === 'string'
-            )
-            .map((tc) => {
-              let args: Record<string, unknown> | undefined;
-              try {
-                args = tc.arguments ? JSON.parse(tc.arguments) : undefined;
-              } catch {
-                args = undefined;
-              }
-              return { id: tc.id, name: tc.name, arguments: args };
-            }),
-          done: chunk.done,
-          finishReason: chunk.finishReason,
-          usage: chunk.usage
-            ? {
-                promptTokens: chunk.usage.promptTokens,
-                completionTokens: chunk.usage.completionTokens,
-                totalTokens: chunk.usage.totalTokens,
-                ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
-              }
-            : undefined,
-        };
+      const data: StreamChunkResponse & {
+        trace?: Record<string, unknown>;
+        session?: SessionInfo;
+        thinkingContent?: string;
+      } = {
+        id: chunk.id,
+        conversationId,
+        delta: cleanDelta,
+        thinking: state.isThinking || undefined,
+        // StreamChunk.toolCalls is Partial<ToolCall>[] — id/name may not be
+        // present on partial deltas (args can stream before the header).
+        // Skip those: UI dedupes on id, and emitting id:null would collapse
+        // every in-flight partial into one bogus entry.
+        toolCalls: chunk.toolCalls
+          ?.filter(
+            (tc): tc is { id: string; name: string; arguments?: string } =>
+              typeof tc.id === 'string' && typeof tc.name === 'string'
+          )
+          .map((tc) => {
+            let args: Record<string, unknown> | undefined;
+            try {
+              args = tc.arguments ? JSON.parse(tc.arguments) : undefined;
+            } catch {
+              args = undefined;
+            }
+            return { id: tc.id, name: tc.name, arguments: args };
+          }),
+        done: chunk.done,
+        finishReason: chunk.finishReason,
+        usage: chunk.usage
+          ? {
+              promptTokens: chunk.usage.promptTokens,
+              completionTokens: chunk.usage.completionTokens,
+              totalTokens: chunk.usage.totalTokens,
+              ...(chunk.usage.cachedTokens != null && { cachedTokens: chunk.usage.cachedTokens }),
+            }
+          : undefined,
+      };
 
       if (chunk.done) {
         // Recovery: some reasoning models (e.g. MiniMax-M2) emit their entire
@@ -387,7 +390,7 @@ export function createStreamCallbacks(config: StreamingConfig): {
         if (memories.length > 0) data.memories = memories;
         // Include accumulated thinking content in done event for UI persistence
         if (state.thinkingContent) {
-          (data as unknown as Record<string, unknown>).thinkingContent = state.thinkingContent;
+          data.thinkingContent = state.thinkingContent;
         }
         const streamDuration = Math.round(performance.now() - state.startTime);
         data.trace = {

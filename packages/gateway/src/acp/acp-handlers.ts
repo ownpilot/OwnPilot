@@ -42,6 +42,10 @@ import { isWithinDirectory } from '../utils/file-safety.js';
 
 const log = getLog('AcpHandlers');
 
+function toPlainRecord(value: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value));
+}
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -256,7 +260,7 @@ export function createAcpClientHandler(
 
         onEvent?.({
           type: 'coding-agent:acp:permission-request',
-          payload: request as unknown as Record<string, unknown>,
+          payload: toPlainRecord(request),
         });
 
         const response = await onPermissionRequest(request);

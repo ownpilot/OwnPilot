@@ -26,8 +26,45 @@ interface SmtpTransporter {
     inReplyTo?: string;
     references?: string;
   }): Promise<{ messageId: string }>;
-  verify(): Promise<true>;
+  verify(): Promise<boolean>;
   close(): void;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function toSmtpTransporter(rawTransporter: unknown): SmtpTransporter {
+  if (!isRecord(rawTransporter)) {
+    throw new Error('nodemailer createTransport returned an invalid transporter');
+  }
+
+  const sendMail = Reflect.get(rawTransporter, 'sendMail');
+  const verify = Reflect.get(rawTransporter, 'verify');
+  const close = Reflect.get(rawTransporter, 'close');
+
+  if (
+    typeof sendMail !== 'function' ||
+    typeof verify !== 'function' ||
+    typeof close !== 'function'
+  ) {
+    throw new Error('nodemailer transporter is missing required methods');
+  }
+
+  return {
+    async sendMail(options) {
+      const result = await Reflect.apply(sendMail, rawTransporter, [options]);
+      return {
+        messageId: isRecord(result) && typeof result.messageId === 'string' ? result.messageId : '',
+      };
+    },
+    async verify() {
+      return (await Reflect.apply(verify, rawTransporter, [])) === true;
+    },
+    close() {
+      Reflect.apply(close, rawTransporter, []);
+    },
+  };
 }
 
 export class EmailChannelAPI implements ChannelPluginAPI {
@@ -59,15 +96,18 @@ export class EmailChannelAPI implements ChannelPluginAPI {
     try {
       // Dynamic import of nodemailer (may not be installed)
       const nodemailer = await import('nodemailer');
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-      }) as unknown as SmtpTransporter;
+      const transporter = toSmtpTransporter(
+        nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser, pass: smtpPass },
+        })
+      );
 
       // Verify connection
-      await this.transporter.verify();
+      await transporter.verify();
+      this.transporter = transporter;
       this.status = 'connected';
       log.info('Email channel connected via SMTP', { host: smtpHost, from: this.fromAddress });
     } catch (error) {

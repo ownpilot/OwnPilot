@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, safeHref, safeDownloadHref } from './safe-url';
+import { isSafeUrl, safeHref, safeDownloadHref, safeExternalHref } from './safe-url';
 
 describe('isSafeUrl', () => {
   it('accepts http and https URLs', () => {
@@ -53,6 +53,23 @@ describe('safeHref', () => {
     expect(safeHref('javascript:alert(1)')).toBeUndefined();
     expect(safeHref('')).toBeUndefined();
     expect(safeHref(null)).toBeUndefined();
+  });
+});
+
+describe('safeExternalHref', () => {
+  it('accepts only http(s) URLs for external browser flows', () => {
+    expect(safeExternalHref('https://example.com/oauth')).toBe('https://example.com/oauth');
+    expect(safeExternalHref('http://localhost:3000/callback')).toBe(
+      'http://localhost:3000/callback'
+    );
+  });
+
+  it('rejects mailto, relative, script, control-char, and whitespace-padded URLs', () => {
+    expect(safeExternalHref('mailto:alice@example.com')).toBeUndefined();
+    expect(safeExternalHref('/relative')).toBeUndefined();
+    expect(safeExternalHref('javascript:alert(1)')).toBeUndefined();
+    expect(safeExternalHref('java\tscript:alert(1)')).toBeUndefined();
+    expect(safeExternalHref(' https://example.com')).toBeUndefined();
   });
 });
 

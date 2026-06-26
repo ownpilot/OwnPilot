@@ -8,8 +8,18 @@
  * - System information
  */
 
+import { randomInt } from 'node:crypto';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+
+function shuffleArray<T>(items: readonly T[]): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+  return shuffled;
+}
 
 // =============================================================================
 // VALIDATION
@@ -669,15 +679,9 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
       case 'unique':
         result = [...new Set(array.map((x) => JSON.stringify(x)))].map((x) => JSON.parse(x));
         break;
-      case 'shuffle': {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        result = shuffled;
+      case 'shuffle':
+        result = shuffleArray(array);
         break;
-      }
       case 'chunk': {
         const size = (options.chunkSize as number) || 2;
         const chunks: unknown[][] = [];
@@ -695,15 +699,7 @@ export const arrayOperationsExecutor: ToolExecutor = async (args): Promise<ToolE
         const sampleSize = Math.min((options.sampleSize as number) || 1, array.length);
         // Fisher-Yates: unbiased shuffle (the previous sort with random
         // comparator is mathematically biased under V8's TimSort).
-        const shuffledForSample = [...array];
-        for (let i = shuffledForSample.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffledForSample[i], shuffledForSample[j]] = [
-            shuffledForSample[j]!,
-            shuffledForSample[i]!,
-          ];
-        }
-        result = shuffledForSample.slice(0, sampleSize);
+        result = shuffleArray(array).slice(0, sampleSize);
         break;
       }
       case 'first': {

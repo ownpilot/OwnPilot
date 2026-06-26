@@ -12,6 +12,7 @@ import {
   type CreatePlanInput,
   type UpdatePlanInput,
   type CreateStepInput,
+  type StepType,
 } from '../db/repositories/plans.js';
 import { getPlanExecutor } from '../plans/index.js';
 import { getPlanService, Services } from '@ownpilot/core/services';
@@ -32,6 +33,25 @@ import { createCrudRoutes } from './crud-factory.js';
 
 const log = getLog('Plans');
 export const plansRoutes = new Hono();
+
+interface ValidatedCreatePlanStepBody {
+  name: string;
+  type: StepType;
+  orderNum: number;
+  description?: string;
+  config?: Record<string, unknown>;
+  action?: Record<string, unknown>;
+}
+
+function toCreatePlanStepInput(body: ValidatedCreatePlanStepBody): CreateStepInput {
+  return {
+    name: body.name,
+    type: body.type,
+    orderNum: body.orderNum,
+    description: body.description,
+    config: body.config ?? body.action ?? {},
+  };
+}
 
 // ============================================================================
 // Plan Routes
@@ -80,7 +100,7 @@ plansRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createPlanSchema, rawBody) as unknown as CreatePlanInput;
+  const body = validateBody(createPlanSchema, rawBody) satisfies CreatePlanInput;
 
   const service = getPlanService();
   const plan = await service.createPlan(userId, body);
@@ -179,7 +199,7 @@ plansRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updatePlanSchema } = await import('../middleware/validation.js');
-  const body = validateBody(updatePlanSchema, rawBody) as unknown as UpdatePlanInput;
+  const body = validateBody(updatePlanSchema, rawBody) satisfies UpdatePlanInput;
 
   const service = getPlanService();
   const updated = await service.updatePlan(userId, id, body);
@@ -414,7 +434,7 @@ plansRoutes.post('/:id/checkpoint', async (c) => {
 
   try {
     const executor = getPlanExecutor({ userId });
-    executor.checkpoint(id, body.data);
+    await executor.checkpoint(id, body.data);
 
     wsGateway.broadcast('data:changed', { entity: 'plan', action: 'updated', id });
 
@@ -592,7 +612,7 @@ plansRoutes.post('/:id/steps', async (c) => {
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, createPlanStepSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createPlanStepSchema, rawBody) as unknown as CreateStepInput;
+  const body = toCreatePlanStepInput(validateBody(createPlanStepSchema, rawBody));
 
   try {
     const service = getPlanService();

@@ -19,6 +19,7 @@ import {
 import { composioApi } from '../api';
 import type { ComposioApp, ComposioConnection } from '../api/endpoints/composio';
 import { useSkipHome } from '../hooks/useSkipHome';
+import { safeExternalHref } from '../utils/safe-url';
 
 // =============================================================================
 // Popular apps catalog — shown as fallback when dynamic list is empty
@@ -407,7 +408,12 @@ export function ConnectedAppsPage() {
     try {
       const result = await composioApi.connect(appSlug);
       if (result.redirectUrl) {
-        window.open(result.redirectUrl, '_blank', 'width=600,height=700');
+        const redirectUrl = safeExternalHref(result.redirectUrl);
+        if (!redirectUrl) {
+          toast.error(`Refused unsafe OAuth redirect URL for ${appSlug}.`);
+          return;
+        }
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer,width=600,height=700');
         toast.success(`OAuth window opened for ${appSlug}. Complete authorization to connect.`);
         pollTimersRef.current.push(setTimeout(() => loadData(), 5000));
         pollTimersRef.current.push(setTimeout(() => loadData(), 15000));

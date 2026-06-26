@@ -528,6 +528,23 @@ describe('CLI Tools Routes', () => {
       expect(json.error.message).toContain('name, displayName, and binaryName are required');
     });
 
+    it('returns 400 when binaryName includes shell syntax', async () => {
+      const res = await app.request('/cli-tools/custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'my-tool',
+          displayName: 'My Tool',
+          binaryName: 'my-tool && whoami',
+        }),
+      });
+
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('shell metacharacters');
+      expect(mockCliProvidersRepo.create).not.toHaveBeenCalled();
+    });
+
     it('returns 400 when name has invalid characters', async () => {
       const res = await app.request('/cli-tools/custom', {
         method: 'POST',

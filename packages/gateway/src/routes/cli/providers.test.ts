@@ -147,6 +147,22 @@ describe('CLI Providers Routes', () => {
       expect(res.status).toBe(400);
     });
 
+    it('returns 400 when binary includes shell syntax', async () => {
+      const res = await app.request('/cli-providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'eslint',
+          display_name: 'ESLint',
+          binary: 'eslint && whoami',
+        }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('shell metacharacters');
+      expect(mockRepo.create).not.toHaveBeenCalled();
+    });
+
     it('returns 400 for invalid name format', async () => {
       const res = await app.request('/cli-providers', {
         method: 'POST',
@@ -227,6 +243,18 @@ describe('CLI Providers Routes', () => {
         body: 'not-json',
       });
       expect(res.status).toBe(400);
+    });
+
+    it('returns 400 when updating binary to shell syntax', async () => {
+      const res = await app.request('/cli-providers/prov-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ binary: 'prettier;whoami' }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error.message).toContain('shell metacharacters');
+      expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
     it('returns 404 and does not update a provider owned by another user (IDOR)', async () => {

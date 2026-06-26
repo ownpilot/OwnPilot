@@ -1,5 +1,6 @@
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
+import { safeImageSrc, safeVideoSrc } from './media-url';
 
 interface Props {
   data: unknown;
@@ -88,20 +89,26 @@ function VideoItemRenderer({ item }: { item: VideoItem }) {
     width,
     height,
   } = item;
+  const safeSrc = safeVideoSrc(src);
+  const safePoster = safeImageSrc(poster);
 
   return (
     <div className="rounded-md overflow-hidden border border-border dark:border-dark-border">
-      <video
-        src={src}
-        poster={poster}
-        autoPlay={autoplay}
-        loop={loop}
-        muted={muted}
-        controls={controls}
-        width={width}
-        height={height}
-        className="max-w-full"
-      />
+      {safeSrc ? (
+        <video
+          src={safeSrc}
+          poster={safePoster}
+          autoPlay={autoplay}
+          loop={loop}
+          muted={muted}
+          controls={controls}
+          width={width}
+          height={height}
+          className="max-w-full"
+        />
+      ) : (
+        <div className="p-3 text-sm text-error">Blocked video URL</div>
+      )}
     </div>
   );
 }

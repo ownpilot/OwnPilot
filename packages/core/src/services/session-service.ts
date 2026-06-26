@@ -129,6 +129,11 @@ export interface ISessionService {
    * Get session count by source type.
    */
   getStats(): Record<SessionSource, number>;
+
+  /**
+   * Optional lifecycle cleanup for implementations with timers/resources.
+   */
+  dispose?(): Promise<void> | void;
 }
 
 // ============================================================================

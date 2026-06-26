@@ -10,7 +10,6 @@ packages/
   gateway/   - Hono HTTP API server, routes, services, DB, channels, triggers, WebSocket
   ui/        - React 19 + Vite + Tailwind frontend (55+ pages, code-split)
   cli/       - Commander.js CLI (bot, config, start, workspace commands)
-  channels/  - Channel manager + Telegram bot
 ```
 
 ## Key Patterns
@@ -20,10 +19,11 @@ packages/
 - **Pagination**: `parsePagination(c)` and `paginatedResponse(c, items, total, page, limit)` helpers
 - **Event system**: EventBus, HookBus, ScopedBus in `packages/core/src/events/`
 - **Plugin system**: PluginRegistry with isolation, marketplace, runtime in `packages/core/src/plugins/`
-- **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension-service.ts`. DB table: `user_extensions`. API: `/extensions`
-- **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
-- **Edge/IoT**: MQTT broker (Mosquitto) integration for edge device management. Types: `packages/core/src/edge/`. Service: `packages/gateway/src/services/edge-service.ts`. Routes: `/api/v1/edge`
-- **Test framework**: Vitest across all packages. 389+ test files, 22,100+ tests total (gateway: 239 files, 11,838 tests; core: 127 files, 9,750 tests; ui: 7 files; cli: 8 files; channels: 2 files)
+- **User Extensions**: Native tool bundles (JS code, triggers, services) in `packages/gateway/src/services/extension/service.ts`. DB table: `user_extensions`. API: `/extensions`
+- **Skills (AgentSkills.io)**: Open standard SKILL.md format for agent instructions. Parser: `packages/gateway/src/services/skill/agentskills-parser.ts`. Format field: `'ownpilot' | 'agentskills'`
+- **Edge/IoT**: MQTT broker (Mosquitto) integration for edge device management. Types: `packages/core/src/edge/`. Service: `packages/gateway/src/services/edge/service.ts`. Routes: `/api/v1/edge`
+- **Channels**: Channel manager and Telegram/WhatsApp/Slack/Discord/Matrix plugins live under `packages/gateway/src/channels/`
+- **Test framework**: Vitest across all packages. The suite is large and changes frequently; use `node scripts/report-code-health.mjs` for current test-file counts and `pnpm run test` for authoritative pass counts.
 
 ## Commands
 

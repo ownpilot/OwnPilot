@@ -48,6 +48,25 @@ function formatAttachmentSize(size: number | undefined): string | null {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isTraceInfo(value: unknown): value is TraceInfo {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.duration === 'number' &&
+    Array.isArray(value.toolCalls) &&
+    Array.isArray(value.modelCalls) &&
+    Array.isArray(value.autonomyChecks) &&
+    isRecord(value.dbOperations) &&
+    isRecord(value.memoryOps) &&
+    Array.isArray(value.triggersFired) &&
+    Array.isArray(value.errors) &&
+    Array.isArray(value.events)
+  );
+}
+
 function HistoryAttachmentChip({
   attachment,
   inverted,
@@ -1004,9 +1023,9 @@ export function ChatHistoryPage() {
                                 </div>
                               )}
 
-                              {isAssistant && msg.trace && (
+                              {isAssistant && isTraceInfo(msg.trace) && (
                                 <div className="mt-3">
-                                  <TraceDisplay trace={msg.trace as unknown as TraceInfo} />
+                                  <TraceDisplay trace={msg.trace} />
                                 </div>
                               )}
 

@@ -11,27 +11,50 @@
  * Execution: SSE streaming with real-time node coloring.
  */
 
+import { lazy, Suspense } from 'react';
 import { ReactFlowProvider, type Node, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import {
-  ToolPalette,
-  NodeConfigPanel,
-  WorkflowSourceModal,
-  NodeSearchPalette,
-  WorkflowCopilotPanel,
-  VariablesPanel,
-  WorkflowVersionsPanel,
-  InputParametersPanel,
-  TemplateGallery,
-  convertDefinitionToReactFlow,
-  type WorkflowDefinition,
-} from '../components/workflows';
+import { ToolPalette } from '../components/workflows/ToolPalette';
+import { NodeConfigPanel } from '../components/workflows/NodeConfigPanel';
+import { NodeSearchPalette } from '../components/workflows/NodeSearchPalette';
+import { VariablesPanel } from '../components/workflows/VariablesPanel';
+import { WorkflowVersionsPanel } from '../components/workflows/WorkflowVersionsPanel';
+import { InputParametersPanel } from '../components/workflows/InputParametersPanel';
+import type { WorkflowDefinition } from '../components/workflows/workflowDefinition';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useWorkflowEditor } from './workflows/useWorkflowEditor';
 import { WorkflowEditorToolbar } from './workflows/WorkflowEditorToolbar';
 import { WorkflowCanvas } from './workflows/WorkflowCanvas';
 import { getEdgeLabelProps } from './workflows/shared';
+
+const WorkflowSourceModal = lazy(() =>
+  import('../components/workflows/WorkflowSourceModal').then((m) => ({
+    default: m.WorkflowSourceModal,
+  }))
+);
+
+const WorkflowCopilotPanel = lazy(() =>
+  import('../components/workflows/WorkflowCopilotPanel').then((m) => ({
+    default: m.WorkflowCopilotPanel,
+  }))
+);
+
+const TemplateGallery = lazy(() =>
+  import('../components/workflows/TemplateGallery').then((m) => ({
+    default: m.TemplateGallery,
+  }))
+);
+
+function WorkflowPanelFallback({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center border-l border-border bg-bg-secondary text-sm text-text-muted dark:border-dark-border dark:bg-dark-bg-secondary dark:text-dark-text-muted ${className}`}
+    >
+      Loading...
+    </div>
+  );
+}
 
 // ============================================================================
 // Main Component (wrapped in ReactFlowProvider for hook access)
@@ -155,14 +178,16 @@ function WorkflowEditorInner() {
             className="w-80 shrink-0"
           />
         ) : editor.showCopilot ? (
-          <WorkflowCopilotPanel
-            workflowName={editor.workflowName}
-            nodes={editor.nodes}
-            edges={editor.edges}
-            availableToolNames={editor.toolNames}
-            onApplyWorkflow={editor.handleApplyWorkflow}
-            onClose={() => editor.setShowCopilot(false)}
-          />
+          <Suspense fallback={<WorkflowPanelFallback className="w-96" />}>
+            <WorkflowCopilotPanel
+              workflowName={editor.workflowName}
+              nodes={editor.nodes}
+              edges={editor.edges}
+              availableToolNames={editor.toolNames}
+              onApplyWorkflow={editor.handleApplyWorkflow}
+              onClose={() => editor.setShowCopilot(false)}
+            />
+          </Suspense>
         ) : null}
       </div>
 
@@ -177,48 +202,54 @@ function WorkflowEditorInner() {
       )}
 
       {editor.showTemplates && (
-        <TemplateGallery
-          onUseTemplate={(template) => {
-            const {
-              nodes: rfNodes,
-              edges: rfEdges,
-              skippedNodes,
-            } = convertDefinitionToReactFlow(
-              template.definition as WorkflowDefinition,
-              editor.toolNames
-            );
-            if (skippedNodes.length > 0) {
-              editor.toast.error(`Skipped unknown node(s): ${skippedNodes.join(', ')}`);
-            }
-            const styledEdges = rfEdges.map((e) => ({
-              ...e,
-              ...getEdgeLabelProps(e.sourceHandle),
-            }));
-            const maxId = rfNodes.reduce((max, n) => {
-              const num = parseInt(n.id.replace('node_', ''), 10);
-              return isNaN(num) ? max : Math.max(max, num);
-            }, 0);
-            editor.nodeIdCounter.current = maxId;
-            editor.setNodes(rfNodes);
-            editor.setEdges(styledEdges);
-            if (template.definition.name) editor.setWorkflowName(template.definition.name);
-            editor.setHasUnsavedChanges(true);
-            editor.setShowTemplates(false);
-            editor.toast.success(`Template "${template.name}" applied`);
-          }}
-          onClose={() => editor.setShowTemplates(false)}
-        />
+        <Suspense fallback={null}>
+          <TemplateGallery
+            onUseTemplate={async (template) => {
+              const { convertDefinitionToReactFlow } =
+                await import('../components/workflows/workflowDefinition');
+              const {
+                nodes: rfNodes,
+                edges: rfEdges,
+                skippedNodes,
+              } = convertDefinitionToReactFlow(
+                template.definition as WorkflowDefinition,
+                editor.toolNames
+              );
+              if (skippedNodes.length > 0) {
+                editor.toast.error(`Skipped unknown node(s): ${skippedNodes.join(', ')}`);
+              }
+              const styledEdges = rfEdges.map((e) => ({
+                ...e,
+                ...getEdgeLabelProps(e.sourceHandle),
+              }));
+              const maxId = rfNodes.reduce((max, n) => {
+                const num = parseInt(n.id.replace('node_', ''), 10);
+                return isNaN(num) ? max : Math.max(max, num);
+              }, 0);
+              editor.nodeIdCounter.current = maxId;
+              editor.setNodes(rfNodes);
+              editor.setEdges(styledEdges);
+              if (template.definition.name) editor.setWorkflowName(template.definition.name);
+              editor.setHasUnsavedChanges(true);
+              editor.setShowTemplates(false);
+              editor.toast.success(`Template "${template.name}" applied`);
+            }}
+            onClose={() => editor.setShowTemplates(false)}
+          />
+        </Suspense>
       )}
 
       {editor.showSource && (
-        <WorkflowSourceModal
-          workflowName={editor.workflowName}
-          nodes={editor.nodes}
-          edges={editor.edges}
-          variables={editor.variables}
-          onClose={() => editor.setShowSource(false)}
-          onImport={editor.handleImportWorkflow}
-        />
+        <Suspense fallback={null}>
+          <WorkflowSourceModal
+            workflowName={editor.workflowName}
+            nodes={editor.nodes}
+            edges={editor.edges}
+            variables={editor.variables}
+            onClose={() => editor.setShowSource(false)}
+            onImport={editor.handleImportWorkflow}
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -29,12 +29,48 @@ export function isSafeUrl(url: string): boolean {
 export const BLOCKED_IMG_PLACEHOLDER =
   'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
+const CTRL_CHAR_RE = /[\u0000-\u001F\u007F]/;
+const ABSOLUTE_SCHEME_RE = /^[a-zA-Z][a-zA-Z0-9+.-]*:/;
+const SAFE_IMAGE_PROTOCOLS = new Set(['http:', 'https:']);
+
+function hasBlockedImageUrlSyntax(url: string): boolean {
+  if (url.length === 0 || url !== url.trim() || CTRL_CHAR_RE.test(url)) return true;
+
+  if (url.startsWith('//')) {
+    try {
+      const parsed = new URL(url, 'https://ownpilot.local');
+      return !SAFE_IMAGE_PROTOCOLS.has(parsed.protocol);
+    } catch {
+      return true;
+    }
+  }
+
+  if (!ABSOLUTE_SCHEME_RE.test(url)) return false;
+
+  try {
+    const parsed = new URL(url);
+    return !SAFE_IMAGE_PROTOCOLS.has(parsed.protocol);
+  } catch {
+    return true;
+  }
+}
+
+function isRemoteImageUrl(url: string): boolean {
+  if (url.startsWith('//')) return true;
+  if (!ABSOLUTE_SCHEME_RE.test(url)) return false;
+
+  try {
+    const parsed = new URL(url);
+    return SAFE_IMAGE_PROTOCOLS.has(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 export function resolveImageUrl(url: string, workspaceId?: string | null): string {
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  // Block data: URIs for images — SVG data URIs can contain scripts that execute
-  // when loaded as img-src; browser SVG-in-img sandboxing reduces but doesn't
-  // eliminate the risk (e.g., embedded scripts in SVG accessed via canvas).
-  if (url.startsWith('data:')) return BLOCKED_IMG_PLACEHOLDER;
+  if (hasBlockedImageUrlSyntax(url)) return BLOCKED_IMG_PLACEHOLDER;
+  if (isRemoteImageUrl(url)) return url;
+
   if (workspaceId) {
     // Reject path-traversal segments and absolute Windows drive paths.
     // Without this, an LLM-generated `![](../../../secrets.txt)` would be

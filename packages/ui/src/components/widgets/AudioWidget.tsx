@@ -1,5 +1,6 @@
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
+import { safeAudioSrc } from './media-url';
 
 interface Props {
   data: unknown;
@@ -75,6 +76,7 @@ export function AudioWidget({ data, title: titleProp }: Props) {
 
 function AudioItemRenderer({ item }: { item: AudioItem }) {
   const { src, autoplay = false, loop = false, controls = true, title } = item;
+  const safeSrc = safeAudioSrc(src);
 
   return (
     <div className="rounded-md border border-border bg-bg-secondary/70 p-3 dark:border-dark-border dark:bg-dark-bg-secondary/70">
@@ -83,7 +85,17 @@ function AudioItemRenderer({ item }: { item: AudioItem }) {
           {title}
         </div>
       )}
-      <audio src={src} autoPlay={autoplay} loop={loop} controls={controls} className="w-full" />
+      {safeSrc ? (
+        <audio
+          src={safeSrc}
+          autoPlay={autoplay}
+          loop={loop}
+          controls={controls}
+          className="w-full"
+        />
+      ) : (
+        <p className="text-sm text-error">Blocked audio URL</p>
+      )}
     </div>
   );
 }

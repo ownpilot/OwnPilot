@@ -38,6 +38,7 @@ vi.mock('@ownpilot/core/services', async (importOriginal) => {
 import {
   isBinaryInstalled,
   getBinaryVersion,
+  validateCliBinaryPath,
   validateCwd,
   createSanitizedEnv,
   spawnCliProcess,
@@ -95,6 +96,39 @@ function createMockProc(options: {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+// ============================================================================
+// validateCliBinaryPath
+// ============================================================================
+
+describe('validateCliBinaryPath', () => {
+  it.each(['codex', 'my-tool.cmd', '/usr/local/bin/my-tool', 'C:\\Tools\\my-tool.exe'])(
+    'accepts command names and paths: %s',
+    (binary) => {
+      expect(validateCliBinaryPath(binary)).toBe(binary);
+    }
+  );
+
+  it('trims surrounding whitespace before returning', () => {
+    expect(validateCliBinaryPath('  codex  ')).toBe('codex');
+  });
+
+  it.each([
+    ['', 'Binary name is required'],
+    ['   ', 'Binary name is required'],
+    ['tool --flag', 'without whitespace'],
+    ['my tool', 'without whitespace'],
+    ['tool;whoami', 'shell metacharacters'],
+    ['tool&&whoami', 'shell metacharacters'],
+    ['tool|whoami', 'shell metacharacters'],
+    ['$(whoami)', 'shell metacharacters'],
+    ['`whoami`', 'shell metacharacters'],
+    ['tool>out', 'shell metacharacters'],
+    ['tool\nwhoami', 'shell metacharacters'],
+  ])('rejects unsafe binary value %s', (binary, message) => {
+    expect(() => validateCliBinaryPath(binary)).toThrow(message);
+  });
 });
 
 // ============================================================================

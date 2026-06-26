@@ -22,6 +22,19 @@ function demoModeReply(text: string): string {
   return `[Demo Mode] I received your message: "${truncate(text, 100)}"\n\nTo get real AI responses, configure an API key in OwnPilot settings.`;
 }
 
+interface ApprovalChannelApi extends ChannelPluginAPI {
+  requestApproval(
+    chatId: string,
+    params: { toolName: string; description: string; riskLevel?: string }
+  ): Promise<boolean>;
+}
+
+function getApprovalApi(api: ChannelPluginAPI | undefined): ApprovalChannelApi | null {
+  if (!api) return null;
+  const requestApproval = (api as { requestApproval?: unknown }).requestApproval;
+  return typeof requestApproval === 'function' ? (api as ApprovalChannelApi) : null;
+}
+
 /**
  * Process a channel message through the MessageBus pipeline.
  * Returns the assistant's response text.
@@ -104,14 +117,8 @@ export async function processViaBus(
   }
 
   // Wire tool approval via Telegram inline keyboard (if channel supports it)
-  const api = deps.getChannel(message.channelPluginId);
-  if (api && typeof (api as unknown as Record<string, unknown>).requestApproval === 'function') {
-    const telegramApi = api as typeof api & {
-      requestApproval(
-        chatId: string,
-        params: { toolName: string; description: string; riskLevel?: string }
-      ): Promise<boolean>;
-    };
+  const telegramApi = getApprovalApi(deps.getChannel(message.channelPluginId));
+  if (telegramApi) {
     agent.setRequestApproval(async (_category, _actionType, description, params) => {
       return telegramApi.requestApproval(message.platformChatId, {
         toolName: (params.toolName as string) ?? 'unknown',

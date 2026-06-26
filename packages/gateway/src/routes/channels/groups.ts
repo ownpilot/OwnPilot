@@ -25,6 +25,10 @@ interface ChannelAPIWithGroups {
   getGroup(groupJid: string): Promise<unknown>;
 }
 
+interface ChannelAPIWithHistoryFetch {
+  fetchGroupHistory(jid: string, count: number): Promise<string>;
+}
+
 function hasGroups(api: unknown): api is ChannelAPIWithGroups {
   return (
     typeof api === 'object' &&
@@ -33,6 +37,14 @@ function hasGroups(api: unknown): api is ChannelAPIWithGroups {
     typeof (api as Record<string, unknown>).listGroups === 'function' &&
     'getGroup' in api &&
     typeof (api as Record<string, unknown>).getGroup === 'function'
+  );
+}
+
+function hasHistoryFetch(api: unknown): api is ChannelAPIWithHistoryFetch {
+  return (
+    typeof api === 'object' &&
+    api !== null &&
+    typeof (api as { fetchGroupHistory?: unknown }).fetchGroupHistory === 'function'
   );
 }
 
@@ -204,8 +216,8 @@ channelGroupsRoutes.post('/:id/groups/:groupJid/sync', async (c) => {
 
   try {
     const service = getChannelService();
-    const api = service.getChannel(pluginId) as unknown as Record<string, unknown> | null;
-    if (!api || typeof api.fetchGroupHistory !== 'function') {
+    const api = service.getChannel(pluginId);
+    if (!hasHistoryFetch(api)) {
       return apiError(
         c,
         { code: ERROR_CODES.INVALID_REQUEST, message: 'Channel does not support history fetch' },
@@ -214,9 +226,7 @@ channelGroupsRoutes.post('/:id/groups/:groupJid/sync', async (c) => {
     }
 
     const count = getIntParam(c, 'count', 50, 1, 50);
-    const sessionId = await (
-      api.fetchGroupHistory as (jid: string, count: number) => Promise<string>
-    )(decoded.jid, count);
+    const sessionId = await api.fetchGroupHistory(decoded.jid, count);
 
     return apiResponse(
       c,

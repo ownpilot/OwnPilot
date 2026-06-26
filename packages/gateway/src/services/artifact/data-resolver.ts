@@ -154,11 +154,8 @@ async function resolveAggregate(
     }
   }
 
-  // Use a repository instance just for the query method
   const repo = new TasksRepository(userId);
-  const rows = await (
-    repo as unknown as { query: <T extends object>(sql: string, params: unknown[]) => Promise<T[]> }
-  ).query<{ result: string }>(sql, params);
+  const rows = await repo.queryAggregate<{ result: string }>(sql, params);
   const val = rows[0]?.result;
   return val !== undefined ? parseFloat(val) : null;
 }

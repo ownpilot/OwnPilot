@@ -18,6 +18,7 @@ import type {
 import { getErrorMessage } from '../../../utils/common.js';
 import { safeFetch, DEFAULT_MAX_REQUEST_BODY_SIZE } from '../../../utils/safe-fetch.js';
 import { resolveTemplates } from '../template-resolver.js';
+import { nodeDataRecord } from '../node-data.js';
 import { log } from './utils.js';
 
 const MAX_RESPONSE_SIZE = 1_048_576; // 1MB default
@@ -265,7 +266,7 @@ export async function executeNotificationNode(
 ): Promise<NodeResult> {
   const startTime = Date.now();
   try {
-    const data = node.data as unknown as Record<string, unknown>;
+    const data = nodeDataRecord(node);
     const severity = (data.severity as string) || 'info';
 
     const resolvedMsg = resolveTemplates({ _msg: data.message as string }, nodeOutputs, variables)

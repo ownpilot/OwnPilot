@@ -9,7 +9,6 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import type { CreateMemoryInput } from '../db/repositories/memories.js';
 import { MemoryServiceError } from '../services/memory-service.js';
 import { getMemoryService } from '@ownpilot/core/services';
 import {
@@ -73,7 +72,7 @@ memoriesRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createMemorySchema } = await import('../middleware/validation.js');
-  const body = validateBody(createMemorySchema, rawBody) as unknown as CreateMemoryInput;
+  const body = validateBody(createMemorySchema, rawBody);
 
   try {
     const service = getMemoryService();

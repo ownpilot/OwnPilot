@@ -193,10 +193,10 @@ function workerMain() {
         // Narrow timer shims — never hand the sandbox a real host timer handle.
         setTimeout: (cb: () => void, ms: number): number => {
           const h = globalThis.setTimeout(cb, ms);
-          return typeof h === 'object' && h !== null ? Number(h) : (h as unknown as number);
+          return typeof h === 'number' ? h : Number(h);
         },
         clearTimeout: (id: number): void => {
-          globalThis.clearTimeout(id as unknown as NodeJS.Timeout);
+          globalThis.clearTimeout(id);
         },
       };
 

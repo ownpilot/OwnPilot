@@ -8,7 +8,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { isCommandBlocked } from '../security/index.js';
 
 // =============================================================================
@@ -39,6 +39,67 @@ export interface ScopedExec {
 // =============================================================================
 
 const MAX_OUTPUT_SIZE = 512 * 1024; // 512KB for sandbox outputs
+const SCOPED_SHELL_METACHARACTER_PATTERN = /(?:&&|\|\||[|;`<>]|\$\(|[\r\n])/;
+
+/**
+ * Split a command string into argv (program + arguments) without a shell.
+ *
+ * Whitespace separates tokens; single/double quotes group, and a backslash
+ * escapes the next character (or `"`/`\` inside double quotes). Shell control
+ * characters (`&`, `|`, `;`, `$`, backtick, redirects) are treated as ORDINARY
+ * characters here — they become literal parts of an argument. Combined with
+ * execFile (no shell, below), this makes shell injection structurally
+ * impossible: even a mis-tokenized command can never spawn a second process,
+ * because no shell ever interprets the result.
+ */
+function tokenizeCommand(command: string): string[] {
+  const args: string[] = [];
+  let current: string | null = null; // null = between tokens
+  let quote: '"' | "'" | null = null;
+
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i]!;
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      } else if (
+        quote === '"' &&
+        ch === '\\' &&
+        (command[i + 1] === '"' || command[i + 1] === '\\')
+      ) {
+        current = (current ?? '') + command[++i];
+      } else {
+        current = (current ?? '') + ch;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      current = current ?? '';
+      quote = ch;
+      continue;
+    }
+    if (ch === '\\' && i + 1 < command.length) {
+      current = (current ?? '') + command[++i];
+      continue;
+    }
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      if (current !== null) {
+        args.push(current);
+        current = null;
+      }
+      continue;
+    }
+    current = (current ?? '') + ch;
+  }
+
+  if (quote) {
+    throw new Error('Command has unbalanced quotes.');
+  }
+  if (current !== null) {
+    args.push(current);
+  }
+  return args;
+}
 
 /**
  * Resolve the real path of `target`, following symlinks. `fs.realpath` only
@@ -174,16 +235,18 @@ export function createScopedExec(workspaceDir: string): ScopedExec {
         throw new Error('Command blocked for security reasons.');
       }
 
-      // Security: block shell metacharacter injection as a defense-in-depth layer.
-      // These are also covered by isCommandBlocked() via CRITICAL_PATTERNS, but
-      // an explicit check here ensures the intent is clear and the block survives
-      // any future refactoring of isCommandBlocked().
-      // Blocked: | $(cmd) >file >>file <file
-      // Note: && and ; are excluded from CRITICAL_PATTERNS (not catastrophic alone;
-      //       scoped-apis keeps its own defense-in-depth layer).
-      // Note: & alone is allowed (appears in URLs like curl?foo=bar&baz=qux).
-      if (/\||\$\(|>{1,2}(?:\s|$)|<(?:\s|$)/.test(command)) {
-        throw new Error('Command blocked: shell metacharacters (| $( ) > >> <) are not permitted.');
+      // Defense-in-depth only. The real guarantee is below: the command is
+      // tokenized and run via execFile WITHOUT a shell, so metacharacters
+      // (including a bare `&` in a URL) are literal argument bytes that can
+      // never spawn a second process. This early reject is kept so obviously
+      // shell-shaped commands fail fast with a clear message.
+      // Blocked: | && || ; $(cmd) `cmd` >file >>file <file and line breaks.
+      // A bare `&` is allowed (appears in URLs like curl?foo=bar&baz=qux) and is
+      // safe because there is no shell to interpret it.
+      if (SCOPED_SHELL_METACHARACTER_PATTERN.test(command)) {
+        throw new Error(
+          'Command blocked: shell metacharacters (| && || ; $( ) ` > >> < newline) are not permitted.'
+        );
       }
 
       const execTimeout = timeout ?? 30000;
@@ -222,10 +285,24 @@ export function createScopedExec(workspaceDir: string): ScopedExec {
         if (process.env[key]) safeEnv[key] = process.env[key]!;
       }
 
+      // Split into argv and run without a shell (execFile, not exec). This is
+      // the load-bearing security boundary: no shell means no command
+      // substitution, chaining, redirection, or globbing — the program receives
+      // exactly these arguments. Note this also means shell features (glob
+      // expansion, $VAR expansion, .cmd/.bat shims on Windows) are NOT available
+      // to sandboxed commands; pass the resolved program and literal args.
+      const argv = tokenizeCommand(command);
+      const file = argv[0];
+      if (!file) {
+        throw new Error('Command is empty.');
+      }
+      const commandArgs = argv.slice(1);
+
       return new Promise<{ stdout: string; stderr: string; exitCode: number | null }>(
         (resolve, reject) => {
-          const child = exec(
-            command,
+          const child = execFile(
+            file,
+            commandArgs,
             {
               cwd: workspaceDir,
               timeout: execTimeout,
@@ -234,11 +311,13 @@ export function createScopedExec(workspaceDir: string): ScopedExec {
             },
             (error, stdout, stderr) => {
               if (error && !error.killed) {
-                // Execution error but not timeout-killed
+                // Execution error but not timeout-killed. execFile's error.code
+                // is `string | number` (it can carry a signal name), so coerce
+                // a non-numeric code to a generic failure exit of 1.
                 resolve({
                   stdout: stdout?.slice(0, MAX_OUTPUT_SIZE) ?? '',
                   stderr: stderr?.slice(0, MAX_OUTPUT_SIZE) ?? '',
-                  exitCode: error.code ?? 1,
+                  exitCode: typeof error.code === 'number' ? error.code : 1,
                 });
               } else if (error?.killed) {
                 reject(new Error(`Command timed out after ${execTimeout}ms`));

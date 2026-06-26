@@ -49,6 +49,17 @@ export async function* readSseData(body: ReadableStream<Uint8Array>): AsyncGener
         yield data;
       }
     }
+
+    // Flush the final line if the stream ended without a trailing newline.
+    // Some providers emit their terminal event ([DONE], message_stop, final
+    // usage) in the same segment as EOF with no closing '\n'; that payload is
+    // held in `buffer` and would otherwise be dropped, losing usage/cost data
+    // or the stream terminator.
+    buffer += decoder.decode();
+    if (buffer.startsWith('data: ')) {
+      const data = buffer.slice(6).trim();
+      if (data) yield data;
+    }
   } finally {
     try {
       await reader.cancel();

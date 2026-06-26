@@ -11,8 +11,11 @@ import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync } from 'node:
 import { dirname, extname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { Hono, type Context } from 'hono';
-import { getExtensionService } from '@ownpilot/core/services';
-import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
+import { ExtensionError } from '../../services/extension/service.js';
+import {
+  getExtensionManifestSecurity,
+  getGatewayExtensionService,
+} from '../../services/extension/accessor.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 import { wsGateway } from '../../ws/server.js';
 import { getDataDirectoryInfo } from '../../paths/index.js';
@@ -73,7 +76,7 @@ function checkInstallThrottle(c: Context): Response | null {
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods).  *
  * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
  */
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
 
 /** Allowed file extensions for upload  *
  * Trust boundary: Extension manifests are read from disk and validated against a Zod schema before reaching this code; the casts here are the post-validation hand-off from unknown to the manifest's typed shape. Manifest input is the trust boundary (validated above); the cast documents that the schema run guarantees the field set.
@@ -85,6 +88,24 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.md', '.json', '.zip', '.skill']);
  */
 const MAX_SINGLE_FILE_SIZE = 1 * 1024 * 1024;
 const MAX_ZIP_FILE_SIZE = 5 * 1024 * 1024;
+
+interface AdmZipEntry {
+  entryName?: unknown;
+  isDirectory?: boolean;
+  header?: { externalFileAttribute?: number };
+  getData(): Buffer;
+}
+
+interface AdmZipArchive {
+  getEntries(): AdmZipEntry[];
+}
+
+type AdmZipConstructor = new (input: Buffer) => AdmZipArchive;
+type AdmZipImport = { default?: AdmZipConstructor } | AdmZipConstructor;
+
+function resolveAdmZipConstructor(mod: AdmZipImport): AdmZipConstructor | null {
+  return typeof mod === 'function' ? mod : (mod.default ?? null);
+}
 
 /**
  * Generate a unique filename: originalName-<random8chars>.ext
@@ -100,8 +121,7 @@ function generateUniqueFilename(originalName: string): string {
   return `${baseName}-${suffix}${ext}`;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractZipSafely(zip: any, tempDir: string): void {
+function extractZipSafely(zip: AdmZipArchive, tempDir: string): void {
   // UPLOAD-003: cap decompressed size to prevent zip-bomb DoS
   const MAX_TOTAL_DECOMPRESSED = 50 * 1024 * 1024; // 50 MB
   const MAX_ENTRY_COUNT = 500;
@@ -220,7 +240,7 @@ installRoutes.post('/install', async (c) => {
       source: 'path',
       userId,
     });
-    const security = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+    const security = getExtensionManifestSecurity(record.manifest);
     return apiResponse(
       c,
       { package: record, security, message: 'Extension installed successfully.' },
@@ -328,13 +348,12 @@ installRoutes.post('/upload', async (c) => {
 
     if (ext === '.zip' || ext === '.skill') {
       // ZIP file: extract to temp dir, find manifest, install
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let AdmZipClass: any = null;
+      let AdmZipClass: AdmZipConstructor | null = null;
       try {
         // Dynamic import with variable name to avoid TS static module resolution
         const admZipPkg = 'adm-zip';
-        const mod = await import(admZipPkg);
-        AdmZipClass = mod.default ?? mod;
+        const mod = (await import(admZipPkg)) as AdmZipImport;
+        AdmZipClass = resolveAdmZipConstructor(mod);
       } catch {
         return apiError(
           c,
@@ -343,6 +362,13 @@ installRoutes.post('/upload', async (c) => {
             message:
               'ZIP extraction requires the adm-zip package. Install it: pnpm add adm-zip -w --filter @ownpilot/gateway',
           },
+          500
+        );
+      }
+      if (!AdmZipClass) {
+        return apiError(
+          c,
+          { code: ERROR_CODES.EXECUTION_ERROR, message: 'ZIP constructor not available' },
           500
         );
       }
@@ -396,8 +422,7 @@ installRoutes.post('/upload', async (c) => {
           userId,
         });
 
-        const zipSecurity =
-          (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+        const zipSecurity = getExtensionManifestSecurity(record.manifest);
         return apiResponse(
           c,
           {
@@ -457,8 +482,7 @@ installRoutes.post('/upload', async (c) => {
           userId,
         });
 
-        const fileSecurity =
-          (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+        const fileSecurity = getExtensionManifestSecurity(record.manifest);
         return apiResponse(
           c,
           {

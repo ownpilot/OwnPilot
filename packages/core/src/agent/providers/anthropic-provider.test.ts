@@ -362,6 +362,28 @@ describe('AnthropicProvider', () => {
       expect(body.messages[0].role).toBe('user');
     });
 
+    it('merges multiple system messages instead of dropping all but the first', async () => {
+      mockFetch.mockImplementation(mockFetchOk(makeAnthropicResponse()));
+
+      await provider.complete(
+        makeRequest({
+          messages: [
+            { role: 'system', content: 'First system block' },
+            { role: 'system', content: 'Second system block' },
+            { role: 'user', content: 'Hello' },
+          ],
+        })
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const systemText = (body.system as Array<{ text: string }>).map((b) => b.text).join('\n');
+      expect(systemText).toContain('First system block');
+      expect(systemText).toContain('Second system block');
+      // System messages are still stripped from the messages array.
+      expect(body.messages).toHaveLength(1);
+      expect(body.messages[0].role).toBe('user');
+    });
+
     it('includes tools when provided', async () => {
       const tools: ToolDefinition[] = [
         {

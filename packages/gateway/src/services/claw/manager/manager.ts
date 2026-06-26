@@ -1103,6 +1103,7 @@ export class ClawManager {
         consecutiveErrors: managed.consecutiveErrors,
         totalCostUsd: managed.session.totalCostUsd,
         state: managed.session.state,
+        error: result.error ?? null,
       });
 
       if (this.shouldStop(managed, result)) {

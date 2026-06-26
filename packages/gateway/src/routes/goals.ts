@@ -11,12 +11,7 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import type {
-  StepStatus,
-  CreateGoalInput,
-  UpdateGoalInput,
-  CreateStepInput,
-} from '../db/repositories/goals.js';
+import type { StepStatus, CreateStepInput } from '../db/repositories/goals.js';
 import { GoalServiceError } from '../services/goal-service.js';
 import { getGoalService, Services } from '@ownpilot/core/services';
 import {
@@ -81,7 +76,7 @@ goalsRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createGoalSchema, rawBody) as unknown as CreateGoalInput;
+  const body = validateBody(createGoalSchema, rawBody);
 
   try {
     const service = getGoalService();
@@ -190,7 +185,7 @@ goalsRoutes.patch('/:id', async (c) => {
   const id = c.req.param('id');
   const rawBody = await parseJsonBody(c);
   const { validateBody, updateGoalSchema } = await import('../middleware/validation.js');
-  const body = validateBody(updateGoalSchema, rawBody) as unknown as UpdateGoalInput;
+  const body = validateBody(updateGoalSchema, rawBody);
 
   const service = getGoalService();
   const updated = await service.updateGoal(userId, id, body);

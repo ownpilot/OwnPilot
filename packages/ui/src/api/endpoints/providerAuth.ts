@@ -61,7 +61,7 @@ export const providerAuthApi = {
   setConfig: (provider: string, override: ProviderOAuthOverride) =>
     apiClient.put<{ provider: string; override: ProviderOAuthOverride }>(
       `/provider-auth/config/${encodeURIComponent(provider)}`,
-      override as unknown as Record<string, unknown>
+      { ...override }
     ),
   clearConfig: (provider: string) =>
     apiClient.delete<{ provider: string; cleared: boolean }>(

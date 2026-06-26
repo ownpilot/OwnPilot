@@ -27,6 +27,7 @@ interface TrackedClaw {
   metricsCollector: ClawMetricsCollector;
   cyclesCompleted: number;
   lastSummary: ClawCycleSummary | null;
+  lastCycleAt: Date | null;
   registeredAt: number;
 }
 
@@ -115,6 +116,7 @@ export class PulseMetricsService {
       metricsCollector: new ClawMetricsCollector(),
       cyclesCompleted: 0,
       lastSummary: null,
+      lastCycleAt: null,
       registeredAt: Date.now(),
     });
     log.info(`[PulseMetricsService] tracking claw ${clawId}`);
@@ -141,6 +143,7 @@ export class PulseMetricsService {
 
     tracked.cyclesCompleted = summary.cycleNumber;
     tracked.lastSummary = summary;
+    tracked.lastCycleAt = new Date();
 
     // Update circuit breaker
     if (summary.success) {
@@ -180,8 +183,8 @@ export class PulseMetricsService {
         avgCycleCost: averages.avgCost,
         totalCostUsd: lastSummary?.totalCostUsd ?? 0,
         cyclesCompleted: tracked.cyclesCompleted,
-        lastCycleAt: lastSummary ? new Date() : null,
-        lastCycleError: null,
+        lastCycleAt: tracked.lastCycleAt,
+        lastCycleError: lastSummary?.success === false ? (lastSummary.error ?? null) : null,
         circuitFailureCount: snapshot.failureCount,
         nextRetryAt: snapshot.nextAttemptAt > Date.now() ? snapshot.nextAttemptAt : null,
       });
@@ -209,8 +212,8 @@ export class PulseMetricsService {
       avgCycleCost: averages.avgCost,
       totalCostUsd: lastSummary?.totalCostUsd ?? 0,
       cyclesCompleted: tracked.cyclesCompleted,
-      lastCycleAt: lastSummary ? new Date() : null,
-      lastCycleError: null,
+      lastCycleAt: tracked.lastCycleAt,
+      lastCycleError: lastSummary?.success === false ? (lastSummary.error ?? null) : null,
       circuitFailureCount: snapshot.failureCount,
       nextRetryAt: snapshot.nextAttemptAt > Date.now() ? snapshot.nextAttemptAt : null,
     };

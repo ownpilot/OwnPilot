@@ -181,6 +181,17 @@ function loadExistingConfig(filePath: string): Partial<ProviderConfig> | null {
   }
 }
 
+function preserveConfigField<K extends keyof ProviderConfig>(
+  merged: ProviderConfig,
+  existingConfig: Partial<ProviderConfig>,
+  field: K
+): void {
+  const existingValue = existingConfig[field];
+  if (existingValue !== undefined) {
+    merged[field] = existingValue;
+  }
+}
+
 /**
  * Merge new config with existing, preserving protected fields
  * Then apply canonical overrides for known providers
@@ -194,9 +205,7 @@ function mergeConfigs(
   if (existingConfig) {
     // Preserve protected fields from existing config
     for (const field of PROTECTED_FIELDS) {
-      if (existingConfig[field] !== undefined) {
-        (merged as unknown as Record<string, unknown>)[field] = existingConfig[field];
-      }
+      preserveConfigField(merged, existingConfig, field);
     }
 
     // Also preserve features if they were manually configured

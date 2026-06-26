@@ -3,8 +3,7 @@
  * Uses Node.js Worker threads for maximum isolation
  */
 
-import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import { createContext, Script } from 'node:vm';
+import { Worker } from 'node:worker_threads';
 import { randomUUID } from 'node:crypto';
 import type { Result } from '../types/result.js';
 import { ok, err } from '../types/result.js';
@@ -12,6 +11,8 @@ import { PluginError, TimeoutError, ValidationError } from '../types/errors.js';
 import type { PluginId } from '../types/branded.js';
 import type {
   SandboxConfig,
+  SandboxPermissions,
+  ResourceLimits,
   ExecutionContext,
   ExecutionResult,
   WorkerMessage,
@@ -19,96 +20,37 @@ import type {
   SandboxStats,
 } from './types.js';
 import { DEFAULT_RESOURCE_LIMITS, DEFAULT_PERMISSIONS } from './types.js';
-import { buildSandboxContext, validateCode } from './context.js';
+import { validateCode } from './context.js';
 import { getErrorMessage } from '../services/error-utils.js';
 
+// NOTE: the worker-thread entry point lives in `./sandbox-worker.ts` (spawned
+// by `initialize()` below as a real module file). It used to be inlined here as
+// a stringified `eval:true` script that did `require('./context.js')`, which
+// never resolved in the ESM dist — so the worker path was effectively dead.
+
 /**
- * Worker code that runs in the isolated thread
+ * Host-state functions invoked on the MAIN thread in response to the worker's
+ * `host-call` RPCs (e.g. config-center reads, `callTool`). Keyed by the dotted
+ * name the sandbox code calls (e.g. 'config.get'). These closures stay on the
+ * main thread (they hold host services); only names + cloneable args/results
+ * cross the worker boundary.
  */
-function workerMain() {
-  if (!parentPort) return;
+export type HostHandlers = Record<string, (...args: unknown[]) => unknown | Promise<unknown>>;
 
-  const { config } = workerData as { config: SandboxConfig };
-  const port = parentPort;
-
-  port.on('message', async (message: WorkerMessage) => {
-    if (message.type !== 'execute') return;
-
-    const { code, context } = message;
-    const startTime = Date.now();
-
+/** Best-effort make a value structured-cloneable for posting back to the worker. */
+function toCloneableValue(value: unknown): unknown {
+  if (value === undefined || value === null) return value;
+  const t = typeof value;
+  if (t === 'string' || t === 'number' || t === 'boolean') return value;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
     try {
-      // Build sandbox context
-      const { context: sandboxGlobals, cleanup } = buildSandboxContext(
-        config.permissions,
-        config.limits,
-        { __context__: context },
-        (level, msg) => {
-          port.postMessage({ type: 'log', level, message: msg });
-        }
-      );
-
-      // Create VM context
-      const vmContext = createContext(sandboxGlobals, {
-        name: `sandbox:${config.pluginId}:${context.executionId}`,
-        codeGeneration: {
-          strings: false,
-          wasm: false,
-        },
-      });
-
-      // Wrap code
-      const wrappedCode = `(async () => { ${code} })()`;
-
-      // Compile and run
-      const script = new Script(wrappedCode, {
-        filename: `plugin:${config.pluginId}`,
-      });
-
-      const resultPromise = script.runInContext(vmContext, {
-        timeout: config.limits?.maxCpuTime ?? DEFAULT_RESOURCE_LIMITS.maxCpuTime,
-        displayErrors: true,
-      });
-
-      const value = await resultPromise;
-      const executionTime = Date.now() - startTime;
-
-      cleanup();
-
-      port.postMessage({
-        type: 'result',
-        result: {
-          success: true,
-          value,
-          executionTime,
-          resourceUsage: { networkRequests: 0, fsOperations: 0 },
-        },
-      } satisfies WorkerMessage);
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      const errorMessage = getErrorMessage(error);
-      const errorStack = config.debug && error instanceof Error ? error.stack : undefined;
-
-      port.postMessage({
-        type: 'result',
-        result: {
-          success: false,
-          error: errorMessage,
-          stack: errorStack,
-          executionTime,
-          resourceUsage: { networkRequests: 0, fsOperations: 0 },
-        },
-      } satisfies WorkerMessage);
+      return String(value);
+    } catch {
+      return undefined;
     }
-  });
-
-  // Signal ready
-  port.postMessage({ type: 'result', result: { success: true, executionTime: 0 } });
-}
-
-// Run worker code if this is the worker thread
-if (!isMainThread && parentPort) {
-  workerMain();
+  }
 }
 
 /**
@@ -136,12 +78,18 @@ export class WorkerSandbox {
    */
   private executionPending = false;
   private readonly executionQueue: Array<() => void> = [];
+  /** Host-state handlers invoked on the main thread for the worker's host-call RPCs. */
+  private readonly hostHandlers: HostHandlers;
 
-  constructor(config: SandboxConfig) {
+  constructor(config: SandboxConfig, hostHandlers: HostHandlers = {}) {
+    this.hostHandlers = hostHandlers;
     this.config = {
       ...config,
       limits: { ...DEFAULT_RESOURCE_LIMITS, ...config.limits },
       permissions: { ...DEFAULT_PERMISSIONS, ...config.permissions },
+      // The worker builds RPC stubs at these dotted paths; the handlers above
+      // stay on the main thread (only names cross the boundary).
+      hostFns: Object.keys(hostHandlers),
     };
     this.stats = {
       totalExecutions: 0,
@@ -162,71 +110,15 @@ export class WorkerSandbox {
     }
 
     try {
-      // Create worker using this file as the worker script
-      const workerScript = `
-        const { parentPort, workerData } = require('worker_threads');
-        const { createContext, runInContext, Script } = require('vm');
-
-        const config = workerData.config;
-
-        parentPort.on('message', async (message) => {
-          if (message.type !== 'execute') return;
-
-          const { code, context } = message;
-          const startTime = Date.now();
-
-          try {
-            const { createContext, Script } = require('vm');
-            const { buildSandboxContext } = require('./context.js');
-
-            const { context: sandboxGlobals } = buildSandboxContext(
-              config.permissions ?? {},
-              config.limits ?? {},
-              { __context__: context },
-              (level, msg) => {
-                parentPort.postMessage({ type: 'log', level, message: msg });
-              }
-            );
-
-            const vmContext = createContext(sandboxGlobals, {
-              codeGeneration: { strings: false, wasm: false },
-            });
-
-            const wrappedCode = '(async () => { ' + code + ' })()';
-            const script = new Script(wrappedCode);
-
-            const resultPromise = script.runInContext(vmContext, {
-              timeout: config.limits?.maxCpuTime || 5000,
-            });
-
-            const value = await resultPromise;
-            const executionTime = Date.now() - startTime;
-
-            parentPort.postMessage({
-              type: 'result',
-              result: { success: true, value, executionTime, resourceUsage: { networkRequests: 0, fsOperations: 0 } },
-            });
-          } catch (error) {
-            const executionTime = Date.now() - startTime;
-            parentPort.postMessage({
-              type: 'result',
-              result: {
-                success: false,
-                error: error.message || String(error),
-                stack: config.debug ? error.stack : undefined,
-                executionTime,
-                resourceUsage: { networkRequests: 0, fsOperations: 0 },
-              },
-            });
-          }
-        });
-
-        parentPort.postMessage({ type: 'result', result: { success: true, executionTime: 0 } });
-      `;
+      // Spawn the real worker entry module. `import.meta.url` is this file's
+      // compiled location (dist/sandbox/worker-sandbox.js in prod), so the
+      // sibling `sandbox-worker.js` resolves correctly. resourceLimits below is
+      // what actually enforces maxMemory — a runaway allocation crashes the
+      // worker thread, not the host.
+      const workerUrl = new URL('./sandbox-worker.js', import.meta.url);
 
       return new Promise((resolve) => {
-        this.worker = new Worker(workerScript, {
-          eval: true,
+        this.worker = new Worker(workerUrl, {
           workerData: { config: this.config },
           resourceLimits: {
             maxOldGenerationSizeMb:
@@ -308,6 +200,38 @@ export class WorkerSandbox {
           this.state = 'error';
         }
         break;
+
+      case 'host-call':
+        // The worker invoked a bridged host-state function; run the real
+        // handler on this (main) thread and post the cloneable result back.
+        // Fire-and-forget: many host-calls can be in flight during one
+        // execution, each correlated by callId — no shared resolver state.
+        void this.handleHostCall(message);
+        break;
+    }
+  }
+
+  private async handleHostCall(
+    message: Extract<WorkerMessage, { type: 'host-call' }>
+  ): Promise<void> {
+    const { callId, fn, args } = message;
+    const handler = this.hostHandlers[fn];
+    try {
+      if (!handler) throw new Error(`No host handler registered for '${fn}'`);
+      const value = await handler(...args);
+      this.worker?.postMessage({
+        type: 'host-result',
+        callId,
+        ok: true,
+        value: toCloneableValue(value),
+      } satisfies WorkerMessage);
+    } catch (error) {
+      this.worker?.postMessage({
+        type: 'host-result',
+        callId,
+        ok: false,
+        error: getErrorMessage(error),
+      } satisfies WorkerMessage);
     }
   }
 
@@ -471,6 +395,51 @@ export class WorkerSandbox {
 /**
  * Create a worker-based sandbox
  */
-export function createWorkerSandbox(config: SandboxConfig): WorkerSandbox {
-  return new WorkerSandbox(config);
+export function createWorkerSandbox(
+  config: SandboxConfig,
+  hostHandlers?: HostHandlers
+): WorkerSandbox {
+  return new WorkerSandbox(config, hostHandlers);
+}
+
+/**
+ * Quick one-shot execution in a fresh Worker-isolated sandbox.
+ *
+ * Mirrors `runInSandbox` but runs in a Worker thread, so `limits.maxMemory` is
+ * ENFORCED (the vm-based `runInSandbox` cannot cap memory — see SandboxExecutor
+ * docs). Use this for untrusted code that needs only the standard sandbox
+ * globals + optional scoped fs/exec (no host-state bridges like config/callTool
+ * yet). Spawns a worker, runs once, and terminates it.
+ */
+export async function runInWorkerSandbox<T = unknown>(
+  pluginId: PluginId,
+  code: string,
+  options?: {
+    data?: unknown;
+    permissions?: SandboxPermissions;
+    limits?: ResourceLimits;
+    workspaceDir?: string;
+    debug?: boolean;
+    /** Host-state functions bridged to the worker over RPC (e.g. config/callTool). */
+    hostHandlers?: HostHandlers;
+    /** Seed the custom-tool global profile (crypto superset, etc.) in the worker. */
+    toolProfile?: boolean;
+  }
+): Promise<Result<ExecutionResult<T>, PluginError | ValidationError | TimeoutError>> {
+  const sandbox = createWorkerSandbox(
+    {
+      pluginId,
+      permissions: options?.permissions,
+      limits: options?.limits,
+      workspaceDir: options?.workspaceDir,
+      debug: options?.debug,
+      toolProfile: options?.toolProfile,
+    },
+    options?.hostHandlers
+  );
+  try {
+    return await sandbox.execute<T>(code, options?.data);
+  } finally {
+    await sandbox.terminate();
+  }
 }

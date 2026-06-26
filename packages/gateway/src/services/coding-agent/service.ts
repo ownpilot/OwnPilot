@@ -35,6 +35,7 @@ import { cliProvidersRepo, type CliProviderRecord } from '../../db/repositories/
 import {
   isBinaryInstalled,
   getBinaryVersion,
+  validateCliBinaryPath,
   validateCwd,
   createSanitizedEnv,
 } from '../binary-utils.js';
@@ -320,7 +321,7 @@ class CodingAgentService implements ICodingAgentService {
           `Custom CLI provider '${customName}' not found. Register it first via Settings.`
         );
       }
-      binary = cp.binary;
+      binary = validateCliBinaryPath(cp.binary);
       apiKeyEnvVar = cp.apiKeyEnvVar;
       apiKey = resolveCustomApiKey(cp);
     } else if (isBuiltinProvider(provider)) {

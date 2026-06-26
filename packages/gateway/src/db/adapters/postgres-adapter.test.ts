@@ -47,6 +47,7 @@ vi.mock('../../config/defaults.js', () => ({
   // mock that's only loosely typed).
   DB_STATEMENT_TIMEOUT_MS: 0,
   DB_IDLE_TX_TIMEOUT_MS: 0,
+  DB_KEEPALIVE: true,
 }));
 vi.mock('pgvector/pg', () => {
   throw new Error('pgvector not installed');
@@ -148,6 +149,12 @@ describe('PostgresAdapter', () => {
       expect(pg.Pool).toHaveBeenCalledWith(
         expect.objectContaining({ connectionTimeoutMillis: 5000 })
       );
+    });
+
+    it('enables TCP keepAlive from DB_KEEPALIVE', async () => {
+      const { default: pg } = await import('pg');
+      await makeInitializedAdapter();
+      expect(pg.Pool).toHaveBeenCalledWith(expect.objectContaining({ keepAlive: true }));
     });
 
     it('calls pool.connect() to obtain a test client', async () => {
@@ -400,6 +407,86 @@ describe('PostgresAdapter', () => {
       );
     });
   });
+  // runQuery retry on transient connection errors
+  describe('transient connection retry', () => {
+    function connErr(message: string, code?: string) {
+      const e = new Error(message) as Error & { code?: string };
+      if (code) e.code = code;
+      return e;
+    }
+
+    it('retries once on "Connection terminated unexpectedly" and succeeds', async () => {
+      const adapter = await makeInitializedAdapter();
+      mockPool.query
+        .mockRejectedValueOnce(connErr('Connection terminated unexpectedly'))
+        .mockResolvedValueOnce({ rows: [{ id: 1 }], rowCount: 1 });
+      const result = await adapter.query('SELECT 1');
+      expect(result).toEqual([{ id: 1 }]);
+      expect(mockPool.query).toHaveBeenCalledTimes(2);
+      expect(mockLog.warn).toHaveBeenCalledWith(
+        expect.stringContaining('retrying once'),
+        'Connection terminated unexpectedly'
+      );
+    });
+
+    it('retries once on a connection-exception SQLSTATE (08006)', async () => {
+      const adapter = await makeInitializedAdapter();
+      mockPool.query
+        .mockRejectedValueOnce(connErr('terminating', '08006'))
+        .mockResolvedValueOnce({ rows: [], rowCount: 2 });
+      const result = await adapter.execute('DELETE FROM foo');
+      expect(result.changes).toBe(2);
+      expect(mockPool.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries once on an ECONNRESET socket error', async () => {
+      const adapter = await makeInitializedAdapter();
+      mockPool.query
+        .mockRejectedValueOnce(connErr('socket hang up', 'ECONNRESET'))
+        .mockResolvedValueOnce({ rows: [{ ok: true }], rowCount: 1 });
+      const result = await adapter.query('SELECT 1');
+      expect(result).toEqual([{ ok: true }]);
+      expect(mockPool.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('does NOT retry a non-transient (query-level) error', async () => {
+      const adapter = await makeInitializedAdapter();
+      mockPool.query.mockRejectedValueOnce(
+        connErr('duplicate key value violates unique constraint')
+      );
+      await expect(adapter.query('INSERT INTO foo VALUES (1)')).rejects.toThrow('duplicate key');
+      expect(mockPool.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('surfaces the error if the single retry also fails', async () => {
+      const adapter = await makeInitializedAdapter();
+      mockPool.query
+        .mockRejectedValueOnce(connErr('Connection terminated unexpectedly'))
+        .mockRejectedValueOnce(connErr('Connection terminated unexpectedly'));
+      await expect(adapter.query('SELECT 1')).rejects.toThrow('Connection terminated');
+      expect(mockPool.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('does NOT retry inside a transaction (atomicity preserved)', async () => {
+      const adapter = await makeInitializedAdapter();
+      // Inside the tx, queries route through mockClient; make it fail transiently.
+      mockClient.query.mockImplementation((sql: string) => {
+        if (sql === 'BEGIN' || sql === 'ROLLBACK' || sql === 'COMMIT') {
+          return Promise.resolve({ rows: [] });
+        }
+        return Promise.reject(connErr('Connection terminated unexpectedly'));
+      });
+      mockPool.query.mockClear();
+      await expect(
+        adapter.transaction(async () => {
+          await adapter.query('SELECT 1');
+        })
+      ).rejects.toThrow('Connection terminated');
+      // The pool must never be used as a retry target for an in-transaction query.
+      expect(mockPool.query).not.toHaveBeenCalled();
+    });
+  });
+
   // transaction()
   describe('transaction()', () => {
     it('throws Database not initialized when pool is null', async () => {
@@ -853,6 +940,7 @@ describe('PostgresAdapter per-connection timeout startup options', () => {
       DB_CONNECT_TIMEOUT_MS: 5000,
       DB_STATEMENT_TIMEOUT_MS: 30000,
       DB_IDLE_TX_TIMEOUT_MS: 60000,
+      DB_KEEPALIVE: true,
     }));
     try {
       const { PostgresAdapter: FreshAdapter } = await import('./postgres-adapter.js');

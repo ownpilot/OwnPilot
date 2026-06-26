@@ -21,6 +21,7 @@ import type {
 import { DEFAULT_RESOURCE_LIMITS, DEFAULT_PERMISSIONS } from './types.js';
 import { buildSandboxContext, validateCode } from './context.js';
 import { getErrorMessage } from '../services/error-utils.js';
+import { silentCatch } from '../utils/ignore-error.js';
 
 /**
  * Strip host file paths from a stack trace.
@@ -40,7 +41,30 @@ function stripHostPaths(stack: string): string {
 }
 
 /**
- * Sandbox executor for running untrusted code
+ * Sandbox executor for running untrusted code.
+ *
+ * IMPORTANT — `limits.maxMemory` is NOT enforced on this path. This executor
+ * runs code in a `node:vm` context, which shares the host process heap; Node
+ * provides no per-context memory cap, so a sandbox can allocate until the host
+ * itself OOMs. The only mechanism that *can* cap memory is a Worker thread
+ * (`worker-sandbox.ts`, via `resourceLimits.maxOldGenerationSizeMb`) — but a
+ * Worker can only receive structured-cloneable data, and every production
+ * caller injects host *functions* into `globals` (the SSRF-safe `fetch`,
+ * `console`, the `config.get`/`callTool` bridges, scoped fs/exec). Those
+ * functions cannot cross a thread boundary, so the Worker sandbox cannot host
+ * the tool/trigger/agentic code that needs them. Enforcing `maxMemory` here
+ * therefore requires either a host-function RPC bridge over the worker port or
+ * accepting the loss of those bridges — both are larger design changes.
+ *
+ * Mitigations in place: `maxCpuTime` (vm timeout), `maxExecutionTime` (wall
+ * clock), and `maxOutputSize` bound runaway *time* and *output*. `maxMemory` is
+ * advisory on THIS (vm) path.
+ *
+ * To actually enforce `maxMemory`, use `runInWorkerSandbox` (worker-sandbox.ts):
+ * it runs code in a Worker thread with `resourceLimits.maxOldGenerationSizeMb`,
+ * so a runaway allocation crashes the worker rather than the host. It supports
+ * the standard sandbox globals + scoped fs/exec (rebuilt natively in-worker);
+ * host-state bridges (config/`callTool`) are not yet available on that path.
  */
 export class SandboxExecutor {
   private readonly pluginId: PluginId;
@@ -170,8 +194,7 @@ export class SandboxExecutor {
       // timeout). Promise.race already consumed our subscription, so that
       // late rejection would become an unhandled rejection that the Node
       // runtime escalates. Attach a no-op handler so it stays bounded here.
-      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-      executePromise.catch(() => {});
+      executePromise.catch(silentCatch('sandbox.execute.raceLoser'));
 
       try {
         const value = await Promise.race([executePromise, timeoutPromise]);

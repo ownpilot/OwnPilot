@@ -14,6 +14,7 @@ import {
   DB_CONNECT_TIMEOUT_MS,
   DB_STATEMENT_TIMEOUT_MS,
   DB_IDLE_TX_TIMEOUT_MS,
+  DB_KEEPALIVE,
 } from '../../config/defaults.js';
 
 /**
@@ -71,6 +72,10 @@ export class PostgresAdapter implements DatabaseAdapter {
       max: this.config.postgresPoolSize || DB_POOL_MAX,
       idleTimeoutMillis: DB_IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: DB_CONNECT_TIMEOUT_MS,
+      // SO_KEEPALIVE so the OS probes idle sockets and the pool recycles a
+      // dead connection (DB restart / host sleep) instead of handing it out
+      // and failing the next query with "Connection terminated unexpectedly".
+      keepAlive: DB_KEEPALIVE,
       ...(startupOptions.length > 0 ? { options: startupOptions.join(' ') } : {}),
     });
 
@@ -108,16 +113,61 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   /**
-   * Get the query target: transaction client (if inside a transaction) or pool.
+   * Classify an error as a transient connection failure (dead/stale socket)
+   * rather than a query-level error. These are safe to retry once on a fresh
+   * pool connection: the failing socket has already been removed from the pool
+   * by pg's internal error handling, so the retry pulls a healthy connection.
+   *
+   * Covers Node socket errors (ECONNRESET/EPIPE/ETIMEDOUT), Postgres connection
+   * exception SQLSTATEs (class 08 + 57P01 admin shutdown), and the pg-pool
+   * "Connection terminated…" messages that have no machine-readable code.
    */
-  private getQueryTarget(): pg.PoolClient | PoolType {
-    return txClientStorage.getStore() ?? this.pool!;
+  private isTransientConnectionError(err: unknown): boolean {
+    if (!(err instanceof Error)) return false;
+    const code = (err as { code?: string }).code;
+    if (
+      code &&
+      ['ECONNRESET', 'EPIPE', 'ETIMEDOUT', '57P01', '08000', '08003', '08006'].includes(code)
+    ) {
+      return true;
+    }
+    const msg = err.message.toLowerCase();
+    return (
+      msg.includes('connection terminated') ||
+      msg.includes('connection ended') ||
+      msg.includes('server closed the connection') ||
+      msg.includes('terminating connection')
+    );
+  }
+
+  /**
+   * Run a query through the transaction client (if inside one) or the pool.
+   *
+   * When NOT in a transaction, a transient connection error is retried exactly
+   * once against the pool — the stale client is gone and a fresh connect
+   * succeeds. Inside a transaction we never retry: the statement is bound to a
+   * single BEGIN-scoped client, and silently re-running it on a new connection
+   * would break atomicity (and run outside the now-aborted transaction).
+   */
+  private async runQuery(sql: string, params: QueryParams): Promise<pg.QueryResult> {
+    const txClient = txClientStorage.getStore();
+    const target = txClient ?? this.pool!;
+    try {
+      return await target.query(sql, params);
+    } catch (err) {
+      if (txClient || !this.isTransientConnectionError(err)) throw err;
+      log.warn(
+        '[PostgreSQL] Transient connection error — retrying once on a fresh connection:',
+        (err as Error).message
+      );
+      return await this.pool!.query(sql, params);
+    }
   }
 
   async query<T extends object = Row>(sql: string, params: QueryParams = []): Promise<T[]> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
-    const result = await this.getQueryTarget().query(convertedSql, params);
+    const result = await this.runQuery(convertedSql, params);
     return result.rows as T[];
   }
 
@@ -132,7 +182,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   ): Promise<{ changes: number; lastInsertRowid?: number | bigint }> {
     if (!this.pool) throw new Error('Database not initialized');
     const convertedSql = this.convertPlaceholders(sql);
-    const result = await this.getQueryTarget().query(convertedSql, params);
+    const result = await this.runQuery(convertedSql, params);
     return {
       changes: result.rowCount ?? 0,
     };

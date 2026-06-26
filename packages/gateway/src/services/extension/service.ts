@@ -173,7 +173,7 @@ export class ExtensionService implements IExtensionService {
     // Validate manifest format
     if (manifest.format === 'agentskills') {
       const fmValidation = validateAgentSkillsFrontmatter(
-        manifest as unknown as Record<string, unknown>
+        Object.fromEntries(Object.entries(manifest))
       );
       if (!fmValidation.valid) {
         throw new ExtensionError(

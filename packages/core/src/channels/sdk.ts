@@ -148,8 +148,7 @@ export function createChannelAdapter(config: ChannelAdapterConfig): UCPChannelAd
     adapter.logout = config.logout.bind(config);
   }
   if (config.getBotInfo) {
-    (adapter as unknown as { getBotInfo: typeof config.getBotInfo }).getBotInfo =
-      config.getBotInfo.bind(config);
+    adapter.getBotInfo = config.getBotInfo.bind(config);
   }
 
   return adapter;

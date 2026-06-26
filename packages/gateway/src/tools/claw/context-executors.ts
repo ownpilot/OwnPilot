@@ -9,6 +9,7 @@
  */
 
 import { getErrorMessage } from '@ownpilot/core/services';
+import { silentCatch } from '@ownpilot/core/utils';
 import { getClawContext } from '../../services/claw/context.js';
 
 type ExecResult = { success: boolean; result?: unknown; error?: string };
@@ -109,8 +110,7 @@ export async function executeSetContext(args: Record<string, unknown>): Promise<
     // Persist immediately so working-memory mutations survive an unexpected
     // crash before the periodic 30s persist timer fires.
     // flushSession logs its own failures via log.warn — we can swallow here.
-    // eslint-disable-next-line no-restricted-syntax
-    manager.flushSession(ctx.clawId).catch(() => {});
+    manager.flushSession(ctx.clawId).catch(silentCatch('claw.flushSession'));
 
     return {
       success: true,

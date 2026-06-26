@@ -5,7 +5,7 @@
  * Connects via WhatsApp Web's WebSocket protocol using QR code authentication.
  * No Meta Business account needed — works with personal WhatsApp accounts.
  *
- * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The casts below read those optional fields; the runtime object is documented upstream to have them when relevant. The cast is a documented trust boundary with the upstream type.
+ * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The helpers below read those optional runtime fields without depending on Baileys' narrower TypeScript surface.
  */
 
 import makeWASocket, {
@@ -20,6 +20,7 @@ import makeWASocket, {
   proto,
 } from '@whiskeysockets/baileys';
 import type { Boom } from '@hapi/boom';
+import { randomInt } from 'node:crypto';
 import pino from 'pino';
 import {
   type ChannelPluginAPI,
@@ -34,6 +35,7 @@ import {
 } from '@ownpilot/core/channels';
 import { getEventBus, createEvent } from '@ownpilot/core/events';
 import { ChannelEvents } from '@ownpilot/core/channels';
+import { silentCatch } from '@ownpilot/core/utils';
 import { getLog } from '../../../services/log.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { MAX_MESSAGE_CHAT_MAP_SIZE } from '../../../config/defaults.js';
@@ -44,9 +46,23 @@ import { channelAssetStore } from '../../../services/channel-asset-store.js';
 
 const log = getLog('WhatsApp');
 const WHATSAPP_MAX_LENGTH = 4096;
+const RANDOM_UNIT_SCALE = 1_000_000_000;
+
+function randomUnit(): number {
+  return randomInt(RANDOM_UNIT_SCALE) / RANDOM_UNIT_SCALE;
+}
+
+function metadataRecord(metadata: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(metadata));
+}
+
+function optionalString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === 'string' ? value : null;
+}
 
 /** Simple TTL cache (replaces node-cache dependency).  *
- * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The casts below read those optional fields; the runtime object is documented upstream to have them when relevant. The cast is a documented trust boundary with the upstream type.
+ * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The helpers below read those optional runtime fields without depending on Baileys' narrower TypeScript surface.
  */
 class SimpleTTLCache<V> {
   private data = new Map<string, { value: V; expires: number }>();
@@ -746,9 +762,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
           const groups = Object.values(raw);
 
           const summaries: WhatsAppGroupSummary[] = groups.map((g) => {
-            // Trust boundary: Baileys group metadata type omits optional community fields
-            // (isCommunity, isCommunityAnnounce, linkedParent) that are present at runtime.
-            const ext = g as unknown as Record<string, unknown>;
+            const ext = metadataRecord(g);
             return {
               id: g.id,
               subject: g.subject ?? '',
@@ -760,7 +774,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
               isLocked: g.restrict ?? false,
               isCommunity: ext.isCommunity === true,
               isCommunityAnnounce: ext.isCommunityAnnounce === true,
-              linkedParent: (ext.linkedParent as string) ?? null,
+              linkedParent: optionalString(ext, 'linkedParent'),
             };
           });
 
@@ -855,9 +869,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
 
     const g = await sock.groupMetadata(groupJid);
 
-    // Trust boundary: Baileys group metadata type omits optional community fields
-    // (isCommunity, isCommunityAnnounce, linkedParent) that are present at runtime.
-    const ext = g as unknown as Record<string, unknown>;
+    const ext = metadataRecord(g);
     return {
       id: g.id,
       subject: g.subject ?? '',
@@ -869,7 +881,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       isLocked: g.restrict ?? false,
       isCommunity: ext.isCommunity === true,
       isCommunityAnnounce: ext.isCommunityAnnounce === true,
-      linkedParent: (ext.linkedParent as string) ?? null,
+      linkedParent: optionalString(ext, 'linkedParent'),
       participants: (g.participants ?? []).map((p) => ({
         jid: this.normalizeJid(p.id),
         phone: this.phoneFromJid(p.id),
@@ -985,8 +997,9 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Anti-ban: immediately go offline — only appear online when typing/sending
       // (Evolution API + WAHA both do this). Presence-update failure is non-fatal
       // and Baileys will retry on the next presence cycle.
-      // eslint-disable-next-line no-restricted-syntax
-      this.sock?.sendPresenceUpdate('unavailable').catch(() => {});
+      this.sock
+        ?.sendPresenceUpdate('unavailable')
+        .catch(silentCatch('whatsapp.presenceUnavailable'));
 
       const info = this.getBotInfo();
       const sockPhone = this.sock?.user?.id?.split(':')[0] ?? '';
@@ -1101,7 +1114,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
     const baseDelay = statusCode === 440 ? 10000 : 3000;
     const exponentialDelay = baseDelay * Math.pow(2, this.reconnectAttempt);
     // Anti-ban: add jitter (0.5x to 1.5x) to prevent synchronized reconnects
-    const jitter = 0.5 + Math.random();
+    const jitter = 0.5 + randomUnit();
     const delay = Math.min(exponentialDelay * jitter, 120_000);
     this.reconnectAttempt++;
 
@@ -1223,7 +1236,7 @@ export class WhatsAppChannelAPI implements ChannelPluginAPI {
       // Typing delay proportional to text length: ~50ms per char, min 1s, max 5s
       // Add Gaussian-like jitter for human-like behavior
       const baseMs = Math.min(Math.max(text.length * 50, 1000), 5000);
-      const jitter = 0.7 + Math.random() * 0.6; // 0.7x to 1.3x
+      const jitter = 0.7 + randomUnit() * 0.6; // 0.7x to 1.3x
       const delayMs = Math.round(baseMs * jitter);
       log.info(`[Typing] Simulating ${delayMs}ms typing for ${text.length} chars to ${jid}`);
       await new Promise((r) => setTimeout(r, delayMs));

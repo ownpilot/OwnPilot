@@ -11,7 +11,7 @@
  */
 
 import type { ToolRegistry } from '@ownpilot/core/tools';
-import { getPluginService, getExtensionService } from '@ownpilot/core/services';
+import { getPluginService } from '@ownpilot/core/services';
 import {
   qualifyToolName,
   getBaseName,
@@ -21,7 +21,7 @@ import {
 } from '@ownpilot/core/tools';
 import { getCustomToolDynamicRegistry } from '../../services/custom/tool-registry.js';
 import { getSharedToolRegistry } from '../../services/tool/executor.js';
-import type { ExtensionService } from '../../services/extension/service.js';
+import { getGatewayExtensionService } from '../../services/extension/accessor.js';
 import { traceToolCallStart, traceToolCallEnd } from '../../tracing/index.js';
 import { getErrorMessage } from '../../utils/common.js';
 import { getLog } from '../../services/log.js';
@@ -107,9 +107,9 @@ export function registerExtensionTools(
   _userId: string,
   trace: boolean
 ): ToolDefinition[] {
-  let service: ExtensionService;
+  let service: ReturnType<typeof getGatewayExtensionService>;
   try {
-    service = getExtensionService() as unknown as ExtensionService;
+    service = getGatewayExtensionService();
   } catch {
     log.debug('Extension service not initialized, skipping tool registration');
     return [];

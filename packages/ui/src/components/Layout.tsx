@@ -3,14 +3,9 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Menu, Settings } from './icons';
-import { StatsPanel } from './StatsPanel';
 import { RealtimeBridge, type BadgeCounts } from './RealtimeBridge';
 import { SecurityBanner } from './SecurityBanner';
-import { DebugDrawer } from './DebugDrawer';
-import { MiniChat } from './MiniChat';
-import { MiniTerminal } from './MiniTerminal';
 import { Sidebar } from './Sidebar';
-import { GlobalSearchOverlay } from './GlobalSearchOverlay';
 import { PinnedItemsProvider } from '../hooks/usePinnedItems';
 import { HeaderItemsProvider } from '../hooks/useHeaderItems';
 import { navGroups } from '../constants/nav-items';
@@ -20,6 +15,15 @@ import { FleetStatusIndicator } from './FleetStatusIndicator';
 
 const CustomizePage = lazy(() =>
   import('../pages/CustomizePage').then((m) => ({ default: m.CustomizePage }))
+);
+const StatsPanel = lazy(() => import('./StatsPanel').then((m) => ({ default: m.StatsPanel })));
+const DebugDrawer = lazy(() => import('./DebugDrawer').then((m) => ({ default: m.DebugDrawer })));
+const MiniChat = lazy(() => import('./MiniChat').then((m) => ({ default: m.MiniChat })));
+const MiniTerminal = lazy(() =>
+  import('./MiniTerminal').then((m) => ({ default: m.MiniTerminal }))
+);
+const GlobalSearchOverlay = lazy(() =>
+  import('./GlobalSearchOverlay').then((m) => ({ default: m.GlobalSearchOverlay }))
 );
 
 const CONNECTION_STYLES: Record<
@@ -240,10 +244,12 @@ export function Layout() {
 
               {/* Right Sidebar - Stats or Detail Panel (desktop only) */}
               {!isMobile && (
-                <StatsPanel
-                  isCollapsed={isStatsPanelCollapsed}
-                  onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
-                />
+                <Suspense fallback={null}>
+                  <StatsPanel
+                    isCollapsed={isStatsPanelCollapsed}
+                    onToggle={() => setIsStatsPanelCollapsed(!isStatsPanelCollapsed)}
+                  />
+                </Suspense>
               )}
             </div>
 
@@ -251,16 +257,30 @@ export function Layout() {
             <RealtimeBridge onBadgeUpdate={handleBadgeUpdate} />
 
             {/* Floating mini chat widget (desktop only, hidden on ChatPage) */}
-            {!isMobile && <MiniChat />}
+            {!isMobile && (
+              <Suspense fallback={null}>
+                <MiniChat />
+              </Suspense>
+            )}
 
             {/* Floating mini terminal widget (desktop only, hidden on CodingAgentsPage) */}
-            {!isMobile && <MiniTerminal />}
+            {!isMobile && (
+              <Suspense fallback={null}>
+                <MiniTerminal />
+              </Suspense>
+            )}
 
             {/* Debug Drawer */}
-            <DebugDrawer />
+            <Suspense fallback={null}>
+              <DebugDrawer />
+            </Suspense>
 
             {/* Global Search Overlay */}
-            {isSearchOpen && <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />}
+            {isSearchOpen && (
+              <Suspense fallback={null}>
+                <GlobalSearchOverlay onClose={() => setIsSearchOpen(false)} />
+              </Suspense>
+            )}
           </div>
         </PinnedItemsProvider>
       </HeaderItemsProvider>

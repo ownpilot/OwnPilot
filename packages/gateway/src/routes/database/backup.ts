@@ -10,6 +10,7 @@ import { Hono } from 'hono';
 import { spawn, type ChildProcess } from 'child_process';
 import { existsSync, unlinkSync, readdirSync, statSync } from 'fs';
 import { createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
 import { join, basename } from 'path';
 import { z } from 'zod';
 import { apiResponse, apiError, ERROR_CODES, sanitizeId, getErrorMessage } from '../helpers.js';
@@ -23,6 +24,14 @@ import { getEventSystem } from '@ownpilot/core/events';
 import { getClientIp } from '../../utils/client-ip.js';
 
 const log = getLog('Database');
+
+function toResponseBody(stream: ReturnType<typeof createReadStream>): ReadableStream {
+  try {
+    return Readable.toWeb(stream);
+  } catch {
+    return stream as never;
+  }
+}
 
 // H-S6: cap pg_dump/pg_restore runtime so a hung process doesn't leave
 // operationStatus.isRunning = true forever and block all future backups.
@@ -483,5 +492,5 @@ backupRoutes.get('/backups/:filename/download', (c) => {
   c.header('Content-Type', contentType);
   c.header('Content-Disposition', attachmentDisposition(basename(filename)));
 
-  return new Response(stream as unknown as ReadableStream);
+  return new Response(toResponseBody(stream));
 });

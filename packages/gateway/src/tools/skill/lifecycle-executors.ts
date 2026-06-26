@@ -20,7 +20,11 @@ type ExecResult = { success: boolean; result?: unknown; error?: string };
 
 export async function executeSearch(args: Record<string, unknown>): Promise<ExecResult> {
   try {
-    const query = String(args.query ?? '');
+    const query = String(args.query ?? '').trim();
+    if (!query) {
+      return { success: false, error: 'query is required' };
+    }
+
     const limit = Math.min(parseInt(String(args.limit ?? '10'), 10), 50);
 
     const installer = getNpmInstaller();

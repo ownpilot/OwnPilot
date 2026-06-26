@@ -212,12 +212,13 @@ class InMemoryStore<T extends { id: string }> implements DataStore<T> {
   async create(data: Omit<T, 'id' | 'createdAt'>): Promise<T> {
     const id = randomUUID();
     const now = new Date().toISOString();
-    const item = {
+    const itemData: unknown = {
       ...(data as object),
       id,
       createdAt: now,
       updatedAt: now,
-    } as unknown as T;
+    };
+    const item = itemData as T;
     this.data.set(id, item);
     return item;
   }

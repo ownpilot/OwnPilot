@@ -752,11 +752,14 @@ export class AgenticGatewayExecutor {
     try {
       // Dynamically import sandbox executor (it's in @ownpilot/core/sandbox).
       // Signature is runInSandbox(pluginId, code, options) returning a Result —
-      // the previous `as unknown as (code, opts)` cast inverted the arguments
+      // the previous double-cast inverted the arguments
       // (passing `code` as the pluginId and the options object as the code), so
       // the user's code never actually ran.
-      const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      const outcome = await runInSandbox(createPluginId('agentic'), code, {
+      // Use the Worker-isolated sandbox so maxMemory is enforced — agentic
+      // sandbox_code is LLM-generated and untrusted; a runaway allocation must
+      // crash the worker, not the gateway. It needs no host-state bridges here.
+      const { runInWorkerSandbox } = await import('@ownpilot/core/sandbox');
+      const outcome = await runInWorkerSandbox(createPluginId('agentic'), code, {
         limits: { maxExecutionTime: (params.timeoutMs as number) ?? 30_000 },
       });
 

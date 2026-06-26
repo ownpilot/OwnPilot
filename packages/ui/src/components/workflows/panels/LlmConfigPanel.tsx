@@ -3,10 +3,8 @@
  * Supports provider/model selection, system prompt, user message with templates,
  * temperature/max tokens, and custom API key/base URL.
  *
- * Trust boundary: the three 'as unknown as' casts in this file bridge
- * between the generic node-data blob (Record<string, unknown>) and the
- * form-typed config shape. The DB row is the source of truth and is
- * sound at runtime; the casts are local assertions, not type holes.
+ * Trust boundary: generic runtime/provider records are narrowed into typed
+ * workflow form state here. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -27,6 +25,10 @@ import {
   RetryAttemptsDisplay,
   INPUT_CLS,
 } from '../NodeConfigPanel';
+
+function hasConfiguredFlag(provider: object): provider is { isConfigured: boolean } {
+  return 'isConfigured' in provider && typeof provider.isConfigured === 'boolean';
+}
 
 export function LlmConfigPanel({
   node,
@@ -100,10 +102,7 @@ export function LlmConfigPanel({
           .map((p) => ({
             id: p.id,
             name: p.name ?? p.id,
-            isConfigured:
-              'isConfigured' in p
-                ? !!(p as unknown as Record<string, unknown>).isConfigured
-                : false,
+            isConfigured: hasConfiguredFlag(p) ? p.isConfigured : false,
           }))
           .filter((p) => p.id);
         setProviders(items);
@@ -653,17 +652,9 @@ export function LlmConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
-            <OutputAliasField
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
 
-            <RetryTimeoutFields
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <RetryTimeoutFields data={data} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Delete */}

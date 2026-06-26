@@ -227,11 +227,7 @@ export function ErrorHandlerConfigPanel({
               </p>
             </div>
 
-            <OutputAliasField
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           <div className="p-3 border-t border-border dark:border-dark-border">

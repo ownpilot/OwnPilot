@@ -1,5 +1,0 @@
-{
-  "state": "dismissed",
-  "dismissed_reason": "not_used",
-  "dismissed_comment": "Stale: website/package-lock.json does not exist in the repository. Project uses pnpm, not npm. Root esbuild upgraded to 0.28.1 (patched) resolving GHSA-gv7w-rqvm-qjhr."
-}

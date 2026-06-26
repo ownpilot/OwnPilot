@@ -23,7 +23,7 @@ import type {
   ToolCall,
   Message,
 } from '../types.js';
-import type { ProviderHealthResult } from '../provider-types.js';
+import type { IProvider, ProviderHealthResult } from '../provider-types.js';
 import {
   loadProviderConfig,
   resolveProviderConfig,
@@ -170,7 +170,7 @@ interface GeminiResponse {
  * - Vision
  * - Streaming
  */
-export class GoogleProvider {
+export class GoogleProvider implements IProvider {
   readonly type: AIProvider = 'google';
   private readonly providerId = 'google';
   private readonly config: ResolvedProviderConfig;
@@ -201,8 +201,7 @@ export class GoogleProvider {
       return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { apiKeyEnv, ...rest } = config;
+    const { apiKeyEnv: _apiKeyEnv, ...rest } = config;
     return new GoogleProvider({ ...rest, apiKey });
   }
 
@@ -600,6 +599,11 @@ export class GoogleProvider {
     return approximateTokenCount(messages);
   }
 
+  recordMetric(input: Parameters<IProvider['recordMetric']>[0]): Promise<void> {
+    void input;
+    return Promise.resolve();
+  }
+
   /**
    * Cancel ongoing request
    */
@@ -637,8 +641,8 @@ export class GoogleProvider {
   }
 
   private buildGeminiRequest(request: CompletionRequest) {
-    // Extract system instruction
-    const systemMessage = request.messages.find((m) => m.role === 'system');
+    // Extract system instruction (merging extras so none are silently dropped)
+    const systemText = this.extractSystemText(request.messages);
     const otherMessages = request.messages.filter((m) => m.role !== 'system');
 
     // Gemini API requires `contents` to be non-empty. If only a system message
@@ -661,19 +665,9 @@ export class GoogleProvider {
     };
 
     // System instruction
-    if (systemMessage) {
+    if (systemText) {
       geminiRequest.systemInstruction = {
-        parts: [
-          {
-            text:
-              typeof systemMessage.content === 'string'
-                ? systemMessage.content
-                : systemMessage.content
-                    .filter((c) => c.type === 'text')
-                    .map((c) => (c as { text: string }).text)
-                    .join('\n'),
-          },
-        ],
+        parts: [{ text: systemText }],
       };
     }
 
@@ -686,6 +680,26 @@ export class GoogleProvider {
     }
 
     return geminiRequest;
+  }
+
+  /**
+   * Merge the text of all system-role messages into one string for Gemini's
+   * single `systemInstruction` field, so extra system messages are preserved
+   * rather than silently dropped. Returns undefined when there are none.
+   */
+  private extractSystemText(messages: readonly Message[]): string | undefined {
+    const texts = messages
+      .filter((m) => m.role === 'system')
+      .map((m) =>
+        typeof m.content === 'string'
+          ? m.content
+          : m.content
+              .filter((c) => c.type === 'text')
+              .map((c) => (c as { text: string }).text)
+              .join('\n')
+      )
+      .filter(Boolean);
+    return texts.length ? texts.join('\n\n') : undefined;
   }
 
   private buildGeminiContents(messages: readonly Message[]) {

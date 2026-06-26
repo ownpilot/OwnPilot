@@ -118,6 +118,19 @@ describe('ChatMessageWidget', () => {
     expect(html).toContain('A photo');
   });
 
+  it('blocks unsafe image widget sources', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget
+        name="image"
+        data={{ src: 'data:image/svg+xml,<svg onload=alert(1)>', alt: 'Bad image' }}
+      />
+    );
+
+    expect(html).toContain('Blocked image URL');
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('onload');
+  });
+
   it('renders images widget with multiple images', () => {
     const html = renderToStaticMarkup(
       <ChatMessageWidget
@@ -175,6 +188,15 @@ describe('ChatMessageWidget', () => {
     expect(html).toContain('<video');
   });
 
+  it('blocks unsafe video widget sources', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget name="video" data={{ src: 'javascript:alert(1)' }} />
+    );
+
+    expect(html).toContain('Blocked video URL');
+    expect(html).not.toContain('<video');
+  });
+
   it('renders audio widget with url', () => {
     const html = renderToStaticMarkup(
       <ChatMessageWidget name="audio" data={{ src: 'https://example.com/podcast.mp3' }} />
@@ -182,6 +204,15 @@ describe('ChatMessageWidget', () => {
 
     expect(html).toContain('podcast.mp3');
     expect(html).toContain('<audio');
+  });
+
+  it('blocks unsafe audio widget sources', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget name="audio" data={{ src: 'data:text/html;base64,AAAA' }} />
+    );
+
+    expect(html).toContain('Blocked audio URL');
+    expect(html).not.toContain('<audio');
   });
 
   it('renders chart widget with bar data', () => {
@@ -231,6 +262,15 @@ describe('ChatMessageWidget', () => {
 
     expect(html).toContain('example.com');
     expect(html).toContain('<iframe');
+  });
+
+  it('blocks unsafe embed widget sources', () => {
+    const html = renderToStaticMarkup(
+      <ChatMessageWidget name="embed" data={{ src: ' java\tscript:alert(1)' }} />
+    );
+
+    expect(html).toContain('Blocked embed URL');
+    expect(html).not.toContain('<iframe');
   });
 
   it('renders iframe widget', () => {

@@ -61,6 +61,80 @@ export interface ProgressEvent {
   timestamp: string;
 }
 
+const PROGRESS_EVENT_TYPES = new Set<ProgressEvent['type']>([
+  'status',
+  'tool_start',
+  'tool_end',
+  'tool_blocked',
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isProgressEventType(value: string): value is ProgressEvent['type'] {
+  return PROGRESS_EVENT_TYPES.has(value as ProgressEvent['type']);
+}
+
+function toProgressTool(value: unknown): ProgressEvent['tool'] | undefined {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string') {
+    return undefined;
+  }
+  return {
+    id: value.id,
+    name: value.name,
+    ...(isRecord(value.arguments) ? { arguments: value.arguments } : {}),
+    ...(typeof value.reason === 'string' ? { reason: value.reason } : {}),
+  };
+}
+
+function toProgressToolCall(value: unknown): ProgressEvent['toolCall'] | undefined {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string') {
+    return undefined;
+  }
+  return { id: value.id, name: value.name };
+}
+
+function toProgressResult(value: unknown): ProgressEvent['result'] | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.success !== 'boolean' ||
+    typeof value.preview !== 'string' ||
+    typeof value.durationMs !== 'number'
+  ) {
+    return undefined;
+  }
+
+  return {
+    success: value.success,
+    preview: value.preview,
+    durationMs: value.durationMs,
+    ...(typeof value.sandboxed === 'boolean' ? { sandboxed: value.sandboxed } : {}),
+    ...(value.executionMode === 'docker' ||
+    value.executionMode === 'local' ||
+    value.executionMode === 'auto'
+      ? { executionMode: value.executionMode }
+      : {}),
+  };
+}
+
+function toProgressEvent(data: { type: string; [key: string]: unknown }): ProgressEvent | null {
+  if (!isProgressEventType(data.type)) {
+    return null;
+  }
+
+  return {
+    type: data.type,
+    ...(typeof data.message === 'string' ? { message: data.message } : {}),
+    ...(toProgressTool(data.tool) ? { tool: toProgressTool(data.tool) } : {}),
+    ...(toProgressToolCall(data.toolCall) ? { toolCall: toProgressToolCall(data.toolCall) } : {}),
+    ...(typeof data.reason === 'string' ? { reason: data.reason } : {}),
+    ...(toProgressResult(data.result) ? { result: toProgressResult(data.result) } : {}),
+    ...(isRecord(data.data) ? { data: data.data } : {}),
+    timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+  };
+}
+
 interface ChatState {
   messages: Message[];
   isLoading: boolean;
@@ -601,7 +675,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     });
                     break;
                   case 'progress':
-                    setProgressEvents((prev) => [...prev, event.data as unknown as ProgressEvent]);
+                    {
+                      const progressEvent = toProgressEvent(event.data);
+                      if (progressEvent) {
+                        setProgressEvents((prev) => [...prev, progressEvent]);
+                      }
+                    }
                     break;
                   case 'delta':
                     if (event.data.thinkingDelta) {
@@ -795,7 +874,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    [provider, model, agentId, workspaceId, thinkingConfig]
+    [provider, model, agentId, workspaceId, thinkingConfig, applySessionInfo]
   );
 
   const retryLastMessage = useCallback(async () => {

@@ -604,9 +604,16 @@ describe('random_choice', () => {
     const result = await exec('random_choice', { options, count: 3 });
     const choices = result.content.split(', ');
     expect(choices).toHaveLength(3);
+    expect(new Set(choices).size).toBe(3);
     for (const c of choices) {
       expect(options).toContain(c);
     }
+  });
+
+  it('returns an error for an empty options list', async () => {
+    const result = await exec('random_choice', { options: [] });
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('options must be a non-empty array');
   });
 });
 

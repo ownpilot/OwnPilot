@@ -797,6 +797,13 @@ export class Agent {
   }
 
   /**
+   * Forward provider telemetry to the underlying provider hook.
+   */
+  recordProviderMetric(input: Parameters<IProvider['recordMetric']>[0]): Promise<void> {
+    return this.provider.recordMetric(input);
+  }
+
+  /**
    * Cancel any ongoing request
    */
   cancel(): void {

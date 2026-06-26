@@ -9,6 +9,7 @@ import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { execFileSync } from 'node:child_process';
 import { Hono } from 'hono';
 import { cliProvidersRepo } from '../../db/repositories/cli/providers.js';
+import { validateCliBinaryPath } from '../../services/binary-utils.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 
 export const cliProvidersRoutes = new Hono();
@@ -68,6 +69,12 @@ cliProvidersRoutes.post('/', async (c) => {
   if (!b.binary || typeof b.binary !== 'string') {
     return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: 'binary is required' }, 400);
   }
+  let binary: string;
+  try {
+    binary = validateCliBinaryPath(b.binary);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(err) }, 400);
+  }
 
   // Validate name format: lowercase alphanumeric + hyphens
   if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(b.name) && b.name.length > 1) {
@@ -96,7 +103,7 @@ cliProvidersRoutes.post('/', async (c) => {
       name: b.name as string,
       displayName: b.display_name as string,
       description: (b.description as string) ?? undefined,
-      binary: b.binary as string,
+      binary,
       category: (b.category as string) ?? undefined,
       icon: (b.icon as string) ?? undefined,
       color: (b.color as string) ?? undefined,
@@ -131,6 +138,25 @@ cliProvidersRoutes.put('/:id', async (c) => {
   }
 
   const b = body as Record<string, unknown>;
+  let binary: string | undefined;
+  if (b.binary !== undefined) {
+    if (typeof b.binary !== 'string') {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'binary must be a string' },
+        400
+      );
+    }
+    try {
+      binary = validateCliBinaryPath(b.binary);
+    } catch (err) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(err) },
+        400
+      );
+    }
+  }
 
   try {
     if (!(await getOwnedProvider(id, userId))) {
@@ -141,7 +167,7 @@ cliProvidersRoutes.put('/:id', async (c) => {
       name: b.name as string | undefined,
       displayName: b.display_name as string | undefined,
       description: b.description as string | undefined,
-      binary: b.binary as string | undefined,
+      binary,
       category: b.category as string | undefined,
       icon: b.icon as string | undefined,
       color: b.color as string | undefined,

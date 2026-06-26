@@ -38,12 +38,12 @@ export {
 } from './NotificationNode';
 export { ParallelNode, type ParallelNodeData, type ParallelNodeType } from './ParallelNode';
 export { MergeNode, type MergeNodeData, type MergeNodeType } from './MergeNode';
+export { WorkflowCopilotPanel } from './WorkflowCopilotPanel';
 export {
-  WorkflowCopilotPanel,
+  buildWorkflowDefinition,
   convertDefinitionToReactFlow,
   type WorkflowDefinition,
-} from './WorkflowCopilotPanel';
-export { buildWorkflowDefinition } from './workflowDefinition';
+} from './workflowDefinition';
 export { VariablesPanel } from './VariablesPanel';
 export { WorkflowVersionsPanel } from './WorkflowVersionsPanel';
 export { autoArrangeNodes } from './auto-arrange';

@@ -25,6 +25,7 @@ import {
 import { canvasApi } from '../api/endpoints/canvas';
 import type { CanvasElement, CanvasElementType } from '../api/endpoints/canvas';
 import { useGateway } from '../hooks/useWebSocket';
+import { safeImageSrc } from '../components/widgets/media-url';
 
 interface CanvasOpPayload {
   canvasId: string;
@@ -53,9 +54,17 @@ function elementIcon(type: CanvasElementType) {
 
 function ElementBody({ el }: { el: CanvasElement }) {
   if (el.type === 'image') {
+    const src = safeImageSrc(el.content);
+    if (!src) {
+      return (
+        <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+          Blocked image URL
+        </div>
+      );
+    }
     return (
       <img
-        src={el.content}
+        src={src}
         alt=""
         className="w-full h-full object-contain"
         onError={(e) => {

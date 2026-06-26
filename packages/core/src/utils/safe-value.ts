@@ -4,6 +4,14 @@
  * Guards against NaN, Infinity, negative values in cost/duration calculations.
  */
 
+import { randomInt } from 'node:crypto';
+
+const RANDOM_UNIT_SCALE = 1_000_000_000;
+
+function randomUnit(): number {
+  return randomInt(RANDOM_UNIT_SCALE) / RANDOM_UNIT_SCALE;
+}
+
 function safeNumber(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return fallback;
@@ -41,7 +49,7 @@ export function calculateBackoffDelay(attempt: number, opts: BackoffOptions = {}
   const cappedDelay = Math.min(exponentialDelay, cfg.maxDelayMs);
 
   const jitterRange = cappedDelay * cfg.jitterFactor;
-  const jitter = (Math.random() * 2 - 1) * jitterRange;
+  const jitter = (randomUnit() * 2 - 1) * jitterRange;
 
   return Math.round(Math.max(0, cappedDelay + jitter));
 }

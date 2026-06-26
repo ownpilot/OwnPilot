@@ -49,8 +49,8 @@ export {
 // VM-based sandbox (faster, less isolated)
 export { SandboxExecutor, createSandbox, runInSandbox } from './executor.js';
 
-// Worker-based sandbox (slower, more isolated)
-export { WorkerSandbox, createWorkerSandbox } from './worker-sandbox.js';
+// Worker-based sandbox (slower, more isolated; enforces maxMemory)
+export { WorkerSandbox, createWorkerSandbox, runInWorkerSandbox } from './worker-sandbox.js';
 
 // Execution mode configuration
 export {

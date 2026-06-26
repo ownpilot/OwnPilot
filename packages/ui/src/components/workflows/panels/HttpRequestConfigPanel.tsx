@@ -2,11 +2,8 @@
  * HTTP Request Config Panel — configuration for HTTP request workflow nodes.
  * Supports GET/POST/PUT/PATCH/DELETE with auth, headers, query params, and body.
  *
- * Trust boundary: the four 'as unknown as' casts in this file all bridge
- * between DB-stored shapes (Record<string, string>, the generic node data
- * blob) and the form-typed shapes (KeyValuePair[], NodeConfigPanelProps).
- * The DB row is the source of truth and is sound at runtime; the casts
- * are local assertions, not type-system holes.
+ * Trust boundary: DB-stored shapes are narrowed into typed workflow form
+ * state here. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -38,6 +35,8 @@ interface KeyValuePair {
   value: string;
 }
 
+type KeyValueStorage = KeyValuePair[] | Record<string, string>;
+
 export interface HttpRequestNodeData {
   label?: string;
   method?: HttpMethod;
@@ -47,8 +46,8 @@ export interface HttpRequestNodeData {
   authUsername?: string;
   authPassword?: string;
   authHeaderName?: string;
-  headers?: KeyValuePair[];
-  queryParams?: KeyValuePair[];
+  headers?: KeyValueStorage;
+  queryParams?: KeyValueStorage;
   body?: string;
   bodyType?: BodyType;
   description?: string;
@@ -565,7 +564,7 @@ export function HttpRequestConfigPanel({
               pairs={headers}
               onChange={(next) => {
                 setHeaders(next);
-                pushUpdate({ headers: toRecord(next) as unknown as KeyValuePair[] });
+                pushUpdate({ headers: toRecord(next) });
               }}
             />
 
@@ -575,7 +574,7 @@ export function HttpRequestConfigPanel({
               pairs={queryParams}
               onChange={(next) => {
                 setQueryParams(next);
-                pushUpdate({ queryParams: toRecord(next) as unknown as KeyValuePair[] });
+                pushUpdate({ queryParams: toRecord(next) });
               }}
             />
 
@@ -645,18 +644,10 @@ export function HttpRequestConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
-            <OutputAliasField
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
 
             {/* Retry / Timeout */}
-            <RetryTimeoutFields
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <RetryTimeoutFields data={data} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           {/* Delete button */}

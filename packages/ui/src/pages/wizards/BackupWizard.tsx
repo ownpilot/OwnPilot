@@ -16,6 +16,7 @@ import {
 } from '../../components/wizard';
 import { systemApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
+import { safeDownloadHref } from '../../utils/safe-url';
 import type { BackupInfo } from '../../api/types/system';
 import { Check, AlertTriangle, Download, Settings } from '../../components/icons';
 
@@ -92,6 +93,7 @@ export function BackupWizard({ onComplete, onCancel }: Props) {
     error?: string;
   } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const resultDownloadHref = safeDownloadHref(result?.downloadUrl);
 
   useEffect(() => {
     if (action === 'download' && backupsList.length === 0) {
@@ -408,9 +410,9 @@ export function BackupWizard({ onComplete, onCancel }: Props) {
               </div>
               <h3 className="text-lg font-semibold text-text-primary">Done!</h3>
               <p className="text-sm text-text-muted mt-1 max-w-md mx-auto">{result.info}</p>
-              {result.downloadUrl && (
+              {resultDownloadHref && (
                 <a
-                  href={result.downloadUrl}
+                  href={resultDownloadHref}
                   className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/90"
                 >
                   <Download className="w-4 h-4" />

@@ -137,7 +137,7 @@ vi.mock('@ownpilot/core/events', () => ({
 }));
 
 vi.mock('@ownpilot/core/sandbox', () => ({
-  runInSandbox: mockRunInSandbox,
+  runInWorkerSandbox: mockRunInSandbox,
 }));
 
 // =============================================================================
@@ -623,13 +623,13 @@ describe('AgenticGatewayExecutor', () => {
       expect(result.error).toMatch(/blocked|disabled/i);
     });
 
-    it('calls runInSandbox with correct args and unwraps the Result', async () => {
+    it('calls runInWorkerSandbox with correct args and unwraps the Result', async () => {
       vi.resetModules();
       // Re-import to get fresh module with our dynamic mock
-      const { runInSandbox } = await import('@ownpilot/core/sandbox');
-      // runInSandbox returns Result<ExecutionResult> — ok wrapper around the
-      // sandbox's own success/value envelope.
-      (runInSandbox as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      const { runInWorkerSandbox } = await import('@ownpilot/core/sandbox');
+      // runInWorkerSandbox returns Result<ExecutionResult> — ok wrapper around
+      // the sandbox's own success/value envelope.
+      (runInWorkerSandbox as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
         value: { success: true, value: { stdout: '42' }, executionTime: 1 },
       });
@@ -644,7 +644,7 @@ describe('AgenticGatewayExecutor', () => {
       );
 
       // pluginId, code, options — NOT the old inverted (code, opts) order.
-      expect(runInSandbox).toHaveBeenCalledWith(
+      expect(runInWorkerSandbox).toHaveBeenCalledWith(
         'agentic',
         'console.log(21 * 2)',
         expect.objectContaining({ limits: { maxExecutionTime: 5_000 } })

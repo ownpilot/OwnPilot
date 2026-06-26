@@ -39,6 +39,13 @@ interface AcpServeOptions {
  */
 type AcpInitializer = () => Promise<void>;
 
+function getConnectionDone(connection: unknown): (() => Promise<void>) | null {
+  if (typeof connection !== 'object' || connection === null) return null;
+  const done = (connection as { done?: unknown }).done;
+  if (typeof done !== 'function') return null;
+  return () => Promise.resolve(done.call(connection));
+}
+
 /**
  * Start the ACP server bound to the current process's stdio.
  *
@@ -71,8 +78,8 @@ export async function startAcpServe(
   // expose that through the connection's done() promise (when present)
   // and additionally watch stdin for completeness.
   await new Promise<void>((resolve) => {
-    const done = (connection as unknown as { done?: () => Promise<void> }).done;
-    if (typeof done === 'function') {
+    const done = getConnectionDone(connection);
+    if (done) {
       void done().finally(resolve);
     }
     process.stdin.once('end', resolve);

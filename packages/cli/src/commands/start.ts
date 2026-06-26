@@ -12,6 +12,7 @@ import {
   getDefaultProvider,
   isDemoModeFromSettings,
 } from '@ownpilot/gateway/config';
+import { replaceShutdownSignalHandlers } from './shutdown-signals.js';
 
 interface StartOptions {
   port: string;
@@ -90,6 +91,5 @@ export async function startAll(options: StartOptions): Promise<void> {
     console.log('\n\n🛑 Shutting down...');
     process.exit(0);
   };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  replaceShutdownSignalHandlers('start', shutdown);
 }

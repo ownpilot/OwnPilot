@@ -8,8 +8,7 @@ import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { existsSync, readdirSync } from 'node:fs';
 import { join, basename, dirname } from 'node:path';
 import { Hono } from 'hono';
-import { getExtensionService } from '@ownpilot/core/services';
-import type { ExtensionService } from '../../services/extension/service.js';
+import { getGatewayExtensionService } from '../../services/extension/accessor.js';
 import { apiError, ERROR_CODES, notFoundError, getErrorMessage } from '../helpers.js';
 import { getLog } from '../../services/log.js';
 import { attachmentDisposition, sanitizeFilenameSegment } from '../../utils/file-safety.js';
@@ -18,7 +17,31 @@ const log = getLog('ExtensionPackaging');
 
 export const packagingRoutes = new Hono();
 
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
+
+function getManifestFormat(manifest: unknown): string {
+  if (typeof manifest !== 'object' || manifest === null) return 'ownpilot';
+  const format = (manifest as Record<string, unknown>).format;
+  return typeof format === 'string' ? format : 'ownpilot';
+}
+
+function getManifestRecord(manifest: unknown): Record<string, unknown> {
+  if (typeof manifest !== 'object' || manifest === null) return {};
+  return manifest as Record<string, unknown>;
+}
+
+interface AdmZipArchive {
+  addLocalFile(localPath: string, zipPath?: string, zipName?: string): void;
+  addFile(entryName: string, data: Buffer): void;
+  toBuffer(): Buffer;
+}
+
+type AdmZipConstructor = new () => AdmZipArchive;
+type AdmZipImport = { default?: AdmZipConstructor } | AdmZipConstructor;
+
+function resolveAdmZipConstructor(mod: AdmZipImport): AdmZipConstructor | null {
+  return typeof mod === 'function' ? mod : (mod.default ?? null);
+}
 
 /**
  * GET /:id/package — Download .skill ZIP
@@ -34,16 +57,22 @@ packagingRoutes.get('/:id/package', async (c) => {
     return notFoundError(c, 'Extension', id);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let AdmZipClass: any = null;
+  let AdmZipClass: AdmZipConstructor | null = null;
   try {
     const admZipPkg = 'adm-zip';
-    const mod = await import(admZipPkg);
-    AdmZipClass = mod.default ?? mod;
+    const mod = (await import(admZipPkg)) as AdmZipImport;
+    AdmZipClass = resolveAdmZipConstructor(mod);
   } catch {
     return apiError(
       c,
       { code: ERROR_CODES.EXECUTION_ERROR, message: 'adm-zip not available' },
+      500
+    );
+  }
+  if (!AdmZipClass) {
+    return apiError(
+      c,
+      { code: ERROR_CODES.EXECUTION_ERROR, message: 'adm-zip constructor not available' },
       500
     );
   }
@@ -57,8 +86,8 @@ packagingRoutes.get('/:id/package', async (c) => {
     const zipFolder = `${skillName}/`;
 
     // Determine manifest file content
-    const manifest = pkg.manifest as unknown as Record<string, unknown>;
-    const format = (manifest.format as string | undefined) ?? 'ownpilot';
+    const manifest = getManifestRecord(pkg.manifest);
+    const format = getManifestFormat(manifest);
 
     // Add the main manifest file
     if (pkg.sourcePath && existsSync(pkg.sourcePath)) {

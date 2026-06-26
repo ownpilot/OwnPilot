@@ -22,6 +22,7 @@ import { useToast } from './ToastProvider';
 import { providersApi } from '../api';
 import type { ProviderInfo, UserOverride } from '../types';
 import { EmptyState } from './EmptyState';
+import { safeHref } from '../utils/safe-url';
 
 // Provider type options - must match ProviderType in configs/types.ts
 const PROVIDER_TYPES = [
@@ -171,6 +172,7 @@ export function ProvidersTab() {
 
   const renderProviderCard = (provider: ProviderInfo) => {
     const isDisabled = !provider.isEnabled;
+    const docsHref = safeHref(provider.docsUrl);
 
     return (
       <div
@@ -263,9 +265,9 @@ export function ProvidersTab() {
             </button>
 
             {/* Docs link */}
-            {provider.docsUrl && (
+            {docsHref && (
               <a
-                href={provider.docsUrl}
+                href={docsHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1.5 text-gray-500 hover:text-primary hover:bg-primary/10 rounded transition-colors"

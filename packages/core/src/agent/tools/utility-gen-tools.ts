@@ -12,6 +12,12 @@ import * as crypto from 'node:crypto';
 import type { ToolDefinition, ToolExecutor, ToolExecutionResult } from '../types.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 
+const RANDOM_FLOAT_SCALE = 1_000_000_000;
+
+function randomFloat(min: number, max: number): number {
+  return min + (crypto.randomInt(RANDOM_FLOAT_SCALE) / RANDOM_FLOAT_SCALE) * (max - min);
+}
+
 // =============================================================================
 // UUID GENERATION
 // =============================================================================
@@ -230,8 +236,19 @@ export const generateRandomNumberExecutor: ToolExecutor = async (
 
     const numbers: number[] = [];
     for (let i = 0; i < count; i++) {
-      const rand = Math.random() * (max - min) + min;
-      numbers.push(integer ? Math.floor(rand) : Number(rand.toFixed(4)));
+      if (integer) {
+        const intMin = Math.ceil(min);
+        const intMaxExclusive = Math.ceil(max);
+        if (intMaxExclusive <= intMin) {
+          return {
+            content: JSON.stringify({ error: 'range does not contain an integer' }),
+            isError: true,
+          };
+        }
+        numbers.push(crypto.randomInt(intMin, intMaxExclusive));
+      } else {
+        numbers.push(Number(randomFloat(min, max).toFixed(4)));
+      }
     }
 
     return {

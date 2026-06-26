@@ -6,7 +6,7 @@
  * Handles message normalization, and event emission.
  */
 
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import { Bot, InputFile } from 'grammy';
 import type { Message } from 'grammy/types';
 import { TelegramApprovalHandler } from './approval-handler.js';
@@ -71,7 +71,7 @@ async function convertAudioToOggOpus(audio: Buffer): Promise<Buffer> {
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const execFileAsync = promisify(execFile);
-  // randomBytes (CSPRNG) for the temp-file suffix — Math.random() is a
+  // randomBytes (CSPRNG) for the temp-file suffix — non-cryptographic PRNGs are
   // non-cryptographic PRNG and the suffix is part of a filesystem path
   // that an attacker could try to predict.
   const base = path.join(
@@ -113,6 +113,42 @@ interface TelegramChannelConfig {
   webhook_secret?: string;
 }
 
+function optionalConfigString(config: Record<string, unknown>, key: string): string | undefined {
+  const value = config[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function parseMode(value: unknown): TelegramChannelConfig['parse_mode'] {
+  return value === 'Markdown' || value === 'MarkdownV2' || value === 'HTML' ? value : undefined;
+}
+
+function voiceReplyMode(value: unknown): TelegramChannelConfig['voice_reply_mode'] {
+  return value === 'never' || value === 'voice_messages' || value === 'always' ? value : undefined;
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function parseTelegramConfig(config: Record<string, unknown>): TelegramChannelConfig {
+  return {
+    bot_token: optionalConfigString(config, 'bot_token') ?? '',
+    allowed_users: optionalConfigString(config, 'allowed_users'),
+    allowed_chats: optionalConfigString(config, 'allowed_chats'),
+    parse_mode: parseMode(config.parse_mode),
+    voice_reply_mode: voiceReplyMode(config.voice_reply_mode),
+    voice_reply_voice: optionalConfigString(config, 'voice_reply_voice'),
+    voice_reply_speed: optionalNumber(config.voice_reply_speed),
+    webhook_url: optionalConfigString(config, 'webhook_url'),
+    webhook_secret: optionalConfigString(config, 'webhook_secret'),
+  };
+}
+
 // ============================================================================
 // Implementation
 // ============================================================================
@@ -137,7 +173,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
   private lastErrorWasConflict = false;
 
   constructor(config: Record<string, unknown>, pluginId: string) {
-    this.config = config as unknown as TelegramChannelConfig;
+    this.config = parseTelegramConfig(config);
     this.pluginId = pluginId;
 
     // Parse allowed users/chats from comma-separated strings
@@ -528,7 +564,7 @@ export class TelegramChannelAPI implements ChannelPluginAPI {
     );
 
     // Add small jitter to prevent thundering herd when multiple instances restart
-    const jitter = Math.floor(Math.random() * 2000);
+    const jitter = randomInt(2000);
     const finalDelay = delay + jitter;
 
     log.info(

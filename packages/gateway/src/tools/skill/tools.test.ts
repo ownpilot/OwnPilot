@@ -12,28 +12,15 @@ import { executeSkillTool, SKILL_TOOLS } from './tools.js';
 // =============================================================================
 
 vi.mock('../../services/skill/npm-installer.js', () => ({
-  getNpmInstaller: () => ({
-    search: vi.fn(),
-    install: vi.fn(),
-    checkForUpdate: vi.fn(),
-  }),
+  getNpmInstaller: () => stableMocks.mockInstaller,
 }));
 
 vi.mock('../../services/extension/service.js', () => ({
-  getExtensionService: () => ({
-    getAll: vi.fn(),
-    getById: vi.fn(),
-    enable: vi.fn(),
-    disable: vi.fn(),
-    getToolDefinitions: vi.fn(),
-  }),
+  getExtensionService: () => stableMocks.mockService,
 }));
 
 vi.mock('../../db/repositories/extensions.js', () => ({
-  extensionsRepo: {
-    getAll: vi.fn(),
-    getById: vi.fn(),
-  },
+  extensionsRepo: stableMocks.mockExtensionsRepo,
 }));
 
 vi.mock('../../services/skill/agentskills-parser.js', () => ({
@@ -112,11 +99,11 @@ const _mockSkillExtension = {
 
 describe('Skill Tools', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    resetSkillToolMocks();
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
   });
 
   // ==========================================================================
@@ -611,15 +598,49 @@ const happyOwnpilotExtension = {
 // Import the mocked getAdapter so we can restore its implementation after clearAllMocks
 import { getAdapter as mockedGetAdapter } from '../../db/adapters/index.js';
 
+function resetSkillToolMocks() {
+  vi.resetAllMocks();
+
+  stableMocks.mockInstaller.search.mockResolvedValue({ packages: [], total: 0 });
+  stableMocks.mockInstaller.install.mockResolvedValue({
+    success: false,
+    error: 'Installation failed',
+  });
+  stableMocks.mockInstaller.checkForUpdate.mockResolvedValue({
+    hasUpdate: false,
+    latestVersion: '',
+  });
+
+  stableMocks.mockService.getAll.mockReturnValue([]);
+  stableMocks.mockService.getById.mockReturnValue(undefined);
+  stableMocks.mockService.enable.mockResolvedValue(null);
+  stableMocks.mockService.disable.mockResolvedValue(null);
+  stableMocks.mockService.getToolDefinitions.mockReturnValue([]);
+
+  stableMocks.mockExtensionsRepo.getAll.mockReturnValue([]);
+  stableMocks.mockExtensionsRepo.getById.mockReturnValue(undefined);
+
+  vi.mocked(mockedGetAdapter).mockResolvedValue(stableMocks.mockAdapter as never);
+  stableMocks.mockAdapter.query.mockResolvedValue([]);
+  stableMocks.mockAdapter.queryOne.mockResolvedValue(null);
+  stableMocks.mockAdapter.execute.mockResolvedValue({ changes: 0, rowCount: 0 });
+  stableMocks.mockAdapter.exec.mockResolvedValue(undefined);
+  stableMocks.mockAdapter.transaction.mockImplementation((fn: () => Promise<unknown>) => fn());
+  stableMocks.mockAdapter.now.mockReturnValue('NOW()');
+  stableMocks.mockAdapter.date.mockImplementation((value: unknown) => value);
+  stableMocks.mockAdapter.dateSubtract.mockImplementation((amount: number, unit: string) => ({
+    amount,
+    unit,
+  }));
+  stableMocks.mockAdapter.placeholder.mockImplementation((i: number) => `$${i}`);
+  stableMocks.mockAdapter.boolean.mockImplementation((v: boolean) => v);
+  stableMocks.mockAdapter.parseBoolean.mockImplementation((v: unknown) => Boolean(v));
+  stableMocks.mockAdapter.close.mockResolvedValue(undefined);
+}
+
 describe('Happy Path Tests', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Restore getAdapter mock implementation (cleared by clearAllMocks above)
-    vi.mocked(mockedGetAdapter).mockResolvedValue(stableMocks.mockAdapter as never);
-    // Reset adapter method defaults after clearAllMocks
-    stableMocks.mockAdapter.query.mockResolvedValue([]);
-    stableMocks.mockAdapter.queryOne.mockResolvedValue(null);
-    stableMocks.mockAdapter.execute.mockResolvedValue({ changes: 0, rowCount: 0 });
+    resetSkillToolMocks();
   });
 
   // ==========================================================================

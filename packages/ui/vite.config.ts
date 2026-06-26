@@ -125,25 +125,42 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/');
             // Vendor chunks (node_modules only)
-            if (id.includes('node_modules')) {
-              if (
-                id.includes('/react-dom/') ||
-                id.includes('/react/') ||
-                id.includes('/react-router') ||
-                id.includes('/scheduler/')
-              ) {
-                return 'vendor-react';
+            if (normalizedId.includes('node_modules')) {
+              if (normalizedId.includes('/react-dom/')) {
+                return 'vendor-react-dom';
               }
-              if (id.includes('/prism-react-renderer/')) {
+              if (normalizedId.includes('/react/') || normalizedId.includes('/scheduler/')) {
+                return 'vendor-react-core';
+              }
+              if (normalizedId.includes('/react-router')) {
+                return 'vendor-router';
+              }
+              if (normalizedId.includes('/@xyflow/')) {
+                return 'vendor-reactflow';
+              }
+              if (normalizedId.includes('/@xterm/')) {
+                return 'vendor-xterm';
+              }
+              if (
+                normalizedId.includes('/@monaco-editor/') ||
+                normalizedId.includes('/monaco-editor/')
+              ) {
+                return 'vendor-monaco';
+              }
+              if (normalizedId.includes('/recharts/') || normalizedId.includes('/d3-')) {
+                return 'vendor-charts';
+              }
+              if (normalizedId.includes('/prism-react-renderer/')) {
                 return 'vendor-prism';
               }
               return; // let Rollup decide for other deps
             }
             // App chunks (source code only)
-            if (id.includes('/components/icons')) return 'icons';
-            if (id.includes('/src/api/')) return 'api';
-            if (id.includes('/src/hooks/')) return 'stores';
+            if (normalizedId.includes('/components/icons')) return 'icons';
+            if (normalizedId.includes('/src/api/')) return 'api';
+            if (normalizedId.includes('/src/hooks/')) return 'stores';
           },
         },
       },

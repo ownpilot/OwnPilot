@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { createElement, Fragment, useMemo, type ReactNode } from 'react';
 import DOMPurify__default from 'dompurify';
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 
 // Handle both CJS (node test env) and ESM imports
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const DOMPurify = (DOMPurify__default as any).default ?? DOMPurify__default;
+type DOMPurifyModule = typeof DOMPurify__default & { default?: typeof DOMPurify__default };
+const DOMPurify = (DOMPurify__default as DOMPurifyModule).default ?? DOMPurify__default;
 
 interface Props {
   data: unknown;
@@ -63,17 +63,18 @@ const ALLOWED_TAGS = [
 ] as const;
 
 const ALLOWED_ATTR = ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'] as const;
+const ALLOWED_TAG_SET = new Set<string>(ALLOWED_TAGS);
+const ALLOWED_ATTR_SET = new Set<string>(ALLOWED_ATTR);
+const URI_ATTRS = new Set(['href', 'src']);
 
 let dompurifyHooked = false;
 function ensureDompurifyHook(): void {
   if (dompurifyHooked) return;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dp = DOMPurify as any;
-  if (typeof dp.addHook !== 'function') return;
+  if (typeof DOMPurify.addHook !== 'function') return;
   // After sanitization, force `rel="noopener noreferrer"` on every
   // `<a target="_blank">` so a sanitized link cannot tabnab the parent
   // window via `window.opener`.
-  dp.addHook('afterSanitizeAttributes', (node: Element) => {
+  DOMPurify.addHook('afterSanitizeAttributes', (node: Element) => {
     if (node.tagName === 'A' && node.getAttribute('target') === '_blank') {
       node.setAttribute('rel', 'noopener noreferrer');
     }
@@ -89,30 +90,91 @@ function ensureDompurifyHook(): void {
 }
 
 function sanitizeHtml(html: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dp = DOMPurify as any;
-  if (!dp || typeof dp.sanitize !== 'function') {
+  if (!DOMPurify || typeof DOMPurify.sanitize !== 'function') {
     // Fallback: strip all tags in non-DOMPurify environments (e.g., test SSR)
     return html.replace(/<[^>]*>/g, '').slice(0, 10000);
   }
   ensureDompurifyHook();
-  // Explicit, restrictive config — no implicit profiles, no SVG/MathML
-  // namespace, no `data:` URIs, no `style` attribute, no template
-  // expressions. SAFE_FOR_TEMPLATES blocks mXSS via `{{}}` `${}` brackets.
-  return dp.sanitize(html, {
+  // Explicit, restrictive config. The React node converter below performs
+  // the final tag/attribute allow-list enforcement, which avoids relying on
+  // environment-specific parser behavior for forbidden tags.
+  return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR],
     ALLOWED_URI_REGEXP: SAFE_URI_RE,
     ALLOW_DATA_ATTR: false,
     ALLOW_ARIA_ATTR: false,
     ALLOW_UNKNOWN_PROTOCOLS: false,
-    USE_PROFILES: { html: true, svg: false, svgFilters: false, mathMl: false },
-    SAFE_FOR_TEMPLATES: true,
-    FORBID_TAGS: ['style', 'script', 'iframe', 'object', 'embed', 'form', 'meta', 'link', 'base'],
     FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'formaction', 'srcdoc'],
-    KEEP_CONTENT: false,
     RETURN_TRUSTED_TYPE: false,
   });
+}
+
+function safeAttributeProps(element: Element): Record<string, string> {
+  const props: Record<string, string> = {};
+
+  for (const attr of Array.from(element.attributes)) {
+    const name = attr.name.toLowerCase();
+    const value = attr.value;
+    if (!ALLOWED_ATTR_SET.has(name)) continue;
+    if (URI_ATTRS.has(name) && !SAFE_URI_RE.test(value)) continue;
+
+    if (name === 'class') {
+      props.className = value;
+    } else if (name === 'target') {
+      if (value === '_blank') props.target = value;
+    } else if (name === 'rel') {
+      props.rel = value;
+    } else {
+      props[name] = value;
+    }
+  }
+
+  if (props.target === '_blank') {
+    props.rel = 'noopener noreferrer';
+  }
+
+  return props;
+}
+
+function nodeToReact(node: ChildNode, key: string): ReactNode {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent ?? '';
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return null;
+  }
+
+  const element = node as Element;
+  const tagName = element.tagName.toLowerCase();
+  if (!ALLOWED_TAG_SET.has(tagName)) {
+    return null;
+  }
+
+  const children = Array.from(element.childNodes)
+    .map((child, index) => nodeToReact(child, `${key}-${index}`))
+    .filter(
+      (child): child is Exclude<ReactNode, null | undefined | false> =>
+        child != null && child !== false
+    );
+
+  return createElement(tagName, { key, ...safeAttributeProps(element) }, ...children);
+}
+
+function htmlToReactNodes(html: string): ReactNode {
+  if (typeof DOMParser === 'undefined' || typeof Node === 'undefined') {
+    return html;
+  }
+
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const nodes = Array.from(doc.body.childNodes)
+    .map((node, index) => nodeToReact(node, `html-${index}`))
+    .filter(
+      (node): node is Exclude<ReactNode, null | undefined | false> => node != null && node !== false
+    );
+
+  return createElement(Fragment, null, ...nodes);
 }
 
 function HtmlIcon({ className = 'h-4 w-4' }: { className?: string }) {
@@ -134,7 +196,7 @@ export function HtmlWidget({ data, title: titleProp }: Props) {
 
   const htmlContent = isHtmlData(data) ? data.html : typeof data === 'string' ? data : '';
 
-  const sanitized = useMemo(() => sanitizeHtml(htmlContent), [htmlContent]);
+  const renderedHtml = useMemo(() => htmlToReactNodes(sanitizeHtml(htmlContent)), [htmlContent]);
 
   if (!htmlContent) {
     return (
@@ -146,10 +208,7 @@ export function HtmlWidget({ data, title: titleProp }: Props) {
 
   return (
     <WidgetShell title={title || 'HTML'} icon={<HtmlIcon />}>
-      <div
-        className="prose prose-sm dark:prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: sanitized }}
-      />
+      <div className="prose prose-sm dark:prose-invert max-w-none">{renderedHtml}</div>
     </WidgetShell>
   );
 }

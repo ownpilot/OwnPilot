@@ -10,6 +10,7 @@
 import type { WorkflowNode, NodeResult } from '../../../db/repositories/workflows/index.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { resolveTemplates } from '../template-resolver.js';
+import { nodeDataRecord } from '../node-data.js';
 import { log } from './utils.js';
 import { getEventSystem } from '@ownpilot/core/events';
 
@@ -24,7 +25,7 @@ export async function executeClawNode(
   let createdClawId: string | null = null;
   let getClawServiceRef: (typeof import('../../claw/service.js'))['getClawService'] | null = null;
   try {
-    const data = node.data as unknown as Record<string, unknown>;
+    const data = nodeDataRecord(node);
 
     const resolved = resolveTemplates(
       {

@@ -25,6 +25,7 @@ import type {
 import { EditModelModal } from '../EditModelModal';
 import { AddLocalProviderDialog } from '../AddLocalProviderDialog';
 import { ModelCard } from './constants';
+import { safeHref } from '../../utils/safe-url';
 
 // ============================================================================
 // Main Component
@@ -719,64 +720,67 @@ export function AIModelsTab() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {availableProviders.map((provider) => (
-              <div
-                key={provider.id}
-                className={`card-elevated p-3 rounded-lg border ${
-                  provider.isConfigured
-                    ? 'border-success/30 bg-success/5'
-                    : 'border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
-                        {provider.name}
-                      </h5>
-                      <span
-                        className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
-                          provider.type === 'aggregator'
-                            ? 'bg-purple-500/10 text-purple-500'
-                            : 'bg-primary/10 text-primary'
-                        }`}
-                      >
-                        {provider.type}
-                      </span>
+            {availableProviders.map((provider) => {
+              const docsHref = safeHref(provider.docsUrl);
+              return (
+                <div
+                  key={provider.id}
+                  className={`card-elevated p-3 rounded-lg border ${
+                    provider.isConfigured
+                      ? 'border-success/30 bg-success/5'
+                      : 'border-border dark:border-dark-border bg-bg-primary dark:bg-dark-bg-primary'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h5 className="font-medium text-text-primary dark:text-dark-text-primary truncate">
+                          {provider.name}
+                        </h5>
+                        <span
+                          className={`flex-shrink-0 px-1.5 py-0.5 text-xs rounded ${
+                            provider.type === 'aggregator'
+                              ? 'bg-purple-500/10 text-purple-500'
+                              : 'bg-primary/10 text-primary'
+                          }`}
+                        >
+                          {provider.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
+                        {provider.modelCount} models
+                        {provider.description && <> &bull; {provider.description}</>}
+                      </p>
                     </div>
-                    <p className="text-xs text-text-muted dark:text-dark-text-muted mt-0.5">
-                      {provider.modelCount} models
-                      {provider.description && <> &bull; {provider.description}</>}
-                    </p>
+                    {provider.isConfigured ? (
+                      <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-success/10 text-success flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Ready
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted">
+                        No key
+                      </span>
+                    )}
                   </div>
-                  {provider.isConfigured ? (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-success/10 text-success flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Ready
-                    </span>
-                  ) : (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-bg-tertiary dark:bg-dark-bg-tertiary text-text-muted">
-                      No key
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
+                    <code className="px-1.5 py-0.5 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary font-mono">
+                      {provider.apiKeyEnv}
+                    </code>
+                    {docsHref && (
+                      <a
+                        href={docsHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1 ml-auto"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Docs
+                      </a>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2 text-xs text-text-muted dark:text-dark-text-muted">
-                  <code className="px-1.5 py-0.5 rounded bg-bg-tertiary dark:bg-dark-bg-tertiary font-mono">
-                    {provider.apiKeyEnv}
-                  </code>
-                  {provider.docsUrl && (
-                    <a
-                      href={provider.docsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1 ml-auto"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Docs
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

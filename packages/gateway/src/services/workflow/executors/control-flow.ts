@@ -15,6 +15,7 @@ import type {
 } from '../../../db/repositories/workflows/index.js';
 import { getErrorMessage } from '../../../utils/common.js';
 import { resolveTemplates } from '../template-resolver.js';
+import { nodeDataRecord } from '../node-data.js';
 import { log, safeVmEval } from './utils.js';
 
 /**
@@ -141,7 +142,7 @@ export function executeMergeNode(
 ): NodeResult {
   const startTime = Date.now();
   try {
-    const data = node.data as unknown as Record<string, unknown>;
+    const data = nodeDataRecord(node);
     const mode = (data.mode as string) || 'waitAll';
 
     const collected: Record<string, unknown> = {};

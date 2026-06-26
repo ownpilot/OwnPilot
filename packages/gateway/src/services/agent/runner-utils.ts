@@ -30,7 +30,7 @@ import { calculateCost } from '@ownpilot/core/costs';
 import type { AIProvider } from '@ownpilot/core/costs';
 import type { ToolId } from '@ownpilot/core/types';
 import { getErrorMessage } from '@ownpilot/core/services';
-import { getExtensionService } from '@ownpilot/core/services';
+import { silentCatch } from '@ownpilot/core/utils';
 import { getLog } from '../log.js';
 import { resolveForProcess } from '../llm/model-routing.js';
 import { getProviderApiKey, loadProviderConfig, NATIVE_PROVIDERS } from './cache.js';
@@ -47,7 +47,7 @@ import {
 } from '../../tools/agent-tool-registry.js';
 import { AGENT_DEFAULT_MAX_TOKENS, AGENT_DEFAULT_TEMPERATURE } from '../../config/defaults.js';
 import { getLlmSemaphore } from '../llm/semaphore.js';
-import type { ExtensionService } from '../extension/service.js';
+import { getGatewayExtensionService } from '../extension/accessor.js';
 import { getProviderMetricsRepository } from '../../db/repositories/costs/provider-metrics.js';
 
 const log = getLog('AgentRunnerUtils');
@@ -406,7 +406,7 @@ export function resolveToolFilter(
 
   if (skills && skills.length > 0) {
     try {
-      const extService = getExtensionService() as unknown as ExtensionService;
+      const extService = getGatewayExtensionService();
       const allowedSkillIds = new Set(skills);
       for (const def of extService.getToolDefinitions()) {
         if (allowedSkillIds.has(def.extensionId)) {
@@ -449,8 +449,7 @@ export function createTimeoutPromise(
   // Attach a no-op catch handler so that a late rejection (after the race has
   // already settled via another promise) does not surface as an unhandled
   // rejection in long-running services.
-  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-  promise.catch(() => {});
+  promise.catch(silentCatch('agentRunner.timeout.raceLoser'));
   return {
     promise,
     cancel: () => {
@@ -596,8 +595,7 @@ function createCancellationPromise(signal: AbortSignal): {
     };
     signal.addEventListener('abort', listener, { once: true });
   });
-  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-  promise.catch(() => {});
+  promise.catch(silentCatch('agentRunner.cancel.raceLoser'));
   return {
     promise,
     cancel: () => {
@@ -710,8 +708,7 @@ export async function executeAgentPipeline(
     // may eventually reject (provider error, late timeout). Without a handler,
     // Node would emit unhandledRejection. timeout.promise / cancellation.promise
     // already suppress this internally.
-    // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-    agentPromise.catch(() => {});
+    agentPromise.catch(silentCatch('agentRunner.agent.raceLoser'));
     const promises: Promise<unknown>[] = [agentPromise, timeout.promise];
     if (cancellation) {
       promises.push(cancellation.promise);
@@ -790,7 +787,6 @@ async function recordTelemetry(
   usage?: { promptTokens?: number; completionTokens?: number }
 ): Promise<void> {
   try {
-    const prov = (agent as unknown as { provider: IProvider }).provider;
     const costUsd = calculateExecutionCost(provider, model, usage ?? null);
     const metricInput = {
       id: crypto.randomUUID(),
@@ -815,25 +811,23 @@ async function recordTelemetry(
         log.warn('Failed to record provider metrics', { provider, model, error: err });
       });
     // Also call provider hook (for providers that want custom handling)
-    if (prov && typeof prov.recordMetric === 'function') {
-      prov
-        .recordMetric({
-          modelId: model,
-          latencyMs,
-          error: isError,
-          errorType: isError ? 'agent_execution_failed' : null,
-          promptTokens: usage?.promptTokens ?? null,
-          completionTokens: usage?.completionTokens ?? null,
-          costUsd: costUsd > 0 ? costUsd : null,
-          workflowId: workflowId ?? null,
-          agentId: agentId ?? null,
-          userId: userId ?? null,
-        })
-        .catch((err: unknown) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          log.warn(`[metrics] recordMetric failed: ${msg}`);
-        });
-    }
+    agent
+      .recordProviderMetric({
+        modelId: model,
+        latencyMs,
+        error: isError,
+        errorType: isError ? 'agent_execution_failed' : null,
+        promptTokens: usage?.promptTokens ?? null,
+        completionTokens: usage?.completionTokens ?? null,
+        costUsd: costUsd > 0 ? costUsd : null,
+        workflowId: workflowId ?? null,
+        agentId: agentId ?? null,
+        userId: userId ?? null,
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn(`[metrics] recordMetric failed: ${msg}`);
+      });
   } catch {
     // Non-blocking telemetry — never surface errors
   }

@@ -14,6 +14,7 @@ import {
   RATE_LIMIT_WINDOW_MS,
 } from '@ownpilot/gateway/config';
 import { settingsRepo } from '@ownpilot/gateway/db';
+import { replaceShutdownSignalHandlers } from './shutdown-signals.js';
 
 // Database settings keys for gateway config
 const GATEWAY_API_KEYS_KEY = 'gateway_api_keys';
@@ -141,6 +142,5 @@ export async function startServer(options: ServerOptions): Promise<void> {
     server.close();
     setTimeout(() => process.exit(0), 3000).unref();
   };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  replaceShutdownSignalHandlers('server', shutdown);
 }

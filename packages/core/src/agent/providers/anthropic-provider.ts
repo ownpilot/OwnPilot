@@ -133,8 +133,8 @@ export class AnthropicProvider extends BaseProvider {
       return err(new ValidationError('Anthropic API key not configured'));
     }
 
-    // Extract system message
-    const systemMessage = request.messages.find((m) => m.role === 'system');
+    // Extract system message (merging any extras so none are silently dropped)
+    const systemMessage = this.extractSystemMessage(request.messages);
     const otherMessages = request.messages.filter((m) => m.role !== 'system');
 
     const anthropicTools = this.buildAnthropicTools(request);
@@ -523,6 +523,30 @@ export class AnthropicProvider extends BaseProvider {
       'anthropic-version': '2023-06-01',
       'anthropic-beta': 'prompt-caching-2024-07-31',
     };
+  }
+
+  /**
+   * Collapse all system-role messages into a single Message. Anthropic only
+   * accepts one top-level `system` field, so if a caller supplies more than one
+   * system message we concatenate their text rather than keeping only the first
+   * and silently dropping the rest. The common single-message case is returned
+   * unchanged.
+   */
+  private extractSystemMessage(messages: readonly Message[]): Message | undefined {
+    const systemMessages = messages.filter((m) => m.role === 'system');
+    if (systemMessages.length <= 1) return systemMessages[0];
+    const merged = systemMessages
+      .map((m) =>
+        typeof m.content === 'string'
+          ? m.content
+          : m.content
+              .filter((c) => c.type === 'text')
+              .map((c) => (c as { text: string }).text)
+              .join('\n')
+      )
+      .filter(Boolean)
+      .join('\n\n');
+    return { role: 'system', content: merged };
   }
 
   /**

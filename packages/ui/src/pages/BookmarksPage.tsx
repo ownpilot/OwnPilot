@@ -28,6 +28,15 @@ import { isSafeUrl as isSafeUrlShared } from '../utils/safe-url';
 import type { BookmarkItem } from '../api';
 import { PageHomeTab } from '../components/PageHomeTab';
 
+export function getUnsafeBookmarkUrlTitle(url: string): string {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol ? `Unsafe URL protocol: ${protocol}` : 'Unsafe URL';
+  } catch {
+    return 'Unsafe or invalid URL';
+  }
+}
+
 export function BookmarksPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -474,8 +483,8 @@ function BookmarkCard({ bookmark, onEdit, onDelete, onToggleFavorite }: Bookmark
           ) : (
             <span
               className="p-1 text-text-muted dark:text-dark-text-muted cursor-not-allowed opacity-50"
-              title={`Unsafe URL protocol — ${new URL(bookmark.url).protocol}`}
-              aria-label="Cannot open — unsafe URL protocol"
+              title={getUnsafeBookmarkUrlTitle(bookmark.url)}
+              aria-label="Cannot open unsafe URL"
             >
               <ExternalLink className="w-4 h-4" />
             </span>

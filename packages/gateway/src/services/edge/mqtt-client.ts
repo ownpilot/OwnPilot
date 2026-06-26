@@ -199,6 +199,8 @@ export class EdgeMqttClient {
       this.doConnect();
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
     }, this.reconnectDelay);
+    // Don't let a pending reconnect keep the event loop alive at shutdown.
+    this.reconnectTimer.unref?.();
   }
 
   /**

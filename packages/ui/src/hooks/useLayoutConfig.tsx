@@ -7,11 +7,9 @@
  * Storage: localStorage[STORAGE_KEYS.LAYOUT_CONFIG] as LayoutConfig.
  * Version field enables forward-compatible migrations.
  *
- * Trust boundary: the 8 'as unknown as' casts below bridge the localStorage
- * blob to the typed LayoutConfig shape across version migrations. The
- * version field is checked at every step; an old or unknown version falls
- * through to defaults rather than being asserted. The cast is a
- * documented trust boundary with the storage layer.
+ * Trust boundary: localStorage stores untyped JSON. Migration code treats old
+ * versions as partial layout drafts, then validates or completes them before
+ * returning the current LayoutConfig shape.
  */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -37,6 +35,26 @@ import {
 const VALID_DISPLAY_MODES = ['icon', 'icon-text', 'text'];
 const VALID_ZONE_IDS: HeaderZoneId[] = ['left', 'center', 'right'];
 const EMPTY_ZONE: HeaderZoneConfig = { entries: [], displayMode: 'icon' };
+type LayoutConfigDraft = Partial<LayoutConfig> & Record<string, unknown>;
+
+function asLayoutConfigDraft(obj: Record<string, unknown>): LayoutConfigDraft {
+  return obj as LayoutConfigDraft;
+}
+
+function completeLayoutConfig(config: LayoutConfigDraft): LayoutConfig {
+  return {
+    ...DEFAULT_LAYOUT_CONFIG,
+    ...config,
+    version: LAYOUT_CONFIG_VERSION,
+    header: config.header ?? DEFAULT_LAYOUT_CONFIG.header,
+    sidebar: {
+      ...DEFAULT_LAYOUT_CONFIG.sidebar,
+      ...config.sidebar,
+      sections: config.sidebar?.sections ?? DEFAULT_LAYOUT_CONFIG.sidebar.sections,
+    },
+    customGroups: config.customGroups ?? DEFAULT_LAYOUT_CONFIG.customGroups,
+  };
+}
 
 function isValidZoneEntry(v: unknown): v is HeaderZoneEntry {
   if (!v || typeof v !== 'object') return false;
@@ -138,7 +156,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // V2 → V3: add customGroups array
   if (typeof obj.version === 'number' && obj.version === 2) {
     return migrateConfig({
-      ...(obj as unknown as LayoutConfig),
+      ...asLayoutConfigDraft(obj),
       version: 3,
       customGroups: [],
     });
@@ -147,7 +165,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // V3 → V4+: add sidebar sections + width (recursive to apply further migrations)
   if (typeof obj.version === 'number' && obj.version === 3) {
     return migrateConfig({
-      ...(obj as unknown as LayoutConfig),
+      ...asLayoutConfigDraft(obj),
       version: 4,
       sidebar: {
         width: 'default' as const,
@@ -160,7 +178,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // Note: V5 sections had `visible` field — V5→V6 migration strips it below
   if (typeof obj.version === 'number' && obj.version === 4) {
     // First migrate to V5 format, then chain to V5→V6
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const existingSections = (config.sidebar?.sections ?? []).filter((s) => s.id !== 'footer');
     return migrateConfig({
       ...config,
@@ -174,7 +192,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
 
   // V5 → V6: remove `visible` field, keep only visible sections (add/remove pattern)
   if (typeof obj.version === 'number' && obj.version === 5) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = (config.sidebar?.sections ?? []) as (SidebarSectionConfig & {
       visible?: boolean;
     })[];
@@ -201,12 +219,12 @@ function migrateConfig(raw: unknown): LayoutConfig {
 
   // V6 → V7: convert pinned items to nav item sections, remove 'pinned' section, drop pinnedItems field
   if (typeof obj.version === 'number' && obj.version === 6) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = config.sidebar?.sections ?? [];
 
     // Read pinned items from either config.sidebar.pinnedItems or old localStorage key
     let pinnedPaths: string[] = [];
-    const sidebarObj = config.sidebar as unknown as Record<string, unknown>;
+    const sidebarObj = config.sidebar as Record<string, unknown> | undefined;
     const configPinned = sidebarObj?.pinnedItems;
     if (Array.isArray(configPinned)) {
       pinnedPaths = configPinned
@@ -269,7 +287,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // additive: existing pinned items are preserved, sections only inserted
   // if missing.
   if (typeof obj.version === 'number' && obj.version === 7) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = config.sidebar?.sections ?? [];
     const existingIds = new Set(oldSections.map((s) => s.id));
     const additions: SidebarSectionConfig[] = [];
@@ -307,7 +325,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // activity feed) — making it the headline operator surface, so it needs
   // to be visible by default just like /claws was promoted in V7→V8.
   if (typeof obj.version === 'number' && obj.version === 8) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = config.sidebar?.sections ?? [];
     const existingIds = new Set(oldSections.map((s) => s.id));
     if (existingIds.has('/mission-control')) {
@@ -340,7 +358,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // coding agents, workflows, triggers, channels, etc.) is the headline
   // autonomous-task surface — needs to be visible by default.
   if (typeof obj.version === 'number' && obj.version === 9) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = config.sidebar?.sections ?? [];
     const existingIds = new Set(oldSections.map((s) => s.id));
     const additions: SidebarSectionConfig[] = [];
@@ -381,7 +399,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
   // Catches users who got version 10 without the sections due to a missing
   // migration step in the previous fix (version was bumped prematurely).
   if (typeof obj.version === 'number' && obj.version === 10) {
-    const config = obj as unknown as LayoutConfig;
+    const config = asLayoutConfigDraft(obj);
     const oldSections = config.sidebar?.sections ?? [];
     const existingIds = new Set(oldSections.map((s) => s.id));
     const additions: SidebarSectionConfig[] = [];
@@ -389,7 +407,7 @@ function migrateConfig(raw: unknown): LayoutConfig {
     if (!existingIds.has('agentic-executions'))
       additions.push({ id: 'agentic-executions', order: 0, style: 'accordion' });
     if (additions.length === 0) {
-      return { ...config, version: LAYOUT_CONFIG_VERSION };
+      return completeLayoutConfig(config);
     }
     const next: SidebarSectionConfig[] = [...oldSections];
     // Insert /agentic nav link right after /mission-control or /dashboard
@@ -403,20 +421,19 @@ function migrateConfig(raw: unknown): LayoutConfig {
       else next.unshift(navAddition);
     }
     if (accordionAddition) next.push(accordionAddition);
-    return {
+    return completeLayoutConfig({
       ...config,
-      version: LAYOUT_CONFIG_VERSION,
       sidebar: {
         ...config.sidebar,
         width: config.sidebar?.width ?? 'default',
         sections: next.map((s, i) => ({ ...s, order: i })),
       },
-    };
+    });
   }
 
   if (isValidConfig(obj)) {
     // Strip leftover 'footer' and 'pinned' sections from old configs
-    const config = { ...obj, version: LAYOUT_CONFIG_VERSION } as LayoutConfig;
+    const config: LayoutConfig = { ...obj, version: LAYOUT_CONFIG_VERSION };
     if (config.sidebar?.sections) {
       const hasPinned = config.sidebar.sections.some((s) => s.id === 'pinned');
       const hasFooter = config.sidebar.sections.some((s) => s.id === 'footer');

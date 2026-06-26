@@ -36,7 +36,7 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('AcpClient');
 
-// Runtime narrowing for event payloads (replaces `as unknown as` casts).
+// Runtime narrowing for event payloads.
 function isAcpToolCall(v: unknown): v is AcpToolCall {
   return (
     typeof v === 'object' &&

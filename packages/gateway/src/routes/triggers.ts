@@ -8,7 +8,11 @@
 
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
-import { type CreateTriggerInput, type UpdateTriggerInput } from '../db/repositories/triggers.js';
+import {
+  type CreateTriggerInput,
+  type TriggerAction,
+  type UpdateTriggerInput,
+} from '../db/repositories/triggers.js';
 import { getTriggerEngine } from '../triggers/index.js';
 import { validateCronExpression } from '@ownpilot/core/scheduler';
 import { getTriggerService } from '@ownpilot/core/services';
@@ -27,6 +31,73 @@ import { wsGateway } from '../ws/server.js';
 import { pagination } from '../middleware/pagination.js';
 
 export const triggersRoutes = new Hono();
+
+const TRIGGER_ACTION_TYPES = new Set<TriggerAction['type']>([
+  'chat',
+  'tool',
+  'notification',
+  'goal_check',
+  'memory_summary',
+  'workflow',
+  'profile_learn',
+  'memory_extract',
+  'memory_consolidate',
+]);
+
+type ValidatedCreateTriggerBody = Omit<CreateTriggerInput, 'config' | 'action'> & {
+  config: Record<string, unknown>;
+  action: Record<string, unknown>;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isTriggerActionType(value: unknown): value is TriggerAction['type'] {
+  return typeof value === 'string' && TRIGGER_ACTION_TYPES.has(value as TriggerAction['type']);
+}
+
+function toPayload(value: unknown): Record<string, unknown> {
+  if (isRecord(value)) return value;
+  if (value === undefined || value === null) return {};
+  return { value };
+}
+
+function normalizeTriggerAction(raw: Record<string, unknown>): TriggerAction | null {
+  const { type, payload, preRun, noAgentMode, contextFrom, ...legacyPayload } = raw;
+  if (!isTriggerActionType(type)) return null;
+
+  const action: TriggerAction = {
+    type,
+    payload: payload === undefined ? legacyPayload : toPayload(payload),
+  };
+
+  if (isRecord(preRun) && typeof preRun.code === 'string') {
+    action.preRun = { code: preRun.code };
+    if (typeof preRun.timeoutMs === 'number') {
+      action.preRun.timeoutMs = preRun.timeoutMs;
+    }
+  }
+  if (typeof noAgentMode === 'boolean') action.noAgentMode = noAgentMode;
+  if (typeof contextFrom === 'string') action.contextFrom = contextFrom;
+
+  return action;
+}
+
+function toCreateTriggerInput(body: ValidatedCreateTriggerBody): CreateTriggerInput | null {
+  const action = normalizeTriggerAction(body.action);
+  if (!action) return null;
+
+  return {
+    name: body.name,
+    description: body.description,
+    type: body.type,
+    config: body.config as CreateTriggerInput['config'],
+    action,
+    enabled: body.enabled,
+    priority: body.priority,
+  };
+}
 
 // ============================================================================
 // Trigger Routes
@@ -70,7 +141,17 @@ triggersRoutes.post('/', async (c) => {
   const userId = LOCAL_OWNER_ID;
   const rawBody = await parseJsonBody(c);
   const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
-  const body = validateBody(createTriggerSchema, rawBody) as unknown as CreateTriggerInput;
+  const body = toCreateTriggerInput(validateBody(createTriggerSchema, rawBody));
+  if (!body) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: 'action.type must be a supported trigger action type',
+      },
+      400
+    );
+  }
 
   // Validate cron expression for schedule triggers before saving
   if (body.type === 'schedule') {
@@ -517,9 +598,9 @@ triggersRoutes.post('/from-natural-language', async (c) => {
   ]);
 
   const description = rawBody.description.trim();
-  const actionType = rawBody.action_type ?? 'notification';
+  const actionType = typeof rawBody.action_type === 'string' ? rawBody.action_type : 'notification';
   const actionPayload = rawBody.action_payload ?? { message: `Trigger: ${description}` };
-  const name = rawBody.name ?? description.substring(0, 50);
+  const name = typeof rawBody.name === 'string' ? rawBody.name : description.substring(0, 50);
   const priority = rawBody.priority ?? 5;
 
   // Resolve provider
@@ -628,16 +709,27 @@ Examples:
     }
 
     const { validateBody, createTriggerSchema } = await import('../middleware/validation.js');
-    const triggerInput = validateBody(createTriggerSchema, {
-      name,
-      description: parsed.summary ?? description,
-      type: 'schedule',
-      config: { cron: parsed.cron },
-      action_type: actionType,
-      action_payload: actionPayload,
-      enabled: true,
-      priority,
-    }) as unknown as CreateTriggerInput;
+    const triggerInput = toCreateTriggerInput(
+      validateBody(createTriggerSchema, {
+        name,
+        description: parsed.summary ?? description,
+        type: 'schedule',
+        config: { cron: parsed.cron },
+        action: { type: actionType, payload: actionPayload },
+        enabled: true,
+        priority,
+      })
+    );
+    if (!triggerInput) {
+      return apiError(
+        c,
+        {
+          code: ERROR_CODES.INVALID_INPUT,
+          message: 'action_type must be a supported trigger action type',
+        },
+        400
+      );
+    }
 
     const service = getTriggerService();
     const trigger = await service.createTrigger(userId, triggerInput);

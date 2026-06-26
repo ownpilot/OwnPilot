@@ -27,6 +27,57 @@ import { useToast } from './ToastProvider';
 import type { Artifact, ArtifactType } from '../api/endpoints/artifacts';
 import { artifactsApi } from '../api/endpoints/artifacts';
 
+/**
+ * Sanitize an HTML/SVG artifact before it is opened in a new tab.
+ *
+ * "Open in new tab" creates a same-origin `blob:` document, so any `<script>`
+ * or event-handler in the (LLM/tool-generated) artifact would otherwise run in
+ * the app's own origin with the session cookie. We strip active content while
+ * preserving structure and styling — unlike the inline HtmlWidget allow-list,
+ * which would gut a standalone document — so the rendered artifact still looks
+ * right but cannot execute script.
+ *
+ * Implemented with the parse-once → remove dangerous nodes → serialize pattern
+ * via DOMParser (which never executes scripts during parsing). This is
+ * deterministic across environments, unlike DOMPurify, whose `isSupported`
+ * check makes it a no-op passthrough under non-browser DOMs (e.g. happy-dom).
+ * Returns '' when no DOMParser is available, so callers refuse rather than open
+ * active content unsanitized.
+ */
+export function sanitizeArtifactForNewTab(content: string, type: 'html' | 'svg'): string {
+  if (typeof DOMParser === 'undefined') return '';
+  const doc = new DOMParser().parseFromString(
+    content,
+    type === 'svg' ? 'image/svg+xml' : 'text/html'
+  );
+
+  // Remove script and foreignObject (the latter can smuggle HTML/script into an
+  // otherwise-SVG document) anywhere in the tree.
+  doc.querySelectorAll('script, foreignObject').forEach((node) => node.remove());
+
+  // Strip event-handler attributes and javascript:/data: URLs from every node.
+  doc.querySelectorAll('*').forEach((el) => {
+    for (const attr of Array.from(el.attributes)) {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+      if (
+        (name === 'href' || name === 'src' || name === 'xlink:href') &&
+        /^\s*(?:javascript|data):/i.test(attr.value)
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+
+  if (type === 'svg') {
+    return doc.documentElement?.outerHTML ?? '';
+  }
+  return doc.body?.innerHTML ?? '';
+}
+
 // =============================================================================
 // Type Config
 // =============================================================================
@@ -130,25 +181,17 @@ export function ArtifactDetailModal({
 
   const handleOpenInNewTab = useCallback(() => {
     if (!currentArtifact) return;
-    if (currentArtifact.type === 'html') {
-      const blob = new Blob([currentArtifact.content], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const opened = window.open(url, '_blank');
-      // Revoke immediately — browsers that support navigation tracking revoke on close
-      if (opened) {
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        URL.revokeObjectURL(url);
+    if (currentArtifact.type === 'html' || currentArtifact.type === 'svg') {
+      const sanitized = sanitizeArtifactForNewTab(currentArtifact.content, currentArtifact.type);
+      if (!sanitized) {
+        toast.info('Unable to safely open this artifact');
+        return;
       }
-    } else if (currentArtifact.type === 'svg') {
-      const blob = new Blob([currentArtifact.content], { type: 'image/svg+xml' });
+      const mime = currentArtifact.type === 'svg' ? 'image/svg+xml' : 'text/html';
+      const blob = new Blob([sanitized], { type: mime });
       const url = URL.createObjectURL(blob);
-      const opened = window.open(url, '_blank');
-      if (opened) {
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        URL.revokeObjectURL(url);
-      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } else {
       toast.info('Open in new tab only available for HTML and SVG artifacts');
     }

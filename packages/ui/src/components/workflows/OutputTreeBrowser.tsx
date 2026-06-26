@@ -65,8 +65,7 @@ function UpstreamNodeSection({
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const data = node.data as ToolNodeData;
-  const rawData = data as unknown as Record<string, unknown>;
-  const alias = rawData.outputAlias as string | undefined;
+  const alias = data.outputAlias as string | undefined;
   const nodeType = (node.type as string) ?? '';
   const output = data.executionOutput;
   const hasOutput = output !== undefined && output !== null;

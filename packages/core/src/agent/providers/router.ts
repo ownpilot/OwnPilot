@@ -418,8 +418,7 @@ export async function routedComplete(
     return result;
   }
   // Strip routing info for simple usage
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { routingInfo, ...response } = result.value;
+  const { routingInfo: _routingInfo, ...response } = result.value;
   return ok(response);
 }
 

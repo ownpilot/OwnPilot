@@ -6,14 +6,13 @@
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
-import { getExtensionService } from '@ownpilot/core/services';
-import { type ExtensionService } from '../../services/extension/service.js';
+import { getGatewayExtensionService } from '../../services/extension/accessor.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from '../helpers.js';
 
 export const scannerRoutes = new Hono();
 
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods). */
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
 
 /**
  * POST /scan - Scan directory for packages

@@ -39,17 +39,15 @@ export interface MappedAcpEvent {
   payload: Record<string, unknown>;
 }
 
-/**
- * Trust boundary: build a MappedAcpEvent whose payload is the typed event
- * spread into a plain Record. Emitters own the shape (this file is the
- * single source of truth for what the UI receives), so the spread is
- * sound at runtime. The cast localises 'as unknown as' to one helper.
- */
+function toPlainRecord(value: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value));
+}
+
 function toMappedEvent<T extends object>(
   type: AcpEventType,
   event: Omit<T, 'type'>
 ): MappedAcpEvent {
-  return { type, payload: { ...event } as unknown as Record<string, unknown> };
+  return { type, payload: toPlainRecord(event) };
 }
 
 /**

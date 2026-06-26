@@ -17,7 +17,7 @@ import type { DataBinding } from '@ownpilot/core/services';
 // ============================================================================
 
 const { mockTasksRepo, mockGoalsRepo, mockMemoriesRepo, mockCustomDataRepo } = vi.hoisted(() => ({
-  mockTasksRepo: { list: vi.fn(), query: vi.fn() },
+  mockTasksRepo: { list: vi.fn(), query: vi.fn(), queryAggregate: vi.fn() },
   mockGoalsRepo: { list: vi.fn(), getById: vi.fn() },
   mockMemoriesRepo: { list: vi.fn(), search: vi.fn() },
   mockCustomDataRepo: { listRecords: vi.fn() },
@@ -71,6 +71,7 @@ function makeBinding(
 describe('resolveBinding', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTasksRepo.queryAggregate.mockImplementation((...args) => mockTasksRepo.query(...args));
   });
 
   // --------------------------------------------------------------------------

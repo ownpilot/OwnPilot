@@ -2,8 +2,8 @@
  * useWorkflowExecution — save, execute (SSE streaming), cancel, and related
  * helpers for the workflow editor.
  *
- * Trust boundary: the 'as unknown as' casts bridge the generic node-data
- * blob to the form-typed config shape. DB row is the source of truth.
+ * Trust boundary: generic node-data blobs are narrowed at the workflow API
+ * boundary. DB row is the source of truth.
  */
 
 import { useCallback, useState } from 'react';
@@ -11,7 +11,7 @@ import type { Edge, Node } from '@xyflow/react';
 
 import { workflowsApi, triggersApi } from '../../api';
 import type { Workflow, WorkflowProgressEvent } from '../../api';
-import type { TriggerNodeData } from '../../components/workflows';
+import type { TriggerNodeData } from '../../components/workflows/TriggerNode';
 import { serializeWorkflowCanvas } from './workflowPersistence';
 
 interface WorkflowExecutionParams {
@@ -106,7 +106,7 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
       // Sync trigger node with trigger system
       const triggerNode = nodes.find((n) => n.type === 'triggerNode');
       if (triggerNode) {
-        const td = triggerNode.data as unknown as TriggerNodeData;
+        const td = triggerNode.data as TriggerNodeData;
         if (td.triggerType !== 'manual') {
           await syncTrigger(id, workflowName, td, triggerNode.id);
         } else if (td.triggerId) {
@@ -121,9 +121,9 @@ export function useWorkflowExecution(params: WorkflowExecutionParams) {
       } else {
         // Trigger node removed -- clean up linked trigger if it existed
         const oldTrigger = workflow.nodes.find((n) => n.type === 'triggerNode');
-        const oldTriggerId = (oldTrigger?.data as unknown as Record<string, unknown>)?.triggerId as
-          | string
-          | undefined;
+        const oldTriggerData = oldTrigger?.data as Record<string, unknown> | undefined;
+        const oldTriggerId =
+          typeof oldTriggerData?.triggerId === 'string' ? oldTriggerData.triggerId : undefined;
         if (oldTriggerId) {
           try {
             await triggersApi.delete(oldTriggerId);

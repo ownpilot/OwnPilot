@@ -17,6 +17,9 @@ const CATEGORIES = [
   'package_manager',
 ] as const;
 const VALID_MODES: ReadonlySet<string> = new Set(['local', 'docker', 'auto']);
+type MutableExecutionPermissions = {
+  -readonly [K in keyof ExecutionPermissions]: ExecutionPermissions[K];
+};
 
 interface PermissionRow {
   user_id: string;
@@ -61,16 +64,16 @@ class ExecutionPermissionsRepository extends BaseRepository {
   async set(userId: string, partial: Partial<ExecutionPermissions>): Promise<ExecutionPermissions> {
     // Get current permissions
     const current = await this.get(userId);
-    const merged = { ...current } as Record<string, unknown>;
+    const result: MutableExecutionPermissions = { ...current };
 
     // Apply enabled toggle
     if (typeof partial.enabled === 'boolean') {
-      merged.enabled = partial.enabled;
+      result.enabled = partial.enabled;
     }
 
     // Apply mode
     if (partial.mode && VALID_MODES.has(partial.mode)) {
-      merged.mode = partial.mode;
+      result.mode = partial.mode;
     }
 
     // Apply partial updates (only valid categories and modes)
@@ -78,12 +81,10 @@ class ExecutionPermissionsRepository extends BaseRepository {
       if (cat in partial) {
         const val = partial[cat];
         if (val === 'blocked' || val === 'prompt' || val === 'allowed') {
-          merged[cat] = val;
+          result[cat] = val;
         }
       }
     }
-
-    const result = merged as unknown as ExecutionPermissions;
 
     await this.execute(
       `INSERT INTO execution_permissions (user_id, enabled, mode, execute_javascript, execute_python, execute_shell, compile_code, package_manager, updated_at)

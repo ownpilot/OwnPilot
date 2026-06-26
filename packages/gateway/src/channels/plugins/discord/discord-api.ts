@@ -39,6 +39,14 @@ interface DiscordChannelConfig {
   allowed_channels?: string;
 }
 
+function hasSendTyping(channel: unknown): channel is { sendTyping(): Promise<void> } {
+  return (
+    typeof channel === 'object' &&
+    channel !== null &&
+    typeof Reflect.get(channel, 'sendTyping') === 'function'
+  );
+}
+
 // ============================================================================
 // Discord API
 // ============================================================================
@@ -241,8 +249,8 @@ export class DiscordChannelAPI implements ChannelPluginAPI {
     if (!this.client) return;
     try {
       const channel = await this.client.channels.fetch(platformChatId);
-      if (channel && 'sendTyping' in channel) {
-        await (channel as unknown as { sendTyping(): Promise<void> }).sendTyping();
+      if (hasSendTyping(channel)) {
+        await channel.sendTyping();
       }
     } catch {
       // Non-fatal

@@ -10,6 +10,7 @@ import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { createReadStream } from 'node:fs';
 import { stat, unlink } from 'node:fs/promises';
+import { Readable } from 'node:stream';
 import { basename } from 'node:path';
 import { getLog } from '../services/log.js';
 import { apiResponse, apiError, ERROR_CODES, getErrorMessage, parseJsonBody } from './helpers.js';
@@ -37,6 +38,14 @@ import {
 } from '../workspace/file-workspace.js';
 import type { Context } from 'hono';
 import type { SessionWorkspaceInfo } from '../workspace/file-workspace.js';
+
+function toResponseBody(stream: ReturnType<typeof createReadStream>): ReadableStream {
+  try {
+    return Readable.toWeb(stream);
+  } catch {
+    return stream as never;
+  }
+}
 
 /** Get workspace and verify it belongs to the requesting user. Returns null with error response if not found/forbidden. */
 function getOwnedWorkspace(
@@ -431,7 +440,7 @@ app.get('/:id/download', async (c) => {
     stream.on('error', () => {
       unlink(zipPath).catch((e) => log.debug('Temp zip cleanup failed', { error: String(e) }));
     });
-    return new Response(stream as unknown as ReadableStream, {
+    return new Response(toResponseBody(stream), {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${filename}"`,

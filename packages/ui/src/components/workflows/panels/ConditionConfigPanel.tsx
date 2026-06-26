@@ -2,8 +2,8 @@
  * Condition Config Panel — configuration for condition/branch workflow nodes.
  * Supports JS expressions that return truthy/falsy for branching logic.
  *
- * Trust boundary: the 'as unknown as' casts bridge the generic node-data
- * blob to the form-typed config shape. DB row is the source of truth.
+ * Trust boundary: the generic node-data blob is narrowed to the form-typed
+ * config shape here. DB row is the source of truth.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -255,17 +255,9 @@ export function ConditionConfigPanel({
             {upstreamNodes.length > 0 && (
               <OutputTreeBrowser upstreamNodes={upstreamNodes} onInsert={injectTemplate} />
             )}
-            <OutputAliasField
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <OutputAliasField data={data} nodeId={node.id} onUpdate={onUpdate} />
 
-            <RetryTimeoutFields
-              data={data as unknown as Record<string, unknown>}
-              nodeId={node.id}
-              onUpdate={onUpdate}
-            />
+            <RetryTimeoutFields data={data} nodeId={node.id} onUpdate={onUpdate} />
           </div>
 
           <div className="p-3 border-t border-border dark:border-dark-border">

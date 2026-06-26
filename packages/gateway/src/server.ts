@@ -60,7 +60,7 @@ import {
 } from './triggers/index.js';
 import { seedExamplePlans } from './db/seeds/plans-seed.js';
 import { createChannelServiceImpl } from './channels/service-impl.js';
-import { initServiceRegistry, Services, type ServiceToken } from '@ownpilot/core/services';
+import { initServiceRegistry, Services } from '@ownpilot/core/services';
 import { setModuleResolver } from '@ownpilot/core/tools';
 import { enforceSecurityConfig } from '@ownpilot/core/security';
 import { getEventSystem } from '@ownpilot/core/events';
@@ -564,18 +564,9 @@ async function main() {
     installService(Services.Heartbeat, getHeartbeatService(), setHeartbeatService);
   }
 
-  // 19b. Pulse Metrics Service (claw + soul monitoring) — registered in the ServiceRegistry
-  // so event subscriptions can be cleaned up via resetPulseMetricsService() on shutdown.
+  // 19b. Pulse Metrics Service (claw + soul monitoring). It is intentionally
+  // separate from Services.Pulse, which is registered by the Autonomy Engine.
   const { getPulseMetricsServiceForRegistry } = await import('./services/metric/pulse.js');
-  registry.registerFactory(
-    // Services.Pulse intentionally holds the PulseMetricsService instance (see
-    // comment above); the token is typed for IPulseService, so bridge via unknown.
-    Services.Pulse as unknown as ServiceToken<
-      import('./services/metric/pulse.js').PulseMetricsService
-    >,
-    () => getPulseMetricsServiceForRegistry()
-  );
-  // Start after registry registration so .start() is called once
   getPulseMetricsServiceForRegistry().start();
 
   // 20. Coding Agent Service (external AI coding CLI orchestration) — also installed on the core capability singleton
@@ -979,8 +970,7 @@ async function main() {
     try {
       const { hasSessionService, getSessionService } = await import('@ownpilot/core');
       if (hasSessionService()) {
-        const sessionSvc = getSessionService() as unknown as { dispose?: () => void };
-        if (sessionSvc.dispose) sessionSvc.dispose();
+        await getSessionService().dispose?.();
       }
     } catch (e) {
       log.warn('Session service dispose error', { error: String(e) });

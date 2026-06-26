@@ -13,6 +13,7 @@ import {
 import { DynamicConfigForm } from './DynamicConfigForm';
 import { voiceApi } from '../api';
 import type { ConfigEntryView, ConfigServiceView, VoiceDiagnostics } from '../api';
+import { safeHref } from '../utils/safe-url';
 
 // ---------------------------------------------------------------------------
 // Constants (duplicated from ConfigCenterPage to keep modal self-contained)
@@ -94,6 +95,7 @@ export function ConfigureServiceModal({
   );
   const canDelete = !isCreating && service.entries.length > 1 && !(isDefault && hasActiveSibling);
   const isAudioService = service.name === 'audio_service';
+  const docsHref = safeHref(service.docsUrl);
   const [diagnostics, setDiagnostics] = useState<VoiceDiagnostics | null>(null);
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
   const [isCheckingDiagnostics, setIsCheckingDiagnostics] = useState(false);
@@ -131,9 +133,9 @@ export function ConfigureServiceModal({
               >
                 {service.category}
               </span>
-              {service.docsUrl && (
+              {docsHref && (
                 <a
-                  href={service.docsUrl}
+                  href={docsHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline"

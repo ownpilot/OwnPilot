@@ -11,6 +11,7 @@ import {
   AlertTriangle,
 } from './icons';
 import { CodeBlock } from './CodeBlock';
+import { BLOCKED_IMG_PLACEHOLDER, resolveImageUrl } from './MarkdownContent.url-helpers';
 
 interface ToolCall {
   id: string;
@@ -190,10 +191,46 @@ function ToolCallCard({ toolCall, onRerun, workspaceId }: ToolCallCardProps) {
 }
 
 interface ToolResultDisplayProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic tool output (string | object)
-  result: any;
+  result: unknown;
   toolName: string;
   workspaceId?: string | null;
+}
+
+interface DirectoryFileResult {
+  isDirectory?: boolean;
+  name?: string;
+  size?: number;
+}
+
+interface SearchResultItem {
+  url?: string;
+  title?: string;
+  description?: string;
+  snippet?: string;
+}
+
+interface ToolResultRecord {
+  output?: unknown;
+  outputPath?: unknown;
+  source?: unknown;
+  content?: unknown;
+  path?: unknown;
+  files?: unknown;
+  stdout?: unknown;
+  stderr?: unknown;
+  result?: unknown;
+  exitCode?: unknown;
+  status?: unknown;
+  url?: unknown;
+  metadata?: unknown;
+  text?: unknown;
+  body?: unknown;
+  results?: unknown;
+  [key: string]: unknown;
+}
+
+function isToolResultRecord(value: unknown): value is ToolResultRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayProps) {
@@ -201,10 +238,12 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   const baseName = toolName.includes('.')
     ? toolName.substring(toolName.lastIndexOf('.') + 1)
     : toolName;
+  const record = isToolResultRecord(result) ? result : null;
 
   // Image tools — show inline preview
   if (isImageToolResult(baseName, result)) {
-    const imagePath = (result.output ?? result.source ?? result.outputPath) as string | undefined;
+    const imagePathValue = result.output ?? result.source ?? result.outputPath;
+    const imagePath = typeof imagePathValue === 'string' ? imagePathValue : undefined;
     const src = resolveWorkspaceImageUrl(imagePath, workspaceId);
     return (
       <div className="space-y-2">
@@ -226,19 +265,20 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // File system tools - show file content
-  if (baseName === 'read_file' && typeof result === 'object' && result !== null && result.content) {
+  if (baseName === 'read_file' && record && typeof record.content === 'string') {
+    const filePath = typeof record.path === 'string' ? record.path : '';
     return (
       <div className="space-y-2">
-        {result.path && (
+        {filePath && (
           <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
             <File className="w-4 h-4" />
-            <span className="font-mono">{result.path}</span>
+            <span className="font-mono">{filePath}</span>
           </div>
         )}
         <CodeBlock
-          code={result.content}
-          language={detectLanguage(result.path || '')}
-          filename={result.path?.split('/').pop()}
+          code={record.content}
+          language={detectLanguage(filePath)}
+          filename={filePath.split('/').pop()}
           maxHeight="300px"
         />
       </div>
@@ -246,36 +286,30 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // Directory listing
-  if (
-    baseName === 'list_directory' &&
-    typeof result === 'object' &&
-    result !== null &&
-    result.files
-  ) {
+  if (baseName === 'list_directory' && record && Array.isArray(record.files)) {
+    const files = record.files as DirectoryFileResult[];
     return (
       <div className="space-y-1">
-        {result.files.map(
-          (file: { isDirectory?: boolean; name?: string; size?: number }, i: number) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary rounded"
-            >
-              {file.isDirectory ? (
-                <span className="text-blue-400">📁</span>
-              ) : (
-                <span className="text-gray-400">📄</span>
-              )}
-              <span className="flex-1 font-mono text-text-primary dark:text-dark-text-primary">
-                {file.name}
+        {files.map((file, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-bg-tertiary dark:bg-dark-bg-tertiary rounded"
+          >
+            {file.isDirectory ? (
+              <span className="text-blue-400">📁</span>
+            ) : (
+              <span className="text-gray-400">📄</span>
+            )}
+            <span className="flex-1 font-mono text-text-primary dark:text-dark-text-primary">
+              {file.name}
+            </span>
+            {file.size !== undefined && (
+              <span className="text-xs text-text-muted dark:text-dark-text-muted">
+                {formatBytes(file.size)}
               </span>
-              {file.size !== undefined && (
-                <span className="text-xs text-text-muted dark:text-dark-text-muted">
-                  {formatBytes(file.size)}
-                </span>
-              )}
-            </div>
-          )
-        )}
+            )}
+          </div>
+        ))}
       </div>
     );
   }
@@ -285,46 +319,48 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
     (baseName.startsWith('execute_') ||
       baseName === 'compile_code' ||
       baseName === 'package_manager') &&
-    typeof result === 'object' &&
-    result !== null
+    record
   ) {
+    const stdout = typeof record.stdout === 'string' ? record.stdout : '';
+    const stderr = typeof record.stderr === 'string' ? record.stderr : '';
+    const exitCode = typeof record.exitCode === 'number' ? record.exitCode : undefined;
     return (
       <div className="space-y-3">
-        {result.stdout && (
+        {stdout && (
           <div>
             <span className="text-xs text-green-500 font-medium">stdout:</span>
             <CodeBlock
-              code={result.stdout}
+              code={stdout}
               language="plaintext"
               showLineNumbers={false}
               maxHeight="200px"
             />
           </div>
         )}
-        {result.stderr && (
+        {stderr && (
           <div>
             <span className="text-xs text-red-500 font-medium">stderr:</span>
             <CodeBlock
-              code={result.stderr}
+              code={stderr}
               language="plaintext"
               showLineNumbers={false}
               maxHeight="200px"
             />
           </div>
         )}
-        {result.result !== undefined && (
+        {record.result !== undefined && (
           <div>
             <span className="text-xs text-blue-500 font-medium">result:</span>
             <pre className="mt-1 p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded text-sm text-text-primary dark:text-dark-text-primary overflow-x-auto">
-              {typeof result.result === 'object'
-                ? JSON.stringify(result.result, null, 2)
-                : String(result.result)}
+              {typeof record.result === 'object'
+                ? JSON.stringify(record.result, null, 2)
+                : String(record.result)}
             </pre>
           </div>
         )}
-        {result.exitCode !== undefined && (
-          <div className={`text-xs ${result.exitCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
-            Exit code: {result.exitCode}
+        {exitCode !== undefined && (
+          <div className={`text-xs ${exitCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
+            Exit code: {exitCode}
           </div>
         )}
       </div>
@@ -332,95 +368,85 @@ function ToolResultDisplay({ result, toolName, workspaceId }: ToolResultDisplayP
   }
 
   // Web fetch results
-  if (
-    (baseName === 'fetch_web_page' || baseName === 'http_request') &&
-    typeof result === 'object' &&
-    result !== null
-  ) {
+  if ((baseName === 'fetch_web_page' || baseName === 'http_request') && record) {
+    const status = typeof record.status === 'number' ? record.status : undefined;
+    const url = typeof record.url === 'string' ? record.url : undefined;
+    const metadata = isToolResultRecord(record.metadata) ? record.metadata : null;
+    const metadataTitle = typeof metadata?.title === 'string' ? metadata.title : undefined;
+    const text = typeof record.text === 'string' ? record.text : undefined;
+    const body = record.body;
+    const hasObjectBody = body !== null && typeof body === 'object';
     return (
       <div className="space-y-3">
-        {result.status && (
+        {status && (
           <div className="flex items-center gap-2">
             <span
               className={`px-2 py-0.5 text-xs font-medium rounded ${
-                result.status >= 200 && result.status < 300
+                status >= 200 && status < 300
                   ? 'bg-green-500/10 text-green-500'
-                  : result.status >= 400
+                  : status >= 400
                     ? 'bg-red-500/10 text-red-500'
                     : 'bg-yellow-500/10 text-yellow-500'
               }`}
             >
-              {result.status}
+              {status}
             </span>
-            {isSafeUrl(result.url) && (
+            {isSafeUrl(url) && (
               <a
-                href={result.url}
+                href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline truncate"
               >
-                {result.url}
+                {url}
               </a>
             )}
           </div>
         )}
-        {result.metadata?.title && (
+        {metadataTitle && (
           <p className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-            {result.metadata.title}
+            {metadataTitle}
           </p>
         )}
-        {result.text && (
+        {text && (
           <div className="p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded max-h-64 overflow-y-auto">
             <p className="text-sm text-text-secondary dark:text-dark-text-secondary whitespace-pre-wrap">
-              {result.text.slice(0, 1000)}
-              {result.text.length > 1000 && '...'}
+              {text.slice(0, 1000)}
+              {text.length > 1000 && '...'}
             </p>
           </div>
         )}
-        {result.body && typeof result.body === 'object' && (
-          <CodeBlock
-            code={JSON.stringify(result.body, null, 2)}
-            language="json"
-            maxHeight="300px"
-          />
+        {hasObjectBody && (
+          <CodeBlock code={JSON.stringify(body, null, 2)} language="json" maxHeight="300px" />
         )}
       </div>
     );
   }
 
   // Search results
-  if (
-    baseName === 'search_web' &&
-    typeof result === 'object' &&
-    result !== null &&
-    result.results
-  ) {
+  if (baseName === 'search_web' && record && Array.isArray(record.results)) {
+    const results = record.results as SearchResultItem[];
     return (
       <div className="space-y-2">
-        {result.results.map(
-          (
-            item: { url?: string; title?: string; description?: string; snippet?: string },
-            i: number
-          ) => (
-            <a
-              key={i}
-              href={isSafeUrl(item.url) ? item.url : '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 transition-colors"
-            >
-              <p className="text-sm font-medium text-primary">{item.title}</p>
-              <p className="text-xs text-text-muted dark:text-dark-text-muted truncate mt-1">
-                {item.url}
+        {results.map((item, i) => (
+          <a
+            key={i}
+            href={isSafeUrl(item.url) ? item.url : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded hover:bg-primary/10 transition-colors"
+          >
+            <p className="text-sm font-medium text-primary">{item.title}</p>
+            <p className="text-xs text-text-muted dark:text-dark-text-muted truncate mt-1">
+              {item.url}
+            </p>
+            {item.snippet && (
+              <p className="text-sm text-text-secondary dark:text-dark-text-secondary mt-2 line-clamp-2">
+                {item.snippet}
               </p>
-              {item.snippet && (
-                <p className="text-sm text-text-secondary dark:text-dark-text-secondary mt-2 line-clamp-2">
-                  {item.snippet}
-                </p>
-              )}
-            </a>
-          )
-        )}
+            )}
+          </a>
+        ))}
       </div>
     );
   }
@@ -568,18 +594,17 @@ function isImageToolResult(baseName: string, result: unknown): result is ImageTo
   return !!(r.output || r.outputPath || r.source);
 }
 
-function resolveWorkspaceImageUrl(
+export function resolveWorkspaceImageUrl(
   path: string | undefined,
   workspaceId?: string | null
 ): string | null {
   if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  if (path.startsWith('data:')) return path;
-  if (workspaceId) {
-    const cleanPath = path.replace(/^[/\\]+/, '').replace(/\\/g, '/');
-    return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;
+  const resolved = resolveImageUrl(path, workspaceId);
+  if (resolved === BLOCKED_IMG_PLACEHOLDER) return null;
+  if (!workspaceId && resolved === path && !/^https?:\/\//i.test(path) && !path.startsWith('//')) {
+    return null;
   }
-  return null;
+  return resolved;
 }
 
 function ToolImagePreview({ src, alt }: { src: string; alt: string }) {
@@ -596,17 +621,31 @@ function ToolImagePreview({ src, alt }: { src: string; alt: string }) {
 
   return (
     <>
-      <img
-        src={src}
-        alt={alt}
+      <button
+        type="button"
         onClick={() => setExpanded(true)}
-        onError={() => setError(true)}
-        className="max-w-sm max-h-64 rounded-lg border border-border dark:border-dark-border cursor-pointer hover:opacity-90 transition-opacity"
-        loading="lazy"
-      />
+        aria-label={alt ? `Expand image: ${alt}` : 'Expand image'}
+        className="block rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+      >
+        <img
+          src={src}
+          alt={alt}
+          onError={() => setError(true)}
+          className="max-w-sm max-h-64 rounded-lg border border-border dark:border-dark-border"
+          loading="lazy"
+        />
+      </button>
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 cursor-pointer"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded image"
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setExpanded(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 cursor-pointer outline-none"
           onClick={() => setExpanded(false)}
         >
           <img src={src} alt={alt} className="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl" />

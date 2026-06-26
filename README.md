@@ -4,7 +4,7 @@
 >
 > **Self-hosted. Your data stays yours.**
 
-v0.7.2
+v0.8.3
 
 <p align="center">
   <img src="ownpilot_.jpeg" alt="OwnPilot — Privacy-First Personal AI Assistant Platform" width="100%" />
@@ -1641,7 +1641,7 @@ pnpm ci                     # Alias for pnpm release:verify
 
 ## Release Process
 
-OwnPilot uses semantic versioning. The current release train is `0.7.2`; subsequent work is tracked under the `[Unreleased]` heading in `CHANGELOG.md` until the next version is cut.
+OwnPilot uses semantic versioning. The current release train is `0.8.3`; subsequent work is tracked under the `[Unreleased]` heading in `CHANGELOG.md` until the next version is cut.
 
 For a normal minor release:
 

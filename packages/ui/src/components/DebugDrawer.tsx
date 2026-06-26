@@ -23,9 +23,38 @@ interface DebugEntry {
     | 'system_prompt';
   provider?: string;
   model?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any;
+  data: DebugEntryData;
   duration?: number;
+}
+
+interface DebugPromptSection {
+  name: string;
+  chars: number;
+  content: string;
+}
+
+interface DebugEntryData {
+  messages?: unknown[];
+  tools?: unknown[];
+  stream?: boolean;
+  status?: string;
+  error?: string;
+  content?: string;
+  toolCalls?: unknown[];
+  usage?: { totalTokens?: number };
+  name?: string;
+  approved?: boolean;
+  success?: boolean;
+  durationMs?: number;
+  attempt?: number;
+  maxRetries?: number;
+  delayMs?: number;
+  tool?: string;
+  language?: string;
+  stage?: string;
+  totalChars?: number;
+  sections?: DebugPromptSection[];
+  [key: string]: unknown;
 }
 
 type FilterType =
@@ -113,22 +142,17 @@ function summarizeEntry(entry: DebugEntry): string {
   }
 }
 
-function SystemPromptDetail({
-  data,
-}: {
-  data: {
-    stage: string;
-    totalChars: number;
-    sections: Array<{ name: string; chars: number; content: string }>;
-  };
-}) {
+function SystemPromptDetail({ data }: { data: DebugEntryData }) {
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const sections = Array.isArray(data.sections) ? data.sections : [];
+
   return (
     <div className="text-[11px] text-text-secondary dark:text-dark-text-secondary space-y-1 max-h-[400px] overflow-auto">
       <div className="text-text-muted dark:text-dark-text-muted mb-1">
-        stage: <strong>{data.stage}</strong> — total: <strong>{data.totalChars} chars</strong>
+        stage: <strong>{data.stage ?? 'unknown'}</strong> — total:{' '}
+        <strong>{data.totalChars ?? 0} chars</strong>
       </div>
-      {(data.sections ?? []).map((s) => (
+      {sections.map((s) => (
         <div
           key={s.name}
           className="border border-border dark:border-dark-border rounded overflow-hidden"

@@ -8,7 +8,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { workflowsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
 import type { WorkflowLog, NodeResult } from '../api';
-import { JsonTreeView, ExecutionTimeline } from '../components/workflows';
+import { JsonTreeView } from '../components/workflows/JsonTreeView';
+import { ExecutionTimeline } from '../components/workflows/ExecutionTimeline';
 import {
   ChevronLeft,
   Activity,
@@ -133,7 +134,7 @@ export function WorkflowLogViewerPage() {
           wf.nodes.map((n) => ({
             id: n.id,
             type: n.type,
-            data: n.data as unknown as Record<string, unknown>,
+            data: n.data as Record<string, unknown>,
           }))
         )
       )

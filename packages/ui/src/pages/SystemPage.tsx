@@ -32,6 +32,7 @@ import type { SandboxStatus, DatabaseStatus, BackupInfo, DatabaseStats } from '.
 import type { ToolDependenciesResponse } from '../api/endpoints/misc';
 import { PageHomeTab } from '../components/PageHomeTab';
 import { formatUptime, CATEGORY_COLORS, CSV_TABLES } from './SystemPage.constants';
+import { safeDownloadHref } from '../utils/safe-url';
 
 export function SystemPage() {
   const [searchParams] = useSearchParams();
@@ -1048,48 +1049,58 @@ export function SystemPage() {
                         Available Backups ({backups.length})
                       </p>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {backups.map((backup) => (
-                          <div
-                            key={backup.filename}
-                            className="flex items-center justify-between p-3 bg-bg-primary dark:bg-dark-bg-primary rounded-lg"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-mono text-text-primary dark:text-dark-text-primary truncate">
-                                {backup.filename}
-                              </p>
-                              <p className="text-xs text-text-muted dark:text-dark-text-muted">
-                                {backup.sizeHuman} • {backup.type.toUpperCase()} •{' '}
-                                {new Date(backup.createdAt).toLocaleString()}
-                              </p>
+                        {backups.map((backup) => {
+                          const backupHref = safeDownloadHref(
+                            systemApi.downloadBackup(backup.filename)
+                          );
+                          return (
+                            <div
+                              key={backup.filename}
+                              className="flex items-center justify-between p-3 bg-bg-primary dark:bg-dark-bg-primary rounded-lg"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-mono text-text-primary dark:text-dark-text-primary truncate">
+                                  {backup.filename}
+                                </p>
+                                <p className="text-xs text-text-muted dark:text-dark-text-muted">
+                                  {backup.sizeHuman} • {backup.type.toUpperCase()} •{' '}
+                                  {new Date(backup.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="flex gap-1 ml-2">
+                                {backupHref && (
+                                  <a
+                                    href={backupHref}
+                                    download={backup.filename}
+                                    className="p-2 text-info hover:bg-info/10 rounded-lg transition-colors"
+                                    title="Download backup"
+                                    aria-label="Download backup"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => restoreBackup(backup.filename)}
+                                  disabled={dbOperationRunning}
+                                  className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Restore backup"
+                                  aria-label="Restore backup"
+                                >
+                                  <Upload className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteBackup(backup.filename)}
+                                  disabled={dbOperationRunning}
+                                  className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Delete backup"
+                                  aria-label="Delete backup"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex gap-1 ml-2">
-                              <a
-                                href={systemApi.downloadBackup(backup.filename)}
-                                download={backup.filename}
-                                className="p-2 text-info hover:bg-info/10 rounded-lg transition-colors"
-                                title="Download backup"
-                              >
-                                <Download className="w-4 h-4" />
-                              </a>
-                              <button
-                                onClick={() => restoreBackup(backup.filename)}
-                                disabled={dbOperationRunning}
-                                className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
-                                title="Restore backup"
-                              >
-                                <Upload className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => deleteBackup(backup.filename)}
-                                disabled={dbOperationRunning}
-                                className="p-2 text-error hover:bg-error/10 rounded-lg transition-colors disabled:opacity-50"
-                                title="Delete backup"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

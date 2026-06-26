@@ -1,5 +1,6 @@
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
+import { safeEmbedSrc } from './media-url';
 
 interface Props {
   data: unknown;
@@ -82,31 +83,11 @@ function EmbedItemRenderer({ item }: { item: EmbedItem }) {
   // (top-level navigation, popups, storage, form submission) — full
   // RCE-in-page via top-level nav hijack. Always sandbox.
   const { src, title, width = '100%', height = 400 } = item;
-
-  // Basic URL validation - only allow safe protocols
-  try {
-    const url = new URL(src);
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      return (
-        <div className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
-          Invalid URL protocol: {url.protocol}
-        </div>
-      );
-    }
-    // Reject same-origin src URLs — they could serve malicious content from the
-    // gateway origin that inherits all cookies and auth headers.
-    const windowOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-    if (windowOrigin && url.origin === windowOrigin) {
-      return (
-        <div className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
-          Same-origin embeds are not permitted for security reasons
-        </div>
-      );
-    }
-  } catch {
+  const safeSrc = safeEmbedSrc(src);
+  if (!safeSrc) {
     return (
       <div className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
-        Invalid URL: {src}
+        Blocked embed URL
       </div>
     );
   }
@@ -122,7 +103,7 @@ function EmbedItemRenderer({ item }: { item: EmbedItem }) {
         </div>
       )}
       <iframe
-        src={src}
+        src={safeSrc}
         title={title || 'Embedded content'}
         width={width}
         height={height}

@@ -25,7 +25,7 @@ import {
 } from '@ownpilot/core/services';
 import { getNextRunTime } from '@ownpilot/core/scheduler';
 import { getEventSystem } from '@ownpilot/core/events';
-import { runInSandbox } from '@ownpilot/core/sandbox';
+import { runInWorkerSandbox } from '@ownpilot/core/sandbox';
 import { createPluginId } from '@ownpilot/core/types';
 import type { Unsubscribe } from '@ownpilot/core/events';
 import { executionPermissionsRepo } from '../db/repositories/execution-permissions.js';
@@ -651,7 +651,11 @@ export class TriggerEngine {
     if (!preRun) return { wakeAgent: true };
 
     try {
-      const sandboxResult = await runInSandbox<unknown>(PRERUN_PLUGIN_ID, preRun.code, {
+      // Worker-isolated so maxMemory is enforced — pre-run runs arbitrary
+      // user/LLM code on every fire; a runaway allocation must crash the worker,
+      // not the gateway. Only cloneable `data` crosses the boundary (no host
+      // functions), so the worker path is a drop-in here.
+      const sandboxResult = await runInWorkerSandbox<unknown>(PRERUN_PLUGIN_ID, preRun.code, {
         data: {
           trigger: { id: trigger.id, name: trigger.name },
           payload,

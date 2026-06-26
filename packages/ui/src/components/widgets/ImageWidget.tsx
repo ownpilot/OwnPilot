@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { WidgetTone } from './widget-types';
 import { WidgetShell } from './WidgetShell';
+import { safeImageSrc } from './media-url';
 
 interface Props {
   data: unknown;
@@ -120,6 +121,7 @@ function ImageItemRenderer({
   error,
 }: ImageItemProps) {
   const [show, setShow] = useState(!lazy);
+  const safeSrc = safeImageSrc(src);
 
   return (
     <figure className="space-y-1">
@@ -129,14 +131,14 @@ function ImageItemRenderer({
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         )}
-        {error ? (
+        {error || !safeSrc ? (
           <div className="flex h-32 items-center justify-center text-text-muted">
             <ImageIcon className="h-8 w-8" />
-            <span className="ml-2 text-sm">Failed to load</span>
+            <span className="ml-2 text-sm">{safeSrc ? 'Failed to load' : 'Blocked image URL'}</span>
           </div>
         ) : (
           <img
-            src={src}
+            src={safeSrc}
             alt={alt || `Image ${index + 1}`}
             width={width}
             height={height}

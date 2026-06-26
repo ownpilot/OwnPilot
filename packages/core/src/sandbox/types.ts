@@ -90,6 +90,28 @@ export interface SandboxConfig {
   globals?: Record<string, unknown>;
   /** Enable debug mode (more verbose errors) */
   debug?: boolean;
+  /**
+   * Workspace directory for scoped fs/exec. Used by the Worker sandbox to
+   * rebuild `fs`/`exec` locally inside the worker thread (host functions can't
+   * cross the thread boundary, but the scoped APIs can be reconstructed from
+   * this path since Node fs/child_process are available in workers).
+   */
+  workspaceDir?: string;
+  /**
+   * Dotted names of host-state functions bridged over RPC on the Worker path
+   * (e.g. `['config.get', 'utils.callTool']`). The worker builds async stubs at
+   * these paths that round-trip to the main thread's matching `hostHandlers`.
+   * Only the NAMES are serialized into the worker; the handler closures stay on
+   * the main thread.
+   */
+  hostFns?: string[];
+  /**
+   * When true, the worker seeds the custom-tool global profile (the `crypto`
+   * superset incl. `createHash`, and — once wired — `utils`/`__args__`). Lets
+   * `dynamic-tool-executor` run in the worker with shape parity. Reconstructed
+   * natively in-thread (node:crypto); host-state parts still come via hostFns.
+   */
+  toolProfile?: boolean;
 }
 
 /**
@@ -137,7 +159,12 @@ export type WorkerMessage =
   | { type: 'result'; result: ExecutionResult }
   | { type: 'error'; error: string; stack?: string }
   | { type: 'log'; level: 'debug' | 'info' | 'warn' | 'error'; message: string }
-  | { type: 'resource'; action: string; allowed: boolean };
+  | { type: 'resource'; action: string; allowed: boolean }
+  // Host-function RPC bridge: the worker calls a host-state function (e.g.
+  // 'config.get', 'utils.callTool') that can't cross the thread boundary; the
+  // main thread runs the real handler and posts the (cloneable) result back.
+  | { type: 'host-call'; callId: string; fn: string; args: unknown[] }
+  | { type: 'host-result'; callId: string; ok: boolean; value?: unknown; error?: string };
 
 /**
  * Worker state

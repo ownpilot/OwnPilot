@@ -20,12 +20,12 @@ const INSECURE_DEFAULTS = {
   MEMORY_SALT: 'change-this-in-production',
   // Default Postgres password shipped in docker-compose.yml — warn in production
   POSTGRES_PASSWORD: 'ownpilot_secret',
-  // Placeholder JWT secret shipped in packages/gateway/.env.example
+  // Legacy placeholder JWT secret used by older gateway env templates
   JWT_SECRET: 'your-super-secret-jwt-key-change-in-production',
 } as const;
 
-// Minimum lengths for secrets
-const MIN_SECRET_LENGTH = 32;
+// Minimum length for JWT secrets. Keep in sync with middleware/auth.ts runtime validation.
+const MIN_JWT_SECRET_LENGTH = 64;
 
 // Sensitive env vars that must NOT be the insecure placeholder
 const REQUIRED_NON_DEFAULT: Array<{
@@ -65,8 +65,8 @@ const AUTH_DEPENDENT_REQUIRED: Array<{
     conditionValue: 'jwt',
     requiredKey: 'JWT_SECRET',
     envKey: 'JWT_SECRET',
-    minLength: MIN_SECRET_LENGTH,
-    description: 'JWT signing secret — must be at least 32 characters',
+    minLength: MIN_JWT_SECRET_LENGTH,
+    description: 'JWT signing secret — must be at least 64 characters',
   },
 ];
 
@@ -181,9 +181,9 @@ function validateBootConfig(): ValidationResult {
         'JWT_SECRET appears to contain placeholder text — this is not secure in production'
       );
     }
-    if (jwtSecret.length < MIN_SECRET_LENGTH) {
+    if (jwtSecret.length < MIN_JWT_SECRET_LENGTH) {
       reportJwtIssue(
-        `JWT_SECRET is ${jwtSecret.length} chars — should be at least ${MIN_SECRET_LENGTH}. Generate with: openssl rand -base64 32`
+        `JWT_SECRET is ${jwtSecret.length} chars — should be at least ${MIN_JWT_SECRET_LENGTH}. Generate with: openssl rand -base64 64`
       );
     }
     // Catch obviously weak secrets — single-character repeats, decimal-only

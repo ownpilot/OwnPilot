@@ -6,12 +6,13 @@
 
 import * as crypto from 'node:crypto';
 import { createSandbox } from '../../sandbox/executor.js';
+import { runInWorkerSandbox, type HostHandlers } from '../../sandbox/worker-sandbox.js';
 import { createScopedFs, createScopedExec } from '../../sandbox/scoped-apis.js';
 import type { PluginId } from '../../types/branded.js';
 import type { ToolDefinition, ToolExecutor, ToolContext, ToolExecutionResult } from '../types.js';
 import { UTILITY_TOOLS } from './utility-tools.js';
 import { getBaseName } from '../tool-namespace.js';
-import type { DynamicToolDefinition } from './dynamic-tool-types.js';
+import type { DynamicToolDefinition, DynamicToolPermission } from './dynamic-tool-types.js';
 import { isToolCallAllowed } from './dynamic-tool-permissions.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { createSafeFetch, mapPermissions, createSandboxUtils } from './dynamic-tool-sandbox.js';
@@ -27,6 +28,22 @@ export async function executeDynamicTool(
 ): Promise<ToolExecutionResult> {
   const pluginId = `dynamic:${tool.name}` as PluginId;
   const toolPermissions = tool.permissions ?? [];
+
+  // Opt-in Worker-isolated path (enforces maxMemory — the vm path below cannot).
+  // Default stays on the vm path so existing behavior is unchanged until custom
+  // tools are validated against the worker; flip OWNPILOT_TOOL_SANDBOX=worker to
+  // enable. Shape parity (utils/crypto/__args__/config/callTool) is covered by
+  // worker-sandbox.integration.test.ts.
+  if (process.env.OWNPILOT_TOOL_SANDBOX === 'worker') {
+    return executeDynamicToolInWorker(
+      tool,
+      args,
+      context,
+      pluginId,
+      toolPermissions,
+      callableTools
+    );
+  }
 
   // Create sandbox with appropriate permissions
   const sandbox = createSandbox({
@@ -248,4 +265,127 @@ export async function executeDynamicTool(
       },
     };
   }
+}
+
+/**
+ * Worker-isolated variant of executeDynamicTool (opt-in via OWNPILOT_TOOL_SANDBOX
+ * = 'worker'). Runs the tool in a Worker thread so `maxMemory` is enforced. The
+ * native global shape (utils/crypto/fetch/fs/exec/__args__) is rebuilt inside
+ * the worker via the `toolProfile`; host-state functions (config reads, callTool)
+ * are bridged back to THIS thread via `hostHandlers` over RPC. The tool code and
+ * result shape are identical to the vm path.
+ */
+async function executeDynamicToolInWorker(
+  tool: DynamicToolDefinition,
+  args: Record<string, unknown>,
+  context: ToolContext,
+  pluginId: PluginId,
+  toolPermissions: DynamicToolPermission[],
+  callableTools?: Array<{ definition: ToolDefinition; executor: ToolExecutor }>
+): Promise<ToolExecutionResult> {
+  const hostHandlers: HostHandlers = {
+    'config.get': (svc, field) => context.getFieldValue?.(svc as string, field as string),
+    'utils.getApiKey': (svc) => context.getApiKey?.(svc as string),
+    'utils.getServiceConfig': (svc) => context.getServiceConfig?.(svc as string) ?? null,
+    'utils.getConfigEntry': (svc, label) =>
+      context.getConfigEntry?.(svc as string, label as string | undefined) ?? null,
+    'utils.getConfigEntries': (svc) => context.getConfigEntries?.(svc as string) ?? [],
+    'utils.getFieldValue': (svc, field, label) =>
+      context.getFieldValue?.(svc as string, field as string, label as string | undefined),
+    'utils.callTool': async (toolName, toolArgs) => {
+      const name = toolName as string;
+      const check = isToolCallAllowed(name, toolPermissions);
+      if (!check.allowed) throw new Error(check.reason);
+      const allTools = callableTools ?? UTILITY_TOOLS;
+      const foundTool =
+        allTools.find((t) => t.definition.name === name) ??
+        allTools.find((t) => getBaseName(t.definition.name) === getBaseName(name));
+      if (!foundTool) {
+        const available = allTools
+          .filter((t) => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+          .map((t) => getBaseName(t.definition.name))
+          .join(', ');
+        throw new Error(`Tool '${name}' not found. Available tools: ${available}`);
+      }
+      const res = await foundTool.executor((toolArgs as Record<string, unknown>) ?? {}, context);
+      if (res.isError) throw new Error(`Tool '${name}' failed: ${res.content}`);
+      if (typeof res.content === 'string') {
+        try {
+          return JSON.parse(res.content);
+        } catch {
+          return res.content;
+        }
+      }
+      return res.content;
+    },
+    'utils.listTools': () => {
+      const allTools = callableTools ?? UTILITY_TOOLS;
+      return allTools
+        .filter((t) => isToolCallAllowed(t.definition.name, toolPermissions).allowed)
+        .map((t) => ({
+          name: getBaseName(t.definition.name),
+          description: t.definition.description,
+          parameters: Object.keys(t.definition.parameters.properties || {}),
+        }));
+    },
+  };
+
+  const wrappedCode = `
+    const args = __args__;
+    const context = __context__;
+
+    // Tool implementation
+    ${tool.code}
+  `;
+
+  let result: Awaited<ReturnType<typeof runInWorkerSandbox>>;
+  try {
+    result = await runInWorkerSandbox(pluginId, wrappedCode, {
+      permissions: mapPermissions(toolPermissions),
+      limits: { maxExecutionTime: 30000, maxCpuTime: 5000, maxMemory: 50 * 1024 * 1024 },
+      workspaceDir: context.workspaceDir,
+      toolProfile: true,
+      data: {
+        args,
+        toolContext: {
+          toolName: tool.name,
+          callId: context.callId,
+          conversationId: context.conversationId,
+          userId: context.userId,
+        },
+      },
+      hostHandlers,
+    });
+  } catch (fatalError) {
+    return {
+      content: `Fatal sandbox error: ${getErrorMessage(fatalError)}`,
+      isError: true,
+      metadata: { dynamicTool: tool.name, fatal: true },
+    };
+  }
+
+  if (result.ok) {
+    const execResult = result.value;
+    if (execResult.success) {
+      return {
+        content: execResult.value,
+        isError: false,
+        metadata: { executionTime: execResult.executionTime, dynamicTool: tool.name },
+      };
+    }
+    return {
+      content: `Tool execution failed: ${execResult.error}`,
+      isError: true,
+      metadata: {
+        executionTime: execResult.executionTime,
+        dynamicTool: tool.name,
+        stack: execResult.stack,
+      },
+    };
+  }
+  return {
+    content: `Tool execution error: ${result.error.message}`,
+    isError: true,
+    metadata: { dynamicTool: tool.name, errorType: result.error.name },
+  };
 }

@@ -28,7 +28,7 @@ import type {
   Message,
   ToolCall,
 } from '../types.js';
-import type { ProviderHealthResult } from '../provider-types.js';
+import type { IProvider, ProviderHealthResult } from '../provider-types.js';
 import {
   loadProviderConfig,
   resolveProviderConfig,
@@ -95,7 +95,7 @@ interface OpenAIResponse {
 /**
  * OpenAI-compatible provider that uses JSON config files
  */
-export class OpenAICompatibleProvider {
+export class OpenAICompatibleProvider implements IProvider {
   readonly type: AIProvider;
   private readonly providerId: string;
   private readonly config: ResolvedProviderConfig;
@@ -131,8 +131,7 @@ export class OpenAICompatibleProvider {
       return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { apiKeyEnv, ...rest } = config;
+    const { apiKeyEnv: _apiKeyEnv, ...rest } = config;
     return new OpenAICompatibleProvider({ ...rest, apiKey });
   }
 
@@ -363,6 +362,11 @@ export class OpenAICompatibleProvider {
             id: parsed.id ?? '',
             content: delta.content,
             toolCalls: delta.tool_calls?.map((tc) => ({
+              // Forward the streamed index so the agent loop can reassemble
+              // argument fragments of parallel tool calls into the right slot
+              // (matches openai-provider.ts). Without it, fragments of a 2nd+
+              // tool call are misrouted to the last slot, corrupting arguments.
+              index: (tc as { index?: number }).index,
               id: tc.id,
               name: tc.function?.name ? desanitizeToolName(tc.function.name) : undefined,
               arguments: tc.function?.arguments,
@@ -434,6 +438,11 @@ export class OpenAICompatibleProvider {
    */
   countTokens(messages: readonly Message[]): number {
     return approximateTokenCount(messages);
+  }
+
+  recordMetric(input: Parameters<IProvider['recordMetric']>[0]): Promise<void> {
+    void input;
+    return Promise.resolve();
   }
 
   /**

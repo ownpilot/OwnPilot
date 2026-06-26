@@ -9,9 +9,16 @@
 import { LOCAL_OWNER_ID } from '../config/defaults.js';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getBrowserService } from '../services/browser-service.js';
+import {
+  getBrowserService,
+  type BrowserAction,
+  type FormField,
+} from '../services/browser-service.js';
 import { getTriggerService } from '../services/index.js';
-import { BrowserWorkflowsRepository } from '../db/repositories/browser-workflows.js';
+import {
+  BrowserWorkflowsRepository,
+  type WorkflowParameter,
+} from '../db/repositories/browser-workflows.js';
 import { apiResponse, apiError, ERROR_CODES, getPaginationParams } from './helpers.js';
 import { getErrorMessage } from '@ownpilot/core/services';
 import {
@@ -35,6 +42,82 @@ const updateBrowserWorkflowSchema = z.object({
 });
 
 export const browserRoutes = new Hono();
+
+const WORKFLOW_ACTION_TYPES = new Set<BrowserAction['type']>([
+  'navigate',
+  'click',
+  'type',
+  'screenshot',
+  'extract',
+  'wait',
+  'scroll',
+  'select',
+]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toFormFields(value: unknown): FormField[] | null {
+  if (!Array.isArray(value)) return null;
+  const fields: FormField[] = [];
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.selector !== 'string' || typeof item.value !== 'string') {
+      return null;
+    }
+    fields.push({ selector: item.selector, value: item.value });
+  }
+  return fields;
+}
+
+function toBrowserAction(value: Record<string, unknown>): BrowserAction | null {
+  const type = value.type;
+  if (typeof type !== 'string' || !WORKFLOW_ACTION_TYPES.has(type as BrowserAction['type'])) {
+    return null;
+  }
+
+  const action: BrowserAction = { type: type as BrowserAction['type'] };
+  if (typeof value.selector === 'string') action.selector = value.selector;
+  if (typeof value.url === 'string') action.url = value.url;
+  if (typeof value.text === 'string') action.text = value.text;
+  if (typeof value.value === 'string') action.value = value.value;
+  if (typeof value.timeout === 'number') action.timeout = value.timeout;
+  return action;
+}
+
+function toBrowserActions(value: Array<Record<string, unknown>>): BrowserAction[] | null {
+  const actions: BrowserAction[] = [];
+  for (const item of value) {
+    const action = toBrowserAction(item);
+    if (!action) return null;
+    actions.push(action);
+  }
+  return actions;
+}
+
+function toWorkflowParameters(value: unknown): WorkflowParameter[] | undefined {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      const record = isRecord(item) ? item : {};
+      return {
+        name: typeof record.name === 'string' ? record.name : '',
+        type: typeof record.type === 'string' ? record.type : 'string',
+        description: typeof record.description === 'string' ? record.description : '',
+      };
+    });
+  }
+  if (!isRecord(value)) return undefined;
+  return Object.entries(value).map(([name, raw]) => {
+    const record = isRecord(raw) ? raw : null;
+    return {
+      name,
+      type:
+        typeof raw === 'string' ? raw : typeof record?.type === 'string' ? record.type : 'string',
+      description: typeof record?.description === 'string' ? record.description : '',
+    };
+  });
+}
 
 function getWorkflowRepo(): BrowserWorkflowsRepository {
   return new BrowserWorkflowsRepository();
@@ -134,7 +217,8 @@ browserRoutes.post('/action', async (c) => {
         return apiResponse(c, result);
       }
       case 'fill_form': {
-        if (!Array.isArray(body.fields))
+        const fields = toFormFields(body.fields);
+        if (!fields)
           return apiError(
             c,
             {
@@ -143,10 +227,7 @@ browserRoutes.post('/action', async (c) => {
             },
             400
           );
-        const result = await service.fillForm(
-          userId,
-          body.fields as unknown as import('../services/browser-service.js').FormField[]
-        );
+        const result = await service.fillForm(userId, fields);
         return apiResponse(c, result);
       }
       case 'extract': {
@@ -223,15 +304,21 @@ browserRoutes.post('/workflows', async (c) => {
   try {
     const userId = LOCAL_OWNER_ID;
     const body = validateBody(createBrowserWorkflowSchema, await c.req.json());
+    const steps = toBrowserActions(body.steps);
+    if (!steps) {
+      return apiError(
+        c,
+        { code: ERROR_CODES.VALIDATION_ERROR, message: 'steps contain an invalid browser action' },
+        400
+      );
+    }
 
     const repo = getWorkflowRepo();
     const workflow = await repo.create(userId, {
       name: body.name,
       description: body.description,
-      steps: body.steps as unknown as import('../services/browser-service.js').BrowserAction[],
-      parameters: body.parameters as unknown as
-        | import('../db/repositories/browser-workflows.js').WorkflowParameter[]
-        | undefined,
+      steps,
+      parameters: toWorkflowParameters(body.parameters),
       triggerId: body.triggerId,
     });
     return apiResponse(c, workflow, 201);

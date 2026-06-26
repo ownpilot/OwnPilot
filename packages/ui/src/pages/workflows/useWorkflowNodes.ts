@@ -8,7 +8,7 @@ import type { Node } from '@xyflow/react';
 
 import { apiClient, triggersApi } from '../../api';
 import { formatToolName } from '../../utils/formatters';
-import type { TriggerNodeData } from '../../components/workflows';
+import type { TriggerNodeData } from '../../components/workflows/TriggerNode';
 
 interface WorkflowNodesParams {
   nodes: Node[];

@@ -24,6 +24,27 @@ const PERMISSION_COLORS: Record<string, string> = {
   agent: 'bg-green-500/10 text-green-600',
 };
 
+function toSkillInfo(value: unknown): SkillInfo | null {
+  if (!value || typeof value !== 'object') return null;
+  const data = value as Record<string, unknown>;
+  return {
+    id: typeof data.id === 'string' ? data.id : '',
+    name: typeof data.name === 'string' ? data.name : 'Unknown skill',
+    description: typeof data.description === 'string' ? data.description : '',
+    version: typeof data.version === 'string' ? data.version : '',
+    toolCount: typeof data.toolCount === 'number' ? data.toolCount : 0,
+    status: typeof data.status === 'string' ? data.status : '',
+    createdAt: typeof data.createdAt === 'string' ? data.createdAt : '',
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
+    grantedPermissions: Array.isArray(data.grantedPermissions)
+      ? data.grantedPermissions.filter(
+          (permission): permission is string => typeof permission === 'string'
+        )
+      : [],
+    ...(typeof data.instructions === 'string' ? { instructions: data.instructions } : {}),
+  };
+}
+
 export function SkillsTab({
   availableSkills,
   selectedSkills,
@@ -52,7 +73,7 @@ export function SkillsTab({
     try {
       const { extensionsApi } = await import('../../../api/endpoints/extensions');
       const skill = await extensionsApi.getById(id);
-      setDetailSkill(skill as unknown as SkillInfo);
+      setDetailSkill(toSkillInfo(skill));
     } catch {
       /* ignore */
     }

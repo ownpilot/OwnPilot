@@ -14,6 +14,7 @@ import {
   getDefaultModel,
 } from '@ownpilot/gateway/config';
 import { settingsRepo } from '@ownpilot/gateway/db';
+import { replaceShutdownSignalHandlers } from './shutdown-signals.js';
 
 interface BotOptions {
   token?: string;
@@ -221,6 +222,5 @@ export async function startBot(options: BotOptions): Promise<void> {
     await bot.stop();
     process.exit(0);
   };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  replaceShutdownSignalHandlers('bot', shutdown);
 }

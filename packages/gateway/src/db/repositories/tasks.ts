@@ -119,6 +119,10 @@ export class TasksRepository extends BaseRepository {
     this.userId = userId;
   }
 
+  async queryAggregate<T extends object>(sql: string, params: unknown[] = []): Promise<T[]> {
+    return this.query<T>(sql, params);
+  }
+
   /**
    * Get a task by ID (standard interface alias)
    */

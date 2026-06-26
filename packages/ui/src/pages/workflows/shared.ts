@@ -3,32 +3,30 @@
  */
 
 import { MarkerType } from '@xyflow/react';
-import {
-  ToolNode,
-  TriggerNode,
-  LlmNode,
-  ConditionNode,
-  CodeNode,
-  TransformerNode,
-  ForEachNode,
-  HttpRequestNode,
-  DelayNode,
-  SwitchNode,
-  ErrorHandlerNode,
-  SubWorkflowNode,
-  ApprovalNode,
-  StickyNoteNode,
-  NotificationNode,
-  ParallelNode,
-  MergeNode,
-  DataStoreNode,
-  SchemaValidatorNode,
-  FilterNode,
-  MapNode,
-  AggregateNode,
-  WebhookResponseNode,
-  ClawNode,
-} from '../../components/workflows';
+import { ToolNode } from '../../components/workflows/ToolNode';
+import { TriggerNode } from '../../components/workflows/TriggerNode';
+import { LlmNode } from '../../components/workflows/LlmNode';
+import { ConditionNode } from '../../components/workflows/ConditionNode';
+import { CodeNode } from '../../components/workflows/CodeNode';
+import { TransformerNode } from '../../components/workflows/TransformerNode';
+import { ForEachNode } from '../../components/workflows/ForEachNode';
+import { HttpRequestNode } from '../../components/workflows/HttpRequestNode';
+import { DelayNode } from '../../components/workflows/DelayNode';
+import { SwitchNode } from '../../components/workflows/SwitchNode';
+import { ErrorHandlerNode } from '../../components/workflows/ErrorHandlerNode';
+import { SubWorkflowNode } from '../../components/workflows/SubWorkflowNode';
+import { ApprovalNode } from '../../components/workflows/ApprovalNode';
+import { StickyNoteNode } from '../../components/workflows/StickyNoteNode';
+import { NotificationNode } from '../../components/workflows/NotificationNode';
+import { ParallelNode } from '../../components/workflows/ParallelNode';
+import { MergeNode } from '../../components/workflows/MergeNode';
+import { DataStoreNode } from '../../components/workflows/DataStoreNode';
+import { SchemaValidatorNode } from '../../components/workflows/SchemaValidatorNode';
+import { FilterNode } from '../../components/workflows/FilterNode';
+import { MapNode } from '../../components/workflows/MapNode';
+import { AggregateNode } from '../../components/workflows/AggregateNode';
+import { WebhookResponseNode } from '../../components/workflows/WebhookResponseNode';
+import { ClawNode } from '../../components/workflows/ClawNode';
 
 // Register custom node types
 export const nodeTypes = {

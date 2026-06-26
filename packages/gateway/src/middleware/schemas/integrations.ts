@@ -82,11 +82,19 @@ export const browserActionSchema = z.object({
   timeout: z.number().int().positive().max(60000).optional(),
 });
 
+const browserWorkflowParameterSchema = z.object({
+  name: z.string().min(1).max(200),
+  type: z.string().min(1).max(100),
+  description: z.string().max(1000).optional(),
+});
+
 export const createBrowserWorkflowSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
   steps: z.array(z.record(z.string(), z.unknown())).min(1).max(100),
-  parameters: z.record(z.string(), z.unknown()).optional(),
+  parameters: z
+    .union([z.array(browserWorkflowParameterSchema).max(100), z.record(z.string(), z.unknown())])
+    .optional(),
   triggerId: z.string().max(200).optional(),
 });
 

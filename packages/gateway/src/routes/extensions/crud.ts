@@ -9,8 +9,11 @@
 
 import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono, type Context } from 'hono';
-import { getExtensionService } from '@ownpilot/core/services';
-import { type ExtensionService, ExtensionError } from '../../services/extension/service.js';
+import { ExtensionError } from '../../services/extension/service.js';
+import {
+  getExtensionManifestSecurity,
+  getGatewayExtensionService,
+} from '../../services/extension/accessor.js';
 import {
   apiResponse,
   apiError,
@@ -29,7 +32,7 @@ export const crudRoutes = new Hono();
 /** Get ExtensionService from registry (cast needed for ExtensionError-specific methods).  *
  * Trust boundary: Extension record updates carry a flexible config payload; the casts below read typed fields off the validated body. The Zod schema is the trust boundary.
  */
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
 
 async function uninstallExtension(c: Context) {
   const userId = LOCAL_OWNER_ID;
@@ -130,7 +133,7 @@ crudRoutes.post('/', async (c) => {
       userId
     );
     wsGateway.broadcast('data:changed', { entity: 'extension', action: 'created', id: record.id });
-    const security = (record.manifest as unknown as Record<string, unknown>)?._security ?? null;
+    const security = getExtensionManifestSecurity(record.manifest);
     return apiResponse(
       c,
       { package: record, security, message: 'Extension installed successfully.' },

@@ -10,8 +10,7 @@ import { LOCAL_OWNER_ID } from '../../config/defaults.js';
 import { Hono } from 'hono';
 import { createProvider, getProviderConfig as coreGetProviderConfig } from '@ownpilot/core/agent';
 import type { AIProvider } from '@ownpilot/core/costs';
-import { getExtensionService } from '@ownpilot/core/services';
-import type { ExtensionService } from '../../services/extension/service.js';
+import { getGatewayExtensionService } from '../../services/extension/accessor.js';
 import {
   apiResponse,
   apiError,
@@ -42,7 +41,7 @@ const NATIVE_PROVIDERS = new Set([
   'perplexity',
 ]);
 
-const getExtService = () => getExtensionService() as unknown as ExtensionService;
+const getExtService = getGatewayExtensionService;
 
 // ---------------------------------------------------------------------------
 // Shared: create a provider instance

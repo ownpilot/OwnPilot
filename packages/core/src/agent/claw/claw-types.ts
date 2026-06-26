@@ -51,4 +51,5 @@ export interface ClawCycleSummary {
   consecutiveErrors: number;
   totalCostUsd: number;
   state: ClawState;
+  error?: string | null;
 }

@@ -85,20 +85,30 @@ function tryGetMessageBus(): IMessageBus | null {
 // Helper: Check if a plugin is a channel plugin
 // ============================================================================
 
-function isChannelPlugin(plugin: Plugin): boolean {
-  const api = plugin.api as unknown as ChannelPluginAPI | undefined;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isChannelPluginApi(api: unknown): api is ChannelPluginAPI {
   return (
-    plugin.manifest.category === 'channel' &&
-    api !== undefined &&
+    isRecord(api) &&
     typeof api.connect === 'function' &&
+    typeof api.disconnect === 'function' &&
     typeof api.sendMessage === 'function' &&
     typeof api.getStatus === 'function' &&
     typeof api.getPlatform === 'function'
   );
 }
 
+function isChannelPlugin(plugin: Plugin): boolean {
+  return plugin.manifest.category === 'channel' && isChannelPluginApi(plugin.api);
+}
+
 function getChannelApi(plugin: Plugin): ChannelPluginAPI {
-  return plugin.api as unknown as ChannelPluginAPI;
+  if (!isChannelPluginApi(plugin.api)) {
+    throw new Error(`Plugin ${plugin.manifest.id} does not expose a channel API`);
+  }
+  return plugin.api;
 }
 
 function getChannelPlatform(plugin: Plugin): ChannelPlatform {
@@ -1426,7 +1436,7 @@ export class ChannelServiceImpl implements IChannelService {
   ): Promise<string> {
     // SECURITY (EXPOSE-004): the 6-digit code is a one-time pairing
     // credential — an attacker who can predict it gains DM access. Use
-    // crypto.randomInt (CSPRNG); Math.random() would be predictable from
+    // crypto.randomInt (CSPRNG); non-cryptographic PRNG output would be predictable from
     // a few observed outputs.
     const code = String(randomInt(100000, 1000000));
 

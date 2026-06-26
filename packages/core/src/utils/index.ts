@@ -14,3 +14,6 @@ export {
 export { safeCost, safeDuration } from './safe-value.js';
 
 export { BoundedMap } from './bounded-map.js';
+
+export { ignoreError, silentCatch } from './ignore-error.js';
+export type { IgnoredErrorHandler } from './ignore-error.js';

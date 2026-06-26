@@ -19,6 +19,7 @@ import { isBuiltinProvider } from '@ownpilot/core/services/coding-agent';
 
 /** Maximum output size (stdout or stderr) captured from a child process */
 export const MAX_OUTPUT_SIZE = 1_048_576; // 1 MB
+const CLI_BINARY_FORBIDDEN_PATTERN = /[\0\r\n\t\s;&|<>`$()"'%!^]/;
 
 /** Built-in provider env var names (needed by createSanitizedEnv) */
 const API_KEY_ENV_VARS: Record<string, string> = {
@@ -30,6 +31,30 @@ const API_KEY_ENV_VARS: Record<string, string> = {
 // =============================================================================
 // BINARY DETECTION
 // =============================================================================
+
+/**
+ * Validate a user-configured CLI binary command/path.
+ *
+ * The value is executed through spawn/execFile in most code paths, but
+ * interactive coding-agent sessions use node-pty and wrap Windows launches with
+ * `cmd.exe /c` for .cmd/.bat support. Keep this field to an executable name or
+ * path only; flags belong in defaultArgs.
+ */
+export function validateCliBinaryPath(binary: string): string {
+  const trimmed = binary.trim();
+  if (!trimmed) {
+    throw new Error('Binary name is required');
+  }
+  if (trimmed.length > 512) {
+    throw new Error('Binary name is too long');
+  }
+  if (CLI_BINARY_FORBIDDEN_PATTERN.test(trimmed)) {
+    throw new Error(
+      'Binary must be a command name or path without whitespace, quotes, or shell metacharacters'
+    );
+  }
+  return trimmed;
+}
 
 /**
  * Check if a CLI binary is installed using execFileSync (safe, no shell injection).

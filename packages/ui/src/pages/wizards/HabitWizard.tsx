@@ -94,6 +94,13 @@ const FREQUENCIES = [
   { id: 'custom', label: 'Custom', desc: 'Pick specific days', days: [] as number[] },
 ];
 
+function getCreatedHabitId(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const response = value as { habit?: { id?: unknown }; id?: unknown };
+  if (typeof response.habit?.id === 'string') return response.habit.id;
+  return typeof response.id === 'string' ? response.id : undefined;
+}
+
 export function HabitWizard({ onComplete, onCancel }: Props) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -199,7 +206,7 @@ export function HabitWizard({ onComplete, onCancel }: Props) {
       try {
         // Backend accepts: daily | weekly | weekdays | custom — map 'weekends' to custom
         const backendFrequency = frequencyId === 'weekends' ? 'custom' : frequencyId;
-        const created = (await habitsApi.create({
+        const created = await habitsApi.create({
           name: name.trim(),
           description: description.trim() || undefined,
           frequency: backendFrequency,
@@ -208,9 +215,9 @@ export function HabitWizard({ onComplete, onCancel }: Props) {
           unit: unit.trim(),
           category: category.trim() || undefined,
           reminderTime: reminderTime || undefined,
-        })) as unknown as { habit?: { id: string }; id?: string };
+        });
         // Response is wrapped: { habit, message }
-        const habitId = created.habit?.id ?? created.id;
+        const habitId = getCreatedHabitId(created);
         setResult({ ok: true, id: habitId });
         draft.clear();
         setStep(4);

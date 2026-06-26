@@ -23,6 +23,7 @@ import { HeartbeatCircuitBreaker } from './heartbeat-circuit-breaker.js';
 import { HeartbeatMetricsCollector } from './heartbeat-metrics.js';
 import { BudgetForecaster } from './budget-forecast.js';
 import { calculateBackoffDelay } from '../../utils/safe-value.js';
+import { silentCatch } from '../../utils/ignore-error.js';
 
 const log = getLog('HeartbeatRunner');
 
@@ -490,8 +491,7 @@ Be concise and focused. Report your findings clearly.`.trim();
       // (e.g. provider returns an error after the deadline). Attach a no-op
       // catch so that late rejection stays bounded here and doesn't bubble
       // up as an unhandledRejection.
-      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-      responsePromise.catch(() => {});
+      responsePromise.catch(silentCatch('heartbeat.response.raceLoser'));
 
       let response;
       try {

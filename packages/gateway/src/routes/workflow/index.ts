@@ -10,6 +10,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { streamSSE } from 'hono/streaming';
+import { silentCatch } from '@ownpilot/core/utils';
 import { ERROR_CODES } from '../error-codes.js';
 import {
   apiResponse,
@@ -47,6 +48,28 @@ const executeWorkflowBodySchema = z.object({
 // Use types from dag-utils for consistency
 type WfNode = ValidationNode;
 type WfEdge = ValidationEdge;
+type SemanticNodeInput = { id: string; type: string; data: object };
+type SemanticEdgeInput = { source: string; target: string; sourceHandle?: string };
+
+function toRecord(value: object): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(value));
+}
+
+function toValidationNodes(nodes: readonly SemanticNodeInput[]): WfNode[] {
+  return nodes.map((node) => ({
+    id: node.id,
+    type: node.type,
+    data: toRecord(node.data),
+  }));
+}
+
+function toValidationEdges(edges: readonly SemanticEdgeInput[]): WfEdge[] {
+  return edges.map((edge) => ({
+    source: edge.source,
+    target: edge.target,
+    sourceHandle: edge.sourceHandle,
+  }));
+}
 
 /**
  * Validate workflow-level semantic constraints that Zod can't express.
@@ -377,7 +400,10 @@ workflowRoutes.post('/', async (c) => {
   }
 
   // Semantic validation (node completeness, edge references, branching handles)
-  const semanticErrors = validateWorkflowSemantics(body.nodes as WfNode[], body.edges as WfEdge[]);
+  const semanticErrors = validateWorkflowSemantics(
+    toValidationNodes(body.nodes),
+    toValidationEdges(body.edges)
+  );
   if (semanticErrors.length > 0) {
     return apiError(
       c,
@@ -576,8 +602,8 @@ workflowRoutes.patch('/:id', async (c) => {
 
     // Semantic validation
     const semanticErrors = validateWorkflowSemantics(
-      nodes as unknown as WfNode[],
-      edges as unknown as WfEdge[]
+      toValidationNodes(nodes),
+      toValidationEdges(edges)
     );
     if (semanticErrors.length > 0) {
       return apiError(
@@ -862,14 +888,13 @@ workflowRoutes.post('/approvals/:id/approve', async (c) => {
         // The original error (`err`) was already captured in the parent
         // .catch; if updateLog itself fails, we can't do anything useful
         // because the approval response has already been computed.
-        // eslint-disable-next-line no-restricted-syntax
         wfRepo
           .updateLog(approval.workflowLogId, {
             status: 'failed',
             error: `Resume after approval failed: ${getErrorMessage(err)}`,
             completedAt: new Date().toISOString(),
           })
-          .catch(() => {});
+          .catch(silentCatch('workflow.approval.updateLog'));
       });
   }
 
@@ -1010,8 +1035,7 @@ workflowRoutes.post('/:id/run', async (c) => {
 
   // Don't await the full execution — it runs in the background.
   // Execution errors are persisted to the workflow log row by the runner.
-  // eslint-disable-next-line no-restricted-syntax
-  executionPromise.catch(() => {});
+  executionPromise.catch(silentCatch('workflow.execution.background'));
 
   if (!logId) {
     return apiError(

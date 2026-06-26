@@ -8,6 +8,8 @@
  *   (from packages/core directory)
  */
 
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { createSandbox } from './executor.js';
 import { createWorkerSandbox } from './worker-sandbox.js';
@@ -19,6 +21,12 @@ const SANDBOX_CONFIG: SandboxConfig = {
   limits: { maxMemory: 64 * 1024 * 1024, maxCpuTime: 5000, maxExecutionTime: 30000 },
   debug: true,
 };
+
+// The Worker sandbox spawns a real worker thread from the COMPILED
+// `sandbox-worker.js`. Under vitest (running .ts source) that sibling file does
+// not exist, so the real-worker isolation checks below are gated on a built
+// dist and skip in source-mode runs. They execute via `pnpm build && pnpm test`.
+const WORKER_BUILT = existsSync(fileURLToPath(new URL('./sandbox-worker.js', import.meta.url)));
 
 // ============================================================================
 // 1. VM Escape via constructor.constructor
@@ -549,7 +557,7 @@ describe('LEGITIMATE code must still work', () => {
 // 13. Worker Sandbox Isolation
 // ============================================================================
 
-describe('WorkerSandbox isolation', () => {
+describe.skipIf(!WORKER_BUILT)('WorkerSandbox isolation', () => {
   it('BLOCKED: parentPort access', async () => {
     const executor = createWorkerSandbox(SANDBOX_CONFIG);
     const result = await executor.execute('return typeof parentPort');

@@ -24,6 +24,8 @@ import {
   type ParsedMarkerWidget,
 } from '../utils/chat-content';
 import type { Message, MessageAttachment } from '../types';
+import { BLOCKED_IMG_PLACEHOLDER, resolveImageUrl } from './MarkdownContent.url-helpers';
+import { safeImageSrc } from './widgets/media-url';
 
 interface MessageListProps {
   messages: Message[];
@@ -90,21 +92,34 @@ function AttachmentChip({ attachment }: { attachment: MessageAttachment }) {
   );
 }
 
-function resolveAttachmentImageSrc(
+function resolveLegacyWorkspaceImagePath(path: string): string | undefined {
+  const cleanPath = path.replace(/^[/\\]+/, '');
+  const isUnsafe =
+    cleanPath.includes('\0') ||
+    /(^|[/\\])\.\.([/\\]|$)/.test(cleanPath) ||
+    /^[a-zA-Z]:[/\\]/.test(cleanPath) ||
+    cleanPath.startsWith('\\\\');
+  if (isUnsafe) return undefined;
+
+  const safePath = cleanPath.split(/[/\\]/).filter(Boolean).map(encodeURIComponent).join('/');
+  return safePath ? `/api/v1/files/workspace/${safePath}` : undefined;
+}
+
+export function resolveAttachmentImageSrc(
   attachment: MessageAttachment,
   workspaceId?: string | null
 ): string | undefined {
   if (attachment.data) {
-    return `data:${attachment.mimeType || 'image/png'};base64,${attachment.data}`;
+    return safeImageSrc(`data:${attachment.mimeType || 'image/png'};base64,${attachment.data}`);
   }
 
   if (!attachment.path) return undefined;
-  const cleanPath = attachment.path.replace(/^[/\\]+/, '');
   if (workspaceId) {
-    return `/api/v1/file-workspaces/${encodeURIComponent(workspaceId)}/file/${cleanPath}?raw=true`;
+    const resolved = resolveImageUrl(attachment.path, workspaceId);
+    return resolved === BLOCKED_IMG_PLACEHOLDER ? undefined : resolved;
   }
 
-  return `/api/v1/files/workspace/${cleanPath}`;
+  return resolveLegacyWorkspaceImagePath(attachment.path);
 }
 
 function MessageBubble({

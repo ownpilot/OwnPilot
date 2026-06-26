@@ -238,17 +238,21 @@ describe('WorkerSandbox.initialize()', () => {
     vi.clearAllMocks();
   });
 
-  it('creates Worker with eval: true', async () => {
+  it('spawns the sandbox-worker module file (not an eval string)', async () => {
     const { Worker: WorkerMock } = await import('node:worker_threads');
     setupAutoReadyWorker();
 
     const sandbox = new WorkerSandbox(makeConfig());
     await sandbox.initialize();
 
-    const opts = (WorkerMock as ReturnType<typeof vi.fn>).mock.calls[0][1] as {
-      eval: boolean;
-    };
-    expect(opts.eval).toBe(true);
+    const call = (WorkerMock as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      unknown,
+      { eval?: boolean },
+    ];
+    // First arg is a URL/path to the real worker module, not a stringified
+    // script; the legacy eval:true path is gone.
+    expect(String(call[0])).toContain('sandbox-worker.js');
+    expect(call[1].eval).toBeUndefined();
   });
 
   it('sets resourceLimits on worker with maxOldGenerationSizeMb from maxMemory', async () => {
@@ -1745,5 +1749,90 @@ describe('WorkerSandbox edge cases', () => {
     const result = await initializeSandbox(sandbox);
     expect(result.ok).toBe(true);
     expect(sandbox.getState()).toBe('idle');
+  });
+});
+
+describe('WorkerSandbox host-function RPC bridge', () => {
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    codeIsValid();
+  });
+
+  it('passes the host handler names to the worker as config.hostFns', async () => {
+    const { Worker: WorkerMock } = await import('node:worker_threads');
+    setupAutoReadyWorker();
+
+    const sandbox = new WorkerSandbox(makeConfig(), {
+      'config.get': vi.fn(),
+      'utils.callTool': vi.fn(),
+    });
+    await sandbox.initialize();
+
+    const opts = (WorkerMock as ReturnType<typeof vi.fn>).mock.calls[0][1] as {
+      workerData: { config: { hostFns: string[] } };
+    };
+    expect(opts.workerData.config.hostFns).toEqual(['config.get', 'utils.callTool']);
+  });
+
+  it('invokes the matching handler and posts an ok host-result', async () => {
+    setupAutoReadyWorker();
+    const handler = vi.fn().mockResolvedValue('mail.example.com');
+    const sandbox = new WorkerSandbox(makeConfig(), { 'config.get': handler });
+    await sandbox.initialize();
+
+    const onMessage = getWorkerHandler('message')!;
+    onMessage({ type: 'host-call', callId: 'c1', fn: 'config.get', args: ['smtp', 'host'] });
+    await flush();
+
+    expect(handler).toHaveBeenCalledWith('smtp', 'host');
+    expect(mockWorkerInstance.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'host-result',
+        callId: 'c1',
+        ok: true,
+        value: 'mail.example.com',
+      })
+    );
+  });
+
+  it('posts an error host-result when the handler throws', async () => {
+    setupAutoReadyWorker();
+    const handler = vi.fn().mockRejectedValue(new Error('tool exploded'));
+    const sandbox = new WorkerSandbox(makeConfig(), { 'utils.callTool': handler });
+    await sandbox.initialize();
+
+    const onMessage = getWorkerHandler('message')!;
+    onMessage({ type: 'host-call', callId: 'c2', fn: 'utils.callTool', args: ['x'] });
+    await flush();
+
+    expect(mockWorkerInstance.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'host-result',
+        callId: 'c2',
+        ok: false,
+        error: 'tool exploded',
+      })
+    );
+  });
+
+  it('posts an error host-result for an unregistered handler name', async () => {
+    setupAutoReadyWorker();
+    const sandbox = new WorkerSandbox(makeConfig(), {});
+    await sandbox.initialize();
+
+    const onMessage = getWorkerHandler('message')!;
+    onMessage({ type: 'host-call', callId: 'c3', fn: 'unknown.fn', args: [] });
+    await flush();
+
+    expect(mockWorkerInstance.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'host-result',
+        callId: 'c3',
+        ok: false,
+        error: expect.stringContaining('No host handler'),
+      })
+    );
   });
 });

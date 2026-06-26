@@ -12,6 +12,7 @@ import { tunnelApi } from '../api';
 import type { TunnelStatus } from '../api';
 import { useTunnelSubscription } from '../hooks/useTunnelSubscription';
 import { ignoreError } from '../utils/ignore-error';
+import { safeExternalHref } from '../utils/safe-url';
 
 type WizardState = 'configure' | 'starting' | 'active' | 'stopped' | 'error';
 
@@ -266,6 +267,8 @@ export function TunnelPage() {
   // ---- Active Step ----
 
   function ActiveStep() {
+    const tunnelHref = safeExternalHref(url);
+
     return (
       <div className="max-w-lg mx-auto space-y-4">
         <div className="card-elevated p-6 bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border rounded-xl">
@@ -320,9 +323,9 @@ export function TunnelPage() {
           >
             Stop Tunnel
           </button>
-          {url && (
+          {tunnelHref && (
             <a
-              href={url}
+              href={tunnelHref}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"

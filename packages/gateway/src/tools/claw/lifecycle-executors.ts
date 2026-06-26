@@ -130,7 +130,7 @@ export async function executeRunScript(
   if (!wsPath) return { success: false, error: 'Workspace not found' };
 
   // Write script to workspace for Docker sandbox path mapping; will be cleaned up after execution.
-  // Use randomUUID for the suffix instead of Math.random().toString(36).slice(2,8):
+  // Use randomUUID for the suffix instead of a short non-cryptographic PRNG suffix:
   // the suffix is part of a filesystem path and gets used as part of an
   // identifier the runner's output/audit may reference. CSPRNG-backed IDs
   // make accidental collisions across concurrent claw cycles essentially

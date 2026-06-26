@@ -19,12 +19,23 @@ describe('resolveImageUrl', () => {
   it('passes http/https through unchanged', () => {
     expect(resolveImageUrl('https://cdn.example.com/a.png')).toBe('https://cdn.example.com/a.png');
     expect(resolveImageUrl('http://x/y.png')).toBe('http://x/y.png');
+    expect(resolveImageUrl('//cdn.example.com/a.png')).toBe('//cdn.example.com/a.png');
   });
 
-  it('blocks data: URIs (SVG-in-img script risk)', () => {
+  it('blocks unsafe absolute image URL schemes', () => {
     expect(resolveImageUrl('data:image/svg+xml,<svg onload=alert(1)>')).toBe(
       BLOCKED_IMG_PLACEHOLDER
     );
+    expect(resolveImageUrl('DATA:image/svg+xml,<svg onload=alert(1)>')).toBe(
+      BLOCKED_IMG_PLACEHOLDER
+    );
+    expect(resolveImageUrl('javascript:alert(1)')).toBe(BLOCKED_IMG_PLACEHOLDER);
+    expect(resolveImageUrl('file:///etc/passwd')).toBe(BLOCKED_IMG_PLACEHOLDER);
+  });
+
+  it('blocks image URL whitespace and control-character smuggling', () => {
+    expect(resolveImageUrl(' https://cdn.example.com/a.png')).toBe(BLOCKED_IMG_PLACEHOLDER);
+    expect(resolveImageUrl('java\tscript:alert(1)')).toBe(BLOCKED_IMG_PLACEHOLDER);
   });
 
   it('returns the raw url unchanged when there is no workspace', () => {

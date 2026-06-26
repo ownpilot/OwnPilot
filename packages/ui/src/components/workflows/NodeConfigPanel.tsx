@@ -75,6 +75,10 @@ export const statusIcons: Partial<
 export const INPUT_CLS =
   'w-full px-3 py-1.5 text-sm bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-md text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary';
 
+function toConfigDataRecord(data: object): Record<string, unknown> {
+  return data as Record<string, unknown>;
+}
+
 // ============================================================================
 // Retry & Timeout constants
 // ============================================================================
@@ -110,10 +114,12 @@ export function OutputAliasField({
   nodeId,
   onUpdate,
 }: {
-  data: Record<string, unknown>;
+  data: object;
   nodeId: string;
   onUpdate: (id: string, data: Record<string, unknown>) => void;
 }) {
+  const dataRecord = toConfigDataRecord(data);
+
   return (
     <div className="space-y-1">
       <label className="block text-xs font-medium text-text-muted dark:text-dark-text-muted">
@@ -121,8 +127,10 @@ export function OutputAliasField({
       </label>
       <input
         type="text"
-        value={(data.outputAlias as string) ?? ''}
-        onChange={(e) => onUpdate(nodeId, { ...data, outputAlias: e.target.value || undefined })}
+        value={(dataRecord.outputAlias as string) ?? ''}
+        onChange={(e) =>
+          onUpdate(nodeId, { ...dataRecord, outputAlias: e.target.value || undefined })
+        }
         placeholder="e.g. result, summary..."
         className={INPUT_CLS}
       />
@@ -138,10 +146,12 @@ export function RetryTimeoutFields({
   nodeId,
   onUpdate,
 }: {
-  data: Record<string, unknown>;
+  data: object;
   nodeId: string;
   onUpdate: (id: string, data: Record<string, unknown>) => void;
 }) {
+  const dataRecord = toConfigDataRecord(data);
+
   return (
     <div className="space-y-2 pt-3 border-t border-border dark:border-dark-border">
       <div className="text-[10px] font-medium text-text-muted dark:text-dark-text-muted uppercase tracking-wider">
@@ -152,9 +162,9 @@ export function RetryTimeoutFields({
           Retry on failure
         </label>
         <select
-          value={(data.retryCount as number) ?? 0}
+          value={(dataRecord.retryCount as number) ?? 0}
           onChange={(e) =>
-            onUpdate(nodeId, { ...data, retryCount: Number(e.target.value) || undefined })
+            onUpdate(nodeId, { ...dataRecord, retryCount: Number(e.target.value) || undefined })
           }
           className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >
@@ -168,9 +178,9 @@ export function RetryTimeoutFields({
       <div className="flex items-center justify-between">
         <label className="text-xs text-text-secondary dark:text-dark-text-secondary">Timeout</label>
         <select
-          value={(data.timeoutMs as number) ?? 0}
+          value={(dataRecord.timeoutMs as number) ?? 0}
           onChange={(e) =>
-            onUpdate(nodeId, { ...data, timeoutMs: Number(e.target.value) || undefined })
+            onUpdate(nodeId, { ...dataRecord, timeoutMs: Number(e.target.value) || undefined })
           }
           className="px-2 py-1 text-xs bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded text-text-primary dark:text-dark-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
         >

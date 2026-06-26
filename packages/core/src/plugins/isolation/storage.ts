@@ -8,6 +8,10 @@ import { ok, err } from '../../types/result.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import type { IsolatedStorage, StorageError } from './types.js';
 
+function coerceStoredValue<T>(value: unknown): T {
+  return value as T;
+}
+
 export class PluginIsolatedStorage implements IsolatedStorage {
   private data: Map<string, string> = new Map();
   private readonly pluginId: PluginId;
@@ -26,9 +30,9 @@ export class PluginIsolatedStorage implements IsolatedStorage {
     if (value === undefined) return null;
 
     try {
-      return JSON.parse(value) as T;
+      return coerceStoredValue<T>(JSON.parse(value));
     } catch {
-      return value as unknown as T;
+      return coerceStoredValue<T>(value);
     }
   }
 

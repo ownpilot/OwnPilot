@@ -1,5 +1,5 @@
 /**
- * Coding Agent, CLI Provider, Orchestration, Orchestra & Artifact Tables
+ * Coding Agent, CLI Provider, Orchestration & Artifact Tables
  */
 
 export const CODING_AGENTS_TABLES_SQL = `

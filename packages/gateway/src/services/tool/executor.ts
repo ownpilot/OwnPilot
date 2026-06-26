@@ -42,7 +42,6 @@ import {
   getConfigCenter,
   getPluginService,
   hasPluginService,
-  getExtensionService,
   hasExtensionService,
   getAuditService,
   hasAuditService,
@@ -50,6 +49,7 @@ import {
 import { getEventSystem } from '@ownpilot/core/events';
 import { checkToolPermission } from './permission.js';
 import type { ToolExecContext } from '../permission/utils.js';
+import { getGatewayExtensionService } from '../extension/accessor.js';
 import { getExtensionSandbox } from '../extension/sandbox.js';
 import type { SkillPermission } from '../extension/types.js';
 import { extensionsRepo } from '../../db/repositories/extensions.js';
@@ -365,8 +365,7 @@ function syncExtensionToolsIntoRegistry(registry: ToolRegistry): void {
   if (!hasExtensionService()) return;
 
   try {
-    const service =
-      getExtensionService() as unknown as import('../extension/service.js').ExtensionService;
+    const service = getGatewayExtensionService();
     const dynamicRegistry = getCustomToolDynamicRegistry();
     const extToolDefs = service.getToolDefinitions();
 

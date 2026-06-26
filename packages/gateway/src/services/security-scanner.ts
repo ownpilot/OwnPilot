@@ -24,6 +24,7 @@ import {
 } from '../db/repositories/index.js';
 import type { Trigger } from '../db/repositories/triggers.js';
 import type { Workflow, WorkflowNode } from '../db/repositories/workflows/index.js';
+import { nodeDataRecord } from './workflow/node-data.js';
 import { getLog } from './log.js';
 
 const log = getLog('SecurityScanner');
@@ -422,7 +423,7 @@ function assessWorkflowRisk(wf: Workflow): { score: number; riskyNodes: string[]
 }
 
 function assessNodeRisk(node: WorkflowNode): number {
-  const data = node.data as unknown as Record<string, unknown>;
+  const data = nodeDataRecord(node);
 
   switch (node.type) {
     case 'tool': {

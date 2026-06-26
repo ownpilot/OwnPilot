@@ -13,6 +13,7 @@ import * as path from 'node:path';
 import { getLog } from '../services/get-log.js';
 import { getErrorMessage } from '../services/error-utils.js';
 import { generateId } from '../services/id-utils.js';
+import { silentCatch } from '../utils/ignore-error.js';
 
 import type { SchedulerNotificationBridge, TaskNotificationConfig } from './notifications.js';
 
@@ -727,8 +728,7 @@ export class Scheduler {
 
       // Suppress unhandled rejection on the race loser: if the timeout wins,
       // the still-in-flight executionPromise rejection must not escape as unhandledRejection.
-      // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-      executionPromise.catch(() => {});
+      executionPromise.catch(silentCatch('scheduler.execution.raceLoser'));
 
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise<never>((_, reject) => {

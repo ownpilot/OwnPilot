@@ -13,6 +13,7 @@ import type { CliToolPolicy, CliInstallMethod } from '@ownpilot/core/services';
 import { CLI_TOOLS_BY_NAME } from '../../services/cli/tools-catalog.js';
 import { cliProvidersRepo } from '../../db/repositories/cli/providers.js';
 import { cliToolPoliciesRepo } from '../../db/repositories/cli/tool-policies.js';
+import { validateCliBinaryPath } from '../../services/binary-utils.js';
 import { clearDiscoveryCache } from '../../services/cli/tools-discovery.js';
 
 const VALID_POLICIES = ['allowed', 'prompt', 'blocked'];
@@ -252,6 +253,12 @@ cliToolsRoutes.post('/custom', async (c) => {
       400
     );
   }
+  let validatedBinaryName: string;
+  try {
+    validatedBinaryName = validateCliBinaryPath(binaryName);
+  } catch (err) {
+    return apiError(c, { code: ERROR_CODES.VALIDATION_ERROR, message: getErrorMessage(err) }, 400);
+  }
 
   if (!/^[a-z0-9_-]+$/.test(name)) {
     return apiError(
@@ -303,7 +310,7 @@ cliToolsRoutes.post('/custom', async (c) => {
     const provider = await cliProvidersRepo.create({
       name,
       displayName,
-      binary: binaryName,
+      binary: validatedBinaryName,
       description,
       category,
       authMethod: 'none',
@@ -325,7 +332,7 @@ cliToolsRoutes.post('/custom', async (c) => {
       {
         name: `custom:${name}`,
         displayName,
-        binaryName,
+        binaryName: validatedBinaryName,
         category,
         riskLevel,
         policy: defaultPolicy,

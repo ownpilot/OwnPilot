@@ -32,6 +32,14 @@ export const DB_IDLE_TIMEOUT_MS = 30_000;
 export const DB_CONNECT_TIMEOUT_MS = 5_000;
 
 /**
+ * Enable TCP keepalive on pool connections so dead sockets (DB restart,
+ * host sleep/hibernate, NAT/idle-timeout drops) are detected and recycled
+ * early instead of surfacing as "Connection terminated unexpectedly" on the
+ * first query that lands on a stale connection. Override with `DB_KEEPALIVE`.
+ */
+export const DB_KEEPALIVE = (process.env.DB_KEEPALIVE ?? 'true') !== 'false';
+
+/**
  * H-D10 fix: per-query statement timeout. Without this, a single bad
  * query (deep OFFSET, ILIKE on millions of rows, runaway plan) can wedge
  * a pool connection indefinitely; ten such queries DoS the gateway.

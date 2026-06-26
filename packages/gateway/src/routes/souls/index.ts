@@ -30,6 +30,31 @@ import { soulDeployRoutes } from './deploy.js';
 import { soulAgentRoutes } from './agent-routes.js';
 
 export const soulRoutes = new Hono();
+type CreateSoulInput = Parameters<ReturnType<typeof getSoulsRepository>['create']>[0];
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+function normalizeSoulProvider(providerId: string | undefined): CreateSoulInput['provider'] {
+  return providerId ? { providerId, modelId: 'default' } : undefined;
+}
+
+function normalizeSkillAccess(
+  skillAccess: Record<string, unknown> | undefined
+): CreateSoulInput['skillAccess'] {
+  if (!skillAccess) return undefined;
+  return {
+    allowed: stringArray(skillAccess.allowed),
+    blocked: stringArray(skillAccess.blocked),
+  };
+}
+
+function coerceSoulField<T>(value: unknown): T {
+  return value as T;
+}
 
 // Mount sub-routes (order matters: deploy + agent sub-routes BEFORE /:agentId catch-all)
 soulRoutes.route('/', soulDeployRoutes);
@@ -175,19 +200,19 @@ soulRoutes.post('/', async (c) => {
   try {
     const body = validateBody(createSoulSchema, await c.req.json());
 
-    const soulData = {
+    const soulData: CreateSoulInput = {
       agentId: body.agentId,
-      identity: body.identity,
-      purpose: body.purpose,
-      autonomy: body.autonomy,
-      heartbeat: body.heartbeat,
-      relationships: body.relationships ?? {},
-      evolution: body.evolution,
-      bootSequence: body.bootSequence ?? {},
-      provider: body.provider,
-      skillAccess: body.skillAccess,
+      identity: coerceSoulField<CreateSoulInput['identity']>(body.identity),
+      purpose: coerceSoulField<CreateSoulInput['purpose']>(body.purpose),
+      autonomy: coerceSoulField<CreateSoulInput['autonomy']>(body.autonomy),
+      heartbeat: coerceSoulField<CreateSoulInput['heartbeat']>(body.heartbeat),
+      relationships: coerceSoulField<CreateSoulInput['relationships']>(body.relationships ?? {}),
+      evolution: coerceSoulField<CreateSoulInput['evolution']>(body.evolution),
+      bootSequence: coerceSoulField<CreateSoulInput['bootSequence']>(body.bootSequence ?? {}),
+      provider: normalizeSoulProvider(body.provider),
+      skillAccess: normalizeSkillAccess(body.skillAccess),
       workspaceId: body.workspaceId,
-    } as unknown as Parameters<ReturnType<typeof getSoulsRepository>['create']>[0];
+    };
     const soul = await getSoulsRepository().create(soulData);
     return apiResponse(c, soul, 201);
   } catch (err) {
@@ -253,7 +278,14 @@ soulRoutes.put('/:agentId', async (c) => {
     if (body.relationships !== undefined) allowedUpdates.relationships = body.relationships;
     if (body.evolution !== undefined) allowedUpdates.evolution = body.evolution;
     if (body.bootSequence !== undefined) allowedUpdates.bootSequence = body.bootSequence;
-    if (body.provider !== undefined) allowedUpdates.provider = body.provider;
+    if (body.provider !== undefined) {
+      // PATCH may send `provider` as a bare provider-id string (the same shape
+      // the create endpoint accepts) or as a full {providerId, modelId} object.
+      // Coerce a string into the object shape so we never persist a raw string,
+      // which would leave soul.provider.providerId undefined at heartbeat time.
+      allowedUpdates.provider =
+        typeof body.provider === 'string' ? normalizeSoulProvider(body.provider) : body.provider;
+    }
     if (body.skillAccess !== undefined) allowedUpdates.skillAccess = body.skillAccess;
     if (body.workspaceId !== undefined) allowedUpdates.workspaceId = body.workspaceId;
 

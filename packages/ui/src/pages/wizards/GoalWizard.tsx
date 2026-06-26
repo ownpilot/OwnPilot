@@ -41,6 +41,13 @@ interface GoalStepDraft {
   description: string;
 }
 
+function getCreatedGoalId(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const response = value as { goal?: { id?: unknown }; id?: unknown };
+  if (typeof response.goal?.id === 'string') return response.goal.id;
+  return typeof response.id === 'string' ? response.id : undefined;
+}
+
 export function GoalWizard({ onComplete, onCancel }: Props) {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -124,15 +131,15 @@ Return ONLY the JSON array, nothing else.`;
       setIsProcessing(true);
       setResult(null);
       try {
-        const created = (await goalsApi.create({
+        const created = await goalsApi.create({
           title: title.trim(),
           description: description.trim() || undefined,
           category: category || undefined,
           dueDate: dueDate || undefined,
           priority,
           status: 'active',
-        })) as unknown as { goal?: { id: string }; id?: string };
-        const goalId = created.goal?.id ?? created.id;
+        });
+        const goalId = getCreatedGoalId(created);
         if (!goalId) throw new Error('Goal created but no ID returned');
         const goal = { id: goalId };
 

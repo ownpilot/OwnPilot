@@ -140,6 +140,21 @@ export const GENERATOR_TOOL_DEFS: readonly ToolDefinition[] = [
 import { randomUUID, randomInt } from 'node:crypto';
 import type { ToolExecutor } from '../../types.js';
 
+const RANDOM_FLOAT_SCALE = 1_000_000_000;
+
+function randomFloat(min: number, max: number): number {
+  return min + (randomInt(RANDOM_FLOAT_SCALE) / RANDOM_FLOAT_SCALE) * (max - min);
+}
+
+function shuffle<T>(items: readonly T[]): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+  return shuffled;
+}
+
 export const GENERATOR_EXECUTORS: Record<string, ToolExecutor> = {
   generate_uuid: async () => {
     return { content: randomUUID() };
@@ -150,8 +165,23 @@ export const GENERATOR_EXECUTORS: Record<string, ToolExecutor> = {
     const max = (args.max as number) ?? 100;
     const integer = args.integer !== false;
 
-    const random = Math.random() * (max - min) + min;
-    const result = integer ? Math.floor(random) : random;
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max < min) {
+      return {
+        content: 'Error: min and max must be finite numbers with max >= min',
+        isError: true,
+      };
+    }
+
+    if (integer) {
+      const intMin = Math.ceil(min);
+      const intMax = Math.floor(max);
+      if (intMax < intMin) {
+        return { content: 'Error: range does not contain an integer', isError: true };
+      }
+      return { content: String(randomInt(intMin, intMax + 1)) };
+    }
+
+    const result = randomFloat(min, max);
 
     return { content: String(result) };
   },
@@ -183,7 +213,7 @@ export const GENERATOR_EXECUTORS: Record<string, ToolExecutor> = {
     for (let i = 0; i < length; i++) {
       // CSPRNG: random_string is a generator tool the LLM may use to mint
       // passwords, tokens, or any value the user later relies on for
-      // security. Math.random() is a non-cryptographic PRNG; the casts
+      // security. Non-cryptographic PRNGs are not appropriate here; the casts
       // here keep the result unpredictable. The per-char cost (length
       // calls to randomInt) is fine for typical lengths (≤128).
       result += chars.charAt(randomInt(chars.length));
@@ -193,14 +223,20 @@ export const GENERATOR_EXECUTORS: Record<string, ToolExecutor> = {
   },
 
   random_choice: async (args) => {
-    const options = args.options as string[];
-    const count = Math.min((args.count as number) ?? 1, options.length);
+    const options = args.options as string[] | undefined;
 
-    if (count === 1) {
-      return { content: options[Math.floor(Math.random() * options.length)] };
+    if (!Array.isArray(options) || options.length === 0) {
+      return { content: 'Error: options must be a non-empty array', isError: true };
     }
 
-    const shuffled = [...options].sort(() => Math.random() - 0.5);
+    const requestedCount = Math.trunc((args.count as number) ?? 1);
+    const count = Math.min(Math.max(requestedCount, 1), options.length);
+
+    if (count === 1) {
+      return { content: options[randomInt(options.length)] };
+    }
+
+    const shuffled = shuffle(options);
     return { content: shuffled.slice(0, count).join(', ') };
   },
 
@@ -304,14 +340,14 @@ ${password}
       'laborum',
     ];
 
-    const getWord = () => words[Math.floor(Math.random() * words.length)];
+    const getWord = () => words[randomInt(words.length)]!;
     const getSentence = () => {
-      const len = 8 + Math.floor(Math.random() * 10);
+      const len = randomInt(8, 18);
       const sentence = Array.from({ length: len }, getWord).join(' ');
       return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.';
     };
     const getParagraph = () => {
-      const len = 3 + Math.floor(Math.random() * 4);
+      const len = randomInt(3, 7);
       return Array.from({ length: len }, getSentence).join(' ');
     };
 

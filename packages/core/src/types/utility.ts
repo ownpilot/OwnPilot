@@ -2,6 +2,8 @@
  * Utility types for OwnPilot
  */
 
+import { silentCatch } from '../utils/ignore-error.js';
+
 /**
  * JSON-serializable value
  */
@@ -112,8 +114,7 @@ export async function withTimeout<T>(
   // If the timeout wins, `promise` keeps running and may reject later.
   // Attach a no-op handler so that rejection stays bounded here instead of
   // surfacing as an unhandledRejection in long-running services.
-  // eslint-disable-next-line no-restricted-syntax -- intentional: race-loser suppression
-  promise.catch(() => {});
+  promise.catch(silentCatch('withTimeout.raceLoser'));
 
   try {
     const result = await Promise.race([promise, timeoutPromise]);

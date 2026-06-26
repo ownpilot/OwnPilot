@@ -265,14 +265,25 @@ export const createPdfExecutor: ToolExecutor = async (
     const dir = path.dirname(outputPath);
     await fs.mkdir(dir, { recursive: true });
 
-    // PDFKit type for dynamic import
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    type PDFKitConstructor = any;
+    interface PDFKitDocument {
+      on(event: 'data', listener: (chunk: Buffer) => void): this;
+      on(event: 'end', listener: () => void): this;
+      fontSize(size: number): this;
+      text(content: string, options?: { align?: 'left' | 'center' | 'right' | 'justify' }): this;
+      end(): void;
+    }
+
+    type PDFKitConstructor = new (options: {
+      size: 'A4' | 'LETTER' | 'LEGAL';
+      info: { Title?: string; Author?: string; Creator: string };
+    }) => PDFKitDocument;
+    type PDFKitImport = { default?: PDFKitConstructor } | PDFKitConstructor | null;
 
     // Try to use pdfkit if available
-    let PDFDocument: PDFKitConstructor = null;
+    let PDFDocument: PDFKitConstructor | null = null;
     try {
-      PDFDocument = ((await tryImport('pdfkit')) as PDFKitConstructor)?.default ?? null;
+      const imported = (await tryImport('pdfkit')) as PDFKitImport;
+      PDFDocument = typeof imported === 'function' ? imported : (imported?.default ?? null);
     } catch {
       // pdfkit not installed
     }

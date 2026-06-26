@@ -25,6 +25,7 @@ import {
 } from '../../api/endpoints/providerAuth';
 import { useToast } from '../../components/ToastProvider';
 import { Check, ExternalLink, Key, LogOut, RefreshCw, Settings } from '../../components/icons';
+import { safeExternalHref } from '../../utils/safe-url';
 
 type FlowState =
   | { kind: 'idle' }
@@ -188,7 +189,13 @@ export function ProviderAuthPanel() {
         // Pop the verification URL automatically so the user doesn't have
         // to copy it. Prefer the "complete" variant which embeds user_code.
         const target = start.verificationUriComplete ?? start.verificationUri;
-        window.open(target, '_blank', 'noopener,noreferrer');
+        const safeTarget = safeExternalHref(target);
+        if (!safeTarget) {
+          toast.error('Provider returned an unsafe verification URL.');
+          setFlow({ kind: 'idle' });
+          return;
+        }
+        window.open(safeTarget, '_blank', 'noopener,noreferrer');
         pollTimerRef.current = window.setTimeout(() => {
           pollOnce(provider, start.interval, expiresAtMs);
         }, start.interval * 1000);
@@ -228,6 +235,10 @@ export function ProviderAuthPanel() {
   }
 
   const visible = (entries ?? []).filter((e) => (showOnlyOAuth ? e.oauthCapable : true));
+  const verificationHref =
+    flow.kind === 'awaiting'
+      ? safeExternalHref(flow.start.verificationUriComplete ?? flow.start.verificationUri)
+      : undefined;
 
   return (
     <div className="space-y-4">
@@ -265,15 +276,17 @@ export function ProviderAuthPanel() {
             {flow.start.userCode}
           </p>
           <div className="flex items-center gap-2 text-xs">
-            <a
-              href={flow.start.verificationUriComplete ?? flow.start.verificationUri}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline flex items-center gap-1"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Open verification page
-            </a>
+            {verificationHref && (
+              <a
+                href={verificationHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Open verification page
+              </a>
+            )}
             <span>·</span>
             <button
               onClick={handleCancel}

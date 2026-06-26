@@ -10,7 +10,7 @@ import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { useWizardKeyboard } from '../../components/wizard';
 import { composioApi } from '../../api';
 import { silentCatch } from '../../utils/ignore-error';
-import { safeHref } from '../../utils/safe-url';
+import { safeExternalHref } from '../../utils/safe-url';
 import type { ComposioApp } from '../../api/endpoints/composio';
 import { Check, AlertTriangle, Link, Search } from '../../components/icons';
 
@@ -110,9 +110,17 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
           redirectUrl: res.redirectUrl,
           connectionId: res.connectionId,
         });
-        // If there's a redirect URL, open it
-        if (res.redirectUrl) {
-          window.open(res.redirectUrl, '_blank');
+        const redirectUrl = safeExternalHref(res.redirectUrl);
+        if (res.redirectUrl && !redirectUrl) {
+          setConnectionResult({
+            ok: false,
+            error: 'Connection returned an unsafe OAuth redirect URL',
+          });
+          setStep(2);
+          return;
+        }
+        if (redirectUrl) {
+          window.open(redirectUrl, '_blank', 'noopener,noreferrer');
         }
         setStep(2);
       } catch (err) {
@@ -345,7 +353,7 @@ export function ConnectedAppWizard({ onComplete, onCancel }: Props) {
               {(() => {
                 // OAuth redirect URL is third-party — Composio relays it from
                 // the connected app's provider. Filter `javascript:` etc.
-                const redirectHref = safeHref(connectionResult.redirectUrl);
+                const redirectHref = safeExternalHref(connectionResult.redirectUrl);
                 if (!redirectHref) return null;
                 return (
                   <a
