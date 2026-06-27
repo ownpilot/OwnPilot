@@ -338,6 +338,41 @@ describe('OpenAICompatibleProvider', () => {
   // complete
   // -------------------------------------------------------------------------
   describe('complete', () => {
+    it('blocks a private/internal base URL (SSRF) when local LLMs are not opted in', async () => {
+      delete process.env.OWNPILOT_ALLOW_LOCAL_LLM_URL;
+      const fetchMock = mockFetchResponse({ choices: [{ message: { content: 'hi' } }] });
+      vi.stubGlobal('fetch', fetchMock);
+      const provider = new OpenAICompatibleProvider({
+        ...mockConfig,
+        baseUrl: 'http://127.0.0.1:1234/v1',
+      });
+
+      const result = await provider.complete(makeRequest());
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.message).toContain('private/internal');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('allows a private base URL when OWNPILOT_ALLOW_LOCAL_LLM_URL=true (Ollama/LM Studio)', async () => {
+      process.env.OWNPILOT_ALLOW_LOCAL_LLM_URL = 'true';
+      try {
+        const fetchMock = mockFetchResponse({ choices: [{ message: { content: 'hi' } }] });
+        vi.stubGlobal('fetch', fetchMock);
+        const provider = new OpenAICompatibleProvider({
+          ...mockConfig,
+          baseUrl: 'http://127.0.0.1:1234/v1',
+        });
+
+        const result = await provider.complete(makeRequest());
+
+        expect(result.ok).toBe(true);
+        expect(fetchMock).toHaveBeenCalled();
+      } finally {
+        delete process.env.OWNPILOT_ALLOW_LOCAL_LLM_URL;
+      }
+    });
+
     it('returns ValidationError when provider is not ready', async () => {
       const provider = new OpenAICompatibleProvider({ ...mockConfig, apiKey: '' });
 

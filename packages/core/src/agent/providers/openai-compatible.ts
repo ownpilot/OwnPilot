@@ -18,6 +18,7 @@ import type { Result } from '../../types/result.js';
 import { ok, err } from '../../types/result.js';
 import { InternalError, TimeoutError, ValidationError } from '../../types/errors.js';
 import { getErrorMessage } from '../../services/error-utils.js';
+import { isPrivateUrlAsync } from '../tools/dynamic-tool-permissions.js';
 import { sanitizeToolName, desanitizeToolName, normalizeToolArguments } from '../tool-namespace.js';
 import type {
   CompletionRequest,
@@ -153,13 +154,32 @@ export class OpenAICompatibleProvider implements IProvider {
     return !!this.config.apiKey && !!this.config.baseUrl;
   }
 
+  /**
+   * SSRF guard for the configured base URL. openai-compatible providers point at
+   * an operator-set baseUrl, and this client sends the API key in the auth header,
+   * so a baseUrl resolving to a private/internal address (e.g. via an injected
+   * config change) could exfiltrate the key or reach internal services. Block
+   * private/internal targets unless the operator explicitly runs a LOCAL model
+   * (Ollama / LM Studio / vLLM at 127.0.0.1) and sets OWNPILOT_ALLOW_LOCAL_LLM_URL=true.
+   */
+  private async assertBaseUrlSafe(): Promise<void> {
+    if (process.env.OWNPILOT_ALLOW_LOCAL_LLM_URL === 'true') return;
+    if (await isPrivateUrlAsync(this.config.baseUrl)) {
+      throw new ValidationError(
+        `Provider base URL "${this.config.baseUrl}" resolves to a private/internal address. ` +
+          `Set OWNPILOT_ALLOW_LOCAL_LLM_URL=true to allow local LLM endpoints (Ollama, LM Studio, vLLM, …).`
+      );
+    }
+  }
+
   async healthCheck(): Promise<Result<ProviderHealthResult, InternalError>> {
     return runProviderHealthCheck({
       providerId: this.providerId,
       ready: this.isReady(),
       notConfiguredError: 'API key or base URL not configured',
-      request: (signal) =>
-        fetch(`${this.config.baseUrl}/models`, {
+      request: async (signal) => {
+        await this.assertBaseUrlSafe();
+        return fetch(`${this.config.baseUrl}/models`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -167,7 +187,8 @@ export class OpenAICompatibleProvider implements IProvider {
             ...this.config.headers,
           },
           signal,
-        }),
+        });
+      },
     });
   }
 
@@ -200,6 +221,7 @@ export class OpenAICompatibleProvider implements IProvider {
           ''
         );
       }
+      await this.assertBaseUrlSafe();
       const response = await fetch(
         `${this.config.baseUrl}${this.config.endpoint ?? '/chat/completions'}`,
         fetchOptions
@@ -284,6 +306,7 @@ export class OpenAICompatibleProvider implements IProvider {
           ''
         );
       }
+      await this.assertBaseUrlSafe();
       const response = await fetch(
         `${this.config.baseUrl}${this.config.endpoint ?? '/chat/completions'}`,
         fetchOptions
@@ -411,6 +434,7 @@ export class OpenAICompatibleProvider implements IProvider {
     }
 
     try {
+      await this.assertBaseUrlSafe();
       const response = await fetch(`${this.config.baseUrl}/models`, {
         headers: {
           Authorization: authHeader(this.config),

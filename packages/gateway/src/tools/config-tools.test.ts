@@ -290,6 +290,44 @@ describe('Config Tools', () => {
   // ========================================================================
 
   describe('config_set_entry', () => {
+    it('blocks setting a URL field to a private/internal address (SSRF)', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'openai',
+        configSchema: [
+          { name: 'api_key', label: 'API Key', type: 'secret', required: true },
+          { name: 'base_url', label: 'Base URL', type: 'text', required: false },
+        ],
+      });
+
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'openai',
+        data: { base_url: 'http://169.254.169.254/latest/meta-data' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(String(result.error)).toContain('private/internal address');
+      expect(mockConfigServicesRepo.createEntry).not.toHaveBeenCalled();
+    });
+
+    it('still allows setting a URL field to a public address', async () => {
+      mockConfigServicesRepo.getByName.mockReturnValue({
+        name: 'deepl',
+        configSchema: [
+          { name: 'api_key', label: 'API Key', type: 'secret', required: true },
+          { name: 'base_url', label: 'Base URL', type: 'text', required: false },
+        ],
+      });
+      mockConfigServicesRepo.getDefaultEntry.mockReturnValue(null);
+      mockConfigServicesRepo.createEntry.mockResolvedValue({ id: 'e', label: 'Default' });
+
+      const result = await executeConfigTool('config_set_entry', {
+        service: 'deepl',
+        data: { api_key: 'k', base_url: 'https://api.deepl.com' },
+      });
+
+      expect(result.success).toBe(true);
+    });
+
     it('creates new entry when none exists', async () => {
       mockConfigServicesRepo.getByName.mockReturnValue({
         name: 'deepl',

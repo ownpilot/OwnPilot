@@ -9,6 +9,7 @@
 import type { ToolDefinition, ToolExecutionResult } from '@ownpilot/core/tools';
 import { configServicesRepo } from '../db/repositories/config-services.js';
 import { maskSecret, getErrorMessage } from '../utils/common.js';
+import { isBlockedUrl } from '../utils/ssrf.js';
 import {
   hasConfiguredData,
   normalizeAndValidateEntryData,
@@ -209,6 +210,34 @@ async function executeSetConfigEntry(
   // Strip prototype pollution keys
   for (const key of ['__proto__', 'constructor', 'prototype']) {
     delete data[key];
+  }
+
+  // SSRF: config_set_entry is an AI-callable tool, so a prompt-injection could
+  // try to point a service's endpoint at an internal host (the gateway then sends
+  // requests there carrying the service's API key). Block only when a URL-bearing
+  // field's VALUE resolves to a private/internal address — public endpoints
+  // (api.deepl.com, etc.) stay settable, and non-URL strings fall through to the
+  // schema validator. Defense-in-depth: the embedding + LLM-provider fetches are
+  // independently SSRF-guarded at request time.
+  for (const [fieldName, value] of Object.entries(data)) {
+    const lower = fieldName.toLowerCase();
+    const isUrlField =
+      lower === 'base_url' || lower === 'baseurl' || lower === 'endpoint' || lower.endsWith('_url');
+    if (!isUrlField || typeof value !== 'string' || !value) continue;
+    let parsed: URL;
+    try {
+      parsed = new URL(value);
+    } catch {
+      continue; // not a URL — let normalizeAndValidateEntryData report it
+    }
+    if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && isBlockedUrl(value)) {
+      return {
+        content: {
+          error: `Field "${fieldName}" cannot be set to a private/internal address ("${value}"). Configure local endpoints in Settings.`,
+        },
+        isError: true,
+      };
+    }
   }
 
   const svc = configServicesRepo.getByName(serviceName);
