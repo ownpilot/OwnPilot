@@ -78,11 +78,49 @@ const PERMISSION_GATED_TOOLS: Record<string, DynamicToolPermission> = {
 };
 
 /**
+ * Verb prefixes that denote read-only / inspection tools. In strict mode these
+ * remain callable without a declared permission; everything else (mutation,
+ * outbound messaging, autonomy/agent control, scheduling) is denied by default.
+ */
+const SAFE_READONLY_PREFIXES = [
+  'get_',
+  'list_',
+  'read_',
+  'search_',
+  'find_',
+  'fetch_',
+  'check_',
+  'count_',
+  'query_',
+  'describe_',
+  'show_',
+  'lookup_',
+  'inspect_',
+  'preview_',
+];
+
+/**
+ * Whether strict callTool gating is enabled. In the DEFAULT (non-strict) mode,
+ * a custom tool may call any built-in tool that is not hard-blocked and not
+ * permission-gated (allow-by-default). Strict mode flips that to default-deny:
+ * only read-only-safe and explicitly-permissioned tools are reachable, which
+ * closes powerful-but-unblocked tools (start_claw, channel send, memory/goal/
+ * trigger mutation, etc.) from being invoked by sandbox code with zero
+ * permissions. Opt in with OWNPILOT_STRICT_CALLTOOL=true.
+ */
+function strictCallToolEnabled(): boolean {
+  return process.env.OWNPILOT_STRICT_CALLTOOL === 'true';
+}
+
+/**
  * Check if a custom tool is allowed to call a given built-in tool.
+ *
+ * @param opts.strict Force strict mode regardless of env (testing/explicit use).
  */
 export function isToolCallAllowed(
   toolName: string,
-  permissions: DynamicToolPermission[]
+  permissions: DynamicToolPermission[],
+  opts?: { strict?: boolean }
 ): { allowed: boolean; reason?: string } {
   // Use base name for security checks (lookup tables use base names)
   const baseName = getBaseName(toolName);
@@ -102,6 +140,21 @@ export function isToolCallAllowed(
       allowed: false,
       reason: `Tool '${toolName}' requires '${requiredPerm}' permission which this custom tool does not have`,
     };
+  }
+
+  // Strict opt-in default-deny: a tool that is neither permission-gated nor a
+  // read-only-safe inspection tool is blocked. Read-only tools (get_/list_/
+  // read_/search_/…) and permission-gated tools that passed the check above
+  // remain callable; mutating/outbound/autonomy tools do not.
+  const strict = opts?.strict ?? strictCallToolEnabled();
+  if (strict && !requiredPerm) {
+    const isSafeReadOnly = SAFE_READONLY_PREFIXES.some((p) => baseName.startsWith(p));
+    if (!isSafeReadOnly) {
+      return {
+        allowed: false,
+        reason: `Tool '${toolName}' is blocked in strict callTool mode (OWNPILOT_STRICT_CALLTOOL): custom tools may only call read-only or explicitly-permissioned tools`,
+      };
+    }
   }
 
   return { allowed: true };

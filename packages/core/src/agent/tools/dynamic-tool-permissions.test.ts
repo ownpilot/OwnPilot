@@ -169,6 +169,41 @@ describe('isToolCallAllowed', () => {
     });
   });
 
+  // --- Strict opt-in default-deny mode (OWNPILOT_STRICT_CALLTOOL) ---
+
+  describe('strict callTool mode (opts.strict)', () => {
+    it('still allows read-only-safe tools in strict mode', () => {
+      for (const name of ['get_current_time', 'list_tasks', 'search_notes', 'read_setting']) {
+        expect(isToolCallAllowed(name, [], { strict: true }).allowed).toBe(true);
+      }
+    });
+
+    it('blocks powerful non-readonly tools in strict mode that are allowed by default', () => {
+      for (const name of ['start_claw', 'send_channel_message', 'create_trigger', 'store_memory']) {
+        // Default (non-strict): allowed.
+        expect(isToolCallAllowed(name, []).allowed).toBe(true);
+        // Strict: denied with a clear reason mentioning the flag.
+        const strict = isToolCallAllowed(name, [], { strict: true });
+        expect(strict.allowed).toBe(false);
+        expect(strict.reason).toContain('strict callTool mode');
+      }
+    });
+
+    it('still permits permission-gated tools in strict mode when the permission is granted', () => {
+      expect(isToolCallAllowed('http_request', ['network'], { strict: true }).allowed).toBe(true);
+      expect(isToolCallAllowed('read_file', ['filesystem'], { strict: true }).allowed).toBe(true);
+    });
+
+    it('still hard-blocks the blocklist in strict mode', () => {
+      expect(isToolCallAllowed('execute_shell', [], { strict: true }).allowed).toBe(false);
+    });
+
+    it('honors qualified names in strict mode (base-name resolution)', () => {
+      expect(isToolCallAllowed('core.start_claw', [], { strict: true }).allowed).toBe(false);
+      expect(isToolCallAllowed('core.get_time', [], { strict: true }).allowed).toBe(true);
+    });
+  });
+
   // --- Key fixed tools are callable from custom extensions ---
 
   describe('fixed tools accessible via callTool', () => {
