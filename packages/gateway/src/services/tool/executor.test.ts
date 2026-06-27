@@ -276,6 +276,9 @@ describe('Tool Executor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetSharedToolRegistry();
+    // EXT-HOST-ACCESS: ensure the host-access opt-in never leaks between tests
+    // so the fail-closed default (sandbox:'none' → forced worker sandbox) holds.
+    delete process.env.OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS;
     // Restore default implementations — vi.clearAllMocks() clears call history but NOT mockReturnValue overrides
     mockCustomToolsRepo.getActiveTools.mockResolvedValue([]);
     mockExtensionService.getToolDefinitions.mockReturnValue([]);
@@ -996,7 +999,9 @@ describe('Tool Executor', () => {
       );
     });
 
-    it('extension tool executor uses dynamic registry only when sandbox is explicitly disabled', async () => {
+    it('extension tool executor uses dynamic registry for sandbox:"none" only when host access is opted in', async () => {
+      // EXT-HOST-ACCESS: the vm (host fs/exec) path is now opt-in.
+      process.env.OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS = 'true';
       const extToolDef = {
         name: 'no_sandbox_tool',
         description: 'Tool without sandbox',
@@ -1029,6 +1034,47 @@ describe('Tool Executor', () => {
 
       expect(mockDynamicRegistry.execute).toHaveBeenCalledWith('no_sandbox_tool', { x: 1 }, {});
       expect(result.content).toContain('ext result');
+    });
+
+    it('forces the worker sandbox for sandbox:"none" when host access is NOT opted in (EXT-HOST-ACCESS)', async () => {
+      // No OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS set (cleared in beforeEach) →
+      // the manifest's sandbox:'none' must NOT reach the host fs/exec vm path.
+      const extToolDef = {
+        name: 'no_sandbox_tool',
+        description: 'Tool requesting no sandbox',
+        parameters: {},
+        category: 'Extension',
+        format: 'ownpilot',
+        extensionId: 'ext-ns-default',
+        extensionTool: { code: 'code', parameters: {}, permissions: ['local', 'shell'] },
+      };
+      mockExtensionService.getToolDefinitions.mockReturnValue([extToolDef]);
+      mockDynamicRegistry.has.mockReturnValue(true);
+      mockSandbox.execute.mockResolvedValue({ success: true, result: 'sandbox result' });
+      mockDynamicRegistry.execute.mockResolvedValue({ content: 'HOST PATH', isError: false });
+      const { extensionsRepo } = await import('../../db/repositories/extensions.js');
+      vi.mocked(extensionsRepo.getById).mockReturnValue({
+        id: 'ext-ns-default',
+        userId: 'default',
+        manifest: { runtime: { sandbox: 'none' } },
+        grantedPermissions: [],
+      } as never);
+
+      getSharedToolRegistry('user-1');
+
+      const registerCall = vi.mocked(mockToolRegistry.register).mock.calls[0];
+      const executor = registerCall[1] as (
+        args: Record<string, unknown>,
+        ctx: unknown
+      ) => Promise<unknown>;
+      const result = (await executor({ x: 1 }, {})) as { content: string; isError: boolean };
+
+      // Forced into the isolated worker sandbox; the host fs/exec vm path is skipped.
+      expect(mockSandbox.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ extensionId: 'ext-ns-default', toolName: 'no_sandbox_tool' })
+      );
+      expect(mockDynamicRegistry.execute).not.toHaveBeenCalled();
+      expect(result.isError).toBe(false);
     });
 
     it('extension tool executor uses sandbox by default', async () => {
@@ -1601,7 +1647,8 @@ describe('Tool Executor', () => {
       expect(res.content).toContain('sandboxed result');
     });
 
-    it('uses dynamic executor for resync tools only when sandbox is explicitly disabled', async () => {
+    it('uses dynamic executor for resync sandbox:"none" tools only when host access is opted in', async () => {
+      process.env.OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS = 'true';
       mockExtensionService.getToolDefinitions.mockReturnValue([]);
       getSharedToolRegistry();
       const resync = getResyncCallback();

@@ -706,9 +706,16 @@ describe('CustomDataRepository', () => {
 
       expect(result.records).toHaveLength(1);
       expect(result.total).toBe(1);
-      // Verify filter was pushed into SQL
+      // Verify the filter was pushed into SQL as BOUND placeholders ($N), not
+      // integer literals. The previous `data->>2 = 3` form (missing `$`) did
+      // array-element access on the JSON object and always yielded NULL, so the
+      // filter silently matched nothing — assert the `$`-prefixed form here.
       const countSql = mockAdapter.queryOne.mock.calls[1]![0] as string;
-      expect(countSql).toContain('data->>');
+      expect(countSql).toMatch(/data->>\$\d+ = \$\d+/);
+      // And the key + value are passed as params (key→$N, String(value)→$N+1).
+      const countParams = mockAdapter.queryOne.mock.calls[1]![1] as unknown[];
+      expect(countParams).toContain('age');
+      expect(countParams).toContain('30');
     });
 
     it('should return total as 0 when no count result', async () => {

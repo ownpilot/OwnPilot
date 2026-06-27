@@ -300,7 +300,25 @@ function registerSingleExtensionTool(
     return false;
   }
 
-  const useSandbox = extRecord.manifest?.runtime?.sandbox !== 'none';
+  // SECURITY (EXT-HOST-ACCESS): a manifest-supplied `runtime.sandbox: 'none'`
+  // routes this extension's code to the legacy vm executor, which injects host
+  // `fs`/`exec` (createScopedFs / createScopedExec) for tools declaring
+  // local+filesystem / local+shell — i.e. host command execution inside the
+  // gateway process. A manifest field alone must NOT opt out of isolation: the
+  // marketplace/scan-dir install path has no consent prompt (unlike custom
+  // tools, which gate local/shell behind approval), so a malicious extension
+  // could silently self-grant host shell. Require an explicit operator opt-in,
+  // mirroring OWNPILOT_ENABLE_SKILL_SCRIPTS. Default fail-closed: force the
+  // isolated worker sandbox.
+  const wantsHostAccess = extRecord.manifest?.runtime?.sandbox === 'none';
+  const hostAccessAllowed = process.env.OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS === 'true';
+  if (wantsHostAccess && !hostAccessAllowed) {
+    log.warn(
+      '[tool-executor] Extension requested sandbox:"none" (host fs/exec) but OWNPILOT_ENABLE_EXTENSION_HOST_ACCESS is not set — forcing the isolated worker sandbox',
+      { extensionId: def.extensionId, toolName: def.name }
+    );
+  }
+  const useSandbox = !(wantsHostAccess && hostAccessAllowed);
   const grantedPermissions = (extRecord.grantedPermissions ?? []) as SkillPermission[];
 
   const toolDef: ToolDefinition = {

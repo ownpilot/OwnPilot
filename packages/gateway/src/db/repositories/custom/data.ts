@@ -413,7 +413,12 @@ export class CustomDataRepository extends BaseRepository {
         // below (params.push(key)), so this is application correctness, not
         // SQL-injection defense.
         validateFilterKey(key, table);
-        conditions.push(`data->>${paramIndex++} = ${paramIndex++}`);
+        // Bind both the JSON key and the value as placeholders ($N). The `$`
+        // prefix is required: without it the emitted SQL was `data->>2 = 3`,
+        // i.e. integer literals — `jsonb ->> int` does array-element access on an
+        // object and yields NULL, so the filter never matched and every filtered
+        // query returned zero rows. params.push below supplies key→$N, value→$N+1.
+        conditions.push(`data->>$${paramIndex++} = $${paramIndex++}`);
         params.push(key, String(value));
       }
     }
