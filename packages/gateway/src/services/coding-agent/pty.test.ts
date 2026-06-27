@@ -24,7 +24,42 @@ vi.mock('../log.js', () => ({
   getLog: vi.fn(() => mockLog),
 }));
 
-import { runWithPty, spawnStreamingPty } from './pty.js';
+import { runWithPty, spawnStreamingPty, resolveCommand } from './pty.js';
+
+// ---------------------------------------------------------------------------
+// resolveCommand — Windows cmd.exe quoting (CODING-AGENT-WIN-INJECT)
+// ---------------------------------------------------------------------------
+
+describe('resolveCommand', () => {
+  it('passes command/args through unchanged on non-Windows', () => {
+    expect(resolveCommand('claude', ['-p', 'fix & calc'], false)).toEqual({
+      file: 'claude',
+      args: ['-p', 'fix & calc'],
+    });
+  });
+
+  it('quotes every token on Windows so cmd metacharacters are literal (no injection)', () => {
+    const r = resolveCommand('claude', ['-p', 'fix & calc.exe'], true);
+    expect(r.file).toBe('cmd.exe');
+    // Outer-wrapped + each token quoted → the `&` lives inside quotes and is inert.
+    expect(r.args).toEqual(['/c', '""claude" "-p" "fix & calc.exe""']);
+  });
+
+  it('keeps a multi-word prompt as a single quoted token on Windows', () => {
+    const r = resolveCommand('claude', ['-p', 'fix the bug'], true);
+    expect(r.args[1]).toBe('""claude" "-p" "fix the bug""');
+  });
+
+  it('escapes embedded double quotes on Windows', () => {
+    const r = resolveCommand('app', ['say "hi"'], true);
+    expect(r.args[1]).toBe('""app" "say ""hi""""');
+  });
+
+  it('neutralizes pipe/redirect/chaining metacharacters on Windows', () => {
+    const r = resolveCommand('tool', ['a | b > c & d'], true);
+    expect(r.args[1]).toBe('""tool" "a | b > c & d""');
+  });
+});
 
 // ---------------------------------------------------------------------------
 // PTY Mock Helpers

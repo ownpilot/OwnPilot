@@ -191,10 +191,10 @@ mcpRoutes.post('/tool-call', async (c) => {
         result = await executeGetToolHelp(registry, toolArgs ?? {});
         break;
       case 'use_tool':
-        result = await executeUseTool(registry, toolArgs ?? {}, context);
+        result = await executeUseTool(registry, toolArgs ?? {}, context, 'mcp');
         break;
       case 'batch_use_tool':
-        result = await executeBatchUseTool(registry, toolArgs ?? {}, context);
+        result = await executeBatchUseTool(registry, toolArgs ?? {}, context, 'mcp');
         break;
       default:
         result = {

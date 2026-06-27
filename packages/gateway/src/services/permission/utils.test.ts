@@ -93,6 +93,10 @@ describe('permission-utils', () => {
       expect(isNonInteractiveContext('system')).toBe(true);
     });
 
+    it('returns true for mcp (external client, no UI to approve)', () => {
+      expect(isNonInteractiveContext('mcp')).toBe(true);
+    });
+
     it('returns false for chat', () => {
       expect(isNonInteractiveContext('chat')).toBe(false);
     });

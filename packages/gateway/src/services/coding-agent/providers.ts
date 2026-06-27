@@ -17,7 +17,7 @@ import { getErrorMessage, getConfigCenter } from '@ownpilot/core/services';
 import { tryImport } from '@ownpilot/core/tools';
 import { type CliProviderRecord } from '../../db/repositories/cli/providers.js';
 import { validateCwd, createSanitizedEnv, spawnCliProcess } from '../binary-utils.js';
-import { getAllowedDirs } from '../app-settings.js';
+import { getEffectiveAllowedDirs } from '../app-settings.js';
 
 // =============================================================================
 // CONSTANTS
@@ -195,7 +195,7 @@ export async function runClaudeCode(
     };
   }
 
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getEffectiveAllowedDirs()) : process.cwd();
   let output = '';
 
   const skillsPreamble = task.skills?.length ? buildSkillsPreamble(task.skills) : '';
@@ -267,7 +267,7 @@ export async function runClaudeCode(
  */
 export async function runCodex(task: CodingAgentTask, apiKey?: string): Promise<CodingAgentResult> {
   const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getEffectiveAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['exec', '--json', '--full-auto'];
@@ -330,7 +330,7 @@ export async function runGeminiCli(
   apiKey?: string
 ): Promise<CodingAgentResult> {
   const start = Date.now();
-  const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
+  const cwd = task.cwd ? validateCwd(task.cwd, await getEffectiveAllowedDirs()) : process.cwd();
   const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
   const args = ['-p', task.prompt, '--yolo', '--output-format', 'json'];

@@ -40,7 +40,7 @@ import {
   createSanitizedEnv,
 } from '../binary-utils.js';
 import { getLog } from '../log.js';
-import { getAllowedDirs } from '../app-settings.js';
+import { getEffectiveAllowedDirs } from '../app-settings.js';
 import {
   DEFAULT_TIMEOUT_MS,
   MAX_TIMEOUT_MS,
@@ -245,7 +245,7 @@ class CodingAgentService implements ICodingAgentService {
     }
 
     const binary = CLI_BINARIES[task.provider];
-    const cwd = task.cwd ? validateCwd(task.cwd, await getAllowedDirs()) : process.cwd();
+    const cwd = task.cwd ? validateCwd(task.cwd, await getEffectiveAllowedDirs()) : process.cwd();
     const timeout = Math.min(task.timeout ?? DEFAULT_TIMEOUT_MS, MAX_TIMEOUT_MS);
 
     // Build CLI args based on provider
@@ -352,7 +352,7 @@ class CodingAgentService implements ICodingAgentService {
       );
     }
 
-    const allowedDirs = await getAllowedDirs();
+    const allowedDirs = await getEffectiveAllowedDirs();
     const cwd = input.cwd ? validateCwd(input.cwd, allowedDirs) : process.cwd();
     const env = createSanitizedEnv(provider, apiKey, apiKeyEnvVar);
 

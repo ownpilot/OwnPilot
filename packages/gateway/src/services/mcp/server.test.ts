@@ -552,7 +552,9 @@ describe('tools/call handler', () => {
     expect(mockExecuteUseTool).toHaveBeenCalledWith(
       expect.anything(),
       args,
-      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' })
+      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' }),
+      // Non-interactive MCP source so approval-required tools are gated.
+      'mcp'
     );
     expect(result.content[0]!.text).toBe('tool result');
   });
@@ -570,7 +572,8 @@ describe('tools/call handler', () => {
     expect(mockExecuteBatchUseTool).toHaveBeenCalledWith(
       expect.anything(),
       args,
-      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' })
+      expect.objectContaining({ userId: 'default', conversationId: 'mcp-session' }),
+      'mcp'
     );
     expect(result.content[0]!.text).toBe('batch results');
   });

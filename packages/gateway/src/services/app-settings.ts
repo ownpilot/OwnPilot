@@ -316,6 +316,25 @@ export async function setAllowedDirs(dirs: string[]): Promise<void> {
   await settingsRepo.set(ALLOWED_DIRS_KEY, JSON.stringify(dirs));
 }
 
+/**
+ * Resolve the EFFECTIVE allowed working directories for a coding-agent run.
+ *
+ * CODING-AGENT-CWD: {@link getAllowedDirs} returns `[]` when the operator hasn't
+ * configured a list, and {@link validateCwd} treats an empty list as "no
+ * restriction" — so a task could run with cwd `/`, `/etc`, or `C:\Windows`,
+ * handing an autonomous full-auto coding agent the entire host filesystem.
+ * Default-deny instead: with no configured list, confine agents to the OwnPilot
+ * workspace root. Operators who genuinely need to point agents at arbitrary
+ * project directories either add those directories in Settings → Coding Agents,
+ * or set `OWNPILOT_CODING_AGENT_ANY_DIR=true` to opt back into unrestricted mode.
+ */
+export async function getEffectiveAllowedDirs(): Promise<string[]> {
+  const configured = await getAllowedDirs();
+  if (configured.length > 0) return configured;
+  if (process.env.OWNPILOT_CODING_AGENT_ANY_DIR === 'true') return [];
+  return [process.env.WORKSPACE_DIR ?? process.cwd()];
+}
+
 // ============================================
 // Sandbox settings
 // ============================================

@@ -58,6 +58,7 @@ import {
   AUTH_PREFIX,
   API_KEY_PREFIX,
   PROVIDER_OAUTH_CONFIG_PREFIX,
+  getEffectiveAllowedDirs,
 } from './app-settings.js';
 
 describe('getResolvedAuth', () => {
@@ -221,5 +222,51 @@ describe('deleteProviderOAuthOverride', () => {
     await deleteProviderOAuthOverride('github');
     expect(mockDelete).toHaveBeenCalledTimes(1);
     expect(mockDelete).toHaveBeenCalledWith(`${PROVIDER_OAUTH_CONFIG_PREFIX}github`);
+  });
+});
+
+describe('getEffectiveAllowedDirs (CODING-AGENT-CWD)', () => {
+  const prevWorkspace = process.env.WORKSPACE_DIR;
+  const prevAnyDir = process.env.OWNPILOT_CODING_AGENT_ANY_DIR;
+
+  beforeEach(() => {
+    mockGet.mockReset();
+    delete process.env.WORKSPACE_DIR;
+    delete process.env.OWNPILOT_CODING_AGENT_ANY_DIR;
+  });
+
+  afterEach(() => {
+    if (prevWorkspace === undefined) delete process.env.WORKSPACE_DIR;
+    else process.env.WORKSPACE_DIR = prevWorkspace;
+    if (prevAnyDir === undefined) delete process.env.OWNPILOT_CODING_AGENT_ANY_DIR;
+    else process.env.OWNPILOT_CODING_AGENT_ANY_DIR = prevAnyDir;
+  });
+
+  it('returns the configured directories when the operator has set them', async () => {
+    mockGet.mockResolvedValue(JSON.stringify(['/srv/projects', '/work']));
+    expect(await getEffectiveAllowedDirs()).toEqual(['/srv/projects', '/work']);
+  });
+
+  it('default-denies to the workspace root when no dirs are configured', async () => {
+    mockGet.mockResolvedValue(undefined);
+    process.env.WORKSPACE_DIR = '/data/workspace';
+    expect(await getEffectiveAllowedDirs()).toEqual(['/data/workspace']);
+  });
+
+  it('falls back to process.cwd() when WORKSPACE_DIR is unset', async () => {
+    mockGet.mockResolvedValue(undefined);
+    expect(await getEffectiveAllowedDirs()).toEqual([process.cwd()]);
+  });
+
+  it('returns [] (unrestricted) only when OWNPILOT_CODING_AGENT_ANY_DIR=true', async () => {
+    mockGet.mockResolvedValue(undefined);
+    process.env.OWNPILOT_CODING_AGENT_ANY_DIR = 'true';
+    expect(await getEffectiveAllowedDirs()).toEqual([]);
+  });
+
+  it('configured dirs take precedence over the any-dir opt-in', async () => {
+    mockGet.mockResolvedValue(JSON.stringify(['/work']));
+    process.env.OWNPILOT_CODING_AGENT_ANY_DIR = 'true';
+    expect(await getEffectiveAllowedDirs()).toEqual(['/work']);
   });
 });

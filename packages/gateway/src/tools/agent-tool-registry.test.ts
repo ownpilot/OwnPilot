@@ -1978,6 +1978,71 @@ describe('agent-tools helpers', () => {
   });
 
   // =========================================================================
+  // executeBatchUseTool — permission gating (MCP-001: batch no longer bypasses
+  // checkToolPermission) + execSource forwarding
+  // =========================================================================
+  describe('executeBatchUseTool — permission gating', () => {
+    it('blocks a batch call when checkToolPermission denies it (no permission bypass)', async () => {
+      mockCheckToolPermission.mockResolvedValueOnce({ allowed: false, reason: 'Tool is blocked' });
+      const registry = createMockRegistry({
+        danger_tool: { name: 'danger_tool', description: 'desc' },
+      });
+      mockValidateRequiredParams.mockReturnValue(null);
+      registry.execute.mockResolvedValue({ ok: true, value: { content: 'SHOULD NOT RUN' } });
+      const result = await executeBatchUseTool(
+        registry as any,
+        { calls: [{ tool_name: 'danger_tool', arguments: {} }] },
+        {}
+      );
+      expect(result.content).toContain('is not available');
+      expect(result.content).toContain('Tool is blocked');
+      // The denied tool must never reach execution.
+      expect(registry.execute).not.toHaveBeenCalled();
+    });
+
+    it('forwards execSource="mcp" to checkToolPermission (non-interactive gating)', async () => {
+      const registry = createMockRegistry({ ok_tool: { name: 'ok_tool', description: 'desc' } });
+      mockValidateRequiredParams.mockReturnValue(null);
+      registry.execute.mockResolvedValue({ ok: true, value: { content: 'ok' } });
+      await executeBatchUseTool(
+        registry as any,
+        { calls: [{ tool_name: 'ok_tool', arguments: {} }] },
+        {},
+        'mcp'
+      );
+      expect(mockCheckToolPermission).toHaveBeenCalledWith(
+        'default',
+        'ok_tool',
+        expect.objectContaining({ source: 'mcp' })
+      );
+    });
+
+    it('executeUseTool forwards execSource="mcp" to checkToolPermission', async () => {
+      const registry = createMockRegistry({ ok_tool: { name: 'ok_tool', description: 'desc' } });
+      mockValidateRequiredParams.mockReturnValue(null);
+      registry.execute.mockResolvedValue({ ok: true, value: { content: 'ok' } });
+      await executeUseTool(registry as any, { tool_name: 'ok_tool', arguments: {} }, {}, 'mcp');
+      expect(mockCheckToolPermission).toHaveBeenCalledWith(
+        'default',
+        'ok_tool',
+        expect.objectContaining({ source: 'mcp' })
+      );
+    });
+
+    it('defaults execSource to "chat" when omitted (chat/agent path unchanged)', async () => {
+      const registry = createMockRegistry({ ok_tool: { name: 'ok_tool', description: 'desc' } });
+      mockValidateRequiredParams.mockReturnValue(null);
+      registry.execute.mockResolvedValue({ ok: true, value: { content: 'ok' } });
+      await executeUseTool(registry as any, { tool_name: 'ok_tool', arguments: {} }, {});
+      expect(mockCheckToolPermission).toHaveBeenCalledWith(
+        'default',
+        'ok_tool',
+        expect.objectContaining({ source: 'chat' })
+      );
+    });
+  });
+
+  // =========================================================================
   // executeSearchTools — tool with tags (line 827)
   // =========================================================================
   describe('executeSearchTools — tags in search blob (line 827)', () => {

@@ -29,7 +29,7 @@ export function downgradePromptToBlocked(perms: ExecutionPermissions): Execution
  */
 export interface ToolExecContext {
   /** The execution source requesting the tool */
-  source: 'chat' | 'trigger' | 'plan' | 'workflow' | 'skill' | 'coding-agent' | 'system';
+  source: 'chat' | 'trigger' | 'plan' | 'workflow' | 'skill' | 'coding-agent' | 'system' | 'mcp';
   /** Code-execution category permissions (from user settings) */
   executionPermissions?: ExecutionPermissions;
   /** Agent ID if called from an agent */
@@ -44,5 +44,14 @@ export interface ToolExecContext {
 
 /** Whether the context is non-interactive (no UI to prompt the user) */
 export function isNonInteractiveContext(source: ToolExecContext['source']): boolean {
-  return source === 'trigger' || source === 'plan' || source === 'workflow' || source === 'system';
+  // 'mcp' is non-interactive: an external MCP client (Claude Desktop, Cursor)
+  // has no OwnPilot UI to satisfy an approval prompt, so prompt-policy tools must
+  // downgrade to blocked rather than pass through as if a human could approve.
+  return (
+    source === 'trigger' ||
+    source === 'plan' ||
+    source === 'workflow' ||
+    source === 'system' ||
+    source === 'mcp'
+  );
 }

@@ -18,20 +18,45 @@ const log = getLog('CodingAgentPty');
 const IS_WINDOWS = process.platform === 'win32';
 
 /**
- * On Windows, node-pty cannot directly spawn .cmd/.bat files (npm global binaries).
- * We resolve this by using cmd.exe /c as the shell.
+ * Quote a single token for cmd.exe.
  *
- * SECURITY: cmd.exe /c parses metacharacters (& | > <) in the command string.
- * Always use windowsVerbatimArguments: true in spawn options to prevent
- * re-parsing of arguments, and avoid placing shell metacharacters in the
- * command itself (the command string goes through cmd.exe regardless).
+ * cmd.exe does NOT interpret its shell metacharacters (`& | < > ( ) ^ ;`) when
+ * they appear inside a double-quoted string, so wrapping each token makes them
+ * literal. Embedded double quotes are doubled (`""`) — cmd's literal-quote form
+ * — and NULs (which truncate a command line) are stripped.
+ *
+ * Note: cmd still expands `%VAR%` inside quotes, but that is variable
+ * substitution, not command execution, and the spawn env is already sanitized
+ * of secrets (createSanitizedEnv), so it is not an RCE vector.
  */
-function resolveCommand(command: string, args: string[]): { file: string; args: string[] } {
-  if (!IS_WINDOWS) return { file: command, args };
-  // Use cmd.exe /c to handle .cmd scripts and PATH resolution.
-  // Arguments are passed as individual strings (not joined into a single
-  // command string) to minimize additional parsing layers.
-  return { file: 'cmd.exe', args: ['/c', command, ...args] };
+function quoteForCmd(arg: string): string {
+  return `"${arg.replace(/\0/g, '').replace(/"/g, '""')}"`;
+}
+
+/**
+ * On Windows, node-pty / spawn cannot directly run .cmd/.bat files (npm global
+ * binary shims), so we route through `cmd.exe /c`.
+ *
+ * SECURITY (CODING-AGENT-WIN-INJECT): the previous form passed the command and
+ * args to `cmd.exe /c` as raw tokens with `windowsVerbatimArguments: true`.
+ * Verbatim mode concatenates the args space-separated WITHOUT quoting, so cmd
+ * re-parsed metacharacters in the (LLM/user-controlled) prompt and any custom
+ * provider args — e.g. a prompt `fix bug & calc.exe` chained a second command.
+ * We now quote every token and wrap the whole command in an outer pair of
+ * quotes: `cmd /c ""prog" "arg1" "arg2""`. cmd strips the outer pair and treats
+ * each inner token as a quoted literal (CommandLineToArgvW), so metacharacters
+ * are inert. This also fixes multi-word args being split on spaces.
+ *
+ * `isWindows` is injectable for deterministic testing of both branches.
+ */
+export function resolveCommand(
+  command: string,
+  args: string[],
+  isWindows: boolean = IS_WINDOWS
+): { file: string; args: string[] } {
+  if (!isWindows) return { file: command, args };
+  const inner = [command, ...args].map(quoteForCmd).join(' ');
+  return { file: 'cmd.exe', args: ['/c', `"${inner}"`] };
 }
 
 // ANSI escape code regex (compatible with strip-ansi)

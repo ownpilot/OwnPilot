@@ -34,6 +34,7 @@ import {
 } from '../../config/defaults.js';
 import { getLog } from '../../services/log.js';
 import { checkToolPermission } from '../../services/tool/permission.js';
+import type { ToolExecContext } from '../../services/permission/utils.js';
 import { resolveToolAlias } from './aliases.js';
 import { findSimilarTools } from './utils.js';
 
@@ -46,7 +47,14 @@ const log = getLog('AgentTools');
 export async function executeUseTool(
   tools: ToolRegistry,
   args: Record<string, unknown>,
-  context: ToolContext
+  context: ToolContext,
+  /**
+   * Execution-context source for the permission check. Defaults to 'chat'
+   * (interactive) so the chat/agent registration path is unchanged; the MCP
+   * entry points pass 'mcp' (non-interactive) so approval-required tools are
+   * blocked rather than auto-passed for an external client with no UI.
+   */
+  execSource: ToolExecContext['source'] = 'chat'
 ): Promise<CoreToolResult> {
   const { arguments: toolArgs } = args as {
     tool_name: string;
@@ -75,7 +83,7 @@ export async function executeUseTool(
 
   // Centralized permission check — enforces tool groups, exec perms, CLI policies, skill restrictions
   const perm = await checkToolPermission(context.userId ?? 'default', tool_name, {
-    source: 'chat',
+    source: execSource,
     executionPermissions: context.executionPermissions,
   });
   if (!perm.allowed) {
@@ -117,7 +125,9 @@ export async function executeUseTool(
 export async function executeBatchUseTool(
   tools: ToolRegistry,
   args: Record<string, unknown>,
-  context: ToolContext
+  context: ToolContext,
+  /** See executeUseTool — defaults to 'chat'; MCP entry points pass 'mcp'. */
+  execSource: ToolExecContext['source'] = 'chat'
 ): Promise<CoreToolResult> {
   const { calls } = args as {
     calls: Array<{ tool_name: string; arguments: Record<string, unknown> }>;
@@ -160,6 +170,24 @@ export async function executeBatchUseTool(
       const missingError = validateRequiredParams(tools, tool_name, toolArgs || {});
       if (missingError) {
         return { idx, tool_name, ok: false, content: missingError };
+      }
+
+      // Permission check — parity with single use_tool. The batch path
+      // previously skipped checkToolPermission entirely, so a caller could
+      // invoke a tool via batch_use_tool that single use_tool would block
+      // (group/exec/CLI/skill gating). Enforce the same check per call, with
+      // the caller's execution source (non-interactive over MCP).
+      const perm = await checkToolPermission(context.userId ?? 'default', tool_name, {
+        source: execSource,
+        executionPermissions: context.executionPermissions,
+      });
+      if (!perm.allowed) {
+        return {
+          idx,
+          tool_name,
+          ok: false,
+          content: `Tool '${tool_name}' is not available: ${perm.reason}`,
+        };
       }
 
       try {
