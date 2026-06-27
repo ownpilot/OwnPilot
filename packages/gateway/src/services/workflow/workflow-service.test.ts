@@ -1424,6 +1424,24 @@ describe('subWorkflowNode', () => {
     expect(String(ne!.error)).toContain('depth');
   });
 
+  it('clamps an attacker-set maxDepth to the hard server ceiling (DoS guard)', async () => {
+    // Node requests an enormous depth; the server must clamp to MAX_SUBWORKFLOW_DEPTH
+    // (10). At depth 10 the clamped ceiling is hit and the recursion errors out,
+    // proving swData.maxDepth cannot drive unbounded A→B→A recursion.
+    const nodes = [
+      makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', maxDepth: 1_000_000 }),
+    ];
+    mockRepo.get.mockResolvedValue(makeWorkflow(nodes));
+    mockRepo.getLog.mockResolvedValue(makeLog({ status: 'failed' }));
+
+    const progressEvents: Array<Record<string, unknown>> = [];
+    await service.executeWorkflow('wf-1', 'user1', (e) => progressEvents.push(e), { depth: 10 });
+
+    const ne = progressEvents.find((e) => e.type === 'node_error');
+    expect(ne).toBeDefined();
+    expect(String(ne!.error)).toContain('depth');
+  });
+
   it('executes subWorkflowNode in dryRun mode', async () => {
     const nodes = [
       makeNode('sw1', 'subWorkflowNode', { subWorkflowId: 'sub-wf', inputMapping: {} }),

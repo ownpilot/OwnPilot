@@ -555,7 +555,14 @@ export async function dispatchNode(
       };
     }
 
-    const nodeMaxDepth = typeof swData.maxDepth === 'number' ? swData.maxDepth : 5;
+    // The node's own maxDepth is author/LLM-controlled. A self-reference (A→A)
+    // is blocked by the per-workflowId execution lock, but an A→B→A cycle uses
+    // distinct workflowIds and slips past it, recursing to the requested depth —
+    // each frame a full executeWorkflow (topo sort, DB writes). Clamp to a hard
+    // server ceiling so a high maxDepth can't drive stack/heap/DB-pool exhaustion.
+    const MAX_SUBWORKFLOW_DEPTH = 10;
+    const requestedDepth = typeof swData.maxDepth === 'number' ? swData.maxDepth : 5;
+    const nodeMaxDepth = Math.min(Math.max(1, requestedDepth), MAX_SUBWORKFLOW_DEPTH);
     if (depth >= nodeMaxDepth) {
       return {
         nodeId,

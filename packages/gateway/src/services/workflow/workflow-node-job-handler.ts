@@ -25,6 +25,7 @@ import { createWorkflowsRepository } from '../../db/repositories/workflows/index
 import { JobQueueService } from '../job-queue-service.js';
 import { getLog } from '../log.js';
 import { getDownstreamNodes } from './dag-utils.js';
+import { WORKFLOW_NODE_TYPES } from './node-types.js';
 
 const log = getLog('WorkflowNodeJobHandler');
 
@@ -327,6 +328,19 @@ async function executeNodeInline(
       );
 
     default:
+      // Unknown-type guard — mirror dispatchNode (workflow-dispatch.ts). This
+      // jobified path is a separate copy of dispatch; without this guard an
+      // unrecognized node type fell through to the toolNode executor below,
+      // running node.data.toolName. Save-time validation rejects unknown types,
+      // but a code-execution surface must not depend on a single upstream check.
+      if (node.type && !WORKFLOW_NODE_TYPES.has(node.type)) {
+        return {
+          nodeId: node.id,
+          status: 'error',
+          error: `Unknown node type "${node.type}"`,
+          completedAt: new Date().toISOString(),
+        };
+      }
       return nodeExecutors.executeNode(
         node,
         nodeOutputs,

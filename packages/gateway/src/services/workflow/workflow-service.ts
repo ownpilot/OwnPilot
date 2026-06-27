@@ -188,6 +188,11 @@ export class WorkflowService implements IWorkflowService {
         'approvalNode',
         'parallelNode',
         'subWorkflowNode',
+        // clawNode spawns an autonomous agent via dispatchNode → executeClawNode.
+        // The jobified executeNodeInline has no clawNode case, so without this it
+        // fell through to the toolNode executor (toolName undefined) and the claw
+        // was never created in the default production path. Run it sync.
+        'clawNode',
       ]);
 
       // Execute level by level
