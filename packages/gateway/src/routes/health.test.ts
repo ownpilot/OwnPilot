@@ -68,9 +68,20 @@ vi.mock('../db/adapters/types.js', () => ({
 import { healthRoutes } from './health.js';
 import { requestId } from '../middleware/request-id.js';
 
-function createApp() {
+function createApp(opts: { authenticated?: boolean } = {}) {
   const app = new Hono();
   app.use('*', requestId);
+  // Simulate the authenticated `/api/v1/health` mount: uiSessionMiddleware sets
+  // `sessionAuthenticated` there, which the diagnostic/admin-endpoint guard
+  // requires. Default true so the existing handler-logic tests exercise the
+  // sandbox/tool-dependencies endpoints; pass { authenticated: false } to
+  // exercise the PUBLIC `/health` mount where those endpoints must be blocked.
+  if (opts.authenticated !== false) {
+    app.use('*', async (c, next) => {
+      c.set('sessionAuthenticated', true);
+      return next();
+    });
+  }
   app.route('/health', healthRoutes);
   return app;
 }
@@ -529,5 +540,62 @@ describe('Health Routes', { timeout: 15_000 }, () => {
       expect(ffmpeg?.version).toBe('5.1.2');
       expect(json.data.summary.cliInstalled).toBeGreaterThanOrEqual(1);
     });
+  });
+});
+
+describe('Health Routes — public mount auth gating (HEALTH-AUTH)', { timeout: 15_000 }, () => {
+  let publicApp: Hono;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // No `sessionAuthenticated` set — mirrors the public `/health` mount where
+    // uiSessionMiddleware does not run.
+    publicApp = createApp({ authenticated: false });
+    mockGetDatabaseConfig.mockReturnValue({
+      postgresHost: 'localhost',
+      postgresPort: 5432,
+      postgresUser: 'testuser',
+      postgresDatabase: 'testdb',
+      postgresPassword: 'testpass',
+    });
+    mockGetAdapterSync.mockReturnValue({ isConnected: mockIsConnected, queryOne: mockQueryOne });
+    mockIsConnected.mockReturnValue(false);
+    mockQueryOne.mockResolvedValue({ exists: 'settings' });
+    mockGetExecutionMode.mockReturnValue('local');
+    mockGetSandboxStatus.mockResolvedValue({
+      dockerAvailable: false,
+      dockerVersion: null,
+      relaxedSecurityRequired: false,
+    });
+  });
+
+  it('blocks GET /health/sandbox without authentication (401)', async () => {
+    const res = await publicApp.request('/health/sandbox');
+    expect(res.status).toBe(401);
+    expect(mockGetSandboxStatus).not.toHaveBeenCalled();
+  });
+
+  it('blocks POST /health/sandbox/reset without authentication (401)', async () => {
+    const res = await publicApp.request('/health/sandbox/reset', { method: 'POST' });
+    expect(res.status).toBe(401);
+    expect(mockResetSandboxCache).not.toHaveBeenCalled();
+  });
+
+  it('blocks POST /health/sandbox/pull-images without authentication (401)', async () => {
+    const res = await publicApp.request('/health/sandbox/pull-images', { method: 'POST' });
+    expect(res.status).toBe(401);
+    expect(mockEnsureImage).not.toHaveBeenCalled();
+  });
+
+  it('blocks GET /health/tool-dependencies without authentication (401)', async () => {
+    const res = await publicApp.request('/health/tool-dependencies');
+    expect(res.status).toBe(401);
+  });
+
+  it('still serves the public liveness probe GET /health (200)', async () => {
+    const res = await publicApp.request('/health');
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.success).toBe(true);
   });
 });

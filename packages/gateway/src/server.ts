@@ -38,7 +38,7 @@ import { serve } from '@hono/node-server';
 import type { Server } from 'node:http';
 import { createApp, sanitizeCorsOriginsFromEnv } from './app.js';
 import type { GatewayConfig } from './types/index.js';
-import { wsGateway } from './ws/index.js';
+import { wsGateway, setWsAuthConfig } from './ws/index.js';
 import { initializeAdapter } from './db/adapters/index.js';
 import { getDatabaseConfig, DEFAULT_POSTGRES_PASSWORD } from './db/adapters/types.js';
 import { loadApiKeysToEnvironment } from './services/app-settings.js';
@@ -413,6 +413,11 @@ async function main() {
   const config = loadConfig();
   const app = createApp(config);
 
+  // WS-AUTH-SOURCE: hand the WebSocket layer the SAME resolved auth (DB-or-env
+  // keys) the HTTP middleware uses. Without this, `/ws` read process.env.API_KEYS
+  // directly and stayed open when gateway keys were configured via the UI/DB.
+  setWsAuthConfig({ type: config.auth?.type ?? 'none', apiKeys: config.auth?.apiKeys });
+
   const port = config.port ?? 8080;
   const host = config.host ?? '0.0.0.0';
 
@@ -694,6 +699,32 @@ async function main() {
     } else {
       log.warn('Authentication is DISABLED (AUTH_TYPE=none).');
       log.warn('Only localhost can access the API. Set AUTH_TYPE=api-key for remote access.');
+    }
+  } else {
+    // AUTH-NO-PASSWORD: when a credential (API key / JWT) IS configured but no UI
+    // password is set, the UI-session middleware treats every request as the
+    // implicitly-authenticated 'default' owner and the API-key/JWT check is
+    // skipped — so the configured credential does NOT actually gate browser/UI/
+    // WebSocket access. This is intended for single-user localhost installs, but
+    // it is a footgun on an exposed host, so warn loudly (the AUTH_TYPE=none path
+    // above already warns; this covers the silent api-key/jwt-without-password case).
+    const { isPasswordConfigured } = await import('./services/ui-session.js');
+    if (!isPasswordConfigured()) {
+      const isExposed = host !== '127.0.0.1' && host !== 'localhost' && host !== '::1';
+      if (isExposed) {
+        log.warn('==========================================================');
+        log.warn('  SECURITY WARNING: no UI password set!');
+        log.warn(`  AUTH_TYPE=${config.auth.type} is configured, but with no UI`);
+        log.warn('  password the web UI and WebSocket run as the implicitly');
+        log.warn(`  authenticated owner — the credential does NOT gate them, and`);
+        log.warn(`  HOST=${host} exposes this on the network.`);
+        log.warn('  Set a UI password (Settings → Security) to require login.');
+        log.warn('==========================================================');
+      } else {
+        log.warn(
+          `No UI password set (AUTH_TYPE=${config.auth.type}). The web UI runs as the implicitly authenticated owner on localhost; set a UI password to require login.`
+        );
+      }
     }
   }
   if (config.corsOrigins?.includes('*')) {

@@ -64,7 +64,11 @@ function shouldEnforceCsrf(method: string, source: string): boolean {
 
 export const uiSessionMiddleware = createMiddleware(async (c, next) => {
   const fullPath = c.req.path;
-  const relativePath = fullPath.replace(/^\/api\/v1/, '');
+  // Strip ANY versioned API prefix (/api/v1, /api/v2, …) so the /auth/ and
+  // /mcp/serve allowances below match identically on every API version. A
+  // hardcoded /api/v1 left the v2 mirror with the un-stripped prefix, so those
+  // session/MCP allowances silently never matched on v2 (fail-closed parity bug).
+  const relativePath = fullPath.replace(/^\/api\/v\d+/, '');
   const allowMcpSessionHeader = relativePath.startsWith('/mcp/serve');
   const sessionAuth = getUiSessionAuth(c, { allowHeader: allowMcpSessionHeader });
 

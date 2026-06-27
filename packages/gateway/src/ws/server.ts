@@ -56,20 +56,49 @@ const wsLoginThrottle = createLoginThrottle({
 
 /**
  * Validate a WebSocket authentication token.
- * Reads API_KEYS from env (same keys used for HTTP auth).
- * Returns true if auth is disabled (no keys) or token is valid.
+ * Returns true if auth is disabled (type 'none' / no keys) or token is valid.
  */
 interface WsAuth {
   apiToken: string | null;
   uiSessionToken: string | null;
 }
 
+/**
+ * Resolved gateway auth, mirrored from the HTTP layer at startup via
+ * {@link setWsAuthConfig}.
+ *
+ * WS-AUTH-SOURCE: previously `validateWsAuth` read `process.env.API_KEYS`
+ * directly, but the HTTP auth layer resolves keys as `dbApiKeys ?? env`
+ * (server.ts) — gateway API keys configured through the UI/DB are stored in
+ * settings and never mirrored to `process.env.API_KEYS`. That mismatch left
+ * `/ws` OPEN (env empty → "no keys" → allow) while the HTTP API was correctly
+ * protected by the DB keys. We now consume the SAME resolved config so both
+ * surfaces enforce identically. Falls back to env when unset (tests / pre-init).
+ */
+let resolvedWsAuth: { type: 'none' | 'api-key' | 'jwt'; apiKeys: string[] } | null = null;
+
+export function setWsAuthConfig(cfg: {
+  type: 'none' | 'api-key' | 'jwt';
+  apiKeys?: string[];
+}): void {
+  resolvedWsAuth = { type: cfg.type, apiKeys: (cfg.apiKeys ?? []).filter(Boolean) };
+}
+
+/** Test helper: clear the resolved WS auth so validation falls back to env. */
+export function resetWsAuthConfig(): void {
+  resolvedWsAuth = null;
+}
+
 async function validateWsAuth(auth: WsAuth): Promise<boolean> {
   if (auth.uiSessionToken && (await validateUiSession(auth.uiSessionToken))) return true;
 
-  const apiKeys = process.env.API_KEYS?.split(',').filter(Boolean);
+  // Auth explicitly disabled — mirror the HTTP middleware (auth.ts skips all
+  // checks when type === 'none').
+  if (resolvedWsAuth?.type === 'none') return true;
 
-  if (!apiKeys || apiKeys.length === 0) {
+  const apiKeys = resolvedWsAuth?.apiKeys ?? process.env.API_KEYS?.split(',').filter(Boolean) ?? [];
+
+  if (apiKeys.length === 0) {
     // No API keys configured — but if UI password is set, require a valid session token
     // (the check above already failed, so reject)
     if (isPasswordConfigured()) return false;

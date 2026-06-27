@@ -3,6 +3,7 @@
  */
 
 import { Hono } from 'hono';
+import { createMiddleware } from 'hono/factory';
 import { VERSION } from '@ownpilot/core/version';
 import {
   getSandboxStatus,
@@ -19,6 +20,25 @@ const startTime = Date.now();
 const CRITICAL_TABLES = ['settings', 'conversations', 'messages', 'user_extensions', 'ui_sessions'];
 
 export const healthRoutes = new Hono();
+
+// HEALTH-AUTH: this router is mounted BOTH publicly at `/health` (for liveness/
+// readiness probes) AND behind auth at `/api/v1/health`. The diagnostic/admin
+// endpoints below disclose host internals (Docker/DB/version/installed-package
+// inventory) or mutate/trigger sandbox state (cache reset, image pulls), so they
+// must NOT be reachable on the public mount. uiSessionMiddleware sets
+// `sessionAuthenticated` on the `/api/*` mount and nothing sets it on the public
+// `/health` mount, so this guard fails closed — public callers get 401, the
+// authenticated admin mount passes through. The probes (`/`, `/live`, `/ready`)
+// remain public.
+const requireAuthenticatedHealth = createMiddleware(async (c, next) => {
+  if (!c.get('sessionAuthenticated')) {
+    return apiError(c, { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' }, 401);
+  }
+  return next();
+});
+healthRoutes.use('/sandbox', requireAuthenticatedHealth);
+healthRoutes.use('/sandbox/*', requireAuthenticatedHealth);
+healthRoutes.use('/tool-dependencies', requireAuthenticatedHealth);
 
 async function checkDatabaseReadiness(): Promise<{
   status: 'pass' | 'fail';

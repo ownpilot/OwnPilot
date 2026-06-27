@@ -265,6 +265,8 @@ describe('WSGateway', () => {
 
     // Clear auth rate limiter state between tests
     mod.resetAuthRateLimit();
+    // Clear resolved WS auth so each test starts on the env-fallback default.
+    mod.resetWsAuthConfig();
   });
 
   afterEach(() => {
@@ -329,6 +331,62 @@ describe('WSGateway', () => {
 
       expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
       expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    // WS-AUTH-SOURCE: keys resolved from the DB/UI reach the WS layer via
+    // setWsAuthConfig, NOT process.env.API_KEYS. These prove the WS path now
+    // enforces those keys even when env is empty (the bug: env-only read left
+    // /ws open while HTTP was protected by the same DB keys).
+    it('enforces DB-sourced keys from setWsAuthConfig when env API_KEYS is empty', async () => {
+      delete process.env.API_KEYS;
+      const mod = await import('./server.js');
+      mod.setWsAuthConfig({ type: 'api-key', apiKeys: ['db-key-1', 'db-key-2'] });
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      // No token offered → must be rejected (previously env-empty meant "open").
+      const request = createMockRequest('/');
+
+      await handler(socket, request);
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts a valid DB-sourced key (Authorization header) with env API_KEYS empty', async () => {
+      delete process.env.API_KEYS;
+      const mod = await import('./server.js');
+      mod.setWsAuthConfig({ type: 'api-key', apiKeys: ['db-key-1', 'db-key-2'] });
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/', { authorization: 'Bearer db-key-2' });
+
+      await handler(socket, request);
+
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('treats type "none" from setWsAuthConfig as auth-disabled (allows connection)', async () => {
+      delete process.env.API_KEYS;
+      const mod = await import('./server.js');
+      mod.setWsAuthConfig({ type: 'none', apiKeys: [] });
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      const request = createMockRequest('/');
+
+      await handler(socket, request);
+
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
     });
 
     // Query-param token tests (deprecated, gated behind WS_ALLOW_QUERY_TOKEN)
