@@ -10,6 +10,7 @@
  */
 
 import { lazy, Suspense, type ReactNode } from 'react';
+import type { Node as ReactFlowNode, Edge as ReactFlowEdge } from '@xyflow/react';
 import type { WorkflowDefinition } from '../../components/workflows/workflowDefinition';
 import { ToolPalette } from '../../components/workflows/ToolPalette';
 import { NodeConfigPanel } from '../../components/workflows/NodeConfigPanel';
@@ -72,6 +73,8 @@ interface WorkflowEditorHandle {
   id?: string;
   workflowName?: string;
   toolNames?: string[];
+  nodes?: ReactFlowNode[];
+  edges?: ReactFlowEdge[];
   handleApplyWorkflow?: (definition: WorkflowDefinition) => Promise<void>;
 }
 
@@ -297,8 +300,8 @@ function PanelContent({
         >
           <WorkflowCopilotPanel
             workflowName={editor.workflowName ?? ''}
-            nodes={[]}
-            edges={[]}
+            nodes={editor.nodes ?? []}
+            edges={editor.edges ?? []}
             availableToolNames={editor.toolNames ?? []}
             onApplyWorkflow={(data) => {
               editor.handleApplyWorkflow?.(data as WorkflowDefinition);
