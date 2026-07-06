@@ -2,18 +2,34 @@
  * MobileWorkflowView — Mobile-optimized workflow editor layout.
  *
  * Replaces the three-panel desktop layout (ToolPalette | Canvas | ConfigPanel)
- * with a single-panel tabbed view for small screens:
- *   - "Nodes" tab:  compact ToolPalette (add/search nodes)
- *   - "Canvas" tab: simplified ReactFlow read-only view
- *   - "Config" tab: NodeConfigPanel for the selected node
+ * with a single-panel tabbed view for small screens.
  *
- * Desktop users see the original three-panel layout unchanged.
- * Mobile detection uses useIsMobile (768px breakpoint).
+ * Extra panels (Variables, Copilot, InputParams, Versions) are rendered
+ * as full-content overlays when toggled from the toolbar, maintaining the
+ * same UX as desktop but filling the whole screen.
  */
 
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
+import type { WorkflowDefinition } from '../../components/workflows/workflowDefinition';
 import { ToolPalette } from '../../components/workflows/ToolPalette';
 import { NodeConfigPanel } from '../../components/workflows/NodeConfigPanel';
+import { VariablesPanel } from '../../components/workflows/VariablesPanel';
+
+const WorkflowCopilotPanel = lazy(() =>
+  import('../../components/workflows/WorkflowCopilotPanel').then((m) => ({
+    default: m.WorkflowCopilotPanel,
+  }))
+);
+const InputParametersPanel = lazy(() =>
+  import('../../components/workflows/InputParametersPanel').then((m) => ({
+    default: m.InputParametersPanel,
+  }))
+);
+const WorkflowVersionsPanel = lazy(() =>
+  import('../../components/workflows/WorkflowVersionsPanel').then((m) => ({
+    default: m.WorkflowVersionsPanel,
+  }))
+);
 
 /** Subset of the useWorkflowEditor return type needed by MobileWorkflowView */
 interface WorkflowEditorHandle {
@@ -27,9 +43,39 @@ interface WorkflowEditorHandle {
   updateNodeData: (id: string, data: Record<string, unknown>) => void;
   deleteNode: (id: string) => void;
   setSelectedNodeId: (id: string | null) => void;
+  // Extra panels
+  showVariables?: boolean;
+  setShowVariables?: (v: boolean) => void;
+  showCopilot?: boolean;
+  setShowCopilot?: (v: boolean) => void;
+  showInputParams?: boolean;
+  setShowInputParams?: (v: boolean) => void;
+  showVersions?: boolean;
+  setShowVersions?: (v: boolean) => void;
+  variables?: Record<string, unknown>;
+  handleVariablesChange?: (vars: Record<string, unknown>) => void;
+  inputSchema?: Array<{
+    name: string;
+    type: 'string' | 'number' | 'boolean' | 'json';
+    required: boolean;
+    defaultValue?: string;
+  }>;
+  setInputSchema?: (
+    schema: Array<{
+      name: string;
+      type: 'string' | 'number' | 'boolean' | 'json';
+      required: boolean;
+      defaultValue?: string;
+    }>
+  ) => void;
+  setHasUnsavedChanges?: (v: boolean) => void;
+  id?: string;
+  workflowName?: string;
+  toolNames?: string[];
+  handleApplyWorkflow?: (definition: WorkflowDefinition) => Promise<void>;
 }
 
-// Icons as inline SVGs to avoid importing the full icon barrel
+// Inline SVG icons
 function NodesIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -54,6 +100,25 @@ function ConfigIcon() {
   );
 }
 
+function BackHeader({ title, onClose }: { title: string; onClose: () => void }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
+      <button
+        onClick={onClose}
+        className="p-1 rounded-md text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
+        aria-label="Back"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
+        {title}
+      </span>
+    </div>
+  );
+}
+
 type MobileTab = 'nodes' | 'canvas' | 'config';
 
 interface MobileWorkflowViewProps {
@@ -70,6 +135,31 @@ export function MobileWorkflowView({
   onTabChange,
 }: MobileWorkflowViewProps) {
   const hasSelection = editor.selectedNode != null;
+
+  // Show external panel overlay when active
+  const activePanel = editor.showVariables
+    ? 'variables'
+    : editor.showCopilot
+      ? 'copilot'
+      : editor.showInputParams
+        ? 'input-params'
+        : editor.showVersions
+          ? 'versions'
+          : null;
+
+  if (activePanel) {
+    return (
+      <div className="flex flex-col h-full">
+        <PanelBackHeader
+          panel={activePanel}
+          editor={editor}
+        />
+        <div className="flex-1 overflow-y-auto">
+          <PanelContent panel={activePanel} editor={editor} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -131,4 +221,117 @@ export function MobileWorkflowView({
       </div>
     </div>
   );
+}
+
+// ---- Panel overlay helpers ----
+
+function panelLabel(panel: string): string {
+  switch (panel) {
+    case 'variables':
+      return 'Variables';
+    case 'copilot':
+      return 'AI Copilot';
+    case 'input-params':
+      return 'Input Parameters';
+    case 'versions':
+      return 'Version History';
+    default:
+      return 'Panel';
+  }
+}
+
+function PanelBackHeader({
+  panel,
+  editor,
+}: {
+  panel: string;
+  editor: WorkflowEditorHandle;
+}) {
+  const onClose = () => {
+    switch (panel) {
+      case 'variables':
+        editor.setShowVariables?.(false);
+        break;
+      case 'copilot':
+        editor.setShowCopilot?.(false);
+        break;
+      case 'input-params':
+        editor.setShowInputParams?.(false);
+        break;
+      case 'versions':
+        editor.setShowVersions?.(false);
+        break;
+    }
+  };
+
+  return <BackHeader title={panelLabel(panel)} onClose={onClose} />;
+}
+
+function PanelContent({
+  panel,
+  editor,
+}: {
+  panel: string;
+  editor: WorkflowEditorHandle;
+}) {
+  switch (panel) {
+    case 'variables':
+      return (
+        <VariablesPanel
+          variables={editor.variables ?? {}}
+          onChange={(vars) => {
+            editor.handleVariablesChange?.(vars);
+          }}
+          onClose={() => editor.setShowVariables?.(false)}
+          className="w-full"
+        />
+      );
+    case 'copilot':
+      return (
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8 text-sm text-text-muted">
+              Loading...
+            </div>
+          }
+        >
+          <WorkflowCopilotPanel
+            workflowName={editor.workflowName ?? ''}
+            nodes={[]}
+            edges={[]}
+            availableToolNames={editor.toolNames ?? []}
+            onApplyWorkflow={(data) => {
+              editor.handleApplyWorkflow?.(data as WorkflowDefinition);
+            }}
+            onClose={() => editor.setShowCopilot?.(false)}
+          />
+        </Suspense>
+      );
+    case 'input-params':
+      return (
+        <Suspense fallback={null}>
+          <InputParametersPanel
+            parameters={editor.inputSchema ?? []}
+            onChange={(params) => {
+              editor.setInputSchema?.(params);
+              editor.setHasUnsavedChanges?.(true);
+            }}
+            onClose={() => editor.setShowInputParams?.(false)}
+          />
+        </Suspense>
+      );
+    case 'versions':
+      return editor.id ? (
+        <Suspense fallback={null}>
+          <WorkflowVersionsPanel
+            workflowId={editor.id}
+            onRestore={() => {}}
+            onClose={() => editor.setShowVersions?.(false)}
+            className="w-full"
+          />
+        </Suspense>
+      ) : null;
+    default:
+      return null;
+  }
 }
