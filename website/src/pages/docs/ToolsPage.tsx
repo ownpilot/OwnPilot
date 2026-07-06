@@ -21,8 +21,6 @@ Voice:            transcribe-audio, text-to-speech
 Browser:          navigate, click, screenshot, fill-form
 Artifacts:        create-artifact, update-artifact
 CLI:              run-cli-tool, list-cli-tools
-Orchestra:        create-orchestra, run-orchestra
-Subagents:        spawn-subagent, check-subagent
 MCP:              (dynamic, from connected MCP servers)
 Custom:           (user-defined via Extension SDK)
 Skills:           (from installed SKILL.md packages)`;

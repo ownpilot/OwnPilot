@@ -176,14 +176,6 @@ POST /api/v1/agents
             <td>pulse</td>
             <td>Proactive autonomy engine</td>
           </tr>
-          <tr>
-            <td>subagent</td>
-            <td>Spawned child agents</td>
-          </tr>
-          <tr>
-            <td>fleet</td>
-            <td>Fleet worker tasks</td>
-          </tr>
         </tbody>
       </table>
 
