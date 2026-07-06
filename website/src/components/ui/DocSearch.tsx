@@ -36,6 +36,7 @@ export function DocSearch({ onClose }: DocSearchProps) {
           { name: 'title', weight: 3 },
           { name: 'description', weight: 1.5 },
           { name: 'keywords', weight: 2 },
+          { name: 'content', weight: 1 },
         ],
         threshold: 0.4,
         includeScore: true,
