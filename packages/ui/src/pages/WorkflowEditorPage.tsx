@@ -11,10 +11,11 @@
  * Execution: SSE streaming with real-time node coloring.
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ReactFlowProvider, type Node, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import { useIsMobile } from '../hooks/useMediaQuery';
 import { ToolPalette } from '../components/workflows/ToolPalette';
 import { NodeConfigPanel } from '../components/workflows/NodeConfigPanel';
 import { NodeSearchPalette } from '../components/workflows/NodeSearchPalette';
@@ -26,6 +27,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useWorkflowEditor } from './workflows/useWorkflowEditor';
 import { WorkflowEditorToolbar } from './workflows/WorkflowEditorToolbar';
 import { WorkflowCanvas } from './workflows/WorkflowCanvas';
+import { MobileWorkflowView } from './workflows/MobileWorkflowView';
 import { getEdgeLabelProps } from './workflows/shared';
 
 const WorkflowSourceModal = lazy(() =>
@@ -70,6 +72,8 @@ export function WorkflowEditorPage() {
 
 function WorkflowEditorInner() {
   const editor = useWorkflowEditor();
+  const isMobile = useIsMobile();
+  const [mobileTab, setMobileTab] = useState<'nodes' | 'canvas' | 'config'>('nodes');
 
   // ========================================================================
   // Render
@@ -116,80 +120,103 @@ function WorkflowEditorInner() {
         executionProgress={editor.executionProgress}
       />
 
-      {/* Three-panel layout */}
-      <div className="flex-1 flex overflow-hidden">
-        <ToolPalette
-          className="w-60 shrink-0"
-          onAddTool={editor.addToolNode}
-          onAddNode={editor.handleAddNode}
-          hasTriggerNode={editor.hasTriggerNode}
-        />
-
-        <WorkflowCanvas
-          nodes={editor.nodes}
-          edges={editor.edges}
-          isExecuting={editor.isExecuting}
-          onNodesChange={editor.onNodesChangeWrapped}
-          onEdgesChange={editor.onEdgesChangeWrapped}
-          onConnect={editor.onConnect}
-          isValidConnection={editor.isValidConnection}
-          onNodeClick={editor.onNodeClick}
-          onPaneClick={editor.onPaneClick}
-          onDragOver={editor.onDragOver}
-          onDrop={editor.onDrop}
-        />
-
-        {editor.selectedNode ? (
-          <NodeConfigPanel
-            node={editor.selectedNode}
-            upstreamNodes={editor.upstreamNodes}
-            onUpdate={editor.updateNodeData}
-            onDelete={editor.deleteNode}
-            onClose={() => editor.setSelectedNodeId(null)}
-            className="w-80 shrink-0"
-          />
-        ) : editor.showVariables ? (
-          <VariablesPanel
-            variables={editor.variables}
-            onChange={editor.handleVariablesChange}
-            onClose={() => editor.setShowVariables(false)}
-            className="w-80 shrink-0"
-          />
-        ) : editor.showInputParams ? (
-          <InputParametersPanel
-            parameters={editor.inputSchema}
-            onChange={(params) => {
-              editor.setInputSchema(params);
-              editor.setHasUnsavedChanges(true);
-            }}
-            onClose={() => editor.setShowInputParams(false)}
-          />
-        ) : editor.showVersions && editor.id ? (
-          <WorkflowVersionsPanel
-            workflowId={editor.id}
-            onRestore={(data) => {
-              editor.setNodes(data.nodes as Node[]);
-              editor.setEdges(data.edges as Edge[]);
-              editor.setVariables(data.variables);
-              editor.setHasUnsavedChanges(false);
-              editor.toast.success('Version restored');
-            }}
-            onClose={() => editor.setShowVersions(false)}
-            className="w-80 shrink-0"
-          />
-        ) : editor.showCopilot ? (
-          <Suspense fallback={<WorkflowPanelFallback className="w-96" />}>
-            <WorkflowCopilotPanel
-              workflowName={editor.workflowName}
+      {/* Three-panel layout (desktop) / Tabbed layout (mobile) */}
+      {isMobile ? (
+        <MobileWorkflowView
+          editor={editor}
+          canvas={
+            <WorkflowCanvas
               nodes={editor.nodes}
               edges={editor.edges}
-              availableToolNames={editor.toolNames}
-              onApplyWorkflow={editor.handleApplyWorkflow}
-              onClose={() => editor.setShowCopilot(false)}
+              isExecuting={editor.isExecuting}
+              onNodesChange={editor.onNodesChangeWrapped}
+              onEdgesChange={editor.onEdgesChangeWrapped}
+              onConnect={editor.onConnect}
+              isValidConnection={editor.isValidConnection}
+              onNodeClick={editor.onNodeClick}
+              onPaneClick={editor.onPaneClick}
+              onDragOver={editor.onDragOver}
+              onDrop={editor.onDrop}
             />
-          </Suspense>
-        ) : null}
-      </div>
+          }
+          activeTab={mobileTab}
+          onTabChange={setMobileTab}
+        />
+      ) : (
+        <div className="flex-1 flex overflow-hidden">
+          <ToolPalette
+            className="w-60 shrink-0"
+            onAddTool={editor.addToolNode}
+            onAddNode={editor.handleAddNode}
+            hasTriggerNode={editor.hasTriggerNode}
+          />
+
+          <WorkflowCanvas
+            nodes={editor.nodes}
+            edges={editor.edges}
+            isExecuting={editor.isExecuting}
+            onNodesChange={editor.onNodesChangeWrapped}
+            onEdgesChange={editor.onEdgesChangeWrapped}
+            onConnect={editor.onConnect}
+            isValidConnection={editor.isValidConnection}
+            onNodeClick={editor.onNodeClick}
+            onPaneClick={editor.onPaneClick}
+            onDragOver={editor.onDragOver}
+            onDrop={editor.onDrop}
+          />
+
+          {editor.selectedNode ? (
+            <NodeConfigPanel
+              node={editor.selectedNode}
+              upstreamNodes={editor.upstreamNodes}
+              onUpdate={editor.updateNodeData}
+              onDelete={editor.deleteNode}
+              onClose={() => editor.setSelectedNodeId(null)}
+              className="w-80 shrink-0"
+            />
+          ) : editor.showVariables ? (
+            <VariablesPanel
+              variables={editor.variables}
+              onChange={editor.handleVariablesChange}
+              onClose={() => editor.setShowVariables(false)}
+              className="w-80 shrink-0"
+            />
+          ) : editor.showInputParams ? (
+            <InputParametersPanel
+              parameters={editor.inputSchema}
+              onChange={(params) => {
+                editor.setInputSchema(params);
+                editor.setHasUnsavedChanges(true);
+              }}
+              onClose={() => editor.setShowInputParams(false)}
+            />
+          ) : editor.showVersions && editor.id ? (
+            <WorkflowVersionsPanel
+              workflowId={editor.id}
+              onRestore={(data) => {
+                editor.setNodes(data.nodes as Node[]);
+                editor.setEdges(data.edges as Edge[]);
+                editor.setVariables(data.variables);
+                editor.setHasUnsavedChanges(false);
+                editor.toast.success('Version restored');
+              }}
+              onClose={() => editor.setShowVersions(false)}
+              className="w-80 shrink-0"
+            />
+          ) : editor.showCopilot ? (
+            <Suspense fallback={<WorkflowPanelFallback className="w-96" />}>
+              <WorkflowCopilotPanel
+                workflowName={editor.workflowName}
+                nodes={editor.nodes}
+                edges={editor.edges}
+                availableToolNames={editor.toolNames}
+                onApplyWorkflow={editor.handleApplyWorkflow}
+                onClose={() => editor.setShowCopilot(false)}
+              />
+            </Suspense>
+          ) : null}
+        </div>
+      )}
 
       {editor.showNodeSearch && (
         <NodeSearchPalette
