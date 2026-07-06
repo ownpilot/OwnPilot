@@ -16,6 +16,7 @@ vi.mock('../debug.js', () => ({
   buildRequestDebugInfo: vi.fn(() => ({})),
   buildResponseDebugInfo: vi.fn(() => ({})),
   calculatePayloadBreakdown: vi.fn(() => ({})),
+  isDebugEnabled: vi.fn(() => false),
 }));
 
 vi.mock('../../services/get-log.js', () => ({

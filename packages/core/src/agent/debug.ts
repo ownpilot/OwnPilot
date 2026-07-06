@@ -129,13 +129,26 @@ export interface ToolResultDebugInfo {
 /**
  * Check if verbose debug logging should be enabled
  */
-function shouldLogToConsole(): boolean {
+function checkDebugEnabled(): boolean {
   return (
     process.env.DEBUG_AI_REQUESTS === 'true' ||
     process.env.DEBUG_AGENT === 'true' ||
     process.env.DEBUG_LLM === 'true' ||
     process.env.NODE_ENV === 'development'
   );
+}
+
+function shouldLogToConsole(): boolean {
+  return checkDebugEnabled();
+}
+
+/**
+ * Cheap check — callers use this to skip building debug info objects
+ * when debug logging is not enabled. Reads the environment at call time
+ * so runtime flag changes and tests take effect immediately.
+ */
+export function isDebugEnabled(): boolean {
+  return checkDebugEnabled();
 }
 
 /**
