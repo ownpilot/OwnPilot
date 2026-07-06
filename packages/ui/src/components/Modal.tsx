@@ -11,8 +11,9 @@
  * rather than grow this primitive.
  */
 
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useModalClose } from '../hooks';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const SIZE_CLASSES = {
   sm: 'max-w-sm',
@@ -48,7 +49,9 @@ export function Modal({
   bodyClassName,
   children,
 }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
   const { onBackdropClick } = useModalClose(onClose);
+  useFocusTrap(panelRef, true);
 
   return (
     <div
@@ -56,6 +59,9 @@ export function Modal({
       onClick={onBackdropClick}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
         className={`w-full ${SIZE_CLASSES[size]} bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col`}
       >
         {(title || headerContent) && (
