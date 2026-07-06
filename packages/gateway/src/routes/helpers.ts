@@ -12,8 +12,8 @@ import { getLog } from '../services/log.js';
 
 const log = getLog('Helpers');
 
-// Re-export error codes and log for test access
-export { ERROR_CODES, type ErrorCode, log };
+// Re-export error codes for route consumers.
+export { ERROR_CODES, type ErrorCode };
 
 // Pure helpers live in utils/common.ts so non-route consumers don't have to
 // reach back into the routes/ layer. Re-exported here for backward compat.

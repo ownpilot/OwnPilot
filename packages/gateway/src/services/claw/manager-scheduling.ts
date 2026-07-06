@@ -19,7 +19,7 @@ import { getLog } from '../log.js';
 const log = getLog('ClawManager');
 
 // Scheduling constants
-export const DEFAULT_INTERVAL_MS = 300_000; // 5 min
+const DEFAULT_INTERVAL_MS = 300_000; // 5 min
 
 // Continuous mode adaptive delays
 const CONTINUOUS_MIN_DELAY_MS = 500; // Active: fast loop
@@ -131,7 +131,7 @@ function scheduleInterval(
  * Event mode: subscribe to EventBus events matching the claw's filters.
  * The claw cycles once per matching event (with self-trigger loop guard).
  */
-export function subscribeToEvents(
+function subscribeToEvents(
   clawId: string,
   managed: ManagedClaw,
   executeCycle: ExecuteCycleFn
