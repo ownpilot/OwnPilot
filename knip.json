@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "ignoreBinaries": ["cloudflared", "pg_dump"],
   "workspaces": {
     ".": {
       "entry": ["scripts/*.mjs", "scripts/generate-provider-configs.ts"]

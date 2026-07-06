@@ -55,7 +55,7 @@ class TunnelServiceImpl implements ITunnelService {
   private state: TunnelStatus = { status: 'stopped', url: null, error: null, startedAt: null };
 
   private childProcess: ChildProcess | null = null;
-  private startupResolve: ((url: string) => void) | null = null;
+  private clearStartupListeners: (() => void) | null = null;
 
   configure(config: Partial<TunnelConfig>): void {
     if (config.port !== undefined) this.config.port = config.port;
@@ -117,20 +117,30 @@ class TunnelServiceImpl implements ITunnelService {
       args.push('--hostname', this.config.hostname);
     }
 
-    log.info('Starting cloudflared', { args, port: this.config.port });
+    log.info('Starting cloudflared', {
+      args: password ? args.map((arg) => (arg === `op:${password}` ? 'op:********' : arg)) : args,
+      port: this.config.port,
+    });
 
     return new Promise((resolve, reject) => {
-      this.startupResolve = resolve;
-
       const child = spawn('cloudflared', args, {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
       this.childProcess = child;
 
+      const settleStartup = (settle: () => void): void => {
+        clearTimeout(timeout);
+        this.clearStartupListeners?.();
+        this.clearStartupListeners = null;
+        settle();
+      };
+
       const timeout = setTimeout(() => {
-        this.cleanup();
-        reject(new Error('Cloudflare tunnel startup timed out (30s)'));
+        settleStartup(() => {
+          this.killChildProcess();
+          reject(new Error('Cloudflare tunnel startup timed out (30s)'));
+        });
       }, STARTUP_TIMEOUT_MS);
 
       const onData = (data: Buffer) => {
@@ -143,45 +153,45 @@ class TunnelServiceImpl implements ITunnelService {
           line.includes('spawn cloudflared') ||
           line.includes('not found')
         ) {
-          clearTimeout(timeout);
-          this.cleanup();
-          reject(
-            new Error(
-              'cloudflared binary not found. Install it: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/'
-            )
-          );
+          settleStartup(() => {
+            this.killChildProcess();
+            reject(
+              new Error(
+                'cloudflared binary not found. Install it: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/'
+              )
+            );
+          });
           return;
         }
 
         const match = line.match(TUNNEL_URL_RE);
         if (match) {
-          clearTimeout(timeout);
           const url = match[1]!;
           log.info('Tunnel URL obtained', { url });
-          this.cleanup();
-          resolve(url);
+          settleStartup(() => resolve(url));
         }
       };
 
-      child.stdout?.on('data', onData);
-      child.stderr?.on('data', onData);
+      const onStartupError = (err: Error) => {
+        settleStartup(() => {
+          this.childProcess = null;
+          reject(err);
+        });
+      };
 
-      child.on('error', (err) => {
-        clearTimeout(timeout);
-        this.cleanup();
-        reject(err);
-      });
+      const onStartupExit = (code: number | null) => {
+        settleStartup(() => {
+          this.childProcess = null;
+          reject(
+            new Error(`cloudflared exited with code ${code ?? 0} before tunnel URL was found`)
+          );
+        });
+      };
 
-      child.on('exit', (code) => {
-        // If we already resolved (got the URL), ignore the exit
-        if (!this.startupResolve) return;
-        clearTimeout(timeout);
-        this.cleanup();
-        reject(new Error(`cloudflared exited with code ${code ?? 0} before tunnel URL was found`));
-      });
-
-      // Handle crash after starting
-      child.on('exit', (code) => {
+      const onRuntimeExit = (code: number | null) => {
+        if (this.childProcess === child) {
+          this.childProcess = null;
+        }
         if (this.state.status === 'running') {
           this.state = {
             status: 'error',
@@ -191,31 +201,42 @@ class TunnelServiceImpl implements ITunnelService {
           };
           this.broadcastStatus();
         }
-      });
+      };
+
+      this.clearStartupListeners = () => {
+        child.stdout?.off('data', onData);
+        child.stderr?.off('data', onData);
+        child.off('error', onStartupError);
+        child.off('exit', onStartupExit);
+      };
+
+      child.stdout?.on('data', onData);
+      child.stderr?.on('data', onData);
+      child.once('error', onStartupError);
+      child.once('exit', onStartupExit);
+      child.once('exit', onRuntimeExit);
     });
   }
 
-  private cleanup(): void {
-    if (this.childProcess) {
-      // Remove listeners to prevent double-calling
-      this.childProcess.removeAllListeners('exit');
-      this.childProcess.removeAllListeners('error');
-      this.childProcess = null;
+  private cleanupStartupListeners(): void {
+    this.clearStartupListeners?.();
+    this.clearStartupListeners = null;
+  }
+
+  private killChildProcess(): void {
+    const child = this.childProcess;
+    if (!child) return;
+    this.childProcess = null;
+    try {
+      child.kill('SIGTERM');
+    } catch {
+      /* best effort */
     }
-    this.startupResolve = null;
   }
 
   private async stopProcess(): Promise<void> {
-    this.cleanup();
-
-    if (this.childProcess) {
-      try {
-        this.childProcess.kill('SIGTERM');
-      } catch {
-        /* best effort */
-      }
-      this.childProcess = null;
-    }
+    this.cleanupStartupListeners();
+    this.killChildProcess();
   }
 
   private broadcastStatus(): void {
