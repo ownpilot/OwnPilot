@@ -10,13 +10,10 @@ import {
   Bot,
   MessageSquare,
   GitBranch,
-  Cpu,
   Wifi,
   Mic,
   Chrome,
   Code,
-  Users,
-  BarChart3,
   Lock,
   Network,
   Layers,
@@ -146,16 +143,6 @@ const features = [
     iconColor: 'text-sky-500',
   },
   {
-    icon: Users,
-    title: 'Fleet Command',
-    badge: 'Multi-Worker',
-    badgeVariant: 'purple' as const,
-    description:
-      'FleetManager with 5 worker types: ai-chat, coding-cli, api-call, mcp-bridge, claw. Task dependencies, shared context feedback, cron scheduling, crash recovery.',
-    color: 'from-violet-500/20 to-indigo-500/20',
-    iconColor: 'text-violet-500',
-  },
-  {
     icon: Globe,
     title: 'Connected Apps',
     badge: '1000+ Integrations',
@@ -174,26 +161,6 @@ const features = [
       'Notes, tasks, bookmarks, contacts, calendar, expenses, habits, Pomodoro timer, goals, custom data tables, and encrypted long-term memory with vector search.',
     color: 'from-blue-500/20 to-indigo-500/20',
     iconColor: 'text-blue-500',
-  },
-  {
-    icon: Cpu,
-    title: 'Subagents',
-    badge: 'Parallel',
-    badgeVariant: 'orange' as const,
-    description:
-      'Fire-and-forget parallel task delegation. Spawn lightweight child agents, poll for results, configurable concurrency limits, and nesting depth cap.',
-    color: 'from-amber-500/20 to-orange-500/20',
-    iconColor: 'text-amber-500',
-  },
-  {
-    icon: BarChart3,
-    title: 'Agent Orchestra',
-    badge: 'Fan-out / Race',
-    badgeVariant: 'purple' as const,
-    description:
-      'Multi-agent orchestration with fan-out, race, pipeline, and voting strategies. Real-time WebSocket progress events and 6 LLM-callable orchestra tools.',
-    color: 'from-purple-500/20 to-pink-500/20',
-    iconColor: 'text-purple-500',
   },
   {
     icon: Lock,

@@ -136,8 +136,6 @@ POST /api/v1/config/routing
   "chat":      { "provider": "anthropic", "model": "claude-opus-4-5" },
   "channel":   { "provider": "openai",    "model": "gpt-4o-mini" },
   "pulse":     { "provider": "anthropic", "model": "claude-haiku-3-5" },
-  "subagent":  { "provider": "openai",    "model": "gpt-4o" },
-  "fleet":     { "provider": "groq",      "model": "llama3-70b-8192" },
   "workflow":  { "provider": "openai",    "model": "gpt-4o-mini" }
 }`;
 

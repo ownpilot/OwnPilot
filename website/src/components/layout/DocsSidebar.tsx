@@ -86,7 +86,6 @@ const docsNav: NavItem[] = [
       { title: 'Workflows', href: '/docs/automation/workflows' },
       { title: 'Triggers', href: '/docs/automation/triggers' },
       { title: 'Pulse System', href: '/docs/automation/pulse' },
-      { title: 'Fleet Command', href: '/docs/automation/fleet' },
     ],
   },
   {
