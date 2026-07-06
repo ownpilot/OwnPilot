@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { useInView } from '@/hooks/useInView';
 import { Badge } from '@/components/ui/Badge';
 
 const packages = [
@@ -81,7 +81,7 @@ export function Architecture() {
     <section className="py-24 bg-[var(--color-bg)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={ref} className="text-center max-w-2xl mx-auto mb-16">
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
           >
@@ -95,11 +95,11 @@ export function Architecture() {
               4 packages, single port in production. Gateway serves the bundled UI, REST API,
               WebSocket, and SSE — all on port 8080.
             </p>
-          </motion.div>
+          </div>
         </div>
 
         {/* Architecture diagram — visual banner */}
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.15 }}
@@ -113,12 +113,12 @@ export function Architecture() {
               loading="lazy"
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Package cards */}
         <div className="grid md:grid-cols-2 gap-6">
           {packages.map((pkg, i) => (
-            <motion.div
+            <div
               key={pkg.name}
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -151,12 +151,12 @@ export function Architecture() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Pipeline */}
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.5 }}
@@ -189,7 +189,7 @@ export function Architecture() {
             All messages (web UI, Telegram, WhatsApp, triggers) flow through the same MessageBus
             pipeline.
           </p>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

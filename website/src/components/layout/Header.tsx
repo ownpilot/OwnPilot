@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Github, Menu, X, Star } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -100,41 +99,37 @@ export function Header() {
       </div>
 
       {/* Mobile menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden border-t border-[var(--color-border)] bg-[var(--color-bg)]"
-          >
-            <div className="px-4 py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  className="flex px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)] transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="pt-3 pb-1 flex items-center gap-3">
-                <ThemeToggle />
-                <a
-                  href="https://github.com/ownpilot/ownpilot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)] transition-colors"
-                >
-                  <Github className="w-4 h-4" />
-                  GitHub
-                </a>
-              </div>
+      <div
+        className={`md:hidden overflow-hidden transition-all duration-200 ease-out ${
+          mobileOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-bg)]">
+          <div className="px-4 py-4 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className="flex px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)] transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="pt-3 pb-1 flex items-center gap-3">
+              <ThemeToggle />
+              <a
+                href="https://github.com/ownpilot/ownpilot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-subtle)] transition-colors"
+              >
+                <Github className="w-4 h-4" />
+                GitHub
+              </a>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }

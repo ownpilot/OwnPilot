@@ -121,6 +121,14 @@ export function Layout() {
     <LayoutConfigProvider>
       <HeaderItemsProvider>
         <PinnedItemsProvider>
+          {/* Skip-to-content link — first focusable element for keyboard users */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-bg-secondary dark:focus:bg-dark-bg-secondary focus:text-text-primary dark:focus:text-dark-text-primary focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:text-sm focus:font-medium"
+          >
+            Skip to content
+          </a>
+
           <div className="flex flex-col h-screen bg-bg-primary dark:bg-dark-bg-primary">
             {/* Global Header Bar — 5 zones: Brand | Left | Center | Right | Settings */}
             <header className="relative h-12 flex items-center px-4 border-b border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary shrink-0 z-50">
@@ -237,7 +245,7 @@ export function Layout() {
               {/* Main Content */}
               <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <SecurityBanner />
-                <main className="flex-1 flex flex-col overflow-y-auto min-h-0">
+                <main id="main-content" className="flex-1 flex flex-col overflow-y-auto min-h-0" tabIndex={-1}>
                   <Outlet />
                 </main>
               </div>

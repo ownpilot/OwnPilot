@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { DocsLayout } from '@/components/layout/DocsLayout';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
@@ -273,7 +272,7 @@ export function ChangelogPage() {
 
       <div className="space-y-12">
         {changelog.map((entry, i) => (
-          <motion.div
+          <div
             key={entry.version}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -333,7 +332,7 @@ export function ChangelogPage() {
                 );
               }
             )}
-          </motion.div>
+          </div>
         ))}
       </div>
     </DocsLayout>

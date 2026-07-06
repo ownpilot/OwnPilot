@@ -104,7 +104,7 @@ html.dark body {
   /* Text — gray-20/200/350 (warm neutral grays) */
   --color-dark-text-primary: #f8f8f6;
   --color-dark-text-secondary: #c2c1b6;
-  --color-dark-text-muted: #96948b;
+  --color-dark-text-muted: #a8a69b; /* WCAG AA 4.5:1 on #2c2c2a — was #96948b (4.2:1) */
 
   /* Border — gray-600 at ~20% opacity approximated as solid */
   --color-dark-border: #3a3a38;

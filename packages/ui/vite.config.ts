@@ -2,6 +2,7 @@ import { defineConfig, loadEnv, createLogger } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import type { Plugin } from 'vite';
@@ -73,6 +74,49 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       tailwindcss(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['logo.svg', 'ownpilot-logo.jpeg'],
+        manifest: {
+          name: 'OwnPilot',
+          short_name: 'OwnPilot',
+          description: 'Privacy-first AI Assistant Dashboard',
+          theme_color: '#0f172a',
+          background_color: '#0f172a',
+          display: 'standalone',
+          display_override: ['window-controls-overlay', 'standalone'],
+          start_url: '/',
+          scope: '/',
+          categories: ['productivity', 'ai', 'developer-tools'],
+          icons: [
+            {
+              src: 'logo.svg',
+              sizes: 'any',
+              type: 'image/svg+xml',
+              purpose: 'any maskable',
+            },
+            {
+              src: 'ownpilot-logo.jpeg',
+              sizes: '256x256',
+              type: 'image/jpeg',
+              purpose: 'any',
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,jpeg,png,ico,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^\/api\/v1\/(chat|conversations|models|providers|settings)/,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'api-cache',
+                expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+              },
+            },
+          ],
+        },
+      }),
       cssSizeGuard(),
       ...(enableVisualizer
         ? [

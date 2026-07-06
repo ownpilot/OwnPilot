@@ -1,5 +1,4 @@
 import { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { ArrowRight, Github, Terminal, Shield, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -151,7 +150,7 @@ export function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text */}
           <div className="text-center lg:text-left">
-            <motion.div
+            <div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -161,9 +160,9 @@ export function Hero() {
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                 v0.3.1 — Analytics Dashboard & Tool Aliases
               </Badge>
-            </motion.div>
+            </div>
 
-            <motion.h1
+            <h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
@@ -173,9 +172,9 @@ export function Hero() {
               <span className="text-gradient">Your Data.</span>
               <br />
               <span className="text-[var(--color-text)]">Your Rules.</span>
-            </motion.h1>
+            </h1>
 
-            <motion.p
+            <p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -186,10 +185,10 @@ export function Hero() {
               <strong className="text-[var(--color-text)] font-medium">
                 Self-hosted. Zero data leaks.
               </strong>
-            </motion.p>
+            </p>
 
             {/* Key badges */}
-            <motion.div
+            <div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
@@ -208,10 +207,10 @@ export function Hero() {
                   {text}
                 </span>
               ))}
-            </motion.div>
+            </div>
 
             {/* CTAs */}
-            <motion.div
+            <div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -235,10 +234,10 @@ export function Hero() {
               >
                 Quick Start
               </Button>
-            </motion.div>
+            </div>
 
             {/* Stats */}
-            <motion.div
+            <div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
@@ -252,11 +251,11 @@ export function Hero() {
                   <div className="text-xs text-[var(--color-text-subtle)]">{label}</div>
                 </div>
               ))}
-            </motion.div>
+            </div>
           </div>
 
           {/* Right: Code */}
-          <motion.div
+          <div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -275,7 +274,7 @@ export function Hero() {
             </div>
 
             {/* Floating badges */}
-            <motion.div
+            <div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 0.8 }}
@@ -283,9 +282,9 @@ export function Hero() {
             >
               <div className="text-xs text-[var(--color-text-muted)]">Single port</div>
               <div className="text-sm font-bold text-[hsl(var(--primary))]">:8080</div>
-            </motion.div>
+            </div>
 
-            <motion.div
+            <div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4, delay: 1 }}
@@ -293,13 +292,13 @@ export function Hero() {
             >
               <div className="text-xs text-[var(--color-text-muted)]">Test coverage</div>
               <div className="text-sm font-bold text-emerald-500">26,500+ tests</div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Scroll indicator */}
-      <motion.div
+      <div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 1.2 }}
@@ -307,14 +306,14 @@ export function Hero() {
       >
         <div className="flex flex-col items-center gap-2 text-[var(--color-text-subtle)]">
           <div className="w-5 h-8 rounded-full border border-[var(--color-border)] flex items-start justify-center pt-1.5">
-            <motion.div
+            <div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
               className="w-1 h-1.5 rounded-full bg-[var(--color-text-subtle)]"
             />
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
