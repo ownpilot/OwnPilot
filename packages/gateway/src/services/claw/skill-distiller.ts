@@ -57,7 +57,7 @@ interface DistillResult {
 }
 
 // ---------------------------------------------------------------------------
-// Pure helpers (exported for unit testing)
+// Pure helpers
 // ---------------------------------------------------------------------------
 
 /**
@@ -65,7 +65,7 @@ interface DistillResult {
  * + single hyphens, no leading/trailing hyphen, bounded length. The result is
  * prefixed with `claw-learned-` and capped at 64 chars (the frontmatter limit).
  */
-export function slugifyMission(mission: string): string {
+function slugifyMission(mission: string): string {
   const body = mission
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -82,7 +82,7 @@ function truncate(text: string, max: number): string {
 }
 
 /** Build the system/user prompt pair for distillation. Pure. */
-export function buildDistillMessages(input: {
+function buildDistillMessages(input: {
   mission: string;
   toolSequence: string[];
   report: string;
