@@ -1,47 +1,43 @@
 # OwnPilot Agent Ecosystem — Complete Architecture Guide
 
-> **Status:** Living document — covers all 6 agent concepts, their isolation boundaries, practical use cases, and current gaps.
+> **Status:** Living document — covers all 4 agent concepts, their isolation boundaries, practical use cases, and current gaps.
 > **Related docs:** [AGENTS.md](./AGENTS.md) (core agent class reference), [AUTONOMOUS_AGENTS.md](./AUTONOMOUS_AGENTS.md) (souls), [CODING_AGENTS.md](./CODING_AGENTS.md) (CLI wrappers), [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ---
 
 ## Table of Contents
 
-1. [Overview — The 6 Agent Concepts](#overview--the-6-agent-concepts)
+1. [Overview — The 4 Agent Concepts](#overview--the-4-agent-concepts)
 2. [Concept 1: Personal Assistant](#concept-1-personal-assistant-default-chat-agent)
 3. [Concept 2: Soul Agent (Autonomous)](#concept-2-soul-agent-autonomousscheduled)
 4. [Concept 3: Claw (Mission Runtime)](#concept-3-claw-unified-autonomous-runtime)
 5. [Concept 4: Coding Agent (CLI Wrapper)](#concept-4-coding-agent-external-cli-orchestration)
-6. [Concept 5: Subagent (Task Delegation)](#concept-5-subagent-task-focused-single-shot)
-7. [Concept 6: Fleet Worker (Parallel Queue)](#concept-6-fleet-worker-parallel-task-queue)
-8. [Architecture Hierarchy](#architecture-hierarchy)
-9. [Isolation Mechanisms](#isolation-mechanisms)
-10. [Multi-Agent Coordination](#multi-agent-coordination-creworchestra)
-11. [Decision Matrix — When to Use What](#decision-matrix--when-to-use-what)
-12. [UI Navigation Map](#ui-navigation-map)
-13. [Current Gaps & Proposed Improvements](#current-gaps--proposed-improvements)
-14. [Agent Routing Skill Design](#agent-routing-skill-design)
-15. [Implementation Roadmap](#implementation-roadmap)
+6. [Architecture Hierarchy](#architecture-hierarchy)
+7. [Isolation Mechanisms](#isolation-mechanisms)
+8. [Multi-Agent Coordination](#multi-agent-coordination-crew)
+9. [Decision Matrix — When to Use What](#decision-matrix--when-to-use-what)
+10. [UI Navigation Map](#ui-navigation-map)
+11. [Current Gaps & Proposed Improvements](#current-gaps--proposed-improvements)
+12. [Agent Routing Skill Design](#agent-routing-skill-design)
+13. [Implementation Roadmap](#implementation-roadmap)
+14. [Appendix — File Reference](#appendix--file-reference)
 
 ---
 
-## Overview — The 6 Agent Concepts
+## Overview — The 4 Agent Concepts
 
 OwnPilot is not a single agent — it's an **ecosystem** of agent concepts, each designed for a specific operational pattern. Understanding the differences is critical for both users (choosing the right tool) and developers (extending the system correctly).
 
-| #   | Concept                | Primary File(s)                             | DB Tables                                                         | Trigger Model              |
-| --- | ---------------------- | ------------------------------------------- | ----------------------------------------------------------------- | -------------------------- |
-| 1   | **Personal Assistant** | `agents.ts`, `agent-service.ts`             | `agents`, `agent_messages`                                        | Reactive (user message)    |
-| 2   | **Soul Agent**         | `souls.ts`, `agent-souls`                   | `agent_souls`, `agent_soul_versions`                              | Scheduled (cron heartbeat) |
-| 3   | **Claw**               | `claw-runner.ts`, `claw-manager.ts`         | `claws`, `claw_sessions`, `claw_history`, `claw_audit_log`        | Mission-driven cyclic      |
-| 4   | **Coding Agent**       | `coding-agent-service.ts`                   | `coding_agent_*`                                                  | External CLI spawn         |
-| 5   | **Subagent**           | `subagent-runner.ts`, `subagent-manager.ts` | `subagent_history`                                                | Parent delegation          |
-| 6   | **Fleet Worker**       | `fleet-manager.ts`, `fleet-worker.ts`       | `fleets`, `fleet_sessions`, `fleet_tasks`, `fleet_worker_history` | Task queue + concurrency   |
+| #   | Concept                | Primary File(s)                     | DB Tables                                                  | Trigger Model              |
+| --- | ---------------------- | ----------------------------------- | ---------------------------------------------------------- | -------------------------- |
+| 1   | **Personal Assistant** | `agents.ts`, `agent-service.ts`     | `agents`, `agent_messages`                                 | Reactive (user message)    |
+| 2   | **Soul Agent**         | `souls.ts`, `agent-souls`           | `agent_souls`, `agent_soul_versions`                       | Scheduled (cron heartbeat) |
+| 3   | **Claw**               | `claw-runner.ts`, `claw-manager.ts` | `claws`, `claw_sessions`, `claw_history`, `claw_audit_log` | Mission-driven cyclic      |
+| 4   | **Coding Agent**       | `coding-agent-service.ts`           | `coding_agent_*`                                           | External CLI spawn         |
 
-Plus **two coordination layers** that orchestrate the above:
+Plus one coordination layer:
 
 - **Agent Crews** (`agent_crews`, `agent_crew_members`) — DB-persisted multi-agent teams
-- **Orchestra** (`orchestra/`) — Runtime DAG-based multi-agent execution
 
 ---
 
@@ -446,152 +442,6 @@ Coding Agents are **not AI themselves** — they're **remote-control wrappers** 
 
 ---
 
-## Concept 5: Subagent (Task-Focused, Single-Shot)
-
-> **One task, one execution, one result.**
-
-### What It Is
-
-A lightweight agent spawned to handle a single subtask in parallel with the parent. Runs to completion, returns the result, dies.
-
-### Technical Profile
-
-```typescript
-// subagent_history schema (only history persisted)
-{
-  id: string,
-  parent_id: string,
-  task: string,
-  status: 'running' | 'completed' | 'failed',
-  result: string,
-  tool_calls: object[],
-  started_at: timestamp,
-  finished_at: timestamp
-}
-
-// At runtime (not in DB)
-const subagent = {
-  task: "Research pricing for competitor X",
-  tools: [...parentTools filtered by scope],
-  maxTurns: 10,
-  budgetUsd: 0.50,
-  onComplete: (result) => parent.receive(result)
-}
-```
-
-### Distinguishing Characteristics
-
-- **Single execution** (not cyclic like Claw)
-- **Task-focused prompt** (not mission-focused)
-- **Full result returned** (not just cycle result)
-- **Cancellable** via AbortController
-- **Scoped tool access** from parent
-
-### Practical Scenario — Parallel Research
-
-```
-Personal Assistant receives: "Research the top 5 CRMs for our industry,
-                              compare features and pricing"
-
-Personal Assistant decides to parallelize:
-  spawn_subagent({name: "research-salesforce", task: "Detailed research on Salesforce..."})
-  spawn_subagent({name: "research-hubspot",    task: "Detailed research on HubSpot..."})
-  spawn_subagent({name: "research-pipedrive",  task: "Detailed research on Pipedrive..."})
-  spawn_subagent({name: "research-zoho",       task: "Detailed research on Zoho..."})
-  spawn_subagent({name: "research-monday",     task: "Detailed research on Monday..."})
-
-Each subagent:
-  - Runs in parallel
-  - Uses web_search, fetch_url, write_note tools
-  - Returns structured result
-
-Personal Assistant:
-  - Waits for all 5
-  - Synthesizes into comparison table
-  - Presents to user
-```
-
-### When to Use
-
-- Parallel research/analysis on independent pieces
-- Delegating a specific subtask while continuing other work
-- Quick one-off task (too small for a Claw, too immediate for a Soul)
-
----
-
-## Concept 6: Fleet Worker (Parallel Task Queue)
-
-> **Swarm workers processing a task queue with concurrency control.**
-
-### What It Is
-
-A coordinated group of workers that pull tasks from a queue, execute them in parallel, and share context via `fleet_sessions.shared_context`.
-
-### Technical Profile
-
-```typescript
-// fleets schema
-{
-  id: string,
-  name: string,
-  mission: string,
-  workers: FleetWorkerConfig[],  // Worker types + count
-  schedule_type: 'continuous' | 'interval' | 'cron' | 'event' | 'on-demand',
-  cycles_per_hour_limit: number,
-  budget_cap_usd: number,
-  max_concurrent: number         // Default 10, max 50
-}
-
-// Worker types
-type WorkerType =
-  | 'ai-chat'      // Full Agent with 250+ tools
-  | 'coding-cli'   // Spawns claude-code/codex/gemini
-  | 'api-call'     // Direct LLM API (lightweight, no tools)
-  | 'mcp-bridge'   // MCP server tool calls
-  | 'claw'         // Spawns a single-shot Claw
-```
-
-### Task Queue Mechanics
-
-- Tasks added to `fleet_tasks` table
-- Workers pull tasks (FIFO with priority)
-- Tasks can have `depends_on: [task_ids]` — DAG execution
-- `failDependentTasks()` cascades failures
-- Shared context in `fleet_sessions.shared_context` (jsonb)
-
-### Practical Scenario — Bulk Product Analysis
-
-```
-Fleet: "Product Analyzer"
-Mission: "Analyze 500 product pages and extract structured data"
-Workers: 10x ai-chat worker (with web_search + fetch_url tools)
-Schedule: on-demand
-Max concurrent: 10
-Budget: $50/day
-
-Task queue (populated via add_fleet_tasks):
-  - Analyze https://example.com/p1 → extract {price, features, reviews}
-  - Analyze https://example.com/p2 → ...
-  ...
-  - Analyze https://example.com/p500 → ...
-
-Execution:
-  → 10 workers pull tasks simultaneously
-  → Each completes in ~30 seconds
-  → Shared context accumulates categories/tags
-  → Failed tasks retry up to 3x
-  → Results stored in fleet_tasks.result (jsonb)
-```
-
-### When to Use
-
-- Many similar tasks (embarrassingly parallel)
-- Need concurrency (10-50 simultaneous workers)
-- Tasks have dependencies (DAG)
-- Shared state needed across workers
-
----
-
 ## Architecture Hierarchy
 
 ```
@@ -599,18 +449,14 @@ Execution:
 │  USER                                                            │
 │   └── Personal Assistant (GLOBAL SCOPE, reactive)               │
 │        │   Sees everything, can do anything                     │
-│        ├── spawn_subagent("X research")         ← One-off       │
 │        ├── create_claw("Finish mission Y")       ← Long-running │
-│        ├── create_autonomous_agent("Every morning")  ← MISSING! │
+│        ├── create_autonomous_agent("Every morning")  ← Soul     │
 │        ├── start_coding_session("Write code Z")  ← External CLI │
-│        ├── create_orchestra(plan)                ← Multi-step   │
-│        └── start_fleet(tasks)                    ← Parallel     │
+│        └── Crews                                 ← Multi-agent   │
 │                                                                  │
 │  Agents can spawn other agents (hierarchical):                  │
 │        Claw ──→ Coding Agent (for code tasks)                   │
 │        Claw ──→ Sub-Claw (MAX_DEPTH=3)                          │
-│        Fleet ──→ Worker (ai-chat/coding-cli/claw/api/mcp)       │
-│        Soul ──→ spawn_subagent (for delegated research)         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -624,14 +470,12 @@ Execution:
 | Soul Agent         | `workspace_id` + `skillAccess` | `agent_souls.workspace_id` | Soul's `skillAccess` list    |
 | Claw               | `workspace_id` + `.claw/` dir  | Dedicated workspace        | `allowed_tools` + claw tools |
 | Coding Agent       | CWD + sanitized env            | User-specified path        | Attached skills only         |
-| Subagent           | Parent's delegation            | Parent workspace           | Scoped by parent             |
-| Fleet Worker       | Fleet session context          | Fleet workspace            | Fleet task type limits       |
 
 **Environment sanitization (Coding Agents):** OwnPilot's own secrets (`POSTGRES_*`, session tokens, internal API keys) are stripped from the child process environment. Only the explicit provider API key + user-defined vars pass through.
 
 ---
 
-## Multi-Agent Coordination (Crew/Orchestra)
+## Multi-Agent Coordination (Crew)
 
 ### Agent Crews
 
@@ -655,30 +499,6 @@ Database-persisted teams for long-term multi-agent coordination.
   agent_id: string,
   role: 'researcher' | 'designer' | 'coder' | 'reviewer' | 'tester',
   order: number
-}
-```
-
-### Orchestra (Runtime Execution)
-
-Runtime-only multi-agent execution engine for ad-hoc plans.
-
-```typescript
-type OrchestraStrategy = 'sequential' | 'parallel' | 'dag';
-
-interface AgentTask {
-  id: string;
-  agentName: string; // Must match agents.name
-  input: string;
-  context?: Record<string, unknown>;
-  dependsOn?: string[]; // DAG edges
-  timeout?: number;
-  optional?: boolean; // If true, failure doesn't block pipeline
-}
-
-interface OrchestraPlan {
-  strategy: OrchestraStrategy;
-  tasks: AgentTask[];
-  providerRouting?: Record<string, { provider: string; model: string }>;
 }
 ```
 
@@ -727,9 +547,7 @@ Execution flow:
 | "Monitor / watch / keep an eye on..."          | **Claw** (continuous/interval) |
 | "Finish this mission / do X until done"        | **Claw** (single-shot)         |
 | "Write / refactor / fix code"                  | **Coding Agent**               |
-| "Quickly research X and report back"           | **Subagent**                   |
-| "Process 100 items / batch analyze..."         | **Fleet**                      |
-| "Multi-step feature development"               | **Orchestra / Crew**           |
+| "Multi-step feature development"               | **Crew**                       |
 
 ### By Technical Pattern
 
@@ -739,9 +557,7 @@ Execution flow:
 | Proactive + scheduled + persona       | Soul                              |
 | Proactive + mission-driven + stateful | Claw                              |
 | External tool wrapping                | Coding Agent                      |
-| Task decomposition                    | Subagent                          |
-| Parallel batch                        | Fleet                             |
-| Multi-agent pipeline                  | Orchestra / Crew                  |
+| Multi-agent pipeline                  | Crew                              |
 
 ---
 
@@ -764,13 +580,11 @@ SYSTEM
 EXPERIMENTAL
   Claws           — Claw runtime dashboard (8-tab mgmt panel)
   Coding Agents   — CLI coding agent sessions (xterm.js)
-  Orchestration   — Multi-agent crews and orchestra plans
+  Orchestration   — Multi-agent crews
 
 SETTINGS
   Coding Agents   — CLI provider configuration (API keys, defaults)
 ```
-
-**Note:** Fleet Command has no UI page yet — it's backend-only. Personal Assistant can create/manage fleets via tool calls.
 
 ---
 
@@ -785,20 +599,16 @@ SETTINGS
 | Tool                      | Status      | Description Keywords                                                     |
 | ------------------------- | ----------- | ------------------------------------------------------------------------ |
 | `create_claw`             | Exists      | "continuous/interval/event/single-shot", "monitoring", "periodic checks" |
-| `create_fleet`            | Exists      | "parallel", "task queue", "workers"                                      |
-| `spawn_subagent`          | Exists      | "delegate", "parallel research", "single subtask"                        |
-| `create_autonomous_agent` | **MISSING** | —                                                                        |
+| `create_autonomous_agent` | **MISSING** | — (should wrap existing `/api/v1/souls/*` endpoints)                     |
 | `create_soul`             | **MISSING** | —                                                                        |
 
 #### Why This Matters
 
 When user says **"create an agent that checks Product Hunt every morning at 8am and sends me a brief"**:
 
-The AI sees only 3 agent-creation tools and chooses the **closest fit**:
+The AI sees limited agent-creation tools and chooses the **closest fit**:
 
 1. **Most likely:** `create_claw` with `mode='interval'`, `interval_ms=86400000` — works but loses Soul features
-2. **Wrong:** `create_fleet` — suggests parallel batch, not right pattern
-3. **Insufficient:** `spawn_subagent` — runs once, not scheduled
 
 #### What's Lost Without the Soul Tool
 
@@ -826,9 +636,8 @@ const createAutonomousAgentDef: ToolDefinition = {
   - An agent that should PERSIST across sessions with memory/learning
 
   DO NOT USE for:
-  - One-off tasks → use spawn_subagent
-  - Long-running single mission → use create_claw
-  - Parallel batch work → use create_fleet`,
+  - One-off tasks → doesn't fit Soul model
+  - Long-running single mission → use create_claw`,
 
   parameters: {
     type: 'object',
@@ -906,8 +715,8 @@ Even with all creation tools present, the AI relies on **tool descriptions alone
 **Example edge cases where AI gets confused:**
 
 - "Agent that monitors my email every 5 minutes" — Soul (scheduled) or Claw (continuous)?
-- "Daily code review of new commits" — Soul or Orchestra?
-- "Run this query once" — Subagent or direct tool call?
+- "Daily code review of new commits" — Soul or Claw?
+- "Run this query once" — direct tool call or single-shot Claw?
 
 **Proposed fix:** Agent Routing Skill (next section).
 
@@ -957,25 +766,22 @@ Ask yourself:
 
 #### ONE-OFF
 
-- Small + need result fast → `spawn_subagent`
+- Small + need result fast → direct tool call or single-shot Claw
 - Large + until complete → `create_claw(mode='single-shot')`
-- Many parallel items → `create_fleet(scheduleType='on-demand')`
 - Code writing needed → `start_coding_session`
 
 #### RECURRING + SCHEDULED
 
 - Identity/persona important → `create_autonomous_agent` (Soul)
 - Just monitoring, no persona → `create_claw(mode='interval')`
-- Batch cyclic work → `create_fleet(scheduleType='interval')`
 
 #### RECURRING + EVENT-DRIVEN
 
 - Single event handler → `create_claw(mode='event')`
-- Multiple event listeners → `create_fleet(scheduleType='event')`
 
 ### Q2: Multi-step with specialists?
 
-If 3+ different expertise areas needed → `create_orchestra` (DAG plan)
+If 3+ different expertise areas needed → Crew (DAG plan)
 
 ## Step 3: Extract Parameters
 
@@ -986,8 +792,6 @@ If 3+ different expertise areas needed → `create_orchestra` (DAG plan)
 | "every morning/day/hour", "daily", "hourly" | **Soul**                     |
 | "continuously monitor", "watch over"        | **Claw continuous/interval** |
 | "until done", "finish", "complete"          | **Claw single-shot**         |
-| "all in parallel", "batch process"          | **Fleet**                    |
-| "quickly research", "look up X"             | **Subagent**                 |
 | "write code", "refactor", "run tests"       | **Coding Agent**             |
 | "[persona name]" with personality           | **Soul** (identity field)    |
 
@@ -997,7 +801,6 @@ If user mentions "cheap", "limit spending", "budget":
 
 - Soul → add `autonomy.dailyBudget`
 - Claw → add `limits.max_cost_usd`
-- Fleet → add `budget_cap_usd`
 
 ### Cron Translation
 
@@ -1062,26 +865,28 @@ skillAccess: ['web_search', 'fetch_url', 'add_note', 'send_notification']
 ### Example 2
 **User:** "Bu dosyadaki bug'ları bul"
 
-**Analysis:** One-off + small + fast result → Subagent
+**Analysis:** One-off + small + fast result → direct tool call or single-shot Claw
 
 **Action:**
 ```
 
-spawn_subagent({
+create_claw({
 name: "bug-finder",
-task: "Analyze the specified file for bugs, return structured list"
+mode: "single-shot",
+mission: "Analyze the specified file for bugs, return structured list"
 })
 
-```
-
 ### Example 3
+
 **User:** "Server'ları 5 dakikada bir monitor et, 3 hata olunca WhatsApp"
 
 **Analysis:**
+
 - Recurring (5min) — but NO persona needed
 - Just monitoring → Claw interval
 
 **Action:**
+
 ```
 
 create_claw({
@@ -1102,19 +907,19 @@ stop_condition: null // runs forever
 Add a compact "## Agent Creation Routing" section to `BASE_SYSTEM_PROMPT`:
 
 ```
+
 ## Agent Creation Routing
 
 When user requests agent/task creation, pick the right tool:
+
 - SCHEDULED + PERSONA → create_autonomous_agent (Soul)
 - LONG MISSION → create_claw
-- ONE-OFF TASK → spawn_subagent
-- PARALLEL BATCH → create_fleet
 - CODE WRITING → start_coding_session
-- MULTI-STEP PIPELINE → create_orchestra
+- MULTI-STEP PIPELINE → Crew
 
 Keywords: "every morning/daily/hourly" → Soul | "monitor" → Claw |
-"until done" → Claw single-shot | "in parallel" → Fleet |
-"quickly research" → Subagent | "write code" → Coding Agent
+"until done" → Claw single-shot | "write code" → Coding Agent
+
 ```
 
 **Pros:** Always active, zero latency, consistent
@@ -1143,7 +948,9 @@ Install `agent-router` as a skill. AI calls `skill.agent-router.classify(userReq
 **Files to create:**
 
 ```
+
 packages/gateway/src/tools/soul-management-tools.ts
+
 ```
 
 **Tool definitions:**
@@ -1165,17 +972,21 @@ packages/gateway/src/tools/soul-management-tools.ts
 **Files to modify:**
 
 ```
+
 packages/gateway/src/routes/agent-service.ts
-  → Import SOUL_MANAGEMENT_TOOLS
-  → Add to chatStandardToolDefs array
+→ Import SOUL_MANAGEMENT_TOOLS
+→ Add to chatStandardToolDefs array
+
 ```
 
 **Tests:**
 
 ```
+
 packages/gateway/src/tools/soul-management-tools.test.ts
-  → Test each tool creates valid soul via API
-  → Test error cases (invalid cron, duplicate name)
+→ Test each tool creates valid soul via API
+→ Test error cases (invalid cron, duplicate name)
+
 ```
 
 ### Phase 2: Agent Router Skill (1 hour)
@@ -1187,18 +998,22 @@ packages/gateway/src/tools/soul-management-tools.test.ts
 **Files to create:**
 
 ```
+
 packages/gateway/src/routes/agent-prompt.ts
-  → Add "## Agent Creation Routing" section to BASE_SYSTEM_PROMPT
+→ Add "## Agent Creation Routing" section to BASE_SYSTEM_PROMPT
 
 ~/.claude/skills/agent-router/SKILL.md (user-installable skill)
-  → Detailed decision tree, keyword mapping, examples
+→ Detailed decision tree, keyword mapping, examples
+
 ```
 
 **Files to modify:**
 
 ```
+
 docs/AGENTS.md
-  → Add "Agent Routing" section with decision tree
+→ Add "Agent Routing" section with decision tree
+
 ```
 
 ### Phase 3: UI Integration (optional, 2 hours)
@@ -1208,22 +1023,23 @@ docs/AGENTS.md
 **Example UX:**
 
 ```
+
 User: "Sabah 8'de product hunt baksın"
-AI:   "I'm creating an Autonomous Agent (Soul) because you specified
-       a recurring morning schedule. Here's the config:
-       - Identity: ProductHunt Radar 🔍
-       - Heartbeat: 08:00 daily
-       - Budget: $0.50/day
-       Create?" [Yes] [Modify] [Use Claw instead]
+AI: "I'm creating an Autonomous Agent (Soul) because you specified
+a recurring morning schedule. Here's the config: - Identity: ProductHunt Radar 🔍 - Heartbeat: 08:00 daily - Budget: $0.50/day
+Create?" [Yes] [Modify] [Use Claw instead]
+
 ```
 
 **Files to modify:**
 
 ```
+
 packages/ui/src/components/AgentCreationConfirmation.tsx (NEW)
 packages/ui/src/pages/ChatPage.tsx
-  → Handle agent_creation_intent event
-```
+→ Handle agent_creation_intent event
+
+````
 
 ### Phase 4: Testing & Iteration (ongoing)
 
@@ -1256,7 +1072,7 @@ During this analysis, a critical config bug was discovered and fixed in `package
 fetch(`${baseUrl}/chat/completions`)
 → https://api.minimax.io/anthropic/v1/chat/completions
 → 404 Not Found (Anthropic endpoint expects /v1/messages)
-```
+````
 
 **Fix:**
 
@@ -1286,7 +1102,7 @@ packages/core/src/agent/
 ├── prompt-composer.ts          # Dynamic system prompt builder
 ├── memory-injector.ts          # Memory injection into prompts
 ├── providers/                  # Multi-provider support
-└── fleet/                      # Fleet types
+└── types/                      # Agent types
 ```
 
 ### Gateway Agent Files
@@ -1295,36 +1111,25 @@ packages/core/src/agent/
 packages/gateway/src/
 ├── assistant/orchestrator.ts   # buildEnhancedSystemPrompt (memories/goals/autonomy)
 ├── services/
-│   ├── claw-runner.ts          # Claw execution
-│   ├── claw-manager.ts         # Claw lifecycle
-│   ├── fleet-manager.ts        # Fleet scheduling
-│   ├── fleet-worker.ts         # Fleet worker execution
-│   ├── subagent-runner.ts      # Subagent execution
-│   ├── subagent-manager.ts     # Subagent lifecycle
+│   ├── claw/                   # Claw runtime (runner, manager, service)
 │   ├── coding-agent-service.ts # CLI orchestration
-│   ├── coding-agent-session.ts # PTY + child_process
+│   ├── coding-agent-sessions.ts# PTY + child_process
 │   └── middleware/
 │       └── context-injection.ts # Per-request prompt injection
 ├── routes/
-│   ├── agent-service.ts        # Agent CRUD + chat
+│   ├── agents/                 # Agent CRUD + chat
 │   ├── agent-prompt.ts         # BASE_SYSTEM_PROMPT, CLI_SYSTEM_PROMPT
-│   ├── souls.ts                # Soul CRUD REST API
-│   ├── souls-agent-routes.ts   # Soul agent operations
-│   ├── souls-deploy.ts         # Soul deployment
+│   ├── souls/                  # Soul CRUD REST API
 │   ├── claws.ts                # Claw CRUD REST API
-│   ├── fleets.ts               # Fleet CRUD REST API
-│   ├── subagents.ts            # Subagent REST API
 │   ├── coding-agents.ts        # Coding agent sessions
 │   └── crews.ts                # Agent crew CRUD
 └── tools/
     ├── claw-tools.ts                 # 16 claw runtime tools
     ├── claw-management-tools.ts      # 7 claw CRUD tools (create_claw here)
-    ├── fleet-tools.ts                # Fleet CRUD tools (create_fleet here)
-    ├── subagent-tools.ts             # spawn_subagent
     └── soul-management-tools.ts      # MISSING — needs to be created
 ```
 
 ---
 
-_Last updated: 2026-04-14_
+_Last updated: 2026-07-06_
 _Authors: OwnPilot team + collaborative analysis session_

@@ -1,7 +1,7 @@
 # OwnPilot Service Catalog
 
-> **91 services** in `packages/gateway/src/services/` + 7 workflow + 7 middleware
-> Last updated: 2026-03-15 (v0.2.1)
+> **85+ services** in `packages/gateway/src/services/` + workflow + middleware
+> Last updated: 2026-07-06 (v0.8.3)
 
 ## How to Read This
 
@@ -51,31 +51,7 @@ Quality ratings:
 
 ---
 
-## 3. Subagent System
-
-| Service            | Lines | Responsibility                                                                                                      |
-| ------------------ | ----- | ------------------------------------------------------------------------------------------------------------------- |
-| `subagent-manager` | 455   | Manages subagent sessions: spawn, cancel, track, cleanup. Handles background execution with event emission.         |
-| `subagent-runner`  | 269   | Single-task subagent execution with cancellation support via AbortController. Uses shared `executeAgentPipeline()`. |
-| `subagent-service` | 82    | Thin facade combining SubagentManager (sessions) + SubagentRunner (execution).                                      |
-
-**Quality**: OK. Runner REFACTORED to use shared pipeline.
-
----
-
-## 4. Fleet Command
-
-| Service         | Lines | Responsibility                                                                                                                           |
-| --------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `fleet-manager` | 747   | Multi-worker task orchestration: task queue, dependency DAG, worker assignment, shared context, crash recovery, cron scheduling.         |
-| `fleet-worker`  | 491   | 4-type task executor: `ai-chat` (full Agent), `coding-cli` (orchestration), `api-call` (direct provider), `mcp-bridge` (MCP tool calls). |
-| `fleet-service` | 239   | Gateway facade for Fleet Command. Session CRUD + task management API.                                                                    |
-
-**Quality**: OK. `ai-chat` executor REFACTORED to use shared pipeline.
-
----
-
-## 5. Coding Agents
+## 3. Coding Agents
 
 | Service                     | Lines | Responsibility                                                                                                                      |
 | --------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -89,17 +65,16 @@ Quality ratings:
 
 ---
 
-## 6. Soul Agents & Orchestra
+## 4. Soul Agents & Heartbeat
 
-| Service                  | Lines | Responsibility                                                                                                     |
-| ------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------ |
-| `soul-heartbeat-service` | 432   | Bridge core HeartbeatRunner to gateway repos. Crew context injection, tool filtering, agent engine factory.        |
-| `heartbeat-service`      | 339   | Heartbeat CRUD + schedule management (NL-to-cron). Trigger synchronization.                                        |
-| `heartbeat-parser`       | 338   | Natural language schedule parsing: "every weekday at 9am" → cron expression.                                       |
-| `heartbeat-context`      | 37    | AsyncLocalStorage for threading soul agentId through tool calls during heartbeat cycles.                           |
-| `orchestra-engine`       | 590   | Multi-agent plan execution: sequential, parallel, DAG strategies. Spawns subagents per task, manages dependencies. |
+| Service                  | Lines | Responsibility                                                                                              |
+| ------------------------ | ----- | ----------------------------------------------------------------------------------------------------------- |
+| `soul-heartbeat-service` | 432   | Bridge core HeartbeatRunner to gateway repos. Crew context injection, tool filtering, agent engine factory. |
+| `heartbeat-service`      | 339   | Heartbeat CRUD + schedule management (NL-to-cron). Trigger synchronization.                                 |
+| `heartbeat-parser`       | 338   | Natural language schedule parsing: "every weekday at 9am" → cron expression.                                |
+| `heartbeat-context`      | 37    | AsyncLocalStorage for threading soul agentId through tool calls during heartbeat cycles.                    |
 
-**Quality**: OK. Well-structured — strategies are clean private methods.
+**Quality**: OK. Well-structured.
 
 ---
 
@@ -167,7 +142,7 @@ Quality ratings:
 
 ---
 
-## 11. MCP (Model Context Protocol)
+## 9. MCP (Model Context Protocol)
 
 | Service              | Lines | Responsibility                                                                                               |
 | -------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
@@ -195,7 +170,7 @@ Quality ratings:
 
 ---
 
-## 13. Edge/IoT
+## 11. Edge/IoT
 
 | Service            | Lines | Responsibility                                                              |
 | ------------------ | ----- | --------------------------------------------------------------------------- |
@@ -254,7 +229,7 @@ Quality ratings:
 
 ---
 
-## 17. Workflow Engine (`services/workflow/`)
+## 15. Workflow Engine (`services/workflow/`)
 
 | Service             | Lines | Responsibility                                                                                                                                   |
 | ------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -269,7 +244,7 @@ Quality ratings:
 
 ---
 
-## 18. Middleware (`services/middleware/`)
+## 16. Middleware (`services/middleware/`)
 
 | Service                | Lines | Responsibility                                                                                       |
 | ---------------------- | ----- | ---------------------------------------------------------------------------------------------------- |
@@ -288,7 +263,7 @@ Quality ratings:
 
 | Metric                            | Value                               |
 | --------------------------------- | ----------------------------------- |
-| Total service files               | 91 (+ 7 workflow + 7 middleware)    |
+| Total service files               | 85+ (+ workflow + middleware)       |
 | Total lines (services only)       | ~30,000                             |
 | Largest service                   | `coding-agent-sessions` (924 lines) |
 | Smallest service                  | `workflow-service` barrel (6 lines) |

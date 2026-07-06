@@ -75,14 +75,12 @@ Error responses:
 35. [Coding Agents](#35-coding-agents)
 36. [CLI Providers](#36-cli-providers)
 37. [Model Routing](#37-model-routing)
-38. [Orchestra](#38-orchestra)
-39. [Artifacts](#39-artifacts)
-40. [Voice](#40-voice)
-41. [Browser](#41-browser)
-42. [Bridges (UCP)](#42-bridges-ucp)
-43. [Skills](#43-skills)
-44. [Edge Devices](#44-edge-devices)
-45. [Subagents](#45-subagents)
+38. [Artifacts](#38-artifacts)
+39. [Voice](#39-voice)
+40. [Browser](#40-browser)
+41. [Bridges (UCP)](#41-bridges-ucp)
+42. [Skills](#42-skills)
+43. [Edge Devices](#43-edge-devices)
 
 ---
 
@@ -115,7 +113,7 @@ Returns overall system health including core module, database connection, and Do
   "success": true,
   "data": {
     "status": "healthy | degraded | unhealthy",
-    "version": "1.0.0",
+    "version": "0.8.3",
     "uptime": 3600.5,
     "checks": [
       { "name": "core", "status": "pass", "message": "Core module loaded" },
@@ -2202,29 +2200,11 @@ Returns routing configuration and resolved provider/model for each process.
 }
 ```
 
-Valid process names: `chat`, `telegram`, `pulse`, `subagent`.
+Valid process names: `chat`, `telegram`, `pulse`.
 
 ---
 
-## 38. Orchestra
-
-**Mount:** `/api/v1/orchestra`
-**Source:** `packages/gateway/src/routes/orchestra.ts`
-
-Multi-agent orchestration engine. Create orchestra sessions with different strategies (fan-out, race, pipeline, voting) to coordinate multiple AI agents.
-
-### Endpoints
-
-| Method | Path          | Description                       |
-| ------ | ------------- | --------------------------------- |
-| `GET`  | `/`           | List orchestra sessions           |
-| `POST` | `/`           | Create and run an orchestra       |
-| `GET`  | `/:id`        | Get orchestra session details     |
-| `GET`  | `/:id/result` | Get the final result of a session |
-
----
-
-## 39. Artifacts
+## 38. Artifacts
 
 **Mount:** `/api/v1/artifacts`
 **Source:** `packages/gateway/src/routes/artifacts.ts`
@@ -2263,7 +2243,7 @@ and local `whisper.cpp` + Piper through `audio_service.provider_type = local`.
 
 ---
 
-## 41. Browser
+## 40. Browser
 
 **Mount:** `/api/v1/browser`
 **Source:** `packages/gateway/src/routes/browser.ts`
@@ -2401,22 +2381,3 @@ Send a command to a device via MQTT.
   }
 }
 ```
-
----
-
-## 45. Subagents
-
-**Mount:** `/api/v1/subagents`
-**Source:** `packages/gateway/src/routes/subagents.ts`
-
-Ephemeral child agents for parallel task delegation.
-
-### Endpoints
-
-| Method | Path          | Description                          |
-| ------ | ------------- | ------------------------------------ |
-| `POST` | `/spawn`      | Spawn a new subagent                 |
-| `GET`  | `/`           | List subagents for a session         |
-| `GET`  | `/:id`        | Get subagent status and result       |
-| `POST` | `/:id/cancel` | Cancel a running subagent            |
-| `GET`  | `/history`    | Get completed subagent execution log |

@@ -1,6 +1,6 @@
 # OwnPilot Tool System
 
-Comprehensive reference for the OwnPilot tool architecture, all 190+ built-in tools, the registration lifecycle, execution model, and extensibility system.
+Comprehensive reference for the OwnPilot tool architecture, all 250+ built-in tools, the registration lifecycle, execution model, and extensibility system.
 
 ---
 
@@ -630,7 +630,7 @@ The `applyToolLimits(toolName, args)` function is called in the `use_tool` proxy
 
 ## Tool Categories Reference
 
-All 24 categories and every tool within them. Each category section lists the tools, their parameters, and whether they have built-in executors or are definition-only.
+All 31 categories and every tool within them. Each category section lists the tools, their parameters, and whether they have built-in executors or are definition-only.
 
 ---
 

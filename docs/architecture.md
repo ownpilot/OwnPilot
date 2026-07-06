@@ -30,8 +30,8 @@
 21. [API Routes](#21-api-routes)
 22. [Security Architecture](#22-security-architecture)
 23. [Key Patterns & Conventions](#23-key-patterns--conventions)
-24. [Additional Subsystems](#23a-additional-subsystems) — MCP, Coding Agents, Browser, Voice, Composio, Pulse, Tunnel, Pairing, Notifications, Security Scanner, Job Queue, Retention, Metrics, Provider Health
-25. [Security Gaps Analysis (Audit)](#24-security-gaps-analysis-external-audit--2026-05-07)
+24. [Additional Subsystems](#24-additional-subsystems) — MCP, Coding Agents, Browser, Voice, Composio, Pulse, Tunnel, Pairing, Notifications, Security Scanner, Job Queue, Retention, Metrics, Provider Health
+25. [Security Gaps Analysis (Audit)](#25-security-gaps-analysis-external-audit--2026-05-07)
 
 ---
 
@@ -1768,7 +1768,7 @@ log.warn('message', { error: err });
 
 ---
 
-## 23.A Additional Subsystems
+## 24. Additional Subsystems
 
 Beyond the named systems above, the gateway hosts several first-class subsystems
 that share the same routing/service/repository pattern but don't have a dedicated
@@ -1905,7 +1905,7 @@ config validation             — config/validation.ts fail-fast at boot. See 24
 
 ---
 
-## 24. Security Gaps Analysis (External Audit — 2026-05-07)
+## 25. Security Gaps Analysis (External Audit — 2026-05-07)
 
 > The following issues were identified by an external architecture audit. Each item is tracked with severity, current state, and recommended resolution.
 
