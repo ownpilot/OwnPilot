@@ -70,10 +70,6 @@ export function ArchitecturePage() {
           loop
         </li>
         <li>
-          <code>agent/orchestra/</code> — Multi-agent orchestration (fan-out, race, pipeline,
-          voting)
-        </li>
-        <li>
           <code>agent/providers/</code> — Provider implementations (OpenAI, Anthropic, Google,
           Zhipu, 8 aggregators)
         </li>

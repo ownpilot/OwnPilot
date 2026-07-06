@@ -57,16 +57,6 @@ export function AgentsPage() {
             <td>Unified autonomous runtime with .claw/ directives</td>
             <td>Continuous / interval / event / single-shot</td>
           </tr>
-          <tr>
-            <td>Subagent</td>
-            <td>Lightweight fire-and-forget child agent</td>
-            <td>Spawned by parent</td>
-          </tr>
-          <tr>
-            <td>Fleet Worker</td>
-            <td>Task-specific worker in a fleet</td>
-            <td>Task queue / cron</td>
-          </tr>
         </tbody>
       </table>
 
@@ -145,58 +135,6 @@ export function AgentsPage() {
         <li>Auto-fail after 5 consecutive errors</li>
         <li>Audit trail: full history with 90-day retention</li>
         <li>Budget tracking: auto-stop when budget exceeded</li>
-      </ul>
-
-      <h2>Subagents</h2>
-      <p>
-        Chat and claw agents can spawn subagents for parallel task execution. The fire-and-forget
-        model lets the parent agent continue working while subagents run concurrently.
-      </p>
-
-      <h3>LLM-callable tools</h3>
-      <ul>
-        <li>
-          <code>spawn_subagent</code> — Create and start a subagent
-        </li>
-        <li>
-          <code>check_subagent</code> — Poll completion status
-        </li>
-        <li>
-          <code>get_subagent_result</code> — Retrieve final output
-        </li>
-        <li>
-          <code>cancel_subagent</code> — Abort a running subagent
-        </li>
-        <li>
-          <code>list_subagents</code> — Show active subagents
-        </li>
-      </ul>
-
-      <h3>Limits</h3>
-      <ul>
-        <li>Concurrent subagents: max 5 (configurable)</li>
-        <li>Total spawn limit: max 20 per session</li>
-        <li>Nesting depth: max 2 levels (subagent cannot spawn subagents)</li>
-      </ul>
-
-      <h2>Agent Orchestra</h2>
-      <p>
-        The orchestra system allows running multiple agents in parallel with different coordination
-        strategies:
-      </p>
-      <ul>
-        <li>
-          <strong>Fan-out</strong> — All agents work on the same task; results are merged
-        </li>
-        <li>
-          <strong>Race</strong> — First agent to complete wins; others are cancelled
-        </li>
-        <li>
-          <strong>Pipeline</strong> — Agents run sequentially, passing output forward
-        </li>
-        <li>
-          <strong>Voting</strong> — Multiple agents vote on the best answer
-        </li>
       </ul>
 
       <h2>Autonomy Levels</h2>
