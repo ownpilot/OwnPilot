@@ -103,6 +103,13 @@ function findByText(container: HTMLElement, text: string): HTMLElement | null {
   return null;
 }
 
+async function flushAsyncUpdates() {
+  await act(async () => {
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 // ─── Default Data ──────────────────────────────────────────────────────────
 
 const defaultStats = {
@@ -194,16 +201,18 @@ describe('AgenticPage', () => {
 
   // ── Render & Loading ──
 
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     const container = render(<AgenticPage />);
     expect(container).toBeDefined();
     expect(findByText(container, 'Agentic Command Center')).toBeTruthy();
+    await flushAsyncUpdates();
   });
 
-  it('calls list and stats on mount', () => {
+  it('calls list and stats on mount', async () => {
     render(<AgenticPage />);
     expect(mockList).toHaveBeenCalledTimes(1);
     expect(mockStats).toHaveBeenCalledTimes(1);
+    await flushAsyncUpdates();
   });
 
   it('renders stats cards after loading', async () => {
@@ -253,11 +262,12 @@ describe('AgenticPage', () => {
 
   // ── Command Bar ──
 
-  it('shows collapsed command bar by default', () => {
+  it('shows collapsed command bar by default', async () => {
     const container = render(<AgenticPage />);
     expect(findByText(container, 'Execute Agentic Task')).toBeTruthy();
     // Form should be hidden
     expect(container.querySelector('form')).toBeNull();
+    await flushAsyncUpdates();
   });
 
   it('expands command bar on click', async () => {
@@ -339,12 +349,13 @@ describe('AgenticPage', () => {
 
   // ── Stats bar shows skeleton before data loads ──
 
-  it('shows skeleton while loading stats', () => {
+  it('shows skeleton while loading stats', async () => {
     // Don't resolve the mock immediately
     mockStats.mockReturnValue(new Promise(() => {}));
     const container = render(<AgenticPage />);
     const skeletons = container.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThanOrEqual(1);
+    await flushAsyncUpdates();
   });
 
   // ── Error handling doesn't crash ──

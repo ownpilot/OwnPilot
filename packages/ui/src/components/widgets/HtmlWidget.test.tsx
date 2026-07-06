@@ -11,8 +11,10 @@ let root: Root | null = null;
 function render(element: React.ReactElement) {
   const container = document.createElement('div');
   document.body.appendChild(container);
-  root = createRoot(container);
-  flushSync(() => root?.render(element));
+  act(() => {
+    root = createRoot(container);
+    flushSync(() => root?.render(element));
+  });
   return container;
 }
 
