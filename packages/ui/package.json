@@ -3,6 +3,7 @@
   "version": "0.8.3",
   "description": "Web UI for OwnPilot",
   "type": "module",
+  "sideEffects": false,
   "private": true,
   "scripts": {
     "dev": "vite",
