@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback, lazy } from 'react';
+import { useRef, useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
@@ -41,12 +41,6 @@ import {
   settingsApi,
   agentsApi,
   chatApi,
-  tasksApi,
-  notesApi,
-  calendarApi,
-  goalsApi,
-  memoriesApi,
-  habitsApi,
 } from '../api';
 import { ignoreError } from '../utils/ignore-error';
 import type { ModelInfo, AgentDetail } from '../types';
@@ -124,9 +118,7 @@ export function ChatPage() {
   const [isChannelMode, setIsChannelMode] = useState(false);
   const { subscribe } = useGateway();
 
-
   // Personal starters moved to ChatStarterPrompts
-  }, []);
 
   // Close dropdowns on Escape key
   useEffect(() => {
@@ -1007,7 +999,6 @@ export function ChatPage() {
                 configuredProviders={configuredProviders}
                 currentProviderName={currentProviderName}
                 model={model}
-                chatInputRef={chatInputRef}
               />
             ) : (
               <>

@@ -38,21 +38,6 @@ interface ChatStarterPromptsProps {
   model: string;
 }
 
-/** Placeholder to satisfy the SetupWizard slot in ChatPage */
-export function SetupWizardPlaceholder() {
-  return (
-    <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
-      <div className="flex items-center justify-center gap-2 text-warning mb-2">
-        <AlertCircle className="w-5 h-5" />
-        <span className="font-medium">Setup Required</span>
-      </div>
-      <p className="text-sm text-text-muted dark:text-dark-text-muted">
-        Configure at least one AI provider to start chatting.
-      </p>
-    </div>
-  );
-}
-
 export function ChatStarterPrompts({
   show,
   onSend,

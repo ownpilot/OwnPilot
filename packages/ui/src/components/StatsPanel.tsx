@@ -33,16 +33,13 @@ import {
   Cpu,
   MessageSquare,
   Send,
-  FolderOpen,
   Terminal,
   Bot,
   StopCircle,
-  Wrench,
-  Layers,
-  Settings,
 } from './icons';
 import { StatCard } from './stats/StatCard';
 import { ContextBanner } from './stats/ContextBanner';
+import { MarkdownContent } from './MarkdownContent';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import { STORAGE_KEYS } from '../constants/storage-keys';
 import type { SummaryData, CostsData, ProviderInfo } from '../types';
