@@ -27,6 +27,7 @@ import {
   buildRequestDebugInfo,
   buildResponseDebugInfo,
   calculatePayloadBreakdown,
+  isDebugEnabled,
 } from '../debug.js';
 import { getErrorMessage } from '../../services/error-utils.js';
 import { sanitizeToolName, desanitizeToolName } from '../tool-namespace.js';
@@ -166,19 +167,21 @@ export class AnthropicProvider extends BaseProvider {
 
     const endpoint = `${this.config.baseUrl}/messages`;
 
-    // Log request with payload breakdown
-    const anthropicDebugInfo = buildRequestDebugInfo(
-      'anthropic',
-      request.model.model,
-      endpoint,
-      request.messages,
-      request.tools,
-      request.model.maxTokens ?? 4096,
-      request.model.temperature,
-      false
-    );
-    anthropicDebugInfo.payload = calculatePayloadBreakdown(body);
-    logRequest(anthropicDebugInfo);
+    // Log request with payload breakdown (skipped when debug logging is off)
+    if (isDebugEnabled()) {
+      const anthropicDebugInfo = buildRequestDebugInfo(
+        'anthropic',
+        request.model.model,
+        endpoint,
+        request.messages,
+        request.tools,
+        request.model.maxTokens ?? 4096,
+        request.model.temperature,
+        false
+      );
+      anthropicDebugInfo.payload = calculatePayloadBreakdown(body);
+      logRequest(anthropicDebugInfo);
+    }
 
     const startTime = Date.now();
 
@@ -258,15 +261,17 @@ export class AnthropicProvider extends BaseProvider {
         };
 
         // Log response
-        logResponse(
-          buildResponseDebugInfo('anthropic', completionResponse.model, Date.now() - startTime, {
-            content: completionResponse.content,
-            toolCalls: completionResponse.toolCalls,
-            finishReason: completionResponse.finishReason,
-            usage: completionResponse.usage,
-            rawResponse: data,
-          })
-        );
+        if (isDebugEnabled()) {
+          logResponse(
+            buildResponseDebugInfo('anthropic', completionResponse.model, Date.now() - startTime, {
+              content: completionResponse.content,
+              toolCalls: completionResponse.toolCalls,
+              finishReason: completionResponse.finishReason,
+              usage: completionResponse.usage,
+              rawResponse: data,
+            })
+          );
+        }
 
         return ok(completionResponse);
       } catch (error) {
@@ -328,18 +333,20 @@ export class AnthropicProvider extends BaseProvider {
     }
 
     // Log streaming request with payload breakdown
-    const anthropicStreamDebugInfo = buildRequestDebugInfo(
-      'anthropic',
-      request.model.model,
-      `${this.config.baseUrl}/messages`,
-      request.messages,
-      request.tools,
-      request.model.maxTokens ?? 4096,
-      request.model.temperature,
-      true
-    );
-    anthropicStreamDebugInfo.payload = calculatePayloadBreakdown(body);
-    logRequest(anthropicStreamDebugInfo);
+    if (isDebugEnabled()) {
+      const anthropicStreamDebugInfo = buildRequestDebugInfo(
+        'anthropic',
+        request.model.model,
+        `${this.config.baseUrl}/messages`,
+        request.messages,
+        request.tools,
+        request.model.maxTokens ?? 4096,
+        request.model.temperature,
+        true
+      );
+      anthropicStreamDebugInfo.payload = calculatePayloadBreakdown(body);
+      logRequest(anthropicStreamDebugInfo);
+    }
 
     try {
       this.clearRequestTimeout();

@@ -37,7 +37,7 @@ import type {
   ToolTrustLevel,
   ToolConfigRequirement,
 } from './types.js';
-import { logToolCall, logToolResult } from './debug.js';
+import { logToolCall, logToolResult, isDebugEnabled } from './debug.js';
 // Lazy-imported to break circular dep: tool-validation.ts imports type from tools.ts
 let _validateToolCall: typeof import('./tool-validation.js').validateToolCall | null = null;
 async function getValidateToolCall() {
@@ -699,15 +699,17 @@ export class ToolRegistry {
       args = JSON.parse(toolCall.arguments);
     } catch {
       const errorContent = `Error: Invalid JSON arguments: ${toolCall.arguments}`;
-      logToolResult({
-        toolCallId: toolCall.id,
-        name: toolCall.name,
-        success: false,
-        result: errorContent,
-        resultLength: errorContent.length,
-        durationMs: Date.now() - startTime,
-        error: 'Invalid JSON arguments',
-      });
+      if (isDebugEnabled()) {
+        logToolResult({
+          toolCallId: toolCall.id,
+          name: toolCall.name,
+          success: false,
+          result: errorContent,
+          resultLength: errorContent.length,
+          durationMs: Date.now() - startTime,
+          error: 'Invalid JSON arguments',
+        });
+      }
       return {
         toolCallId: toolCall.id,
         content: errorContent,
@@ -728,6 +730,23 @@ export class ToolRegistry {
         const revalidation = validateToolCall(this, effectiveName, args);
         if (!revalidation.valid) {
           const errorContent = `Error: Tool '${toolCall.name}' auto-corrected to '${effectiveName}', but parameter errors remain: ${revalidation.errors.map((e) => e.message).join('; ')}${revalidation.helpText ?? ''}`;
+          if (isDebugEnabled()) {
+            logToolResult({
+              toolCallId: toolCall.id,
+              name: toolCall.name,
+              success: false,
+              result: errorContent,
+              resultLength: errorContent.length,
+              durationMs: Date.now() - startTime,
+              error: 'Parameter validation failed',
+            });
+          }
+          return { toolCallId: toolCall.id, content: errorContent, isError: true };
+        }
+      } else {
+        // Tool not found or param errors — return helpful error
+        const errorContent = `Error: ${validation.errors.map((e) => e.message).join('; ')}${validation.helpText ?? ''}`;
+        if (isDebugEnabled()) {
           logToolResult({
             toolCallId: toolCall.id,
             name: toolCall.name,
@@ -735,33 +754,22 @@ export class ToolRegistry {
             result: errorContent,
             resultLength: errorContent.length,
             durationMs: Date.now() - startTime,
-            error: 'Parameter validation failed',
+            error: 'Tool call validation failed',
           });
-          return { toolCallId: toolCall.id, content: errorContent, isError: true };
         }
-      } else {
-        // Tool not found or param errors — return helpful error
-        const errorContent = `Error: ${validation.errors.map((e) => e.message).join('; ')}${validation.helpText ?? ''}`;
-        logToolResult({
-          toolCallId: toolCall.id,
-          name: toolCall.name,
-          success: false,
-          result: errorContent,
-          resultLength: errorContent.length,
-          durationMs: Date.now() - startTime,
-          error: 'Tool call validation failed',
-        });
         return { toolCallId: toolCall.id, content: errorContent, isError: true };
       }
     }
 
     // Log the tool call with arguments
-    logToolCall({
-      id: toolCall.id,
-      name: effectiveName,
-      arguments: args,
-      approved: true, // It's already approved if we're here
-    });
+    if (isDebugEnabled()) {
+      logToolCall({
+        id: toolCall.id,
+        name: effectiveName,
+        arguments: args,
+        approved: true, // It's already approved if we're here
+      });
+    }
 
     const result = await this.execute(effectiveName, args, {
       conversationId,
@@ -779,15 +787,17 @@ export class ToolRegistry {
 
     if (!result.ok) {
       const errorContent = `Error: ${result.error.message}`;
-      logToolResult({
-        toolCallId: toolCall.id,
-        name: toolCall.name,
-        success: false,
-        result: errorContent,
-        resultLength: errorContent.length,
-        durationMs,
-        error: result.error.message,
-      });
+      if (isDebugEnabled()) {
+        logToolResult({
+          toolCallId: toolCall.id,
+          name: toolCall.name,
+          success: false,
+          result: errorContent,
+          resultLength: errorContent.length,
+          durationMs,
+          error: result.error.message,
+        });
+      }
       return {
         toolCallId: toolCall.id,
         content: errorContent,
@@ -805,15 +815,17 @@ export class ToolRegistry {
           : JSON.stringify(rawContent);
 
     // Log successful tool result
-    logToolResult({
-      toolCallId: toolCall.id,
-      name: toolCall.name,
-      success: !result.value.isError,
-      result: content,
-      resultLength: content.length,
-      durationMs,
-      error: result.value.isError ? content : undefined,
-    });
+    if (isDebugEnabled()) {
+      logToolResult({
+        toolCallId: toolCall.id,
+        name: toolCall.name,
+        success: !result.value.isError,
+        result: content,
+        resultLength: content.length,
+        durationMs,
+        error: result.value.isError ? content : undefined,
+      });
+    }
 
     return {
       toolCallId: toolCall.id,
