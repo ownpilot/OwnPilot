@@ -518,7 +518,7 @@ function getToolCategory(name: string): string {
  * Detect if a tool result indicates local (non-sandboxed) execution.
  * Checks both object and JSON string results.
  */
-function isLocalExecution(result: unknown): boolean {
+export function isLocalExecution(result: unknown): boolean {
   if (!result) return false;
 
   // Direct object with sandboxed field
