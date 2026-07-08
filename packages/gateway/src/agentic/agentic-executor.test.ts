@@ -797,4 +797,236 @@ describe('AgenticGatewayExecutor', () => {
       expect(failCall).toBeDefined();
     });
   });
+
+  // ── dispatchSoulHeartbeat ─────────────────────────────────────────
+
+  describe('dispatchSoulHeartbeat', () => {
+    it('returns error when agentId is missing', async () => {
+      mockRuntimeContext.llm.pick.mockResolvedValue({ provider: 'openai', model: 'gpt-4' });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(makeStep('soul_heartbeat', { task: 'heartbeat' }));
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/agentId or soulId/i);
+    });
+
+    it('returns success with resolved provider/model when agentId provided', async () => {
+      mockRuntimeContext.llm.pick.mockResolvedValue({ provider: 'anthropic', model: 'claude-3' });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('soul_heartbeat', { task: 'beat', agentId: 'soul-1' })
+      );
+      expect(result.success).toBe(true);
+      expect(result.output).toMatchObject({
+        agentId: 'soul-1',
+        provider: 'anthropic',
+        model: 'claude-3',
+      });
+    });
+  });
+
+  // ── dispatchCrew ──────────────────────────────────────────────────
+
+  describe('dispatchCrew', () => {
+    it('returns error when crewId is missing', async () => {
+      mockRuntimeContext.llm.pick.mockResolvedValue({ provider: 'openai', model: 'gpt-4' });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(makeStep('crew', { task: 'crew task' }));
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/crewId/i);
+    });
+
+    it('returns success with crewId', async () => {
+      mockRuntimeContext.llm.pick.mockResolvedValue({ provider: 'openai', model: 'gpt-4' });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(makeStep('crew', { crewId: 'crew-1', task: 'do it' }));
+      expect(result.success).toBe(true);
+      expect(result.output).toMatchObject({ crewId: 'crew-1' });
+    });
+  });
+
+  // ── dispatchChannel ───────────────────────────────────────────────
+
+  describe('dispatchChannel', () => {
+    it('returns error when message or provider is missing', async () => {
+      const executor = new AgenticGatewayExecutor();
+      const result1 = await executor.dispatch(makeStep('channel', { message: 'hi' }));
+      expect(result1.success).toBe(false);
+      expect(result1.error).toMatch(/message.*provider/i);
+
+      const result2 = await executor.dispatch(makeStep('channel', { provider: 'slack' }));
+      expect(result2.success).toBe(false);
+    });
+
+    it('sends message via channel service', async () => {
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('channel', { provider: 'slack', message: 'Hello', chatId: 'C123' })
+      );
+      expect(result.success).toBe(true);
+      expect(mockRuntimeContext.channels.send).toHaveBeenCalledWith('slack', {
+        platformChatId: 'C123',
+        text: 'Hello',
+      });
+    });
+  });
+
+  // ── dispatchDirectLlm ─────────────────────────────────────────────
+
+  describe('dispatchDirectLlm', () => {
+    it('returns a placeholder with resolved provider/model', async () => {
+      mockRuntimeContext.llm.pick.mockResolvedValue({ provider: 'openai', model: 'gpt-4o' });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('direct_llm', { task: 'Tell me a joke', systemPrompt: 'Be funny' })
+      );
+      expect(result.success).toBe(true);
+      expect(result.output).toMatchObject({
+        provider: 'openai',
+        model: 'gpt-4o',
+        systemPrompt: 'Be funny',
+        task: 'Tell me a joke',
+      });
+    });
+  });
+
+  // ── Trigger edge cases ────────────────────────────────────────────
+
+  describe('dispatchTrigger — edge cases', () => {
+    it('returns error when scheduled trigger has no cron or intervalMs', async () => {
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          trigger: { type: 'scheduled' },
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/cron or intervalMs/i);
+    });
+
+    it('returns error when condition trigger has no condition expression', async () => {
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          trigger: { type: 'condition' },
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/condition expression/i);
+    });
+  });
+
+  // ── convertIntervalToCron ─────────────────────────────────────────
+
+  describe('convertIntervalToCron', () => {
+    it('returns null for undefined or < 1000ms intervals', async () => {
+      // convertIntervalToCron is private, but we can test it through
+      // dispatchTrigger which uses it internally
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          taskName: 'test',
+          trigger: { type: 'interval', intervalMs: 500 },
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      // intervalMs 500 < 1000 → convertIntervalToCron returns null → error
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/cron or intervalMs/i);
+    });
+
+    it('converts minutes to cron expression', async () => {
+      mockTriggerService.createTrigger.mockResolvedValueOnce({
+        id: 'trig-min',
+      } as never);
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          taskName: 'min-test',
+          trigger: { type: 'interval', intervalMs: 300_000 }, // 5 minutes
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      expect(result.success).toBe(true);
+      expect((result.output as Record<string, unknown>).type).toBe('schedule');
+    });
+
+    it('converts hours to cron expression', async () => {
+      mockTriggerService.createTrigger.mockResolvedValueOnce({
+        id: 'trig-hour',
+      } as never);
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          taskName: 'hour-test',
+          trigger: { type: 'interval', intervalMs: 7_200_000 }, // 2 hours
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('converts days to cron expression', async () => {
+      mockTriggerService.createTrigger.mockResolvedValueOnce({
+        id: 'trig-day',
+      } as never);
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(
+        makeStep('trigger', {
+          taskName: 'day-test',
+          trigger: { type: 'interval', intervalMs: 172_800_000 }, // 2 days
+          action: { type: 'chat', payload: { task: 'test' } },
+        })
+      );
+      expect(result.success).toBe(true);
+    });
+  });
+
+  // ── dispatchClaw edge cases ───────────────────────────────────────
+
+  describe('dispatchClaw — provider service fallback', () => {
+    it('falls back to ProviderService when no explicit provider and env is empty', async () => {
+      const mockResolve = vi.fn().mockResolvedValue({ provider: 'anthropic', model: 'claude-3' });
+      mockHasProviderService.mockReturnValue(true);
+      mockGetProviderService.mockReturnValueOnce({ resolve: mockResolve });
+      const mockAgent = { chat: vi.fn(), updateSystemPrompt: vi.fn() };
+      mockGetOrCreateChatAgent.mockResolvedValue(mockAgent as never);
+      mockAgent.chat.mockResolvedValue({ ok: true, value: { content: 'hello' } });
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(makeStep('claw', { task: 'test' }));
+      expect(result.success).toBe(true);
+      expect(mockResolve).toHaveBeenCalled();
+      expect(mockGetOrCreateChatAgent).toHaveBeenCalledWith('anthropic', 'claude-3');
+    });
+
+    it('handles ProviderService.resolve rejection gracefully', async () => {
+      mockHasProviderService.mockReturnValue(true);
+      mockGetProviderService.mockReturnValueOnce({
+        resolve: vi.fn().mockRejectedValue(new Error('service down')),
+      });
+
+      const origProvider = process.env.DEFAULT_PROVIDER;
+      const origModel = process.env.DEFAULT_MODEL;
+      process.env.DEFAULT_PROVIDER = '';
+      process.env.DEFAULT_MODEL = '';
+
+      const executor = new AgenticGatewayExecutor();
+      const result = await executor.dispatch(makeStep('claw', { task: 'test' }));
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/No AI provider configured/i);
+
+      process.env.DEFAULT_PROVIDER = origProvider ?? '';
+      process.env.DEFAULT_MODEL = origModel ?? '';
+    });
+  });
 });

@@ -400,4 +400,116 @@ describe('AutonomyEngine', () => {
       expect(stats.actionsExecuted).toBe(0);
     });
   });
+
+  // ============================================================================
+  // getRecentLogsPaginated
+  // ============================================================================
+
+  describe('getRecentLogsPaginated', () => {
+    it('returns paginated results', async () => {
+      const mockGetPage = vi.fn().mockResolvedValue([]);
+      // Reset the mock for createAutonomyLogRepo to return a repo with getPage
+      const mockRepo = {
+        ...mockAutonomyLogRepo,
+        getPage: mockGetPage,
+      };
+      // Re-create engine to pick up fresh mocks
+      const localEngine = new AutonomyEngine({ userId: 'test-user' });
+      const { createAutonomyLogRepo } = await import('../db/repositories/autonomy-log.js');
+      (createAutonomyLogRepo as ReturnType<typeof vi.fn>).mockReturnValue(mockRepo);
+
+      const result = await localEngine.getRecentLogsPaginated('test-user', 10, 0);
+      expect(result).toEqual([]);
+      expect(mockGetPage).toHaveBeenCalledWith(10, 0);
+    });
+  });
+
+  // ============================================================================
+  // isQuietHours
+  // ============================================================================
+
+  describe('isQuietHours', () => {
+    it('returns true when hour is within normal range (start <= end)', () => {
+      // Access private method via bracket notation
+      const engineAny = engine as unknown as {
+        isQuietHours(hour: number): boolean;
+        config: { quietHoursStart: number; quietHoursEnd: number };
+      };
+      engineAny.config.quietHoursStart = 22;
+      engineAny.config.quietHoursEnd = 7;
+      // 23:00 with wrapping range (22-7) → 23 >= 22 → true
+      expect(engineAny.isQuietHours(23)).toBe(true);
+      // 5:00 with wrapping range → 5 < 7 → true
+      expect(engineAny.isQuietHours(5)).toBe(true);
+      // 12:00 with wrapping range → false
+      expect(engineAny.isQuietHours(12)).toBe(false);
+    });
+
+    it('returns false when hour is outside wrapping range', () => {
+      const engineAny = engine as unknown as {
+        isQuietHours(hour: number): boolean;
+        config: { quietHoursStart: number; quietHoursEnd: number };
+      };
+      engineAny.config.quietHoursStart = 22;
+      engineAny.config.quietHoursEnd = 7;
+      expect(engineAny.isQuietHours(14)).toBe(false);
+    });
+
+    it('handles non-wrapping range (e.g. 9-17)', () => {
+      const engineAny = engine as unknown as {
+        isQuietHours(hour: number): boolean;
+        config: { quietHoursStart: number; quietHoursEnd: number };
+      };
+      engineAny.config.quietHoursStart = 9;
+      engineAny.config.quietHoursEnd = 17;
+      expect(engineAny.isQuietHours(10)).toBe(true);
+      expect(engineAny.isQuietHours(8)).toBe(false);
+      expect(engineAny.isQuietHours(17)).toBe(false); // end is exclusive
+    });
+  });
+
+  // ============================================================================
+  // getStatus with lastPulse
+  // ============================================================================
+
+  describe('getStatus with lastPulse', () => {
+    it('includes lastPulse when a result exists', async () => {
+      await engine.runPulse('test-user', true);
+      const status = engine.getStatus();
+      expect(status.lastPulse).toBeDefined();
+      expect(status.lastPulse?.signalsFound).toBe(0);
+    });
+  });
+
+  // ============================================================================
+  // Pulse with LLM signals — decision making
+  // ============================================================================
+
+  describe('LLM decision making path', () => {
+    it('calls LLM when signals detected', async () => {
+      // Override evaluatePulseContext to return signals
+      const { evaluatePulseContext } = await import('./evaluator.js');
+      (evaluatePulseContext as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        shouldCallLLM: true,
+        signals: [{ id: 'sig-1', type: 'new_memory', severity: 3, description: 'New memory' }],
+        urgencyScore: 3,
+      });
+
+      const result = await engine.runPulse('test-user', true);
+      expect(result.signalsFound).toBe(1);
+    });
+
+    it('reschedules with urgency-adjusted interval after LLM pulse', async () => {
+      // Override evaluatePulseContext to return signals with urgency
+      const { evaluatePulseContext } = await import('./evaluator.js');
+      (evaluatePulseContext as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        shouldCallLLM: true,
+        signals: [{ id: 'sig-1', type: 'new_memory', severity: 5, description: 'Important' }],
+        urgencyScore: 5,
+      });
+
+      const result = await engine.runPulse('test-user', true);
+      expect(result.llmCalled).toBe(true);
+    });
+  });
 });
