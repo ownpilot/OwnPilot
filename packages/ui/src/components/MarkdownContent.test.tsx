@@ -513,4 +513,137 @@ After`}
 
     expect(hideIncompleteStreamingWidgets(content)).toBe(content);
   });
+
+  it('renders heading level 1 as h2 element', () => {
+    const html = renderToStaticMarkup(<MarkdownContent content="# Top Level Heading" />);
+
+    expect(html).toContain('<h2');
+    expect(html).toContain('Top Level Heading');
+    expect(html).not.toContain('<h1');
+  });
+
+  it('renders heading level 4 as h5 element', () => {
+    const html = renderToStaticMarkup(<MarkdownContent content="#### Level 4 Heading" />);
+
+    expect(html).toContain('<h5');
+    expect(html).toContain('Level 4 Heading');
+  });
+
+  it('renders blockquotes', () => {
+    const html = renderToStaticMarkup(<MarkdownContent content="> This is a quoted line" />);
+
+    expect(html).toContain('<blockquote');
+    expect(html).toContain('This is a quoted line');
+  });
+
+  it('renders horizontal rules', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content={`Text before\n\n---\n\nText after`} />
+    );
+
+    expect(html).toContain('<hr');
+    expect(html).toContain('Text before');
+    expect(html).toContain('Text after');
+  });
+
+  it('renders ordered lists with dot format (1.)', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content={`1. First item\n2. Second item\n3. Third item`} />
+    );
+
+    expect(html).toContain('<ol');
+    expect(html).toContain('First item');
+    expect(html).toContain('Second item');
+    expect(html).toContain('Third item');
+  });
+
+  it('renders ordered lists with paren format (1))', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content={`1) First item\n2) Second item`} />
+    );
+
+    expect(html).toContain('<ol');
+    expect(html).toContain('First item');
+    expect(html).toContain('Second item');
+  });
+
+  it('renders unsafe javascript: URLs as plain text', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content="[Click me](javascript:alert(1))" />
+    );
+
+    // Unsafe URL should render as plain text span, not as an anchor
+    expect(html).toContain('Click me');
+    expect(html).not.toContain('href');
+    expect(html).not.toContain('javascript:alert');
+  });
+
+  it('renders safe https links as anchors', () => {
+    const html = renderToStaticMarkup(<MarkdownContent content="[OpenAI](https://openai.com)" />);
+
+    expect(html).toContain('<a');
+    expect(html).toContain('href="https://openai.com"');
+    expect(html).toContain('OpenAI');
+  });
+
+  it('renders inline code with backticks', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content="Use the `console.log()` function" />
+    );
+
+    expect(html).toContain('<code');
+    expect(html).toContain('console.log()');
+  });
+
+  it('renders bold and italic text', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content="This is **bold** and *italic* text" />
+    );
+
+    expect(html).toContain('<strong>bold</strong>');
+    expect(html).toContain('<em>italic</em>');
+  });
+
+  it('renders image with alt text and safe src', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content="![Logo](https://example.com/logo.png)" />
+    );
+
+    expect(html).toContain('<img');
+    expect(html).toContain('src="https://example.com/logo.png"');
+    expect(html).toContain('alt="Logo"');
+  });
+
+  it('renders code block with language and compact maxHeight', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={'```js\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\n```'}
+        compact
+      />
+    );
+
+    // compact mode: showLineNumbers when > 5 lines; with 4 lines, no line numbers
+    expect(html).toContain('language-javascript');
+    expect(html).toContain('const</');
+  });
+
+  it('renders code block with line numbers in non-compact mode', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        content={'```ts\nconst a = 1;\nconst b = 2;\nconst c = 3;\nconst d = 4;\n```'}
+      />
+    );
+
+    // non-compact mode: showLineNumbers when > 3 lines; with 4 lines, show numbers
+    expect(html).toContain('language-typescript');
+    expect(html).toContain('const</');
+  });
+
+  it('renders image fallback text when src has no alt', () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent content="![](https://example.com/image.png)" />
+    );
+
+    expect(html).toContain('src="https://example.com/image.png"');
+  });
 });

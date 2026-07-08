@@ -176,6 +176,54 @@ describe('FilterConfigPanel', () => {
     expect(r.container.textContent).toContain('Retry');
     r.cleanup();
   });
+
+  it('updates description via onUpdate', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(FilterConfigPanel, makeProps({}, { onUpdate }));
+    const descInput = r.container.querySelector(
+      'input[placeholder="Optional description..."]'
+    ) as HTMLInputElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(descInput, 'My filter description');
+      descInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      'n1',
+      expect.objectContaining({ description: 'My filter description' })
+    );
+    r.cleanup();
+  });
+
+  it('clears description to undefined when emptied', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(FilterConfigPanel, makeProps({ description: 'old' }, { onUpdate }));
+    const descInput = r.container.querySelector(
+      'input[placeholder="Optional description..."]'
+    ) as HTMLInputElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(descInput, '');
+      descInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      'n1',
+      expect.objectContaining({ description: undefined })
+    );
+    r.cleanup();
+  });
+
+  it('renders TemplateValidator hint for array expression', () => {
+    const r = renderPanel(FilterConfigPanel, makeProps({ arrayExpression: '{{items}}' }));
+    expect(r.container.textContent).toContain('{{items}}');
+    r.cleanup();
+  });
 });
 
 // ── WebhookResponseConfigPanel ──
@@ -220,6 +268,89 @@ describe('WebhookResponseConfigPanel', () => {
       statusInput.dispatchEvent(new window.Event('input', { bubbles: true }));
     });
     expect(onUpdate).toHaveBeenCalledWith('n1', expect.objectContaining({ statusCode: 201 }));
+    r.cleanup();
+  });
+
+  it('updates body textarea via onUpdate', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(WebhookResponseConfigPanel, makeProps({}, { onUpdate }));
+    const bodyTextarea = r.container.querySelector('textarea') as HTMLTextAreaElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(bodyTextarea, '{"msg":"hello"}');
+      bodyTextarea.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      'n1',
+      expect.objectContaining({ body: '{"msg":"hello"}' })
+    );
+    r.cleanup();
+  });
+
+  it('updates headers textarea via onUpdate and clears when empty', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(
+      WebhookResponseConfigPanel,
+      makeProps({ headers: 'Old: val' }, { onUpdate })
+    );
+    const headersTextarea = r.container.querySelectorAll('textarea')[1] as HTMLTextAreaElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(headersTextarea, '');
+      headersTextarea.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith('n1', expect.objectContaining({ headers: undefined }));
+    r.cleanup();
+  });
+
+  it('updates contentType via onUpdate', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(WebhookResponseConfigPanel, makeProps({}, { onUpdate }));
+    const ctInput = r.container.querySelector(
+      'input[placeholder="application/json"]'
+    ) as HTMLInputElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(ctInput, 'text/xml');
+      ctInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      'n1',
+      expect.objectContaining({ contentType: 'text/xml' })
+    );
+    r.cleanup();
+  });
+
+  it('clears description to undefined when emptied', () => {
+    const onUpdate = vi.fn();
+    const r = renderPanel(
+      WebhookResponseConfigPanel,
+      makeProps({ description: 'old' }, { onUpdate })
+    );
+    const descInput = r.container.querySelector(
+      'input[placeholder="Optional description..."]'
+    ) as HTMLInputElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(descInput, '');
+      descInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+    expect(onUpdate).toHaveBeenCalledWith(
+      'n1',
+      expect.objectContaining({ description: undefined })
+    );
     r.cleanup();
   });
 });
@@ -463,6 +594,53 @@ describe('ErrorHandlerConfigPanel', () => {
   it('renders OutputAliasField', () => {
     const r = renderPanel(ErrorHandlerConfigPanel, makeProps());
     expect(r.container.textContent).toContain('Output Alias');
+    r.cleanup();
+  });
+
+  it('shows configured label value in input field', () => {
+    const r = renderPanel(ErrorHandlerConfigPanel, makeProps({ label: 'Custom Handler' }));
+    const labelInput = r.container.querySelector('input') as HTMLInputElement;
+    expect(labelInput?.value).toBe('Custom Handler');
+    r.cleanup();
+  });
+
+  it('shows configured description value in textarea', () => {
+    const r = renderPanel(
+      ErrorHandlerConfigPanel,
+      makeProps({ description: 'Handle errors gracefully' })
+    );
+    const textarea = r.container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea?.value).toBe('Handle errors gracefully');
+    r.cleanup();
+  });
+
+  it('renders retry attempts in results tab', () => {
+    const r = renderPanel(
+      ErrorHandlerConfigPanel,
+      makeProps({
+        executionStatus: 'error',
+        retryAttempts: 3,
+      })
+    );
+    expect(r.container.textContent).toContain('3');
+    r.cleanup();
+  });
+
+  it('formats duration in minutes format', () => {
+    const r = renderPanel(
+      ErrorHandlerConfigPanel,
+      makeProps({
+        executionStatus: 'error',
+        executionDuration: 125000, // 2m 5s
+      })
+    );
+    expect(r.container.textContent).toContain('2.1m');
+    r.cleanup();
+  });
+
+  it('renders the header title with configured label', () => {
+    const r = renderPanel(ErrorHandlerConfigPanel, makeProps({ label: 'Custom Handler' }));
+    expect(r.container.querySelector('h3')?.textContent).toContain('Custom Handler');
     r.cleanup();
   });
 });

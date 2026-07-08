@@ -301,4 +301,30 @@ describe('useAutoCompact', () => {
     expect(hook.isCompacting).toBe(false);
     t.cleanup();
   });
+
+  it('applySessionInfo skips prompt when autoCompactDisabled localStorage is set', () => {
+    localStorage.setItem(STORAGE_KEYS.AUTO_COMPACT_DISABLED, '1');
+    const t = mountAutoCompact('openai', 'gpt-4');
+    const hook = t.resultRef.current!;
+    expect(hook.autoCompactDisabled).toBe(true);
+    // Even with a full session, prompt should be null because disabled
+    act(() => hook.applySessionInfo(makeSession()));
+    expect(hook.autoCompactPrompt).toBeNull();
+    t.cleanup();
+  });
+
+  it('disableAutoCompactPrompt survives localStorage throw', () => {
+    const origSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = vi.fn(() => {
+      throw new Error('denied');
+    });
+    try {
+      const t = mountAutoCompact('openai', 'gpt-4');
+      act(() => t.resultRef.current!.disableAutoCompactPrompt());
+      expect(t.resultRef.current!.autoCompactDisabled).toBe(true);
+      t.cleanup();
+    } finally {
+      Storage.prototype.setItem = origSetItem;
+    }
+  });
 });

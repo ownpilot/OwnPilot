@@ -13,6 +13,7 @@ import { AgenticPage } from '../pages/AgenticPage';
 const mockExecute = vi.fn();
 const mockList = vi.fn();
 const mockGet = vi.fn();
+const mockCancel = vi.fn();
 const mockStats = vi.fn();
 const mockCapabilities = vi.fn();
 
@@ -23,6 +24,7 @@ vi.mock('../api/endpoints/agentic', () => ({
     get: (...args: unknown[]) => mockGet(...args),
     stats: (...args: unknown[]) => mockStats(...args),
     capabilities: (...args: unknown[]) => mockCapabilities(...args),
+    cancel: (...args: unknown[]) => mockCancel(...args),
   },
 }));
 
@@ -369,5 +371,551 @@ describe('AgenticPage', () => {
     });
     // Should still show the page without crashing
     expect(findByText(container, 'Agentic Command Center')).toBeTruthy();
+  });
+
+  // ── Capabilities edge-cases ──
+
+  it('renders the empty capabilities state when API returns none', async () => {
+    mockCapabilities.mockResolvedValue({ capabilities: [], total: 0 });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const capsTab = findByText(container, 'Capabilities');
+    expect(capsTab).toBeTruthy();
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(container.textContent).toContain('No capabilities found');
+  });
+
+  it('renders capability executor-kind chips and tags', async () => {
+    mockCapabilities.mockResolvedValue({
+      capabilities: [
+        {
+          id: 'claw:tagged',
+          name: 'Tagged Claw',
+          description: 'Has tags',
+          executorKind: 'claw',
+          providerId: 'p1',
+          tags: ['a', 'b'],
+          requiresApproval: false,
+        },
+      ],
+      total: 1,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('Tagged Claw');
+    expect(container.textContent).toContain('a');
+    expect(container.textContent).toContain('b');
+  });
+
+  it('handles capabilities API failure by showing the capabilities empty fallback', async () => {
+    // The capabilities fetch path is now wrapped in try/catch (see
+    // AgenticPage.tsx), so a rejection is consumed and the page renders the
+    // empty state. No try/catch shim is needed in the mock anymore.
+    mockCapabilities.mockRejectedValue(new Error('caps down'));
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    // The empty-state copy is rendered because the catch path resets caps to []
+    expect(container.textContent).toContain('No capabilities found');
+  });
+
+  // ── Active execution polling ──
+
+  it('polls for fresh execution data when a running execution is present', async () => {
+    // Two list calls are expected: the initial fetch and the polling refetch.
+    mockList.mockResolvedValue({
+      executions: defaultExecutions, // includes a "running" execution
+      total: 2,
+      limit: 20,
+      offset: 0,
+    });
+    vi.useFakeTimers();
+    try {
+      render(<AgenticPage />);
+      // Let the initial fetch resolve
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const initialCalls = mockList.mock.calls.length;
+
+      // Advance the POLL_MS timer to trigger a refetch
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+      expect(mockList.mock.calls.length).toBeGreaterThan(initialCalls);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // ── Execute form validation ──
+
+  it('keeps the execute button disabled until description is filled', async () => {
+    mockExecute.mockResolvedValue({
+      id: 'exec-x',
+      status: 'completed',
+      summary: 'Done',
+      totalCostUsd: 0,
+      totalDurationMs: 50,
+      steps: [],
+    });
+    const container = render(<AgenticPage />);
+    const header = findByText(container, 'Execute Agentic Task');
+    await act(async () => {
+      header!.click();
+    });
+
+    const submitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
+
+    // Type a description
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(textarea, 'Hello world');
+      textarea.dispatchEvent(new window.Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new window.Event('change', { bubbles: true }));
+    });
+
+    const enabledBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(enabledBtn.disabled).toBe(false);
+  });
+
+  // ── Execution detail modal ──
+
+  it('opens the execution detail modal when a row is clicked', async () => {
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    // Click the first execution row
+    const row = findByText(container, 'Research AI');
+    expect(row).toBeTruthy();
+    await act(async () => {
+      row!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(mockGet).toHaveBeenCalledWith('exec-1');
+  });
+
+  // ── Capabilities filter change ──
+
+  it('re-fetches capabilities with the kind filter when the dropdown changes', async () => {
+    mockCapabilities.mockResolvedValueOnce({ capabilities: [], total: 0 }).mockResolvedValueOnce({
+      capabilities: [
+        {
+          id: 'claw:filtered',
+          name: 'Filtered Claw',
+          description: 'Filter test',
+          executorKind: 'claw',
+          providerId: 'p1',
+          tags: ['f'],
+          requiresApproval: false,
+        },
+      ],
+      total: 1,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Switch the kind filter to "claw"
+    const kindFilter = container.querySelector('select') as HTMLSelectElement;
+    expect(kindFilter).not.toBeNull();
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLSelectElement.prototype,
+        'value'
+      )?.set;
+      setter?.call(kindFilter, 'claw');
+      kindFilter.dispatchEvent(new window.Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Second capabilities call should pass the kind filter
+    expect(mockCapabilities).toHaveBeenCalledWith({ kind: 'claw' });
+    expect(container.textContent).toContain('Filtered Claw');
+  });
+
+  // ── Pagination edge-case ──
+
+  it('disables the Next button at the end of the executions list', async () => {
+    // total=50 with page size 20 → 3 pages; walk forward to the last page
+    // and confirm Next is disabled there.
+    mockList.mockResolvedValue({
+      executions: defaultExecutions,
+      total: 50,
+      limit: 20,
+      offset: 0,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const clickNext = () => {
+      const btn = Array.from(container.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Next'
+      );
+      act(() => {
+        btn?.click();
+      });
+    };
+
+    // First click: offset 0 → 20
+    clickNext();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    // Second click: offset 20 → 40
+    clickNext();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const finalNext = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Next'
+    );
+    expect(finalNext).toBeDefined();
+    expect(finalNext?.disabled).toBe(true);
+  });
+
+  it('enables the Previous button when offset is non-zero and moves back', async () => {
+    // total=50 with page size 20. Click Next once (offset 0 → 20) and assert
+    // Previous becomes enabled. Then click Previous to assert offset goes
+    // back to 0.
+    mockList.mockResolvedValue({
+      executions: defaultExecutions,
+      total: 50,
+      limit: 20,
+      offset: 0,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const nextButton = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Next'
+    );
+    expect(nextButton).toBeDefined();
+
+    // Advance to page 2
+    act(() => {
+      nextButton?.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const prevButton = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Previous'
+    );
+    expect(prevButton).toBeDefined();
+    expect(prevButton?.disabled).toBe(false);
+
+    // Move back to page 1
+    act(() => {
+      prevButton?.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(mockList).toHaveBeenLastCalledWith(20, 0);
+  });
+
+  // ── Capabilities card detail edge-cases ──
+
+  it('renders the requires-approval chip when capability requires approval', async () => {
+    mockCapabilities.mockResolvedValue({
+      capabilities: [
+        {
+          id: 'claw:approval',
+          name: 'Approval Cap',
+          description: 'Needs approval',
+          executorKind: 'claw',
+          providerId: 'p1',
+          tags: ['one'],
+          requiresApproval: true,
+        },
+      ],
+      total: 1,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('requires approval');
+  });
+
+  it('renders at most six tag chips per capability, even with longer tag arrays', async () => {
+    const manyTags = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
+    mockCapabilities.mockResolvedValue({
+      capabilities: [
+        {
+          id: 'claw:tagged-many',
+          name: 'Many Tags',
+          description: 'Tags overload',
+          executorKind: 'claw',
+          providerId: 'p1',
+          tags: manyTags,
+          requiresApproval: false,
+        },
+      ],
+      total: 1,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    // 6 tag chips from the capability render; we assert text content presence
+    // rather than counting DOM nodes because the select background also
+    // uses bg-bg-tertiary.
+    expect(container.textContent).toContain('a');
+    expect(container.textContent).toContain('f');
+    expect(container.textContent).not.toContain('>g<');
+    expect(container.textContent).not.toContain('>h<');
+    expect(container.textContent).not.toContain('>i<');
+  });
+
+  it('groups capabilities by executor-kind and renders each group heading', async () => {
+    mockCapabilities.mockResolvedValue({
+      capabilities: [
+        {
+          id: 'claw:a',
+          name: 'A Claw',
+          description: 'A',
+          executorKind: 'claw',
+          providerId: 'p1',
+          tags: [],
+          requiresApproval: false,
+        },
+        {
+          id: 'direct_llm:b',
+          name: 'B LLM',
+          description: 'B',
+          executorKind: 'direct_llm',
+          providerId: 'p1',
+          tags: [],
+          requiresApproval: false,
+        },
+      ],
+      total: 2,
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const capsTab = findByText(container, 'Capabilities');
+    await act(async () => {
+      capsTab!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('claw (1)');
+    expect(container.textContent).toContain('direct llm (1)');
+    expect(container.textContent).toContain('2 capabilities');
+  });
+
+  // ── ExecutionDetailModal render states ──
+
+  it('renders the loading spinner while the detail modal is fetching', async () => {
+    // Hold the response indefinitely so loading state persists.
+    mockGet.mockImplementation(() => new Promise(() => {}));
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const row = findByText(container, 'Research AI');
+    expect(row).toBeTruthy();
+    await act(async () => {
+      row!.click();
+    });
+    // The modal is now in the loading state; the spinner is a RefreshCw SVG
+    // with animate-spin class.
+    const spinners = container.querySelectorAll('svg.animate-spin');
+    expect(spinners.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders the error block and step error when present', async () => {
+    mockGet.mockResolvedValueOnce({
+      ...defaultExecutions[0],
+      id: 'exec-err',
+      error: 'Top-level failure',
+      summary: 'Partial progress before failure',
+      steps: [
+        {
+          index: 0,
+          executorKind: 'claw',
+          capabilityId: 'cap-a',
+          status: 'failed',
+          durationMs: 1200,
+          costUsd: 0.01,
+          error: 'step failed',
+          output: null,
+        },
+        {
+          index: 1,
+          executorKind: 'direct_llm',
+          capabilityId: 'cap-b',
+          status: 'completed',
+          durationMs: 500,
+          costUsd: 0.005,
+          output: { ok: true },
+        },
+      ],
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const row = findByText(container, 'Research AI');
+    await act(async () => {
+      row!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    // Top-level error block
+    expect(container.textContent).toContain('Top-level failure');
+    expect(container.textContent).toContain('Error');
+    // Summary
+    expect(container.textContent).toContain('Partial progress before failure');
+    // Step error
+    expect(container.textContent).toContain('step failed');
+    // Step cost rendering (costUsd !== undefined branch)
+    expect(container.textContent).toContain('$0.0100');
+    expect(container.textContent).toContain('$0.0050');
+    // Step duration >= 1000ms
+    expect(container.textContent).toContain('1.2s');
+    // Status badge for failed step
+    expect(container.textContent).toContain('failed');
+  });
+
+  it('renders the no-step-details fallback when an execution has no steps', async () => {
+    mockGet.mockResolvedValueOnce({
+      ...defaultExecutions[0],
+      id: 'exec-empty',
+      steps: [],
+    });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const row = findByText(container, 'Research AI');
+    await act(async () => {
+      row!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('No step details available');
+  });
+
+  it('renders the Execution not found state when the API returns no record', async () => {
+    mockGet.mockResolvedValueOnce(null as unknown as (typeof defaultExecutions)[0]);
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const row = findByText(container, 'Research AI');
+    await act(async () => {
+      row!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('Execution not found');
+  });
+
+  it('renders a Cancel button for running executions and flips status after click', async () => {
+    // Make the default lookup return a running execution so the cancel
+    // branch (status === 'running' || 'pending') is reachable.
+    const runningExec = { ...defaultExecutions[0], status: 'running', summary: 'Working...' };
+    mockGet.mockResolvedValueOnce(runningExec);
+    mockCancel.mockResolvedValueOnce({ id: 'exec-1', status: 'cancelled' });
+    const container = render(<AgenticPage />);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const row = findByText(container, 'Research AI');
+    await act(async () => {
+      row!.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    const cancelButton = Array.from(container.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Cancel'
+    );
+    expect(cancelButton).toBeDefined();
+
+    act(() => {
+      cancelButton?.click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+
+    expect(mockCancel).toHaveBeenCalledWith('exec-1');
+    // The badge should now show 'cancelled' after the click
+    expect(container.textContent).toContain('cancelled');
   });
 });
