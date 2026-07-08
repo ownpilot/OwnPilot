@@ -479,4 +479,122 @@ describe('buildSandboxContext', () => {
     const { cleanup } = buildSandboxContext();
     expect(() => cleanup()).not.toThrow();
   });
+
+  it('non-writable dangerous globals cannot be reassigned', () => {
+    const { context } = buildSandboxContext();
+    // Non-writable properties prevent assignment in strict mode
+    const processDesc = Object.getOwnPropertyDescriptor(context, 'process');
+    expect(processDesc?.writable).toBe(false);
+    const evalDesc = Object.getOwnPropertyDescriptor(context, 'eval');
+    expect(evalDesc?.writable).toBe(false);
+    const functionDesc = Object.getOwnPropertyDescriptor(context, 'Function');
+    expect(functionDesc?.writable).toBe(false);
+  });
+
+  it('harden membrane does not wrap primitives', () => {
+    // Primitives (strings, numbers, booleans) should pass through the membrane unchanged
+    const { context } = buildSandboxContext();
+    // encodeURIComponent is a function — wrapped by membrane
+    expect(typeof context.encodeURIComponent).toBe('function');
+    // parseInt is a function — wrapped by membrane
+    expect(typeof context.parseInt).toBe('function');
+  });
+
+  it('fetch is wrapped by the harden membrane', () => {
+    const { context } = buildSandboxContext({ network: true });
+    // fetch is a host-realm function, should be membrane-wrapped
+    expect(context.fetch).not.toBe(globalThis.fetch);
+  });
+
+  it('crypto object is properly wrapped by membrane when permitted', () => {
+    const { context } = buildSandboxContext({ crypto: true });
+    expect(context.crypto).toBeDefined();
+    const c = context.crypto as { sha256: (s: string) => string };
+    expect(typeof c.sha256).toBe('function');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildTimers — additional edge cases
+// ---------------------------------------------------------------------------
+
+describe('buildTimers — edge cases', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('calls onTimeout when setTimeout callback throws', () => {
+    const onTimeout = vi.fn();
+    const timers = buildTimers(true, onTimeout);
+    const fn = vi.fn(() => {
+      throw new Error('boom');
+    });
+
+    expect(() => {
+      timers.setTimeout!(fn, 100);
+      vi.advanceTimersByTime(100);
+    }).toThrow('boom');
+    expect(onTimeout).toHaveBeenCalled();
+    timers._cleanup();
+  });
+
+  it('setInterval clears interval on callback throw', () => {
+    const timers = buildTimers(true, vi.fn());
+    const fn = vi.fn(() => {
+      throw new Error('interval error');
+    });
+
+    expect(() => {
+      timers.setInterval!(fn, 100);
+      vi.advanceTimersByTime(100);
+    }).toThrow('interval error');
+
+    // After throwing, the interval should be cleared — advancing again should not call fn again
+    vi.advanceTimersByTime(200);
+    expect(fn).toHaveBeenCalledTimes(1);
+    timers._cleanup();
+  });
+
+  it('_cleanup clears all pending timeouts', () => {
+    const timers = buildTimers(true, vi.fn());
+    const fn = vi.fn();
+    timers.setTimeout!(fn, 1000);
+    timers.setTimeout!(fn, 2000);
+
+    timers._cleanup();
+    vi.advanceTimersByTime(5000);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('_cleanup clears all pending intervals', () => {
+    const timers = buildTimers(true, vi.fn());
+    const fn = vi.fn();
+    timers.setInterval!(fn, 100);
+
+    timers._cleanup();
+    vi.advanceTimersByTime(1000);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('clearTimeout removes tracked timeout', () => {
+    const timers = buildTimers(true, vi.fn());
+    const fn = vi.fn();
+    const id = timers.setTimeout!(fn, 100);
+    timers.clearTimeout!(id);
+    vi.advanceTimersByTime(200);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('clearInterval removes tracked interval', () => {
+    const timers = buildTimers(true, vi.fn());
+    const fn = vi.fn();
+    const id = timers.setInterval!(fn, 100);
+    timers.clearInterval!(id);
+    vi.advanceTimersByTime(500);
+    expect(fn).not.toHaveBeenCalled();
+  });
 });

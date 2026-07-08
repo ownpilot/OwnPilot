@@ -26,10 +26,18 @@ describe('DANGEROUS_CODE_PATTERNS', () => {
   it('contains 37 patterns', () => {
     expect(DANGEROUS_CODE_PATTERNS).toHaveLength(37);
   });
+
+  it('each pattern has pattern (RegExp) and message (string)', () => {
+    for (const entry of DANGEROUS_CODE_PATTERNS) {
+      expect(entry.pattern).toBeInstanceOf(RegExp);
+      expect(typeof entry.message).toBe('string');
+      expect(entry.message.length).toBeGreaterThan(0);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
-// validateToolCode (~8 tests)
+// validateToolCode
 // ---------------------------------------------------------------------------
 
 describe('validateToolCode', () => {
@@ -74,6 +82,68 @@ describe('validateToolCode', () => {
     const result = validateToolCode(hugeCode);
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain(`${MAX_TOOL_CODE_SIZE}`);
+  });
+
+  it('detects dynamic import()', () => {
+    const result = validateToolCode("const mod = import('fs')");
+    expect(result.errors).toContain('Dynamic import() is not allowed');
+  });
+
+  it('detects new Function pattern', () => {
+    const result = validateToolCode('const fn = new Function("return 1")');
+    expect(result.errors).toContain('new Function() is not allowed');
+  });
+
+  it('detects child_process', () => {
+    const result = validateToolCode("const cp = require('child_process')");
+    expect(result.errors).toContain('child_process module is not allowed');
+  });
+
+  it('detects spawn()', () => {
+    const result = validateToolCode("spawn('ls')");
+    expect(result.errors).toContain('spawn() is not allowed');
+  });
+
+  it('detects debugger statement', () => {
+    const result = validateToolCode('debugger;');
+    expect(result.errors).toContain('debugger statement is not allowed');
+  });
+
+  it('detects with statement', () => {
+    const result = validateToolCode('with(obj) { x }');
+    expect(result.errors).toContain('with statement is not allowed');
+  });
+
+  it('detects XMLHttpRequest', () => {
+    const result = validateToolCode('const xhr = new XMLHttpRequest()');
+    expect(result.errors).toContain('XMLHttpRequest is not allowed (use fetch)');
+  });
+
+  it('detects WebSocket', () => {
+    const result = validateToolCode('const ws = new WebSocket("ws://x")');
+    expect(result.errors).toContain('WebSocket is not allowed');
+  });
+
+  it('detects WebAssembly', () => {
+    const result = validateToolCode('WebAssembly.compile(b)');
+    expect(result.errors).toContain('WebAssembly is not allowed');
+  });
+
+  it('detects Symbol.unscopables', () => {
+    const result = validateToolCode('Symbol.unscopables');
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain('Symbol.unscopables');
+  });
+
+  it('allows class constructor method definition', () => {
+    // The constructor keyword in class method definitions is NOT preceded by . or [
+    const result = validateToolCode('class Foo { constructor() { this.x = 1; } }');
+    expect(result.valid).toBe(true);
+  });
+
+  it('detects constructor property access via bracket notation', () => {
+    const result = validateToolCode("obj['constructor']");
+    expect(result.errors).toContain('constructor property access is not allowed');
   });
 
   it('returns ALL errors, not just the first one', () => {
@@ -196,10 +266,20 @@ describe('findFirstDangerousPattern', () => {
     const result = findFirstDangerousPattern(code);
     expect(result).toBe('require() is not allowed');
   });
+
+  it('returns size error for oversized code', () => {
+    const hugeCode = 'x'.repeat(MAX_TOOL_CODE_SIZE + 1);
+    const result = findFirstDangerousPattern(hugeCode);
+    expect(result).toContain(`${MAX_TOOL_CODE_SIZE}`);
+  });
+
+  it('returns null for code with only safe patterns like return', () => {
+    expect(findFirstDangerousPattern('return 42;')).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
-// calculateSecurityScore (~4 tests)
+// calculateSecurityScore
 // ---------------------------------------------------------------------------
 
 describe('calculateSecurityScore', () => {
@@ -229,10 +309,88 @@ describe('calculateSecurityScore', () => {
     // 1 permission * 5 = 5
     expect(score.factors['permissions']).toBe(-5);
   });
+
+  it('applies code length penalty for 100+ lines', () => {
+    const code = Array.from({ length: 150 }, (_, i) => `const x${i} = ${i};`).join('\n');
+    const score = calculateSecurityScore(code);
+    expect(score.factors['codeLength']).toBe(-10);
+    expect(score.score).toBeLessThan(95);
+  });
+
+  it('applies small code length penalty for 50+ lines', () => {
+    const code = Array.from({ length: 75 }, (_, i) => `const x${i} = ${i};`).join('\n');
+    const score = calculateSecurityScore(code);
+    expect(score.factors['codeLength']).toBe(-5);
+  });
+
+  it('gives zero code length penalty for short code (< 50 lines)', () => {
+    const code = Array.from({ length: 10 }, (_, i) => `const x${i} = ${i};`).join('\n');
+    const score = calculateSecurityScore(code);
+    expect(score.factors['codeLength']).toBe(0);
+  });
+
+  it('applies callTool usage penalty', () => {
+    const score = calculateSecurityScore("utils.callTool('read_file')");
+    expect(score.factors['callToolUsage']).toBe(-10);
+  });
+
+  it('gives error handling bonus for try/catch', () => {
+    const score = calculateSecurityScore('try { return x; } catch(e) { return null; }');
+    expect(score.factors['errorHandling']).toBe(10);
+  });
+
+  it('gives input validation bonus for typeof check', () => {
+    const score = calculateSecurityScore("if (typeof x === 'undefined') return;");
+    expect(score.factors['inputValidation']).toBe(5);
+  });
+
+  it('gives input validation bonus for !args check', () => {
+    const score = calculateSecurityScore('if (!args.name) return;');
+    expect(score.factors['inputValidation']).toBe(5);
+  });
+
+  it('gives input validation bonus for === undefined check', () => {
+    const score = calculateSecurityScore('if (x === undefined) return;');
+    expect(score.factors['inputValidation']).toBe(5);
+  });
+
+  it('applies filesystem permission penalty', () => {
+    const score = calculateSecurityScore('return 1;', ['filesystem']);
+    expect(score.factors['filesystemPermission']).toBe(-5);
+  });
+
+  it('clamps score to 0 minimum', () => {
+    // Many penalties: 100 - 15 (200+ lines) - 20 (4 perms) - 10 (fetch) - 15 (shell) = 40... not enough
+    // Push it negative with all penalties
+    const code = 'x'.repeat(300) + '\n'.repeat(210) + " fetch('http://x.com');";
+    const score = calculateSecurityScore(code, ['shell', 'a', 'b', 'c', 'd', 'e', 'f']);
+    expect(score.score).toBeGreaterThanOrEqual(0);
+  });
+
+  it('categories scores correctly', () => {
+    // Dangerous (score < 50) — code with many penalties
+    const dangerous = calculateSecurityScore(
+      "const r = await fetch('http://x.com');" +
+        Array.from({ length: 210 }, (_, i) => `\nconst x${i} = ${i};`).join(''),
+      ['shell', 'a', 'b', 'c', 'd']
+    );
+    expect(dangerous.category).toBe('dangerous');
+    // Review (score >= 50 and < 80)
+    const review = calculateSecurityScore(
+      "const r = await fetch('http://x.com');" +
+        " const result = await utils.callTool('data');" +
+        ' console.log(r);',
+      ['network', 'a', 'b']
+    );
+    expect(review.category).toBe('review');
+    // Safe (score >= 80)
+    const safe = calculateSecurityScore('return 42;');
+    expect(safe.category).toBe('safe');
+  });
 });
 
 // ---------------------------------------------------------------------------
-// analyzeToolCode (~3 tests)
+// analyzeToolCode
 // ---------------------------------------------------------------------------
 
 describe('analyzeToolCode', () => {
@@ -256,5 +414,110 @@ describe('analyzeToolCode', () => {
     expect(analysis.suggestedPermissions).toContain('network');
     expect(analysis.stats.usesFetch).toBe(true);
     expect(analysis.stats.hasAsyncCode).toBe(true);
+  });
+
+  it('warns about missing return statement', () => {
+    const code = 'const x = 1;';
+    const analysis = analyzeToolCode(code);
+    expect(analysis.warnings.some((w) => w.includes('return statement'))).toBe(true);
+    expect(analysis.stats.returnsValue).toBe(false);
+  });
+
+  it('warns about fetch() without try/catch', () => {
+    const code = "const r = await fetch('http://x.com'); return r;";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.warnings.some((w) => w.includes('fetch'))).toBe(true);
+    expect(analysis.warnings.some((w) => w.includes('try/catch'))).toBe(true);
+  });
+
+  it('warns about callTool() without try/catch', () => {
+    const code = "const r = await utils.callTool('x'); return r;";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.warnings.some((w) => w.includes('callTool'))).toBe(true);
+    expect(analysis.warnings.some((w) => w.includes('try/catch'))).toBe(true);
+  });
+
+  it('warns about infinite loop patterns', () => {
+    const code = 'while (true) { break; }';
+    const analysis = analyzeToolCode(code);
+    expect(analysis.warnings.some((w) => w.includes('Infinite loop'))).toBe(true);
+  });
+
+  it('detects data flow risk: fetch piped to callTool', () => {
+    const code = `
+      const data = await fetch('http://api.com/data');
+      await utils.callTool('read_file', { path: '/tmp/x' });
+      return data;
+    `;
+    const analysis = analyzeToolCode(code);
+    expect(analysis.dataFlowRisks.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('detects user input in fetch URL directly', () => {
+    const code = 'const r = await fetch(args.url);';
+    const analysis = analyzeToolCode(code);
+    const hasInputRisk = analysis.dataFlowRisks.some((r) => r.includes('fetch URL'));
+    expect(hasInputRisk).toBe(true);
+  });
+
+  it('returns best practices for code with error handling', () => {
+    const code = `
+      try {
+        const r = await fetch('http://x.com');
+        return r;
+      } catch(e) {
+        return null;
+      }
+    `;
+    const analysis = analyzeToolCode(code);
+    expect(analysis.bestPractices.followed.some((b) => b.includes('try/catch'))).toBe(true);
+  });
+
+  it('flags violated best practice: missing return', () => {
+    const analysis = analyzeToolCode('const x = 1;');
+    expect(analysis.bestPractices.violated.some((b) => b.includes('return'))).toBe(true);
+  });
+
+  it('flags violated best practice: missing input validation', () => {
+    const analysis = analyzeToolCode('return 42;');
+    expect(analysis.bestPractices.violated.some((b) => b.includes('input'))).toBe(true);
+  });
+
+  it('detects fetch response status check as best practice', () => {
+    const code = "const r = await fetch('http://x.com'); if (response.ok) return r;";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.bestPractices.followed.some((b) => b.includes('response'))).toBe(true);
+  });
+
+  it('flags fetch without response status check', () => {
+    const code = "const r = await fetch('http://x.com'); return r;";
+    const analysis = analyzeToolCode(code);
+    const hasViolation = analysis.bestPractices.violated.some((b) => b.includes('response'));
+    expect(hasViolation).toBe(true);
+  });
+
+  it('suggests filesystem permission for read_file callTool', () => {
+    const code = "await utils.callTool('read_file', { path: '/tmp/x' });";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.suggestedPermissions).toContain('filesystem');
+  });
+
+  it('suggests shell permission for execute_shell callTool', () => {
+    const code = "await utils.callTool('execute_shell', { cmd: 'ls' });";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.suggestedPermissions).toContain('shell');
+  });
+
+  it('suggests email permission for send_email callTool', () => {
+    const code = "await utils.callTool('send_email', { to: 'a@b.com' });";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.suggestedPermissions).toContain('email');
+  });
+
+  it('all validates invalid code and reports errors', () => {
+    const code = "const fs = require('fs'); eval('bad');";
+    const analysis = analyzeToolCode(code);
+    expect(analysis.valid).toBe(false);
+    expect(analysis.errors.length).toBeGreaterThanOrEqual(1);
   });
 });

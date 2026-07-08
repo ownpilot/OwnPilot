@@ -13,23 +13,20 @@ import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
 import { ThinkingToggle } from '../components/ThinkingToggle';
+import { ChatStarterPrompts } from '../components/ChatStarterPrompts';
 import { useGateway } from '../hooks/useWebSocket';
 import { ChatTimeline } from '../components/ChatTimeline';
 import type { Conversation, ChannelInfo } from '../api';
 
 // Lazy-load rarely-used components
-const SetupWizard = lazy(() =>
-  import('../components/SetupWizard').then((m) => ({ default: m.SetupWizard }))
-);
 const ExecutionApprovalDialog = lazy(() =>
   import('../components/ExecutionApprovalDialog').then((m) => ({
     default: m.ExecutionApprovalDialog,
   }))
 );
 import {
-  AlertCircle,
-  AlertTriangle,
   Settings,
+  AlertTriangle,
   Bot,
   Shield,
   ChevronDown,
@@ -44,24 +41,9 @@ import {
   settingsApi,
   agentsApi,
   chatApi,
-  tasksApi,
-  notesApi,
-  calendarApi,
-  goalsApi,
-  memoriesApi,
-  habitsApi,
 } from '../api';
 import { ignoreError } from '../utils/ignore-error';
 import type { ModelInfo, AgentDetail } from '../types';
-import { STORAGE_KEYS } from '../constants/storage-keys';
-import {
-  EXAMPLE_STARTERS,
-  STARTER_MENU_TTL_MS,
-  getTextList,
-  readStarterMenuCache,
-  writeStarterMenuCache,
-  type StarterPrompt,
-} from './ChatPage.starters';
 
 export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,15 +101,6 @@ export function ChatPage() {
   const [showContextDetail, setShowContextDetail] = useState(false);
   const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const [timelineMode, setTimelineMode] = useState(false);
-  const [starterTab, setStarterTab] = useState<'personal' | 'examples'>('personal');
-  const [personalStarters, setPersonalStarters] = useState<StarterPrompt[]>(() => {
-    const cached = readStarterMenuCache();
-    return cached?.personalPrompts ?? [];
-  });
-  const [starterMenuCachedAt, setStarterMenuCachedAt] = useState<number | null>(() => {
-    const cached = readStarterMenuCache();
-    return cached?.createdAt ?? null;
-  });
 
   // Channel mode state
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
@@ -145,140 +118,7 @@ export function ChatPage() {
   const [isChannelMode, setIsChannelMode] = useState(false);
   const { subscribe } = useGateway();
 
-  useEffect(() => {
-    let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-    const cached = readStarterMenuCache();
-    if (cached) {
-      setPersonalStarters(cached.personalPrompts);
-      setStarterMenuCachedAt(cached.createdAt);
-      refreshTimer = setTimeout(
-        () => ignoreError(loadPersonalStarters(), 'chat:refreshPersonalStarters'),
-        Math.max(cached.expiresAt - Date.now(), 1_000)
-      );
-    }
-
-    const today = new Date();
-    const weekFromNow = new Date(today);
-    weekFromNow.setDate(today.getDate() + 7);
-    const isoDate = (date: Date) => date.toISOString().slice(0, 10);
-
-    async function loadPersonalStarters() {
-      const [tasksRes, goalsRes, calendarRes, notesRes, memoriesRes, habitsRes] =
-        await Promise.allSettled([
-          tasksApi.list({ status: ['pending', 'in_progress'] }),
-          goalsApi.list({ status: 'active' }),
-          calendarApi.list({ start: isoDate(today), end: isoDate(weekFromNow) }),
-          notesApi.list({ limit: '5' }),
-          memoriesApi.list({ limit: '5' }),
-          habitsApi.getToday(),
-        ]);
-
-      if (cancelled) return;
-
-      const prompts: StarterPrompt[] = [];
-      if (tasksRes.status === 'fulfilled' && tasksRes.value.length > 0) {
-        const highPriority = tasksRes.value
-          .filter((task) => task.priority === 'urgent' || task.priority === 'high')
-          .slice(0, 3);
-        const taskNames = getTextList(
-          (highPriority.length ? highPriority : tasksRes.value).map((task) => task.title)
-        );
-        prompts.push({
-          icon: '✅',
-          label: `${tasksRes.value.length} open task${tasksRes.value.length === 1 ? '' : 's'}`,
-          detail: taskNames || 'Prioritize what is active',
-          source: 'personal',
-          prompt: `Look at my current open tasks, especially these: ${taskNames || 'the highest priority ones'}. Help me prioritize them, pick the next concrete action, and identify anything I should defer.`,
-        });
-      }
-
-      if (goalsRes.status === 'fulfilled' && goalsRes.value.goals.length > 0) {
-        const goal = [...goalsRes.value.goals].sort((a, b) => b.priority - a.priority)[0]!;
-        prompts.push({
-          icon: '🎯',
-          label: 'Advance a goal',
-          detail: `${goal.title}${goal.progress ? ` (${goal.progress}% done)` : ''}`,
-          source: 'personal',
-          prompt: `Help me make progress on this goal: "${goal.title}". Review what I know about it, identify the next milestone, and give me a focused action plan for the next 7 days.`,
-        });
-      }
-
-      if (calendarRes.status === 'fulfilled' && calendarRes.value.length > 0) {
-        const eventNames = getTextList(calendarRes.value.map((event) => event.title));
-        prompts.push({
-          icon: '📅',
-          label: 'Prep my week',
-          detail: eventNames || 'Upcoming calendar events',
-          source: 'personal',
-          prompt: `Review my upcoming calendar for the next 7 days, especially: ${eventNames}. Help me prepare, spot conflicts, and turn meetings/events into a practical checklist.`,
-        });
-      }
-
-      if (habitsRes.status === 'fulfilled' && habitsRes.value.total > 0) {
-        const incomplete = habitsRes.value.habits.filter((habit) => !habit.completedToday);
-        prompts.push({
-          icon: '🌱',
-          label: 'Check habits',
-          detail:
-            incomplete.length > 0
-              ? `${incomplete.length} still open today`
-              : 'All habits done today',
-          source: 'personal',
-          prompt:
-            incomplete.length > 0
-              ? `My unfinished habits today are: ${getTextList(
-                  incomplete.map((habit) => habit.name),
-                  5
-                )}. Help me fit them into the rest of the day without overloading myself.`
-              : 'Review my habit progress for today and suggest how to keep the streak going tomorrow.',
-        });
-      }
-
-      if (notesRes.status === 'fulfilled' && notesRes.value.length > 0) {
-        const noteTitles = getTextList(notesRes.value.map((note) => note.title));
-        prompts.push({
-          icon: '🗂️',
-          label: 'Connect my notes',
-          detail: noteTitles || 'Recent notes',
-          source: 'personal',
-          prompt: `Look at my recent notes, including: ${noteTitles}. Find patterns, summarize the useful parts, and suggest follow-up actions or tags.`,
-        });
-      }
-
-      if (memoriesRes.status === 'fulfilled' && memoriesRes.value.memories.length > 0) {
-        prompts.push({
-          icon: '🧠',
-          label: 'Use my memory',
-          detail: `${memoriesRes.value.memories.length} recent memories`,
-          source: 'personal',
-          prompt:
-            'Use my saved memories and preferences to recommend how I should work with you today. Be specific: tone, planning style, likely priorities, and what you should remember to avoid.',
-        });
-      }
-
-      const nextPrompts = prompts.slice(0, 6);
-      writeStarterMenuCache(nextPrompts);
-      setPersonalStarters(nextPrompts);
-      setStarterMenuCachedAt(Date.now());
-      if (!cancelled) {
-        if (refreshTimer) clearTimeout(refreshTimer);
-        refreshTimer = setTimeout(
-          () => ignoreError(loadPersonalStarters(), 'chat:refreshPersonalStarters'),
-          STARTER_MENU_TTL_MS
-        );
-      }
-    }
-
-    if (!cached) {
-      ignoreError(loadPersonalStarters(), 'chat:loadPersonalStarters');
-    }
-
-    return () => {
-      cancelled = true;
-      if (refreshTimer) clearTimeout(refreshTimer);
-    };
-  }, []);
+  // Personal starters moved to ChatStarterPrompts
 
   // Close dropdowns on Escape key
   useEffect(() => {
@@ -1151,271 +991,15 @@ export function ChatPage() {
         {!isChannelMode && (
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center max-w-md">
-                  <h3 className="text-xl font-medium text-text-primary dark:text-dark-text-primary mb-2">
-                    {currentAgent ? `Chat with ${agentDisplayName}` : 'Welcome to OwnPilot'}
-                  </h3>
-
-                  {!isLoadingModels &&
-                  configuredProviders.length === 0 &&
-                  localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true' ? (
-                    <Suspense fallback={null}>
-                      <SetupWizard onComplete={() => window.location.reload()} />
-                    </Suspense>
-                  ) : !isLoadingModels && configuredProviders.length === 0 ? (
-                    <>
-                      <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg mb-4">
-                        <div className="flex items-center justify-center gap-2 text-warning mb-2">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">No API Keys</span>
-                        </div>
-                        <p className="text-sm text-text-muted dark:text-dark-text-muted">
-                          Configure at least one AI provider to start chatting.
-                        </p>
-                      </div>
-                      <a
-                        href="/settings/api-keys"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors mb-4"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Configure API Keys
-                      </a>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-text-muted dark:text-dark-text-muted mb-2">
-                        Start a conversation by typing a message below.
-                      </p>
-                      <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-                        Currently using:{' '}
-                        <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
-                        <span className="font-mono">{model}</span>
-                      </p>
-                    </>
-                  )}
-
-                  <div className="max-w-2xl mx-auto">
-                    <div className="inline-flex items-center gap-1 p-1 mb-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
-                      {[
-                        {
-                          id: 'personal' as const,
-                          label: 'For you',
-                          count: personalStarters.length,
-                        },
-                        {
-                          id: 'examples' as const,
-                          label: 'Examples',
-                          count: EXAMPLE_STARTERS.length,
-                        },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          onClick={() => setStarterTab(tab.id)}
-                          className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                            starterTab === tab.id
-                              ? 'bg-bg-primary dark:bg-dark-bg-primary text-primary shadow-sm'
-                              : 'text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary'
-                          }`}
-                        >
-                          {tab.label}
-                          {tab.count > 0 && <span className="ml-1 opacity-60">{tab.count}</span>}
-                        </button>
-                      ))}
-                    </div>
-
-                    {starterTab === 'personal' && personalStarters.length === 0 && (
-                      <div className="mb-3 rounded-lg border border-border dark:border-dark-border bg-bg-secondary/60 dark:bg-dark-bg-secondary/60 px-4 py-3 text-sm text-text-muted dark:text-dark-text-muted">
-                        Add tasks, goals, notes, calendar events, memories, or habits and this area
-                        will turn into personalized starter questions. The menu is cached for at
-                        least 1 hour, so New Chat keeps the same suggestions.
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {(starterTab === 'personal' && personalStarters.length > 0
-                        ? personalStarters
-                        : EXAMPLE_STARTERS
-                      )
-                        .slice(0, starterTab === 'personal' ? 4 : 6)
-                        .map((item) => (
-                          <button
-                            key={`${item.source}-${item.label}`}
-                            onClick={() => sendMessage(item.prompt)}
-                            className="flex items-start gap-3 px-3 py-3 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
-                          >
-                            <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
-                            <span className="min-w-0">
-                              <span className="block text-sm font-medium text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
-                                {item.label}
-                              </span>
-                              <span className="block text-xs text-text-muted dark:text-dark-text-muted truncate">
-                                {item.detail}
-                              </span>
-                            </span>
-                          </button>
-                        ))}
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-text-muted dark:text-dark-text-muted">
-                      <span>
-                        {starterTab === 'personal' && starterMenuCachedAt
-                          ? `Personalized menu cached at ${new Date(starterMenuCachedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                          : 'Personalized suggestions refresh hourly when data is available'}
-                      </span>
-                      <span className="hidden sm:inline">•</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          chatInputRef.current?.setValue(
-                            'Ask me 5 sharp questions based on my tasks, notes, calendar, goals, memories, and habits. Use my real data where available, and explain why each question matters.'
-                          )
-                        }
-                        className="text-primary hover:underline"
-                      >
-                        Draft custom questions
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="hidden">
-                    {/* Suggestion cards grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-                      {[
-                        {
-                          icon: '🚀',
-                          label: 'What can you do?',
-                          prompt:
-                            'What are all the things you can help me with? Give me a quick overview of your capabilities, tools, and what makes you different from a regular chatbot.',
-                        },
-                        {
-                          icon: '🧠',
-                          label: 'My setup & limits',
-                          prompt:
-                            'Tell me about my current setup — which model am I using, what tools are available, and what are the context window limits? How much can you remember in a single conversation?',
-                        },
-                        {
-                          icon: '✅',
-                          label: 'Manage my tasks',
-                          prompt:
-                            'Show me all my current tasks and help me prioritize them. If I have none yet, help me create a task list for today.',
-                        },
-                        {
-                          icon: '📝',
-                          label: 'Take a note',
-                          prompt:
-                            'I want to save a quick note. Help me organize it with tags so I can find it later.',
-                        },
-                        {
-                          icon: '💡',
-                          label: 'Brainstorm with me',
-                          prompt:
-                            "I need fresh ideas. Let's brainstorm — ask me what topic I'm working on and then generate creative angles I haven't considered.",
-                        },
-                        {
-                          icon: '🔍',
-                          label: 'Search the web',
-                          prompt:
-                            'Search the web for the most interesting tech news from this week and give me a brief summary of the top 3 stories.',
-                        },
-                        {
-                          icon: '💻',
-                          label: 'Write & run code',
-                          prompt:
-                            'Show me what you can do with code execution. Write a quick Python script that does something fun and run it.',
-                        },
-                        {
-                          icon: '📊',
-                          label: 'Track something',
-                          prompt:
-                            "I want to start tracking something — maybe expenses, habits, books I've read, or workouts. Help me set up a custom data table for it.",
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.label}
-                          onClick={() => sendMessage(item.prompt)}
-                          className="flex items-center gap-2.5 px-3 py-2.5 text-left rounded-xl border border-border dark:border-dark-border hover:border-primary/40 dark:hover:border-primary/40 hover:bg-bg-secondary dark:hover:bg-dark-bg-secondary transition-all group"
-                        >
-                          <span className="text-base shrink-0">{item.icon}</span>
-                          <span className="text-sm text-text-secondary dark:text-dark-text-secondary group-hover:text-text-primary dark:group-hover:text-dark-text-primary transition-colors">
-                            {item.label}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Quick-action pills */}
-                    <div className="space-y-3 mt-5 max-w-lg mx-auto">
-                      {/* Code Execution */}
-                      <div>
-                        <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
-                          Code Execution
-                        </p>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {[
-                            {
-                              label: 'Run JavaScript',
-                              prompt:
-                                'Run this JavaScript code:\n\nconsole.log("Hello from Node.js!");\nconst arr = [1, 2, 3, 4, 5];\nconsole.log("Sum:", arr.reduce((a, b) => a + b, 0));\nconsole.log("Reversed:", arr.reverse());',
-                            },
-                            {
-                              label: 'Run Python',
-                              prompt:
-                                'Run this Python code:\n\nimport sys, os, datetime\nprint(f"Python {sys.version}")\nprint(f"Platform: {sys.platform}")\nprint(f"Current time: {datetime.datetime.now()}")\nprint(f"Fibonacci:", [0,1,1,2,3,5,8,13,21,34])',
-                            },
-                            {
-                              label: 'Run Shell',
-                              prompt:
-                                'Run this shell command: echo "=== System Info ===" && uname -a && echo "\\n=== Disk Usage ===" && df -h / && echo "\\n=== Memory ===" && free -h 2>/dev/null || echo "(memory info not available)"',
-                            },
-                          ].map((item) => (
-                            <button
-                              key={item.label}
-                              onClick={() => sendMessage(item.prompt)}
-                              className="px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full hover:bg-primary hover:text-white transition-colors"
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Tools & Productivity */}
-                      <div>
-                        <p className="text-xs text-text-muted dark:text-dark-text-muted mb-2 text-center">
-                          Tools & Productivity
-                        </p>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {[
-                            {
-                              label: 'Web Search',
-                              prompt:
-                                'Search the web for the most interesting tech news this week and summarize the top 3 stories.',
-                            },
-                            {
-                              label: 'Calculator',
-                              prompt: 'Calculate: (15 * 27) + (sqrt(144) / 3) - 18^2',
-                            },
-                            {
-                              label: 'Plan my day',
-                              prompt:
-                                'Help me plan my day. Ask me what I need to get done and create a structured schedule with time blocks.',
-                            },
-                          ].map((item) => (
-                            <button
-                              key={item.label}
-                              onClick={() => sendMessage(item.prompt)}
-                              className="px-3 py-1.5 text-sm bg-success/10 text-success rounded-full hover:bg-success hover:text-white transition-colors"
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <ChatStarterPrompts
+                show
+                onSend={sendMessage}
+                onDraftQuestions={(text) => chatInputRef.current?.setValue(text)}
+                isLoadingModels={isLoadingModels}
+                configuredProviders={configuredProviders}
+                currentProviderName={currentProviderName}
+                model={model}
+              />
             ) : (
               <>
                 <MessageList

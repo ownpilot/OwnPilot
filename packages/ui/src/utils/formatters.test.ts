@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { formatNumber, formatBytes, formatToolName } from './formatters.js';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import {
+  formatNumber,
+  formatBytes,
+  formatToolName,
+  formatCurrency,
+  timeAgo,
+} from './formatters.js';
 
 describe('formatNumber', () => {
   it('returns plain string for numbers under 1000', () => {
@@ -80,5 +86,47 @@ describe('formatToolName', () => {
 
   it('handles names without underscores or dots', () => {
     expect(formatToolName('mytool')).toBe('Mytool');
+  });
+});
+
+describe('formatCurrency', () => {
+  it('formats USD by default', () => {
+    expect(formatCurrency(12.5)).toBe('$12.50');
+  });
+
+  it('respects a custom currency code', () => {
+    expect(formatCurrency(12.5, 'EUR')).toBe('€12.50');
+  });
+});
+
+describe('timeAgo', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns the null label for empty or invalid dates', () => {
+    expect(timeAgo('')).toBe('—');
+    expect(timeAgo('not-a-date')).toBe('—');
+    expect(timeAgo('', { nullLabel: 'n/a' })).toBe('n/a');
+    expect(timeAgo('not-a-date', { nullLabel: 'n/a' })).toBe('n/a');
+  });
+
+  it('formats recent times as just now, minutes, hours, and days', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T12:00:00.000Z'));
+
+    expect(timeAgo('2026-07-07T11:59:30.000Z')).toBe('just now');
+    expect(timeAgo('2026-07-07T11:55:00.000Z')).toBe('5m ago');
+    expect(timeAgo('2026-07-07T09:00:00.000Z')).toBe('3h ago');
+    expect(timeAgo('2026-07-04T12:00:00.000Z')).toBe('3d ago');
+  });
+
+  it('falls back to locale date after the absolute threshold', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-07T12:00:00.000Z'));
+
+    expect(timeAgo('2026-07-02T12:00:00.000Z', { absoluteAfterDays: 5 })).toBe(
+      new Date('2026-07-02T12:00:00.000Z').toLocaleDateString()
+    );
   });
 });

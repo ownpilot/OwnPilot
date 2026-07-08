@@ -108,3 +108,101 @@ describe('autoArrangeNodes', () => {
     expect(original.position).toEqual(originalCopy.position);
   });
 });
+
+describe('autoArrangeNodes node size estimation', () => {
+  it('calculates large node sizes for llmNode with all fields', () => {
+    const node = makeNode('llm', 0, 0, {
+      systemPrompt: 'prompt',
+      userMessage: 'msg',
+      temperature: 0.7,
+      responseFormat: 'json',
+    });
+    node.type = 'llmNode';
+    const result = autoArrangeNodes([node], []);
+    expect(result[0]!.position.x).toBeGreaterThanOrEqual(0);
+  });
+
+  it('calculates httpRequestNode with url and auth', () => {
+    const node = makeNode('http', 0, 0, { url: 'https://api.test', auth: { bearer: 'x' } });
+    node.type = 'httpRequestNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates codeNode with multi-line code', () => {
+    const node = makeNode('code', 0, 0, { code: 'a\nb\nc\nd\ne' });
+    node.type = 'codeNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates switchNode with many cases', () => {
+    const node = makeNode('sw', 0, 0, { cases: ['a', 'b', 'c', 'd', 'e', 'f'] });
+    node.type = 'switchNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates subWorkflowNode with input mapping', () => {
+    const node = makeNode('sub', 0, 0, { inputMapping: { a: 'x', b: 'y', c: 'z' } });
+    node.type = 'subWorkflowNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates schemaValidatorNode with schema properties', () => {
+    const node = makeNode('sv', 0, 0, { schema: { properties: { a: {}, b: {}, c: {} } } });
+    node.type = 'schemaValidatorNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates toolNode with args and description', () => {
+    const node = makeNode('tool', 0, 0, { toolArgs: { url: 'x' }, description: 'desc' });
+    node.type = 'toolNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates parallelNode with branch count', () => {
+    const node = makeNode('par', 0, 0, { branchCount: 4 });
+    node.type = 'parallelNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates stickyNoteNode with multi-line text', () => {
+    const node = makeNode('note', 0, 0, { text: 'a\nb\nc\nd\ne\nf' });
+    node.type = 'stickyNoteNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates notificationNode without message', () => {
+    const node = makeNode('notif', 0, 0, {});
+    node.type = 'notificationNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates default node size for unknown type', () => {
+    const node = makeNode('unk', 0, 0, {});
+    node.type = 'unknownNodeType';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates subWorkflowNode without input mapping', () => {
+    const node = makeNode('sub', 0, 0, {});
+    node.type = 'subWorkflowNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+
+  it('calculates schemaValidatorNode without schema', () => {
+    const node = makeNode('sv', 0, 0, {});
+    node.type = 'schemaValidatorNode';
+    const result = autoArrangeNodes([node], []);
+    expect(Number.isFinite(result[0]!.position.x)).toBe(true);
+  });
+});

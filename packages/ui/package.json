@@ -3,6 +3,7 @@
   "version": "0.8.3",
   "description": "Web UI for OwnPilot",
   "type": "module",
+  "sideEffects": false,
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -32,7 +33,8 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.16.0",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "vite-plugin-pwa": "^1.3.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

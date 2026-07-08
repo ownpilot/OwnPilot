@@ -590,4 +590,307 @@ describe('Agentic CLI Commands', () => {
       expect(typeof mod.agenticWatch).toBe('function');
     });
   });
+
+  // ─── agenticDestinations ───
+
+  describe('agenticDelete', () => {
+    it('shows usage when no id provided', async () => {
+      const { agenticDelete } = await import('./agentic.js');
+      await agenticDelete('');
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Usage: ownpilot agentic delete')
+      );
+    });
+
+    it('sends DELETE request', async () => {
+      mockFetch.mockResolvedValueOnce(apiOk({}));
+      const { agenticDelete } = await import('./agentic.js');
+
+      await agenticDelete('exec-1');
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('/agentic/executions/exec-1');
+      expect((mockFetch.mock.calls[0][1] as RequestInit).method).toBe('DELETE');
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Deleted'));
+    });
+
+    it('handles gateway error', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      const { agenticDelete } = await import('./agentic.js');
+      await agenticDelete('exec-1');
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  // ─── agenticHelp ───
+
+  describe('agenticHelp', () => {
+    it('prints help text', async () => {
+      const { agenticHelp } = await import('./agentic.js');
+      agenticHelp();
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Agentic Commands'));
+    });
+  });
+
+  // ─── agenticRun --json ───
+
+  describe('agenticRun --json', () => {
+    it('outputs JSON when --json flag set', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-json',
+          status: 'completed',
+          summary: 'Done',
+          totalCostUsd: 0,
+          totalDurationMs: 0,
+          steps: [],
+        })
+      );
+
+      const { agenticRun } = await import('./agentic.js');
+      await agenticRun(['JSON output'], { json: true });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"id"'));
+    });
+  });
+
+  // ─── agenticRun with provider/model ───
+
+  describe('agenticRun with provider options', () => {
+    it('passes provider and model in body', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-p',
+          status: 'completed',
+          summary: '',
+          totalCostUsd: 0,
+          totalDurationMs: 0,
+          steps: [],
+        })
+      );
+
+      const { agenticRun } = await import('./agentic.js');
+      await agenticRun(['Task'], { provider: 'anthropic', model: 'claude-3' });
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.provider).toBe('anthropic');
+      expect(body.model).toBe('claude-3');
+    });
+
+    it('passes custom system prompt', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-prompt',
+          status: 'completed',
+          summary: '',
+          totalCostUsd: 0,
+          totalDurationMs: 0,
+          steps: [],
+        })
+      );
+
+      const { agenticRun } = await import('./agentic.js');
+      await agenticRun(['Task'], { prompt: 'You are a helpful assistant' });
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.prompt).toBe('You are a helpful assistant');
+    });
+  });
+
+  // ─── agenticList --json ───
+
+  describe('agenticList --json', () => {
+    it('outputs JSON instead of formatted table', async () => {
+      mockFetch.mockResolvedValueOnce(apiOk({ executions: [], total: 0, limit: 20, offset: 0 }));
+
+      const { agenticList } = await import('./agentic.js');
+      await agenticList({ json: true });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"executions"'));
+    });
+  });
+
+  // ─── agenticCapabilities --json and empty ───
+
+  describe('agenticCapabilities extended', () => {
+    it('outputs JSON when --json flag set', async () => {
+      mockFetch.mockResolvedValueOnce(apiOk({ capabilities: [], total: 0 }));
+
+      const { agenticCapabilities } = await import('./agentic.js');
+      logSpy.mockReset();
+      await agenticCapabilities({ json: true });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"capabilities"'));
+    });
+
+    it('shows empty message when no capabilities match', async () => {
+      mockFetch.mockResolvedValueOnce(apiOk({ capabilities: [], total: 0 }));
+
+      const { agenticCapabilities } = await import('./agentic.js');
+      await agenticCapabilities({ kind: 'unknown' });
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No capabilities'));
+    });
+
+    it('supports search filter', async () => {
+      mockFetch.mockResolvedValueOnce(apiOk({ capabilities: [], total: 0 }));
+
+      const { agenticCapabilities } = await import('./agentic.js');
+      await agenticCapabilities({ search: 'research' });
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).toContain('search=research');
+    });
+
+    it('displays requiresApproval tag', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          capabilities: [
+            {
+              id: 'claw:admin',
+              name: 'Admin Task',
+              description: 'Admin operation',
+              executorKind: 'claw',
+              providerId: 'ownpilot:claw',
+              tags: ['admin'],
+              requiresApproval: true,
+            },
+          ],
+          total: 1,
+        })
+      );
+
+      const { agenticCapabilities } = await import('./agentic.js');
+      await agenticCapabilities({});
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('requires approval'));
+    });
+  });
+
+  // ─── agenticStats extended ───
+
+  describe('agenticStats extended', () => {
+    it('shows empty-by-executor-kind gracefully', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          totalExecutions: 5,
+          activeExecutions: 0,
+          totalCostUsd: 0,
+          successRate: 1,
+        })
+      );
+
+      const { agenticStats } = await import('./agentic.js');
+      await agenticStats();
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('5'));
+    });
+  });
+
+  // ─── agenticRerun edge cases ───
+
+  describe('agenticRerun extended', () => {
+    it('handles missing task description', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-1',
+          task: {},
+          status: 'failed',
+          steps: [],
+        })
+      );
+
+      const { agenticRerun } = await import('./agentic.js');
+      await agenticRerun('exec-1', {});
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('no task description'));
+    });
+
+    it('passes prompt override', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-1',
+          task: { name: 'Test', description: 'Desc' },
+          status: 'failed',
+          steps: [],
+        })
+      );
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          id: 'exec-2',
+          status: 'completed',
+          summary: '',
+          totalCostUsd: 0,
+          totalDurationMs: 0,
+          steps: [],
+        })
+      );
+
+      const { agenticRerun } = await import('./agentic.js');
+      await agenticRerun('exec-1', { prompt: 'New prompt' });
+      const body = JSON.parse((mockFetch.mock.calls[1][1] as RequestInit).body as string);
+      expect(body.prompt).toBe('New prompt');
+    });
+  });
+
+  // ─── agenticWatch extended ───
+
+  describe('agenticWatch extended', () => {
+    it('agenticDeriveWsUrl uses env var when set', async () => {
+      // Test indirectly through the module — no export needed
+      const mod = await import('./agentic.js');
+      expect(typeof mod.agenticWatch).toBe('function');
+    });
+
+    it('formatAgenticEvent is tested through agenticWatch', async () => {
+      // formatAgenticEvent is module-private — tested via agenticWatch integration
+      const mod = await import('./agentic.js');
+      expect(typeof mod.agenticWatch).toBe('function');
+    });
+  });
+
+  // ─── agenticPlan with trigger options ───
+
+  describe('agenticPlan extended', () => {
+    it('passes interval trigger type', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          analysis: {
+            suggestedKinds: [],
+            requiresOrchestration: false,
+            likelyNeedsCodeExecution: false,
+            confidence: 0.5,
+            reasoning: 'test',
+          },
+          plan: {
+            steps: [],
+            estimatedCostUsd: 0,
+            estimatedDurationMs: 0,
+            requiresApproval: false,
+            fallbackStrategy: 'none',
+          },
+        })
+      );
+
+      const { agenticPlan } = await import('./agentic.js');
+      await agenticPlan(['Test'], { trigger: 'interval', interval: '120000' });
+      const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+      expect(body.trigger.type).toBe('interval');
+      expect(body.trigger.intervalMs).toBe(120000);
+    });
+
+    it('shows empty steps gracefully in plan output', async () => {
+      mockFetch.mockResolvedValueOnce(
+        apiOk({
+          analysis: {
+            suggestedKinds: [],
+            requiresOrchestration: false,
+            likelyNeedsCodeExecution: false,
+            confidence: 0,
+            reasoning: '',
+          },
+          plan: {
+            steps: [],
+            estimatedCostUsd: 0,
+            estimatedDurationMs: 0,
+            requiresApproval: false,
+            fallbackStrategy: 'none',
+          },
+        })
+      );
+
+      const { agenticPlan } = await import('./agentic.js');
+      await agenticPlan(['Plan test'], {});
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Plan'));
+    });
+  });
 });

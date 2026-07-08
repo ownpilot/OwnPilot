@@ -4,15 +4,17 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node scripts/build-search-index.mjs && vite",
+    "build": "node scripts/build-search-index.mjs && tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "search-index": "node scripts/build-search-index.mjs",
+    "search-index:watch": "node scripts/build-search-index.mjs --watch"
   },
   "dependencies": {
     "@oxog/codeshine": "^1.0.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.18.1",
+    "fuse.js": "^7.4.2",
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

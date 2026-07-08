@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { useInView } from '@/hooks/useInView';
 import { CheckCircle } from 'lucide-react';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { Badge } from '@/components/ui/Badge';
@@ -124,7 +124,7 @@ export function QuickStart() {
     <section id="quick-start" className="py-24 bg-[var(--color-bg-subtle)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={ref} className="text-center max-w-2xl mx-auto mb-12">
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
           >
@@ -137,12 +137,12 @@ export function QuickStart() {
             <p className="text-[var(--color-text-muted)]">
               Three ways to get started. Docker is the quickest — no Node.js required.
             </p>
-          </motion.div>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Left: Setup steps */}
-          <motion.div
+          <div
             initial={{ opacity: 0, x: -20 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.15 }}
@@ -215,10 +215,10 @@ export function QuickStart() {
                 ))}
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Right: .env config */}
-          <motion.div
+          <div
             initial={{ opacity: 0, x: 20 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.25 }}
@@ -255,7 +255,7 @@ export function QuickStart() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

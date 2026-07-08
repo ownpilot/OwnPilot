@@ -1,5 +1,4 @@
 import { Link } from 'react-router';
-import { motion } from 'framer-motion';
 import { ArrowLeft, Home, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Header } from '@/components/layout/Header';
@@ -10,7 +9,7 @@ export function NotFoundPage() {
     <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center px-4 py-24">
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -45,7 +44,7 @@ export function NotFoundPage() {
               </Button>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </main>
       <Footer />
     </div>

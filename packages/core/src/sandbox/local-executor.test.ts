@@ -265,4 +265,88 @@ describe('local-executor', () => {
       expect(result.stdout.trim()).toBe('custom_value_42');
     }, 10000);
   });
+
+  // ===========================================================================
+  // Timeout handling
+  // ===========================================================================
+
+  describe('timeout', () => {
+    it('returns timedOut=true for JavaScript infinite loop', async () => {
+      const result = await executeJavaScriptLocal('while(true) {}', { timeout: 500 });
+      expect(result.timedOut).toBe(true);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('timed out');
+    }, 15000);
+
+    it('returns timedOut=true for Python hang', async () => {
+      const result = await executePythonLocal('import time; time.sleep(10)', { timeout: 200 });
+      // Python may not be installed, skip gracefully
+      if (result.error?.includes('not found')) return;
+      expect(result.timedOut).toBe(true);
+    }, 10000);
+  });
+
+  // ===========================================================================
+  // Additional env sanitization prefixes
+  // ===========================================================================
+
+  describe('env sanitization — additional prefixes', () => {
+    const ORIGINAL_ENV: Record<string, string | undefined> = {};
+
+    beforeEach(() => {
+      ORIGINAL_ENV.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+      ORIGINAL_ENV.SMTP_HOST = process.env.SMTP_HOST;
+      ORIGINAL_ENV.AUTH_TOKEN = process.env.AUTH_TOKEN;
+      ORIGINAL_ENV.JWT_SECRET = process.env.JWT_SECRET;
+      ORIGINAL_ENV.MYAPP_CREDENTIAL = process.env.MYAPP_CREDENTIAL;
+
+      process.env.AWS_ACCESS_KEY_ID = 'AKIA_TEST_KEY';
+      process.env.SMTP_HOST = 'smtp.example.com';
+      process.env.AUTH_TOKEN = 'super-secret-token';
+      process.env.JWT_SECRET = 'jwt-secret-value';
+      process.env.MYAPP_CREDENTIAL = 'credential-value';
+    });
+
+    afterEach(() => {
+      const restore = (key: string, original: string | undefined) => {
+        if (original === undefined) delete process.env[key];
+        else process.env[key] = original;
+      };
+      restore('AWS_ACCESS_KEY_ID', ORIGINAL_ENV.AWS_ACCESS_KEY_ID);
+      restore('SMTP_HOST', ORIGINAL_ENV.SMTP_HOST);
+      restore('AUTH_TOKEN', ORIGINAL_ENV.AUTH_TOKEN);
+      restore('JWT_SECRET', ORIGINAL_ENV.JWT_SECRET);
+      restore('MYAPP_CREDENTIAL', ORIGINAL_ENV.MYAPP_CREDENTIAL);
+    });
+
+    it('strips AWS_ prefixed vars', async () => {
+      const code = "console.log(JSON.stringify(process.env.AWS_ACCESS_KEY_ID ?? '__UNDEFINED__'))";
+      const result = await executeJavaScriptLocal(code);
+      expect(result.stdout.trim()).toBe('"__UNDEFINED__"');
+    }, 10000);
+
+    it('strips SMTP_ prefixed vars', async () => {
+      const code = "console.log(JSON.stringify(process.env.SMTP_HOST ?? '__UNDEFINED__'))";
+      const result = await executeJavaScriptLocal(code);
+      expect(result.stdout.trim()).toBe('"__UNDEFINED__"');
+    }, 10000);
+
+    it('strips vars containing AUTH', async () => {
+      const code = "console.log(JSON.stringify(process.env.AUTH_TOKEN ?? '__UNDEFINED__'))";
+      const result = await executeJavaScriptLocal(code);
+      expect(result.stdout.trim()).toBe('"__UNDEFINED__"');
+    }, 10000);
+
+    it('strips vars containing JWT', async () => {
+      const code = "console.log(JSON.stringify(process.env.JWT_SECRET ?? '__UNDEFINED__'))";
+      const result = await executeJavaScriptLocal(code);
+      expect(result.stdout.trim()).toBe('"__UNDEFINED__"');
+    }, 10000);
+
+    it('strips vars containing CREDENTIAL', async () => {
+      const code = "console.log(JSON.stringify(process.env.MYAPP_CREDENTIAL ?? '__UNDEFINED__'))";
+      const result = await executeJavaScriptLocal(code);
+      expect(result.stdout.trim()).toBe('"__UNDEFINED__"');
+    }, 10000);
+  });
 });

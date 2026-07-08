@@ -89,6 +89,16 @@ describe('buildSoulPrompt() — identity', () => {
     const result = buildSoulPrompt(soul, [], 0);
     expect(result).toContain('Uses cooking analogies');
   });
+
+  it('handles empty backstory gracefully', () => {
+    const result = buildSoulPrompt(makeSoul(), [], 0);
+    expect(result).not.toContain('Backstory:');
+  });
+
+  it('handles empty quirks gracefully', () => {
+    const result = buildSoulPrompt(makeSoul(), [], 0);
+    expect(result).not.toContain('Quirk:');
+  });
 });
 
 describe('buildSoulPrompt() — boundaries', () => {
@@ -140,6 +150,85 @@ describe('buildSoulPrompt() — inbox', () => {
   it('omits inbox section when pendingInbox is 0', () => {
     const result = buildSoulPrompt(makeSoul(), [], 0);
     expect(result).not.toContain('unread');
+  });
+});
+
+describe('buildSoulPrompt() — claw mode (autonomy level 5)', () => {
+  it('includes claw mode section when level=5 and clawMode enabled', () => {
+    const soul = makeSoul();
+    soul.autonomy.level = 5;
+    soul.autonomy.clawMode = {
+      enabled: true,
+      canManageAgents: false,
+      canCreateTools: false,
+      selfImprovement: 'disabled' as const,
+    };
+    const result = buildSoulPrompt(soul, [], 0);
+    expect(result).toContain('Claw Mode');
+    expect(result).toContain('ACTIVE');
+    expect(result).toContain('All tools available');
+  });
+
+  it('includes canManageAgents and canCreateTools when enabled', () => {
+    const soul = makeSoul();
+    soul.autonomy.level = 5;
+    soul.autonomy.clawMode = {
+      enabled: true,
+      canManageAgents: true,
+      canCreateTools: true,
+      selfImprovement: 'enabled' as const,
+    };
+    const result = buildSoulPrompt(soul, [], 0);
+    expect(result).toContain('Can spawn subclaws');
+    expect(result).toContain('Can create tools at runtime');
+    expect(result).toContain('Self-improvement: enabled');
+  });
+
+  it('omits claw mode section when level is not 5', () => {
+    const soul = makeSoul();
+    soul.autonomy.level = 3;
+    soul.autonomy.clawMode = {
+      enabled: true,
+      canManageAgents: false,
+      canCreateTools: false,
+      selfImprovement: 'disabled' as const,
+    };
+    const result = buildSoulPrompt(soul, [], 0);
+    expect(result).not.toContain('Claw Mode');
+  });
+
+  it('omits claw mode section when clawMode.enabled is false', () => {
+    const soul = makeSoul();
+    soul.autonomy.level = 5;
+    soul.autonomy.clawMode = {
+      enabled: false,
+      canManageAgents: false,
+      canCreateTools: false,
+      selfImprovement: 'disabled' as const,
+    };
+    const result = buildSoulPrompt(soul, [], 0);
+    expect(result).not.toContain('Claw Mode');
+  });
+});
+
+describe('buildSoulPrompt() — heartbeat task detail', () => {
+  it('includes outputTo and priority in heartbeat task', () => {
+    const task: HeartbeatTask = {
+      id: 'task-1',
+      name: 'Monitor',
+      description: 'Check system',
+      schedule: 'every',
+      tools: ['search_web', 'send_email'],
+      priority: 'low',
+      outputTo: { type: 'memory', key: 'monitor_results' },
+      stalenessHours: 1,
+    };
+    const result = buildSoulPrompt(makeSoul(), [], 0, task);
+    expect(result).toContain('Output to');
+    expect(result).toContain('monitor_results');
+    expect(result).toContain('low');
+    expect(result).toContain('search_web');
+    expect(result).toContain('send_email');
   });
 });
 

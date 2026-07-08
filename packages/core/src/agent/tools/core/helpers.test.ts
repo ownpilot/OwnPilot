@@ -12,17 +12,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockExistsSync = vi.hoisted(() => vi.fn());
 const mockMkdirSync = vi.hoisted(() => vi.fn());
+const mockLstatSync = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs', () => ({
   existsSync: mockExistsSync,
   mkdirSync: mockMkdirSync,
+  lstatSync: mockLstatSync,
 }));
 
 // ---------------------------------------------------------------------------
 // Import after mocks
 // ---------------------------------------------------------------------------
 
-import { getWorkspacePath, resolveWorkspacePath, WORKSPACE_DIR } from './helpers.js';
+import {
+  getWorkspacePath,
+  resolveWorkspacePath,
+  rejectWorkspaceSymlink,
+  WORKSPACE_DIR,
+} from './helpers.js';
 import * as path from 'node:path';
 
 // ---------------------------------------------------------------------------
@@ -129,5 +136,55 @@ describe('resolveWorkspacePath', () => {
     expect(result).not.toBeNull();
     // Should resolve within workspace
     expect(result!.startsWith(path.join(process.cwd(), 'workspace'))).toBe(true);
+  });
+});
+
+describe('rejectWorkspaceSymlink', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does nothing when path does not exist (lstat throws ENOENT)', () => {
+    mockLstatSync.mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+
+    expect(() => rejectWorkspaceSymlink('/some/path')).not.toThrow();
+  });
+
+  it('does nothing when path is a regular file (not a symlink)', () => {
+    mockLstatSync.mockReturnValue({ isSymbolicLink: () => false });
+
+    expect(() => rejectWorkspaceSymlink('/some/file.txt')).not.toThrow();
+  });
+
+  it('throws when path is a symlink', () => {
+    mockLstatSync.mockReturnValue({ isSymbolicLink: () => true });
+
+    expect(() => rejectWorkspaceSymlink('/some/link')).toThrow(
+      'Symlinks are not permitted in workspace paths'
+    );
+  });
+
+  it('does nothing when lstat throws non-symlink error (e.g., EACCES)', () => {
+    const error = new Error('EACCES: permission denied');
+    mockLstatSync.mockImplementation(() => {
+      throw error;
+    });
+
+    expect(() => rejectWorkspaceSymlink('/restricted')).not.toThrow();
+  });
+
+  it('catches lstat errors that happen to have the symlink message prefix and re-throws', () => {
+    // Edge case: lstatSync itself throws an error whose message coincidentally
+    // starts with "Symlinks are not permitted" — the catch block will re-throw
+    // it rather than silently swallowing because the message matches the
+    // known prefix (defense in depth).
+    mockLstatSync.mockImplementation(() => {
+      const err = new Error('Symlinks are not permitted: some lstat failure');
+      throw err;
+    });
+
+    expect(() => rejectWorkspaceSymlink('/edge')).toThrow('Symlinks are not permitted');
   });
 });

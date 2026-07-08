@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from 'react-router';
+import { BrowserRouter, Routes, Route } from 'react-router';
 import { Suspense, lazy, useEffect } from 'react';
 import { useThemeStore } from '@/hooks/useTheme';
 
@@ -94,7 +94,7 @@ function ThemeInitializer() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <ThemeInitializer />
       <Suspense fallback={<PageLoader />}>
         <Routes>
@@ -142,6 +142,6 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </HashRouter>
+    </BrowserRouter>
   );
 }

@@ -1,4 +1,4 @@
-import { motion, useInView } from 'framer-motion';
+import { useInView } from '@/hooks/useInView';
 import { useRef } from 'react';
 import {
   Brain,
@@ -195,7 +195,7 @@ function FeatureCard({ feature, index }: FeatureCardProps) {
   const Icon = feature.icon;
 
   return (
-    <motion.div
+    <div
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -219,7 +219,7 @@ function FeatureCard({ feature, index }: FeatureCardProps) {
           {feature.description}
         </p>
       </Card>
-    </motion.div>
+    </div>
   );
 }
 
@@ -232,7 +232,7 @@ export function Features() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div ref={headerRef} className="text-center max-w-3xl mx-auto mb-16">
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={isHeaderInView ? { opacity: 1, y: 0 } : {}}
           >
@@ -247,7 +247,7 @@ export function Features() {
               subscription fees, no vendor lock-in. Just a powerful, extensible AI assistant that
               respects your privacy.
             </p>
-          </motion.div>
+          </div>
         </div>
 
         {/* Feature grid */}

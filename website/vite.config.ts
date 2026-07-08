@@ -17,7 +17,6 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           router: ['react-router'],
-          motion: ['framer-motion'],
           codeshine: ['@oxog/codeshine', '@oxog/codeshine/react'],
         },
       },

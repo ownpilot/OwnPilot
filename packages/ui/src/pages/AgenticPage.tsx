@@ -772,6 +772,11 @@ function CapabilitiesPanel() {
       try {
         const data = await agenticApi.capabilities(kindFilter ? { kind: kindFilter } : undefined);
         if (mounted) setCaps(data.capabilities);
+      } catch {
+        // Capabilities fetch is non-critical; swallow the error so it doesn't
+        // bubble up as an unhandled rejection. The capabilities tab will
+        // simply show the empty state in this case.
+        if (mounted) setCaps([]);
       } finally {
         if (mounted) setLoading(false);
       }

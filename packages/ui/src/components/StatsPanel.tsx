@@ -33,14 +33,12 @@ import {
   Cpu,
   MessageSquare,
   Send,
-  FolderOpen,
   Terminal,
   Bot,
   StopCircle,
-  Wrench,
-  Layers,
-  Settings,
 } from './icons';
+import { StatCard } from './stats/StatCard';
+import { ContextBanner } from './stats/ContextBanner';
 import { MarkdownContent } from './MarkdownContent';
 import { summaryApi, costsApi, providersApi, modelsApi } from '../api';
 import { STORAGE_KEYS } from '../constants/storage-keys';
@@ -52,92 +50,11 @@ import { usePageCopilotContext } from '../hooks/usePageCopilotContext';
 import { cleanStreamingChatContent, stripChatInternalTags } from '../utils/chat-content';
 import { silentCatch } from '../utils/ignore-error';
 
-interface StatCardProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-  subValue?: string;
-  color?: string;
-  alert?: boolean;
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  subValue,
-  color = 'text-primary',
-  alert,
-}: StatCardProps) {
-  return (
-    <div
-      className={`p-3 bg-bg-tertiary dark:bg-dark-bg-tertiary rounded-lg ${alert ? 'ring-1 ring-error' : ''}`}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <Icon className={`w-4 h-4 ${alert ? 'text-error' : color}`} />
-        <span className="text-xs text-text-muted dark:text-dark-text-muted">{label}</span>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span
-          className={`text-lg font-semibold ${alert ? 'text-error' : 'text-text-primary dark:text-dark-text-primary'}`}
-        >
-          {value}
-        </span>
-        {subValue && (
-          <span className="text-xs text-text-muted dark:text-dark-text-muted">{subValue}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // QuickAddSection is now extracted to QuickAddModal.tsx (shared with DashboardPage)
 
 // ---- Compact Chat (StatsPanel Chat tab) ----
 
-const CONTEXT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  workspace: FolderOpen,
-  'coding-agent': Terminal,
-  claw: Bot,
-  workflow: Layers,
-  workflows: Layers,
-  agent: Brain,
-  agents: Brain,
-  tools: Wrench,
-  settings: Settings,
-};
-
-function ContextBanner() {
-  const { context, isLoading: ctxLoading } = usePageContext();
-  const [expanded, setExpanded] = useState(false);
-
-  if (ctxLoading || !context.type) return null;
-
-  const Icon = CONTEXT_ICONS[context.type] ?? Activity;
-  const label = context.name || context.type;
-  const detail = context.path;
-
-  return (
-    <button
-      data-testid="context-banner"
-      onClick={() => setExpanded((v) => !v)}
-      className="w-full flex items-center gap-2 px-3 py-1.5 bg-primary/5 border-b border-primary/10 text-xs text-text-secondary dark:text-dark-text-secondary hover:bg-primary/10 transition-colors text-left"
-    >
-      <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
-      <span className="font-medium truncate">{label}</span>
-      {detail && !expanded && (
-        <span className="text-text-muted dark:text-dark-text-muted truncate ml-auto">
-          {detail.length > 25 ? '...' + detail.slice(-25) : detail}
-        </span>
-      )}
-      {detail && expanded && (
-        <span className="text-text-muted dark:text-dark-text-muted break-all ml-auto">
-          {detail}
-        </span>
-      )}
-    </button>
-  );
-}
+// ---- Utility functions ----
 
 const isBridgeProvider = (p: { id: string; name: string }) =>
   p.id.startsWith('bridge-') || p.name.startsWith('bridge-');
