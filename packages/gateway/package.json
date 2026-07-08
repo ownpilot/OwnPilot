@@ -50,7 +50,8 @@
     "seed": "tsx scripts/seed-database.ts",
     "seed:triggers-plans": "tsx scripts/seed-triggers-plans.ts",
     "migrate:postgres": "tsx scripts/migrate-to-postgres.ts",
-    "migrate:postgres:dry": "tsx scripts/migrate-to-postgres.ts --dry-run"
+    "migrate:postgres:dry": "tsx scripts/migrate-to-postgres.ts --dry-run",
+    "migration:smoke": "tsx scripts/migration-smoke-test.ts"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.16.1",
