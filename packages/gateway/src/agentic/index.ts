@@ -17,7 +17,6 @@
 export {
   AgenticGatewayExecutor,
   getAgenticExecutor,
-  setAgenticExecutor,
   resetAgenticExecutor,
 } from './agentic-executor.js';
 export type { DispatchResult } from './agentic-executor.js';

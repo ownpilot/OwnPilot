@@ -5,27 +5,20 @@
     ".": {
       "entry": ["scripts/*.mjs", "scripts/generate-provider-configs.ts"]
     },
-    "packages/core": {
-      "entry": ["src/index.ts"]
-    },
+    "packages/core": {},
     "packages/gateway": {
       "entry": [
-        "src/index.ts",
-        "src/server.ts",
         "src/mcp/cli-mcp-server.ts",
         "src/mcp/e2e-test.ts",
-        "scripts/migration-smoke-test.ts",
-        "src/agentic/index.ts"
+        "scripts/migration-smoke-test.ts"
       ]
     },
-    "packages/cli": {
-      "entry": ["src/index.ts"]
-    },
+    "packages/cli": {},
     "packages/ui": {
-      "entry": ["src/main.tsx", "dev-proxy.mjs", "e2e/**/*.ts"]
+      "entry": ["dev-proxy.mjs", "e2e/**/*.ts"]
     },
     "website": {
-      "entry": ["src/main.tsx", "index.html"]
+      "entry": ["index.html"]
     }
   }
 }

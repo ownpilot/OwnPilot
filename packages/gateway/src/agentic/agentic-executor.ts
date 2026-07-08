@@ -847,13 +847,6 @@ export function getAgenticExecutor(ctx?: RuntimeContext): AgenticGatewayExecutor
 }
 
 /**
- * Replace the executor singleton (for testing).
- */
-export function setAgenticExecutor(executor: AgenticGatewayExecutor): void {
-  _executor = executor;
-}
-
-/**
  * Reset the executor singleton.
  */
 export function resetAgenticExecutor(): void {
