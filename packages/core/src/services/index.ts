@@ -394,6 +394,7 @@ export type {
 } from './claw-types.js';
 export {
   DEFAULT_CLAW_LIMITS,
+  DEFAULT_CLAW_AUTONOMY_POLICY,
   MAX_CLAW_DEPTH,
   CLAW_RECENT_FAILURES_MAX,
   CLAW_REFLECTION_THRESHOLD,
@@ -460,12 +461,6 @@ export { getEdgeService, setEdgeService, hasEdgeService, EdgeToken } from './edg
 
 // Config Center
 export * from './config-center.js';
-
-// Claw Types
-export * from './claw-types.js';
-
-// Coding Agent Service
-export * from './coding-agent-service.js';
 
 // Weather Service
 export * from './weather-service.js';
