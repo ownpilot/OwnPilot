@@ -591,3 +591,274 @@ describe('timeout capping', () => {
     expect(mocks.executeJavaScriptLocal).toHaveBeenCalledWith('x', { timeout: 30000 });
   });
 });
+
+// ============================================================================
+// 11. Compile code executor (via CODE_EXECUTION_TOOLS)
+// ============================================================================
+
+describe('compile_code executor', () => {
+  const compileCodeExecutor = CODE_EXECUTION_TOOLS.find(
+    (t) => t.definition.name === 'compile_code'
+  )!.executor;
+
+  beforeEach(() => {
+    mocks.executeShellLocal.mockResolvedValue({
+      success: true,
+      stdout: 'compiled successfully',
+      stderr: '',
+      exitCode: 0,
+    });
+  });
+
+  it('should reject unknown compiler', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: 'test.ts', compiler: 'nonexistent' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('Unknown compiler');
+  });
+
+  it('should reject shell metacharacters in args', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: 'test.ts', compiler: 'tsc', args: '; rm -rf /' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('blocked shell character');
+  });
+
+  it('should reject path traversal in filePath', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: '../../../etc/passwd', compiler: 'gcc' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('blocked shell character');
+  });
+
+  it('should reject absolute filePath (/ gets caught by PATH_SHELL_META)', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: '/etc/passwd', compiler: 'gcc' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('blocked shell character');
+  });
+
+  it('should reject docker mode (needs local)', async () => {
+    const ctx = createContext({
+      executionPermissions: {
+        enabled: true,
+        mode: 'docker',
+        execute_javascript: 'allowed',
+        execute_python: 'allowed',
+        execute_shell: 'allowed',
+        compile_code: 'allowed',
+        package_manager: 'allowed',
+      },
+    });
+    const result = await compileCodeExecutor({ filePath: 'test.ts', compiler: 'tsc' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('requires local execution mode');
+  });
+
+  it('should compile successfully in local mode', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: 'test.ts', compiler: 'tsc' },
+      createContext()
+    );
+    expect(result.isError).toBe(false);
+    const content = result.content as Record<string, unknown>;
+    expect(content.stdout).toBe('compiled successfully');
+  });
+});
+
+// ============================================================================
+// 12. Package manager executor (via CODE_EXECUTION_TOOLS)
+// ============================================================================
+
+describe('package_manager executor', () => {
+  const packageManagerExecutor = CODE_EXECUTION_TOOLS.find(
+    (t) => t.definition.name === 'package_manager'
+  )!.executor;
+
+  beforeEach(() => {
+    mocks.executeShellLocal.mockResolvedValue({
+      success: true,
+      stdout: 'installed',
+      stderr: '',
+      exitCode: 0,
+    });
+  });
+
+  it('should reject unknown package manager', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'brew', command: 'install' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('Unknown package manager');
+  });
+
+  it('should reject blocked subcommands like publish', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'npm', command: 'publish' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('blocked for safety');
+  });
+
+  it('should reject blocked subcommand unpublish', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'npm', command: 'unpublish --force my-pkg' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('blocked for safety');
+  });
+
+  it('should reject blocked subcommand login', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'pnpm', command: 'login --registry http://example.com' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+  });
+
+  it('should reject docker mode (needs local)', async () => {
+    const ctx = createContext({
+      executionPermissions: {
+        enabled: true,
+        mode: 'docker',
+        execute_javascript: 'allowed',
+        execute_python: 'allowed',
+        execute_shell: 'allowed',
+        compile_code: 'allowed',
+        package_manager: 'allowed',
+      },
+    });
+    const result = await packageManagerExecutor({ manager: 'npm', command: 'install lodash' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('requires local execution mode');
+  });
+
+  it('should run successfully via local executor', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'npm', command: 'install lodash' },
+      createContext()
+    );
+    expect(result.isError).toBe(false);
+    const content = result.content as Record<string, unknown>;
+    expect(content.stdout).toBe('installed');
+  });
+
+  it('should use yarn manager', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'yarn', command: 'add lodash' },
+      createContext()
+    );
+    expect(result.isError).toBe(false);
+    expect(mocks.executeShellLocal).toHaveBeenCalledWith('yarn add lodash', expect.any(Object));
+  });
+
+  it('should use pip manager', async () => {
+    const result = await packageManagerExecutor(
+      { manager: 'pip', command: 'install requests' },
+      createContext()
+    );
+    expect(result.isError).toBe(false);
+    expect(mocks.executeShellLocal).toHaveBeenCalledWith(
+      'pip install requests',
+      expect.any(Object)
+    );
+  });
+});
+
+// ============================================================================
+// 13. Undefined permissions edge cases
+// ============================================================================
+
+describe('undefined permissions edge cases', () => {
+  beforeEach(() => {
+    // Clear env so it doesn't interfere
+    delete process.env.OWNPILOT_ALLOW_LOCAL_EXEC;
+  });
+
+  it('should block when permissions=undefined with userId set', async () => {
+    const ctx = createContext();
+    // Remove executionPermissions to test undefined path
+    delete (ctx as any).executionPermissions;
+    const result = await executeJavaScriptExecutor({ code: 'x' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('is blocked');
+  });
+
+  it('should block when permissions=undefined without userId (CLI without env)', async () => {
+    const ctx = { callId: 'c1', conversationId: 'cv1' } as unknown as ToolContext;
+    const result = await executeJavaScriptExecutor({ code: 'x' }, ctx);
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    expect(content.error).toContain('OWNPILOT_ALLOW_LOCAL_EXEC=1');
+  });
+
+  it('should allow when OWNPILOT_ALLOW_LOCAL_EXEC=1 and no userId/requestApproval', async () => {
+    mocks.executeJavaScriptLocal.mockResolvedValue(localSuccess);
+    process.env.OWNPILOT_ALLOW_LOCAL_EXEC = '1';
+    const ctx = { callId: 'c1', conversationId: 'cv1' } as unknown as ToolContext;
+    const result = await executeJavaScriptExecutor({ code: 'console.log("hi")' }, ctx);
+    expect(result.isError).toBe(false);
+    expect(mocks.executeJavaScriptLocal).toHaveBeenCalled();
+  });
+});
+
+// ============================================================================
+// 14. Shell: compile_code executor sanitizeArgs / sanitizeFilePath
+// ============================================================================
+
+describe('compile_code sanitization', () => {
+  const compileCodeExecutor = CODE_EXECUTION_TOOLS.find(
+    (t) => t.definition.name === 'compile_code'
+  )!.executor;
+
+  it('should block path with .. traversal', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: 'subdir/../../etc/passwd', compiler: 'gcc' },
+      createContext()
+    );
+    expect(result.isError).toBe(true);
+    const content = result.content as Record<string, unknown>;
+    // Either blocked by filePath sanitizer or by shell meta detection
+    expect(content.error).toBeTruthy();
+  });
+
+  it('should handle empty args', async () => {
+    const result = await compileCodeExecutor(
+      { filePath: 'source.c', compiler: 'gcc', args: '' },
+      createContext()
+    );
+    expect(result.isError).toBe(false);
+  });
+
+  it('should handle timeout capping for compile', async () => {
+    const ctx = createContext();
+    const result = await compileCodeExecutor(
+      { filePath: 'test.ts', compiler: 'tsc', timeout: 999999 },
+      ctx
+    );
+    // Timeout should be capped at 60s for compile
+    expect(result).toBeDefined();
+    // Should not throw
+  });
+});

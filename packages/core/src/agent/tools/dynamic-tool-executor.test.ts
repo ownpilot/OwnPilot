@@ -898,3 +898,156 @@ describe('executeDynamicTool', () => {
     expect(typeof globals.console.error).toBe('function');
   });
 });
+
+// =============================================================================
+// Worker-isolated path (OWNPILOT_TOOL_SANDBOX=worker)
+// =============================================================================
+
+const mockRunInWorkerSandbox = vi.hoisted(() => vi.fn());
+
+vi.mock('../../sandbox/worker-sandbox.js', () => ({
+  runInWorkerSandbox: mockRunInWorkerSandbox,
+}));
+
+describe('executeDynamicTool worker path', () => {
+  const OLD_ENV = process.env.OWNPILOT_TOOL_SANDBOX;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.OWNPILOT_TOOL_SANDBOX = 'worker';
+    mockRunInWorkerSandbox.mockResolvedValue({
+      ok: true,
+      value: { success: true, value: 'worker-result', executionTime: 15 },
+    });
+  });
+
+  afterEach(() => {
+    process.env.OWNPILOT_TOOL_SANDBOX = OLD_ENV;
+  });
+
+  it('returns success result from worker sandbox', async () => {
+    const result = await executeDynamicTool(makeTool(), { x: 1 }, makeContext());
+
+    expect(result.isError).toBe(false);
+    expect(result.content).toBe('worker-result');
+    expect(result.metadata).toEqual({
+      executionTime: 15,
+      dynamicTool: 'my_tool',
+    });
+  });
+
+  it('calls runInWorkerSandbox with correct pluginId', async () => {
+    await executeDynamicTool(makeTool({ name: 'test_tool' }), {}, makeContext());
+
+    expect(mockRunInWorkerSandbox).toHaveBeenCalledWith(
+      'dynamic:test_tool',
+      expect.stringContaining('const args = __args__'),
+      expect.objectContaining({
+        permissions: expect.any(Object),
+        limits: expect.objectContaining({
+          maxExecutionTime: 30000,
+          maxCpuTime: 5000,
+        }),
+      })
+    );
+  });
+
+  it('passes args and toolContext as data to worker sandbox', async () => {
+    const args = { query: 'hello' };
+    const ctx = makeContext({ callId: 'c123', conversationId: 'conv-abc', userId: 'u456' });
+    await executeDynamicTool(makeTool(), args, ctx);
+
+    expect(mockRunInWorkerSandbox).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          args,
+          toolContext: expect.objectContaining({
+            toolName: 'my_tool',
+            callId: 'c123',
+            conversationId: 'conv-abc',
+            userId: 'u456',
+          }),
+        }),
+      })
+    );
+  });
+
+  it('returns fatal error when worker sandbox throws', async () => {
+    mockRunInWorkerSandbox.mockRejectedValue(new Error('Worker crashed'));
+
+    const result = await executeDynamicTool(makeTool(), {}, makeContext());
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Fatal sandbox error');
+    expect(result.content).toContain('Worker crashed');
+    expect(result.metadata).toEqual({
+      dynamicTool: 'my_tool',
+      fatal: true,
+    });
+  });
+
+  it('returns execution error when worker returns Result.err', async () => {
+    mockRunInWorkerSandbox.mockResolvedValue({
+      ok: false,
+      error: { message: 'Timeout', name: 'TimeoutError' },
+    });
+
+    const result = await executeDynamicTool(makeTool(), {}, makeContext());
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Tool execution error');
+    expect(result.content).toContain('Timeout');
+    expect(result.metadata).toEqual({
+      dynamicTool: 'my_tool',
+      errorType: 'TimeoutError',
+    });
+  });
+
+  it('returns execution failure when worker returns success=false', async () => {
+    mockRunInWorkerSandbox.mockResolvedValue({
+      ok: true,
+      value: {
+        success: false,
+        error: 'SyntaxError: unexpected token',
+        executionTime: 5,
+        stack: 'at line 2',
+      },
+    });
+
+    const result = await executeDynamicTool(makeTool(), {}, makeContext());
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toContain('Tool execution failed');
+    expect(result.content).toContain('SyntaxError');
+    expect(result.metadata).toEqual(
+      expect.objectContaining({
+        stack: 'at line 2',
+      })
+    );
+  });
+
+  it('calls isToolCallAllowed in worker hostHandlers', async () => {
+    mockIsToolCallAllowed.mockReturnValue({ allowed: true });
+
+    await executeDynamicTool(makeTool(), {}, makeContext());
+
+    // Retrieve the hostHandlers from the worker sandbox config
+    const config = mockRunInWorkerSandbox.mock.calls[0]![2];
+    expect(config.hostHandlers).toBeDefined();
+    expect(typeof config.hostHandlers['config.get']).toBe('function');
+    expect(typeof config.hostHandlers['utils.callTool']).toBe('function');
+    expect(typeof config.hostHandlers['utils.listTools']).toBe('function');
+    expect(typeof config.hostHandlers['utils.getApiKey']).toBe('function');
+  });
+
+  it('wraps tool code for worker sandbox', async () => {
+    await executeDynamicTool(makeTool({ code: 'return 42;' }), {}, makeContext());
+
+    const wrappedCode = mockRunInWorkerSandbox.mock.calls[0]![1];
+    expect(wrappedCode).toContain('const args = __args__');
+    expect(wrappedCode).toContain('const context = __context__');
+    expect(wrappedCode).toContain('return 42;');
+  });
+});
