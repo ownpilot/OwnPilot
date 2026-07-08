@@ -767,8 +767,6 @@ export function clearAllChatAgentCaches(): number {
 export {
   getContextBreakdown,
   compactContext,
-  mirrorCompactionToDatabase,
-  STRUCTURED_SUMMARY_INSTRUCTIONS,
   type ContextBreakdown,
   type CompactionResult,
 } from './agent-context.js';

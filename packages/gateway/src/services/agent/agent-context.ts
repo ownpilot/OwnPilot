@@ -115,7 +115,7 @@ export interface CompactionResult {
  * the conversation coherent (goals, decisions, file paths, open questions)
  * rather than producing a flat narrative.
  */
-export const STRUCTURED_SUMMARY_INSTRUCTIONS = `You are compacting a multi-turn conversation into a dense summary. The next assistant MUST be able to continue without re-reading the history.
+const STRUCTURED_SUMMARY_INSTRUCTIONS = `You are compacting a multi-turn conversation into a dense summary. The next assistant MUST be able to continue without re-reading the history.
 
 ## Required Structure (omit empty sections)
 \`\`\`
@@ -138,7 +138,7 @@ OPEN QUESTIONS: What still needs to be resolved
 /**
  * Mirror a successful in-memory compaction to the persisted chat history.
  */
-export async function mirrorCompactionToDatabase(opts: {
+async function mirrorCompactionToDatabase(opts: {
   userId: string;
   conversationId: string;
   keepRecent: number;
