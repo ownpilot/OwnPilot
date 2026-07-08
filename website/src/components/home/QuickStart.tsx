@@ -1,5 +1,4 @@
-import { useRef, useState } from 'react';
-import { useInView } from '@/hooks/useInView';
+import { useState } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { Badge } from '@/components/ui/Badge';
@@ -114,8 +113,6 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...`;
 
 export function QuickStart() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
   const [activeTab, setActiveTab] = useState('docker');
 
   const activeTabData = tabs.find((t) => t.id === activeTab) ?? tabs[0]!;
@@ -123,11 +120,8 @@ export function QuickStart() {
   return (
     <section id="quick-start" className="py-24 bg-[var(--color-bg-subtle)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={ref} className="text-center max-w-2xl mx-auto mb-12">
-          <div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-          >
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <div>
             <Badge variant="green" className="mb-4">
               Quick Start
             </Badge>
@@ -142,11 +136,7 @@ export function QuickStart() {
 
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Left: Setup steps */}
-          <div
-            initial={{ opacity: 0, x: -20 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.15 }}
-          >
+          <div>
             {/* Tab bar */}
             <div className="flex gap-1 mb-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-1 w-fit">
               {tabs.map((tab) => (
@@ -218,11 +208,7 @@ export function QuickStart() {
           </div>
 
           {/* Right: .env config */}
-          <div
-            initial={{ opacity: 0, x: 20 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.25 }}
-          >
+          <div>
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-[var(--color-text)] mb-1">
                 Environment Configuration

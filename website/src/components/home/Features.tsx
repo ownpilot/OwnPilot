@@ -1,5 +1,3 @@
-import { useInView } from '@/hooks/useInView';
-import { useRef } from 'react';
 import {
   Brain,
   Wrench,
@@ -184,23 +182,11 @@ const features = [
   },
 ];
 
-interface FeatureCardProps {
-  feature: (typeof features)[number];
-  index: number;
-}
-
-function FeatureCard({ feature, index }: FeatureCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-50px' });
+function FeatureCard({ feature }: { feature: (typeof features)[number] }) {
   const Icon = feature.icon;
 
   return (
-    <div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.4, delay: (index % 4) * 0.08 }}
-    >
+    <div>
       <Card hover className="h-full group">
         <div
           className={`w-10 h-10 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-110`}
@@ -224,18 +210,12 @@ function FeatureCard({ feature, index }: FeatureCardProps) {
 }
 
 export function Features() {
-  const headerRef = useRef<HTMLDivElement>(null);
-  const isHeaderInView = useInView(headerRef, { once: true });
-
   return (
     <section id="features" className="py-24 bg-[var(--color-bg)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div ref={headerRef} className="text-center max-w-3xl mx-auto mb-16">
-          <div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isHeaderInView ? { opacity: 1, y: 0 } : {}}
-          >
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div>
             <Badge variant="purple" className="mb-4">
               Everything you need
             </Badge>
@@ -252,8 +232,8 @@ export function Features() {
 
         {/* Feature grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {features.map((feature, index) => (
-            <FeatureCard key={feature.title} feature={feature} index={index} />
+          {features.map((feature) => (
+            <FeatureCard key={feature.title} feature={feature} />
           ))}
         </div>
       </div>

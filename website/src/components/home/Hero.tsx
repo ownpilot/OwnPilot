@@ -150,36 +150,21 @@ export function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text */}
           <div className="text-center lg:text-left">
-            <div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 mb-6"
-            >
+            <div className="inline-flex items-center gap-2 mb-6">
               <Badge variant="purple" className="px-3 py-1 text-xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                 v0.3.1 — Analytics Dashboard & Tool Aliases
               </Badge>
             </div>
 
-            <h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight mb-6"
-            >
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight mb-6">
               <span className="text-[var(--color-text)]">Your AI. </span>
               <span className="text-gradient">Your Data.</span>
               <br />
               <span className="text-[var(--color-text)]">Your Rules.</span>
             </h1>
 
-            <p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg text-[var(--color-text-muted)] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0"
-            >
+            <p className="text-lg text-[var(--color-text-muted)] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
               Privacy-first personal AI assistant platform with soul agents, autonomous workflows,
               250+ tools, and 104 AI providers.{' '}
               <strong className="text-[var(--color-text)] font-medium">
@@ -188,12 +173,7 @@ export function Hero() {
             </p>
 
             {/* Key badges */}
-            <div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
-              className="flex flex-wrap gap-2 justify-center lg:justify-start mb-8"
-            >
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-start mb-8">
               {[
                 { icon: Shield, text: 'AES-256-GCM' },
                 { icon: Cpu, text: '104 AI Providers' },
@@ -210,12 +190,7 @@ export function Hero() {
             </div>
 
             {/* CTAs */}
-            <div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
-            >
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <Button
                 size="lg"
                 onClick={() => window.open('https://github.com/ownpilot/ownpilot', '_blank')}
@@ -237,12 +212,7 @@ export function Hero() {
             </div>
 
             {/* Stats */}
-            <div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="grid grid-cols-4 gap-4 mt-12 pt-8 border-t border-[var(--color-border-subtle)]"
-            >
+            <div className="grid grid-cols-4 gap-4 mt-12 pt-8 border-t border-[var(--color-border-subtle)]">
               {stats.map(({ value, label }) => (
                 <div key={label} className="text-center lg:text-left">
                   <div className="text-2xl font-bold text-[var(--color-text)] leading-none mb-1">
@@ -255,12 +225,7 @@ export function Hero() {
           </div>
 
           {/* Right: Code */}
-          <div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="relative"
-          >
+          <div className="relative">
             <div className="relative">
               {/* Glow behind code */}
               <div className="absolute inset-0 rounded-2xl bg-[hsl(var(--primary))] opacity-10 blur-3xl" />
@@ -274,22 +239,12 @@ export function Hero() {
             </div>
 
             {/* Floating badges */}
-            <div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.8 }}
-              className="absolute -top-4 -right-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg"
-            >
+            <div className="absolute -top-4 -right-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg">
               <div className="text-xs text-[var(--color-text-muted)]">Single port</div>
               <div className="text-sm font-bold text-[hsl(var(--primary))]">:8080</div>
             </div>
 
-            <div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 1 }}
-              className="absolute -bottom-4 -left-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg"
-            >
+            <div className="absolute -bottom-4 -left-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl px-3 py-2 shadow-lg">
               <div className="text-xs text-[var(--color-text-muted)]">Test coverage</div>
               <div className="text-sm font-bold text-emerald-500">26,500+ tests</div>
             </div>
@@ -298,19 +253,10 @@ export function Hero() {
       </div>
 
       {/* Scroll indicator */}
-      <div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 1.2 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
         <div className="flex flex-col items-center gap-2 text-[var(--color-text-subtle)]">
           <div className="w-5 h-8 rounded-full border border-[var(--color-border)] flex items-start justify-center pt-1.5">
-            <div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-1 h-1.5 rounded-full bg-[var(--color-text-subtle)]"
-            />
+            <div className="w-1 h-1.5 rounded-full bg-[var(--color-text-subtle)]" />
           </div>
         </div>
       </div>

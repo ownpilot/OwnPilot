@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import Fuse from 'fuse.js';
 import { Search, X } from 'lucide-react';
-import { SEARCH_INDEX, type SearchEntry } from '@/lib/search-index';
+import { SEARCH_INDEX } from '@/lib/search-index';
 
 interface DocSearchProps {
   onClose: () => void;
@@ -162,7 +162,9 @@ export function DocSearch({ onClose }: DocSearchProps) {
 
         {/* Footer hint */}
         <div className="px-4 py-2 border-t border-[var(--color-border)] text-[10px] text-[var(--color-text-subtle)] flex items-center justify-between">
-          <span>{results.length} page{results.length !== 1 ? 's' : ''}</span>
+          <span>
+            {results.length} page{results.length !== 1 ? 's' : ''}
+          </span>
           <span>
             <kbd className="px-1 py-0.5 rounded bg-[var(--color-bg-subtle)] border border-[var(--color-border)] font-mono">
               ↑↓

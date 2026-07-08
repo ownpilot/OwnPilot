@@ -9,12 +9,7 @@ export function NotFoundPage() {
     <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
       <Header />
       <main className="flex-1 flex items-center justify-center px-4 py-24">
-        <div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center max-w-lg"
-        >
+        <div className="text-center max-w-lg">
           {/* 404 number */}
           <div className="text-[10rem] font-black leading-none text-transparent bg-clip-text bg-gradient-to-b from-[hsl(var(--primary)/0.5)] to-transparent mb-4">
             404

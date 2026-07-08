@@ -1,23 +1,14 @@
-import { useRef } from 'react';
-import { useInView } from '@/hooks/useInView';
 import { Github, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export function CTA() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
-
   return (
     <section className="py-24 bg-[var(--color-bg-subtle)] relative overflow-hidden">
       {/* Gradient blobs */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[hsl(262,83%,58%)] opacity-5 blur-[100px] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10" ref={ref}>
-        <div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5 }}
-        >
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] text-sm text-[var(--color-text-muted)] mb-8">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             Open source · MIT License · Self-hosted

@@ -1,5 +1,3 @@
-import { useRef } from 'react';
-import { useInView } from '@/hooks/useInView';
 import { Badge } from '@/components/ui/Badge';
 
 const packages = [
@@ -74,17 +72,11 @@ const packages = [
 ];
 
 export function Architecture() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
-
   return (
     <section className="py-24 bg-[var(--color-bg)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={ref} className="text-center max-w-2xl mx-auto mb-16">
-          <div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-          >
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <div>
             <Badge variant="blue" className="mb-4">
               Architecture
             </Badge>
@@ -99,12 +91,7 @@ export function Architecture() {
         </div>
 
         {/* Architecture diagram — visual banner */}
-        <div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.15 }}
-          className="mb-16"
-        >
+        <div className="mb-16">
           <div className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-[var(--color-border)] shadow-lg">
             <img
               src="/architecture.png"
@@ -117,14 +104,8 @@ export function Architecture() {
 
         {/* Package cards */}
         <div className="grid md:grid-cols-2 gap-6">
-          {packages.map((pkg, i) => (
-            <div
-              key={pkg.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.2 + i * 0.1 }}
-              className={`rounded-xl border p-6 ${pkg.color}`}
-            >
+          {packages.map((pkg) => (
+            <div key={pkg.name} className={`rounded-xl border p-6 ${pkg.color}`}>
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <code className={`text-sm font-mono font-bold px-2 py-0.5 rounded ${pkg.badge}`}>
@@ -156,12 +137,7 @@ export function Architecture() {
         </div>
 
         {/* Pipeline */}
-        <div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.5 }}
-          className="mt-12 p-6 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]"
-        >
+        <div className="mt-12 p-6 rounded-xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-subtle)] mb-4">
             Message Pipeline
           </h3>

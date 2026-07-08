@@ -271,12 +271,9 @@ export function ChangelogPage() {
       </div>
 
       <div className="space-y-12">
-        {changelog.map((entry, i) => (
+        {changelog.map((entry) => (
           <div
             key={entry.version}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
             className={cn(
               'relative pl-8 border-l-2',
               entry.highlight ? 'border-[hsl(var(--primary))]' : 'border-[var(--color-border)]'
