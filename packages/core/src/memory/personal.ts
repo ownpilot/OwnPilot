@@ -886,16 +886,3 @@ export async function getPersonalMemoryStore(userId: string): Promise<PersonalMe
   }
   return store;
 }
-
-/**
- * Clear cached stores. If userId is provided, only that entry is removed;
- * otherwise the whole cache is cleared. Call from assistant shutdown paths
- * to release memory when the gateway goes idle.
- */
-export function clearPersonalStoreCache(userId?: string): void {
-  if (userId !== undefined) {
-    personalStoreCache.delete(userId);
-  } else {
-    personalStoreCache.clear();
-  }
-}
