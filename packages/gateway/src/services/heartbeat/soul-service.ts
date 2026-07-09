@@ -207,7 +207,7 @@ function createHeartbeatLogRepoAdapter(): IHeartbeatLogRepository {
 // SoulHeartbeatService — class form (takes RuntimeContext explicitly)
 // ============================================================================
 
-export class SoulHeartbeatService {
+class SoulHeartbeatService {
   private runner: HeartbeatRunner | null = null;
   private communicationBus: AgentCommunicationBus | null = null;
   private circuitBreaker: HeartbeatCircuitBreaker | null = null;
