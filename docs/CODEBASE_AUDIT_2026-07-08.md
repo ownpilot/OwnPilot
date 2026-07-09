@@ -29,7 +29,7 @@ Full monorepo analysis: 4 packages (`core`, `gateway`, `cli`, `ui`) + `website`,
 
 ## Findings & Resolutions
 
-### ✅ Fixed (11 findings resolved)
+### ✅ Fixed (14 findings resolved)
 
 | #   | Finding                                                                       | Severity | Fix                                                                                                                               | Commit                 |
 | --- | ----------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
@@ -43,7 +43,10 @@ Full monorepo analysis: 4 packages (`core`, `gateway`, `cli`, `ui`) + `website`,
 | 8   | `resetServiceRegistrySync` — dead export (tests mock it)                      | 🟡       | Removed function entirely                                                                                                         | `c232283a`             |
 | 9   | `skills/constants.ts` dead re-exports                                         | 🔵       | Removed `STATUS_COLORS`/`CATEGORY_COLORS`/`EXTENSION_CATEGORIES` re-exports                                                       | `ed4196ef`             |
 | 10  | `mirrorCompactionToDatabase` / `STRUCTURED_SUMMARY_INSTRUCTIONS` dead exports | 🔵       | Made internal (no external consumers); removed from backward-compat re-export block in `service.ts`                               | `5b1d14b3`             |
-| 11  | `setAgenticExecutor` dead export + `agentic/index.ts` dead barrel             | 🔵       | Removed `setAgenticExecutor` (test-only, never called by production); deleted barrel file (nothing imported from it)              | `36cf5ab4`, `0daaf988` |
+| 11  | `setAgenticExecutor` dead export + `agentic/index.ts` dead barrel             | 🔵       | Removed `setAgenticExecutor`; deleted barrel (nothing imported from it)                                                           | `36cf5ab4`, `0daaf988` |
+| 12  | 5 unused icon re-exports in `icons.tsx`                                       | 🔵       | Removed MicOff, PanelTop, ClipboardPaste, Scissors, Command (never imported)                                                      | `e8c80488`             |
+| 13  | `SoulHeartbeatService` dead class export + `templateToSoulPayload` dead fn    | 🔵       | Made class internal; removed 60-line dead converter function                                                                      | `0b988958`             |
+| 14  | Website `useInView` hook unused (replaced by CSS animations)                  | 🔵       | Deleted file (no callers remain after framer-motion prop removal)                                                                 | `03148680`             |
 
 PR: https://github.com/ownpilot/OwnPilot/pull/111 — merged into `main`.
 
@@ -52,7 +55,7 @@ PR: https://github.com/ownpilot/OwnPilot/pull/111 — merged into `main`.
 | Metric         | Initial | Final   | Change                                            |
 | -------------- | ------- | ------- | ------------------------------------------------- |
 | Unused files   | 1       | **0**   | -100%                                             |
-| Unused exports | 43      | **34**  | -21%                                              |
+| Unused exports | 43      | **27**  | -37%                                              |
 | Unused types   | 420     | **420** | (event type definitions, intentional API surface) |
 | Config hints   | 7       | **0**   | Knip auto-detects all entries                     |
 
