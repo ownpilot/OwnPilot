@@ -1,7 +1,7 @@
 -- OwnPilot PostgreSQL Schema
 -- Squashed migration: single file for Docker first-time init.
 -- Generated from TypeScript schema modules (source of truth).
--- Generated: 2026-07-10T10:25:34.057Z
+-- Generated: 2026-07-10T10:38:21.059Z
 -- Do not edit manually — regenerate via: tsx scripts/generate-squashed-migration.ts
 
 -- =====================================================
@@ -1329,6 +1329,7 @@ CREATE TABLE IF NOT EXISTS channel_users (
   verified_at TIMESTAMP,
   verification_method TEXT,
   is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'active',
   metadata JSONB DEFAULT '{}',
   first_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
   last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -1965,6 +1966,16 @@ CREATE INDEX IF NOT EXISTS idx_agent_souls_skill_access ON agent_souls USING GIN
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'heartbeat_log' AND column_name = 'tool_calls') THEN
     ALTER TABLE heartbeat_log ADD COLUMN tool_calls JSONB DEFAULT '[]';
+  END IF;
+END $$;
+
+-- =====================================================
+-- MIGRATION: Add status column to channel_users (missing from initial schema, GH#108)
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'channel_users' AND column_name = 'status') THEN
+    ALTER TABLE channel_users ADD COLUMN status TEXT NOT NULL DEFAULT 'active';
   END IF;
 END $$;
 

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS channel_users (
   verified_at TIMESTAMP,
   verification_method TEXT,
   is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'active',
   metadata JSONB DEFAULT '{}',
   first_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
   last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -74,6 +75,16 @@ CREATE TABLE IF NOT EXISTS channel_assets (
 `;
 
 export const CHANNELS_MIGRATIONS_SQL = `
+-- =====================================================
+-- MIGRATION: Add status column to channel_users (missing from initial schema, GH#108)
+-- =====================================================
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'channel_users' AND column_name = 'status') THEN
+    ALTER TABLE channel_users ADD COLUMN status TEXT NOT NULL DEFAULT 'active';
+  END IF;
+END $$;
+
 -- =====================================================
 -- MIGRATION: Rename skill_packages -> user_extensions (MUST run BEFORE CREATE TABLE)
 -- =====================================================
