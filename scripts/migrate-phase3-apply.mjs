@@ -142,7 +142,7 @@ function extractTopLevelKeys(mockLines) {
 let fixed = 0,
   skipped = 0;
 
-for (const { file, subPaths } of brokenFiles) {
+for (const { file } of brokenFiles) {
   const testPath = base + file;
   const srcPath = testPath.replace('.test.ts', '.ts');
 

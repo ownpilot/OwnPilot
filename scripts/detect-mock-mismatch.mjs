@@ -60,7 +60,7 @@ for (const { name, dir } of packages) {
     if (!/vi\.mock\((['"])@ownpilot\/core['"],/.test(content)) continue;
 
     const srcFile = testFile.replace('.test.ts', '.ts');
-    let subPaths = [];
+    const subPaths = [];
     try {
       const srcContent = readFileSync(srcFile, 'utf8');
       const importRe = /from\s+['"]@ownpilot\/core\/(\w+)['"]/g;

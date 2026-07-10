@@ -317,10 +317,10 @@ function transformProvider(id: string, provider: ModelsDevProvider): ProviderCon
   }
 
   // Get base URL
-  let baseUrl = provider.api || apiUrls[id] || '';
+  const baseUrl = provider.api || apiUrls[id] || '';
 
   // Get API key env var
-  let apiKeyEnv =
+  const apiKeyEnv =
     provider.env?.[0] || envVars[id] || `${id.toUpperCase().replace(/-/g, '_')}_API_KEY`;
 
   // Determine features based on models
