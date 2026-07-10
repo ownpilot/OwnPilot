@@ -59,7 +59,46 @@ PR: https://github.com/ownpilot/OwnPilot/pull/111 — merged into `main`.
 | Unused types   | 420     | **420** | (event type definitions, intentional API surface) |
 | Config hints   | 7       | **0**   | Knip auto-detects all entries                     |
 
-### 🔄 Remaining (2 items — planning/coordination, not code)
+### 2026-07-10 Addendum — Full System Scan
+
+A second comprehensive scan was performed on 2026-07-10 covering: security (security-scanner role, 0 CVE), dead-code (bug-hunter/Knip, 25 unused exports, 86 unused types), dependency audit (0 vulnerabilities), config consistency, and remaining audit items.
+
+#### ✅ Fixed (7 findings resolved)
+
+| #   | Finding                                                                      | Severity | Fix                                                       | Commit     |
+| --- | ---------------------------------------------------------------------------- | -------- | --------------------------------------------------------- | ---------- |
+| 15  | ESLint ignored all `.mjs` files (scripts, dev-proxy, website build scripts)  | 🟡       | Removed `**/*.mjs` from ignores — now under lint coverage | `721d833b` |
+| 16  | `claw-types.ts` internal constants leaking as public API (item 10 from prev) | 🔵       | Added `@internal` JSDoc to all 7 CLAW\_\* constants       | `721d833b` |
+| 17  | `scripts/report-code-health.mjs` unused `statSync` import                    | 🔵       | Removed from import list                                  | `721d833b` |
+| 18  | `packages/ui/dev-proxy.mjs` unused `head` parameter                          | 🔵       | Renamed to `_head` (lint convention)                      | `721d833b` |
+| 19  | `scripts/detect-mock-mismatch.mjs` `let subPaths` → `const`                  | 🔵       | Switched to `const` (never reassigned)                    | `721d833b` |
+| 20  | `scripts/migrate-phase3-apply.mjs` unused destructured `subPaths`            | 🔵       | Removed from destructuring                                | `721d833b` |
+| 21  | `scripts/generate-provider-configs.ts` 2× `let` → `const`                    | 🔵       | Switched `baseUrl` and `apiKeyEnv` to `const`             | `721d833b` |
+
+PR: https://github.com/ownpilot/OwnPilot/pull/new/feat/audit-eslint-clawtypes-cleanup
+
+### Security Scan Summary (2026-07-10)
+
+| Severity  | Count | Key Findings                                                                                                                                                                 |
+| --------- | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟠 High   |     2 | Auth bypass risk when UI password unset + non-localhost host; WebSocket auth fallback open in same scenario                                                                  |
+| 🟡 Medium |     6 | ESLint JS/MJS scope (fixed), env template default password, opt-in hardening flags (CALLTOOL, EXTENSION_HOST, ANY_DIR, SKILL_SCRIPTS), localhost CORS defaults in production |
+| 🔵 Low    |     5 | Website dependency drift, package-manager drift (pnpm + npm lockfiles), legacy MD5 helpers, placeholder secret examples                                                      |
+
+All design-level risks (auth bypass, WS fallback) require architectural changes to resolve. Documented for deployment planning.
+
+### Knip Progress (2026-07-10)
+
+| Metric         | Initial | Previous | Current | Change |
+| -------------- | ------- | -------- | ------- | ------ |
+| Unused files   | 1       | 0        | 0       | —      |
+| Unused exports | 43      | 27       | 25      | -2     |
+| Unused types   | 420     | 420      | 86      | -334   |
+| Config hints   | 7       | 0        | 0       | —      |
+
+The 86 unused types (down from 420) are primarily event-payload DTOs, API endpoint types, and workflow node data types — many are intentional public API surface. Further reduction requires manual API-surface review.
+
+### 🔄 Remaining (3 items — planning/coordination, not code)
 
 #### 8. 🟠 41 SQL migration files — squash needed
 
@@ -79,14 +118,6 @@ PR: https://github.com/ownpilot/OwnPilot/pull/111 — merged into `main`.
 
 The website package is not in `pnpm-workspace.yaml` so it manages deps independently. This is intentional but the version drift should be monitored.
 
-#### 10. 🔵 `claw-types.ts` exports internal implementation constants
-
-**Location:** `packages/core/src/services/claw-types.ts`
-
-Constants like `CLAW_RECENT_FAILURES_MAX`, `CLAW_REFLECTION_THRESHOLD`, `CLAW_TASK_STALL_*` are exported from the file and leak through `export *` chains. These are internal implementation details of the claw circuit-breaker and should not be part of the public API.
-
-**Recommendation:** Move constants into the claw module that uses them (`heartbeat-circuit-breaker.ts`) or mark with `@internal` JSDoc. Verify no external consumers exist first (grep shows none).
-
 ---
 
 ## Verification Pipeline
@@ -100,4 +131,6 @@ pnpm --filter @ownpilot/ui typecheck        # ✅
 pnpm --filter @ownpilot/core test           # ✅ 9845 pass
 pnpm run typecheck                          # ✅ turbo: 6/6 tasks
 pnpm run build (core, gateway, cli)         # ✅
+pnpm audit                                  # ✅ 0 vulnerabilities (1239 deps)
+MJS ESLint lint                             # ✅ clean (scripts/, website/scripts/, dev-proxy)
 ```
