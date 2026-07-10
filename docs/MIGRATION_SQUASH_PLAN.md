@@ -1,106 +1,196 @@
 # Migration Squash Plan
 
-**Date:** 2026-07-08
-**Context:** Codebase audit finding — 41 SQL migrations is high. 3 are "drop" migrations that revert earlier schema decisions.
-
-## Current State
-
-`packages/gateway/src/db/migrations/postgres/` contains **41 sequential migration files**.
-
-### Schema Evolution Timeline
-
-```
-Phase 1 — Initial Build (001–010)
-  001  initial_schema           Core tables (agents, conversations, messages, etc.)
-  002  background_agents        Initial background agent system
-  003  background_agents_v2     Redesign: added scheduling, status, output format
-  004  subagents                Subagent delegation system
-  005  ucp                      Unified Communication Protocol
-  006  orchestra                Orchestration engine
-  007  artifacts                Artifact storage
-  008  browser                  Browser automation
-  009  skills_platform          Skill marketplace
-  010  edge_delegation          IoT/edge device delegation
-
-Phase 2 — Agent Souls (011–019)
-  011  agent_souls              Agent personality/identity system
-  012  soul_provider            Souls with provider bindings
-  013  background_agents_skills  Skills for background agents
-  014  memories_content_hash     Content hash for dedup
-  015  owner_pairing            Owner-pairing relationship
-  016  orchestration_enable_analysis  Analysis toggle
-  017  autonomy_log_signal_ids  Signal tracking for autonomy
-  018  fleet                    Fleet management
-  019  claw_crew_enhancements   Claw + crew improvements
-
-Phase 3 — Claw Era + Cleanup (020–029)
-  020  ✂️ drop_dead_tables       First schema cleanup
-  021  expenses_table           New feature: expense tracking
-  022  claws                    Claw system (replaces background agents)
-  023  claw_fixes               Fixes to claw schema
-  024  provider_billing         Billing/usage tracking
-  025  ✂️ drop_background_agents  Drop tables replaced by claws
-  026  subagent_parent_type      Schema fix
-  027  performance_indexes       Performance indexes (round 1)
-  028  ui_sessions              UI session management
-  029  claw_advanced_config     Extended claw configuration
-
-Phase 4 — Production Hardening (030–041)
-  030  idempotency_keys         Idempotency for job safety
-  031  job_queue                Job queue system
-  032  retention_policies       Data retention policies
-  033  usage_records            Usage tracking records
-  034  claw_session_state_index  Claw performance index
-  035  ✂️ user_extension_removals  Cleanup unused extension columns
-  036  fleet_last_cycle_at      Fleet schema addition
-  037  perf_indexes             Performance indexes (round 2)
-  038  ✂️ drop_legacy_agent_systems  Final legacy cleanup
-  039  conversation_fts         Full-text search for conversations
-  040  dm_pairing               Direct message pairing
-  041  canvas_elements          Live canvas elements
-```
-
-## Issues Identified
-
-1. **3 drop migrations** (020, 025, 038) — architectural churn. The background_agents → claws migration took 3 iterations (002→003→013→025 drop).
-2. **2 perf index migrations** (027, 037) — first round of indexes missed some tables.
-3. **Interleaved schema + cleanup** — new features (021 expenses, 022 claws) appear between drop migrations, making squash non-trivial.
-4. **Subagent/Fleet tables** created in 004/018 but never explicitly dropped — may still exist in some databases.
-
-## Squash Strategy
-
-### Recommended: 4-Phase Squash
-
-Consolidate into **4 well-named migration files**, keeping the logical evolution visible:
-
-| New File                        | Old Files | Rationale                                                      |
-| ------------------------------- | --------- | -------------------------------------------------------------- |
-| `001_initial_schema.sql`        | 001–010   | All initial tables, no cleanup yet                             |
-| `011_agent_souls_and_crews.sql` | 011–019   | Agent soul system + crew expansion                             |
-| `020_claw_migration.sql`        | 020–029   | Claw replacement of background agents + expenses + UI sessions |
-| `030_production_hardening.sql`  | 030–041   | Final state with all performance indexes                       |
-
-**Result:** 41 files → 4 files (90% reduction).
-
-### Execution Steps
-
-1. **Create new files** by concatenating DDL from each group in order, removing `DROP TABLE IF EXISTS` statements for tables that are recreated later in the sequence.
-2. **Wrap in idempotent checks** — each file should use `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS` so re-runs are safe.
-3. **Update `migration-smoke-test.ts`** — the critical tables list should reflect the final state (not intermediate tables that were later dropped).
-4. **Verify against a clean database** — run `pnpm migration:smoke` on a fresh PostgreSQL to confirm the squashed schema produces the same final state.
-
-### Risk Assessment
-
-| Risk                                                                 | Mitigation                                                                                                          |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Production DB at migration 41 would need to re-run from squashed 001 | Use `PRAGMA user_version` or equivalent to track applied schema version; only apply squashed files on fresh deploys |
-| Squash might miss a subtle column rename                             | Generate the schema from migration 41 final state with `pg_dump --schema-only`, then diff against squashed output   |
-| Foreign key ordering broken                                          | Test on a clean DB with the smoke test suite before deploying                                                       |
-
-## Recommendation
-
-Squash during the **next major version bump** (e.g., 0.9.0 or 1.0.0) when a fresh database deploy is expected. For existing production databases at migration 41, leave them as-is — the squashed files are only for new deployments.
+**Date:** 2026-07-10  
+**Author:** System audit  
+**Status:** Plan (not yet executed)
 
 ---
 
-_Part of codebase audit: `docs/CODEBASE_AUDIT_2026-07-08.md`_
+## Current State
+
+`packages/gateway/src/db/migrations/postgres/` contains **41 numbered SQL files** (001–041).
+
+### Problem
+
+- 5 "drop" migrations (020, 025, 038) revert schema decisions made in earlier migrations
+- Every fresh deployment runs all 41 files sequentially (~10s+ startup overhead)
+- Understanding the "current schema" requires mentally combining all 41 files
+- 2 migrations create the same table (`user_extensions` in 001 and 009) — works via `IF NOT EXISTS` but confusing
+
+### Goal
+
+Squash into a single `001_initial_schema.sql` that represents the current desired state, keeping the old files as a history archive for reference only.
+
+---
+
+## Migration Timeline
+
+```
+001 ── Initial schema (1177 lines) ─────────────────────────────────────────►
+002 ── background_agents ─────────────────────────── DROP 025 ──► ✂️
+003 ── background_agents_v2 ──────────────────────── DROP 025 ──► ✂️
+004 ── subagent_history ──────────────────────────── DROP 038 ──► ✂️
+005 ── channel_bridges ─────────────────────────────────────────► ✅
+006 ── orchestra_executions ──────────────────────── DROP 038 ──► ✂️
+007 ── artifacts + artifact_versions ──────────────────────────► ✅
+008 ── browser_workflows ──────────────────────────────────────► ✅
+009 ── user_extensions (duplicate of 001) ─────────────────────► 🚩 duplicate
+010 ── edge_devices, edge_commands, edge_telemetry ────────────► ✅
+011 ── agent_souls (ALTERs, no CREATE) ───────────────────────► 🔄 absorbed
+012 ── soul_provider (ALTERs, no CREATE) ─────────────────────► 🔄 absorbed
+013 ── background_agents_skills ├── DROP 025 ──► ✂️
+014 ── memories_content_hash (ALTER) ─────────────────────────► 🔄 absorbed
+015 ── owner_pairing → system_settings ───────────────────────► ✅
+016 ── orchestration_enable_analysis (ALTER) ├── DROP 038 ──► ✂️
+017 ── autonomy_log_signal_ids (ALTER) ───────────────────────► 🔄 absorbed
+018 ── fleets, fleet_sessions, fleet_tasks ├── DROP 038 ──► ✂️
+019 ── crew_shared_memory, crew_task_queue ───────────────────► ✅
+020 ── DROP projects, reminders ─────────────────────────────────► absorb
+021 ── expenses ───────────────────────────────────────────────► ✅
+022 ── claws, claw_sessions, claw_history ─────────────────────► ✅
+023 ── claw_fixes (ALTERs) ───────────────────────────────────► 🔄 absorbed
+024 ── provider_billing (ALTER) ───────────────────────────────► 🔄 absorbed
+025 ── DROP background_agent* ───────────────────────────────────► absorb
+026 ── subagent_parent_type_update ├── DROP 038 ──► ✂️
+027 ── performance_indexes (CREATE INDEX) ─────────────────────► 🔄 absorbed
+028 ── ui_sessions ───────────────────────────────────────────► ✅
+029 ── claw_advanced_config (ALTER) ──────────────────────────► 🔄 absorbed
+030 ── idempotency_keys ──────────────────────────────────────► ✅
+031 ── job_queue (ALTER) ─────────────────────────────────────► 🔄 absorbed
+032 ── retention_policies ────────────────────────────────────► ✅
+033 ── usage_records ─────────────────────────────────────────► ✅
+034 ── claw_session_state_index (CREATE INDEX) ───────────────► 🔄 absorbed
+035 ── user_extension_removals ───────────────────────────────► ✅
+036 ── fleet_last_cycle_at (ALTER) ├── DROP 038 ──► ✂️
+037 ── perf_indexes (CREATE INDEX) ───────────────────────────► 🔄 absorbed
+038 ── DROP fleet*, subagent*, orchestra* ─────────────────────► absorb
+039 ── conversation_fts (CREATE INDEX) ───────────────────────► 🔄 absorbed
+040 ── dm_pairing → dm_pairing_requests ──────────────────────► ✅
+041 ── canvas_elements ───────────────────────────────────────► ✅
+```
+
+Legend:
+
+- ✅ = Table still active in current schema
+- ✂️ = Table created then later dropped — exclude from squash
+- 🔄 = ALTER TABLE / CREATE INDEX only — absorb into base
+- 🚩 = Duplicate CREATE — resolve in squash
+
+---
+
+## Squash Plan
+
+### Step 1: Identify tables to exclude (created then dropped)
+
+| Table                       | Created By | Dropped By |
+| --------------------------- | ---------- | ---------- |
+| `background_agents`         | 002        | 025        |
+| `background_agent_sessions` | 002        | 025        |
+| `background_agent_history`  | 002        | 025        |
+| `subagent_history`          | 004        | 038        |
+| `orchestra_executions`      | 006        | 038        |
+| `fleets`                    | 018        | 038        |
+| `fleet_sessions`            | 018        | 038        |
+| `fleet_tasks`               | 018        | 038        |
+| `fleet_worker_history`      | 018        | 038        |
+
+### Step 2: Identify tables to create in squashed schema
+
+**From 001 (keep only non-dropped):**
+conversations, messages, request_logs, channels, channel_messages, costs, agents, settings, bookmarks, notes, tasks, calendar_events, contacts, captures, pomodoro_sessions, pomodoro_settings, pomodoro_daily_stats, habits, habit_logs, memories, goals, goal_steps, triggers, trigger_history, plans, plan_steps, plan_history, oauth_integrations, user_workspaces, user_containers, code_executions, workspace_audit, user_model_configs, custom_providers, user_provider_configs, custom_data, custom_tools, custom_table_schemas, custom_data_records, config_services, config_entries, plugins, user_extensions, local_providers, local_models, channel_users, channel_sessions, channel_verification_tokens
+
+**Drop from 001 (never used):** projects, reminders
+
+**Add from later migrations (still active):**
+
+- `channel_bridges` (005)
+- `artifacts`, `artifact_versions` (007)
+- `browser_workflows` (008)
+- `edge_devices`, `edge_commands`, `edge_telemetry` (010)
+- `system_settings` (015)
+- `crew_shared_memory`, `crew_task_queue` (019)
+- `expenses` (021)
+- `claws`, `claw_sessions`, `claw_history` (022)
+- `ui_sessions` (028)
+- `idempotency_keys` (030)
+- `retention_policies` (032)
+- `usage_records` (033)
+- `user_extension_removals` (035)
+- `dm_pairing_requests` (040)
+- `canvas_elements` (041)
+
+**Note:** `user_extensions` is created in both 001 and 009. Remove the duplicate from 009's additions.
+
+### Step 3: Absorb ALTER TABLE and CREATE INDEX statements
+
+These modify tables from 001 and should be included in the squashed `CREATE TABLE` definitions:
+
+| Migration | Change                       | Target Table                |
+| --------- | ---------------------------- | --------------------------- |
+| 011       | ADD COLUMN soul_config, etc. | agents                      |
+| 012       | ADD COLUMN provider          | souls (effect on agents)    |
+| 014       | ADD COLUMN content_hash      | memories                    |
+| 017       | ADD COLUMN signal_ids        | autonomy_log                |
+| 023       | Various ALTERs               | claws, claw_sessions        |
+| 024       | ADD COLUMN billing fields    | providers                   |
+| 027       | CREATE INDEX                 | various                     |
+| 029       | ADD COLUMN advanced_config   | claws                       |
+| 031       | ALTER job_queue              | (if table exists post-038)  |
+| 034       | CREATE INDEX                 | claw_sessions               |
+| 036       | ADD COLUMN last_cycle_at     | fleets → EXCLUDED (dropped) |
+| 037       | CREATE INDEX                 | various                     |
+| 039       | CREATE INDEX                 | conversations               |
+
+### Step 4: Resolve naming conflicts
+
+- `user_extensions` — created in 001 (line 750) AND in 009. Remove from 001 or 009; squash keeps the final `CREATE TABLE IF NOT EXISTS` with all columns from both versions.
+
+### Step 5: Verification
+
+After generating the squashed `001_initial_schema.sql`:
+
+1. Run `pnpm migration:smoke` — verify against a fresh DB
+2. Run existing test suite — verify no code-level breakage
+3. Archive old files to `packages/gateway/src/db/migrations/postgres/archive/`
+
+---
+
+## Concrete File Manifest
+
+### New `001_initial_schema.sql` (estimated: ~1500 lines)
+
+Contains full CREATE TABLE for all 50+ active tables, with all ALTER TABLE additions baked in, plus all CREATE INDEX statements.
+
+### Archive directory
+
+```
+postgres/archive/
+├── 001_initial_schema.sql      # original
+├── 002_background_agents.sql
+├── 003_background_agents_v2.sql
+├── ...
+└── 041_canvas_elements.sql
+```
+
+The archive is for historical reference only — never executed.
+
+### Migration runner update
+
+The migration runner (`packages/gateway/src/db/migrations/runner.ts` or equivalent) should be updated to only scan non-archived `.sql` files, or switch to a single-file approach.
+
+---
+
+## When to Execute
+
+This squash should be done when:
+
+1. A fresh production deployment is planned (squash invalidates existing DBs)
+2. OR a migration compatibility shim is written to detect old schema versions
+3. The migration runner supports a "checkpoint" concept
+
+**Risk:** Squashing means existing databases cannot be incrementally migrated. Requires either:
+
+- Full DB re-creation from the squashed migration (acceptable for early-stage projects)
+- A compatibility layer that detects old schema and applies only delta migrations
+
+For OwnPilot's current stage, **option A (full re-create)** is recommended — the project is pre-v1.0 and no production DBs depend on incremental migration history.
