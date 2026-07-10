@@ -85,7 +85,15 @@ PR: https://github.com/ownpilot/OwnPilot/pull/new/feat/audit-eslint-clawtypes-cl
 | 🟡 Medium |     6 | ESLint JS/MJS scope (fixed), env template default password, opt-in hardening flags (CALLTOOL, EXTENSION_HOST, ANY_DIR, SKILL_SCRIPTS), localhost CORS defaults in production |
 | 🔵 Low    |     5 | Website dependency drift, package-manager drift (pnpm + npm lockfiles), legacy MD5 helpers, placeholder secret examples                                                      |
 
-All design-level risks (auth bypass, WS fallback) require architectural changes to resolve. Documented for deployment planning.
+#### 🟠 Partially Resolved — Auth bypass design-level risk
+
+**PR #115** added a **production auth guard**: `AUTH_TYPE=none` + non-loopback `HOST` now causes a **fatal boot error** in production (`process.exit(1)` via `assertBootConfig()`). The remaining risk (API-key-without-password + exposed host) still produces only a startup warning — resolving it requires runtime DB access (`isPasswordConfigured()` is DB-backed), which happens outside the boot-validation window.
+
+Deployments still need to:
+
+- Set `AUTH_TYPE=api-key` + `API_KEYS` in production
+- Set a UI password via Settings → Security
+- Keep `HOST=127.0.0.1` unless a reverse proxy manages auth
 
 ### Knip Progress (2026-07-10)
 
@@ -98,25 +106,19 @@ All design-level risks (auth bypass, WS fallback) require architectural changes 
 
 The 86 unused types (down from 420) are primarily event-payload DTOs, API endpoint types, and workflow node data types — many are intentional public API surface. Further reduction requires manual API-surface review.
 
-### 🔄 Remaining (3 items — planning/coordination, not code)
+### ✅ Resolved (prior audit items 8–9)
 
-#### 8. 🟠 41 SQL migration files — squash needed
+#### 8. 🟠 41 SQL migration files — **squashed** (PR #114)
 
-**Location:** `packages/gateway/src/db/migrations/postgres/`
-
-41 migration files is high for any project. 5 of the 41 are "drop" migrations (020, 025, 035, 038) which revert earlier schema decisions. This indicates architectural churn that should be resolved by squashing into a clean base migration.
-
-**Recommendation:** Squash migrations 001-041 into a single `001_initial_schema.sql` when the next production deployment window opens. Verify against the smoke test (`pnpm migration:smoke`).
+**Status:** ✅ Done  
+**Before:** 41 files (001–041), 5 drop migrations, stale schema (missing `jobs`, `job_history`, `provider_metrics`)  
+**After:** Single `001_initial_schema.sql` (2375 lines, 90 CREATE TABLE statements) generated from TypeScript schema modules (source of truth). Old files archived to `archive/`.  
+**New script:** `packages/gateway/scripts/generate-squashed-migration.ts` to regenerate.  
+**Verification:** Gateway typecheck ✅, schema test (3/3) ✅
 
 #### 9. 🔵 Website package version drift
 
-**Location:** `website/package.json`
-
-- `@types/node@^25.5.0` — root uses `^22.19.21`
-- `react-router@^7.17.0` — ui uses `react-router-dom@^7.16.0`
-- `typescript@^5.8.3` — root uses `^5.9.3`
-
-The website package is not in `pnpm-workspace.yaml` so it manages deps independently. This is intentional but the version drift should be monitored.
+**Status:** 🔄 Monitored (intentional — outside `pnpm-workspace.yaml`, manages deps independently)
 
 ---
 
