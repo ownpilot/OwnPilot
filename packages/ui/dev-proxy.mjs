@@ -68,7 +68,7 @@ const server = createServer((clientReq, clientRes) => {
 });
 
 // WebSocket upgrade handler — forward WS connections to the gateway
-server.on('upgrade', (clientReq, clientSocket, head) => {
+server.on('upgrade', (clientReq, clientSocket, _head) => {
   const options = {
     hostname: TARGET_HOST,
     port: TARGET_PORT,

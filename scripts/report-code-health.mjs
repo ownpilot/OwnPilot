@@ -5,7 +5,7 @@
  * Generates read-only structural metrics for refactor planning.
  * Run: node scripts/report-code-health.mjs
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const root = process.cwd();

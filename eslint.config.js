@@ -2,14 +2,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: [
-      '**/dist/**',
-      '**/node_modules/**',
-      '**/coverage/**',
-      '**/*.js',
-      '**/*.cjs',
-      '**/*.mjs',
-    ],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/*.js', '**/*.cjs'],
   },
   {
     linterOptions: {

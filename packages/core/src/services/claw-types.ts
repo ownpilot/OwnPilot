@@ -401,7 +401,8 @@ export interface ClawTask {
 
 /** Maximum number of tasks retained on a session — prevents the plan from
  *  blowing up the cycle prompt. Sized to be useful for non-trivial missions
- *  while still bounded. */
+ *  while still bounded.
+ *  @internal Implementation constant — do not rely on in external code. */
 export const CLAW_MAX_TASKS = 50;
 
 /**
@@ -409,6 +410,7 @@ export const CLAW_MAX_TASKS = 50;
  * a stall warning. Picked deliberately larger than CLAW_REFLECTION_THRESHOLD
  * (which fires on consecutive *failures*) — staying on one task for a few
  * cycles is normal; staying for many is a signal it needs to be split.
+ * @internal
  */
 export const CLAW_TASK_STALL_THRESHOLD = 5;
 
@@ -441,6 +443,7 @@ export const CLAW_TASK_STALL_FORCE_BLOCK = 20;
  * Max plan-history entries retained on a session. Picked to comfortably
  * cover the operator inspecting "what happened in the last hour or so"
  * without ballooning the session row when serialised.
+ * @internal
  */
 export const CLAW_PLAN_HISTORY_MAX = 50;
 
