@@ -193,7 +193,32 @@ function validateBootConfig(): ValidationResult {
     }
   }
 
-  // 5. Warn about CORS_ORIGINS in production if it looks like a template
+  // 5. Production auth guard: non-loopback host + no auth = fatal
+  const host = process.env.HOST ?? '127.0.0.1';
+  const isExposed = host !== '127.0.0.1' && host !== 'localhost' && host !== '::1' && host !== '';
+  if (isExposed && isProduction) {
+    // 5a. Explicit auth disabled on exposed host
+    const authType = process.env.AUTH_TYPE ?? '';
+    if (authType === 'none') {
+      errors.push(
+        `[FATAL] AUTH_TYPE=none with HOST=${host} — the server is exposed on the network without authentication.\n` +
+          `         Set AUTH_TYPE=api-key and API_KEYS, or restrict HOST to 127.0.0.1.`
+      );
+    }
+
+    // 5b. No credentials configured on exposed host
+    const apiKeys = process.env.API_KEYS ?? '';
+    const jwtSecret = process.env.JWT_SECRET ?? '';
+    const hasNoCredentials = !apiKeys && !jwtSecret;
+    if (hasNoCredentials && authType !== 'jwt') {
+      warnings.push(
+        `[WARN] HOST=${host} is exposed on the network but no API_KEYS or JWT_SECRET are configured.\n` +
+          `         In production this will prevent secure remote access — set API_KEYS or JWT_SECRET.`
+      );
+    }
+  }
+
+  // 6. Warn about CORS_ORIGINS in production if it looks like a template
   const corsOrigins = process.env.CORS_ORIGINS;
   if (isProduction && corsOrigins && corsOrigins.includes('localhost')) {
     warnings.push(
