@@ -63,7 +63,7 @@
     "@slack/socket-mode": "^2.0.6",
     "@slack/web-api": "^7.15.0",
     "@whiskeysockets/baileys": "7.0.0-rc13",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "archiver": "^7.0.1",
     "discord.js": "^14.26.4",
     "dotenv": "^17.3.1",
@@ -86,7 +86,7 @@
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
-    "@types/adm-zip": "^0.5.7",
+    "@types/adm-zip": "^0.5.8",
     "@types/archiver": "^7.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.15",
@@ -96,7 +96,7 @@
     "rimraf": "^6.1.3",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",
-    "vitest": "4.1.5"
+    "vitest": "4.1.10"
   },
   "engines": {
     "node": ">=22.0.0"
