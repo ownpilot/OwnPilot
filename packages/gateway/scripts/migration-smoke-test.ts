@@ -30,6 +30,7 @@ const CRITICAL_TABLES = [
   'claws',
   'agent_souls',
   'channel_messages',
+  'dm_pairing_requests',
   'triggers',
   'custom_table_schemas',
   'user_extensions',

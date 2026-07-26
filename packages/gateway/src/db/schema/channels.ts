@@ -54,6 +54,18 @@ CREATE TABLE IF NOT EXISTS channel_verification_tokens (
   used_at TIMESTAMP
 );
 
+-- Pending one-time codes for approving unknown direct-message senders
+CREATE TABLE IF NOT EXISTS dm_pairing_requests (
+  id TEXT PRIMARY KEY,
+  platform TEXT NOT NULL,
+  platform_user_id TEXT NOT NULL,
+  code TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  used_at TIMESTAMP,
+  UNIQUE(platform, platform_user_id, code)
+);
+
 -- Temporary stored channel attachments for later processing
 CREATE TABLE IF NOT EXISTS channel_assets (
   id TEXT PRIMARY KEY,
@@ -158,6 +170,10 @@ CREATE INDEX IF NOT EXISTS idx_channel_sessions_conversation ON channel_sessions
 CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verification_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_dm_pairing_code ON dm_pairing_requests(code, platform);
+CREATE INDEX IF NOT EXISTS idx_dm_pairing_pending
+  ON dm_pairing_requests(platform, platform_user_id, created_at DESC)
+  WHERE used_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_channel_assets_message ON channel_assets(channel_message_id);
 CREATE INDEX IF NOT EXISTS idx_channel_assets_conversation ON channel_assets(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_channel_assets_expires ON channel_assets(expires_at);

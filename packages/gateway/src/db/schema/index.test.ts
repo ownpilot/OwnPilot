@@ -6,6 +6,7 @@ const CRITICAL_TABLES = [
   'conversations',
   'messages',
   'user_extensions',
+  'dm_pairing_requests',
   'user_workspaces',
   'custom_tools',
   'cli_providers',
@@ -24,6 +25,11 @@ describe('PostgreSQL schema bundle', () => {
   it('includes ui_sessions indexes in the bundled index SQL', () => {
     expect(INDEXES_SQL).toContain('idx_ui_sessions_expires_at');
     expect(INDEXES_SQL).toContain('idx_ui_sessions_kind');
+  });
+
+  it('includes indexes used by DM pairing approval and pending-sender lookups', () => {
+    expect(INDEXES_SQL).toContain('idx_dm_pairing_code');
+    expect(INDEXES_SQL).toContain('idx_dm_pairing_pending');
   });
 
   it('runs tables, migrations, then indexes in order', async () => {
