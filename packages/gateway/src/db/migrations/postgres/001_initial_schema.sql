@@ -1,7 +1,6 @@
 -- OwnPilot PostgreSQL Schema
 -- Squashed migration: single file for Docker first-time init.
 -- Generated from TypeScript schema modules (source of truth).
--- Generated: 2026-07-26T10:25:47.302Z
 -- Do not edit manually — regenerate via: tsx scripts/generate-squashed-migration.ts
 
 -- =====================================================

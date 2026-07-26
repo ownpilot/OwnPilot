@@ -69,7 +69,6 @@ const { UI_SESSIONS_TABLES_SQL, UI_SESSIONS_MIGRATIONS_SQL, UI_SESSIONS_INDEXES_
 const header = `-- OwnPilot PostgreSQL Schema
 -- Squashed migration: single file for Docker first-time init.
 -- Generated from TypeScript schema modules (source of truth).
--- Generated: ${new Date().toISOString()}
 -- Do not edit manually — regenerate via: tsx scripts/generate-squashed-migration.ts
 
 `;
@@ -161,7 +160,8 @@ const body = [
 ].join('\n');
 
 const sql = header + body + '\n';
+const lineCount = sql.length === 0 ? 0 : sql.split('\n').length - (sql.endsWith('\n') ? 1 : 0);
 
 writeFileSync(outputPath, sql, 'utf-8');
 console.log(`Wrote ${outputPath}`);
-console.log(`Size: ${sql.length} bytes, ${sql.split('\\n').length} lines`);
+console.log(`Size: ${sql.length} bytes, ${lineCount} lines`);
