@@ -97,6 +97,7 @@ export class EdgeMqttClient {
   private reconnectDelay = 1000;
   private maxReconnectDelay = 30000;
   private connectFn: MqttConnectFn | null = null;
+  private authOptions: { username?: string; password?: string } = {};
 
   /**
    * Connect to MQTT broker. If url is not provided, reads MQTT_BROKER_URL env.
@@ -113,6 +114,11 @@ export class EdgeMqttClient {
       log.info('No MQTT_BROKER_URL configured — edge MQTT features dormant');
       return false;
     }
+
+    this.authOptions = {
+      ...(process.env.MQTT_USERNAME ? { username: process.env.MQTT_USERNAME } : {}),
+      ...(process.env.MQTT_PASSWORD ? { password: process.env.MQTT_PASSWORD } : {}),
+    };
 
     log.info(`Attempting MQTT connection to: ${redactBrokerUrl(this.brokerUrl)}`);
 
@@ -147,6 +153,7 @@ export class EdgeMqttClient {
         reconnectPeriod: 0, // We handle reconnection ourselves
         connectTimeout: 10000,
         clean: true,
+        ...this.authOptions,
       });
       this.client = client;
 

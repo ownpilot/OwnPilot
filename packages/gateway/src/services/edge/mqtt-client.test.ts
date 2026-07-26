@@ -138,6 +138,8 @@ describe('EdgeMqttClient', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.MQTT_BROKER_URL;
+    delete process.env.MQTT_USERNAME;
+    delete process.env.MQTT_PASSWORD;
     client = new EdgeMqttClient();
     mockMqttClient = makeMockMqttClient();
     mockMqttConnect.mockReturnValue(mockMqttClient);
@@ -146,6 +148,8 @@ describe('EdgeMqttClient', () => {
   afterEach(() => {
     vi.useRealTimers();
     delete process.env.MQTT_BROKER_URL;
+    delete process.env.MQTT_USERNAME;
+    delete process.env.MQTT_PASSWORD;
   });
 
   // --- connect() ---
@@ -403,6 +407,23 @@ describe('EdgeMqttClient', () => {
       expect(client.getBrokerUrl()).toBe('mqtts://broker.example:8883/edge');
       expect(mockLog.info).toHaveBeenCalledWith(
         'Attempting MQTT connection to: mqtts://broker.example:8883/edge'
+      );
+      expect(JSON.stringify(mockLog.info.mock.calls)).not.toContain('super-secret');
+    });
+
+    it('passes separately configured credentials to the MQTT client', async () => {
+      (client as any).connectFn = mockMqttConnect;
+      process.env.MQTT_USERNAME = 'ownpilot';
+      process.env.MQTT_PASSWORD = 'super-secret';
+
+      await client.connect('mqtt://broker.example:1883');
+
+      expect(mockMqttConnect).toHaveBeenCalledWith(
+        'mqtt://broker.example:1883',
+        expect.objectContaining({
+          username: 'ownpilot',
+          password: 'super-secret',
+        })
       );
       expect(JSON.stringify(mockLog.info.mock.calls)).not.toContain('super-secret');
     });

@@ -1538,6 +1538,8 @@ cp .env.example .env
 docker compose --profile postgres up -d
 
 # With MQTT broker for edge/IoT devices
+# First set MQTT_BROKER_URL=mqtt://mosquitto:1883 plus a strong
+# MQTT_USERNAME and MQTT_PASSWORD in .env.
 docker compose --profile postgres --profile mqtt up -d
 ```
 

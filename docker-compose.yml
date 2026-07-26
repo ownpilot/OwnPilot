@@ -63,6 +63,8 @@ services:
       - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-500}
       # MQTT (Edge Delegation)
       - MQTT_BROKER_URL=${MQTT_BROKER_URL:-}
+      - MQTT_USERNAME=${MQTT_USERNAME:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
       # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
@@ -85,12 +87,13 @@ services:
     image: eclipse-mosquitto:2
     container_name: ownpilot-mosquitto
     restart: unless-stopped
+    entrypoint: ['/bin/sh', '/mosquitto/config/start-secure.sh']
+    environment:
+      - MQTT_USERNAME=${MQTT_USERNAME:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
     ports:
-      # SECURITY (DOCK-004/IAC-002): bind to IPv4 loopback only. The broker
-      # ships with allow_anonymous=true, so exposing these ports on 0.0.0.0
-      # would give any host on the LAN full read/write on all MQTT topics
-      # (including edge-device control + agent messaging). Other containers
-      # still reach the broker over the compose network by service name.
+      # Keep host access local even though the bundled broker requires auth.
+      # Other containers reach it over the compose network by service name.
       - '127.0.0.1:${MQTT_PORT:-1883}:1883'
       - '127.0.0.1:${MQTT_WS_PORT:-9001}:9001'
     volumes:
