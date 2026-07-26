@@ -340,3 +340,39 @@ export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
     return true;
   }
 }
+
+export interface ResolvedAddress {
+  address: string;
+  family: 4 | 6;
+}
+
+/**
+ * Resolve a URL without using the DNS cache and return only an entirely public
+ * answer set. Socket callers should pin their lookup to these exact addresses.
+ */
+export async function resolvePublicAddressesFresh(
+  urlString: string
+): Promise<ResolvedAddress[] | null> {
+  try {
+    const url = new URL(urlString);
+    if (isPrivateUrl(urlString)) return null;
+
+    const addresses = await lookup(url.hostname, { all: true });
+    if (addresses.length === 0 || addresses.some((entry) => isPrivateIp(entry.address))) {
+      return null;
+    }
+
+    const publicAddresses = addresses
+      .filter((entry): entry is typeof entry & { family: 4 | 6 } => [4, 6].includes(entry.family))
+      .map(({ address, family }) => ({ address, family }));
+    if (publicAddresses.length === 0) return null;
+
+    dnsCache.set(url.hostname.toLowerCase(), {
+      ips: publicAddresses.map((entry) => entry.address),
+      timestamp: Date.now(),
+    });
+    return publicAddresses;
+  } catch {
+    return null;
+  }
+}

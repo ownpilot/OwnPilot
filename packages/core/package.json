@@ -223,5 +223,8 @@
     "plugin"
   ],
   "author": "OwnPilot",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "undici": "8.5.0"
+  }
 }

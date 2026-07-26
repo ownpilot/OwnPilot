@@ -10,7 +10,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const dnsLookupMock = vi.hoisted(() => vi.fn());
 vi.mock('node:dns/promises', () => ({ lookup: dnsLookupMock }));
 
-import { isToolCallAllowed, isPrivateUrl, isPrivateUrlAsync } from './dynamic-tool-permissions.js';
+import {
+  isToolCallAllowed,
+  isPrivateUrl,
+  isPrivateUrlAsync,
+  resolvePublicAddressesFresh,
+} from './dynamic-tool-permissions.js';
 import type { DynamicToolPermission } from './dynamic-tool-types.js';
 
 // =============================================================================
@@ -443,5 +448,26 @@ describe('isPrivateUrlAsync', () => {
   it('allows a host that resolves to a public IP', async () => {
     dnsLookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
     expect(await isPrivateUrlAsync('https://public-d.example.com')).toBe(false);
+  });
+
+  it('returns the exact public DNS set for socket pinning', async () => {
+    dnsLookupMock.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+    ]);
+
+    await expect(resolvePublicAddressesFresh('https://pin.example.com')).resolves.toEqual([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+    ]);
+  });
+
+  it('refuses a mixed public/private DNS set', async () => {
+    dnsLookupMock.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '::ffff:169.254.169.254', family: 6 },
+    ]);
+
+    await expect(resolvePublicAddressesFresh('https://mixed.example.com')).resolves.toBeNull();
   });
 });

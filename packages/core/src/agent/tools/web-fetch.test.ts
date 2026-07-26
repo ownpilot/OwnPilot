@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Agent } from 'undici';
 import {
   httpRequestTool,
   httpRequestExecutor,
@@ -282,6 +283,9 @@ describe('URL blocking (isBlockedUrl via httpRequestExecutor)', () => {
     const result = await httpRequestExecutor({ url: 'https://example.com' }, ctx);
     expect(result.isError).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    const fetchInit = fetchMock.mock.calls[0]?.[1] as RequestInit & { dispatcher: Agent };
+    expect(fetchInit.dispatcher).toBeInstanceOf(Agent);
+    expect(fetchInit.dispatcher.closed).toBe(true);
   });
 
   it('allows valid external http URL', async () => {

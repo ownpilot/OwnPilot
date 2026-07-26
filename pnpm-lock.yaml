@@ -119,6 +119,10 @@ importers:
         version: 1.7.0
 
   packages/core:
+    dependencies:
+      undici:
+        specifier: 8.5.0
+        version: 8.5.0
     devDependencies:
       '@types/node':
         specifier: ^22.19.15
@@ -211,7 +215,7 @@ importers:
         specifier: ^0.35.0
         version: 0.35.3(@types/node@22.19.15)
       undici:
-        specifier: 8.5.0
+        specifier: '>=8.5.0'
         version: 8.5.0
       ws:
         specifier: '>=8.21.0'

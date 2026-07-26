@@ -4,7 +4,8 @@
  */
 
 import type { ToolContext, ToolDefinition, ToolExecutor, ToolExecutionResult } from '../tools.js';
-import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
+import { Agent, fetch as undiciFetch } from 'undici';
+import { isPrivateUrlAsync, resolvePublicAddressesFresh } from './dynamic-tool-permissions.js';
 
 /**
  * Short-circuit a tool call when the caller's AbortSignal has fired. The
@@ -234,7 +235,43 @@ export async function safeFetch(initialUrl: string, init: RequestInit = {}): Pro
   let body = init.body;
 
   for (let hops = 0; ; hops++) {
-    const response = await fetch(currentUrl, { ...init, method, body, redirect: 'manual' });
+    if (isBlockedUrl(currentUrl) || (await isPrivateUrlAsync(currentUrl))) {
+      throw new Error(`Request to blocked internal address: ${currentUrl}`);
+    }
+    const publicAddresses = await resolvePublicAddressesFresh(currentUrl);
+    if (!publicAddresses) {
+      throw new Error(`Request to blocked internal address: ${currentUrl}`);
+    }
+
+    const pinnedAddress = publicAddresses[0]!;
+    const dispatcher = new Agent({
+      connect: {
+        lookup: (_hostname, lookupOptions, callback) => {
+          if (lookupOptions.all) {
+            const allCallback = callback as unknown as (
+              error: NodeJS.ErrnoException | null,
+              addresses: typeof publicAddresses
+            ) => void;
+            allCallback(null, publicAddresses);
+            return;
+          }
+          callback(null, pinnedAddress.address, pinnedAddress.family);
+        },
+      },
+    });
+    let response: Response;
+    try {
+      const undiciOptions = {
+        ...init,
+        method,
+        body,
+        redirect: 'manual' as const,
+        dispatcher,
+      } as unknown as NonNullable<Parameters<typeof undiciFetch>[1]>;
+      response = (await undiciFetch(currentUrl, undiciOptions)) as unknown as Response;
+    } finally {
+      void dispatcher.close().catch(() => undefined);
+    }
 
     // Not a redirect (or a 3xx with no Location) → terminal response.
     if (response.status < 300 || response.status >= 400) return response;
@@ -251,6 +288,8 @@ export async function safeFetch(initialUrl: string, init: RequestInit = {}): Pro
         `Request was redirected to a blocked internal address (${nextUrl}). Original URL: ${initialUrl}`
       );
     }
+
+    await response.body?.cancel().catch(() => undefined);
 
     if (
       response.status === 303 ||
