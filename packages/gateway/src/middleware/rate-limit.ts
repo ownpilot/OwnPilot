@@ -12,6 +12,19 @@ import { RATE_LIMIT_MAX_STORE_SIZE } from '../config/defaults.js';
 import { getClientIp as getClientIpShared, isProxyAwareConfigured } from '../utils/client-ip.js';
 
 const log = getLog('RateLimit');
+const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
+
+function isLoopbackBind(): boolean {
+  const host = (process.env.HOST ?? '127.0.0.1').trim().toLowerCase();
+  return (
+    host === 'localhost' || host === '::1' || host === '[::1]' || /^127(?:\.\d{1,3}){3}$/.test(host)
+  );
+}
+
+function shouldBypassRateLimit(ip: string): boolean {
+  if (LOCAL_IPS.has(ip)) return true;
+  return ip === 'direct' && !isProxyAwareConfigured() && isLoopbackBind();
+}
 
 /**
  * Get client IP for rate limiting.
@@ -72,7 +85,6 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
    * 'direct' when TRUSTED_PROXY is not set) — which is the common case for
    * self-hosted / local-dev where the WebUI and gateway run on the same machine.
    */
-  const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
   const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up expired entries periodically
@@ -100,13 +112,12 @@ export function createRateLimitMiddleware(config: RateLimitConfig) {
     // Skip rate limiting for local/internal requests.
     // Self-hosted gateway + WebUI run on the same machine; no reason to
     // rate-limit the browser's own API calls against itself.
-    // When no proxy is configured, getClientIp returns 'direct' —
-    // this is the common self-hosted case where the gateway is not
-    // behind a reverse proxy.
+    // A `direct` request is exempt only when the gateway itself is bound to a
+    // loopback host. On 0.0.0.0/LAN binds, Hono cannot expose the socket peer,
+    // so all clients intentionally share the `direct` bucket and are limited
+    // together rather than bypassing the limiter entirely.
     const ip = getClientIp(c);
-    const isLocalIp = LOCAL_IPS.has(ip);
-    const noProxy = !isProxyAwareConfigured() && ip === 'direct';
-    if (isLocalIp || noProxy) {
+    if (shouldBypassRateLimit(ip)) {
       return next();
     }
 
@@ -205,7 +216,6 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
   const requests = new Map<string, number[]>();
   const burstLimit = config.burstLimit ?? Math.floor(config.maxRequests * 1.5);
   const excludePaths = config.excludePaths ?? ['/health', '/api/v1/health'];
-  const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost']);
   const maxStoreSize = RATE_LIMIT_MAX_STORE_SIZE;
 
   // Clean up old entries
@@ -233,9 +243,7 @@ export function createSlidingWindowRateLimiter(config: RateLimitConfig) {
     }
 
     const ip = getClientIp(c);
-    const isLocalIp = LOCAL_IPS.has(ip);
-    const noProxy = !isProxyAwareConfigured() && ip === 'direct';
-    if (isLocalIp || noProxy) {
+    if (shouldBypassRateLimit(ip)) {
       return next();
     }
 
