@@ -76,6 +76,33 @@ const PRIVATE_RANGES = [
   /^fe80:/i,
 ];
 
+function isPrivateAddress(address: string): boolean {
+  const normalized = address.toLowerCase().replace(/^\[/, '').replace(/\]$/, '');
+  if (normalized === '::' || normalized.startsWith('ff')) return true;
+  const mappedIpv4 = normalized.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/)?.[1];
+  const candidate = mappedIpv4 ?? normalized;
+  const octets = candidate.split('.').map(Number);
+
+  if (
+    octets.length === 4 &&
+    octets.every((part) => Number.isInteger(part) && part >= 0 && part <= 255)
+  ) {
+    const [a, b] = octets as [number, number, number, number];
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      a >= 224 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
+  }
+
+  return PRIVATE_RANGES.some((re) => re.test(candidate));
+}
+
 export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
   try {
     const hostname = new URL(urlString).hostname;
@@ -91,34 +118,52 @@ export async function isPrivateUrlAsync(urlString: string): Promise<boolean> {
       dnsCache.set(hostname, { ips, ts: now });
     }
 
-    return ips.some((ip) => PRIVATE_RANGES.some((re) => re.test(ip)));
+    return ips.some(isPrivateAddress);
   } catch {
     return true; // DNS failure: block the request (fail-closed for safety)
   }
 }
 
+export interface ResolvedAddress {
+  address: string;
+  family: 4 | 6;
+}
+
 /**
- * Uncached variant of {@link isPrivateUrlAsync} — performs a fresh DNS lookup
- * every call. Use this as the LAST guard immediately before the actual fetch
- * to narrow the DNS-rebinding TOCTOU window (H-S4): cached resolutions can
- * return a public IP while a subsequent fetch resolves to a private one.
- *
- * Residual risk: there is still a microsecond gap between this lookup and
- * the libuv/undici DNS lookup inside `fetch`. A complete fix requires
- * hostname-pinning via `undici.Agent.connect.lookup`, which would add an
- * `undici` runtime dependency. This function reduces the practical exposure
- * by ~6 orders of magnitude (60s cache → microsecond gap) without that dep.
+ * Resolve every address for a URL and return it only when the whole answer set
+ * is public. Callers can pin their socket lookup to one of these exact results,
+ * eliminating the DNS-validation-to-connect race.
  */
-export async function isPrivateUrlAsyncFresh(urlString: string): Promise<boolean> {
+export async function resolvePublicAddressesFresh(
+  urlString: string
+): Promise<ResolvedAddress[] | null> {
   try {
     const hostname = new URL(urlString).hostname;
     const records = await lookup(hostname, { all: true });
-    const ips = records.map((r) => r.address);
-    // Refresh the cache opportunistically — anything else that looked up the
-    // same hostname recently gets the same answer we are about to act on.
-    dnsCache.set(hostname, { ips, ts: Date.now() });
-    return ips.some((ip) => PRIVATE_RANGES.some((re) => re.test(ip)));
+    if (records.length === 0 || records.some((record) => isPrivateAddress(record.address))) {
+      return null;
+    }
+
+    const addresses = records
+      .filter((record): record is typeof record & { family: 4 | 6 } =>
+        [4, 6].includes(record.family)
+      )
+      .map(({ address, family }) => ({ address, family }));
+    if (addresses.length === 0) return null;
+
+    dnsCache.set(hostname, { ips: addresses.map((record) => record.address), ts: Date.now() });
+    return addresses;
   } catch {
-    return true;
+    return null;
   }
+}
+
+/**
+ * Uncached variant of {@link isPrivateUrlAsync} — performs a fresh DNS lookup
+ * every call. Retained for compatibility; network callers that need to remove
+ * DNS-rebinding TOCTOU entirely should use {@link resolvePublicAddressesFresh}
+ * and pin the returned addresses in their socket lookup.
+ */
+export async function isPrivateUrlAsyncFresh(urlString: string): Promise<boolean> {
+  return (await resolvePublicAddressesFresh(urlString)) === null;
 }

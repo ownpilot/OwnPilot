@@ -21,6 +21,17 @@ vi.mock('./services/log.js', () => ({
   }),
 }));
 
+// Production safeFetch uses undici.fetch so its pinned Agent and fetch share
+// the same dispatcher ABI. Route/tool tests historically stub global fetch;
+// bridge undici.fetch to that stub while retaining the real Agent class.
+vi.mock('undici', async (importOriginal) => {
+  const original = await importOriginal<typeof import('undici')>();
+  return {
+    ...original,
+    fetch: (input: string | URL | Request, init?: RequestInit) => globalThis.fetch(input, init),
+  };
+});
+
 // Pin the at-rest encryption key so any test that touches encrypted columns
 // stays hermetic — without this, the first encrypt would auto-generate a
 // real key file under the user's data directory.

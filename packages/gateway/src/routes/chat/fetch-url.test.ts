@@ -20,6 +20,8 @@ vi.mock('../../utils/ssrf.js', () => ({
   isBlockedUrl: mockIsBlockedUrl,
   isPrivateUrlAsync: mockIsPrivateUrlAsync,
   isPrivateUrlAsyncFresh: mockIsPrivateUrlAsyncFresh,
+  resolvePublicAddressesFresh: async (...args: unknown[]) =>
+    (await mockIsPrivateUrlAsyncFresh(...args)) ? null : [{ address: '93.184.216.34', family: 4 }],
 }));
 
 // Import after mocks

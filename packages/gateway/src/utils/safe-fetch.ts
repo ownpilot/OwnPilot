@@ -6,7 +6,8 @@
  * - Caps total redirects to prevent infinite redirect loops
  */
 
-import { isBlockedUrl, isPrivateUrlAsync, isPrivateUrlAsyncFresh } from './ssrf.js';
+import { Agent, fetch as undiciFetch } from 'undici';
+import { isBlockedUrl, isPrivateUrlAsync, resolvePublicAddressesFresh } from './ssrf.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('safeFetch');
@@ -95,7 +96,8 @@ export async function safeFetch(url: string, options: SafeFetchOptions = {}): Pr
           'SSRF_BLOCKED'
         );
       }
-      if (await isPrivateUrlAsyncFresh(currentUrl)) {
+      const publicAddresses = await resolvePublicAddressesFresh(currentUrl);
+      if (!publicAddresses) {
         log.warn('safeFetch: blocked private URL (fresh lookup — possible DNS rebinding)', {
           url: currentUrl,
         });
@@ -105,11 +107,36 @@ export async function safeFetch(url: string, options: SafeFetchOptions = {}): Pr
         );
       }
 
-      const response = await fetch(currentUrl, {
-        ...fetchOptions,
-        redirect: 'manual' as const,
-        signal,
+      const pinnedAddress = publicAddresses[0]!;
+      const dispatcher = new Agent({
+        connect: {
+          lookup: (_hostname, lookupOptions, callback) => {
+            if (lookupOptions.all) {
+              const allCallback = callback as unknown as (
+                error: NodeJS.ErrnoException | null,
+                addresses: typeof publicAddresses
+              ) => void;
+              allCallback(null, publicAddresses);
+              return;
+            }
+            callback(null, pinnedAddress.address, pinnedAddress.family);
+          },
+        },
       });
+      let response: Response;
+      try {
+        const undiciOptions = {
+          ...fetchOptions,
+          redirect: 'manual' as const,
+          signal,
+          dispatcher,
+        } as unknown as NonNullable<Parameters<typeof undiciFetch>[1]>;
+        response = (await undiciFetch(currentUrl, undiciOptions)) as unknown as Response;
+      } finally {
+        // close() stops this one-hop dispatcher accepting new work while
+        // allowing the returned response body to finish streaming.
+        void dispatcher.close().catch(() => undefined);
+      }
 
       // Not a redirect — return directly
       if (response.status < 300 || response.status > 399) {
@@ -129,6 +156,10 @@ export async function safeFetch(url: string, options: SafeFetchOptions = {}): Pr
         // 3xx with no Location header — treat as terminal
         return response;
       }
+
+      // The next hop gets its own pinned dispatcher. Release the current
+      // redirect body so close() can dispose its connection promptly.
+      await response.body?.cancel().catch(() => undefined);
 
       // Resolve relative redirects (e.g. Location: /path)
       const base = new URL(currentUrl);

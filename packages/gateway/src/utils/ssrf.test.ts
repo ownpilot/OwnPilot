@@ -13,7 +13,7 @@ vi.mock('node:dns/promises', () => ({
 }));
 
 // Import AFTER mock is in place
-const { isBlockedUrl, isPrivateUrlAsync } = await import('./ssrf.js');
+const { isBlockedUrl, isPrivateUrlAsync, resolvePublicAddressesFresh } = await import('./ssrf.js');
 
 // ---------------------------------------------------------------------------
 // isBlockedUrl — synchronous checks
@@ -210,6 +210,29 @@ describe('isPrivateUrlAsync', () => {
     expect(result).toBe(true);
   });
 
+  it('blocks IPv4-mapped IPv6 loopback addresses', async () => {
+    mockLookup.mockResolvedValue([{ address: '::ffff:127.0.0.1', family: 6 }]);
+    const result = await isPrivateUrlAsync('https://mapped-loopback.example.com');
+    expect(result).toBe(true);
+  });
+
+  it('blocks carrier-grade NAT addresses', async () => {
+    mockLookup.mockResolvedValue([{ address: '100.64.10.20', family: 4 }]);
+    const result = await isPrivateUrlAsync('https://cgnat-host.example.com');
+    expect(result).toBe(true);
+  });
+
+  it.each([
+    ['IPv6 unspecified', '::', 6],
+    ['IPv6 multicast', 'ff02::1', 6],
+    ['IPv4 multicast', '224.0.0.1', 4],
+  ])('blocks %s DNS answers', async (_label, address, family) => {
+    mockLookup.mockResolvedValue([{ address, family }]);
+    const hostSuffix = address.replace(/[^a-z0-9]/gi, '-');
+    const result = await isPrivateUrlAsync(`https://reserved-${hostSuffix}.example.com`);
+    expect(result).toBe(true);
+  });
+
   it('returns true if ANY resolved IP is private (multi-A-record)', async () => {
     mockLookup.mockResolvedValue([
       { address: '93.184.216.34', family: 4 }, // public
@@ -236,5 +259,43 @@ describe('isPrivateUrlAsync', () => {
     const result = await isPrivateUrlAsync('not-a-url');
     expect(result).toBe(true);
     expect(mockLookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolvePublicAddressesFresh', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns the exact public addresses that a socket can pin', async () => {
+    mockLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+    ]);
+
+    await expect(resolvePublicAddressesFresh('https://example.com/resource')).resolves.toEqual([
+      { address: '93.184.216.34', family: 4 },
+      { address: '2606:2800:220:1:248:1893:25c8:1946', family: 6 },
+    ]);
+    expect(mockLookup).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed when any fresh answer is private', async () => {
+    mockLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '::ffff:169.254.169.254', family: 6 },
+    ]);
+
+    await expect(
+      resolvePublicAddressesFresh('https://rebind.example.com/resource')
+    ).resolves.toBeNull();
+  });
+
+  it('fails closed for empty or failed DNS answers', async () => {
+    mockLookup.mockResolvedValueOnce([]);
+    await expect(resolvePublicAddressesFresh('https://empty.example.com')).resolves.toBeNull();
+
+    mockLookup.mockRejectedValueOnce(new Error('DNS failure'));
+    await expect(resolvePublicAddressesFresh('https://failed.example.com')).resolves.toBeNull();
   });
 });

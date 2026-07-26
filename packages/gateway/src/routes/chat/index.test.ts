@@ -453,6 +453,8 @@ vi.mock('../../utils/ssrf.js', () => ({
   isBlockedUrl: (...args: unknown[]) => mockIsBlockedUrl(...args),
   isPrivateUrlAsync: (...args: unknown[]) => mockIsPrivateUrlAsync(...args),
   isPrivateUrlAsyncFresh: (...args: unknown[]) => mockIsPrivateUrlAsyncFresh(...args),
+  resolvePublicAddressesFresh: async (...args: unknown[]) =>
+    (await mockIsPrivateUrlAsyncFresh(...args)) ? null : [{ address: '93.184.216.34', family: 4 }],
 }));
 
 // ─── Import route + mocked modules ──────────────────────────────

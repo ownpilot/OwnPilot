@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Agent } from 'undici';
 
 // =============================================================================
 // Mocks
@@ -84,8 +85,11 @@ describe('safeFetch', () => {
     expect(result.status).toBe(200);
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://example.com/api',
-      expect.objectContaining({ redirect: 'manual' })
+      expect.objectContaining({ redirect: 'manual', dispatcher: expect.any(Agent) })
     );
+    const fetchInit = fetchSpy.mock.calls[0]?.[1] as RequestInit & { dispatcher: Agent };
+    const dispatcher = fetchInit.dispatcher;
+    expect(dispatcher.closed).toBe(true);
     fetchSpy.mockRestore();
   });
 
