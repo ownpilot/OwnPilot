@@ -57,6 +57,7 @@ import {
   telemetryWildcard,
   statusWildcard,
   parseTopicIds,
+  redactBrokerUrl,
 } from './mqtt-client.js';
 
 // ---------------------------------------------------------------------------
@@ -110,6 +111,19 @@ describe('parseTopicIds', () => {
 
   it('returns null for empty userId', () => {
     expect(parseTopicIds('ownpilot//devices/device1/telemetry')).toBeNull();
+  });
+
+  it('redacts credentials while preserving broker path and query', () => {
+    expect(redactBrokerUrl('mqtts://device:super-secret@broker.example:8883/edge?client=one')).toBe(
+      'mqtts://broker.example:8883/edge?client=one'
+    );
+    expect(redactBrokerUrl('mqtt://localhost:1883')).toBe('mqtt://localhost:1883');
+  });
+
+  it('does not echo malformed broker configuration', () => {
+    expect(redactBrokerUrl('not a broker URL with password=secret')).toBe(
+      '[configured MQTT broker]'
+    );
   });
 });
 
@@ -376,6 +390,21 @@ describe('EdgeMqttClient', () => {
 
       expect(mockMqttConnect).toHaveBeenCalledWith('mqtt://localhost:1883', expect.any(Object));
       expect(result).toBe(true);
+    });
+
+    it('uses credentials for the connection but redacts them from status and logs', async () => {
+      (client as any).connectFn = mockMqttConnect;
+      const brokerUrl = 'mqtts://device:super-secret@broker.example:8883/edge';
+
+      const result = await client.connect(brokerUrl);
+
+      expect(result).toBe(true);
+      expect(mockMqttConnect).toHaveBeenCalledWith(brokerUrl, expect.any(Object));
+      expect(client.getBrokerUrl()).toBe('mqtts://broker.example:8883/edge');
+      expect(mockLog.info).toHaveBeenCalledWith(
+        'Attempting MQTT connection to: mqtts://broker.example:8883/edge'
+      );
+      expect(JSON.stringify(mockLog.info.mock.calls)).not.toContain('super-secret');
     });
   });
 

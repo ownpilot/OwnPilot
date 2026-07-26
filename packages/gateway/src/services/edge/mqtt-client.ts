@@ -68,6 +68,23 @@ export function parseTopicIds(topic: string): { userId: string; deviceId: string
   return { userId, deviceId };
 }
 
+/**
+ * Remove credentials before exposing a configured broker URL in logs or APIs.
+ * The connection path continues to use the original URL.
+ */
+export function redactBrokerUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.username = '';
+    parsed.password = '';
+
+    const path = parsed.pathname === '/' ? '' : parsed.pathname;
+    return `${parsed.protocol}//${parsed.host}${path}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '[configured MQTT broker]';
+  }
+}
+
 // =============================================================================
 // EdgeMqttClient
 // =============================================================================
@@ -97,7 +114,7 @@ export class EdgeMqttClient {
       return false;
     }
 
-    log.info(`Attempting MQTT connection to: ${this.brokerUrl}`);
+    log.info(`Attempting MQTT connection to: ${redactBrokerUrl(this.brokerUrl)}`);
 
     // Lazy-load mqtt package
     if (!this.connectFn) {
@@ -139,7 +156,7 @@ export class EdgeMqttClient {
       // have moved on.
       client.on('connect', () => {
         if (this.client !== client) return;
-        log.info(`Connected to MQTT broker: ${this.brokerUrl}`);
+        log.info(`Connected to MQTT broker: ${redactBrokerUrl(this.brokerUrl!)}`);
         this.reconnectDelay = 1000;
 
         // Resubscribe to all topics
@@ -277,7 +294,7 @@ export class EdgeMqttClient {
    * Get broker URL (for status display).
    */
   getBrokerUrl(): string | null {
-    return this.brokerUrl;
+    return this.brokerUrl ? redactBrokerUrl(this.brokerUrl) : null;
   }
 
   // ---------------------------------------------------------------------------
