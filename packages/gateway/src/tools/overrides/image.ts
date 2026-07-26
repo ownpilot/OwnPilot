@@ -460,8 +460,7 @@ const generateImageOverride: ToolExecutor = async (
     // --- Read config ---
     const config = getConfigCenter();
     const providerType = config.getFieldValue(IMAGE_GEN_SERVICE, 'provider_type') as
-      | string
-      | undefined;
+      string | undefined;
     const apiKey = config.getFieldValue(IMAGE_GEN_SERVICE, 'api_key') as string | undefined;
     const baseUrl = config.getFieldValue(IMAGE_GEN_SERVICE, 'base_url') as string | undefined;
     const model = config.getFieldValue(IMAGE_GEN_SERVICE, 'model') as string | undefined;

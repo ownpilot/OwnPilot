@@ -58,13 +58,7 @@ interface DebugEntryData {
 }
 
 type FilterType =
-  | 'all'
-  | 'request'
-  | 'response'
-  | 'tool_call'
-  | 'tool_result'
-  | 'error'
-  | 'system_prompt';
+  'all' | 'request' | 'response' | 'tool_call' | 'tool_result' | 'error' | 'system_prompt';
 
 const MAX_ENTRIES = 200;
 

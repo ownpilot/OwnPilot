@@ -12,7 +12,7 @@
 
 // ── Attribute parsing ────────────────────────────────────────────────
 
-export function decodeAttributeValue(value: string): string {
+function decodeAttributeValue(value: string): string {
   return value
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
@@ -26,7 +26,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function readBalancedAttributeValue(
+function readBalancedAttributeValue(
   source: string,
   startIndex: number
 ): { value: string; nextIndex: number } | null {
@@ -136,7 +136,7 @@ export function parseTagAttributes(source: string): Record<string, string> {
 
 // ── JSON repair ──────────────────────────────────────────────────────
 
-export function repairJsonLikeWidgetData(value: string): string {
+function repairJsonLikeWidgetData(value: string): string {
   let repaired = value.trim();
   if (!repaired) return repaired;
 
@@ -178,7 +178,7 @@ export function repairJsonLikeWidgetData(value: string): string {
   return repaired.replace(/,\s*([}\]])/g, '$1');
 }
 
-export function expandWidgetDataCandidates(value: string): string[] {
+function expandWidgetDataCandidates(value: string): string[] {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   return Array.from(
     new Set([
@@ -210,7 +210,7 @@ export function parseWidgetData(value: string): unknown {
 
 // ── String/number field recovery ─────────────────────────────────────
 
-export function decodeJsonString(value: string): string {
+function decodeJsonString(value: string): string {
   try {
     return JSON.parse(`"${value.replace(/"/g, '\\"')}"`);
   } catch {
@@ -218,7 +218,7 @@ export function decodeJsonString(value: string): string {
   }
 }
 
-export function recoverStringField(source: string, keys: string[]): string | undefined {
+function recoverStringField(source: string, keys: string[]): string | undefined {
   for (const key of keys) {
     const closed = source.match(
       new RegExp(`"${key}"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`)
@@ -234,14 +234,14 @@ export function recoverStringField(source: string, keys: string[]): string | und
   return undefined;
 }
 
-export function parseRecoveredNumber(value: unknown): number | undefined {
+function parseRecoveredNumber(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value !== 'string') return undefined;
   const parsed = Number(value.replace(/%$/, '').trim());
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function recoverNumberField(source: string, keys: string[]): number | undefined {
+function recoverNumberField(source: string, keys: string[]): number | undefined {
   for (const key of keys) {
     const direct = source.match(new RegExp(`"${key}"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)`))?.[1];
     const parsedDirect = parseRecoveredNumber(direct);
@@ -257,7 +257,7 @@ export function recoverNumberField(source: string, keys: string[]): number | und
 
 // ── Object/collection recovery ───────────────────────────────────────
 
-export function recoverScalarPairs(
+function recoverScalarPairs(
   source: string,
   ignoredKeys = new Set<string>()
 ): Array<{ key: string; value: string | number | boolean }> {
@@ -283,7 +283,7 @@ export function recoverScalarPairs(
   return Array.from(pairs, ([key, value]) => ({ key, value })).slice(0, 12);
 }
 
-export function compactRecoveredRecord(
+function compactRecoveredRecord(
   record: Record<string, string | number | boolean | undefined>
 ): Record<string, string | number | boolean> {
   return Object.fromEntries(
@@ -291,7 +291,7 @@ export function compactRecoveredRecord(
   ) as Record<string, string | number | boolean>;
 }
 
-export function recoverObjectItems(
+function recoverObjectItems(
   source: string,
   collectionKeys: string[],
   mapItem: (itemSource: string) => Record<string, string | number | boolean>
@@ -311,7 +311,7 @@ export function recoverObjectItems(
 
 // ── Widget-type-specific recovery ────────────────────────────────────
 
-export function recoverStringArray(source: string, key: string): string[] {
+function recoverStringArray(source: string, key: string): string[] {
   const start = source.search(new RegExp(`"${key}"\\s*:\\s*\\[`));
   if (start === -1) return [];
 
@@ -328,7 +328,7 @@ export function recoverStringArray(source: string, key: string): string[] {
   );
 }
 
-export function recoverTableData(value: string): unknown {
+function recoverTableData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const headers = recoverStringArray(normalized, 'headers');
   if (headers.length === 0) headers.push(...recoverStringArray(normalized, 'columns'));
@@ -374,7 +374,7 @@ export function recoverTableData(value: string): unknown {
   return { error: 'Invalid widget data' };
 }
 
-export function recoverMetricData(value: string): unknown {
+function recoverMetricData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title', 'heading']);
   const items = recoverObjectItems(normalized, ['items', 'metrics', 'stats', 'values'], (item) =>
@@ -399,7 +399,7 @@ export function recoverMetricData(value: string): unknown {
   return recoverGenericCalloutData(value);
 }
 
-export function recoverProgressData(value: string): unknown {
+function recoverProgressData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title', 'heading']);
   const label = recoverStringField(normalized, ['label', 'name']) ?? title;
@@ -431,7 +431,7 @@ export function recoverProgressData(value: string): unknown {
   return recoverGenericCalloutData(value);
 }
 
-export function recoverBarChartData(value: string): unknown {
+function recoverBarChartData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title', 'heading']);
   const items = recoverObjectItems(normalized, ['items', 'bars', 'series', 'values'], (item) => {
@@ -447,7 +447,7 @@ export function recoverBarChartData(value: string): unknown {
   return recoverGenericCalloutData(value);
 }
 
-export function recoverTimelineData(value: string): unknown {
+function recoverTimelineData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title', 'heading']);
   const items = recoverObjectItems(normalized, ['items', 'events', 'entries'], (item) =>
@@ -463,7 +463,7 @@ export function recoverTimelineData(value: string): unknown {
   return recoverGenericCalloutData(value);
 }
 
-export function recoverListData(value: string, name: string): unknown {
+function recoverListData(value: string, name: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title']);
   const collectionStart = normalized.search(/"(?:items|entries|facts|cards|steps)"\s*:\s*\[/);
@@ -506,7 +506,7 @@ export function recoverListData(value: string, name: string): unknown {
   return { error: 'Invalid widget data' };
 }
 
-export function recoverGenericCalloutData(value: string): unknown {
+function recoverGenericCalloutData(value: string): unknown {
   const normalized = value.replace(/\\"/g, '"').replace(/\\'/g, "'");
   const title = recoverStringField(normalized, ['title', 'heading', 'label', 'name']);
   const body = recoverStringField(normalized, [
@@ -549,7 +549,7 @@ export function recoverGenericCalloutData(value: string): unknown {
 
 // ── Data shape normalization ─────────────────────────────────────────
 
-export function isInvalidWidgetFallback(data: unknown): boolean {
+function isInvalidWidgetFallback(data: unknown): boolean {
   return isRecord(data) && data.error === 'Invalid widget data';
 }
 

@@ -49,12 +49,7 @@ interface AcpPanelProps {
 }
 
 type CodingAgentSessionState =
-  | 'starting'
-  | 'running'
-  | 'waiting'
-  | 'completed'
-  | 'failed'
-  | 'terminated';
+  'starting' | 'running' | 'waiting' | 'completed' | 'failed' | 'terminated';
 
 // =============================================================================
 // Constants

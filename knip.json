@@ -7,7 +7,12 @@
     },
     "packages/core": {},
     "packages/gateway": {
-      "entry": ["src/mcp/cli-mcp-server.ts", "src/mcp/e2e-test.ts"]
+      "entry": [
+        "src/mcp/cli-mcp-server.ts",
+        "src/mcp/e2e-test.ts",
+        "scripts/generate-squashed-migration.ts"
+      ],
+      "ignoreDependencies": ["@types/adm-zip"]
     },
     "packages/cli": {},
     "packages/ui": {

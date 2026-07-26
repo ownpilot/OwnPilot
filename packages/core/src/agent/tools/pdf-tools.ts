@@ -94,8 +94,8 @@ export const readPdfExecutor: ToolExecutor = async (
 
     // Use pdf-parse library if available, otherwise basic extraction
     let pdfParse:
-      | ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>)
-      | null = null;
+      ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>) | null =
+      null;
     try {
       pdfParse =
         (
@@ -439,8 +439,8 @@ export const pdfInfoExecutor: ToolExecutor = async (
 
     // Try to use pdf-parse for metadata
     let pdfParse:
-      | ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>)
-      | null = null;
+      ((buffer: PdfParseBuffer, options?: { max: number }) => Promise<PdfParseResult>) | null =
+      null;
     try {
       const imported = await tryImport('pdf-parse');
       pdfParse =

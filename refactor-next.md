@@ -59,19 +59,19 @@
 
 **Risk signal counts** from `node scripts/report-code-health.mjs` (production/test separated; excludes `dist`, `coverage`, `node_modules`):
 
-| Pattern                             | Production | Tests | Interpretation                                                                    |
+| Pattern | Production | Tests | Interpretation |
 | ----------------------------------- | ---------: | ----: | --------------------------------------------------------------------------------- | --- | --- | ----------------------------------------------------------------- |
-| `as any`                            |          5 |   494 | Production remains low; tests intentionally use mock casts.                       |
-| `as unknown as`                     |        150 |   265 | Still the main typed-boundary debt; reduce via validators/typed DB rows.          |
-| `TODO                               |      FIXME |  HACK | XXX`                                                                              | 5   | 8   | Low; visible production hits include generated/default task text. |
-| `dangerouslySetInnerHTML/innerHTML` |          1 |     2 | Production hit is `HtmlWidget` and is sanitized; keep allowlisted.                |
-| `eval/new Function`                 |          8 |    49 | Mostly validators/comments/Puppeteer `$eval`; audit before changing.              |
-| `child_process/spawn/exec`          |        110 |   354 | Centralize or document through permission gates and sandbox boundaries.           |
-| `Math.random()`                     |         22 |     9 | Mostly jitter/sampling; replace ID/shuffle uses first.                            |
-| `eslint-disable`                    |         40 |     0 | Audit line-level exceptions.                                                      |
-| `@ts-expect-error`                  |          1 |     5 | Good production count; keep under 5.                                              |
-| `console.*`                         |        554 |    71 | CLI/test noise expected, but gateway/core runtime should move to structured logs. |
-| `JSON.parse()`                      |        213 |   260 | Ensure untrusted parse sites use safe parse/validation.                           |
+| `as any` | 5 | 494 | Production remains low; tests intentionally use mock casts. |
+| `as unknown as` | 150 | 265 | Still the main typed-boundary debt; reduce via validators/typed DB rows. |
+| `TODO                               |      FIXME |  HACK | XXX` | 5 | 8 | Low; visible production hits include generated/default task text. |
+| `dangerouslySetInnerHTML/innerHTML` | 1 | 2 | Production hit is `HtmlWidget` and is sanitized; keep allowlisted. |
+| `eval/new Function` | 8 | 49 | Mostly validators/comments/Puppeteer `$eval`; audit before changing. |
+| `child_process/spawn/exec` | 110 | 354 | Centralize or document through permission gates and sandbox boundaries. |
+| `Math.random()` | 22 | 9 | Mostly jitter/sampling; replace ID/shuffle uses first. |
+| `eslint-disable` | 40 | 0 | Audit line-level exceptions. |
+| `@ts-expect-error` | 1 | 5 | Good production count; keep under 5. |
+| `console.*` | 554 | 71 | CLI/test noise expected, but gateway/core runtime should move to structured logs. |
+| `JSON.parse()` | 213 | 260 | Ensure untrusted parse sites use safe parse/validation. |
 
 **Test coverage gap**: 41 source files in `packages/gateway/src/services/` have no direct colocated test by the health script heuristic (see Appendix A).
 

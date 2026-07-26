@@ -19,11 +19,7 @@ import { getLog } from '../services/log.js';
 
 export interface PulseAction {
   type:
-    | 'create_memory'
-    | 'update_goal_progress'
-    | 'send_notification'
-    | 'run_memory_cleanup'
-    | 'skip';
+    'create_memory' | 'update_goal_progress' | 'send_notification' | 'run_memory_cleanup' | 'skip';
   params: Record<string, unknown>;
 }
 

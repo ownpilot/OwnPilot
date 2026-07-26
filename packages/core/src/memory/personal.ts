@@ -755,11 +755,7 @@ export class PersonalMemoryStore {
       case 'ai_preferences':
         if (key === 'autonomy')
           profile.aiPreferences.autonomyLevel = value as
-            | 'none'
-            | 'low'
-            | 'medium'
-            | 'high'
-            | 'full';
+            'none' | 'low' | 'medium' | 'high' | 'full';
         else if (key === 'proactive') profile.aiPreferences.proactivity = value === 'true';
         else if (key === 'reminders') profile.aiPreferences.reminders = value === 'true';
         else if (key === 'suggestions') profile.aiPreferences.suggestions = value === 'true';

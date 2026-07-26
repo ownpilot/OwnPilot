@@ -19,11 +19,7 @@ export type ChannelPlatform = string;
 
 /** Connection lifecycle states for a channel plugin. */
 export type ChannelConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+  'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 
 // ============================================================================
 // Channel User Identity

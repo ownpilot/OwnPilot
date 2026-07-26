@@ -2626,8 +2626,7 @@ describe('extended branch coverage', () => {
     vi.mocked(core.createFallbackProvider).mockImplementationOnce(
       (opts: Record<string, unknown>) => {
         const cb = opts['onFallback'] as
-          | ((failed: string, error: Error, next: string) => void)
-          | undefined;
+          ((failed: string, error: Error, next: string) => void) | undefined;
         cb?.('primary', new Error('Primary failed'), 'fallback');
         return {} as import('@ownpilot/core').IProvider;
       }

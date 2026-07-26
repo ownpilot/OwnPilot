@@ -121,13 +121,7 @@ export interface PlanStep {
   id: string;
   planId: string;
   type:
-    | 'tool_call'
-    | 'llm_decision'
-    | 'user_input'
-    | 'condition'
-    | 'parallel'
-    | 'loop'
-    | 'sub_plan';
+    'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
   name: string;
   description?: string;
   config: Record<string, unknown>;

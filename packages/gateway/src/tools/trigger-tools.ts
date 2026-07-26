@@ -302,11 +302,7 @@ export async function executeTriggerTool(
           config,
           action: {
             type: args.action_type as
-              | 'chat'
-              | 'tool'
-              | 'notification'
-              | 'goal_check'
-              | 'memory_summary',
+              'chat' | 'tool' | 'notification' | 'goal_check' | 'memory_summary',
             payload: (args.action_payload as Record<string, unknown>) ?? {},
           },
           enabled: args.enabled !== false,

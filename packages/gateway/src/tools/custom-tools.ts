@@ -67,8 +67,7 @@ export async function executeCustomToolTool(
           name: string;
           description: string;
           parameters:
-            | string
-            | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+            string | { type: 'object'; properties: Record<string, unknown>; required?: string[] };
           code: string;
           category?: string;
           permissions?: string[];

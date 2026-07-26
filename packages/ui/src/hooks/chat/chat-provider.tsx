@@ -5,15 +5,15 @@
  * session management, and auto-compact prompting.
  */
 
-import {
-  createContext,
-  useContext,
-  useRef,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react';
-import type { Message, MessageAttachment, SessionInfo, ChatResponse, ApiResponse, TraceInfo } from '../../types';
+import { createContext, useContext, useRef, useState, useCallback, type ReactNode } from 'react';
+import type {
+  Message,
+  MessageAttachment,
+  SessionInfo,
+  ChatResponse,
+  ApiResponse,
+  TraceInfo,
+} from '../../types';
 import type { ApprovalRequest } from '../../api';
 import { executionPermissionsApi, memoriesApi, chatApi } from '../../api';
 import { parseSSELine } from '../../utils/sse-parser';
@@ -473,8 +473,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           const finalThinking =
             ((finalResponse as Record<string, unknown> | null)?.thinkingContent as
-              | string
-              | undefined) ||
+              string | undefined) ||
             accumulatedThinking ||
             undefined;
 

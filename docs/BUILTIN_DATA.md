@@ -169,28 +169,30 @@ Task management with priorities, due dates, subtask hierarchy, and project group
 - Logically references `projects` via `project_id`.
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_task` | Create a new task with title, due date, priority, category, and notes |
-| `list_tasks` | List tasks with filters (status, priority, category, search, limit) |
-| `complete_task` | Mark a task as completed by ID |
-| `update_task` | Update any task fields by ID |
-| `delete_task` | Delete a task by ID |
-| `batch_add_tasks` | Create multiple tasks at once |
+
+| Tool Name         | Description                                                           |
+| ----------------- | --------------------------------------------------------------------- |
+| `add_task`        | Create a new task with title, due date, priority, category, and notes |
+| `list_tasks`      | List tasks with filters (status, priority, category, search, limit)   |
+| `complete_task`   | Mark a task as completed by ID                                        |
+| `update_task`     | Update any task fields by ID                                          |
+| `delete_task`     | Delete a task by ID                                                   |
+| `batch_add_tasks` | Create multiple tasks at once                                         |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/personal/tasks` | List tasks with query filters |
-| `GET` | `/api/v1/personal/tasks/today` | Tasks due today |
-| `GET` | `/api/v1/personal/tasks/overdue` | Overdue tasks |
-| `GET` | `/api/v1/personal/tasks/upcoming` | Tasks due in the next N days |
-| `GET` | `/api/v1/personal/tasks/categories` | All task categories |
-| `GET` | `/api/v1/personal/tasks/:id` | Single task by ID |
-| `POST` | `/api/v1/personal/tasks` | Create a task |
-| `PATCH` | `/api/v1/personal/tasks/:id` | Update a task |
-| `POST` | `/api/v1/personal/tasks/:id/complete` | Mark task complete |
-| `DELETE` | `/api/v1/personal/tasks/:id` | Delete a task |
+
+| Method   | Path                                  | Description                   |
+| -------- | ------------------------------------- | ----------------------------- |
+| `GET`    | `/api/v1/personal/tasks`              | List tasks with query filters |
+| `GET`    | `/api/v1/personal/tasks/today`        | Tasks due today               |
+| `GET`    | `/api/v1/personal/tasks/overdue`      | Overdue tasks                 |
+| `GET`    | `/api/v1/personal/tasks/upcoming`     | Tasks due in the next N days  |
+| `GET`    | `/api/v1/personal/tasks/categories`   | All task categories           |
+| `GET`    | `/api/v1/personal/tasks/:id`          | Single task by ID             |
+| `POST`   | `/api/v1/personal/tasks`              | Create a task                 |
+| `PATCH`  | `/api/v1/personal/tasks/:id`          | Update a task                 |
+| `POST`   | `/api/v1/personal/tasks/:id/complete` | Mark task complete            |
+| `DELETE` | `/api/v1/personal/tasks/:id`          | Delete a task                 |
 
 ---
 
@@ -220,25 +222,27 @@ Web bookmark management with favorites, visit tracking, and categorization.
 - `idx_bookmarks_category` on `(category)`
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_bookmark` | Save a bookmark with URL, title, description, category, tags |
-| `list_bookmarks` | List bookmarks with filters (category, favorite, search, limit) |
-| `delete_bookmark` | Delete a bookmark by ID |
-| `batch_add_bookmarks` | Save multiple bookmarks at once |
+
+| Tool Name             | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `add_bookmark`        | Save a bookmark with URL, title, description, category, tags    |
+| `list_bookmarks`      | List bookmarks with filters (category, favorite, search, limit) |
+| `delete_bookmark`     | Delete a bookmark by ID                                         |
+| `batch_add_bookmarks` | Save multiple bookmarks at once                                 |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/personal/bookmarks` | List bookmarks |
-| `GET` | `/api/v1/personal/bookmarks/favorites` | Favorite bookmarks |
-| `GET` | `/api/v1/personal/bookmarks/recent` | Recently added bookmarks |
-| `GET` | `/api/v1/personal/bookmarks/categories` | All categories |
-| `GET` | `/api/v1/personal/bookmarks/:id` | Single bookmark |
-| `POST` | `/api/v1/personal/bookmarks` | Create bookmark |
-| `PATCH` | `/api/v1/personal/bookmarks/:id` | Update bookmark |
-| `POST` | `/api/v1/personal/bookmarks/:id/favorite` | Toggle favorite status |
-| `DELETE` | `/api/v1/personal/bookmarks/:id` | Delete bookmark |
+
+| Method   | Path                                      | Description              |
+| -------- | ----------------------------------------- | ------------------------ |
+| `GET`    | `/api/v1/personal/bookmarks`              | List bookmarks           |
+| `GET`    | `/api/v1/personal/bookmarks/favorites`    | Favorite bookmarks       |
+| `GET`    | `/api/v1/personal/bookmarks/recent`       | Recently added bookmarks |
+| `GET`    | `/api/v1/personal/bookmarks/categories`   | All categories           |
+| `GET`    | `/api/v1/personal/bookmarks/:id`          | Single bookmark          |
+| `POST`   | `/api/v1/personal/bookmarks`              | Create bookmark          |
+| `PATCH`  | `/api/v1/personal/bookmarks/:id`          | Update bookmark          |
+| `POST`   | `/api/v1/personal/bookmarks/:id/favorite` | Toggle favorite status   |
+| `DELETE` | `/api/v1/personal/bookmarks/:id`          | Delete bookmark          |
 
 ---
 
@@ -267,28 +271,30 @@ Markdown note storage with pinning, archiving, and color coding.
 - `idx_notes_category` on `(category)`
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_note` | Create a note with title, content, category, tags |
-| `list_notes` | List notes with filters (category, pinned, search, limit) |
-| `update_note` | Update a note by ID |
-| `delete_note` | Delete a note by ID |
-| `batch_add_notes` | Create multiple notes at once |
+
+| Tool Name         | Description                                               |
+| ----------------- | --------------------------------------------------------- |
+| `add_note`        | Create a note with title, content, category, tags         |
+| `list_notes`      | List notes with filters (category, pinned, search, limit) |
+| `update_note`     | Update a note by ID                                       |
+| `delete_note`     | Delete a note by ID                                       |
+| `batch_add_notes` | Create multiple notes at once                             |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/personal/notes` | List notes |
-| `GET` | `/api/v1/personal/notes/pinned` | Pinned notes |
-| `GET` | `/api/v1/personal/notes/archived` | Archived notes |
-| `GET` | `/api/v1/personal/notes/categories` | All categories |
-| `GET` | `/api/v1/personal/notes/:id` | Single note |
-| `POST` | `/api/v1/personal/notes` | Create note |
-| `PATCH` | `/api/v1/personal/notes/:id` | Update note |
-| `POST` | `/api/v1/personal/notes/:id/pin` | Toggle pin |
-| `POST` | `/api/v1/personal/notes/:id/archive` | Archive note |
-| `POST` | `/api/v1/personal/notes/:id/unarchive` | Unarchive note |
-| `DELETE` | `/api/v1/personal/notes/:id` | Delete note |
+
+| Method   | Path                                   | Description    |
+| -------- | -------------------------------------- | -------------- |
+| `GET`    | `/api/v1/personal/notes`               | List notes     |
+| `GET`    | `/api/v1/personal/notes/pinned`        | Pinned notes   |
+| `GET`    | `/api/v1/personal/notes/archived`      | Archived notes |
+| `GET`    | `/api/v1/personal/notes/categories`    | All categories |
+| `GET`    | `/api/v1/personal/notes/:id`           | Single note    |
+| `POST`   | `/api/v1/personal/notes`               | Create note    |
+| `PATCH`  | `/api/v1/personal/notes/:id`           | Update note    |
+| `POST`   | `/api/v1/personal/notes/:id/pin`       | Toggle pin     |
+| `POST`   | `/api/v1/personal/notes/:id/archive`   | Archive note   |
+| `POST`   | `/api/v1/personal/notes/:id/unarchive` | Unarchive note |
+| `DELETE` | `/api/v1/personal/notes/:id`           | Delete note    |
 
 ---
 
@@ -324,24 +330,26 @@ Calendar events with timezone support, recurrence, reminders, attendees, and ext
 - `idx_calendar_start` on `(start_time)`
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_calendar_event` | Create an event with title, start/end time, location, reminder |
-| `list_calendar_events` | List events with filters (date range, category, search) |
-| `delete_calendar_event` | Delete an event by ID |
-| `batch_add_calendar_events` | Create multiple events at once |
+
+| Tool Name                   | Description                                                    |
+| --------------------------- | -------------------------------------------------------------- |
+| `add_calendar_event`        | Create an event with title, start/end time, location, reminder |
+| `list_calendar_events`      | List events with filters (date range, category, search)        |
+| `delete_calendar_event`     | Delete an event by ID                                          |
+| `batch_add_calendar_events` | Create multiple events at once                                 |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/personal/calendar` | List events with query filters |
-| `GET` | `/api/v1/personal/calendar/today` | Today's events |
-| `GET` | `/api/v1/personal/calendar/upcoming` | Events in the next N days |
-| `GET` | `/api/v1/personal/calendar/categories` | All categories |
-| `GET` | `/api/v1/personal/calendar/:id` | Single event |
-| `POST` | `/api/v1/personal/calendar` | Create event |
-| `PATCH` | `/api/v1/personal/calendar/:id` | Update event |
-| `DELETE` | `/api/v1/personal/calendar/:id` | Delete event |
+
+| Method   | Path                                   | Description                    |
+| -------- | -------------------------------------- | ------------------------------ |
+| `GET`    | `/api/v1/personal/calendar`            | List events with query filters |
+| `GET`    | `/api/v1/personal/calendar/today`      | Today's events                 |
+| `GET`    | `/api/v1/personal/calendar/upcoming`   | Events in the next N days      |
+| `GET`    | `/api/v1/personal/calendar/categories` | All categories                 |
+| `GET`    | `/api/v1/personal/calendar/:id`        | Single event                   |
+| `POST`   | `/api/v1/personal/calendar`            | Create event                   |
+| `PATCH`  | `/api/v1/personal/calendar/:id`        | Update event                   |
+| `DELETE` | `/api/v1/personal/calendar/:id`        | Delete event                   |
 
 ---
 
@@ -380,28 +388,30 @@ Contact management with rich profile data, social links, custom fields, and exte
 - `idx_contacts_name` on `(name)`
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_contact` | Create a contact with name, email, phone, company, relationship, etc. |
-| `list_contacts` | List contacts with filters (relationship, company, favorite, search) |
-| `update_contact` | Update a contact by ID |
-| `delete_contact` | Delete a contact by ID |
-| `batch_add_contacts` | Create multiple contacts at once |
+
+| Tool Name            | Description                                                           |
+| -------------------- | --------------------------------------------------------------------- |
+| `add_contact`        | Create a contact with name, email, phone, company, relationship, etc. |
+| `list_contacts`      | List contacts with filters (relationship, company, favorite, search)  |
+| `update_contact`     | Update a contact by ID                                                |
+| `delete_contact`     | Delete a contact by ID                                                |
+| `batch_add_contacts` | Create multiple contacts at once                                      |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/personal/contacts` | List contacts |
-| `GET` | `/api/v1/personal/contacts/favorites` | Favorite contacts |
-| `GET` | `/api/v1/personal/contacts/recent` | Recently contacted |
-| `GET` | `/api/v1/personal/contacts/birthdays` | Upcoming birthdays (next N days) |
-| `GET` | `/api/v1/personal/contacts/relationships` | All relationship types |
-| `GET` | `/api/v1/personal/contacts/companies` | All companies |
-| `GET` | `/api/v1/personal/contacts/:id` | Single contact |
-| `POST` | `/api/v1/personal/contacts` | Create contact |
-| `PATCH` | `/api/v1/personal/contacts/:id` | Update contact |
-| `POST` | `/api/v1/personal/contacts/:id/favorite` | Toggle favorite |
-| `DELETE` | `/api/v1/personal/contacts/:id` | Delete contact |
+
+| Method   | Path                                      | Description                      |
+| -------- | ----------------------------------------- | -------------------------------- |
+| `GET`    | `/api/v1/personal/contacts`               | List contacts                    |
+| `GET`    | `/api/v1/personal/contacts/favorites`     | Favorite contacts                |
+| `GET`    | `/api/v1/personal/contacts/recent`        | Recently contacted               |
+| `GET`    | `/api/v1/personal/contacts/birthdays`     | Upcoming birthdays (next N days) |
+| `GET`    | `/api/v1/personal/contacts/relationships` | All relationship types           |
+| `GET`    | `/api/v1/personal/contacts/companies`     | All companies                    |
+| `GET`    | `/api/v1/personal/contacts/:id`           | Single contact                   |
+| `POST`   | `/api/v1/personal/contacts`               | Create contact                   |
+| `PATCH`  | `/api/v1/personal/contacts/:id`           | Update contact                   |
+| `POST`   | `/api/v1/personal/contacts/:id/favorite`  | Toggle favorite                  |
+| `DELETE` | `/api/v1/personal/contacts/:id`           | Delete contact                   |
 
 ---
 
@@ -484,15 +494,16 @@ Quick-capture inbox for rapidly recording ideas, thoughts, TODOs, links, quotes,
 - `idx_captures_created` on `(created_at DESC)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/productivity/captures` | List captures with filters |
-| `GET` | `/api/v1/productivity/captures/inbox` | Unprocessed captures |
-| `GET` | `/api/v1/productivity/captures/stats` | Capture statistics |
-| `GET` | `/api/v1/productivity/captures/:id` | Single capture |
-| `POST` | `/api/v1/productivity/captures` | Create a capture |
-| `POST` | `/api/v1/productivity/captures/:id/process` | Process (triage) a capture |
-| `DELETE` | `/api/v1/productivity/captures/:id` | Delete a capture |
+
+| Method   | Path                                        | Description                |
+| -------- | ------------------------------------------- | -------------------------- |
+| `GET`    | `/api/v1/productivity/captures`             | List captures with filters |
+| `GET`    | `/api/v1/productivity/captures/inbox`       | Unprocessed captures       |
+| `GET`    | `/api/v1/productivity/captures/stats`       | Capture statistics         |
+| `GET`    | `/api/v1/productivity/captures/:id`         | Single capture             |
+| `POST`   | `/api/v1/productivity/captures`             | Create a capture           |
+| `POST`   | `/api/v1/productivity/captures/:id/process` | Process (triage) a capture |
+| `DELETE` | `/api/v1/productivity/captures/:id`         | Delete a capture           |
 
 ---
 
@@ -534,13 +545,14 @@ Individual Pomodoro timer sessions (work, short break, or long break).
 - `idx_pomodoro_sessions_started` on `(started_at DESC)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/productivity/pomodoro/session` | Get active session |
-| `POST` | `/api/v1/productivity/pomodoro/session/start` | Start a new session |
-| `POST` | `/api/v1/productivity/pomodoro/session/:id/complete` | Complete a session |
+
+| Method | Path                                                  | Description         |
+| ------ | ----------------------------------------------------- | ------------------- |
+| `GET`  | `/api/v1/productivity/pomodoro/session`               | Get active session  |
+| `POST` | `/api/v1/productivity/pomodoro/session/start`         | Start a new session |
+| `POST` | `/api/v1/productivity/pomodoro/session/:id/complete`  | Complete a session  |
 | `POST` | `/api/v1/productivity/pomodoro/session/:id/interrupt` | Interrupt a session |
-| `GET` | `/api/v1/productivity/pomodoro/sessions` | List past sessions |
+| `GET`  | `/api/v1/productivity/pomodoro/sessions`              | List past sessions  |
 
 ---
 
@@ -560,10 +572,11 @@ Per-user Pomodoro timer configuration.
 | `updated_at`                 | TIMESTAMP WITH TIME ZONE | `NOW()`     | Last settings change                  |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/productivity/pomodoro/settings` | Get Pomodoro settings |
-| `PATCH` | `/api/v1/productivity/pomodoro/settings` | Update settings |
+
+| Method  | Path                                     | Description           |
+| ------- | ---------------------------------------- | --------------------- |
+| `GET`   | `/api/v1/productivity/pomodoro/settings` | Get Pomodoro settings |
+| `PATCH` | `/api/v1/productivity/pomodoro/settings` | Update settings       |
 
 ---
 
@@ -586,10 +599,11 @@ Aggregated daily statistics for Pomodoro usage. Used for streak tracking and pro
 - `idx_pomodoro_daily_user_date` on `(user_id, date)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/productivity/pomodoro/stats` | Overall statistics plus today's stats |
-| `GET` | `/api/v1/productivity/pomodoro/stats/daily/:date` | Stats for a specific date |
+
+| Method | Path                                              | Description                           |
+| ------ | ------------------------------------------------- | ------------------------------------- |
+| `GET`  | `/api/v1/productivity/pomodoro/stats`             | Overall statistics plus today's stats |
+| `GET`  | `/api/v1/productivity/pomodoro/stats/daily/:date` | Stats for a specific date             |
 
 ---
 
@@ -625,18 +639,19 @@ Habit tracking with flexible frequency, streak computation, and archiving.
 - `idx_habits_category` on `(category)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/productivity/habits` | List habits |
-| `GET` | `/api/v1/productivity/habits/today` | Today's habits with completion status |
-| `GET` | `/api/v1/productivity/habits/categories` | All categories |
-| `GET` | `/api/v1/productivity/habits/:id` | Habit details with stats |
-| `POST` | `/api/v1/productivity/habits` | Create a habit |
-| `PATCH` | `/api/v1/productivity/habits/:id` | Update a habit |
-| `DELETE` | `/api/v1/productivity/habits/:id` | Delete a habit |
-| `POST` | `/api/v1/productivity/habits/:id/archive` | Archive a habit |
-| `POST` | `/api/v1/productivity/habits/:id/log` | Log a completion |
-| `GET` | `/api/v1/productivity/habits/:id/logs` | Get completion logs |
+
+| Method   | Path                                      | Description                           |
+| -------- | ----------------------------------------- | ------------------------------------- |
+| `GET`    | `/api/v1/productivity/habits`             | List habits                           |
+| `GET`    | `/api/v1/productivity/habits/today`       | Today's habits with completion status |
+| `GET`    | `/api/v1/productivity/habits/categories`  | All categories                        |
+| `GET`    | `/api/v1/productivity/habits/:id`         | Habit details with stats              |
+| `POST`   | `/api/v1/productivity/habits`             | Create a habit                        |
+| `PATCH`  | `/api/v1/productivity/habits/:id`         | Update a habit                        |
+| `DELETE` | `/api/v1/productivity/habits/:id`         | Delete a habit                        |
+| `POST`   | `/api/v1/productivity/habits/:id/archive` | Archive a habit                       |
+| `POST`   | `/api/v1/productivity/habits/:id/log`     | Log a completion                      |
+| `GET`    | `/api/v1/productivity/habits/:id/logs`    | Get completion logs                   |
 
 ---
 
@@ -688,37 +703,40 @@ interface ExpenseEntry {
 ```
 
 **Expense Categories:**
-| Category | Color |
-|----------|-------|
-| `food` | `#FF6B6B` |
-| `transport` | `#4ECDC4` |
-| `utilities` | `#45B7D1` |
+
+| Category        | Color     |
+| --------------- | --------- |
+| `food`          | `#FF6B6B` |
+| `transport`     | `#4ECDC4` |
+| `utilities`     | `#45B7D1` |
 | `entertainment` | `#96CEB4` |
-| `shopping` | `#FFEAA7` |
-| `health` | `#DDA0DD` |
-| `education` | `#98D8C8` |
-| `travel` | `#F7DC6F` |
-| `subscription` | `#BB8FCE` |
-| `housing` | `#85C1E9` |
-| `other` | `#AEB6BF` |
+| `shopping`      | `#FFEAA7` |
+| `health`        | `#DDA0DD` |
+| `education`     | `#98D8C8` |
+| `travel`        | `#F7DC6F` |
+| `subscription`  | `#BB8FCE` |
+| `housing`       | `#85C1E9` |
+| `other`         | `#AEB6BF` |
 
 **AI Tools:**
-| Tool Name | Description |
-|-----------|-------------|
-| `add_expense` | Add an expense with amount, category, description, date |
-| `query_expenses` | Query expenses by date range, category, search |
-| `export_expenses` | Export expenses as structured data |
+
+| Tool Name         | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `add_expense`     | Add an expense with amount, category, description, date    |
+| `query_expenses`  | Query expenses by date range, category, search             |
+| `export_expenses` | Export expenses as structured data                         |
 | `expense_summary` | Get summary by period (today, this_week, this_month, etc.) |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/expenses` | List expenses with filters (startDate, endDate, category, search) |
-| `GET` | `/api/v1/expenses/summary` | Get expense summary for a period |
-| `GET` | `/api/v1/expenses/monthly` | Monthly breakdown for a year |
-| `POST` | `/api/v1/expenses` | Add an expense |
-| `PUT` | `/api/v1/expenses/:id` | Update an expense |
-| `DELETE` | `/api/v1/expenses/:id` | Delete an expense |
+
+| Method   | Path                       | Description                                                       |
+| -------- | -------------------------- | ----------------------------------------------------------------- |
+| `GET`    | `/api/v1/expenses`         | List expenses with filters (startDate, endDate, category, search) |
+| `GET`    | `/api/v1/expenses/summary` | Get expense summary for a period                                  |
+| `GET`    | `/api/v1/expenses/monthly` | Monthly breakdown for a year                                      |
+| `POST`   | `/api/v1/expenses`         | Add an expense                                                    |
+| `PUT`    | `/api/v1/expenses/:id`     | Update an expense                                                 |
+| `DELETE` | `/api/v1/expenses/:id`     | Delete an expense                                                 |
 
 ---
 
@@ -764,21 +782,23 @@ Persistent memory for the AI assistant. The AI stores facts, preferences, conver
 - `skill` -- Something the AI learned to do for this user.
 
 **AI Tools (MEMORY_TOOLS):**
-| Tool Name | Description |
-|-----------|-------------|
-| `remember` | Store a new memory with content, type, importance, tags |
-| `recall` | Search memories by query, type, minimum importance |
-| `forget` | Delete a specific memory by ID |
+
+| Tool Name       | Description                                                |
+| --------------- | ---------------------------------------------------------- |
+| `remember`      | Store a new memory with content, type, importance, tags    |
+| `recall`        | Search memories by query, type, minimum importance         |
+| `forget`        | Delete a specific memory by ID                             |
 | `list_memories` | List all memories with optional type and importance filter |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/memories` | List memories with filters |
-| `POST` | `/api/v1/memories` | Create a memory |
-| `GET` | `/api/v1/memories/:id` | Get a specific memory |
-| `PATCH` | `/api/v1/memories/:id` | Update a memory |
-| `DELETE` | `/api/v1/memories/:id` | Delete a memory |
+
+| Method   | Path                   | Description                |
+| -------- | ---------------------- | -------------------------- |
+| `GET`    | `/api/v1/memories`     | List memories with filters |
+| `POST`   | `/api/v1/memories`     | Create a memory            |
+| `GET`    | `/api/v1/memories/:id` | Get a specific memory      |
+| `PATCH`  | `/api/v1/memories/:id` | Update a memory            |
+| `DELETE` | `/api/v1/memories/:id` | Delete a memory            |
 
 ---
 
@@ -816,21 +836,23 @@ Long-term objectives with hierarchical sub-goals and progress tracking.
 - Has many `plans` via `plans.goal_id` (set null on delete).
 
 **AI Tools (GOAL_TOOLS):**
-| Tool Name | Description |
-|-----------|-------------|
+
+| Tool Name     | Description                                                   |
+| ------------- | ------------------------------------------------------------- |
 | `create_goal` | Create a new goal with title, description, priority, due date |
-| `list_goals` | List goals with status and priority filters |
-| `update_goal` | Update goal status, progress, or details |
-| `delete_goal` | Delete a goal |
+| `list_goals`  | List goals with status and priority filters                   |
+| `update_goal` | Update goal status, progress, or details                      |
+| `delete_goal` | Delete a goal                                                 |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/goals` | List goals |
-| `POST` | `/api/v1/goals` | Create a goal |
-| `GET` | `/api/v1/goals/:id` | Get goal with steps |
-| `PATCH` | `/api/v1/goals/:id` | Update a goal |
-| `DELETE` | `/api/v1/goals/:id` | Delete a goal |
+
+| Method   | Path                | Description         |
+| -------- | ------------------- | ------------------- |
+| `GET`    | `/api/v1/goals`     | List goals          |
+| `POST`   | `/api/v1/goals`     | Create a goal       |
+| `GET`    | `/api/v1/goals/:id` | Get goal with steps |
+| `PATCH`  | `/api/v1/goals/:id` | Update a goal       |
+| `DELETE` | `/api/v1/goals/:id` | Delete a goal       |
 
 ---
 
@@ -895,13 +917,14 @@ Proactive automation triggers. The AI can create and manage triggers that fire o
 Available via the gateway tools layer for creating, listing, enabling/disabling, and deleting triggers.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/triggers` | List triggers |
-| `POST` | `/api/v1/triggers` | Create a trigger |
-| `GET` | `/api/v1/triggers/:id` | Get trigger with history |
-| `PATCH` | `/api/v1/triggers/:id` | Update a trigger |
-| `DELETE` | `/api/v1/triggers/:id` | Delete a trigger |
+
+| Method   | Path                   | Description              |
+| -------- | ---------------------- | ------------------------ |
+| `GET`    | `/api/v1/triggers`     | List triggers            |
+| `POST`   | `/api/v1/triggers`     | Create a trigger         |
+| `GET`    | `/api/v1/triggers/:id` | Get trigger with history |
+| `PATCH`  | `/api/v1/triggers/:id` | Update a trigger         |
+| `DELETE` | `/api/v1/triggers/:id` | Delete a trigger         |
 
 ---
 
@@ -959,13 +982,14 @@ Autonomous multi-step plan execution. Plans are sequences of steps the AI execut
 | `metadata`       | JSONB                    | `'{}'`      | Yes      | --                                                                            | Extensible metadata                                      |
 
 **Autonomy levels:**
-| Level | Name | Behavior |
-|-------|------|----------|
-| 0 | Manual | User must approve every step |
-| 1 | Suggest | AI suggests actions, user approves |
-| 2 | Act & Report | AI acts, reports results |
-| 3 | Act & Flag | AI acts, flags issues only |
-| 4 | Full Auto | AI executes without intervention |
+
+| Level | Name         | Behavior                           |
+| ----- | ------------ | ---------------------------------- |
+| 0     | Manual       | User must approve every step       |
+| 1     | Suggest      | AI suggests actions, user approves |
+| 2     | Act & Report | AI acts, reports results           |
+| 3     | Act & Flag   | AI acts, flags issues only         |
+| 4     | Full Auto    | AI executes without intervention   |
 
 **Indexes:**
 
@@ -979,13 +1003,14 @@ Autonomous multi-step plan execution. Plans are sequences of steps the AI execut
 Available via the gateway tools layer for creating, running, pausing, resuming, and cancelling plans.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/plans` | List plans |
-| `POST` | `/api/v1/plans` | Create a plan |
-| `GET` | `/api/v1/plans/:id` | Get plan with steps and history |
-| `PATCH` | `/api/v1/plans/:id` | Update a plan |
-| `DELETE` | `/api/v1/plans/:id` | Delete a plan |
+
+| Method   | Path                | Description                     |
+| -------- | ------------------- | ------------------------------- |
+| `GET`    | `/api/v1/plans`     | List plans                      |
+| `POST`   | `/api/v1/plans`     | Create a plan                   |
+| `GET`    | `/api/v1/plans/:id` | Get plan with steps and history |
+| `PATCH`  | `/api/v1/plans/:id` | Update a plan                   |
+| `DELETE` | `/api/v1/plans/:id` | Delete a plan                   |
 
 ---
 
@@ -1101,12 +1126,13 @@ Generic key-value store for AI-created dynamic data. Allows the AI to persist ar
 | `updated_at` | TIMESTAMP WITH TIME ZONE | `NOW()`     | NOT NULL                       | Last update time  |
 
 **AI Tools (CUSTOM_DATA_TOOLS):**
-| Tool Name | Description |
-|-----------|-------------|
-| `store_data` | Store a key-value pair |
-| `retrieve_data` | Retrieve data by key |
-| `list_data_keys` | List all stored keys |
-| `delete_data` | Delete a key-value pair |
+
+| Tool Name        | Description             |
+| ---------------- | ----------------------- |
+| `store_data`     | Store a key-value pair  |
+| `retrieve_data`  | Retrieve data by key    |
+| `list_data_keys` | List all stored keys    |
+| `delete_data`    | Delete a key-value pair |
 
 ---
 
@@ -1115,24 +1141,26 @@ Generic key-value store for AI-created dynamic data. Allows the AI to persist ar
 AI-managed dynamic schemas. The AI can create new "virtual tables" with custom column definitions and store records in them.
 
 **`custom_table_schemas`:**
-| Column | Type | Default | Constraint | Description |
-|--------|------|---------|------------|-------------|
-| `id` | TEXT | -- | PK | Unique identifier |
-| `name` | TEXT | -- | NOT NULL, UNIQUE | Table name |
-| `display_name` | TEXT | -- | NOT NULL | Human-readable name |
-| `description` | TEXT | -- | Yes | Description |
-| `columns` | JSONB | `'[]'` | NOT NULL | Array of column definitions |
-| `created_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL | Creation time |
-| `updated_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL | Last update time |
+
+| Column         | Type                     | Default | Constraint       | Description                 |
+| -------------- | ------------------------ | ------- | ---------------- | --------------------------- |
+| `id`           | TEXT                     | --      | PK               | Unique identifier           |
+| `name`         | TEXT                     | --      | NOT NULL, UNIQUE | Table name                  |
+| `display_name` | TEXT                     | --      | NOT NULL         | Human-readable name         |
+| `description`  | TEXT                     | --      | Yes              | Description                 |
+| `columns`      | JSONB                    | `'[]'`  | NOT NULL         | Array of column definitions |
+| `created_at`   | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL         | Creation time               |
+| `updated_at`   | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL         | Last update time            |
 
 **`custom_data_records`:**
-| Column | Type | Default | Constraint | Description |
-|--------|------|---------|------------|-------------|
-| `id` | TEXT | -- | PK | Unique identifier |
-| `table_id` | TEXT | -- | NOT NULL, FK -> `custom_table_schemas(id)` ON DELETE CASCADE | Parent table |
-| `data` | JSONB | `'{}'` | NOT NULL | Row data as JSON |
-| `created_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL | Creation time |
-| `updated_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL | Last update time |
+
+| Column       | Type                     | Default | Constraint                                                   | Description       |
+| ------------ | ------------------------ | ------- | ------------------------------------------------------------ | ----------------- |
+| `id`         | TEXT                     | --      | PK                                                           | Unique identifier |
+| `table_id`   | TEXT                     | --      | NOT NULL, FK -> `custom_table_schemas(id)` ON DELETE CASCADE | Parent table      |
+| `data`       | JSONB                    | `'{}'`  | NOT NULL                                                     | Row data as JSON  |
+| `created_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL                                                     | Creation time     |
+| `updated_at` | TIMESTAMP WITH TIME ZONE | `NOW()` | NOT NULL                                                     | Last update time  |
 
 ---
 
@@ -1163,11 +1191,12 @@ Tracks the monetary cost of every AI API call. Costs are computed using per-mode
 - `idx_costs_conversation` on `(conversation_id)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/costs` | Get cost data with period filters |
-| `GET` | `/api/v1/costs/summary` | Cost summary by provider and model |
-| `GET` | `/api/v1/costs/budget` | Budget status and remaining balance |
+
+| Method | Path                    | Description                         |
+| ------ | ----------------------- | ----------------------------------- |
+| `GET`  | `/api/v1/costs`         | Get cost data with period filters   |
+| `GET`  | `/api/v1/costs/summary` | Cost summary by provider and model  |
+| `GET`  | `/api/v1/costs/budget`  | Budget status and remaining balance |
 
 ---
 
@@ -1236,12 +1265,13 @@ Registered messaging channels (Telegram).
 Available for listing channels, sending messages, and managing channel state.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/channels` | List channels |
-| `POST` | `/api/v1/channels` | Register a channel |
-| `GET` | `/api/v1/channels/:id` | Get channel details |
-| `DELETE` | `/api/v1/channels/:id` | Remove a channel |
+
+| Method   | Path                   | Description         |
+| -------- | ---------------------- | ------------------- |
+| `GET`    | `/api/v1/channels`     | List channels       |
+| `POST`   | `/api/v1/channels`     | Register a channel  |
+| `GET`    | `/api/v1/channels/:id` | Get channel details |
+| `DELETE` | `/api/v1/channels/:id` | Remove a channel    |
 
 ---
 
@@ -1290,11 +1320,12 @@ Simple key-value store for application configuration. Used for API keys, default
 - `default_ai_model` -- Default AI model ID.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/settings` | Get all settings (keys masked) |
-| `POST` | `/api/v1/settings/api-keys/:provider` | Set an API key |
-| `DELETE` | `/api/v1/settings/api-keys/:provider` | Remove an API key |
+
+| Method   | Path                                  | Description                    |
+| -------- | ------------------------------------- | ------------------------------ |
+| `GET`    | `/api/v1/settings`                    | Get all settings (keys masked) |
+| `POST`   | `/api/v1/settings/api-keys/:provider` | Set an API key                 |
+| `DELETE` | `/api/v1/settings/api-keys/:provider` | Remove an API key              |
 
 ---
 
@@ -1320,13 +1351,14 @@ Configured AI agent profiles with custom system prompts and model selection.
 - Referenced by `conversations.agent_id`.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/agents` | List agents |
-| `POST` | `/api/v1/agents` | Create an agent |
-| `GET` | `/api/v1/agents/:id` | Get agent details |
-| `PATCH` | `/api/v1/agents/:id` | Update an agent |
-| `DELETE` | `/api/v1/agents/:id` | Delete an agent |
+
+| Method   | Path                 | Description       |
+| -------- | -------------------- | ----------------- |
+| `GET`    | `/api/v1/agents`     | List agents       |
+| `POST`   | `/api/v1/agents`     | Create an agent   |
+| `GET`    | `/api/v1/agents/:id` | Get agent details |
+| `PATCH`  | `/api/v1/agents/:id` | Update an agent   |
+| `DELETE` | `/api/v1/agents/:id` | Delete an agent   |
 
 ---
 
@@ -1646,13 +1678,14 @@ Service definitions with schema-driven configuration. Each service describes wha
 Available for querying and managing service configurations.
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/config-services` | List all config services |
-| `POST` | `/api/v1/config-services` | Create a config service |
-| `GET` | `/api/v1/config-services/:name` | Get service with entries |
-| `PATCH` | `/api/v1/config-services/:name` | Update a service |
-| `DELETE` | `/api/v1/config-services/:name` | Delete a service |
+
+| Method   | Path                            | Description              |
+| -------- | ------------------------------- | ------------------------ |
+| `GET`    | `/api/v1/config-services`       | List all config services |
+| `POST`   | `/api/v1/config-services`       | Create a config service  |
+| `GET`    | `/api/v1/config-services/:name` | Get service with entries |
+| `PATCH`  | `/api/v1/config-services/:name` | Update a service         |
+| `DELETE` | `/api/v1/config-services/:name` | Delete a service         |
 
 ---
 
@@ -1678,10 +1711,11 @@ Actual configuration values for services. Supports multiple entries per service 
 - `idx_config_entries_default` UNIQUE on `(service_name)` WHERE `is_default = TRUE` -- enforces at most one default per service
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/config-services/:name/entries` | Create an entry |
-| `PATCH` | `/api/v1/config-services/:name/entries/:id` | Update an entry |
+
+| Method   | Path                                        | Description     |
+| -------- | ------------------------------------------- | --------------- |
+| `POST`   | `/api/v1/config-services/:name/entries`     | Create an entry |
+| `PATCH`  | `/api/v1/config-services/:name/entries/:id` | Update an entry |
 | `DELETE` | `/api/v1/config-services/:name/entries/:id` | Delete an entry |
 
 Secret values in responses are automatically masked (first 4 + `...` + last 4 characters shown).
@@ -1707,12 +1741,13 @@ Plugin state persistence. Tracks installed plugins, their versions, status, sett
 | `updated_at`          | TIMESTAMP WITH TIME ZONE | `NOW()`     | NOT NULL | --                                        | Last update time                            |
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/plugins` | List plugins |
-| `POST` | `/api/v1/plugins` | Install a plugin |
-| `PATCH` | `/api/v1/plugins/:id` | Update plugin settings or status |
-| `DELETE` | `/api/v1/plugins/:id` | Uninstall a plugin |
+
+| Method   | Path                  | Description                      |
+| -------- | --------------------- | -------------------------------- |
+| `GET`    | `/api/v1/plugins`     | List plugins                     |
+| `POST`   | `/api/v1/plugins`     | Install a plugin                 |
+| `PATCH`  | `/api/v1/plugins/:id` | Update plugin settings or status |
+| `DELETE` | `/api/v1/plugins/:id` | Uninstall a plugin               |
 
 ---
 
@@ -1747,13 +1782,14 @@ Registered local AI provider instances.
 - `idx_local_providers_default` on `(is_default)`
 
 **API Routes:**
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/v1/local-providers` | List local providers |
-| `POST` | `/api/v1/local-providers` | Register a local provider |
-| `PATCH` | `/api/v1/local-providers/:id` | Update provider config |
-| `DELETE` | `/api/v1/local-providers/:id` | Remove a provider |
-| `POST` | `/api/v1/local-providers/:id/discover` | Trigger model discovery |
+
+| Method   | Path                                   | Description               |
+| -------- | -------------------------------------- | ------------------------- |
+| `GET`    | `/api/v1/local-providers`              | List local providers      |
+| `POST`   | `/api/v1/local-providers`              | Register a local provider |
+| `PATCH`  | `/api/v1/local-providers/:id`          | Update provider config    |
+| `DELETE` | `/api/v1/local-providers/:id`          | Remove a provider         |
+| `POST`   | `/api/v1/local-providers/:id/discover` | Trigger model discovery   |
 
 ---
 

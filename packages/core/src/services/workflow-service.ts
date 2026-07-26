@@ -13,11 +13,7 @@
 // ============================================================================
 
 export type WorkflowLogStatus =
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-  | 'awaiting_approval';
+  'running' | 'completed' | 'failed' | 'cancelled' | 'awaiting_approval';
 
 export interface WorkflowLog {
   readonly id: string;

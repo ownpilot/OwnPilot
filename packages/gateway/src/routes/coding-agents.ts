@@ -240,25 +240,19 @@ codingAgentsRoutes.post('/sessions', async (c) => {
         permissions: (permissions as Record<string, unknown> | undefined)
           ? ({
               outputFormat: (permissions as Record<string, unknown>).output_format as
-                | string
-                | undefined,
+                string | undefined,
               fileAccess: (permissions as Record<string, unknown>).file_access as
-                | string
-                | undefined,
+                string | undefined,
               allowedPaths: (permissions as Record<string, unknown>).allowed_paths as
-                | string[]
-                | undefined,
+                string[] | undefined,
               networkAccess: (permissions as Record<string, unknown>).network_access as
-                | boolean
-                | undefined,
+                boolean | undefined,
               shellAccess: (permissions as Record<string, unknown>).shell_access as
-                | boolean
-                | undefined,
+                boolean | undefined,
               gitAccess: (permissions as Record<string, unknown>).git_access as boolean | undefined,
               autonomy: (permissions as Record<string, unknown>).autonomy as string | undefined,
               maxFileChanges: (permissions as Record<string, unknown>).max_file_changes as
-                | number
-                | undefined,
+                number | undefined,
             } as import('@ownpilot/core').CodingAgentPermissions)
           : undefined,
       },

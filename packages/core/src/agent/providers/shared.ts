@@ -42,7 +42,7 @@ export async function* readSseData(body: ReadableStream<Uint8Array>): AsyncGener
       buffer += decoder.decode(value, { stream: true });
 
       // Process complete lines via offset tracking
-      for (let newlineIdx; (newlineIdx = buffer.indexOf('\n', offset)) !== -1; ) {
+      for (let newlineIdx; (newlineIdx = buffer.indexOf('\n', offset)) !== -1;) {
         const line = buffer.slice(offset, newlineIdx);
         offset = newlineIdx + 1;
         if (line.startsWith('data: ')) {

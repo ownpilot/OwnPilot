@@ -222,8 +222,7 @@ goalsRoutes.post('/:id/steps', async (c) => {
   const rawBody = await parseJsonBody(c);
   const { validateBody, createGoalStepsSchema } = await import('../middleware/validation.js');
   const body = validateBody(createGoalStepsSchema, rawBody) as
-    | { steps: CreateStepInput[] }
-    | CreateStepInput;
+    { steps: CreateStepInput[] } | CreateStepInput;
 
   try {
     const service = getGoalService();

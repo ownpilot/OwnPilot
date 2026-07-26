@@ -62,10 +62,7 @@ function renderFields(opts: {
     getInput: (name) => {
       const row = findRow(name);
       return row?.querySelector('input, select, textarea') as
-        | HTMLInputElement
-        | HTMLSelectElement
-        | HTMLTextAreaElement
-        | null;
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
     },
     getByName: (name) => {
       const row = findRow(name);

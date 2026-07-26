@@ -14,13 +14,7 @@ import type {
 } from '../types.js';
 
 export type DynamicToolPermission =
-  | 'network'
-  | 'filesystem'
-  | 'database'
-  | 'shell'
-  | 'email'
-  | 'scheduling'
-  | 'local';
+  'network' | 'filesystem' | 'database' | 'shell' | 'email' | 'scheduling' | 'local';
 
 /** Config service requirement declared by a tool */
 export interface RequiredConfigService {

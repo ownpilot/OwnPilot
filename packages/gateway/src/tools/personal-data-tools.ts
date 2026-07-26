@@ -39,11 +39,7 @@ async function handleTaskTool(
         title: params.title as string,
         dueDate: params.dueDate as string | undefined,
         priority: normalizePriority(params.priority as string | undefined) as
-          | 'low'
-          | 'normal'
-          | 'high'
-          | 'urgent'
-          | undefined,
+          'low' | 'normal' | 'high' | 'urgent' | undefined,
         category: params.category as string | undefined,
         description: params.notes as string | undefined,
       });
@@ -58,11 +54,7 @@ async function handleTaskTool(
       const tasks = await repo.list({
         status: params.status as 'pending' | 'in_progress' | 'completed' | 'cancelled' | undefined,
         priority: normalizePriority(params.priority as string | undefined) as
-          | 'low'
-          | 'normal'
-          | 'high'
-          | 'urgent'
-          | undefined,
+          'low' | 'normal' | 'high' | 'urgent' | undefined,
         category: params.category as string | undefined,
         search: params.search as string | undefined,
         limit: params.limit as number | undefined,
@@ -133,11 +125,7 @@ async function handleTaskTool(
           title: taskInput.title,
           dueDate: taskInput.dueDate,
           priority: normalizePriority(taskInput.priority) as
-            | 'low'
-            | 'normal'
-            | 'high'
-            | 'urgent'
-            | undefined,
+            'low' | 'normal' | 'high' | 'urgent' | undefined,
           category: taskInput.category,
           description: taskInput.notes,
         });

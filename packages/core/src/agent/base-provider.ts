@@ -173,18 +173,16 @@ export abstract class BaseProvider implements IProvider {
     return messages.flatMap((msg): OpenAIMsg | OpenAIMsg[] => {
       // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
       if (msg.role === 'tool' && msg.toolResults?.length) {
-        return msg.toolResults.map(
-          (result): OpenAIMsg => ({
-            role: 'tool',
-            // A tool that succeeds with no output yields content "". Strict
-            // providers (MiniMax code 2013 "chat content is empty", GLM/ZAI
-            // code 1213) reject empty tool content — the single most common
-            // way an agentic/tool-heavy run (e.g. Claw) trips them. Fall back
-            // to a space so the turn is structurally valid.
-            content: result.content === '' ? ' ' : result.content,
-            tool_call_id: result.toolCallId,
-          })
-        );
+        return msg.toolResults.map((result): OpenAIMsg => ({
+          role: 'tool',
+          // A tool that succeeds with no output yields content "". Strict
+          // providers (MiniMax code 2013 "chat content is empty", GLM/ZAI
+          // code 1213) reject empty tool content — the single most common
+          // way an agentic/tool-heavy run (e.g. Claw) trips them. Fall back
+          // to a space so the turn is structurally valid.
+          content: result.content === '' ? ' ' : result.content,
+          tool_call_id: result.toolCallId,
+        }));
       }
 
       // A tool role message without toolResults is structurally invalid for OpenAI (code 1214).

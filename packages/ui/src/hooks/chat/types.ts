@@ -6,11 +6,7 @@
  * from index.ts and the original useChatStore.tsx barrel.
  */
 
-import type {
-  Message,
-  MessageAttachment,
-  SessionInfo,
-} from '../../types';
+import type { Message, MessageAttachment, SessionInfo } from '../../types';
 import type { ApprovalRequest } from '../../api';
 import type { AutoCompactPromptState } from '../useAutoCompact';
 import type { SessionTab } from '../useChatSessions';

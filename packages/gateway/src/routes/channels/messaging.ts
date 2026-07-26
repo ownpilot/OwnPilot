@@ -54,8 +54,7 @@ channelMessagingRoutes.post('/:id/send', async (c) => {
       const registry = await getDefaultPluginRegistry();
       const plugin = registry.get(pluginId);
       const requiredServices = plugin?.manifest.requiredServices as
-        | Array<{ name: string }>
-        | undefined;
+        Array<{ name: string }> | undefined;
       if (requiredServices?.length) {
         const svcName = requiredServices[0]!.name;
         const config = getConfigCenter();
@@ -144,8 +143,7 @@ channelMessagingRoutes.post('/:id/reply', async (c) => {
       const registry = await getDefaultPluginRegistry();
       const plugin = registry.get(pluginId);
       const requiredServices = plugin?.manifest.requiredServices as
-        | Array<{ name: string }>
-        | undefined;
+        Array<{ name: string }> | undefined;
       if (requiredServices?.length) {
         const raw = getConfigCenter().getFieldValue(requiredServices[0]!.name, 'allowed_users');
         if (typeof raw === 'string' && raw.trim()) {

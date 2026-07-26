@@ -2191,22 +2191,18 @@ describe('Scheduler.setTaskExecutor()', () => {
     const scheduler = makeScheduler();
     const task = await scheduler.addTask(makeMinimalAddTask());
 
-    const executor1 = vi.fn(
-      async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
-        taskId: t.id,
-        status: 'completed',
-        startedAt: new Date().toISOString(),
-        result: 'from executor1',
-      })
-    );
-    const executor2 = vi.fn(
-      async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
-        taskId: t.id,
-        status: 'completed',
-        startedAt: new Date().toISOString(),
-        result: 'from executor2',
-      })
-    );
+    const executor1 = vi.fn(async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
+      taskId: t.id,
+      status: 'completed',
+      startedAt: new Date().toISOString(),
+      result: 'from executor1',
+    }));
+    const executor2 = vi.fn(async (t: ScheduledTask): Promise<TaskExecutionResult> => ({
+      taskId: t.id,
+      status: 'completed',
+      startedAt: new Date().toISOString(),
+      result: 'from executor2',
+    }));
 
     scheduler.setTaskExecutor(executor1);
     await scheduler.triggerTask(task.id);
@@ -2331,14 +2327,12 @@ describe('Edge cases', () => {
     });
     const task = await scheduler.addTask(makeMinimalAddTask());
     let callCount = 0;
-    scheduler.setTaskExecutor(
-      async (t): Promise<TaskExecutionResult> => ({
-        taskId: t.id,
-        status: 'completed',
-        startedAt: new Date().toISOString(),
-        result: `call-${++callCount}`,
-      })
-    );
+    scheduler.setTaskExecutor(async (t): Promise<TaskExecutionResult> => ({
+      taskId: t.id,
+      status: 'completed',
+      startedAt: new Date().toISOString(),
+      result: `call-${++callCount}`,
+    }));
 
     for (let i = 0; i < 5; i++) {
       await scheduler.triggerTask(task.id);

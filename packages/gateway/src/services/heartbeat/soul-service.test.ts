@@ -540,8 +540,7 @@ describe('heartbeat engine — processMessage()', () => {
   it('onBeforeToolCall approves tools in allowedTools list (H2 fix)', async () => {
     initRunner();
     let capturedFilter:
-      | ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>)
-      | undefined;
+      ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>) | undefined;
     mockChat.mockImplementation(
       (_msg: string, opts: { onBeforeToolCall?: typeof capturedFilter }) => {
         capturedFilter = opts.onBeforeToolCall;
@@ -581,8 +580,7 @@ describe('heartbeat engine — processMessage()', () => {
       } as never);
 
       let captured:
-        | ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>)
-        | undefined;
+        ((tc: { name: string }) => Promise<{ approved: boolean; reason?: string }>) | undefined;
       mockChat.mockImplementation((_msg: string, opts: { onBeforeToolCall?: typeof captured }) => {
         captured = opts.onBeforeToolCall;
         return Promise.resolve({ ok: true, value: { content: 'ok', usage: null } });

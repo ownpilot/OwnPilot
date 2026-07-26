@@ -32,14 +32,7 @@ const APP_NAME_UNIX = '.ownpilot';
  * All data directory types
  */
 export type DataDirType =
-  | 'root'
-  | 'config'
-  | 'data'
-  | 'credentials'
-  | 'personal'
-  | 'workspace'
-  | 'logs'
-  | 'cache';
+  'root' | 'config' | 'data' | 'credentials' | 'personal' | 'workspace' | 'logs' | 'cache';
 
 /**
  * Workspace subdirectory types

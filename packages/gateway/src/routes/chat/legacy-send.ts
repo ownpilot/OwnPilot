@@ -309,8 +309,7 @@ export async function handleLegacySend(params: LegacySendParams): Promise<Respon
         toolCalls: enhancedToolCalls,
         modelCalls: traceSummary.modelCalls.map((mc) => {
           const respData = responseEntry?.data as
-            | { usage?: { promptTokens?: number; completionTokens?: number } }
-            | undefined;
+            { usage?: { promptTokens?: number; completionTokens?: number } } | undefined;
           return {
             provider: mc.provider,
             model: mc.model,

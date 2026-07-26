@@ -727,11 +727,7 @@ crewRoutes.get('/:id/tasks', async (c) => {
     const taskRepo = getCrewTasksRepository();
 
     const status = c.req.query('status') as
-      | 'pending'
-      | 'in_progress'
-      | 'completed'
-      | 'failed'
-      | undefined;
+      'pending' | 'in_progress' | 'completed' | 'failed' | undefined;
     const { limit, offset } = getPaginationParams(c);
 
     const result = await taskRepo.listByCrew(crewId, status, limit, offset);

@@ -5,13 +5,7 @@
 import { apiClient } from '../client';
 
 export type CanvasElementType =
-  | 'text'
-  | 'note'
-  | 'heading'
-  | 'image'
-  | 'shape'
-  | 'markdown'
-  | 'html';
+  'text' | 'note' | 'heading' | 'image' | 'shape' | 'markdown' | 'html';
 
 export interface CanvasElement {
   id: string;

@@ -149,8 +149,7 @@ function subscribeToEvents(
         // Guard against self-trigger loops when an event-mode claw filters on
         // event types it can emit itself (e.g. claw.*, claw.cycle.complete, claw.cycle.summary).
         const ev = event as
-          | { source?: string; payload?: { _clawId?: string; clawId?: string } }
-          | undefined;
+          { source?: string; payload?: { _clawId?: string; clawId?: string } } | undefined;
         if (ev) {
           if (ev.source === selfSource || ev.source === 'claw-manager') return;
           const payloadClawId = ev.payload?._clawId ?? ev.payload?.clawId;

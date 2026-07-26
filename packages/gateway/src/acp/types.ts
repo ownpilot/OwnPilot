@@ -20,12 +20,7 @@ import type {
 
 /** ACP connection state */
 export type AcpConnectionState =
-  | 'connecting'
-  | 'initializing'
-  | 'ready'
-  | 'prompting'
-  | 'closed'
-  | 'error';
+  'connecting' | 'initializing' | 'ready' | 'prompting' | 'closed' | 'error';
 
 /** Tracked ACP session — wraps the protocol session with OwnPilot metadata */
 export interface AcpSession {

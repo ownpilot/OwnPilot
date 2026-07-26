@@ -415,8 +415,7 @@ channelRoutes.post('/:id/setup', async (c) => {
     }
 
     const requiredServices = plugin.manifest.requiredServices as
-      | Array<{ name: string }>
-      | undefined;
+      Array<{ name: string }> | undefined;
     if (!requiredServices?.length) {
       return apiError(
         c,

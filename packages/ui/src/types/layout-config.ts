@@ -46,8 +46,7 @@ export type SidebarWidth = 'narrow' | 'default' | 'wide';
 
 /** Legacy type — kept for migration compatibility */
 export type SidebarPinnedConfig =
-  | { type: 'item'; path: string }
-  | { type: 'group'; id: string; label: string; items: string[] };
+  { type: 'item'; path: string } | { type: 'group'; id: string; label: string; items: string[] };
 
 export const MAX_PINNED_ITEMS = 15;
 

@@ -636,8 +636,7 @@ export class AnthropicProvider extends BaseProvider {
       // Assistant messages: include thinking blocks before text/tool_use if present
       if (msg.role === 'assistant') {
         const thinkingBlocks = msg.metadata?.thinkingBlocks as
-          | Record<string, unknown>[]
-          | undefined;
+          Record<string, unknown>[] | undefined;
         if (thinkingBlocks?.length) {
           // Prepend thinking blocks — must be sent back unmodified for tool use continuity
           const thinkingParts = thinkingBlocks.map((block) => {

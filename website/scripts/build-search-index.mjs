@@ -35,7 +35,10 @@ function extractCalloutText(text) {
   let match;
   while ((match = regex.exec(text)) !== null) {
     const title = match[1];
-    const body = match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const body = match[2]
+      .replace(/<[^>]+>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
     if (title) results.push(title);
     if (body && body.length > 10) results.push(body);
   }
@@ -55,23 +58,91 @@ function extractTableText(text) {
 
 // Page metadata mapping (path, section, keywords)
 const PAGE_META = {
-  AgentsPage: { path: '/docs/agents', section: 'Core Concepts', keywords: ['agent', 'soul', 'personality', 'crew', 'identity', 'autonomous'] },
-  ApiReferencePage: { path: '/docs/api-reference', section: 'Operations', keywords: ['api', 'rest', 'endpoint', 'reference', 'gateway'] },
-  ArchitecturePage: { path: '/docs/architecture', section: 'Getting Started', keywords: ['architecture', 'packages', 'monorepo', 'core', 'gateway', 'system design'] },
-  ChannelsPage: { path: '/docs/channels', section: 'Core Concepts', keywords: ['telegram', 'whatsapp', 'messaging', 'channel', 'bot'] },
-  CodingAgentsPage: { path: '/docs/coding-agents', section: 'Core Concepts', keywords: ['coding', 'claude code', 'codex', 'gemini', 'cli', 'terminal'] },
-  ConfigurationPage: { path: '/docs/configuration', section: 'Getting Started', keywords: ['config', 'settings', 'providers', 'auth', 'logging'] },
-  DeploymentPage: { path: '/docs/deployment', section: 'Operations', keywords: ['deploy', 'production', 'docker', 'proxy', 'nginx', 'postgres'] },
-  EdgeDevicesPage: { path: '/docs/edge-devices', section: 'Core Concepts', keywords: ['iot', 'edge', 'device', 'mqtt', 'raspberry pi', 'esp32', 'telemetry'] },
-  InstallationPage: { path: '/docs/installation', section: 'Getting Started', keywords: ['docker', 'manual', 'install', 'configure', 'environment', '.env'] },
-  IntroductionPage: { path: '/docs/introduction', section: 'Getting Started', keywords: ['overview', 'about', 'privacy', 'self-hosted', 'ai assistant'] },
-  McpPage: { path: '/docs/mcp', section: 'Core Concepts', keywords: ['mcp', 'model context protocol', 'claude', 'external', 'integration'] },
-  PersonalDataPage: { path: '/docs/personal-data', section: 'Core Concepts', keywords: ['tasks', 'notes', 'bookmarks', 'contacts', 'calendar', 'expenses', 'habits', 'data'] },
-  ProvidersPage: { path: '/docs/providers', section: 'Core Concepts', keywords: ['provider', 'model', 'api', 'openai', 'anthropic', 'ollama', 'lm studio', 'local'] },
-  QuickStartPage: { path: '/docs/quick-start', section: 'Getting Started', keywords: ['docker', 'compose', 'setup', 'installation', 'start'] },
-  SecurityPage: { path: '/docs/security', section: 'Operations', keywords: ['security', 'sandbox', 'pii', 'encryption', 'audit', 'permissions'] },
-  ToolsPage: { path: '/docs/tools', section: 'Core Concepts', keywords: ['tool', 'code', 'search', 'browser', 'iot', 'automation', 'execution'] },
-  WorkflowsPage: { path: '/docs/automation/workflows', section: 'Automation', keywords: ['workflow', 'automation', 'drag-drop', 'pipeline', 'llm', 'node'] },
+  AgentsPage: {
+    path: '/docs/agents',
+    section: 'Core Concepts',
+    keywords: ['agent', 'soul', 'personality', 'crew', 'identity', 'autonomous'],
+  },
+  ApiReferencePage: {
+    path: '/docs/api-reference',
+    section: 'Operations',
+    keywords: ['api', 'rest', 'endpoint', 'reference', 'gateway'],
+  },
+  ArchitecturePage: {
+    path: '/docs/architecture',
+    section: 'Getting Started',
+    keywords: ['architecture', 'packages', 'monorepo', 'core', 'gateway', 'system design'],
+  },
+  ChannelsPage: {
+    path: '/docs/channels',
+    section: 'Core Concepts',
+    keywords: ['telegram', 'whatsapp', 'messaging', 'channel', 'bot'],
+  },
+  CodingAgentsPage: {
+    path: '/docs/coding-agents',
+    section: 'Core Concepts',
+    keywords: ['coding', 'claude code', 'codex', 'gemini', 'cli', 'terminal'],
+  },
+  ConfigurationPage: {
+    path: '/docs/configuration',
+    section: 'Getting Started',
+    keywords: ['config', 'settings', 'providers', 'auth', 'logging'],
+  },
+  DeploymentPage: {
+    path: '/docs/deployment',
+    section: 'Operations',
+    keywords: ['deploy', 'production', 'docker', 'proxy', 'nginx', 'postgres'],
+  },
+  EdgeDevicesPage: {
+    path: '/docs/edge-devices',
+    section: 'Core Concepts',
+    keywords: ['iot', 'edge', 'device', 'mqtt', 'raspberry pi', 'esp32', 'telemetry'],
+  },
+  InstallationPage: {
+    path: '/docs/installation',
+    section: 'Getting Started',
+    keywords: ['docker', 'manual', 'install', 'configure', 'environment', '.env'],
+  },
+  IntroductionPage: {
+    path: '/docs/introduction',
+    section: 'Getting Started',
+    keywords: ['overview', 'about', 'privacy', 'self-hosted', 'ai assistant'],
+  },
+  McpPage: {
+    path: '/docs/mcp',
+    section: 'Core Concepts',
+    keywords: ['mcp', 'model context protocol', 'claude', 'external', 'integration'],
+  },
+  PersonalDataPage: {
+    path: '/docs/personal-data',
+    section: 'Core Concepts',
+    keywords: ['tasks', 'notes', 'bookmarks', 'contacts', 'calendar', 'expenses', 'habits', 'data'],
+  },
+  ProvidersPage: {
+    path: '/docs/providers',
+    section: 'Core Concepts',
+    keywords: ['provider', 'model', 'api', 'openai', 'anthropic', 'ollama', 'lm studio', 'local'],
+  },
+  QuickStartPage: {
+    path: '/docs/quick-start',
+    section: 'Getting Started',
+    keywords: ['docker', 'compose', 'setup', 'installation', 'start'],
+  },
+  SecurityPage: {
+    path: '/docs/security',
+    section: 'Operations',
+    keywords: ['security', 'sandbox', 'pii', 'encryption', 'audit', 'permissions'],
+  },
+  ToolsPage: {
+    path: '/docs/tools',
+    section: 'Core Concepts',
+    keywords: ['tool', 'code', 'search', 'browser', 'iot', 'automation', 'execution'],
+  },
+  WorkflowsPage: {
+    path: '/docs/automation/workflows',
+    section: 'Automation',
+    keywords: ['workflow', 'automation', 'drag-drop', 'pipeline', 'llm', 'node'],
+  },
 };
 
 function extractTitle(text) {
@@ -86,9 +157,15 @@ function extractDescription(text) {
   let firstP = null;
   for (const line of lines) {
     const trimmed = line.trim();
-    if (trimmed.startsWith('<h1>')) { afterH1 = true; continue; }
+    if (trimmed.startsWith('<h1>')) {
+      afterH1 = true;
+      continue;
+    }
     if (afterH1 && trimmed.startsWith('<p>') && !trimmed.startsWith('<p class=')) {
-      firstP = trimmed.replace(/<\/?[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      firstP = trimmed
+        .replace(/<\/?[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
       if (firstP.length > 20) break;
     }
   }
@@ -97,7 +174,9 @@ function extractDescription(text) {
 
 function build() {
   const entries = [];
-  const files = fs.readdirSync(DOCS_DIR).filter(f => f.endsWith('.tsx') && !f.endsWith('.test.tsx'));
+  const files = fs
+    .readdirSync(DOCS_DIR)
+    .filter((f) => f.endsWith('.tsx') && !f.endsWith('.test.tsx'));
 
   for (const file of files) {
     const content = fs.readFileSync(path.join(DOCS_DIR, file), 'utf8');
@@ -117,18 +196,14 @@ function build() {
       ...extractTextBetweenTags(content, 'h2'),
       ...extractTextBetweenTags(content, 'h3'),
     ];
-    const paragraphs = extractTextBetweenTags(content, 'p')
-      .filter(p => p.length > 15 && !p.startsWith('{'));
+    const paragraphs = extractTextBetweenTags(content, 'p').filter(
+      (p) => p.length > 15 && !p.startsWith('{')
+    );
     const calloutText = extractCalloutText(content);
     const tableText = extractTableText(content);
 
     // Build rich text content
-    const bodyText = [
-      ...headings,
-      ...paragraphs,
-      ...calloutText,
-      ...tableText,
-    ].join(' ');
+    const bodyText = [...headings, ...paragraphs, ...calloutText, ...tableText].join(' ');
 
     entries.push({
       path: meta.path,

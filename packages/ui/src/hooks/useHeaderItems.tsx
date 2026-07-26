@@ -12,8 +12,7 @@ import { STORAGE_KEYS } from '../constants/storage-keys';
 // --- Types ---
 
 export type HeaderItemConfig =
-  | { type: 'item'; path: string }
-  | { type: 'group'; id: string; label: string; items: string[] };
+  { type: 'item'; path: string } | { type: 'group'; id: string; label: string; items: string[] };
 
 const MAX_HEADER_ITEMS = 8;
 

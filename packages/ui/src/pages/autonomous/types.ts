@@ -9,13 +9,7 @@ import type { AgentSoul, AgentCrew } from '../../api/endpoints/souls';
 export type AgentKind = 'soul';
 
 export type AgentStatus =
-  | 'running'
-  | 'paused'
-  | 'idle'
-  | 'error'
-  | 'stopped'
-  | 'starting'
-  | 'waiting';
+  'running' | 'paused' | 'idle' | 'error' | 'stopped' | 'starting' | 'waiting';
 
 export interface UnifiedAgent {
   id: string;

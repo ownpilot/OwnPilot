@@ -806,8 +806,7 @@ export class BrowserService {
   private getAllowedDomains(): string[] {
     try {
       const raw = getConfigCenter().getFieldValue(BROWSER_SERVICE, 'allowed_domains') as
-        | string
-        | undefined;
+        string | undefined;
       if (!raw) return [];
       return raw
         .split(',')

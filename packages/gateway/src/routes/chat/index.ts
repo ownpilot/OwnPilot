@@ -850,8 +850,7 @@ chatRoutes.post('/', async (c) => {
 
     const conversation = agent.getConversation();
     const busUsage = busResult.response.metadata.tokens as
-      | { input: number; output: number }
-      | undefined;
+      { input: number; output: number } | undefined;
     const { content: busMemStripped, memories: busMemories } = extractMemoriesFromResponse(
       busResult.response.content
     );

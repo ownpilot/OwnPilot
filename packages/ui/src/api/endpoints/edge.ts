@@ -12,29 +12,11 @@ export type EdgeDeviceType = 'raspberry-pi' | 'esp32' | 'arduino' | 'custom';
 export type EdgeProtocol = 'mqtt' | 'websocket' | 'http-poll';
 export type EdgeDeviceStatus = 'online' | 'offline' | 'error';
 export type EdgeSensorType =
-  | 'temperature'
-  | 'humidity'
-  | 'motion'
-  | 'light'
-  | 'pressure'
-  | 'camera'
-  | 'door'
-  | 'custom';
+  'temperature' | 'humidity' | 'motion' | 'light' | 'pressure' | 'camera' | 'door' | 'custom';
 export type EdgeActuatorType =
-  | 'relay'
-  | 'servo'
-  | 'led'
-  | 'buzzer'
-  | 'display'
-  | 'motor'
-  | 'custom';
+  'relay' | 'servo' | 'led' | 'buzzer' | 'display' | 'motor' | 'custom';
 export type EdgeCommandStatus =
-  | 'pending'
-  | 'sent'
-  | 'acknowledged'
-  | 'completed'
-  | 'failed'
-  | 'timeout';
+  'pending' | 'sent' | 'acknowledged' | 'completed' | 'failed' | 'timeout';
 
 export interface EdgeSensor {
   id: string;

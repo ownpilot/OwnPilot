@@ -544,15 +544,13 @@ function parseOneService(sub: { name: string; content: string }): ExtensionRequi
   // Config schema table
   const tableRows = parseMarkdownTable(sub.content);
   if (tableRows.length > 0) {
-    service.config_schema = tableRows.map(
-      (row): ExtensionConfigField => ({
-        name: row['field'] || row['name'] || '',
-        label: row['label'] || '',
-        type: row['type'] || 'string',
-        required: ['yes', 'true'].includes((row['required'] ?? '').toLowerCase()),
-        description: row['description'],
-      })
-    );
+    service.config_schema = tableRows.map((row): ExtensionConfigField => ({
+      name: row['field'] || row['name'] || '',
+      label: row['label'] || '',
+      type: row['type'] || 'string',
+      required: ['yes', 'true'].includes((row['required'] ?? '').toLowerCase()),
+      description: row['description'],
+    }));
   }
 
   return service;

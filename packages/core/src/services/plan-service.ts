@@ -16,21 +16,9 @@
 
 export type PlanStatus = 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 export type StepType =
-  | 'tool_call'
-  | 'llm_decision'
-  | 'user_input'
-  | 'condition'
-  | 'parallel'
-  | 'loop'
-  | 'sub_plan';
+  'tool_call' | 'llm_decision' | 'user_input' | 'condition' | 'parallel' | 'loop' | 'sub_plan';
 export type StepStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'skipped'
-  | 'blocked'
-  | 'waiting';
+  'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'blocked' | 'waiting';
 export type PlanEventType =
   | 'started'
   | 'step_started'

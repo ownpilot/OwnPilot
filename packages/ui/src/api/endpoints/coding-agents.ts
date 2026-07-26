@@ -30,12 +30,7 @@ export interface CodingAgentTestResult {
 }
 
 export type CodingAgentSessionState =
-  | 'starting'
-  | 'running'
-  | 'waiting'
-  | 'completed'
-  | 'failed'
-  | 'terminated';
+  'starting' | 'running' | 'waiting' | 'completed' | 'failed' | 'terminated';
 
 export type CodingAgentOutputFormat = 'text' | 'json' | 'stream-json';
 export type CodingAgentFileAccess = 'none' | 'read-only' | 'read-write' | 'full';

@@ -145,7 +145,10 @@ function DialogOverlay({
         if (e.target === backdropRef.current) onCancel();
       }}
     >
-      <div ref={panelRef} className="w-full max-w-md mx-4 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-2xl animate-[scaleIn_150ms_ease-out]">
+      <div
+        ref={panelRef}
+        className="w-full max-w-md mx-4 bg-bg-primary dark:bg-dark-bg-primary border border-border dark:border-dark-border rounded-xl shadow-2xl animate-[scaleIn_150ms_ease-out]"
+      >
         {/* Header */}
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-3">

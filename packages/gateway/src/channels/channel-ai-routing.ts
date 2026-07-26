@@ -74,8 +74,7 @@ export async function processViaBus(
   // owning provider, preferring the routed provider when it already serves the model.
   const preferredModel =
     ((session as { context?: Record<string, unknown> }).context?.preferredModel as
-      | string
-      | undefined) || undefined;
+      string | undefined) || undefined;
   const effectiveProvider = preferredModel
     ? (inferProviderForModel(preferredModel, routing.provider) ?? routing.provider ?? 'openai')
     : (routing.provider ?? 'openai');

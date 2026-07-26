@@ -67,8 +67,7 @@ edgeRoutes.get('/', async (c) => {
     const { limit, offset } = getPaginationParams(c);
     const type = validateQueryEnum(c.req.query('type'), VALID_TYPES) as EdgeDeviceType | undefined;
     const status = validateQueryEnum(c.req.query('status'), VALID_STATUSES) as
-      | EdgeDeviceStatus
-      | undefined;
+      EdgeDeviceStatus | undefined;
     const search = c.req.query('search');
 
     const service = getEdgeService();

@@ -17,14 +17,7 @@ import {
   writeStarterMenuCache,
   type StarterPrompt,
 } from '../pages/ChatPage.starters';
-import {
-  tasksApi,
-  goalsApi,
-  calendarApi,
-  notesApi,
-  memoriesApi,
-  habitsApi,
-} from '../api';
+import { tasksApi, goalsApi, calendarApi, notesApi, memoriesApi, habitsApi } from '../api';
 import { ignoreError } from '../utils/ignore-error';
 
 interface ChatStarterPromptsProps {
@@ -199,9 +192,7 @@ export function ChatStarterPrompts({
     configuredProviders.length === 0 &&
     localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETE) !== 'true';
 
-  const showNoProviders =
-    show &&
-    !isLoadingModels && configuredProviders.length === 0;
+  const showNoProviders = show && !isLoadingModels && configuredProviders.length === 0;
 
   if (!show) return null;
 
@@ -218,10 +209,7 @@ export function ChatStarterPrompts({
           ) : showNoProviders ? (
             <NoProvidersMessage />
           ) : (
-            <DefaultWelcome
-              currentProviderName={currentProviderName}
-              model={model}
-            />
+            <DefaultWelcome currentProviderName={currentProviderName} model={model} />
           )}
 
           <StarterGrid
@@ -290,8 +278,7 @@ function DefaultWelcome({
         Start a conversation by typing a message below.
       </p>
       <p className="text-sm text-text-muted dark:text-dark-text-muted mb-4">
-        Currently using:{' '}
-        <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
+        Currently using: <span className="font-medium text-primary">{currentProviderName}</span> /{' '}
         <span className="font-mono">{model}</span>
       </p>
     </>
@@ -319,10 +306,10 @@ function StarterGrid({
     <div className="max-w-2xl mx-auto">
       {/* Tab bar */}
       <div className="inline-flex items-center gap-1 p-1 mb-3 rounded-lg bg-bg-secondary dark:bg-dark-bg-secondary border border-border dark:border-dark-border">
-        {([
+        {[
           { id: 'personal' as const, label: 'For you', count: personalStarters.length },
           { id: 'examples' as const, label: 'Examples', count: EXAMPLE_STARTERS.length },
-        ]).map((tab) => (
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
@@ -340,9 +327,9 @@ function StarterGrid({
 
       {starterTab === 'personal' && personalStarters.length === 0 && (
         <div className="mb-3 rounded-lg border border-border dark:border-dark-border bg-bg-secondary/60 dark:bg-dark-bg-secondary/60 px-4 py-3 text-sm text-text-muted dark:text-dark-text-muted">
-          Add tasks, goals, notes, calendar events, memories, or habits and this area
-          will turn into personalized starter questions. The menu is cached for at
-          least 1 hour, so New Chat keeps the same suggestions.
+          Add tasks, goals, notes, calendar events, memories, or habits and this area will turn into
+          personalized starter questions. The menu is cached for at least 1 hour, so New Chat keeps
+          the same suggestions.
         </div>
       )}
 

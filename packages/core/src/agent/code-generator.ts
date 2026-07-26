@@ -20,15 +20,7 @@ import { generateId } from '../services/id-utils.js';
  * Supported programming languages
  */
 export type CodeLanguage =
-  | 'javascript'
-  | 'typescript'
-  | 'python'
-  | 'shell'
-  | 'sql'
-  | 'html'
-  | 'css'
-  | 'json'
-  | 'markdown';
+  'javascript' | 'typescript' | 'python' | 'shell' | 'sql' | 'html' | 'css' | 'json' | 'markdown';
 
 /**
  * Code generation request

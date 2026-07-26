@@ -23,13 +23,7 @@ export type AgentType = 'regular' | 'coding' | 'background' | 'soul' | 'claw';
  *   Claw:       running → running, paused → paused, completed → completed, failed → failed, stopped → cancelled
  */
 export type UnifiedAgentState =
-  | 'idle'
-  | 'starting'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  'idle' | 'starting' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 /** Resource usage metrics for cross-agent observability. */
 export interface ResourceMetrics {

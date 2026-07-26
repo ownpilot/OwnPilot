@@ -479,9 +479,7 @@ const sandbox = createSandbox({
     maxCpuTime: 5000, // 5 seconds CPU
     maxMemory: 50 * 1024 * 1024, // 50 MB (tighter than default)
   },
-  globals: {
-    /* ... */
-  },
+  globals: {/* ... */},
 });
 ```
 
@@ -816,9 +814,7 @@ List custom tools with optional filtering.
 {
   "success": true,
   "data": {
-    "tools": [
-      /* array of CustomToolRecord objects */
-    ],
+    "tools": [/* array of CustomToolRecord objects */],
     "count": 5
   },
   "meta": { "requestId": "...", "timestamp": "..." }
@@ -868,9 +864,7 @@ Get active tools formatted as LLM tool definitions. Used internally to inject cu
         "description": "Fetch current weather for a city",
         "parameters": {
           "type": "object",
-          "properties": {
-            /* ... */
-          }
+          "properties": {/* ... */}
         },
         "category": "Weather",
         "requiresConfirmation": true
@@ -988,9 +982,7 @@ Execute a custom tool directly via the API (outside of the LLM agent flow).
   "success": true,
   "data": {
     "tool": "fetch_weather",
-    "result": {
-      /* tool output */
-    },
+    "result": {/* tool output */},
     "isError": false,
     "duration": 245,
     "metadata": { "executionTime": 243, "dynamicTool": "fetch_weather" }

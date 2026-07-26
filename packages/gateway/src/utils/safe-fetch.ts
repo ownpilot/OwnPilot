@@ -150,11 +150,7 @@ export class SafeFetchError extends Error {
   constructor(
     message: string,
     public readonly code:
-      | 'SSRF_BLOCKED'
-      | 'TOO_MANY_REDIRECTS'
-      | 'BODY_TOO_LARGE'
-      | 'TIMEOUT'
-      | 'UNKNOWN'
+      'SSRF_BLOCKED' | 'TOO_MANY_REDIRECTS' | 'BODY_TOO_LARGE' | 'TIMEOUT' | 'UNKNOWN'
   ) {
     super(message);
     this.name = 'SafeFetchError';

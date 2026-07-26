@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import {
-  FolderOpen,
-  Terminal,
-  Bot,
-  Layers,
-  Brain,
-  Wrench,
-  Settings,
-  Activity,
-} from '../icons';
+import { FolderOpen, Terminal, Bot, Layers, Brain, Wrench, Settings, Activity } from '../icons';
 import { usePageContext } from '../../hooks/usePageContext';
 
 const CONTEXT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {

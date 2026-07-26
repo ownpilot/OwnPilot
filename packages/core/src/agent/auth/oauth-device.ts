@@ -57,11 +57,7 @@ export interface TokenResponse {
  * are normal during polling — the others are terminal.
  */
 export type DeviceAuthError =
-  | 'authorization_pending'
-  | 'slow_down'
-  | 'access_denied'
-  | 'expired_token'
-  | string; // forward-compat for provider-specific codes
+  'authorization_pending' | 'slow_down' | 'access_denied' | 'expired_token' | string; // forward-compat for provider-specific codes
 
 /**
  * Either a successful token or a polling error. Polling errors with

@@ -481,8 +481,7 @@ async function getIndexAsync(): Promise<KeywordIndex | null> {
     let extensions: ExtensionKeywords[] = [];
     try {
       const extService = getExtensionService() as
-        | (IExtensionService & { getEnabledMetadata?: () => unknown })
-        | undefined;
+        (IExtensionService & { getEnabledMetadata?: () => unknown }) | undefined;
       if (extService?.getEnabledMetadata) {
         extensions = buildKeywordIndex(extService as Parameters<typeof buildKeywordIndex>[0]);
       }

@@ -34,12 +34,7 @@ export type CodingAgentSessionMode = 'auto' | 'interactive';
 
 /** Session lifecycle states */
 export type CodingAgentSessionState =
-  | 'starting'
-  | 'running'
-  | 'waiting'
-  | 'completed'
-  | 'failed'
-  | 'terminated';
+  'starting' | 'running' | 'waiting' | 'completed' | 'failed' | 'terminated';
 
 // =============================================================================
 // PERMISSIONS & SKILLS
@@ -271,13 +266,7 @@ export interface ICodingAgentService {
 
 /** Orchestration run status */
 export type OrchestrationRunStatus =
-  | 'planning'
-  | 'running'
-  | 'waiting_user'
-  | 'paused'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  'planning' | 'running' | 'waiting_user' | 'paused' | 'completed' | 'failed' | 'cancelled';
 
 /** A single step in an orchestration run */
 export interface OrchestrationStep {

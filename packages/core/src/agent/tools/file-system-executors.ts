@@ -14,9 +14,6 @@ import { isBlockedUrl, safeFetch } from './web-fetch.js';
 import { isPrivateUrlAsync } from './dynamic-tool-permissions.js';
 import { isPathAllowedAsync, resolveFilePath } from './file-security.js';
 
-// Re-export shared constants so callers can reference them
-export { isPathAllowedAsync, resolveFilePath } from './file-security.js';
-
 /** Maximum file size for read/write operations (10 MB) */
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 

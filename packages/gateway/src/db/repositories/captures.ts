@@ -11,14 +11,7 @@ import { BaseRepository, parseJsonField } from './base.js';
 // =============================================================================
 
 type CaptureType =
-  | 'idea'
-  | 'thought'
-  | 'todo'
-  | 'link'
-  | 'quote'
-  | 'snippet'
-  | 'question'
-  | 'other';
+  'idea' | 'thought' | 'todo' | 'link' | 'quote' | 'snippet' | 'question' | 'other';
 type ProcessedAsType = 'note' | 'task' | 'bookmark' | 'discarded';
 
 interface Capture {

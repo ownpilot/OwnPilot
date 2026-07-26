@@ -8,12 +8,7 @@ import { silentCatch } from '../utils/ignore-error.js';
  * JSON-serializable value
  */
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 /**
  * JSON object type

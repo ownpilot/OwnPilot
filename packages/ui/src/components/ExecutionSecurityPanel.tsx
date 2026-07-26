@@ -19,11 +19,7 @@ import type { ExecutionPermissions, ExecutionMode, PermissionMode } from '../api
 
 /** Only the 5 category keys (not enabled/mode) */
 type CategoryKey =
-  | 'execute_javascript'
-  | 'execute_python'
-  | 'execute_shell'
-  | 'compile_code'
-  | 'package_manager';
+  'execute_javascript' | 'execute_python' | 'execute_shell' | 'compile_code' | 'package_manager';
 
 const CATEGORIES: {
   key: CategoryKey;

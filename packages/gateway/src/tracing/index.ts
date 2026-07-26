@@ -413,9 +413,7 @@ export function getTraceSummary(): TraceSummary | null {
     .filter((e) => e.type === 'memory_add' || e.type === 'memory_recall')
     .map((e) => ({
       type: (e.name.includes('recall') ? 'recall' : e.name.includes('add') ? 'add' : 'update') as
-        | 'add'
-        | 'recall'
-        | 'update',
+        'add' | 'recall' | 'update',
       count: e.details?.count as number | undefined,
     }));
 

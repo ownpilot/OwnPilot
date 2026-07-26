@@ -33,8 +33,7 @@ type PermissionDenialCode =
   | 'REQUIRES_APPROVAL';
 
 type PermissionResult =
-  | { allowed: true }
-  | { allowed: false; reason: string; code: PermissionDenialCode };
+  { allowed: true } | { allowed: false; reason: string; code: PermissionDenialCode };
 
 // =============================================================================
 // CODE EXECUTION TOOLS — tools that require ExecutionPermissions

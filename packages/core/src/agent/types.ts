@@ -19,11 +19,7 @@ export type PermissionMode = 'blocked' | 'prompt' | 'allowed';
  * Execution category for granular permission control
  */
 export type ExecutionCategory =
-  | 'execute_javascript'
-  | 'execute_python'
-  | 'execute_shell'
-  | 'compile_code'
-  | 'package_manager';
+  'execute_javascript' | 'execute_python' | 'execute_shell' | 'compile_code' | 'package_manager';
 
 /**
  * Per-category execution permissions (persistent in DB)
