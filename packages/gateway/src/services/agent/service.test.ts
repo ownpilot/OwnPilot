@@ -124,6 +124,7 @@ vi.mock('../../db/repositories/index.js', () => ({
 const mockChatRepoGetMessages = vi.fn(async () => []);
 const mockChatRepoDeleteMessage = vi.fn(async () => true);
 const mockChatRepoAddMessage = vi.fn(async () => ({ id: 'm-1' }));
+const mockChatRepoTransaction = vi.fn(async (fn: () => Promise<unknown>) => fn());
 vi.mock('../../db/repositories/chat/index.js', () => ({
   // Use `function` (not an arrow) — this constructor is invoked with `new`,
   // which arrow functions don't support. See vitest_mock_queue_gotcha note.
@@ -132,6 +133,7 @@ vi.mock('../../db/repositories/chat/index.js', () => ({
       getMessages: mockChatRepoGetMessages,
       deleteMessage: mockChatRepoDeleteMessage,
       addMessage: mockChatRepoAddMessage,
+      transaction: mockChatRepoTransaction,
     };
   }),
 }));
@@ -424,6 +426,7 @@ beforeEach(() => {
   mockChatRepoGetMessages.mockImplementation(async () => []);
   mockChatRepoDeleteMessage.mockResolvedValue(true);
   mockChatRepoAddMessage.mockResolvedValue({ id: 'm-1' });
+  mockChatRepoTransaction.mockImplementation(async (fn: () => Promise<unknown>) => fn());
 });
 
 // =============================================================================
@@ -1781,6 +1784,33 @@ describe('compactContext', () => {
     expect(result.compacted).toBe(false);
   });
 
+  it('preserves all messages when the provider returns an empty summary', async () => {
+    const messages = Array.from({ length: 20 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `msg-${i}`,
+    }));
+    const { agent, memory } = makeMockAgent();
+    memory.getContextMessages.mockReturnValue(messages);
+    chatAgentCache.set('chat|openai|gpt-4o', agent);
+
+    mockCreateProvider.mockReturnValue({
+      complete: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: ' \n\t ' },
+      }),
+    });
+
+    const result = await mod.compactContext('openai', 'gpt-4o');
+
+    expect(result).toMatchObject({
+      compacted: false,
+      reason: 'summary_failed',
+      removedMessages: 0,
+    });
+    expect(memory.clearMessages).not.toHaveBeenCalled();
+    expect(memory.addMessage).not.toHaveBeenCalled();
+  });
+
   it('returns { compacted: false } when provider creation throws', async () => {
     const messages = Array.from({ length: 20 }, (_, i) => ({
       role: i % 2 === 0 ? 'user' : 'assistant',
@@ -1960,6 +1990,7 @@ describe('compactContext', () => {
     const result = await mod.compactContext('openai', 'gpt-4o', 6, undefined, 'user-123');
     expect(result.compacted).toBe(true);
 
+    expect(mockChatRepoTransaction).toHaveBeenCalledOnce();
     // 6 older DB messages should have been deleted (index 0..5).
     expect(mockChatRepoDeleteMessage).toHaveBeenCalledTimes(6);
     // Summary user + summary assistant inserted.

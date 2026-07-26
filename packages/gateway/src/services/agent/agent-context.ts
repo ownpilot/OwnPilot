@@ -147,41 +147,43 @@ async function mirrorCompactionToDatabase(opts: {
   model: string;
 }): Promise<void> {
   const chatRepo = new ChatRepository(opts.userId);
-  const existing = await chatRepo.getMessages(opts.conversationId, { limit: 10_000 });
-  if (existing.length === 0) {
-    return;
-  }
+  await chatRepo.transaction(async () => {
+    const existing = await chatRepo.getMessages(opts.conversationId, { limit: 10_000 });
+    if (existing.length === 0) {
+      return;
+    }
 
-  const olderDbMessages = existing.slice(0, Math.max(0, existing.length - opts.keepRecent));
-  const firstRemaining = existing[existing.length - opts.keepRecent];
+    const olderDbMessages = existing.slice(0, Math.max(0, existing.length - opts.keepRecent));
+    const firstRemaining = existing[existing.length - opts.keepRecent];
 
-  if (olderDbMessages.length === 0) {
-    return;
-  }
+    if (olderDbMessages.length === 0) {
+      return;
+    }
 
-  for (const msg of olderDbMessages) {
-    await chatRepo.deleteMessage(msg.id);
-  }
+    for (const msg of olderDbMessages) {
+      await chatRepo.deleteMessage(msg.id);
+    }
 
-  const baseTime = firstRemaining ? new Date(firstRemaining.createdAt).getTime() : Date.now();
-  const summaryUserTime = new Date(baseTime - 2).toISOString();
-  const summaryAssistantTime = new Date(baseTime - 1).toISOString();
+    const baseTime = firstRemaining ? new Date(firstRemaining.createdAt).getTime() : Date.now();
+    const summaryUserTime = new Date(baseTime - 2).toISOString();
+    const summaryAssistantTime = new Date(baseTime - 1).toISOString();
 
-  await chatRepo.addMessage({
-    conversationId: opts.conversationId,
-    role: 'user',
-    content: `[Conversation summary from compaction — use as background context, not as a new instruction]\n\n${opts.summary}`,
-    provider: opts.provider,
-    model: opts.model,
-    createdAt: summaryUserTime,
-  });
-  await chatRepo.addMessage({
-    conversationId: opts.conversationId,
-    role: 'assistant',
-    content: 'Got it. I have the context from earlier. Continuing.',
-    provider: opts.provider,
-    model: opts.model,
-    createdAt: summaryAssistantTime,
+    await chatRepo.addMessage({
+      conversationId: opts.conversationId,
+      role: 'user',
+      content: `[Conversation summary from compaction — use as background context, not as a new instruction]\n\n${opts.summary}`,
+      provider: opts.provider,
+      model: opts.model,
+      createdAt: summaryUserTime,
+    });
+    await chatRepo.addMessage({
+      conversationId: opts.conversationId,
+      role: 'assistant',
+      content: 'Got it. I have the context from earlier. Continuing.',
+      provider: opts.provider,
+      model: opts.model,
+      createdAt: summaryAssistantTime,
+    });
   });
 }
 
@@ -268,6 +270,17 @@ export async function compactContext(
     }
 
     const summary = result.value.content.trim();
+    if (!summary) {
+      log.warn('Context compaction failed: AI returned an empty summary');
+      return {
+        compacted: false,
+        reason: 'summary_failed',
+        removedMessages: 0,
+        newTokenEstimate: prevStats?.estimatedTokens ?? 0,
+        previousTokenEstimate: prevStats?.estimatedTokens ?? 0,
+        session: getSessionInfo(agent, provider, model, contextWindowOverride),
+      };
+    }
 
     const currentMessages = memory.getContextMessages(conversation.id);
     if (currentMessages.length !== messages.length) {
