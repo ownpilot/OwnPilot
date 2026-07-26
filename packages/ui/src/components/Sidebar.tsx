@@ -6,7 +6,7 @@
  * Mobile slide: translate-x-0 (open) / -translate-x-full (closed).
  */
 import { useRef, useState, useMemo } from 'react';
-import { NavLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { NavLink, useNavigate, useSearchParams } from 'react-router';
 import type { ConnectionStatus } from '../hooks/useWebSocket';
 import { useChatStore } from '../hooks/useChatStore';
 import { useSidebarRecents } from '../hooks/useSidebarRecents';
@@ -24,13 +24,7 @@ import { PinnedNavLink } from './sidebar/PinnedNavLink';
 import { RecentsList } from './sidebar/RecentsList';
 import { useToast } from './ToastProvider';
 import { useDialog } from './ConfirmDialog';
-import {
-  X,
-  ChevronRight,
-  Search,
-  Calendar,
-  MessageSquare,
-} from './icons';
+import { X, ChevronRight, Search, Calendar, MessageSquare } from './icons';
 import type { Conversation } from '../api/types';
 
 /** Data sections get a divider before them (if not first visible section) */

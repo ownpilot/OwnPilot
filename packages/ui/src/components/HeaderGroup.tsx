@@ -6,7 +6,7 @@
  * Escape close the dropdown.
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import { ChevronDown } from './icons';
 import { NAV_ITEM_MAP } from '../constants/nav-items';
 import type { HeaderItemConfig } from '../hooks/useHeaderItems';

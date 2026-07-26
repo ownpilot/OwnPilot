@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { Zap } from './icons';
 import { clawsApi, type ClawConfig } from '../api';
 import { useGateway } from '../hooks/useWebSocket';

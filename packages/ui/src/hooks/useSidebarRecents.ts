@@ -10,7 +10,7 @@
  * - Reload on route change (to catch new conversations)
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { chatApi } from '../api';
 import type { Conversation } from '../api/types';
 import { useGateway } from './useWebSocket';

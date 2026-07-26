@@ -105,7 +105,7 @@
 | --------------------- | ------------------ | --------------------------------------------------------------------- | ------------------ |
 | **@ownpilot/core**    | `packages/core`    | Agent engine, tools, plugins, events, sandbox, crypto, channels, edge | Zero (base)        |
 | **@ownpilot/gateway** | `packages/gateway` | HTTP API, WebSocket, PostgreSQL, all business logic                   | core               |
-| **@ownpilot/ui**      | `packages/ui`      | React 19 SPA (64 pages)                                               | gateway (HTTP API) |
+| **@ownpilot/ui**      | `packages/ui`      | React 19 SPA (69 pages)                                               | gateway (HTTP API) |
 | **@ownpilot/cli**     | `packages/cli`     | CLI commands                                                          | gateway, core      |
 
 ### Dependency Rules
@@ -157,7 +157,7 @@ packages/
 │   └── ws/            # WebSocket server
 │
 ├── ui/src/
-│   ├── pages/         # 64 pages (code-split)
+│   ├── pages/         # 69 pages (code-split)
 │   ├── components/    # React components
 │   └── api/           # API client wrappers
 │
@@ -899,7 +899,7 @@ packages/gateway/src/
 
 ## 7. UI Package
 
-React 19 + Vite + Tailwind CSS 4. **64 pages**, code-split.
+React 19 + Vite + Tailwind CSS 4. **69 pages**, code-split.
 
 ```
 packages/ui/src/
@@ -912,7 +912,7 @@ packages/ui/src/
 │   ├── HabitsPage.tsx         # Habit tracking + streak heatmap
 │   ├── WorkflowPage.tsx       # Visual DAG editor (ReactFlow)
 │   ├── SkillsHubPage.tsx     # 14-file skills discovery UI
-│   └── ... (58 more pages)
+│   └── ... (63 more pages)
 ├── components/
 │   ├── dashboard/
 │   │   ├── ClawsWidget.tsx    # Live WS updates claw widget

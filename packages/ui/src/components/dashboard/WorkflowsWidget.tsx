@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { GitBranch, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from '../icons';
 import { workflowsApi, type WorkflowLog } from '../../api';
 import { Skeleton } from '../Skeleton';

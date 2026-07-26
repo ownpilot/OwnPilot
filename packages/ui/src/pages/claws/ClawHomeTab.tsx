@@ -25,7 +25,7 @@ import type { ClawConfig, FleetEval } from '../../api/endpoints/claws';
 import { clawsApi } from '../../api/endpoints/claws';
 import { ignoreError } from '../../utils/ignore-error';
 import { timeAgo } from './utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 // Mirrors backend constants — keep in sync with claw-types.ts.
 const REFLECT_THRESHOLD = 2;

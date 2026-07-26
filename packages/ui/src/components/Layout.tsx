@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import { useGateway, type ConnectionStatus } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Menu, Settings } from './icons';
@@ -245,7 +245,11 @@ export function Layout() {
               {/* Main Content */}
               <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <SecurityBanner />
-                <main id="main-content" className="flex-1 flex flex-col overflow-y-auto min-h-0" tabIndex={-1}>
+                <main
+                  id="main-content"
+                  className="flex-1 flex flex-col overflow-y-auto min-h-0"
+                  tabIndex={-1}
+                >
                   <Outlet />
                 </main>
               </div>

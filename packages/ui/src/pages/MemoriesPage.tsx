@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useGateway } from '../hooks/useWebSocket';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { memoriesApi } from '../api';

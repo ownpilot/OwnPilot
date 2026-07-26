@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router';
 import { ArtifactCard } from '../components/ArtifactCard';
 import { ArtifactDetailModal } from '../components/ArtifactDetailModal';
 import { EmptyState } from '../components/EmptyState';

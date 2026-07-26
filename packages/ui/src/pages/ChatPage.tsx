@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback, lazy, Suspense } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { ChatInput, type ChatInputHandle } from '../components/ChatInput';
 import { MessageList } from '../components/MessageList';
 import { SuggestionChips } from '../components/SuggestionChips';
@@ -7,8 +7,6 @@ import { MemoryCards } from '../components/MemoryCards';
 import { ContextBar } from '../components/ContextBar';
 import { ContextDetailModal } from '../components/ContextDetailModal';
 import { WorkspaceSelector } from '../components/WorkspaceSelector';
-import { MarkdownContent } from '../components/MarkdownContent';
-import { cleanStreamingChatContent } from '../utils/chat-content';
 import { useChatStore } from '../hooks/useChatStore';
 import { ExecutionSecurityPanel } from '../components/ExecutionSecurityPanel';
 import { ToolCallLimitPanel } from '../components/ToolCallLimitPanel';
@@ -16,6 +14,8 @@ import { ThinkingToggle } from '../components/ThinkingToggle';
 import { ChatStarterPrompts } from '../components/ChatStarterPrompts';
 import { useGateway } from '../hooks/useWebSocket';
 import { ChatTimeline } from '../components/ChatTimeline';
+import { StreamingResponseArea } from '../components/StreamingResponseArea';
+import { ChannelMessageList } from '../components/ChannelMessageList';
 import type { Conversation, ChannelInfo } from '../api';
 
 // Lazy-load rarely-used components
@@ -24,24 +24,8 @@ const ExecutionApprovalDialog = lazy(() =>
     default: m.ExecutionApprovalDialog,
   }))
 );
-import {
-  Settings,
-  AlertTriangle,
-  Bot,
-  Shield,
-  ChevronDown,
-  ChevronRight,
-  Telegram,
-  WhatsApp,
-  MessageSquare,
-} from '../components/icons';
-import {
-  modelsApi,
-  providersApi,
-  settingsApi,
-  agentsApi,
-  chatApi,
-} from '../api';
+import { Settings, Bot, Telegram, WhatsApp, MessageSquare } from '../components/icons';
+import { modelsApi, providersApi, settingsApi, agentsApi, chatApi } from '../api';
 import { ignoreError } from '../utils/ignore-error';
 import type { ModelInfo, AgentDetail } from '../types';
 
@@ -99,7 +83,6 @@ export function ChatPage() {
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [currentAgent, setCurrentAgent] = useState<AgentDetail | null>(null);
   const [showContextDetail, setShowContextDetail] = useState(false);
-  const [thinkingExpanded, setThinkingExpanded] = useState(false);
   const [timelineMode, setTimelineMode] = useState(false);
 
   // Channel mode state
@@ -443,8 +426,7 @@ export function ChatPage() {
             content: m.content,
             timestamp: m.createdAt,
             toolCalls: (m.toolCalls ?? undefined) as
-              | Array<{ id: string; name: string; arguments: Record<string, unknown> }>
-              | undefined,
+              Array<{ id: string; name: string; arguments: Record<string, unknown> }> | undefined,
             provider: m.provider ?? undefined,
             model: m.model ?? undefined,
             isError: m.isError,
@@ -948,44 +930,7 @@ export function ChatPage() {
         )}
 
         {/* Channel mode message list */}
-        {isChannelMode && (
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-            {channelMessages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-text-muted dark:text-dark-text-muted text-sm italic">
-                  No messages yet
-                </p>
-              </div>
-            ) : (
-              channelMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}
-                >
-                  <div
-                    className={`max-w-[75%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-bg-secondary dark:bg-dark-bg-secondary text-text-primary dark:text-dark-text-primary'
-                        : 'bg-primary text-white'
-                    }`}
-                  >
-                    {msg.senderName && msg.role === 'user' && (
-                      <p className="text-[10px] opacity-60 mb-0.5 font-medium">{msg.senderName}</p>
-                    )}
-                    {msg.content}
-                    <p className={`text-[10px] mt-1 opacity-50 text-right`}>
-                      {new Date(msg.timestamp).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        {isChannelMode && <ChannelMessageList messages={channelMessages} ref={messagesEndRef} />}
 
         {/* Messages */}
         {!isChannelMode && (
@@ -1014,193 +959,14 @@ export function ChatPage() {
                 />
 
                 {/* Streaming content and progress */}
-                {!timelineMode && isLoading && (
-                  <div className="mt-4 p-4 bg-bg-secondary dark:bg-dark-bg-secondary rounded-lg border border-border dark:border-dark-border">
-                    {/* Security block banner */}
-                    {progressEvents.some(
-                      (e) =>
-                        e.type === 'tool_blocked' ||
-                        (e.type === 'tool_end' &&
-                          e.result?.preview?.includes('blocked in Execution Security'))
-                    ) && (
-                      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                        <Shield className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        <span className="text-xs text-red-600 dark:text-red-400">
-                          Tool execution was blocked by Execution Security settings. Adjust
-                          permissions in the security panel above.
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Local execution warning banner */}
-                    {progressEvents.some(
-                      (e) => e.type === 'tool_end' && e.result?.sandboxed === false
-                    ) && (
-                      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                        <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                          Code is executing directly on your local machine without Docker sandbox.
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Progress events */}
-                    {progressEvents.length > 0 && (
-                      <div className="mb-3 space-y-1">
-                        {progressEvents.slice(-5).map((event, idx) => (
-                          <div
-                            key={`progress-${event.type}-${idx}`}
-                            className="flex items-center gap-2 text-xs text-text-muted dark:text-dark-text-muted"
-                          >
-                            {event.type === 'status' && (
-                              <>
-                                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                                <span>{event.message}</span>
-                              </>
-                            )}
-                            {event.type === 'tool_start' && (
-                              <>
-                                <span className="w-2 h-2 bg-warning rounded-full animate-pulse" />
-                                <span>
-                                  🔧 Running <strong>{event.tool?.name}</strong>
-                                  {event.tool?.reason && (
-                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
-                                      — {event.tool.reason}
-                                    </span>
-                                  )}
-                                  ...
-                                </span>
-                              </>
-                            )}
-                            {event.type === 'tool_end' && (
-                              <>
-                                <span
-                                  className={`w-2 h-2 ${event.result?.success ? 'bg-success' : 'bg-error'} rounded-full`}
-                                />
-                                <span>
-                                  {event.result?.success ? '✓' : '✗'} {event.tool?.name}
-                                  <span className="opacity-60 ml-1">
-                                    ({event.result?.durationMs}ms)
-                                  </span>
-                                  {event.tool?.reason && (
-                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
-                                      — {event.tool.reason}
-                                    </span>
-                                  )}
-                                </span>
-                                {event.result?.preview?.includes(
-                                  'blocked in Execution Security'
-                                ) ? (
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
-                                    <Shield className="w-3 h-3" />
-                                    BLOCKED
-                                  </span>
-                                ) : (
-                                  event.result?.sandboxed === false && (
-                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded font-semibold leading-4">
-                                      LOCAL
-                                    </span>
-                                  )
-                                )}
-                              </>
-                            )}
-                            {event.type === 'tool_blocked' && (
-                              <>
-                                <span className="w-2 h-2 bg-error rounded-full" />
-                                <span>
-                                  Blocked <strong>{event.toolCall?.name ?? 'tool'}</strong>
-                                  {event.reason && (
-                                    <span className="ml-1.5 text-text-secondary dark:text-dark-text-secondary">
-                                      - {event.reason}
-                                    </span>
-                                  )}
-                                </span>
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0 text-[10px] bg-red-500/15 text-red-600 dark:text-red-400 rounded font-semibold leading-4">
-                                  <Shield className="w-3 h-3" />
-                                  BLOCKED
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Thinking section (collapsible, shows streaming thinking content) */}
-                    {(isThinking || thinkingContent) && (
-                      <div className="rounded-lg border border-border dark:border-dark-border bg-bg-tertiary/50 dark:bg-dark-bg-tertiary/50 overflow-hidden text-sm">
-                        <button
-                          onClick={() => setThinkingExpanded(!thinkingExpanded)}
-                          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
-                        >
-                          <div className="text-text-muted dark:text-dark-text-muted">
-                            {thinkingExpanded ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-text-secondary dark:text-dark-text-secondary font-medium">
-                              Thinking
-                            </span>
-                            {isThinking && (
-                              <div className="flex gap-1">
-                                <span
-                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: '0ms' }}
-                                />
-                                <span
-                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: '150ms' }}
-                                />
-                                <span
-                                  className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"
-                                  style={{ animationDelay: '300ms' }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                        {thinkingExpanded && thinkingContent && (
-                          <div className="border-t border-border dark:border-dark-border px-3 py-2 max-h-64 overflow-y-auto">
-                            <div className="whitespace-pre-wrap text-text-muted dark:text-dark-text-muted text-xs leading-relaxed">
-                              {thinkingContent}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Streaming text */}
-                    {streamingContent && (
-                      <div>
-                        <MarkdownContent content={cleanStreamingChatContent(streamingContent)} />
-                        <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5" />
-                      </div>
-                    )}
-
-                    {/* Loading indicator when no content yet */}
-                    {!streamingContent && !isThinking && progressEvents.length === 0 && (
-                      <div className="flex items-center gap-2 text-sm text-text-muted dark:text-dark-text-muted">
-                        <div className="flex gap-1">
-                          <span
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: '0ms' }}
-                          />
-                          <span
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: '150ms' }}
-                          />
-                          <span
-                            className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                            style={{ animationDelay: '300ms' }}
-                          />
-                        </div>
-                        <span>Thinking...</span>
-                      </div>
-                    )}
-                  </div>
+                {!timelineMode && (
+                  <StreamingResponseArea
+                    isLoading={isLoading}
+                    streamingContent={streamingContent}
+                    thinkingContent={thinkingContent}
+                    isThinking={isThinking}
+                    progressEvents={progressEvents}
+                  />
                 )}
 
                 {/* Timeline mode — full chronological event stream */}

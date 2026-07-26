@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useChatStore } from '../hooks/useChatStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { ChatInput } from './ChatInput';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useGateway } from '../hooks/useWebSocket';
 import { useDebouncedCallback } from '../hooks';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import {
   CheckCircle2,
   FileText,

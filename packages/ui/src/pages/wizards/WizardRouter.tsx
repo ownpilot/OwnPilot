@@ -2,7 +2,7 @@
  * Wizard Router — Dynamic wizard loader based on URL param.
  */
 
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router';
 import { useToast } from '../../components/ToastProvider';
 import { AIProviderWizard } from './AIProviderWizard';
 import { TelegramWizard } from './TelegramWizard';

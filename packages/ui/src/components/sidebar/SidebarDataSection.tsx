@@ -8,7 +8,7 @@
  * Data fetching is lazy — only fires when visible AND in accordion mode.
  */
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ChevronRight, Plus } from '../icons';
 import type {
   SidebarDataSectionDef,

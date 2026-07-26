@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { fileWorkspacesApi, codingAgentsApi, clawsApi } from '../api';
 
 interface PageContext {

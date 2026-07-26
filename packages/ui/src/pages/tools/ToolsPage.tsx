@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router';
 import { Wrench, Code, Puzzle, Layers, Home } from '../../components/icons';
 import { toolsApi } from '../../api';
 import type { GroupedTools, ToolItem } from './types';

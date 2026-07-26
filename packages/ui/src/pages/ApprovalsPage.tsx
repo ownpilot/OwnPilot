@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useGateway } from '../hooks/useWebSocket';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { workflowsApi } from '../api/endpoints/workflows';

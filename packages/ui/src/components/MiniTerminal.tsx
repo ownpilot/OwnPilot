@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useGateway } from '../hooks/useWebSocket';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { Terminal, X, ExternalLink, Maximize2, Minimize2, StopCircle } from './icons';

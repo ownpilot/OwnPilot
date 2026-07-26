@@ -4,7 +4,7 @@
  * Display mode controls rendering: icon-only, icon+text, or text-only.
  * Navigates on click. Shows active state when on the matching route.
  */
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import type { NavItem } from '../constants/nav-items';
 import type { HeaderItemDisplayMode } from '../types/layout-config';
 

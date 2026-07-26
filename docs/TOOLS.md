@@ -630,7 +630,9 @@ The `applyToolLimits(toolName, args)` function is called in the `use_tool` proxy
 
 ## Tool Categories Reference
 
-All 31 categories and every tool within them. Each category section lists the tools, their parameters, and whether they have built-in executors or are definition-only.
+All 27 categories and every tool within them. Each category section lists the tools, their parameters, and whether they have built-in executors or are definition-only.
+
+> **Note on the count:** This reference documents **27** categories, while the [root `README.md`](../README.md) tool table lists **33**. Both are correct — the difference is granularity, not drift. `README.md` splits **Utilities** into 5 rows (Math, Text, Date, Data, Gen) and breaks out **Artifacts** and **Browser** separately; this reference groups Utilities as one section and folds those in (33 = 27 + 4 Utilities sub-rows + Artifacts + Browser). Don't "reconcile" one to the other.
 
 ---
 

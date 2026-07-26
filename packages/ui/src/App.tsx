@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router';
 import { Layout } from './components/Layout';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { useAuth } from './hooks/useAuth';

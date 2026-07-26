@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { PAGE_COPILOT_REGISTRY } from '../constants/page-copilot-registry';
 import type { PageCopilotConfig, PageContextData } from '../types/page-copilot';
 

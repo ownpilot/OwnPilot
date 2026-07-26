@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Users, AlertCircle } from '../icons';
 import { crewsApi, type AgentCrew, type CrewStatusMetrics } from '../../api';
 import { Skeleton } from '../Skeleton';

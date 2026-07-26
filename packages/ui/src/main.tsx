@@ -15,7 +15,7 @@ if (typeof crypto !== 'undefined' && typeof crypto.randomUUID !== 'function') {
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { App } from './App';
 import { WebSocketProvider } from './hooks/useWebSocket';
 import { ThemeProvider } from './hooks/useTheme';

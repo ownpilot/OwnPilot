@@ -15,7 +15,7 @@ import { useSkipHome } from './useSkipHome';
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSetSearchParams = vi.hoisted(() => vi.fn());
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
   useSearchParams: () => [new URLSearchParams(), mockSetSearchParams],
 }));

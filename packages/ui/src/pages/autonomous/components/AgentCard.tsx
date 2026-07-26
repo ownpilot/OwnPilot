@@ -2,7 +2,7 @@
  * AgentCard — card for soul-based autonomous agents
  */
 
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Eye,
   Pause,

@@ -5,7 +5,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import { WizardLoadingView, WizardErrorView, useWizardKeyboard } from '../../components/wizard';
 import { mcpApi, type CreateMcpServerInput } from '../../api';

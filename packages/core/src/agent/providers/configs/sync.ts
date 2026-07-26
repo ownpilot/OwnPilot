@@ -8,6 +8,9 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ProviderConfig, ModelConfig, ModelCapability, ProviderType } from './types.js';
+import { getLog } from '../../../services/get-log.js';
+
+const log = getLog('ProviderSync');
 
 /**
  * Fields that should NEVER be overwritten by sync
@@ -470,7 +473,7 @@ export async function syncAllProviders(outputDir?: string): Promise<{
       synced.push(providerId);
       totalModels += Object.keys(providerData.models).length;
     } catch (error) {
-      console.error(`Failed to sync provider ${providerId}:`, error);
+      log.error(`Failed to sync provider ${providerId}`, { error: String(error) });
       failed.push(providerId);
     }
   }
@@ -513,7 +516,7 @@ export async function syncProviders(
       synced.push(providerId);
       totalModels += Object.keys(providerData.models ?? {}).length;
     } catch (error) {
-      console.error(`Failed to sync provider ${providerId}:`, error);
+      log.error(`Failed to sync provider ${providerId}`, { error: String(error) });
       failed.push(providerId);
     }
   }

@@ -3,7 +3,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { crewsApi } from '../../../api/endpoints/souls';
 import type { AgentCrew, CrewTemplate, CrewAgentInfo } from '../../../api/endpoints/souls';
 import {

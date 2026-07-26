@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import { Pin, Search, LayoutDashboard, Info, ChevronRight, FolderOpen } from '../components/icons';
 import { LocalFilesTab } from '../components/LocalFilesTab';
 import { navGroups, mainItems, bottomItems } from '../constants/nav-items';

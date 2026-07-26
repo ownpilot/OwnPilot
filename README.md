@@ -72,7 +72,7 @@ v0.8.3
 
 ### Tools & Extensions
 
-- **250+ Built-in Tools** across 31 categories (personal data, files, code execution, web, email, media, git, translation, weather, finance, automation, vector search, data extraction, utilities, artifacts, browser, edge devices)
+- **250+ Built-in Tools** across 33 categories (personal data, files, code execution, web, email, media, git, translation, weather, finance, automation, vector search, data extraction, utilities, artifacts, browser, edge devices)
 - **Meta-tool Proxy** — Only 4 meta-tools sent to the LLM (`search_tools`, `get_tool_help`, `use_tool`, `batch_use_tool`); all tools remain available via dynamic discovery
 - **Tool Namespaces** — Qualified tool names with prefixes (`core.`, `custom.`, `plugin.`, `skill.`, `mcp.`) for clear origin tracking
 - **MCP Client** — Connect to external MCP servers (Filesystem, GitHub, Brave Search, etc.) and use their tools natively
@@ -198,14 +198,14 @@ v0.8.3
 
 ### Communication
 
-- **Web UI** — React 19 + Vite 7 + Tailwind CSS 4 with dark mode, 63 pages, 175+ components, code-split
+- **Web UI** — React 19 + Vite 8 + Tailwind CSS 4 with dark mode, 69 pages, 175+ components, code-split
 - **Telegram Bot** — Full bot integration with user/chat filtering, message splitting, HTML/Markdown formatting
 - **WhatsApp (Baileys)** — QR code authentication (no Meta Business account needed), self-chat mode with loop prevention, session persistence, group message support with passive history sync
 - **Channel User Approval** — Multi-step verification: approval code flow, manual admin approval, user blocking/unblocking with real-time notifications
 - **Channel Pairing Keys** — Per-channel rotating pairing keys for ownership verification with revoke support
 - **EventBus** — Unified event backbone with EventBusBridge translating dot-notation events to WebSocket colon-notation; Event Monitor UI for live debugging
 - **WebSocket** — Real-time broadcasts for all data mutations, event subscriptions, session management
-- **REST API** — 115 route modules with standardized responses, pagination, and error codes
+- **REST API** — 62 route modules with standardized responses, pagination, and error codes
 
 ### Security
 
@@ -225,7 +225,7 @@ v0.8.3
 
 ```
                          ┌──────────────┐
-                         │   Web UI     │  React 19 + Vite 7
+                         │   Web UI     │  React 19 + Vite 8
                          │  (bundled)   │  Tailwind CSS 4
                          └──────┬───────┘
                                 │ HTTP + SSE + WebSocket (/ws)
@@ -240,7 +240,7 @@ v0.8.3
                        │
               ┌────────▼────────┐
               │    Gateway      │  Hono HTTP API Server
-              │  (Port 8080)    │  115 Route Modules
+              │  (Port 8080)    │  62 Route Modules
               ├─────────────────┤
               │  MessageBus     │  Middleware Pipeline
               │  Agent Engine   │  Tool Orchestration
@@ -409,15 +409,15 @@ ownpilot/
 │   │   │   └── types/           # Branded types, Result<T,E>, guards
 │   │   └── package.json
 │   │
-│   ├── gateway/                 # Hono API server (~148K LOC)
+│   ├── gateway/                 # Hono API server (~172K LOC)
 │   │   ├── src/
-│   │   │   ├── routes/          # 115 route handlers
-│   │   │   ├── services/        # 108 business logic services
+│   │   │   ├── routes/          # 62 mounted route modules (v1, mirrored at v2)
+│   │   │   ├── services/        # 181 business logic service files
 │   │   │   ├── tools/           # Tool providers (coding, CLI, edge, browser, etc.)
 │   │   │   ├── db/
-│   │   │   │   ├── repositories/  # 67 data access repositories
+│   │   │   │   ├── repositories/  # 73 data access repositories
 │   │   │   │   ├── adapters/      # PostgreSQL adapter
-│   │   │   │   ├── migrations/    # 41 schema migrations
+│   │   │   │   ├── migrations/    # Squashed initial schema (001_initial_schema.sql)
 │   │   │   │   └── seeds/         # Default data
 │   │   │   ├── channels/        # Telegram + WhatsApp channel plugins
 │   │   │   ├── plugins/         # Plugin initialization & registration
@@ -431,10 +431,10 @@ ownpilot/
 │   │   │   └── audit/           # Gateway audit logging
 │   │   └── package.json
 │   │
-│   ├── ui/                      # React 19 web interface (~115K LOC)
+│   ├── ui/                      # React 19 web interface (~146K LOC)
 │   │   ├── src/
-│   │   │   ├── pages/           # 64 page components
-│   │   │   ├── components/      # 175 reusable components
+│   │   │   ├── pages/           # 69 page components
+│   │   │   ├── components/      # 175+ reusable components
 │   │   │   ├── hooks/           # Custom hooks (chat store, theme, WebSocket)
 │   │   │   ├── api/             # Typed fetch wrapper + endpoint modules
 │   │   │   ├── types/           # UI type definitions
@@ -462,13 +462,13 @@ ownpilot/
 
 The foundational runtime library. Contains the AI engine, tool system, plugin architecture, security primitives, and cryptography. Minimal dependencies (only `googleapis` for Google OAuth).
 
-**~72,000 LOC** across 251 source files.
+**~80,000 LOC** across 271 source files (excluding tests).
 
 | Module             | Description                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
 | `agent/`           | Agent engine with multi-provider support, orchestrator, tool-calling loop                        |
 | `agent/providers/` | Provider implementations (OpenAI, Anthropic, Google, Zhipu, OpenAI-compatible, 8 aggregators)    |
-| `agent/tools/`     | 250+ built-in tool definitions across 31 tool files                                              |
+| `agent/tools/`     | 250+ built-in tool definitions across 33 tool categories                                         |
 | `plugins/`         | Plugin system with isolation, marketplace, signing, runtime                                      |
 | `events/`          | 3-in-1 event system: EventBus (fire-and-forget), HookBus (interceptable), ScopedBus (namespaced) |
 | `services/`        | Service registry (DI container) with typed tokens                                                |
@@ -486,9 +486,9 @@ The foundational runtime library. Contains the AI engine, tool system, plugin ar
 
 The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket communication, database operations, agent execution, MCP integration, plugin management, and channel connectivity.
 
-**~144,000 LOC** across 460 source files. **388 test files** with **16,294+ tests**.
+**~172,000 LOC** across the gateway source tree (excluding tests), with the largest share of the monorepo's **729 test files**.
 
-**Route Modules (115 handlers):**
+**Route Modules (62 mounted, mirrored at `/api/v2`):**
 
 | Category               | Routes                                                                                                                                                                            |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -505,23 +505,23 @@ The API server built on [Hono](https://hono.dev/). Handles HTTP/WebSocket commun
 | **Configuration**      | `settings.ts`, `config-services.ts`, `ui-auth.ts`                                                                                                                                 |
 | **System**             | `health.ts`, `dashboard.ts`, `costs.ts`, `audit.ts`, `debug.ts`, `database.ts`, `profile.ts`, `workspaces.ts`, `file-workspaces.ts`, `execution-permissions.ts`, `error-codes.ts` |
 
-**Services (108):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, ClawManager, ClawRunner, ChannelVerificationService, ArtifactService, ArtifactDataResolver, VoiceService, BrowserService, EdgeService, EdgeMqttClient, SoulService, CrewService, AgentMessagesService, and more.
+**Services (181 files; 15 registered via ServiceRegistry):** MessageBus, ConfigCenter, ToolExecutor, ProviderService, McpClientService, McpServerService, ExtensionService, ComposioService, EmbeddingService, HeartbeatService, AuditService, PluginService, MemoryService, GoalService, TriggerService, PlanService, WorkspaceService, DatabaseService, SessionService, LogService, ResourceService, LocalDiscovery, WorkflowService, AgentSkillsParser, CodingAgentService, CodingAgentSessions, CliToolService, CliToolsDiscovery, ModelRouting, ExecutionApproval, ClawManager, ClawRunner, ChannelVerificationService, ArtifactService, ArtifactDataResolver, VoiceService, BrowserService, EdgeService, EdgeMqttClient, SoulService, CrewService, AgentMessagesService, and more.
 
-**Repositories (67):** agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, claws, artifacts, channel-bridges, browser-workflows, edge-devices, edge-commands, edge-telemetry, souls, crews, agent-messages.
+**Repositories (73):** a representative sample — agents, conversations, messages, tasks, notes, bookmarks, calendar, contacts, memories, goals, triggers, plans, expenses, custom-data, custom-tools, plugins, channels, channel-messages, channel-users, channel-sessions, channel-verification, costs, settings, config-services, pomodoro, habits, captures, workspaces, model-configs, execution-permissions, logs, mcp-servers, extensions, local-providers, heartbeats, embedding-cache, workflows, autonomy-log, coding-agent-results, cli-providers, cli-tool-policies, claws, artifacts, channel-bridges, browser-workflows, edge-devices, edge-commands, edge-telemetry, souls, crews, agent-messages, and more.
 
 ### UI (`@ownpilot/ui`)
 
-Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
+Modern web interface built with React 19, Vite 8, and Tailwind CSS 4. Minimal dependencies — no Redux/Zustand, no axios, no component library.
 
 | Technology           | Version |
 | -------------------- | ------- |
 | React                | 19.2.4  |
-| React Router DOM     | 7.1.3   |
-| Vite                 | 7.3.1   |
-| Tailwind CSS         | 4.2.0   |
+| React Router DOM     | 7.16.0  |
+| Vite                 | 8.0.16  |
+| Tailwind CSS         | 4.2.1   |
 | prism-react-renderer | 2.4.1   |
 
-**Pages (63):**
+**Pages (69):**
 
 | Page                                                | Description                                                                                |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -558,7 +558,7 @@ Modern web interface built with React 19, Vite 7, and Tailwind CSS 4. Minimal de
 | **System**                                          | Database backup/restore, sandbox status, theme, notifications                              |
 | **Profile / Logs / About**                          | User profile, request logs, system info                                                    |
 
-**Key Components (175):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
+**Key Components (175+):** Layout, ChatInput, MessageList, ContextBar, ContextDetailModal, ToolExecutionDisplay, TraceDisplay, CodeBlock, MarkdownContent, ExecutionApprovalDialog, ExecutionSecurityPanel, SuggestionChips, MemoryCards, WorkspaceSelector, ToastProvider, ConfirmDialog, DynamicConfigForm, ErrorBoundary, SetupWizard, and more.
 
 **State Management (Context + Hooks):**
 
@@ -779,7 +779,7 @@ The creator uses a dedicated agent with a specialized system prompt, ensuring it
 
 ### Overview
 
-OwnPilot has **250+ tools** organized into **32 categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
+OwnPilot has **250+ tools** organized into **33 categories**. Rather than sending all tool definitions to the LLM (which would consume too many tokens), OwnPilot uses a **meta-tool proxy pattern**:
 
 1. **`search_tools`** — Find tools by keyword with optional `include_params` for inline parameter schemas
 2. **`get_tool_help`** — Get detailed help for a specific tool (supports batch lookup)
@@ -787,6 +787,8 @@ OwnPilot has **250+ tools** organized into **32 categories**. Rather than sendin
 4. **`batch_use_tool`** — Execute multiple tools in a single call
 
 ### Tool Categories
+
+> **Note on the count:** This table lists **33** categories, while [`docs/TOOLS.md`](docs/TOOLS.md) documents **27**. Both are correct — the difference is granularity, not drift. This table splits **Utilities** into 5 rows (Math, Text, Date, Data, Gen) and breaks out **Artifacts** and **Browser** as their own rows; `TOOLS.md` groups Utilities as a single section and folds those into related groups (33 = 27 + 4 Utilities sub-rows + Artifacts + Browser). Don't "reconcile" one to the other.
 
 | Category             | Examples                                                                 |
 | -------------------- | ------------------------------------------------------------------------ |
@@ -1101,7 +1103,7 @@ Visual multi-step automation with a workflow editor:
 
 ## Database
 
-PostgreSQL with 85+ repositories via the `pg` adapter.
+PostgreSQL with 73 repositories via the `pg` adapter.
 
 ### Key Tables
 
@@ -1662,18 +1664,18 @@ Before publishing the next version, run `pnpm version:minor` (or `:patch`), rena
 
 | Layer          | Technology                                    |
 | -------------- | --------------------------------------------- |
-| **Monorepo**   | pnpm 10+ workspaces + Turborepo 2.x           |
+| **Monorepo**   | pnpm 10.29 workspaces + Turborepo 2.10        |
 | **Language**   | TypeScript 5.9 (strict, ES2023, NodeNext)     |
 | **Runtime**    | Node.js 22+                                   |
 | **API Server** | Hono 4.12                                     |
-| **Web UI**     | React 19 + Vite 7 + Tailwind CSS 4            |
+| **Web UI**     | React 19 + Vite 8 + Tailwind CSS 4            |
 | **Database**   | PostgreSQL (with pgvector)                    |
 | **Telegram**   | Grammy 1.41                                   |
 | **CLI**        | Commander.js 14                               |
 | **MCP**        | @modelcontextprotocol/sdk                     |
-| **Testing**    | Vitest 4.x (549 test files, 26,500+ tests)    |
+| **Testing**    | Vitest 4.1 (729 test files)                   |
 | **Linting**    | ESLint 10 (flat config)                       |
-| **Formatting** | Prettier 3.8                                  |
+| **Formatting** | Prettier 3.9                                  |
 | **Container**  | Docker multi-arch (ghcr.io/ownpilot/ownpilot) |
 | **Git Hooks**  | Husky (pre-commit: lint + typecheck)          |
 | **CI**         | GitHub Actions (Node 22, Ubuntu)              |

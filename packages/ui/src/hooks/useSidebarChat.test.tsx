@@ -9,7 +9,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { createElement, act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { SidebarChatProvider, useSidebarChat } from './useSidebarChat';
 
 // Mock crypto.randomUUID
@@ -285,14 +285,12 @@ describe('useSidebarChat', () => {
 
   test('sendMessage: sends fetch request with correct headers and body', async () => {
     const { result, unmount } = renderHook(() => useSidebarChat(), { wrapper });
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ data: { response: 'Hello!' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: { response: 'Hello!' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     await act(async () => {
       await result.current.sendMessage('Hi');
@@ -312,14 +310,12 @@ describe('useSidebarChat', () => {
 
   test('sendMessage: handles JSON response and adds assistant message', async () => {
     const { result, unmount } = renderHook(() => useSidebarChat(), { wrapper });
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ data: { response: 'Hello there!' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: { response: 'Hello there!' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     await act(async () => {
       await result.current.sendMessage('Hi');
@@ -368,14 +364,12 @@ describe('useSidebarChat', () => {
 
   test('sendMessage: handles HTTP error status', async () => {
     const { result, unmount } = renderHook(() => useSidebarChat(), { wrapper });
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ error: { message: 'Bad request' } }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: 'Bad request' } }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     await act(async () => {
       await result.current.sendMessage('Hi');
@@ -417,14 +411,12 @@ describe('useSidebarChat', () => {
       result.current.setProvider('prov-1');
     });
 
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ data: { response: 'OK' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: { response: 'OK' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     await act(async () => {
       await result.current.sendMessage('Hi');
@@ -444,14 +436,12 @@ describe('useSidebarChat', () => {
       result.current.setContext('/my/project', 'workspace');
     });
 
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ data: { response: 'OK' } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: { response: 'OK' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
 
     await act(async () => {
       await result.current.sendMessage('Hi');

@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { useNodesState, useEdgesState, type Edge, type Node } from '@xyflow/react';
 
 import { workflowsApi, toolsApi } from '../../api';

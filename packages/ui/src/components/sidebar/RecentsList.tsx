@@ -7,16 +7,8 @@
  */
 
 import { useRef } from 'react';
-import { NavLink } from 'react-router-dom';
-import {
-  ChevronRight,
-  Edit2,
-  Trash2,
-  Globe,
-  MessageSquare,
-  Telegram,
-  WhatsApp,
-} from '../icons';
+import { NavLink } from 'react-router';
+import { ChevronRight, Edit2, Trash2, Globe, MessageSquare, Telegram, WhatsApp } from '../icons';
 import { getConvTitle, type SourceFilter } from '../../hooks/useSidebarRecents';
 import type { Conversation } from '../../api/types';
 

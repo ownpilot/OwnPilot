@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { AlertCircle, Shield, Lock, Key, Users, FileText, Home } from '../components/icons';
 import { PageHomeTab } from '../components/PageHomeTab';

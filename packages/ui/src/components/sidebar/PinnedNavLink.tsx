@@ -5,7 +5,7 @@
  * route (/) by resetting the conversation when clicked while already on it.
  */
 
-import { useLocation, useNavigate, useSearchParams, NavLink } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams, NavLink } from 'react-router';
 import { useChatStore } from '../../hooks/useChatStore';
 import { chatApi } from '../../api/endpoints/chat';
 import { ignoreError } from '../../utils/ignore-error';

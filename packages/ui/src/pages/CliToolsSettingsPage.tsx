@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router';
 import { useToast } from '../components/ToastProvider';
 import { useSkipHome } from '../hooks/useSkipHome';
 import {

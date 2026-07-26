@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router';
 import { settingsApi } from '../api';
 import type { ToolGroupInfo } from '../api';
 import { useToast } from '../components/ToastProvider';

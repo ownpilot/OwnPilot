@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import Editor from '@monaco-editor/react';
 import { useToast } from '../../components/ToastProvider';
 import { extensionsApi, type FileEntry, type FileTreeResult } from '../../api/endpoints/extensions';

@@ -6,7 +6,7 @@
  * Live state dot mirrors the sidebar accordion tones so users learn one rule.
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import type { ClawConfig } from '../../api/endpoints/claws';
 import {
   Play,

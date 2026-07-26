@@ -2,7 +2,7 @@
  * GlobalStatusBar — compact header showing pulse engine status and budget
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useState, useEffect } from 'react';
 import type { UnifiedAgent } from '../types';
 import { formatCost } from '../helpers';

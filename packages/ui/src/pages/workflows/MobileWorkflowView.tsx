@@ -15,23 +15,14 @@ import type { WorkflowDefinition } from '../../components/workflows/workflowDefi
 import { ToolPalette } from '../../components/workflows/ToolPalette';
 import { NodeConfigPanel } from '../../components/workflows/NodeConfigPanel';
 import { VariablesPanel } from '../../components/workflows/VariablesPanel';
+import { InputParametersPanel } from '../../components/workflows/InputParametersPanel';
+import { WorkflowVersionsPanel } from '../../components/workflows/WorkflowVersionsPanel';
 
 const WorkflowCopilotPanel = lazy(() =>
   import('../../components/workflows/WorkflowCopilotPanel').then((m) => ({
     default: m.WorkflowCopilotPanel,
   }))
 );
-const InputParametersPanel = lazy(() =>
-  import('../../components/workflows/InputParametersPanel').then((m) => ({
-    default: m.InputParametersPanel,
-  }))
-);
-const WorkflowVersionsPanel = lazy(() =>
-  import('../../components/workflows/WorkflowVersionsPanel').then((m) => ({
-    default: m.WorkflowVersionsPanel,
-  }))
-);
-
 /** Subset of the useWorkflowEditor return type needed by MobileWorkflowView */
 interface WorkflowEditorHandle {
   addToolNode: (toolName: string) => void;
@@ -98,7 +89,11 @@ function ConfigIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
       <circle cx="12" cy="12" r="3" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+      />
     </svg>
   );
 }
@@ -111,7 +106,13 @@ function BackHeader({ title, onClose }: { title: string; onClose: () => void }) 
         className="p-1 rounded-md text-text-muted dark:text-dark-text-muted hover:text-text-primary dark:hover:text-dark-text-primary hover:bg-bg-tertiary dark:hover:bg-dark-bg-tertiary transition-colors"
         aria-label="Back"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
@@ -153,10 +154,7 @@ export function MobileWorkflowView({
   if (activePanel) {
     return (
       <div className="flex flex-col h-full">
-        <PanelBackHeader
-          panel={activePanel}
-          editor={editor}
-        />
+        <PanelBackHeader panel={activePanel} editor={editor} />
         <div className="flex-1 overflow-y-auto">
           <PanelContent panel={activePanel} editor={editor} />
         </div>
@@ -177,9 +175,7 @@ export function MobileWorkflowView({
           />
         )}
 
-        {activeTab === 'canvas' && (
-          <div className="w-full h-full min-h-[300px]">{canvas}</div>
-        )}
+        {activeTab === 'canvas' && <div className="w-full h-full min-h-[300px]">{canvas}</div>}
 
         {activeTab === 'config' &&
           (hasSelection ? (
@@ -203,11 +199,13 @@ export function MobileWorkflowView({
 
       {/* Bottom tab bar */}
       <div className="flex-shrink-0 flex border-t border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary">
-        {([
-          { id: 'nodes' as const, label: 'Nodes', icon: <NodesIcon /> },
-          { id: 'canvas' as const, label: 'Canvas', icon: <CanvasIcon /> },
-          { id: 'config' as const, label: 'Config', icon: <ConfigIcon /> },
-        ] satisfies { id: MobileTab; label: string; icon: ReactNode }[]).map((tab) => (
+        {(
+          [
+            { id: 'nodes' as const, label: 'Nodes', icon: <NodesIcon /> },
+            { id: 'canvas' as const, label: 'Canvas', icon: <CanvasIcon /> },
+            { id: 'config' as const, label: 'Config', icon: <ConfigIcon /> },
+          ] satisfies { id: MobileTab; label: string; icon: ReactNode }[]
+        ).map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
@@ -243,13 +241,7 @@ function panelLabel(panel: string): string {
   }
 }
 
-function PanelBackHeader({
-  panel,
-  editor,
-}: {
-  panel: string;
-  editor: WorkflowEditorHandle;
-}) {
+function PanelBackHeader({ panel, editor }: { panel: string; editor: WorkflowEditorHandle }) {
   const onClose = () => {
     switch (panel) {
       case 'variables':
@@ -270,13 +262,7 @@ function PanelBackHeader({
   return <BackHeader title={panelLabel(panel)} onClose={onClose} />;
 }
 
-function PanelContent({
-  panel,
-  editor,
-}: {
-  panel: string;
-  editor: WorkflowEditorHandle;
-}) {
+function PanelContent({ panel, editor }: { panel: string; editor: WorkflowEditorHandle }) {
   switch (panel) {
     case 'variables':
       return (
@@ -312,27 +298,23 @@ function PanelContent({
       );
     case 'input-params':
       return (
-        <Suspense fallback={null}>
-          <InputParametersPanel
-            parameters={editor.inputSchema ?? []}
-            onChange={(params) => {
-              editor.setInputSchema?.(params);
-              editor.setHasUnsavedChanges?.(true);
-            }}
-            onClose={() => editor.setShowInputParams?.(false)}
-          />
-        </Suspense>
+        <InputParametersPanel
+          parameters={editor.inputSchema ?? []}
+          onChange={(params) => {
+            editor.setInputSchema?.(params);
+            editor.setHasUnsavedChanges?.(true);
+          }}
+          onClose={() => editor.setShowInputParams?.(false)}
+        />
       );
     case 'versions':
       return editor.id ? (
-        <Suspense fallback={null}>
-          <WorkflowVersionsPanel
-            workflowId={editor.id}
-            onRestore={() => {}}
-            onClose={() => editor.setShowVersions?.(false)}
-            className="w-full"
-          />
-        </Suspense>
+        <WorkflowVersionsPanel
+          workflowId={editor.id}
+          onRestore={() => {}}
+          onClose={() => editor.setShowVersions?.(false)}
+          className="w-full"
+        />
       ) : null;
     default:
       return null;

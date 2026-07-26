@@ -5,7 +5,7 @@
  * Not dismissible — stays until a password is set.
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useAuth } from '../hooks/useAuth';
 import { ShieldCheck } from './icons';
 

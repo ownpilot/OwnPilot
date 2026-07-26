@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Search, GitBranch, MessageSquare } from './icons';
 import { ALL_NAV_ITEMS, type NavItem } from '../constants/nav-items';
 import { NAV_DESCRIPTIONS } from '../constants/nav-descriptions';

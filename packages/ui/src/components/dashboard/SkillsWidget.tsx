@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Puzzle, CheckCircle2, XCircle, AlertCircle, Sparkles } from '../icons';
 import { extensionsApi, type ExtensionInfo } from '../../api';
 import { Skeleton } from '../Skeleton';

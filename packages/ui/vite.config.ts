@@ -140,6 +140,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: uiPort,
+      // Ignore coverage artifact changes across the entire monorepo.
+      // Vitest writes HTML/JS coverage reports under each package's coverage/
+      // directory during test runs—Vite detects these as new/changed files and
+      // triggers a full page reload, creating a disruptive feedback loop.
+      watch: {
+        ignored: ['**/coverage/**'],
+      },
       // NOTE: Vite 7.3.1 built-in proxy is broken on Node.js 24.
       // In dev mode with VITE_API_BASE set, the UI fetches directly from gateway.
       // Without VITE_API_BASE, proxy is used (works on Node 22).

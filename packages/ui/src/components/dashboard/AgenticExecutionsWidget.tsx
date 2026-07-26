@@ -2,7 +2,7 @@
  * Agentic Executions Widget — enhanced with stats, live WS updates, and polling
  */
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Brain, CheckCircle2, X, Clock, RefreshCw } from '../icons';
 import { agenticApi, type AgenticExecution, type AgenticStats } from '../../api/endpoints/agentic';
 import { useGateway } from '../../hooks/useWebSocket';

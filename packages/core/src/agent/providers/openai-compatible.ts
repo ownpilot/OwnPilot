@@ -38,6 +38,9 @@ import {
 } from './configs/index.js';
 import { getAuthHeader, type ResolvedAuth } from './configs/types.js';
 import { readSseData, runProviderHealthCheck, approximateTokenCount } from './shared.js';
+import { getLog } from '../../services/get-log.js';
+
+const log = getLog('OpenAICompatible');
 
 /**
  * Build the Authorization header from either the new `resolvedAuth`
@@ -332,7 +335,7 @@ export class OpenAICompatibleProvider implements IProvider {
 
       for await (const data of readSseData(response.body)) {
         if (process.env.OWNPILOT_DEBUG_STREAM) {
-          console.log(`[stream:${this.providerId}] ${data.slice(0, 500)}`);
+          log.debug(`[stream:${this.providerId}] ${data.slice(0, 500)}`);
         }
         if (data === '[DONE]') {
           yield ok({
@@ -552,18 +555,16 @@ export class OpenAICompatibleProvider implements IProvider {
     return messages.flatMap<Msg>((msg): Msg | Msg[] => {
       // Tool result messages: expand each result into a separate message (OpenAI requires one per tool_call_id)
       if (msg.role === 'tool' && msg.toolResults?.length) {
-        return msg.toolResults.map(
-          (result): Msg => ({
-            role: 'tool',
-            // A tool that succeeds with no output yields content "". Strict
-            // providers (MiniMax code 2013 "chat content is empty", GLM/ZAI
-            // code 1213) reject empty tool content — the single most common
-            // way an agentic/tool-heavy run (e.g. Claw) trips them. Fall back
-            // to a space so the turn is structurally valid.
-            content: result.content === '' ? ' ' : result.content,
-            tool_call_id: result.toolCallId,
-          })
-        );
+        return msg.toolResults.map((result): Msg => ({
+          role: 'tool',
+          // A tool that succeeds with no output yields content "". Strict
+          // providers (MiniMax code 2013 "chat content is empty", GLM/ZAI
+          // code 1213) reject empty tool content — the single most common
+          // way an agentic/tool-heavy run (e.g. Claw) trips them. Fall back
+          // to a space so the turn is structurally valid.
+          content: result.content === '' ? ' ' : result.content,
+          tool_call_id: result.toolCallId,
+        }));
       }
 
       // A tool role message without toolResults is structurally invalid for OpenAI (code 1214).

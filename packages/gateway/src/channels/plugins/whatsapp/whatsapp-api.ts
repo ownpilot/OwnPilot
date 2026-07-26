@@ -43,6 +43,7 @@ import { splitMessage } from '../../utils/message-utils.js';
 import { getSessionDir, clearSession } from './session-store.js';
 import { wsGateway } from '../../../ws/server.js';
 import { channelAssetStore } from '../../../services/channel-asset-store.js';
+import { SimpleTTLCache } from '../../../utils/simple-ttl-cache.js';
 
 const log = getLog('WhatsApp');
 const WHATSAPP_MAX_LENGTH = 4096;
@@ -61,51 +62,7 @@ function optionalString(record: Record<string, unknown>, key: string): string | 
   return typeof value === 'string' ? value : null;
 }
 
-/** Simple TTL cache (replaces node-cache dependency).  *
- * Trust boundary: Baileys group-metadata has a loose metadata shape that does not declare isCommunity, isCommunityAnnounce, or linkedParent. The helpers below read those optional runtime fields without depending on Baileys' narrower TypeScript surface.
- */
-class SimpleTTLCache<V> {
-  private data = new Map<string, { value: V; expires: number }>();
-  private pruneTimer: ReturnType<typeof setInterval> | null = null;
-  constructor(private readonly ttlMs: number) {
-    // Proactively evict expired entries every 60s to prevent unbounded growth
-    this.pruneTimer = setInterval(() => this.prune(), 60_000);
-    if (this.pruneTimer.unref) this.pruneTimer.unref();
-  }
-  set(key: string, value: V): void {
-    this.data.set(key, { value, expires: Date.now() + this.ttlMs });
-  }
-  get(key: string): V | undefined {
-    const entry = this.data.get(key);
-    if (!entry) return undefined;
-    if (Date.now() > entry.expires) {
-      this.data.delete(key);
-      return undefined;
-    }
-    return entry.value;
-  }
-  del(key: string): void {
-    this.data.delete(key);
-  }
-  flushAll(): void {
-    this.data.clear();
-  }
-  private prune(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.data) {
-      if (now > entry.expires) this.data.delete(key);
-    }
-  }
-  destroy(): void {
-    if (this.pruneTimer) {
-      clearInterval(this.pruneTimer);
-      this.pruneTimer = null;
-    }
-    this.data.clear();
-  }
-}
-
-// Anti-ban constants
+/** Anti-ban constants */
 const MAX_RECONNECT_ATTEMPTS = 10;
 const MAX_CONSECUTIVE_440 = 3;
 /**
@@ -131,12 +88,7 @@ const PROCESSED_MSG_IDS_CAP = 5000; // dedup cap for processedMsgIds (shared acr
 //                      ↓
 //                disconnected (permanent error or logout)
 type WhatsAppInternalState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'disconnecting'
-  | 'reconnecting'
-  | 'error';
+  'disconnected' | 'connecting' | 'connected' | 'disconnecting' | 'reconnecting' | 'error';
 
 // Baileys logger — silent in production to prevent leaking JIDs/message content
 const baileysLogger = pino({

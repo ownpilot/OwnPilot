@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Bot, Brain, Heart, Clock, AlertCircle, Pause, Zap } from '../icons';
 import { soulsApi, heartbeatLogsApi, type AgentSoul, type HeartbeatLog } from '../../api';
 import { Skeleton } from '../Skeleton';

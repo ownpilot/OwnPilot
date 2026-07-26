@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { WizardShell, type WizardStep } from '../../components/WizardShell';
 import {
   WizardLoadingView,

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { workflowsApi } from '../api';
 import { silentCatch } from '../utils/ignore-error';
 import type { WorkflowLog, NodeResult } from '../api';

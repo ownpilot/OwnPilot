@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useToast } from '../components/ToastProvider';
 import { useSkipHome } from '../hooks/useSkipHome';
 import { usePageData } from '../hooks/usePageData';

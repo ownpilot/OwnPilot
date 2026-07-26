@@ -8,7 +8,7 @@
  * Trust boundary: Channel plugin responses are normalised via per-plugin normalizers before reaching this code; the casts below adapt the normalised shape to the canonical channel-event type. The normalizer is the trust boundary.
  */
 
-import { timingSafeEqual, randomInt } from 'node:crypto';
+import { timingSafeEqual } from 'node:crypto';
 import { InboundFloodGuard } from './flood-guard.js';
 import {
   type IChannelService,
@@ -19,7 +19,6 @@ import {
   type ChannelIncomingMessage,
   type ChannelPluginManifest,
   type ChannelMessageReceivedData,
-  type ChannelConnectionEventData,
   type ChannelUserVerifiedData,
   type ChannelUserPendingData,
   type ChannelUserFirstSeenData,
@@ -51,8 +50,12 @@ import {
   getChannelVerificationService,
   type ChannelVerificationService,
 } from './auth/verification.js';
-import type { DmPairingRequestsRepository } from '../db/repositories/channels/dm-pairing.js';
-import { dmPairingRequestsRepo } from '../db/repositories/channels/dm-pairing.js';
+import {
+  dmPairingRequestsRepo,
+  type DmPairingRequestsRepository,
+} from '../db/repositories/channels/dm-pairing.js';
+import { DmPairingService } from './dm-pairing-service.js';
+import { emitConnectionEvent } from './connection-events.js';
 import { wsGateway } from '../ws/server.js';
 import { getErrorMessage } from '../utils/common.js';
 import { getLog } from '../services/log.js';
@@ -124,7 +127,7 @@ export class ChannelServiceImpl implements IChannelService {
   private readonly sessionsRepo: ChannelSessionsRepository;
   private readonly messagesRepo: ChannelMessagesRepository;
   private readonly verificationService: ChannelVerificationService;
-  private readonly dmPairingRequests: DmPairingRequestsRepository;
+  private readonly dmPairing: DmPairingService;
   private readonly pluginRegistry: PluginRegistry;
   private unsubscribes: Array<() => void> = [];
   private readonly sessionLocks = new Map<string, Promise<void>>();
@@ -144,6 +147,7 @@ export class ChannelServiceImpl implements IChannelService {
       usersRepo?: ChannelUsersRepository;
       sessionsRepo?: ChannelSessionsRepository;
       verificationService?: ChannelVerificationService;
+      dmPairing?: DmPairingService;
       dmPairingRequests?: DmPairingRequestsRepository;
     }
   ) {
@@ -152,7 +156,9 @@ export class ChannelServiceImpl implements IChannelService {
     this.sessionsRepo = options?.sessionsRepo ?? channelSessionsRepo;
     this.messagesRepo = new ChannelMessagesRepository();
     this.verificationService = options?.verificationService ?? getChannelVerificationService();
-    this.dmPairingRequests = options?.dmPairingRequests ?? dmPairingRequestsRepo;
+    this.dmPairing =
+      options?.dmPairing ??
+      new DmPairingService(options?.dmPairingRequests ?? dmPairingRequestsRepo, this.usersRepo);
 
     // Subscribe to incoming messages from channel plugins
     this.subscribeToEvents();
@@ -284,23 +290,7 @@ export class ChannelServiceImpl implements IChannelService {
       throw new Error(`Channel plugin not found: ${channelPluginId}`);
     }
 
-    try {
-      const eventBus = getEventBus();
-      eventBus.emit(
-        createEvent<ChannelConnectionEventData>(
-          ChannelEvents.CONNECTING,
-          'channel',
-          'channel-service',
-          {
-            channelPluginId,
-            platform: api.getPlatform(),
-            status: 'connecting',
-          }
-        )
-      );
-    } catch (emitErr) {
-      log.warn('EventBus not available for CONNECTING event', { error: emitErr });
-    }
+    emitConnectionEvent(channelPluginId, api.getPlatform(), 'connecting');
 
     await api.connect();
 
@@ -317,29 +307,7 @@ export class ChannelServiceImpl implements IChannelService {
       log.warn('Failed to upsert channel row', { channelPluginId, error: err });
     }
 
-    try {
-      const eventBus = getEventBus();
-      eventBus.emit(
-        createEvent<ChannelConnectionEventData>(
-          ChannelEvents.CONNECTED,
-          'channel',
-          'channel-service',
-          {
-            channelPluginId,
-            platform: api.getPlatform(),
-            status: 'connected',
-          }
-        )
-      );
-    } catch (emitErr) {
-      log.warn('EventBus not available for CONNECTED event', { error: emitErr });
-    }
-
-    // Broadcast connection status to WebSocket clients
-    wsGateway.broadcast('channel:status', {
-      channelId: channelPluginId,
-      status: 'connected',
-    });
+    emitConnectionEvent(channelPluginId, api.getPlatform(), 'connected');
   }
 
   async disconnect(channelPluginId: string): Promise<void> {
@@ -357,29 +325,7 @@ export class ChannelServiceImpl implements IChannelService {
       log.warn('Failed to update channel status', { channelPluginId, error: err });
     }
 
-    try {
-      const eventBus = getEventBus();
-      eventBus.emit(
-        createEvent<ChannelConnectionEventData>(
-          ChannelEvents.DISCONNECTED,
-          'channel',
-          'channel-service',
-          {
-            channelPluginId,
-            platform: api.getPlatform(),
-            status: 'disconnected',
-          }
-        )
-      );
-    } catch (emitErr) {
-      log.warn('EventBus not available for DISCONNECTED event', { error: emitErr });
-    }
-
-    // Broadcast disconnection status to WebSocket clients
-    wsGateway.broadcast('channel:status', {
-      channelId: channelPluginId,
-      status: 'disconnected',
-    });
+    emitConnectionEvent(channelPluginId, api.getPlatform(), 'disconnected');
   }
 
   async logout(channelPluginId: string): Promise<void> {
@@ -402,28 +348,7 @@ export class ChannelServiceImpl implements IChannelService {
       log.warn('Failed to update channel status', { channelPluginId, error: err });
     }
 
-    try {
-      const eventBus = getEventBus();
-      eventBus.emit(
-        createEvent<ChannelConnectionEventData>(
-          ChannelEvents.DISCONNECTED,
-          'channel',
-          'channel-service',
-          {
-            channelPluginId,
-            platform: api.getPlatform(),
-            status: 'disconnected',
-          }
-        )
-      );
-    } catch (emitErr) {
-      log.warn('EventBus not available for DISCONNECTED event', { error: emitErr });
-    }
-
-    wsGateway.broadcast('channel:status', {
-      channelId: channelPluginId,
-      status: 'disconnected',
-    });
+    emitConnectionEvent(channelPluginId, api.getPlatform(), 'disconnected');
   }
 
   async resolveUser(platform: ChannelPlatform, platformUserId: string): Promise<string | null> {
@@ -610,10 +535,10 @@ export class ChannelServiceImpl implements IChannelService {
         // Owner IS claimed — check if sender is the owner
         if (message.sender.platformUserId !== ownerUserId) {
           // Non-owner: check if pending approval
-          const pendingSenders = await this.getPendingSenders(message.platform);
+          const pendingSenders = await this.dmPairing.getPendingSenders(message.platform);
           if (pendingSenders.has(message.sender.platformUserId)) {
             // Pending — generate code, notify owner, store as pending
-            const code = await this.generateDmPairingCode(
+            const code = await this.dmPairing.generateDmPairingCode(
               message.channelPluginId,
               message.platform,
               message.sender.platformUserId,
@@ -1216,8 +1141,7 @@ export class ChannelServiceImpl implements IChannelService {
    */
   private getPluginAllowedUsers(plugin: Plugin): string[] {
     const requiredServices = plugin.manifest.requiredServices as
-      | Array<{ name: string }>
-      | undefined;
+      Array<{ name: string }> | undefined;
     if (!requiredServices || requiredServices.length === 0) return [];
 
     const serviceName = requiredServices[0]!.name;
@@ -1237,8 +1161,7 @@ export class ChannelServiceImpl implements IChannelService {
    */
   private getPluginApprovalCode(plugin: Plugin): string | null {
     const requiredServices = plugin.manifest.requiredServices as
-      | Array<{ name: string }>
-      | undefined;
+      Array<{ name: string }> | undefined;
     if (!requiredServices || requiredServices.length === 0) return null;
 
     const serviceName = requiredServices[0]!.name;
@@ -1412,117 +1335,23 @@ export class ChannelServiceImpl implements IChannelService {
     log.info('ChannelService disposed');
   }
   // ============================================================================
-  // DM Pairing Security
+  // DM Pairing Security — delegated to DmPairingService
   // ============================================================================
 
-  /**
-   * Get the set of platformUserIds that are pending approval for a platform.
-   * Used to determine whether a non-owner DM gets the pairing flow.
-   */
-  private async getPendingSenders(platform: string): Promise<Set<string>> {
-    const tokens = await this.dmPairingRequests.listPending(platform);
-    return new Set(tokens.map((t) => t.platformUserId));
-  }
-
-  /**
-   * Generate a 6-digit pairing code for a non-owner DM.
-   * Stores the code in verification_tokens and notifies the owner via WS.
-   */
-  private async generateDmPairingCode(
-    _pluginId: string,
-    platform: string,
-    senderUserId: string,
-    _ownerUserId: string
-  ): Promise<string> {
-    // SECURITY (EXPOSE-004): the 6-digit code is a one-time pairing
-    // credential — an attacker who can predict it gains DM access. Use
-    // crypto.randomInt (CSPRNG); non-cryptographic PRNG output would be predictable from
-    // a few observed outputs.
-    const code = String(randomInt(100000, 1000000));
-
-    // Store in verification_tokens
-    await this.dmPairingRequests.create({
-      platform,
-      platformUserId: senderUserId,
-      code,
-      expiresInMinutes: 10,
-    });
-
-    // Mark sender as pending
-    const channelUser = await this.usersRepo.findByPlatform(platform, senderUserId);
-    if (channelUser) {
-      await this.usersRepo.updateStatus(channelUser.id, 'pending');
-    }
-
-    // Notify owner via WS
-    wsGateway.broadcast('data:changed', {
-      entity: 'dm-pairing' as const,
-      action: 'pending' as const,
-    });
-
-    return code;
-  }
-
-  /**
-   * Approve a pending DM sender by code.
-   * Called via REST API from the owner's dashboard.
-   */
   async approvePendingSender(
     platform: string,
     code: string
   ): Promise<{ success: boolean; error?: string }> {
-    const token = await this.dmPairingRequests.findByCode(code, platform);
-    if (!token) {
-      return { success: false, error: 'Invalid or expired code.' };
-    }
-
-    // Mark token as used
-    await this.dmPairingRequests.markUsed(token.id);
-
-    // Update channel user status to active
-    const channelUser = await this.usersRepo.findByPlatform(platform, token.platformUserId);
-    if (channelUser) {
-      await this.usersRepo.updateStatus(channelUser.id, 'active');
-    }
-
-    // Verify the user
-    if (channelUser) {
-      await this.usersRepo.markVerified(channelUser.id, 'default', 'admin');
-    }
-
-    log.info('Pending sender approved via DM pairing code', {
-      platform,
-      senderUserId: token.platformUserId,
-      code,
-    });
-
-    return { success: true };
+    return this.dmPairing.approvePendingSender(platform, code);
   }
 
-  /**
-   * Deny a pending DM sender by platform+userId.
-   */
   async denyPendingSender(
     platform: string,
     platformUserId: string
   ): Promise<{ success: boolean; error?: string }> {
-    const token = await this.dmPairingRequests.findValidToken(platform, platformUserId);
-    if (token) {
-      await this.dmPairingRequests.markUsed(token.id);
-    }
-
-    const channelUser = await this.usersRepo.findByPlatform(platform, platformUserId);
-    if (channelUser) {
-      await this.usersRepo.block(channelUser.id);
-    }
-
-    log.info('Pending sender denied', { platform, platformUserId });
-    return { success: true };
+    return this.dmPairing.denyPendingSender(platform, platformUserId);
   }
 
-  /**
-   * List all pending DM pairing requests for a platform.
-   */
   async listPendingSenders(platform: string): Promise<
     Array<{
       platformUserId: string;
@@ -1531,18 +1360,7 @@ export class ChannelServiceImpl implements IChannelService {
       expiresAt: Date;
     }>
   > {
-    const tokens = await this.dmPairingRequests.listPending(platform);
-    const result = [];
-    for (const token of tokens) {
-      const channelUser = await this.usersRepo.findByPlatform(platform, token.platformUserId);
-      result.push({
-        platformUserId: token.platformUserId,
-        displayName: channelUser?.displayName,
-        code: token.code,
-        expiresAt: token.expiresAt,
-      });
-    }
-    return result;
+    return this.dmPairing.listPendingSenders(platform);
   }
 }
 
