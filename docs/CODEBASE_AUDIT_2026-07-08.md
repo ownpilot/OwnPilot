@@ -85,11 +85,18 @@ PR: https://github.com/ownpilot/OwnPilot/pull/new/feat/audit-eslint-clawtypes-cl
 | 🟡 Medium |     6 | ESLint JS/MJS scope (fixed), env template default password, opt-in hardening flags (CALLTOOL, EXTENSION_HOST, ANY_DIR, SKILL_SCRIPTS), localhost CORS defaults in production |
 | 🔵 Low    |     5 | Website dependency drift, package-manager drift (pnpm + npm lockfiles), legacy MD5 helpers, placeholder secret examples                                                      |
 
-#### 🟠 Partially Resolved — Auth bypass design-level risk
+#### ✅ Resolved — Auth bypass design-level risk
 
-**PR #115** added a **production auth guard**: `AUTH_TYPE=none` + non-loopback `HOST` now causes a **fatal boot error** in production (`process.exit(1)` via `assertBootConfig()`). The remaining risk (API-key-without-password + exposed host) still produces only a startup warning — resolving it requires runtime DB access (`isPasswordConfigured()` is DB-backed), which happens outside the boot-validation window.
+**PR #115** added a **production auth guard**: `AUTH_TYPE=none` + non-loopback `HOST` now causes a **fatal boot error** in production (`process.exit(1)` via `assertBootConfig()`). At that point, API-key-without-password on an exposed host remained warning-only because UI-password state is DB-backed and unavailable during boot validation.
 
-Deployments still need to:
+**2026-07-26 follow-up:** the host-aware UI-session middleware now preserves
+implicit passwordless-owner access only on loopback (or when API auth is
+explicitly disabled). Exposed binds defer to the configured API-key/JWT
+middleware. WebSocket authentication also validates JWTs using the same
+resolved secret as HTTP instead of allowing passwordless JWT configurations
+through.
+
+Deployments should still:
 
 - Set `AUTH_TYPE=api-key` + `API_KEYS` in production
 - Set a UI password via Settings → Security

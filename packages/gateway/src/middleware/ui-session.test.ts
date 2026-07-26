@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
-import { uiSessionMiddleware } from './ui-session.js';
+import { createUiSessionMiddleware, uiSessionMiddleware } from './ui-session.js';
 import { requestId } from './request-id.js';
+import { createAuthMiddleware } from './auth.js';
 
 // Mock the ui-session service
 vi.mock('../services/ui-session.js', () => ({
@@ -248,6 +249,34 @@ describe('UI Session Middleware', () => {
 
       const res = await app.request('/api/v1/test');
       expect(res.status).toBe(200);
+    });
+
+    it('does not authenticate the implicit owner when API auth must be enforced', async () => {
+      mockIsPasswordConfigured.mockReturnValue(false);
+      const app = new Hono();
+      app.use('*', requestId);
+      app.use('/api/v1/*', createUiSessionMiddleware({ allowImplicitOwnerWithoutPassword: false }));
+      app.use(
+        '/api/v1/*',
+        createAuthMiddleware({ type: 'api-key', apiKeys: ['configured-secret'] })
+      );
+      app.get('/api/v1/test', (c) =>
+        c.json({
+          session: c.get('sessionAuthenticated'),
+          userId: c.get('userId'),
+        })
+      );
+
+      const unauthenticated = await app.request('/api/v1/test');
+      expect(unauthenticated.status).toBe(401);
+
+      const authenticated = await app.request('/api/v1/test', {
+        headers: { 'X-API-Key': 'configured-secret' },
+      });
+      expect(authenticated.status).toBe(200);
+      expect(await authenticated.json()).toEqual({
+        userId: 'apikey:configur...',
+      });
     });
   });
 

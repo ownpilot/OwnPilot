@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { WebSocket, RawData } from 'ws';
+import { SignJWT } from 'jose';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -384,6 +385,41 @@ describe('WSGateway', () => {
       const request = createMockRequest('/');
 
       await handler(socket, request);
+
+      expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('rejects passwordless JWT WebSocket connections without a token', async () => {
+      const mod = await import('./server.js');
+      mod.setWsAuthConfig({ type: 'jwt', jwtSecret: 's'.repeat(64) });
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      await handler(socket, createMockRequest('/'));
+
+      expect(socket.close).toHaveBeenCalledWith(1008, 'Authentication required');
+      expect(mockSessionManager.create).not.toHaveBeenCalled();
+    });
+
+    it('accepts a valid JWT on a passwordless WebSocket gateway', async () => {
+      const secret = 's'.repeat(64);
+      const token = await new SignJWT({})
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject('ws-user')
+        .setIssuedAt()
+        .setExpirationTime('1h')
+        .sign(new TextEncoder().encode(secret));
+      const mod = await import('./server.js');
+      mod.setWsAuthConfig({ type: 'jwt', jwtSecret: secret });
+      const gw = new WSGateway();
+      gw.start();
+
+      const handler = getConnectionHandler();
+      const socket = createMockSocket();
+      await handler(socket, createMockRequest('/', { authorization: `Bearer ${token}` }));
 
       expect(mockSessionManager.create).toHaveBeenCalledWith(socket);
       expect(socket.close).not.toHaveBeenCalled();

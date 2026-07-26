@@ -9,7 +9,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Server as HttpServer } from 'node:http';
 import type { Server as HttpsServer } from 'node:https';
 import type { Http2SecureServer, Http2Server } from 'node:http2';
-import { apiKeyMatches } from '../middleware/auth.js';
+import { apiKeyMatches, validateJWT } from '../middleware/auth.js';
 import {
   validateSession as validateUiSession,
   isPasswordConfigured,
@@ -75,13 +75,22 @@ interface WsAuth {
  * protected by the DB keys. We now consume the SAME resolved config so both
  * surfaces enforce identically. Falls back to env when unset (tests / pre-init).
  */
-let resolvedWsAuth: { type: 'none' | 'api-key' | 'jwt'; apiKeys: string[] } | null = null;
+let resolvedWsAuth: {
+  type: 'none' | 'api-key' | 'jwt';
+  apiKeys: string[];
+  jwtSecret?: string;
+} | null = null;
 
 export function setWsAuthConfig(cfg: {
   type: 'none' | 'api-key' | 'jwt';
   apiKeys?: string[];
+  jwtSecret?: string;
 }): void {
-  resolvedWsAuth = { type: cfg.type, apiKeys: (cfg.apiKeys ?? []).filter(Boolean) };
+  resolvedWsAuth = {
+    type: cfg.type,
+    apiKeys: (cfg.apiKeys ?? []).filter(Boolean),
+    jwtSecret: cfg.jwtSecret,
+  };
 }
 
 /** Test helper: clear the resolved WS auth so validation falls back to env. */
@@ -91,6 +100,16 @@ export function resetWsAuthConfig(): void {
 
 async function validateWsAuth(auth: WsAuth): Promise<boolean> {
   if (auth.uiSessionToken && (await validateUiSession(auth.uiSessionToken))) return true;
+
+  if (resolvedWsAuth?.type === 'jwt') {
+    if (!resolvedWsAuth.jwtSecret || !auth.apiToken) return false;
+    try {
+      await validateJWT(auth.apiToken, resolvedWsAuth.jwtSecret);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   // Auth explicitly disabled — mirror the HTTP middleware (auth.ts skips all
   // checks when type === 'none').

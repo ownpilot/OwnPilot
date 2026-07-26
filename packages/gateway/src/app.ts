@@ -23,7 +23,7 @@ import {
   errorHandler,
   notFoundHandler,
   auditMiddleware,
-  uiSessionMiddleware,
+  createUiSessionMiddleware,
 } from './middleware/index.js';
 import { registerPlatformRoutes } from './routes/register/platform.js';
 import { registerAgentRoutes } from './routes/register/agent.js';
@@ -275,7 +275,20 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // Scoped to ALL versioned API paths (/api/*), not just /api/v1/*, so the v2
   // mirror (registerV2Routes) is covered too. The unprefixed /health route is
   // not under /api/* and stays public for container health checks.
-  app.use('/api/*', uiSessionMiddleware);
+  const authType = fullConfig.auth?.type ?? 'none';
+  const bindHost = (fullConfig.host ?? '127.0.0.1').trim().toLowerCase();
+  const isLoopbackBind =
+    bindHost === '' ||
+    bindHost === 'localhost' ||
+    bindHost === '::1' ||
+    bindHost === '[::1]' ||
+    /^127(?:\.\d{1,3}){3}$/.test(bindHost);
+  app.use(
+    '/api/*',
+    createUiSessionMiddleware({
+      allowImplicitOwnerWithoutPassword: authType === 'none' || isLoopbackBind,
+    })
+  );
 
   // Authentication (skip health routes)
   if (fullConfig.auth && fullConfig.auth.type !== 'none') {

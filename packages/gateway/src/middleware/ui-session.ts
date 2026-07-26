@@ -62,66 +62,86 @@ function shouldEnforceCsrf(method: string, source: string): boolean {
   return source === 'cookie' && !SAFE_METHODS.has(method.toUpperCase());
 }
 
-export const uiSessionMiddleware = createMiddleware(async (c, next) => {
-  const fullPath = c.req.path;
-  // Strip ANY versioned API prefix (/api/v1, /api/v2, …) so the /auth/ and
-  // /mcp/serve allowances below match identically on every API version. A
-  // hardcoded /api/v1 left the v2 mirror with the un-stripped prefix, so those
-  // session/MCP allowances silently never matched on v2 (fail-closed parity bug).
-  const relativePath = fullPath.replace(/^\/api\/v\d+/, '');
-  const allowMcpSessionHeader = relativePath.startsWith('/mcp/serve');
-  const sessionAuth = getUiSessionAuth(c, { allowHeader: allowMcpSessionHeader });
+export interface UiSessionMiddlewareOptions {
+  /**
+   * Preserve the passwordless single-user flow only when the gateway is local
+   * or API authentication is explicitly disabled. Exposed gateways with
+   * api-key/JWT auth must defer to the API auth middleware instead of silently
+   * marking every request as authenticated.
+   */
+  allowImplicitOwnerWithoutPassword?: boolean;
+}
 
-  if (relativePath.startsWith('/auth/')) {
-    if (shouldEnforceCsrf(c.req.method, sessionAuth.source) && !isTrustedBrowserOrigin(c)) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid request origin' },
-        403
-      );
-    }
-    c.set('sessionAuthenticated', true);
-    c.set('userId', 'default');
-    return next();
-  }
+export function createUiSessionMiddleware(options: UiSessionMiddlewareOptions = {}) {
+  const { allowImplicitOwnerWithoutPassword = true } = options;
 
-  const token = sessionAuth.token;
-  if (token && (await validateSession(token))) {
-    if (shouldEnforceCsrf(c.req.method, sessionAuth.source) && !isTrustedBrowserOrigin(c)) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid request origin' },
-        403
-      );
-    }
-    c.set('sessionAuthenticated', true);
-    c.set('userId', 'default');
-    return next();
-  }
+  return createMiddleware(async (c, next) => {
+    const fullPath = c.req.path;
+    // Strip ANY versioned API prefix (/api/v1, /api/v2, …) so the /auth/ and
+    // /mcp/serve allowances below match identically on every API version. A
+    // hardcoded /api/v1 left the v2 mirror with the un-stripped prefix, so those
+    // session/MCP allowances silently never matched on v2 (fail-closed parity bug).
+    const relativePath = fullPath.replace(/^\/api\/v\d+/, '');
+    const allowMcpSessionHeader = relativePath.startsWith('/mcp/serve');
+    const sessionAuth = getUiSessionAuth(c, { allowHeader: allowMcpSessionHeader });
 
-  if (isPasswordConfigured()) {
-    const hasAuthHeader = c.req.header('Authorization');
-    const hasApiKey = c.req.header('X-API-Key');
-
-    if (!hasAuthHeader && !hasApiKey) {
-      return apiError(
-        c,
-        { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
-        401
-      );
+    if (relativePath.startsWith('/auth/')) {
+      if (shouldEnforceCsrf(c.req.method, sessionAuth.source) && !isTrustedBrowserOrigin(c)) {
+        return apiError(
+          c,
+          { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid request origin' },
+          403
+        );
+      }
+      c.set('sessionAuthenticated', true);
+      c.set('userId', 'default');
+      return next();
     }
 
-    // Password configured + Authorization/X-API-Key present: let the API auth
-    // middleware validate the credential.
-    return next();
-  }
+    const token = sessionAuth.token;
+    if (token && (await validateSession(token))) {
+      if (shouldEnforceCsrf(c.req.method, sessionAuth.source) && !isTrustedBrowserOrigin(c)) {
+        return apiError(
+          c,
+          { code: ERROR_CODES.ACCESS_DENIED, message: 'Invalid request origin' },
+          403
+        );
+      }
+      c.set('sessionAuthenticated', true);
+      c.set('userId', 'default');
+      return next();
+    }
 
-  // No UI password configured — this is an open single-user deployment, so the
-  // local owner is implicitly authenticated. Mark the request as the 'default'
-  // owner so downstream route guards (e.g. claws IDOR-017) don't mistake the
-  // legitimate owner for an anonymous caller and 401 them, which would bounce
-  // the web UI back to the login screen even though no password exists.
-  c.set('sessionAuthenticated', true);
-  c.set('userId', 'default');
-  return next();
-});
+    if (isPasswordConfigured()) {
+      const hasAuthHeader = c.req.header('Authorization');
+      const hasApiKey = c.req.header('X-API-Key');
+
+      if (!hasAuthHeader && !hasApiKey) {
+        return apiError(
+          c,
+          { code: ERROR_CODES.UNAUTHORIZED, message: 'Authentication required' },
+          401
+        );
+      }
+
+      // Password configured + Authorization/X-API-Key present: let the API auth
+      // middleware validate the credential.
+      return next();
+    }
+
+    // No UI password configured. Local or explicitly open deployments retain
+    // the single-user implicit-owner flow. On an exposed gateway with API auth
+    // configured, leave the request unauthenticated so createAuthMiddleware()
+    // can enforce the configured API key or JWT.
+    if (allowImplicitOwnerWithoutPassword) {
+      c.set('sessionAuthenticated', true);
+      c.set('userId', 'default');
+    }
+    return next();
+  });
+}
+
+// Compatibility/default middleware for nested route modules and local,
+// passwordless deployments. The top-level application uses the factory with
+// host-aware options.
+export const uiSessionMiddleware = createUiSessionMiddleware();

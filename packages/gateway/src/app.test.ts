@@ -23,6 +23,7 @@ const mockErrorHandler = vi.fn().mockImplementation((err, c) => c.json({ error: 
 const mockNotFoundHandler = vi.fn().mockImplementation((c) => c.json({ error: 'Not found' }, 404));
 const mockAuditMiddleware = vi.fn().mockImplementation((c, next) => next());
 const mockUiSessionMiddleware = vi.fn().mockImplementation((c, next) => next());
+const mockCreateUiSessionMiddleware = vi.fn(() => mockUiSessionMiddleware);
 
 vi.mock('./middleware/index.js', () => ({
   requestId: mockRequestId,
@@ -33,6 +34,7 @@ vi.mock('./middleware/index.js', () => ({
   notFoundHandler: mockNotFoundHandler,
   auditMiddleware: mockAuditMiddleware,
   uiSessionMiddleware: mockUiSessionMiddleware,
+  createUiSessionMiddleware: mockCreateUiSessionMiddleware,
 }));
 
 // Mock route modules - use a factory pattern for proper hoisting
@@ -313,6 +315,22 @@ describe('createApp', () => {
       vi.clearAllMocks();
       createApp({ auth: { type: 'none' } });
       expect(mockCreateAuthMiddleware).not.toHaveBeenCalled();
+    });
+
+    it('defers passwordless exposed requests to configured API auth', () => {
+      vi.clearAllMocks();
+      createApp({ host: '0.0.0.0', auth: { type: 'api-key', apiKeys: ['secret'] } });
+      expect(mockCreateUiSessionMiddleware).toHaveBeenCalledWith({
+        allowImplicitOwnerWithoutPassword: false,
+      });
+    });
+
+    it('preserves implicit passwordless owner access on loopback', () => {
+      vi.clearAllMocks();
+      createApp({ host: '127.0.0.1', auth: { type: 'api-key', apiKeys: ['secret'] } });
+      expect(mockCreateUiSessionMiddleware).toHaveBeenCalledWith({
+        allowImplicitOwnerWithoutPassword: true,
+      });
     });
   });
 

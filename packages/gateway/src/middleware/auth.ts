@@ -125,7 +125,7 @@ const JWT_CLOCK_TOLERANCE_SEC = parseInt(process.env.JWT_CLOCK_TOLERANCE_SEC ?? 
 /**
  * JWT validation with proper signature verification using jose
  */
-async function validateJWT(
+export async function validateJWT(
   token: string,
   secret: string
 ): Promise<{ sub: string; exp?: number; [key: string]: unknown }> {
