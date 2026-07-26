@@ -12,6 +12,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { format, resolveConfig } from 'prettier';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = path.resolve(__dirname, '../src/pages/docs');
@@ -172,7 +173,7 @@ function extractDescription(text) {
   return firstP || '';
 }
 
-function build() {
+async function build() {
   const entries = [];
   const files = fs
     .readdirSync(DOCS_DIR)
@@ -234,19 +235,27 @@ export interface SearchEntry {
 
 export const SEARCH_INDEX: SearchEntry[] = ${JSON.stringify(entries, null, 2)};
 `;
-  fs.writeFileSync(OUT_FILE, tsContent, 'utf8');
+  const prettierConfig = (await resolveConfig(OUT_FILE)) ?? {};
+  const formattedContent = await format(tsContent, {
+    ...prettierConfig,
+    filepath: OUT_FILE,
+  });
+  fs.writeFileSync(OUT_FILE, formattedContent, 'utf8');
   console.log(`✅ Search index generated: ${entries.length} pages → ${OUT_FILE}`);
 }
 
-build();
+await build();
 
 // Watch mode
 if (process.argv.includes('--watch')) {
   console.log('👀 Watching for changes...');
+  let buildQueue = Promise.resolve();
   fs.watch(DOCS_DIR, (event, filename) => {
     if (filename?.endsWith('.tsx')) {
       console.log(`\n📝 ${filename} changed, rebuilding...`);
-      build();
+      buildQueue = buildQueue.then(build).catch((error) => {
+        console.error('Failed to rebuild search index:', error);
+      });
     }
   });
 }
