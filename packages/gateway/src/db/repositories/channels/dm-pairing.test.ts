@@ -47,6 +47,49 @@ describe('DmPairingRequestsRepository', () => {
     repo = new DmPairingRequestsRepository();
   });
 
+  it('creates a request after removing stale code collisions', async () => {
+    mockAdapter.execute.mockResolvedValue({ changes: 1 });
+    mockAdapter.queryOne.mockResolvedValueOnce({
+      ...makeRequestRow(),
+      used_at: null,
+    });
+
+    const result = await repo.create({
+      platform: 'telegram',
+      platformUserId: 'sender-1',
+      code: '654321',
+    });
+
+    expect(result).toMatchObject({
+      platform: 'telegram',
+      platformUserId: 'sender-1',
+      code: '654321',
+    });
+    expect(mockAdapter.execute).toHaveBeenCalledTimes(3);
+    const staleDeleteSql = mockAdapter.execute.mock.calls[1]![0] as string;
+    expect(staleDeleteSql).toContain('expires_at <= NOW()');
+    expect(mockAdapter.execute.mock.calls[1]![1]).toEqual(['telegram', '654321']);
+    const insertSql = mockAdapter.execute.mock.calls[2]![0] as string;
+    expect(insertSql).toContain('ON CONFLICT DO NOTHING');
+  });
+
+  it('returns null when an active code conflicts', async () => {
+    mockAdapter.execute
+      .mockResolvedValueOnce({ changes: 1 })
+      .mockResolvedValueOnce({ changes: 0 })
+      .mockResolvedValueOnce({ changes: 0 });
+
+    await expect(
+      repo.create({
+        platform: 'telegram',
+        platformUserId: 'sender-1',
+        code: '654321',
+      })
+    ).resolves.toBeNull();
+
+    expect(mockAdapter.queryOne).not.toHaveBeenCalled();
+  });
+
   it('atomically consumes a valid code and returns the claimed request', async () => {
     mockAdapter.queryOne.mockResolvedValueOnce(makeRequestRow());
 

@@ -64,6 +64,40 @@ describe('DmPairingService', () => {
     });
   });
 
+  it('retries when a generated code conflicts with another pending sender', async () => {
+    const { service, requests, users } = createHarness();
+    requests.create.mockResolvedValueOnce(null).mockResolvedValueOnce({});
+    users.findByPlatform.mockResolvedValue(null);
+
+    const code = await service.generateDmPairingCode(
+      'telegram.main',
+      'telegram',
+      'sender-1',
+      'owner-1'
+    );
+
+    expect(code).toMatch(/^\d{6}$/);
+    expect(requests.create).toHaveBeenCalledTimes(2);
+    expect(requests.create.mock.calls[1]![0]).toMatchObject({
+      platform: 'telegram',
+      platformUserId: 'sender-1',
+      code,
+    });
+  });
+
+  it('fails closed after repeated pairing-code collisions', async () => {
+    const { service, requests, users } = createHarness();
+    requests.create.mockResolvedValue(null);
+
+    await expect(
+      service.generateDmPairingCode('telegram.main', 'telegram', 'sender-1', 'owner-1')
+    ).rejects.toThrow('Could not allocate a unique DM pairing code');
+
+    expect(requests.create).toHaveBeenCalledTimes(5);
+    expect(users.findByPlatform).not.toHaveBeenCalled();
+    expect(mockBroadcast).not.toHaveBeenCalled();
+  });
+
   it('rejects an invalid or expired approval code', async () => {
     const { service, requests, users } = createHarness();
     requests.consumeByCode.mockResolvedValue(null);

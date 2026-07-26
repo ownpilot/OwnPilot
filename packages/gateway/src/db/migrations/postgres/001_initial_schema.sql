@@ -1,7 +1,7 @@
 -- OwnPilot PostgreSQL Schema
 -- Squashed migration: single file for Docker first-time init.
 -- Generated from TypeScript schema modules (source of truth).
--- Generated: 2026-07-26T10:16:55.914Z
+-- Generated: 2026-07-26T10:25:47.302Z
 -- Do not edit manually — regenerate via: tsx scripts/generate-squashed-migration.ts
 
 -- =====================================================
@@ -1991,6 +1991,24 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Resolve any historical active-code collisions before enforcing uniqueness.
+-- Keep the newest request claimable and invalidate older ambiguous requests.
+WITH duplicate_pairing_codes AS (
+  SELECT
+    id,
+    ROW_NUMBER() OVER (
+      PARTITION BY platform, code
+      ORDER BY created_at DESC, id DESC
+    ) AS duplicate_rank
+  FROM dm_pairing_requests
+  WHERE used_at IS NULL
+)
+UPDATE dm_pairing_requests AS request
+SET used_at = NOW()
+FROM duplicate_pairing_codes AS duplicate
+WHERE request.id = duplicate.id
+  AND duplicate.duplicate_rank > 1;
+
 -- =====================================================
 -- MIGRATION: Rename skill_packages -> user_extensions (MUST run BEFORE CREATE TABLE)
 -- =====================================================
@@ -2376,6 +2394,9 @@ CREATE INDEX IF NOT EXISTS idx_channel_verification_token ON channel_verificatio
 CREATE INDEX IF NOT EXISTS idx_channel_verification_user ON channel_verification_tokens(ownpilot_user_id);
 CREATE INDEX IF NOT EXISTS idx_channel_verification_expires ON channel_verification_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_dm_pairing_code ON dm_pairing_requests(code, platform);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_pairing_active_code
+  ON dm_pairing_requests(platform, code)
+  WHERE used_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_dm_pairing_pending
   ON dm_pairing_requests(platform, platform_user_id, created_at DESC)
   WHERE used_at IS NULL;

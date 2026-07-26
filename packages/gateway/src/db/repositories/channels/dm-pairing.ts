@@ -66,7 +66,7 @@ export class DmPairingRequestsRepository extends BaseRepository {
    * Create a pending pairing code for a platform+user pair.
    * Replaces any existing pending code for the same platform+user.
    */
-  async create(input: CreateDmPairingRequestInput): Promise<DmPairingRequestEntity> {
+  async create(input: CreateDmPairingRequestInput): Promise<DmPairingRequestEntity | null> {
     const id = randomUUID();
     const expiresAt = new Date(Date.now() + (input.expiresInMinutes ?? 10) * 60 * 1000);
 
@@ -77,11 +77,22 @@ export class DmPairingRequestsRepository extends BaseRepository {
       [input.platform, input.platformUserId]
     );
 
+    // An expired, unused request still participates in the active-code unique
+    // index until cleanup runs. Remove that exact stale collision before insert.
     await this.execute(
+      `DELETE FROM dm_pairing_requests
+       WHERE platform = $1 AND code = $2
+         AND used_at IS NULL AND expires_at <= NOW()`,
+      [input.platform, input.code]
+    );
+
+    const inserted = await this.execute(
       `INSERT INTO dm_pairing_requests (id, platform, platform_user_id, code, expires_at)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
       [id, input.platform, input.platformUserId, input.code, expiresAt.toISOString()]
     );
+    if (inserted.changes === 0) return null;
 
     const result = await this.getById(id);
     if (!result) throw new Error('Failed to create DM pairing request');

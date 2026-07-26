@@ -47,15 +47,23 @@ export class DmPairingService {
     // credential — an attacker who can predict it gains DM access. Use
     // crypto.randomInt (CSPRNG); non-cryptographic PRNG output would be predictable from
     // a few observed outputs.
-    const code = String(randomInt(100000, 1000000));
-
-    // Store in verification_tokens
-    await this.dmPairingRequests.create({
-      platform,
-      platformUserId: senderUserId,
-      code,
-      expiresInMinutes: 10,
-    });
+    let code: string | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = String(randomInt(100000, 1000000));
+      const created = await this.dmPairingRequests.create({
+        platform,
+        platformUserId: senderUserId,
+        code: candidate,
+        expiresInMinutes: 10,
+      });
+      if (created) {
+        code = candidate;
+        break;
+      }
+    }
+    if (!code) {
+      throw new Error('Could not allocate a unique DM pairing code');
+    }
 
     // Mark sender as pending
     const channelUser = await this.usersRepo.findByPlatform(platform, senderUserId);

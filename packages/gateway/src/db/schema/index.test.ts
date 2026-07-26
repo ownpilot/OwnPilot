@@ -29,7 +29,14 @@ describe('PostgreSQL schema bundle', () => {
 
   it('includes indexes used by DM pairing approval and pending-sender lookups', () => {
     expect(INDEXES_SQL).toContain('idx_dm_pairing_code');
+    expect(INDEXES_SQL).toContain('CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_pairing_active_code');
     expect(INDEXES_SQL).toContain('idx_dm_pairing_pending');
+  });
+
+  it('invalidates historical DM pairing code collisions before adding indexes', () => {
+    expect(MIGRATIONS_SQL).toContain('WITH duplicate_pairing_codes AS');
+    expect(MIGRATIONS_SQL).toContain('PARTITION BY platform, code');
+    expect(MIGRATIONS_SQL).toContain('duplicate.duplicate_rank > 1');
   });
 
   it('runs tables, migrations, then indexes in order', async () => {
