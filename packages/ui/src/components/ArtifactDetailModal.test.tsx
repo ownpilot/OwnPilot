@@ -164,12 +164,16 @@ describe('ArtifactDetailModal', () => {
 
     const pinBtn = container.querySelector<HTMLButtonElement>('button[title="Pin to dashboard"]');
     expect(pinBtn).toBeDefined();
-    act(() => pinBtn!.click());
-
-    await vi.waitFor(() => {
-      expect(mockTogglePin).toHaveBeenCalledWith('artifact-1');
-      expect(mockToast.success).toHaveBeenCalledWith('Artifact pinned');
+    await act(async () => {
+      pinBtn!.click();
+      await Promise.resolve();
     });
+
+    expect(mockTogglePin).toHaveBeenCalledWith('artifact-1');
+    expect(mockToast.success).toHaveBeenCalledWith('Artifact pinned');
+    expect(
+      container.querySelector<HTMLButtonElement>('button[title="Unpin from dashboard"]')
+    ).toBeDefined();
   });
 
   it('shows unpin button when already pinned', () => {

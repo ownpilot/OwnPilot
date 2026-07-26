@@ -60,7 +60,7 @@ const defaultSessionInfo = {
 };
 
 describe('ContextDetailModal', () => {
-  it('summarizes remaining context and recommends compacting near the limit', () => {
+  it('summarizes remaining context and recommends compacting near the limit', async () => {
     (chatApi.getContextDetail as ReturnType<typeof vi.fn>).mockResolvedValue({
       breakdown: {
         maxContextTokens: 100_000,
@@ -80,6 +80,10 @@ describe('ContextDetailModal', () => {
         onClear={() => undefined}
       />
     );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(container.textContent).toContain('92% used');
     expect(container.textContent).toContain('8.0K left');
