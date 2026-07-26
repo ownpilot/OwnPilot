@@ -6,7 +6,7 @@
  */
 
 import { getEventSystem } from '@ownpilot/core/events';
-import type { IDatabaseService, DatabaseTableStats } from '@ownpilot/core/services';
+import type { IDatabaseService, DatabaseTableStats, TableSchema } from '@ownpilot/core/services';
 import type { CustomDataRepository } from '../../db/repositories/custom/data.js';
 import {
   createCustomDataRepository,
@@ -305,6 +305,27 @@ export class CustomDataServiceError extends Error {
     super(message);
     this.name = 'CustomDataServiceError';
   }
+}
+
+/**
+ * Enforce the boundary between user-managed custom data and plugin-owned data.
+ *
+ * Plugins intentionally use IDatabaseService directly for their own protected
+ * tables. User-facing HTTP routes and agent tools must call this guard before
+ * reading or mutating records in those tables.
+ */
+export async function assertUserAccessibleTable(
+  service: IDatabaseService,
+  nameOrId: string
+): Promise<TableSchema | null> {
+  const table = await service.getTable(nameOrId);
+  if (table?.isProtected) {
+    throw new CustomDataServiceError(
+      `Access to protected table "${table.displayName}" is denied`,
+      'PROTECTED'
+    );
+  }
+  return table;
 }
 
 // ============================================================================

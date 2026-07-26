@@ -21,7 +21,10 @@ import {
 import { pagination } from '../middleware/pagination.js';
 import type { ColumnDefinition } from '../db/repositories/custom/data.js';
 import { UnknownFilterKeyError } from '../db/repositories/custom/data.js';
-import { CustomDataServiceError } from '../services/custom/data-service.js';
+import {
+  assertUserAccessibleTable,
+  CustomDataServiceError,
+} from '../services/custom/data-service.js';
 import { getDatabaseService } from '@ownpilot/core/services';
 import { wsGateway } from '../ws/server.js';
 
@@ -127,15 +130,23 @@ customDataRoutes.put('/tables/:table', async (c) => {
   };
 
   const service = getDatabaseService();
-  const updated = await service.updateTable(tableId, body);
+  try {
+    await assertUserAccessibleTable(service, tableId);
+    const updated = await service.updateTable(tableId, body);
 
-  if (!updated) {
-    return notFoundError(c, 'Table', tableId);
+    if (!updated) {
+      return notFoundError(c, 'Table', tableId);
+    }
+
+    wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'updated', id: tableId });
+
+    return apiResponse(c, updated);
+  } catch (err) {
+    if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
+      return apiError(c, { code: ERROR_CODES.PROTECTED, message: err.message }, 403);
+    }
+    throw err;
   }
-
-  wsGateway.broadcast('data:changed', { entity: 'custom_table', action: 'updated', id: tableId });
-
-  return apiResponse(c, updated);
 });
 
 /**
@@ -194,6 +205,7 @@ customDataRoutes.get(
 
     try {
       const service = getDatabaseService();
+      await assertUserAccessibleTable(service, tableId);
       const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
 
       return apiResponse(c, {
@@ -204,6 +216,9 @@ customDataRoutes.get(
         hasMore: offset + records.length < total,
       });
     } catch (err) {
+      if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
+        return apiError(c, { code: ERROR_CODES.PROTECTED, message: err.message }, 403);
+      }
       // Plan 11 SQL-001: a filter key that doesn't match any declared column
       // is a caller error (typo, stale contract), not a server fault. Map it
       // to 400 INVALID_INPUT with a precise message; everything else stays
@@ -239,6 +254,7 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 
   try {
     const service = getDatabaseService();
+    await assertUserAccessibleTable(service, tableId);
     const record = await service.addRecord(tableId, body.data);
 
     wsGateway.broadcast('data:changed', {
@@ -249,6 +265,9 @@ customDataRoutes.post('/tables/:table/records', async (c) => {
 
     return apiResponse(c, record, 201);
   } catch (err) {
+    if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
+      return apiError(c, { code: ERROR_CODES.PROTECTED, message: err.message }, 403);
+    }
     return apiError(
       c,
       { code: ERROR_CODES.ADD_FAILED, message: getErrorMessage(err, 'Failed to add record') },
@@ -275,10 +294,14 @@ customDataRoutes.get('/tables/:table/search', async (c) => {
 
   try {
     const service = getDatabaseService();
+    await assertUserAccessibleTable(service, tableId);
     const records = await service.searchRecords(tableId, query, { limit });
 
     return apiResponse(c, records);
   } catch (err) {
+    if (err instanceof CustomDataServiceError && err.code === 'PROTECTED') {
+      return apiError(c, { code: ERROR_CODES.PROTECTED, message: err.message }, 403);
+    }
     return apiError(
       c,
       {

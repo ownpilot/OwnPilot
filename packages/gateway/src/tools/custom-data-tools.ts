@@ -11,7 +11,10 @@
 
 import { getDatabaseService } from '@ownpilot/core/services';
 import type { ColumnDefinition } from '../db/repositories/custom/data.js';
-import { CustomDataServiceError } from '../services/custom/data-service.js';
+import {
+  assertUserAccessibleTable,
+  CustomDataServiceError,
+} from '../services/custom/data-service.js';
 import { sanitizeId, sanitizeText, getErrorMessage } from '../utils/common.js';
 import type { ToolExecutionResult } from '../services/tool/executor.js';
 
@@ -116,8 +119,8 @@ export async function executeCustomDataTool(
           table: string;
           data: Record<string, unknown>;
         };
+        const table = await assertUserAccessibleTable(service, tableId);
         const record = await service.addRecord(tableId, data);
-        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -137,8 +140,8 @@ export async function executeCustomDataTool(
           return { success: false, error: 'records must be an array' };
         }
 
+        const table = await assertUserAccessibleTable(service, tableId);
         const results = await service.batchAddRecords(tableId, recordsInput);
-        const table = await service.getTable(tableId);
 
         return {
           success: true,
@@ -162,8 +165,8 @@ export async function executeCustomDataTool(
           offset?: number;
           filter?: Record<string, unknown>;
         };
+        const table = await assertUserAccessibleTable(service, tableId);
         const { records, total } = await service.listRecords(tableId, { limit, offset, filter });
-        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -185,8 +188,8 @@ export async function executeCustomDataTool(
           query: string;
           limit?: number;
         };
+        const table = await assertUserAccessibleTable(service, tableId);
         const records = await service.searchRecords(tableId, query, { limit });
-        const table = await service.getTable(tableId);
         return {
           success: true,
           result: {
@@ -202,6 +205,7 @@ export async function executeCustomDataTool(
         if (!record) {
           return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
         }
+        await assertUserAccessibleTable(service, record.tableId);
         return {
           success: true,
           result: {
@@ -221,6 +225,11 @@ export async function executeCustomDataTool(
           recordId: string;
           data: Record<string, unknown>;
         };
+        const existing = await service.getRecord(recordId);
+        if (!existing) {
+          return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
+        }
+        await assertUserAccessibleTable(service, existing.tableId);
         const updated = await service.updateRecord(recordId, data);
         if (!updated) {
           return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
@@ -236,6 +245,11 @@ export async function executeCustomDataTool(
 
       case 'delete_custom_record': {
         const { recordId } = params as { recordId: string };
+        const existing = await service.getRecord(recordId);
+        if (!existing) {
+          return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };
+        }
+        await assertUserAccessibleTable(service, existing.tableId);
         const deleted = await service.deleteRecord(recordId);
         if (!deleted) {
           return { success: false, error: `Record not found: ${sanitizeId(recordId)}` };

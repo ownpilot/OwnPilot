@@ -30,16 +30,30 @@ const mockCustomDataService = {
   batchAddRecords: vi.fn(),
 };
 
-vi.mock('../services/custom/data-service.js', () => ({
-  getCustomDataService: () => mockCustomDataService,
-  CustomDataServiceError: class extends Error {
+vi.mock('../services/custom/data-service.js', () => {
+  class MockCustomDataServiceError extends Error {
     code: string;
     constructor(message: string, code: string) {
       super(message);
       this.code = code;
     }
-  },
-}));
+  }
+
+  return {
+    getCustomDataService: () => mockCustomDataService,
+    CustomDataServiceError: MockCustomDataServiceError,
+    assertUserAccessibleTable: async (service: typeof mockCustomDataService, tableId: string) => {
+      const table = await service.getTable(tableId);
+      if (table?.isProtected) {
+        throw new MockCustomDataServiceError(
+          `Access to protected table "${table.displayName}" is denied`,
+          'PROTECTED'
+        );
+      }
+      return table;
+    },
+  };
+});
 
 vi.mock('@ownpilot/core/services', async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -85,6 +99,7 @@ describe('Custom Data Routes', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCustomDataService.getTable.mockResolvedValue(null);
     app = createApp();
   });
 
@@ -240,6 +255,24 @@ describe('Custom Data Routes', () => {
 
       expect(res.status).toBe(404);
     });
+
+    it('rejects schema changes for protected plugin tables', async () => {
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const res = await app.request('/custom-data/tables/plugin-data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: 'Hijacked' }),
+      });
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).error.code).toBe('PROTECTED');
+      expect(mockCustomDataService.updateTable).not.toHaveBeenCalled();
+    });
   });
 
   // ========================================================================
@@ -313,6 +346,20 @@ describe('Custom Data Routes', () => {
         filter: { genre: 'fiction' },
       });
     });
+
+    it('rejects listing records from protected plugin tables', async () => {
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const res = await app.request('/custom-data/tables/plugin-data/records');
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).error.code).toBe('PROTECTED');
+      expect(mockCustomDataService.listRecords).not.toHaveBeenCalled();
+    });
   });
 
   // ========================================================================
@@ -346,6 +393,24 @@ describe('Custom Data Routes', () => {
 
       expect(res.status).toBe(400);
     });
+
+    it('rejects adding records to protected plugin tables', async () => {
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const res = await app.request('/custom-data/tables/plugin-data/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { value: 'injected' } }),
+      });
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).error.code).toBe('PROTECTED');
+      expect(mockCustomDataService.addRecord).not.toHaveBeenCalled();
+    });
   });
 
   // ========================================================================
@@ -370,6 +435,20 @@ describe('Custom Data Routes', () => {
       const res = await app.request('/custom-data/tables/books/search');
 
       expect(res.status).toBe(400);
+    });
+
+    it('rejects searching records in protected plugin tables', async () => {
+      mockCustomDataService.getTable.mockResolvedValue({
+        id: 'tbl-1',
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const res = await app.request('/custom-data/tables/plugin-data/search?q=secret');
+
+      expect(res.status).toBe(403);
+      expect((await res.json()).error.code).toBe('PROTECTED');
+      expect(mockCustomDataService.searchRecords).not.toHaveBeenCalled();
     });
   });
 
@@ -807,6 +886,22 @@ describe('executeCustomDataTool', () => {
       expect(result.success).toBe(true);
       expect(result.result.message).toContain('Books');
     });
+
+    it('rejects protected plugin tables', async () => {
+      mockCustomDataService.getTable.mockResolvedValue({
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const result = await executeCustomDataTool('add_custom_record', {
+        table: 'plugin-data',
+        data: { value: 'injected' },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('protected table');
+      expect(mockCustomDataService.addRecord).not.toHaveBeenCalled();
+    });
   });
 
   describe('batch_add_custom_records', () => {
@@ -886,6 +981,23 @@ describe('executeCustomDataTool', () => {
       expect(result.result.record.id).toBe('r1');
     });
 
+    it('rejects records from protected plugin tables', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'plugin-data',
+        data: { token: 'secret' },
+      });
+      mockCustomDataService.getTable.mockResolvedValue({
+        displayName: 'Plugin Data',
+        isProtected: true,
+      });
+
+      const result = await executeCustomDataTool('get_custom_record', { recordId: 'r1' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('protected table');
+    });
+
     it('returns error when record not found', async () => {
       mockCustomDataService.getRecord.mockResolvedValue(null);
 
@@ -898,6 +1010,12 @@ describe('executeCustomDataTool', () => {
 
   describe('update_custom_record', () => {
     it('updates record and returns success', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'tbl-1',
+        data: { title: 'Book' },
+      });
+      mockCustomDataService.getTable.mockResolvedValue({ isProtected: false });
       mockCustomDataService.updateRecord.mockResolvedValue({
         id: 'r1',
         data: { title: 'Updated' },
@@ -927,6 +1045,12 @@ describe('executeCustomDataTool', () => {
 
   describe('delete_custom_record', () => {
     it('deletes record successfully', async () => {
+      mockCustomDataService.getRecord.mockResolvedValue({
+        id: 'r1',
+        tableId: 'tbl-1',
+        data: { title: 'Book' },
+      });
+      mockCustomDataService.getTable.mockResolvedValue({ isProtected: false });
       mockCustomDataService.deleteRecord.mockResolvedValue(true);
 
       const result = await executeCustomDataTool('delete_custom_record', { recordId: 'r1' });
