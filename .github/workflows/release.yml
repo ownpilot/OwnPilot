@@ -16,11 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Create GitHub Release (softprops/action-gh-release)
-      packages: write # Push image to GHCR
 
     steps:
       - name: Checkout
@@ -62,6 +59,17 @@ jobs:
 
       - name: Test
         run: TURBO_FORCE=true pnpm test
+
+  release:
+    runs-on: ubuntu-latest
+    needs: validate
+    permissions:
+      contents: write # Create GitHub Release (softprops/action-gh-release)
+      packages: write # Push image to GHCR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
