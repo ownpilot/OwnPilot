@@ -27,9 +27,8 @@ import type { ChannelUsersRepository } from '../../db/repositories/channels/user
 function createMockVerificationRepo() {
   return {
     generateToken: vi.fn(),
-    findValidToken: vi.fn(),
-    // Default: this caller wins the atomic single-use claim.
-    consumeToken: vi.fn().mockResolvedValue(true),
+    claimValidToken: vi.fn(),
+    assignClaimedTokenToUser: vi.fn(),
     cleanupExpired: vi.fn(),
   };
 }
@@ -145,10 +144,9 @@ describe('ChannelVerificationService', () => {
     it('should return success when token is valid', async () => {
       const tokenEntity = makeTokenEntity();
       const channelUser = makeChannelUser();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       mockUsersRepo.markVerified.mockResolvedValue(undefined);
-      mockVerificationRepo.consumeToken.mockResolvedValue(true);
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus
       >);
@@ -161,23 +159,18 @@ describe('ChannelVerificationService', () => {
       });
     });
 
-    it('rejects and does NOT verify when the atomic token claim is lost (race)', async () => {
-      const tokenEntity = makeTokenEntity();
-      const channelUser = makeChannelUser();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
-      mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
-      // A concurrent /connect already consumed this single-use token → claim lost.
-      mockVerificationRepo.consumeToken.mockResolvedValue(false);
+    it('does not create or link a user when the atomic token claim is lost', async () => {
+      mockVerificationRepo.claimValidToken.mockResolvedValue(null);
 
       const result = await service.verifyToken(token, platform, platformUserId, displayName);
 
       expect(result).toEqual({ success: false, error: 'Invalid or expired token.' });
-      // The loser must NOT be linked to the owner's account.
+      expect(mockUsersRepo.findOrCreate).not.toHaveBeenCalled();
       expect(mockUsersRepo.markVerified).not.toHaveBeenCalled();
     });
 
     it('should return error when token is invalid or expired', async () => {
-      mockVerificationRepo.findValidToken.mockResolvedValue(null);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(null);
 
       const result = await service.verifyToken(token, platform, platformUserId, displayName);
 
@@ -190,7 +183,7 @@ describe('ChannelVerificationService', () => {
 
     it('should call findOrCreate with correct data', async () => {
       const tokenEntity = makeTokenEntity();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus
@@ -210,7 +203,7 @@ describe('ChannelVerificationService', () => {
     it('should call markVerified with pin method', async () => {
       const tokenEntity = makeTokenEntity();
       const channelUser = makeChannelUser({ id: 'cu-42' });
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus
@@ -225,10 +218,10 @@ describe('ChannelVerificationService', () => {
       );
     });
 
-    it('should call consumeToken with correct IDs', async () => {
+    it('should claim before creating a user and then record the claiming user', async () => {
       const tokenEntity = makeTokenEntity({ id: 'tok-99' });
       const channelUser = makeChannelUser({ id: 'cu-42' });
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(channelUser);
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus
@@ -236,12 +229,16 @@ describe('ChannelVerificationService', () => {
 
       await service.verifyToken(token, platform, platformUserId, displayName);
 
-      expect(mockVerificationRepo.consumeToken).toHaveBeenCalledWith('tok-99', 'cu-42');
+      expect(mockVerificationRepo.claimValidToken).toHaveBeenCalledWith(token, platform);
+      expect(mockVerificationRepo.assignClaimedTokenToUser).toHaveBeenCalledWith('tok-99', 'cu-42');
+      expect(mockVerificationRepo.claimValidToken.mock.invocationCallOrder[0]).toBeLessThan(
+        mockUsersRepo.findOrCreate.mock.invocationCallOrder[0]!
+      );
     });
 
     it('should emit channel.user.verified event on success', async () => {
       const tokenEntity = makeTokenEntity();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       const mockEmit = vi.fn();
       vi.mocked(getEventBus).mockReturnValue({ emit: mockEmit } as unknown as ReturnType<
@@ -255,7 +252,7 @@ describe('ChannelVerificationService', () => {
 
     it('should succeed even when getEventBus throws', async () => {
       const tokenEntity = makeTokenEntity();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       vi.mocked(getEventBus).mockImplementation(() => {
         throw new Error('EventBus not initialized');
@@ -271,7 +268,7 @@ describe('ChannelVerificationService', () => {
 
     it('should pass platformUsername through as undefined when not provided', async () => {
       const tokenEntity = makeTokenEntity();
-      mockVerificationRepo.findValidToken.mockResolvedValue(tokenEntity);
+      mockVerificationRepo.claimValidToken.mockResolvedValue(tokenEntity);
       mockUsersRepo.findOrCreate.mockResolvedValue(makeChannelUser());
       vi.mocked(getEventBus).mockReturnValue({ emit: vi.fn() } as unknown as ReturnType<
         typeof getEventBus

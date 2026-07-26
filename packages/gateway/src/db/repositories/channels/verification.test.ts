@@ -1,7 +1,7 @@
 /**
  * ChannelVerificationRepository Tests
  *
- * Tests token generation, findValidToken, consumeToken, cleanupExpired,
+ * Tests token generation, valid-token lookup and claim, cleanupExpired,
  * listByUser, revokeAll, and row-to-entity mapping.
  */
 
@@ -202,32 +202,57 @@ describe('ChannelVerificationRepository', () => {
     });
   });
 
-  // ---- consumeToken ----
+  // ---- claimValidToken / assignClaimedTokenToUser ----
 
-  describe('consumeToken', () => {
-    it('atomically claims an unused token and returns true', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
-
-      const claimed = await repo.consumeToken('tok-1', 'cu-1');
-
-      expect(claimed).toBe(true);
-      expect(mockAdapter.execute).toHaveBeenCalledWith(
-        expect.stringContaining('SET is_used = TRUE'),
-        ['cu-1', 'tok-1']
+  describe('claimValidToken', () => {
+    it('atomically claims a valid token and returns it', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(
+        makeTokenRow({
+          platform: 'telegram',
+          is_used: true,
+          used_at: '2024-06-01T12:05:00Z',
+        })
       );
-      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+
+      const claimed = await repo.claimValidToken('123456', 'telegram');
+
+      expect(claimed).toMatchObject({
+        id: 'tok-1',
+        token: '123456',
+        platform: 'telegram',
+        isUsed: true,
+      });
+      expect(mockAdapter.queryOne).toHaveBeenCalledWith(expect.any(String), ['123456', 'telegram']);
+      const sql = mockAdapter.queryOne.mock.calls[0][0] as string;
+      expect(sql).toContain('UPDATE channel_verification_tokens');
+      expect(sql).toContain('SET is_used = TRUE');
       expect(sql).toContain('used_at = NOW()');
-      expect(sql).toContain('used_by_channel_user_id = $1');
-      // Atomic single-use guard — only flips a still-unused token.
       expect(sql).toContain('is_used = FALSE');
+      expect(sql).toContain('expires_at > NOW()');
+      expect(sql).toContain('(platform IS NULL OR platform = $2)');
+      expect(sql).toContain('RETURNING *');
     });
 
-    it('returns false when the token was already consumed (no row updated)', async () => {
-      mockAdapter.execute.mockResolvedValueOnce({ changes: 0 });
+    it('returns null when the token is expired or another caller claimed it', async () => {
+      mockAdapter.queryOne.mockResolvedValueOnce(null);
 
-      const claimed = await repo.consumeToken('tok-1', 'cu-1');
+      const claimed = await repo.claimValidToken('123456', 'telegram');
 
-      expect(claimed).toBe(false);
+      expect(claimed).toBeNull();
+    });
+  });
+
+  describe('assignClaimedTokenToUser', () => {
+    it('records the user only on an already-claimed unassigned token', async () => {
+      mockAdapter.execute.mockResolvedValueOnce({ changes: 1 });
+
+      await repo.assignClaimedTokenToUser('tok-1', 'cu-1');
+
+      expect(mockAdapter.execute).toHaveBeenCalledWith(expect.any(String), ['cu-1', 'tok-1']);
+      const sql = mockAdapter.execute.mock.calls[0][0] as string;
+      expect(sql).toContain('SET used_by_channel_user_id = $1');
+      expect(sql).toContain('is_used = TRUE');
+      expect(sql).toContain('used_by_channel_user_id IS NULL');
     });
   });
 

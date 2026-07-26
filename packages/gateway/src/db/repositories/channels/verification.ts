@@ -121,20 +121,40 @@ export class ChannelVerificationRepository extends BaseRepository {
   }
 
   /**
-   * Atomically consume a single-use token. The `AND is_used = FALSE` guard
-   * makes this the authoritative claim: only the first concurrent caller flips
-   * the row, so it returns true exactly once per token. A find-then-consume
-   * sequence is NOT race-safe on its own (two `/connect` messages can both read
-   * an unused token); callers must gate verification on this return value.
+   * Atomically claim a valid single-use token before creating or linking a
+   * channel user. The expiry and platform checks are part of the authoritative
+   * UPDATE so a token cannot become invalid between a preliminary read and its
+   * claim.
    */
-  async consumeToken(tokenId: string, channelUserId: string): Promise<boolean> {
-    const result = await this.execute(
+  async claimValidToken(
+    token: string,
+    platform: string
+  ): Promise<ChannelVerificationTokenEntity | null> {
+    const row = await this.queryOne<TokenRow>(
       `UPDATE channel_verification_tokens
-       SET is_used = TRUE, used_at = NOW(), used_by_channel_user_id = $1
-       WHERE id = $2 AND is_used = FALSE`,
+       SET is_used = TRUE, used_at = NOW()
+       WHERE token = $1
+         AND is_used = FALSE
+         AND expires_at > NOW()
+         AND (platform IS NULL OR platform = $2)
+       RETURNING *`,
+      [token, platform]
+    );
+    return row ? rowToEntity(row) : null;
+  }
+
+  /**
+   * Record which channel user used an already-claimed token.
+   */
+  async assignClaimedTokenToUser(tokenId: string, channelUserId: string): Promise<void> {
+    await this.execute(
+      `UPDATE channel_verification_tokens
+       SET used_by_channel_user_id = $1
+       WHERE id = $2
+         AND is_used = TRUE
+         AND used_by_channel_user_id IS NULL`,
       [channelUserId, tokenId]
     );
-    return result.changes > 0;
   }
 
   /**
