@@ -1,0 +1,137 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockBroadcast, mockLog } = vi.hoisted(() => ({
+  mockBroadcast: vi.fn(),
+  mockLog: { info: vi.fn() },
+}));
+
+vi.mock('../ws/server.js', () => ({
+  wsGateway: { broadcast: mockBroadcast },
+}));
+
+vi.mock('../services/log.js', () => ({
+  getLog: () => mockLog,
+}));
+
+import { DmPairingService } from './dm-pairing-service.js';
+
+function createHarness() {
+  const requests = {
+    listPending: vi.fn(),
+    create: vi.fn(),
+    findByCode: vi.fn(),
+    findValidToken: vi.fn(),
+    markUsed: vi.fn(),
+  };
+  const users = {
+    findByPlatform: vi.fn(),
+    updateStatus: vi.fn(),
+    markVerified: vi.fn(),
+    block: vi.fn(),
+  };
+  const service = new DmPairingService(requests as never, users as never);
+  return { service, requests, users };
+}
+
+describe('DmPairingService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('creates a pending request and marks an existing sender pending', async () => {
+    const { service, requests, users } = createHarness();
+    requests.create.mockResolvedValue({});
+    users.findByPlatform.mockResolvedValue({ id: 'channel-user-1' });
+
+    const code = await service.generateDmPairingCode(
+      'telegram.main',
+      'telegram',
+      'sender-1',
+      'owner-1'
+    );
+
+    expect(code).toMatch(/^\d{6}$/);
+    expect(requests.create).toHaveBeenCalledWith({
+      platform: 'telegram',
+      platformUserId: 'sender-1',
+      code,
+      expiresInMinutes: 10,
+    });
+    expect(users.updateStatus).toHaveBeenCalledWith('channel-user-1', 'pending');
+    expect(mockBroadcast).toHaveBeenCalledWith('data:changed', {
+      entity: 'dm-pairing',
+      action: 'pending',
+    });
+  });
+
+  it('rejects an invalid or expired approval code', async () => {
+    const { service, requests, users } = createHarness();
+    requests.findByCode.mockResolvedValue(null);
+
+    await expect(service.approvePendingSender('telegram', '123456')).resolves.toEqual({
+      success: false,
+      error: 'Invalid or expired code.',
+    });
+    expect(requests.markUsed).not.toHaveBeenCalled();
+    expect(users.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('approves a sender without logging the pairing credential', async () => {
+    const { service, requests, users } = createHarness();
+    requests.findByCode.mockResolvedValue({
+      id: 'token-1',
+      platformUserId: 'sender-1',
+    });
+    users.findByPlatform.mockResolvedValue({ id: 'channel-user-1' });
+
+    await expect(service.approvePendingSender('telegram', '654321')).resolves.toEqual({
+      success: true,
+    });
+
+    expect(requests.markUsed).toHaveBeenCalledWith('token-1');
+    expect(users.updateStatus).toHaveBeenCalledWith('channel-user-1', 'active');
+    expect(users.markVerified).toHaveBeenCalledWith('channel-user-1', 'default', 'admin');
+    expect(mockLog.info).toHaveBeenCalledWith('Pending sender approved via DM pairing code', {
+      platform: 'telegram',
+      senderUserId: 'sender-1',
+    });
+    expect(mockLog.info).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ code: expect.anything() })
+    );
+  });
+
+  it('denies a sender and consumes an existing token', async () => {
+    const { service, requests, users } = createHarness();
+    requests.findValidToken.mockResolvedValue({ id: 'token-1' });
+    users.findByPlatform.mockResolvedValue({ id: 'channel-user-1' });
+
+    await expect(service.denyPendingSender('discord', 'sender-1')).resolves.toEqual({
+      success: true,
+    });
+
+    expect(requests.markUsed).toHaveBeenCalledWith('token-1');
+    expect(users.block).toHaveBeenCalledWith('channel-user-1');
+  });
+
+  it('enriches pending requests with channel display names', async () => {
+    const { service, requests, users } = createHarness();
+    const expiresAt = new Date('2026-01-01T00:10:00.000Z');
+    requests.listPending.mockResolvedValue([
+      { platformUserId: 'sender-1', code: '123456', expiresAt },
+    ]);
+    users.findByPlatform.mockResolvedValue({
+      id: 'channel-user-1',
+      displayName: 'Ada',
+    });
+
+    await expect(service.listPendingSenders('telegram')).resolves.toEqual([
+      {
+        platformUserId: 'sender-1',
+        displayName: 'Ada',
+        code: '123456',
+        expiresAt,
+      },
+    ]);
+  });
+});
