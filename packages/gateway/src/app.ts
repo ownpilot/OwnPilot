@@ -50,6 +50,7 @@ import {
 // creates from the other direction.
 export { sanitizeCorsOriginsFromEnv } from './utils/cors-origin.js';
 import { sanitizeCorsOriginsFromEnv as _sanitizeCorsOriginsFromEnv } from './utils/cors-origin.js';
+import { isSecureRequest } from './utils/trusted-proxy.js';
 
 // Resolve UI dist path relative to this file (works in both dev and Docker)
 const __appDirname = dirname(fileURLToPath(import.meta.url));
@@ -163,16 +164,16 @@ export function createApp(config: Partial<GatewayConfig> = {}): Hono {
   // HTTP→HTTPS redirect (HTTPS-001). When HTTPS_ONLY=true, any plain-HTTP
   // request is redirected to its HTTPS equivalent with a 301. Respects
   // X-Forwarded-Proto for reverse-proxy deployments that terminate TLS
-  // upstream and forward to the gateway over plain HTTP. When the proxy
-  // sends X-Forwarded-Proto: https, no redirect happens.
+  // upstream and forward to the gateway over plain HTTP. Forwarded scheme
+  // headers are honored only when trusted-proxy mode and its peer allowlist
+  // are configured; direct clients cannot spoof them to bypass the redirect.
   //
   // Must run after the security-headers middleware (which sets HSTS) so
   // the HSTS header is present on the redirect response. The same env var
   // (HTTPS_ONLY) controls both — they're always paired.
   if (process.env.HTTPS_ONLY === 'true') {
     app.use('*', async (c, next) => {
-      const fwdProto = c.req.header('X-Forwarded-Proto') ?? c.req.header('X-Forwarded-Scheme');
-      if (fwdProto === 'https') return next();
+      if (isSecureRequest(c.req)) return next();
 
       const url = new URL(c.req.url);
       if (url.protocol === 'http:') {

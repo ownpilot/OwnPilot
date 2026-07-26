@@ -54,7 +54,8 @@ export function getRequestUrl(req: RequestLike, path: string): string {
  */
 export function isSecureRequest(req: RequestLike): boolean {
   if (req.url.startsWith('https://')) return true;
-  if (isProxyAwareConfigured() && req.header('X-Forwarded-Proto') === 'https') {
+  const forwardedScheme = req.header('X-Forwarded-Proto') ?? req.header('X-Forwarded-Scheme');
+  if (isProxyAwareConfigured() && forwardedScheme?.toLowerCase() === 'https') {
     return true;
   }
   return false;

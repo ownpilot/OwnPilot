@@ -256,6 +256,34 @@ describe('createApp', () => {
       const hsts = res.headers.get('Strict-Transport-Security');
       expect(hsts).not.toContain('preload');
     });
+
+    it('redirects plain HTTP when HTTPS_ONLY=true', async () => {
+      process.env.HTTPS_ONLY = 'true';
+      const app = createApp({ auth: { type: 'none' } });
+      const res = await app.request('http://example.com/api/v1/agents');
+
+      expect(res.status).toBe(301);
+      expect(res.headers.get('Location')).toBe('https://example.com/api/v1/agents');
+    });
+
+    it('ignores spoofed forwarded-proto headers without a trusted proxy', async () => {
+      process.env.HTTPS_ONLY = 'true';
+      const app = createApp({ auth: { type: 'none' } });
+      const res = await app.request('http://example.com/api/v1/agents', {
+        headers: { 'X-Forwarded-Proto': 'https' },
+      });
+
+      expect(res.status).toBe(301);
+      expect(res.headers.get('Location')).toBe('https://example.com/api/v1/agents');
+    });
+
+    it('does not redirect a request already received over HTTPS', async () => {
+      process.env.HTTPS_ONLY = 'true';
+      const app = createApp({ auth: { type: 'none' } });
+      const res = await app.request('https://example.com/api/v1/agents');
+
+      expect(res.status).toBe(200);
+    });
   });
 
   describe('cache control headers', () => {
