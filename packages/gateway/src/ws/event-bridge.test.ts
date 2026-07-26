@@ -328,6 +328,35 @@ describe('EventBusBridge', () => {
       const result = bridge.publish('sess-1', longType, {});
       expect(result).toBe(false);
     });
+
+    it.each([
+      ['empty suffix', 'external.'],
+      ['wildcard', 'external.*'],
+      ['empty segment', 'external.device..status'],
+      ['control character', 'external.device\nstatus'],
+      ['space', 'client.user action'],
+    ])('rejects %s in publish event types', (_case, type) => {
+      const result = bridge.publish('sess-1', type, {});
+
+      expect(result).toBe(false);
+      expect(mockEmitRaw).not.toHaveBeenCalled();
+      expect(mockSM.send).toHaveBeenCalledWith('sess-1', 'event:publish:error', {
+        type,
+        error: expect.stringContaining('dot-separated'),
+      });
+    });
+
+    it('rejects event types deeper than the subscription limit', () => {
+      const type = 'external.one.two.three.four.five.six';
+      const result = bridge.publish('sess-1', type, {});
+
+      expect(result).toBe(false);
+      expect(mockEmitRaw).not.toHaveBeenCalled();
+      expect(mockSM.send).toHaveBeenCalledWith('sess-1', 'event:publish:error', {
+        type,
+        error: 'Event type too deep (max 6 segments)',
+      });
+    });
   });
 
   // -------------------------------------------------------------------------

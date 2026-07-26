@@ -32,6 +32,7 @@ const ALLOWED_PUBLISH_PREFIXES = ['external.', 'client.'];
 const BLOCKED_PUBLISH_PATTERNS = ['system.shutdown', 'system.startup'];
 const MAX_PATTERN_LENGTH = 100;
 const MAX_PATTERN_DEPTH = 6;
+const PUBLISH_TYPE_PATTERN = /^(external|client)\.[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*$/;
 
 // ============================================================================
 // EventBusBridge
@@ -206,6 +207,12 @@ export class EventBusBridge {
     const allowed = ALLOWED_PUBLISH_PREFIXES.some((prefix) => type.startsWith(prefix));
     if (!allowed) {
       return `Publishing restricted to namespaces: ${ALLOWED_PUBLISH_PREFIXES.join(', ')}`;
+    }
+    if (!PUBLISH_TYPE_PATTERN.test(type)) {
+      return 'Event type must contain only dot-separated alphanumeric, hyphen, or underscore segments';
+    }
+    if (type.split('.').length > MAX_PATTERN_DEPTH) {
+      return `Event type too deep (max ${MAX_PATTERN_DEPTH} segments)`;
     }
     // Block specific patterns
     if (BLOCKED_PUBLISH_PATTERNS.includes(type)) {
