@@ -40,6 +40,10 @@ import { randomUUID } from 'node:crypto';
 import { getOwnerUserId, getOwnerChatId } from '../../services/pairing-service.js';
 import { getLog } from '../../services/log.js';
 import { stripInternalTags } from '../../channels/normalizers/base.js';
+import {
+  isValidKeepRecentMessages,
+  MAX_KEEP_RECENT_MESSAGES,
+} from '../../services/agent/compaction-policy.js';
 import type { ChannelIncomingMessage } from '@ownpilot/core/channels';
 
 const log = getLog('ChatHistory');
@@ -986,7 +990,18 @@ chatHistoryRoutes.post('/compact', async (c) => {
 
   const provider = body?.provider ?? (await getDefaultProvider()) ?? 'openai';
   const model = body?.model ?? (await getDefaultModel(provider)) ?? 'gpt-4o';
-  const keepRecent = body?.keepRecentMessages ?? 6;
+  const requestedKeepRecent = body?.keepRecentMessages;
+  if (requestedKeepRecent !== undefined && !isValidKeepRecentMessages(requestedKeepRecent)) {
+    return apiError(
+      c,
+      {
+        code: ERROR_CODES.INVALID_INPUT,
+        message: `keepRecentMessages must be an integer between 0 and ${MAX_KEEP_RECENT_MESSAGES}`,
+      },
+      400
+    );
+  }
+  const keepRecent = requestedKeepRecent ?? 6;
 
   // Honor the user's configured context window so the returned SessionInfo
   // matches what the rest of the chat surface reports.

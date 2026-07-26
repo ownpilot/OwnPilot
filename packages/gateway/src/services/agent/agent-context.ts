@@ -21,6 +21,7 @@ import {
   loadProviderConfig,
 } from './cache.js';
 import { getSessionInfo } from './session-info.js';
+import { isValidKeepRecentMessages } from './compaction-policy.js';
 import type { SessionInfo } from '../../types/index.js';
 
 const log = getLog('AgentContext');
@@ -197,6 +198,15 @@ export async function compactContext(
   contextWindowOverride?: number,
   userId?: string
 ): Promise<CompactionResult> {
+  if (!isValidKeepRecentMessages(keepRecentMessages)) {
+    return {
+      compacted: false,
+      reason: 'invalid_keep_recent',
+      removedMessages: 0,
+      newTokenEstimate: 0,
+    };
+  }
+
   const cacheKey = `chat|${provider.replace(/\|/g, '_')}|${model.replace(/\|/g, '_')}`;
   const agent = chatAgentCache.get(cacheKey);
   if (!agent) {

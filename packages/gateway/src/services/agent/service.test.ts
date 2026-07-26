@@ -1684,6 +1684,30 @@ describe('getOrCreateAgentInstance', () => {
 // =============================================================================
 
 describe('compactContext', () => {
+  it.each([-1, 1.5, 101, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid keepRecentMessages value %s without touching memory',
+    async (keepRecentMessages) => {
+      const { agent, memory } = makeMockAgent({
+        contextMessages: Array.from({ length: 20 }, (_, i) => ({
+          role: i % 2 === 0 ? 'user' : 'assistant',
+          content: `msg-${i}`,
+        })),
+      });
+      chatAgentCache.set('chat|openai|gpt-4o', agent);
+
+      const result = await mod.compactContext('openai', 'gpt-4o', keepRecentMessages);
+
+      expect(result).toEqual({
+        compacted: false,
+        reason: 'invalid_keep_recent',
+        removedMessages: 0,
+        newTokenEstimate: 0,
+      });
+      expect(memory.getContextMessages).not.toHaveBeenCalled();
+      expect(memory.clearMessages).not.toHaveBeenCalled();
+    }
+  );
+
   it('returns { compacted: false } when no agent in cache', async () => {
     const result = await mod.compactContext('openai', 'gpt-4o');
     expect(result.compacted).toBe(false);

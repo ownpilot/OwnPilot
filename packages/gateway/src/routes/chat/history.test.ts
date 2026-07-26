@@ -1457,6 +1457,23 @@ describe('Chat History & Logs Routes', () => {
       );
     });
 
+    it.each([-1, 1.5, 101, '6', null])(
+      'rejects invalid keepRecentMessages value %j',
+      async (keepRecentMessages) => {
+        const res = await app.request('/api/compact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keepRecentMessages }),
+        });
+
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.error.code).toBe('INVALID_INPUT');
+        expect(json.error.message).toContain('keepRecentMessages must be an integer');
+        expect(mockCompactContext).not.toHaveBeenCalled();
+      }
+    );
+
     it('uses provider/model defaults when not specified', async () => {
       const res = await app.request('/api/compact', {
         method: 'POST',
