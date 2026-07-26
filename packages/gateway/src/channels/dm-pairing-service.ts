@@ -80,13 +80,10 @@ export class DmPairingService {
     platform: string,
     code: string
   ): Promise<{ success: boolean; error?: string }> {
-    const token = await this.dmPairingRequests.findByCode(code, platform);
+    const token = await this.dmPairingRequests.consumeByCode(code, platform);
     if (!token) {
       return { success: false, error: 'Invalid or expired code.' };
     }
-
-    // Mark token as used
-    await this.dmPairingRequests.markUsed(token.id);
 
     // Update channel user status to active
     const channelUser = await this.usersRepo.findByPlatform(platform, token.platformUserId);
@@ -116,7 +113,7 @@ export class DmPairingService {
   ): Promise<{ success: boolean; error?: string }> {
     const token = await this.dmPairingRequests.findValidToken(platform, platformUserId);
     if (token) {
-      await this.dmPairingRequests.markUsed(token.id);
+      await this.dmPairingRequests.consume(token.id);
     }
 
     const channelUser = await this.usersRepo.findByPlatform(platform, platformUserId);

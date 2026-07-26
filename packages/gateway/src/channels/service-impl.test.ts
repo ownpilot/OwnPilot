@@ -69,9 +69,9 @@ const mockConversationsRepo = vi.hoisted(() => ({
 const mockDmPairingRequests = vi.hoisted(() => ({
   listPending: vi.fn().mockResolvedValue([]),
   create: vi.fn(),
-  findByCode: vi.fn(),
+  consumeByCode: vi.fn(),
   findValidToken: vi.fn(),
-  markUsed: vi.fn(),
+  consume: vi.fn(),
   getById: vi.fn(),
 }));
 

@@ -19,9 +19,9 @@ function createHarness() {
   const requests = {
     listPending: vi.fn(),
     create: vi.fn(),
-    findByCode: vi.fn(),
+    consumeByCode: vi.fn(),
     findValidToken: vi.fn(),
-    markUsed: vi.fn(),
+    consume: vi.fn(),
   };
   const users = {
     findByPlatform: vi.fn(),
@@ -66,21 +66,22 @@ describe('DmPairingService', () => {
 
   it('rejects an invalid or expired approval code', async () => {
     const { service, requests, users } = createHarness();
-    requests.findByCode.mockResolvedValue(null);
+    requests.consumeByCode.mockResolvedValue(null);
 
     await expect(service.approvePendingSender('telegram', '123456')).resolves.toEqual({
       success: false,
       error: 'Invalid or expired code.',
     });
-    expect(requests.markUsed).not.toHaveBeenCalled();
+    expect(requests.consume).not.toHaveBeenCalled();
     expect(users.updateStatus).not.toHaveBeenCalled();
   });
 
   it('approves a sender without logging the pairing credential', async () => {
     const { service, requests, users } = createHarness();
-    requests.findByCode.mockResolvedValue({
+    requests.consumeByCode.mockResolvedValue({
       id: 'token-1',
       platformUserId: 'sender-1',
+      usedAt: new Date(),
     });
     users.findByPlatform.mockResolvedValue({ id: 'channel-user-1' });
 
@@ -88,7 +89,7 @@ describe('DmPairingService', () => {
       success: true,
     });
 
-    expect(requests.markUsed).toHaveBeenCalledWith('token-1');
+    expect(requests.consumeByCode).toHaveBeenCalledWith('654321', 'telegram');
     expect(users.updateStatus).toHaveBeenCalledWith('channel-user-1', 'active');
     expect(users.markVerified).toHaveBeenCalledWith('channel-user-1', 'default', 'admin');
     expect(mockLog.info).toHaveBeenCalledWith('Pending sender approved via DM pairing code', {
@@ -101,6 +102,31 @@ describe('DmPairingService', () => {
     );
   });
 
+  it('allows only one of two concurrent approvals to activate the sender', async () => {
+    const { service, requests, users } = createHarness();
+    requests.consumeByCode
+      .mockResolvedValueOnce({
+        id: 'token-1',
+        platformUserId: 'sender-1',
+        usedAt: new Date(),
+      })
+      .mockResolvedValueOnce(null);
+    users.findByPlatform.mockResolvedValue({ id: 'channel-user-1' });
+
+    const results = await Promise.all([
+      service.approvePendingSender('telegram', '654321'),
+      service.approvePendingSender('telegram', '654321'),
+    ]);
+
+    expect(results).toEqual([
+      { success: true },
+      { success: false, error: 'Invalid or expired code.' },
+    ]);
+    expect(requests.consumeByCode).toHaveBeenCalledTimes(2);
+    expect(users.updateStatus).toHaveBeenCalledOnce();
+    expect(users.markVerified).toHaveBeenCalledOnce();
+  });
+
   it('denies a sender and consumes an existing token', async () => {
     const { service, requests, users } = createHarness();
     requests.findValidToken.mockResolvedValue({ id: 'token-1' });
@@ -110,7 +136,7 @@ describe('DmPairingService', () => {
       success: true,
     });
 
-    expect(requests.markUsed).toHaveBeenCalledWith('token-1');
+    expect(requests.consume).toHaveBeenCalledWith('token-1');
     expect(users.block).toHaveBeenCalledWith('channel-user-1');
   });
 

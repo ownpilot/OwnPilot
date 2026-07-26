@@ -119,24 +119,45 @@ export class DmPairingRequestsRepository extends BaseRepository {
   }
 
   /**
-   * Find a valid token by code + platform.
+   * Atomically find and consume a valid token by code + platform.
+   *
+   * The conditional UPDATE ensures that concurrent approval requests cannot
+   * both claim the same one-time code.
    */
-  async findByCode(code: string, platform: string): Promise<DmPairingRequestEntity | null> {
+  async consumeByCode(code: string, platform: string): Promise<DmPairingRequestEntity | null> {
     const row = await this.queryOne<DmPairingRequestRow>(
-      `SELECT * FROM dm_pairing_requests
-       WHERE code = $1 AND platform = $2
+      `UPDATE dm_pairing_requests
+       SET used_at = NOW()
+       WHERE id = (
+         SELECT id FROM dm_pairing_requests
+         WHERE code = $1 AND platform = $2
+           AND used_at IS NULL
+           AND expires_at > NOW()
+         ORDER BY created_at DESC
+         LIMIT 1
+       )
          AND used_at IS NULL
-         AND expires_at > NOW()`,
+         AND expires_at > NOW()
+       RETURNING *`,
       [code, platform]
     );
     return row ? rowToEntity(row) : null;
   }
 
   /**
-   * Mark a token as used.
+   * Atomically consume a token if it is still valid and unused.
    */
-  async markUsed(id: string): Promise<void> {
-    await this.execute(`UPDATE dm_pairing_requests SET used_at = NOW() WHERE id = $1`, [id]);
+  async consume(id: string): Promise<boolean> {
+    const row = await this.queryOne<{ id: string }>(
+      `UPDATE dm_pairing_requests
+       SET used_at = NOW()
+       WHERE id = $1
+         AND used_at IS NULL
+         AND expires_at > NOW()
+       RETURNING id`,
+      [id]
+    );
+    return row !== null;
   }
 
   /**
