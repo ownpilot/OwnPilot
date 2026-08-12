@@ -39,16 +39,25 @@ vi.mock('@ownpilot/core/version', async (importOriginal) => {
   return { ...actual, VERSION: '1.0.0-test' };
 });
 
-vi.mock('@ownpilot/core/sandbox', async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    getSandboxStatus: (...args: unknown[]) => mockGetSandboxStatus(...args),
-    resetSandboxCache: (...args: unknown[]) => mockResetSandboxCache(...args),
-    ensureImage: (...args: unknown[]) => mockEnsureImage(...args),
-    getExecutionMode: () => mockGetExecutionMode(),
-  };
-});
+// Deliberately NOT spread from importOriginal.
+//
+// The project convention is to spread `...await importOriginal()` so a newly
+// added export does not break the mock. Here that convention was costing 3.5s:
+// importOriginal resolves lazily, so the first call to getSandboxStatus pulled
+// in and transformed the entire real sandbox graph (docker probing, executors)
+// mid-test. That single first request accounted for ~3.5s of a 5.7s file and
+// made this one of the two suites that timed out under full-suite load.
+//
+// health.ts imports exactly these four symbols from @ownpilot/core/sandbox and
+// nothing else, so an explicit mock is complete. If health.ts ever imports a
+// fifth, this fails loudly with "No X export is defined on the mock" at this
+// exact file — a good trade for not loading the graph on every run.
+vi.mock('@ownpilot/core/sandbox', () => ({
+  getSandboxStatus: (...args: unknown[]) => mockGetSandboxStatus(...args),
+  resetSandboxCache: (...args: unknown[]) => mockResetSandboxCache(...args),
+  ensureImage: (...args: unknown[]) => mockEnsureImage(...args),
+  getExecutionMode: () => mockGetExecutionMode(),
+}));
 
 const mockIsConnected = vi.fn();
 const mockQueryOne = vi.fn();
@@ -86,7 +95,18 @@ function createApp(opts: { authenticated?: boolean } = {}) {
   return app;
 }
 
-describe('Health Routes', { timeout: 15_000 }, () => {
+// No explicit `{ timeout }` here.
+//
+// These describes previously carried `{ timeout: 15_000 }`, which silently
+// overrode the 30s testTimeout in vitest.config.ts — so this file kept flaking
+// on full runs even after the global timeout was raised.
+//
+// The timeout was measuring the wrong thing anyway. Vitest attributes module
+// transform cost to whichever test runs first, so the "slow" test here is just
+// the one that happens to pay for compiling health.ts and its graph (~3-6s,
+// tracking `transform` exactly); every subsequent identical request takes 2ms.
+// Capping that at 15s bounds compile time, not assertion time.
+describe('Health Routes', () => {
   let app: Hono;
 
   beforeEach(() => {
@@ -543,7 +563,7 @@ describe('Health Routes', { timeout: 15_000 }, () => {
   });
 });
 
-describe('Health Routes — public mount auth gating (HEALTH-AUTH)', { timeout: 15_000 }, () => {
+describe('Health Routes — public mount auth gating (HEALTH-AUTH)', () => {
   let publicApp: Hono;
 
   beforeEach(() => {
