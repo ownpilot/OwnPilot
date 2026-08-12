@@ -248,6 +248,19 @@ console.log('');
 
 console.log('## Gateway services without direct colocated tests');
 console.log('');
+console.log(
+  '> **This is a filename check, not a coverage measurement, and it overstates the gap.**\n' +
+    '> It looks for `X.test.ts` beside `X.ts`. A module covered by differently named\n' +
+    '> tests still appears here: `services/claw/manager/manager.ts` is listed despite\n' +
+    '> sitting at 82% via eight `manager-*.test.ts` files, and most other entries are\n' +
+    '> prompt strings and workflow template data with no branching logic.\n' +
+    '>\n' +
+    '> To find real gaps, run `pnpm --filter @ownpilot/gateway test:coverage` and sort\n' +
+    '> `coverage/coverage-final.json` by statement coverage. Doing that surfaced a\n' +
+    '> different and more useful list — e.g. `workflow-node-job-handler.ts` at 9.2%,\n' +
+    '> which this heuristic never flagged and which contained a live dispatch bug.'
+);
+console.log('');
 console.log(`Count: ${untestedGatewayServices.length}`);
 for (const file of untestedGatewayServices.slice(0, 80)) console.log(`- ${file}`);
 if (untestedGatewayServices.length > 80) {

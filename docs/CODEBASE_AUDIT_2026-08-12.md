@@ -288,7 +288,22 @@ Metrics in that document were last refreshed **2026-06-22**. Current values:
 Two observations the roadmap does not make:
 
 1. **The UI now has more > 1000-LOC files than the gateway** (15 vs 14), yet Phase 2A lists six gateway targets and zero UI targets. The decomposition plan is aimed at the package that is no longer the worst offender.
-2. **The 30 "services without tests" figure overstates the gap.** Roughly 20 of the 30 are `page-prompts/*.ts` and `workflow/templates/*.ts` — prompt strings and template data with no branching logic. The genuine gap is ~10 files, led by `services/claw/manager/manager.ts` (1 315 LOC, no colocated test), `services/agent/compaction-policy.ts`, `services/workflow/workflow-context.ts`, and `services/workflow/executors/tool-llm-code.ts`.
+2. **The 30 "services without tests" figure overstates the gap — and my "~10 real files" estimate above was also wrong.** Measured coverage (added 2026-08-12, after this audit was first written) shows the flagged files are well covered by differently-named tests: `services/claw/manager/manager.ts` is at **82.2 %** via eight `manager-*.test.ts` files, `services/agent/agent-context.ts` at **98.9 %**, `services/agent/compaction-policy.ts` at **100 %**. The heuristic checks for `X.test.ts` beside `X.ts` and reports filename mismatches, not coverage. There is no ~10-file gap here; the correct action was to fix the metric, not write redundant tests.
+
+   Sorting `coverage-final.json` by statement coverage gives a genuinely different — and useful — list, none of which this heuristic flagged:
+
+   |  Coverage | File                                             |
+   | --------: | ------------------------------------------------ |
+   |     4.5 % | `channels/plugins/sms/sms-api.ts`                |
+   |     8.0 % | `channels/plugins/webchat/webchat-api.ts`        |
+   | **9.2 %** | `services/workflow/workflow-node-job-handler.ts` |
+   |    10.5 % | `db/repositories/jobs.ts`                        |
+   |    14.0 % | `tools/claw/management-tools.ts`                 |
+   |    16.1 % | `channels/plugins/whatsapp/whatsapp-api.ts`      |
+   |    22.1 % | `services/coding-agent/service.ts`               |
+   |    29.0 % | `channels/plugins/discord/discord-api.ts`        |
+
+   The 9.2 % entry turned out to contain a live defect: `transformerNode` silently executed as a tool node on the queue-backed path. Low coverage was the signal; the filename heuristic was noise.
 
 **Recommendation**: refresh `refactor-next.md`'s metrics table, close out Phase 1, rewrite Phase 2A to include the UI pages, and retarget the coverage item at the ~10 real files rather than the 30 the heuristic reports.
 
