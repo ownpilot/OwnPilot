@@ -3,9 +3,8 @@
 **Date**: 2026-08-12
 **Source**: `docs/CODEBASE_AUDIT_2026-08-12.md`
 **Baseline**: `main` @ `6c93682f`, v0.8.3
-**Status**: WI-1, WI-2, WI-3, WI-4, WI-6, WI-7 and WI-9b implemented on
-`fix/audit-2026-08-12-tier1` (see §5 for outcomes). WI-5, WI-8 and the remaining
-WI-9 items are still open.
+**Status**: WI-1 through WI-8 and WI-9b implemented on
+`fix/audit-2026-08-12-tier1` (see §5 for outcomes). Remaining: WI-9a, 9c–9g.
 
 This document turns the audit findings into executable work items. Each item states the
 problem, the decision taken and _why_, the exact changes, the test plan, and acceptance
@@ -524,13 +523,15 @@ makes the WI-1 test work legible.
 Branch `fix/audit-2026-08-12-tier1`. Full suite green after every commit:
 gateway 471 files / 17 922 tests, core 9 847, ui 1 902, cli 438.
 
-| Item         | Commit      | Outcome                                                                                                                                                                                                             |
-| ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WI-2         | `49593a9c`  | `testTimeout`/`hookTimeout` → 30 s. Three consecutive full runs green.                                                                                                                                              |
-| WI-1 + WI-7  | `927b82ba`  | All five exposition defects fixed and re-verified by rendering the built module. Route templates replace raw paths; `/api/v1/metrics` excluded from both metrics and audit; audit records carry the route template. |
-| WI-3         | `3912d4eb`  | `.env.example` security section + `config/escape-hatches.ts` registry + startup WARN. 11 tests.                                                                                                                     |
-| WI-6         | `f2684efb`  | `getOrCreateSessionWorkspacePath()` — cached, path-only.                                                                                                                                                            |
-| WI-4 + WI-9b | `<pending>` | Gateway coverage gated at 83/75/84/84 (measured 85.55/77.04/86.37/86.40). Health script now reports production counts per package.                                                                                  |
+| Item         | Commit     | Outcome                                                                                                                                                                                                                    |
+| ------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WI-2         | `49593a9c` | `testTimeout`/`hookTimeout` → 30 s. Three consecutive full runs green.                                                                                                                                                     |
+| WI-1 + WI-7  | `927b82ba` | All five exposition defects fixed and re-verified by rendering the built module. Route templates replace raw paths; `/api/v1/metrics` excluded from both metrics and audit; audit records carry the route template.        |
+| WI-3         | `3912d4eb` | `.env.example` security section + `config/escape-hatches.ts` registry + startup WARN. 11 tests.                                                                                                                            |
+| WI-6         | `f2684efb` | `getOrCreateSessionWorkspacePath()` — cached, path-only.                                                                                                                                                                   |
+| WI-4 + WI-9b | `6455b639` | Gateway coverage gated at 83/75/84/84 (measured 85.55/77.04/86.37/86.40). Health script now reports production counts per package.                                                                                         |
+| WI-5         | `7e3d5c98` | Smoke tests for ChatPage, ClawsPage, AnalyticsPage, CodingAgentsPage, LogsPage (31 tests). Shared harness extracted to `ui/src/test-harness.ts`; convention recorded in `CLAUDE.md`. ui: 94 → 99 files, 1902 → 1933 tests. |
+| WI-8         | `8f0e3e16` | `windows-latest` job: build (runs `cssSizeGuard`), typecheck, lint, core/cli/ui suites. PRs only.                                                                                                                          |
 
 ### Findings that changed during implementation
 
@@ -555,6 +556,21 @@ smaller or the fix better, and none invalidated a decision:
    `'true'`. Setting it to `true` silently does nothing. The registry encodes
    each flag's real activating value rather than assuming uniformity, and a test
    pins that behaviour.
+
+Two further traps surfaced while writing the UI tests (WI-5), both recorded in
+`CLAUDE.md` so the next person does not pay for them again:
+
+4. **A `vi.mock` factory returning a catch-all Proxy hangs the worker.** If the
+   Proxy answers _every_ property with a function, the module namespace has a
+   callable `then`, so `await import(...)` treats it as a thenable and recurses
+   forever — the run dies on timeout with no useful error rather than failing.
+   `then` must resolve to `undefined`. Cost one 300-second timeout to diagnose.
+
+5. **Stubbing a hook by return value alone is insufficient when it has
+   effects.** `useSkipHome` navigates to a default tab on mount, and `LogsPage`
+   gates all fetching on `activeTab !== 'home'`. A stub returning only
+   `skipHome: true` left the page parked on the home tab, so no request ever
+   fired and the test asserted against a page that had done nothing.
 
 ### Coverage baseline recorded
 
