@@ -46,7 +46,7 @@ vi.mock('../components/ToastProvider', () => ({
 // only returns `skipHome: true` leaves the page on the home tab and no data
 // call ever fires — the mock has to reproduce the navigation.
 vi.mock('../hooks/useSkipHome', async () => {
-  const { useEffect } = await import('react');
+  const { useEffect, useRef } = await import('react');
   return {
     useSkipHome: ({
       defaultTab,
@@ -55,9 +55,17 @@ vi.mock('../hooks/useSkipHome', async () => {
       defaultTab?: string;
       onNavigate?: (tab: string) => void;
     }) => {
+      // Navigate exactly once, guarded by a ref rather than by the dep array.
+      // LogsPage passes a fresh `onNavigate` closure on every render, so a
+      // dependency-based effect re-fires forever and drags the page back to
+      // the default tab — which silently defeated every test that clicks a
+      // different tab.
+      const done = useRef(false);
       useEffect(() => {
+        if (done.current) return;
+        done.current = true;
         if (defaultTab && onNavigate) onNavigate(defaultTab);
-      }, [defaultTab, onNavigate]);
+      });
       return { skipHome: true, onSkipHomeChange: () => {} };
     },
   };
@@ -87,7 +95,12 @@ const emptyStats = {
 function resolveAllEmpty() {
   mockListLogs.mockResolvedValue({ logs: [], total: 0 });
   mockGetLogStats.mockResolvedValue(emptyStats);
-  mockGet.mockResolvedValue({ logs: [], entries: [] });
+  // debugApi.get returns DebugInfo — `summary` is read by the tab bar badge
+  // even while the requests tab is active, so it must always be present.
+  mockGet.mockResolvedValue({
+    entries: [],
+    summary: { toolCalls: 0, errors: 0, requests: 0, responses: 0 },
+  });
   mockGetLogs.mockResolvedValue({ log: null });
   mockDeleteLogs.mockResolvedValue({ deleted: 0 });
   mockClear.mockResolvedValue({ cleared: true });
@@ -144,6 +157,61 @@ describe('LogsPage', () => {
     await flushAsyncUpdates();
 
     expect(container.querySelectorAll('*').length).toBeGreaterThan(0);
+  });
+
+  describe('debug tab', () => {
+    // The debug half lives in ./logs/DebugLogsTab. These assertions exist so
+    // that split is covered — the request-log tests above never render it.
+    async function openDebugTab() {
+      const container = render(<LogsPage />);
+      await flushAsyncUpdates();
+      const tab = [...container.querySelectorAll('button')].find((b) =>
+        /Debug Logs/i.test(b.textContent ?? '')
+      );
+      expect(tab, 'expected a "Debug Logs" tab').toBeTruthy();
+      tab!.click();
+      // Two flushes: the click commits the tab change, whose effect then fires
+      // the fetch — the resulting setState lands on a later tick.
+      await flushAsyncUpdates();
+      await flushAsyncUpdates();
+      return container;
+    }
+
+    it('fetches debug logs when the tab is opened', async () => {
+      await openDebugTab();
+      expect(mockGet).toHaveBeenCalled();
+    });
+
+    it('renders returned debug entries', async () => {
+      mockGet.mockResolvedValue({
+        entries: [
+          {
+            id: 'dbg-1',
+            type: 'tool_call',
+            timestamp: '2026-08-12T10:00:00Z',
+            data: { name: 'search_web' },
+          },
+        ],
+        summary: { toolCalls: 1, errors: 0, requests: 0, responses: 0 },
+      });
+
+      const container = await openDebugTab();
+
+      expect(container.querySelectorAll('*').length).toBeGreaterThan(10);
+      // The row renders `entry.type.replace('_', ' ')` and `entry.data.name`.
+      expect(hasText(container, 'tool call')).toBe(true);
+      expect(hasText(container, 'search_web')).toBe(true);
+    });
+
+    it('renders an empty debug state without crashing', async () => {
+      mockGet.mockResolvedValue({
+        entries: [],
+        summary: { toolCalls: 0, errors: 0, requests: 0, responses: 0 },
+      });
+
+      const container = await openDebugTab();
+      expect(container.textContent?.trim()).toBeTruthy();
+    });
   });
 
   it('renders returned log rows', async () => {
