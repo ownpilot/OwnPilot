@@ -150,6 +150,29 @@ describe('CodingAgentsPage', () => {
     expect(hasText(container, 'Coding') || container.textContent!.length > 0).toBe(true);
   });
 
+  it('opens the new-session modal', async () => {
+    // NewSessionModal lives in ./coding-agents/NewSessionModal — the largest
+    // piece split out of this page. Without this the smoke test never renders
+    // it, so a mistake in ~460 moved lines would go unnoticed.
+    const container = render(<CodingAgentsPage />);
+    await flushAsyncUpdates();
+
+    const button = [...container.querySelectorAll('button')].find((b) =>
+      /New Session/i.test(b.textContent ?? '')
+    );
+    expect(button, 'expected a "New Session" button').toBeTruthy();
+    expect((button as HTMLButtonElement).disabled, 'should be enabled with no sessions').toBe(
+      false
+    );
+
+    button!.click();
+    await flushAsyncUpdates();
+
+    // The modal renders its own form controls.
+    expect(container.querySelector('textarea, select'), 'expected modal form').toBeTruthy();
+    expect(hasText(container, 'Cancel')).toBe(true);
+  });
+
   it('unsubscribes from gateway events on unmount', async () => {
     const unsubscribe = vi.fn();
     mockSubscribe.mockReturnValue(unsubscribe);
