@@ -37,7 +37,8 @@ import {
   initializeDataDirectories,
   type WorkspaceSubdir,
 } from '../paths/index.js';
-import { MS_PER_DAY, MS_PER_HOUR } from '../config/defaults.js';
+import { MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from '../config/defaults.js';
+import { TTLCache } from '../utils/ttl-cache.js';
 import { getLog } from '../services/log.js';
 
 const log = getLog('FileWorkspace');
@@ -441,7 +442,11 @@ export function getSessionWorkspace(id: string): SessionWorkspaceInfo | null {
 }
 
 /**
- * Get or create session workspace
+ * Get or create session workspace.
+ *
+ * Returns full workspace info, which includes a recursive directory walk to
+ * compute size/fileCount. Use `getOrCreateSessionWorkspacePath` instead on any
+ * path that runs per request.
  */
 export function getOrCreateSessionWorkspace(
   sessionId: string,
@@ -453,6 +458,65 @@ export function getOrCreateSessionWorkspace(
     return existing;
   }
   return createSessionWorkspace({ sessionId, agentId, userId });
+}
+
+/**
+ * Resolved workspace directories, keyed by session id.
+ *
+ * A workspace directory never moves once created, so the mapping is stable for
+ * the lifetime of the session. The TTL exists only to bound the map.
+ */
+const sessionWorkspacePathCache = new TTLCache<string, string>({
+  defaultTtlMs: 60 * MS_PER_MINUTE,
+  maxEntries: 1000,
+});
+
+/**
+ * Get or create a session workspace, returning only its directory path.
+ *
+ * This is the variant for hot paths (chat runs it on every message). The full
+ * `getOrCreateSessionWorkspace` returns `size`/`fileCount`, which means
+ * `calculateDirSize` recursively walks the entire workspace tree with
+ * synchronous `readdirSync`/`statSync` — so its cost grows with the number of
+ * files the session has accumulated, and it blocks the event loop for all other
+ * requests while it runs. Callers that only need the directory (to hand to
+ * `setWorkspaceDir` or `getWorkspaceContext`) were paying for a full tree walk
+ * per message.
+ *
+ * After the first call for a session this is a map lookup and no syscall at
+ * all. `deleteSessionWorkspace` invalidates the entry.
+ */
+export function getOrCreateSessionWorkspacePath(
+  sessionId: string,
+  agentId?: string,
+  userId?: string
+): string {
+  const cached = sessionWorkspacePathCache.get(sessionId);
+  if (cached) return cached;
+
+  validateWorkspaceId(sessionId);
+  const workspacePath = join(getDataPaths().workspace, sessionId);
+
+  // Cheap existence check — no metadata read, no directory walk.
+  if (!existsSync(workspacePath)) {
+    const created = createSessionWorkspace({ sessionId, agentId, userId });
+    sessionWorkspacePathCache.set(sessionId, created.path);
+    return created.path;
+  }
+
+  sessionWorkspacePathCache.set(sessionId, workspacePath);
+  return workspacePath;
+}
+
+/**
+ * Drop a cached workspace path. Exported for tests and called on delete.
+ */
+export function invalidateSessionWorkspacePathCache(sessionId?: string): void {
+  if (sessionId === undefined) {
+    sessionWorkspacePathCache.clear();
+    return;
+  }
+  sessionWorkspacePathCache.invalidate(sessionId);
 }
 
 /**
@@ -681,6 +745,9 @@ export function deleteSessionWorkspace(id: string): boolean {
   }
 
   rmSync(workspacePath, { recursive: true, force: true });
+  // Drop the resolved-path cache entry, or a later chat turn would hand the
+  // agent a workspace directory that no longer exists.
+  invalidateSessionWorkspacePathCache(id);
 
   // Also delete zip if exists
   const zipPath = join(workspaceRoot, `${id}.zip`);

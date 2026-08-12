@@ -70,6 +70,7 @@ vi.mock('../paths/index.js', () => ({
 vi.mock('../config/defaults.js', () => ({
   MS_PER_DAY: 86_400_000,
   MS_PER_HOUR: 3_600_000,
+  MS_PER_MINUTE: 60_000,
 }));
 
 vi.mock('../services/log.js', () => ({
@@ -105,6 +106,8 @@ import {
   cleanupSessionWorkspaces,
   smartCleanupSessionWorkspaces,
   getSessionWorkspacePath,
+  getOrCreateSessionWorkspacePath,
+  invalidateSessionWorkspacePathCache,
 } from './file-workspace.js';
 
 // ---------------------------------------------------------------------------
@@ -1068,6 +1071,70 @@ describe('getOrCreateSessionWorkspace', () => {
     expect(metaJson.agentId).toBe('agent-x');
     expect(metaJson.userId).toBe('user-y');
     expect(result.sessionId).toBe('new-ws');
+  });
+});
+
+// =========================================================================
+// 12b. getOrCreateSessionWorkspacePath (hot-path variant)
+// =========================================================================
+
+describe('getOrCreateSessionWorkspacePath', () => {
+  beforeEach(() => {
+    invalidateSessionWorkspacePathCache();
+  });
+
+  it('returns the workspace directory without walking the tree', () => {
+    mockFs.existsSync.mockReturnValue(true);
+
+    const path = getOrCreateSessionWorkspacePath('hot-1');
+
+    expect(path).toBe('/data/workspace/hot-1');
+    // The full variant reads .meta.json and recurses via calculateDirSize;
+    // this one must do neither.
+    expect(mockFs.readFileSync).not.toHaveBeenCalled();
+    expect(mockFs.readdirSync).not.toHaveBeenCalled();
+  });
+
+  it('creates the workspace when it does not exist', () => {
+    mockFs.existsSync.mockReturnValue(false);
+
+    const path = getOrCreateSessionWorkspacePath('hot-2', 'agent-1', 'user-1');
+
+    expect(path).toBe('/data/workspace/hot-2');
+    expect(mockFs.mkdirSync).toHaveBeenCalled();
+  });
+
+  it('performs no filesystem calls on subsequent lookups', () => {
+    mockFs.existsSync.mockReturnValue(true);
+    getOrCreateSessionWorkspacePath('hot-3');
+
+    vi.clearAllMocks();
+    const path = getOrCreateSessionWorkspacePath('hot-3');
+
+    expect(path).toBe('/data/workspace/hot-3');
+    expect(mockFs.existsSync).not.toHaveBeenCalled();
+    expect(mockFs.statSync).not.toHaveBeenCalled();
+  });
+
+  it('rejects a traversal-style session id', () => {
+    mockFs.existsSync.mockReturnValue(true);
+    expect(() => getOrCreateSessionWorkspacePath('../escape')).toThrow();
+  });
+
+  it('drops the cached path when the workspace is deleted', () => {
+    mockFs.existsSync.mockReturnValue(true);
+    getOrCreateSessionWorkspacePath('hot-4');
+
+    deleteSessionWorkspace('hot-4');
+
+    // Cache was invalidated, so the next call must hit the filesystem again
+    // rather than hand back a directory that no longer exists.
+    vi.clearAllMocks();
+    mockFs.existsSync.mockReturnValue(false);
+    getOrCreateSessionWorkspacePath('hot-4');
+
+    expect(mockFs.existsSync).toHaveBeenCalled();
+    expect(mockFs.mkdirSync).toHaveBeenCalled();
   });
 });
 

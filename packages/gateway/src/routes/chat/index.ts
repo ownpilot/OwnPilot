@@ -43,7 +43,7 @@ import { modelConfigsRepo } from '../../db/repositories/model-configs.js';
 import { validateBody, chatMessageSchema } from '../../middleware/validation.js';
 import type { NormalizedMessage, MessageProcessingResult } from '@ownpilot/core/services';
 import { DEFAULT_EXECUTION_PERMISSIONS, type ExecutionPermissions } from '@ownpilot/core/tools';
-import { getOrCreateSessionWorkspace } from '../../workspace/file-workspace.js';
+import { getOrCreateSessionWorkspacePath } from '../../workspace/file-workspace.js';
 import { executionPermissionsRepo } from '../../db/repositories/execution-permissions.js';
 import {
   extractSuggestions,
@@ -473,15 +473,20 @@ chatRoutes.post('/', async (c) => {
   const isPromptInitialized = promptInitializedConversations.has(conversationId);
   const chatUserId = LOCAL_OWNER_ID;
 
-  // Workspace — set on every request (cheap), but prompt section only on first
+  // Workspace — set on every request, but prompt section only on first.
+  // Path-only resolution: the full getOrCreateSessionWorkspace() computes
+  // size/fileCount via a recursive synchronous walk of the whole workspace
+  // tree, which would run on every message and block the event loop for a
+  // duration that grows with the session's file count. Only the directory is
+  // needed here.
   const sessionId = body.workspaceId || body.conversationId || conversationId;
   try {
-    const sessionWorkspace = getOrCreateSessionWorkspace(sessionId, body.agentId);
-    agent.setWorkspaceDir(sessionWorkspace.path);
+    const sessionWorkspacePath = getOrCreateSessionWorkspacePath(sessionId, body.agentId);
+    agent.setWorkspaceDir(sessionWorkspacePath);
 
     if (!isPromptInitialized) {
       const currentPrompt = agent.getConversation().systemPrompt || '';
-      const wsContext = getWorkspaceContext(sessionWorkspace.path);
+      const wsContext = getWorkspaceContext(sessionWorkspacePath);
       const workspaceInfo = `\n\n## File Operations\nWorkspace: \`${wsContext.workspaceDir}\`. Use relative paths for new files.`;
       if (!currentPrompt.includes(workspaceInfo)) {
         const promptWithoutOldWs = currentPrompt.replace(
