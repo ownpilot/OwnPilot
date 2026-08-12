@@ -1,0 +1,51 @@
+{
+  "id": "blueclaw",
+  "name": "Blue Claw",
+  "type": "openai-compatible",
+  "apiKeyEnv": "BLUECLAW_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "Qwen3.6-27B",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 196608,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "Qwen/Qwen3.6-35B-A3B-FP8",
+      "name": "Qwen3.6 35B A3B FP8",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    }
+  ],
+  "baseUrl": "https://openai.blueclaw.network/v1",
+  "docsUrl": "https://blueclaw.network"
+}

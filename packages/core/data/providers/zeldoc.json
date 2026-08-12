@@ -12,10 +12,10 @@
   },
   "models": [
     {
-      "id": "z-code",
-      "name": "Z-Code",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
+      "id": "zdev",
+      "name": "ZDev",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

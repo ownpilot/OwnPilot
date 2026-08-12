@@ -14,7 +14,7 @@
     {
       "id": "MiniMax-M3",
       "name": "MiniMax-M3",
-      "contextWindow": 512000,
+      "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -29,8 +29,8 @@
       "releaseDate": "2026-06-01"
     },
     {
-      "id": "MiniMax-M2.7-highspeed",
-      "name": "MiniMax-M2.7-highspeed",
+      "id": "MiniMax-M2.7",
+      "name": "MiniMax-M2.7",
       "contextWindow": 204800,
       "maxOutput": 131072,
       "inputPrice": 0,
@@ -45,8 +45,8 @@
       "releaseDate": "2026-03-18"
     },
     {
-      "id": "MiniMax-M2.7",
-      "name": "MiniMax-M2.7",
+      "id": "MiniMax-M2.7-highspeed",
+      "name": "MiniMax-M2.7-highspeed",
       "contextWindow": 204800,
       "maxOutput": 131072,
       "inputPrice": 0,

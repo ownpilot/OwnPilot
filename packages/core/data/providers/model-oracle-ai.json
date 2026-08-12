@@ -1,0 +1,279 @@
+{
+  "id": "model-oracle-ai",
+  "name": "Model Oracle AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "MODEL_ORACLE_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "claude-sonnet-5",
+      "name": "Claude Sonnet 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "auto",
+      "name": "Auto",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-29"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "claude-fable-5",
+      "name": "Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-09"
+    },
+    {
+      "id": "claude-opus-4.8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-23"
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "name": "GPT-5.4 nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-17"
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-17"
+    },
+    {
+      "id": "gpt-5.4",
+      "name": "GPT-5.4",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
+      "id": "claude-haiku-4.5",
+      "name": "Claude Haiku 4.5 (latest)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    },
+    {
+      "id": "gpt-5",
+      "name": "GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "o4-mini",
+      "name": "o4-mini",
+      "contextWindow": 200000,
+      "maxOutput": 100000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1",
+      "name": "GPT-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    }
+  ],
+  "baseUrl": "https://api.modeloracle.com/api/v1",
+  "docsUrl": "https://modeloracle.com/setup/"
+}

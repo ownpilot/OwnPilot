@@ -1,0 +1,32 @@
+{
+  "id": "lynkr",
+  "name": "Lynkr",
+  "type": "openai-compatible",
+  "apiKeyEnv": "LYNKR_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "lynkr-auto",
+      "name": "Lynkr Auto (complexity routing)",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-12-03"
+    }
+  ],
+  "baseUrl": "http://127.0.0.1:8081/v1",
+  "docsUrl": "https://github.com/Fast-Editor/Lynkr"
+}

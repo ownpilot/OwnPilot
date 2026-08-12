@@ -12,12 +12,63 @@
   },
   "models": [
     {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 256000,
+      "maxOutput": 262144,
+      "inputPrice": 1.791,
+      "outputPrice": 8.9436,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "kimi-latest",
+      "name": "Kimi (latest)",
+      "contextWindow": 256000,
+      "maxOutput": 262144,
+      "inputPrice": 1.791,
+      "outputPrice": 8.9436,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "deepseek-ocr-2",
+      "name": "DeepSeek OCR 2",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 0.8897,
+      "outputPrice": 1.4675,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-01-27"
+    },
+    {
       "id": "gpt-oss-120b",
       "name": "gpt-oss-120b",
       "contextWindow": 128000,
-      "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 32768,
+      "inputPrice": 0.4969,
+      "outputPrice": 1.9644,
       "capabilities": [
         "chat",
         "function_calling",
@@ -25,15 +76,30 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
-      "releaseDate": "2025-08-04"
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "voxtral-mini-3b",
+      "name": "Voxtral Mini 3B",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.00462,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07"
     },
     {
       "id": "qwen3-embedding-4b",
       "name": "Qwen3-Embedding 4B",
       "contextWindow": 32000,
       "maxOutput": 2560,
-      "inputPrice": 0,
+      "inputPrice": 0.1502,
       "outputPrice": 0,
       "capabilities": [
         "chat",
@@ -43,44 +109,11 @@
       "releaseDate": "2025-06-06"
     },
     {
-      "id": "qwen3-coder-30b-a3b",
-      "name": "Qwen3-Coder 30B-A3B",
-      "contextWindow": 128000,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04"
-    },
-    {
-      "id": "gemma-3-27b",
-      "name": "Gemma 3 27B",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-03-12"
-    },
-    {
       "id": "whisper-large-v3",
       "name": "Whisper large-v3",
-      "contextWindow": 0,
+      "contextWindow": 448,
       "maxOutput": 4096,
-      "inputPrice": 0,
+      "inputPrice": 0.01618,
       "outputPrice": 0,
       "capabilities": [
         "chat",
@@ -88,7 +121,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2023-09-01"
+      "releaseDate": "2024-10-01"
     }
   ],
   "baseUrl": "http://localhost:8080/v1",

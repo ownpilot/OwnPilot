@@ -1,0 +1,85 @@
+{
+  "id": "ebcloud",
+  "name": "EBCloud",
+  "type": "openai-compatible",
+  "apiKeyEnv": "EBCLOUD_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "DeepSeek-V4-Flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.143,
+      "outputPrice": 0.2857,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "DeepSeek-V4-Pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.4286,
+      "outputPrice": 0.8571,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.9286,
+      "outputPrice": 3.8571,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "GLM-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 0.8571,
+      "outputPrice": 3.4286,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    }
+  ],
+  "baseUrl": "https://maas-api.ebcloud.com/v1",
+  "docsUrl": "https://docs.ebtech.com/ai/model-api.html"
+}

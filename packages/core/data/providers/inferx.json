@@ -1,0 +1,124 @@
+{
+  "id": "inferx",
+  "name": "InferX",
+  "type": "openai-compatible",
+  "apiKeyEnv": "INFERX_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "qwen/qwen3.6-27b-fp8",
+      "name": "Qwen3.6 27B FP8",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "qwen/qwen3.6-35b-a3b-fp8",
+      "name": "Qwen3.6 35B A3B FP8",
+      "contextWindow": 262000,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "google/gemma-4-31b-it-fp8",
+      "name": "Gemma 4 31B IT FP8",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "qwen/qwen3.5-122b-a10b-nvfp4",
+      "name": "Qwen3.5 122B A10B NVFP4",
+      "contextWindow": 256144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-23"
+    },
+    {
+      "id": "qwen3-coder-next-fp8-1m",
+      "name": "Qwen3 Coder Next FP8 1M",
+      "contextWindow": 1024000,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-03"
+    },
+    {
+      "id": "qwen3-coder-next-fp8",
+      "name": "Qwen3 Coder Next FP8",
+      "contextWindow": 256144,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-03"
+    }
+  ],
+  "baseUrl": "https://model.inferx.net/endpoints/v1",
+  "docsUrl": "https://model.inferx.net/endpoints"
+}

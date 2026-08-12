@@ -1,0 +1,172 @@
+{
+  "id": "aiand",
+  "name": "ai&",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AIAND_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "motif-technologies/motif-3",
+      "name": "Motif 3",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.5,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
+      "id": "moonshotai/kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 12.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "zai-org/glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "moonshotai/kimi-k2.7-code",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.75,
+      "outputPrice": 3.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "deepseek-ai/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 0.15,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepseek-ai/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 1,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "qwen/qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.32,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "google/gemma-4-31b-it",
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.2,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    }
+  ],
+  "baseUrl": "https://api.aiand.com/v1",
+  "docsUrl": "https://docs.aiand.com/"
+}

@@ -26,7 +26,7 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-04-24"
+      "releaseDate": "2026-07-31"
     },
     {
       "id": "deepseek-v4-pro",
@@ -46,6 +46,21 @@
       "releaseDate": "2026-04-24"
     },
     {
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
       "id": "deepseek-reasoner",
       "name": "DeepSeek Reasoner",
       "contextWindow": 1000000,
@@ -56,21 +71,6 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
-    },
-    {
-      "id": "deepseek-chat",
-      "name": "DeepSeek Chat",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 0.14,
-      "outputPrice": 0.28,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,

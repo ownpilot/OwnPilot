@@ -12,6 +12,62 @@
   },
   "models": [
     {
+      "id": "anthropic--claude-4.8-opus",
+      "name": "anthropic--claude-4.8-opus",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "name": "gemini-3.5-flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-19"
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "name": "gemini-3.1-flash-lite",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-07"
+    },
+    {
       "id": "gpt-5.5",
       "name": "gpt-5.5",
       "contextWindow": 1050000,
@@ -26,7 +82,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-23"
     },
     {
@@ -45,6 +101,23 @@
       ],
       "default": false,
       "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "mistralai--mistral-small",
+      "name": "mistralai--mistral-small",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.07,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
     },
     {
       "id": "gpt-5.4",
@@ -99,6 +172,56 @@
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "gpt-5.2",
+      "name": "gpt-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 9.44,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-11"
+    },
+    {
+      "id": "amazon--nova-lite",
+      "name": "amazon--nova-lite",
+      "contextWindow": 1000000,
+      "maxOutput": 64000,
+      "inputPrice": 0.3,
+      "outputPrice": 2.37,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "sap-abap-1",
+      "name": "sap-abap-1",
+      "contextWindow": 32768,
+      "maxOutput": 4096,
+      "inputPrice": 0.48,
+      "outputPrice": 1.7,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-26"
+    },
+    {
       "id": "anthropic--claude-4.5-opus",
       "name": "anthropic--claude-4.5-opus",
       "contextWindow": 200000,
@@ -148,6 +271,22 @@
       ],
       "default": false,
       "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "cohere--command-a-reasoning",
+      "name": "cohere--command-a-reasoning",
+      "contextWindow": 256000,
+      "maxOutput": 32000,
+      "inputPrice": 0.63,
+      "outputPrice": 5.05,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-21"
     },
     {
       "id": "gpt-5",
@@ -223,6 +362,23 @@
       "releaseDate": "2025-06-17"
     },
     {
+      "id": "anthropic--claude-4-opus",
+      "name": "anthropic--claude-4-opus",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-22"
+    },
+    {
       "id": "anthropic--claude-4-sonnet",
       "name": "anthropic--claude-4-sonnet",
       "contextWindow": 200000,
@@ -240,21 +396,34 @@
       "releaseDate": "2025-05-22"
     },
     {
-      "id": "anthropic--claude-4-opus",
-      "name": "anthropic--claude-4-opus",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "id": "gemini-embedding",
+      "name": "Gemini Embedding 001",
+      "contextWindow": 2048,
+      "maxOutput": 1,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-05-20"
+    },
+    {
+      "id": "mistralai--mistral-medium-instruct",
+      "name": "mistralai--mistral-medium-instruct",
+      "contextWindow": 128000,
+      "maxOutput": 128000,
+      "inputPrice": 0.36,
+      "outputPrice": 1.22,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-05-22"
+      "releaseDate": "2025-05-07"
     },
     {
       "id": "gemini-2.5-flash",
@@ -276,12 +445,12 @@
       "releaseDate": "2025-04-17"
     },
     {
-      "id": "gpt-4.1",
-      "name": "gpt-4.1",
+      "id": "gpt-4.1-mini",
+      "name": "gpt-4.1-mini",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 8,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "vision",
@@ -293,12 +462,29 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "gpt-4.1-mini",
-      "name": "gpt-4.1-mini",
+      "id": "gpt-4.1-nano",
+      "name": "gpt-4.1-nano",
       "contextWindow": 1047576,
       "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "inputPrice": 0.08,
+      "outputPrice": 0.26,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
+      "id": "gpt-4.1",
+      "name": "gpt-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
       "capabilities": [
         "chat",
         "vision",
@@ -361,6 +547,37 @@
       "releaseDate": "2025-02-01"
     },
     {
+      "id": "amazon--nova-micro",
+      "name": "amazon--nova-micro",
+      "contextWindow": 128000,
+      "maxOutput": 8192,
+      "inputPrice": 0.03,
+      "outputPrice": 0.1,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-03"
+    },
+    {
+      "id": "amazon--nova-pro",
+      "name": "amazon--nova-pro",
+      "contextWindow": 300000,
+      "maxOutput": 8192,
+      "inputPrice": 0.56,
+      "outputPrice": 2.13,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-03"
+    },
+    {
       "id": "anthropic--claude-3.5-sonnet",
       "name": "anthropic--claude-3.5-sonnet",
       "contextWindow": 200000,
@@ -375,6 +592,34 @@
       ],
       "default": false,
       "releaseDate": "2024-10-22"
+    },
+    {
+      "id": "nvidia--llama-3.2-nv-embedqa-1b",
+      "name": "nvidia--llama-3.2-nv-embedqa-1b",
+      "contextWindow": 8192,
+      "maxOutput": 4096,
+      "inputPrice": 0.07,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-25"
+    },
+    {
+      "id": "amazon--titan-embed-text",
+      "name": "amazon--titan-embed-text",
+      "contextWindow": 8192,
+      "maxOutput": 1536,
+      "inputPrice": 0.14,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-04-30"
     },
     {
       "id": "anthropic--claude-3-haiku",
@@ -423,6 +668,34 @@
       ],
       "default": false,
       "releaseDate": "2024-02-29"
+    },
+    {
+      "id": "text-embedding-3-large",
+      "name": "text-embedding-3-large",
+      "contextWindow": 8191,
+      "maxOutput": 3072,
+      "inputPrice": 0.09,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
+    },
+    {
+      "id": "text-embedding-3-small",
+      "name": "text-embedding-3-small",
+      "contextWindow": 8191,
+      "maxOutput": 1536,
+      "inputPrice": 0.02,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-01-25"
     },
     {
       "id": "sonar",

@@ -12,12 +12,80 @@
   },
   "models": [
     {
+      "id": "deepseek/deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "zai-org/GLM-5.2-FP8",
+      "name": "GLM-5.2",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1.2,
+      "outputPrice": 4.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "ambient/large",
+      "name": "Ambient Large",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1.05,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "z-ai/glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 202752,
+      "maxOutput": 202752,
+      "inputPrice": 1.05,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
       "id": "moonshotai/kimi-k2.7-code",
       "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.75,
-      "outputPrice": 3.5,
+      "inputPrice": 0.69,
+      "outputPrice": 3.49,
       "capabilities": [
         "chat",
         "vision",
@@ -26,8 +94,62 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "stepfun/step-3.7-flash",
+      "name": "Step 3.7 Flash",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.19,
+      "outputPrice": 1.14,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-29"
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "xiaomi/mimo-v2.5",
+      "name": "MiMo-V2.5",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
     },
     {
       "id": "moonshotai/kimi-k2.6",
@@ -62,7 +184,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     }
   ],
   "baseUrl": "https://api.ambient.xyz/v1",

@@ -12,9 +12,78 @@
   },
   "models": [
     {
+      "id": "accounts/fireworks/models/deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "accounts/fireworks/routers/kimi-k3-fast",
+      "name": "Kimi K3 Fast",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 4.5,
+      "outputPrice": 22.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-27"
+    },
+    {
+      "id": "accounts/fireworks/models/kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-27"
+    },
+    {
+      "id": "accounts/fireworks/routers/glm-5p2-fast",
+      "name": "GLM 5.2 Fast",
+      "contextWindow": 1048575,
+      "maxOutput": 131072,
+      "inputPrice": 2.1,
+      "outputPrice": 6.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-26"
+    },
+    {
       "id": "accounts/fireworks/models/glm-5p2",
       "name": "GLM 5.2",
-      "contextWindow": 1048576,
+      "contextWindow": 1048575,
       "maxOutput": 131072,
       "inputPrice": 1.4,
       "outputPrice": 4.4,
@@ -24,7 +93,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-16"
     },
     {
@@ -45,14 +114,15 @@
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "accounts/fireworks/models/minimax-m3",
-      "name": "MiniMax-M3",
-      "contextWindow": 512000,
-      "maxOutput": 512000,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "id": "accounts/fireworks/models/qwen3p7-plus",
+      "name": "Qwen 3.7 Plus",
+      "contextWindow": 262144,
+      "maxOutput": 65536,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -61,12 +131,12 @@
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "accounts/fireworks/models/qwen3p7-plus",
-      "name": "Qwen 3.7 Plus",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
+      "id": "accounts/fireworks/models/minimax-m3",
+      "name": "MiniMax-M3",
+      "contextWindow": 512000,
+      "maxOutput": 512000,
+      "inputPrice": 0.3,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "vision",
@@ -129,8 +199,8 @@
       "releaseDate": "2026-04-24"
     },
     {
-      "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
-      "name": "Kimi K2.6 Turbo",
+      "id": "accounts/fireworks/routers/kimi-k2p6-fast",
+      "name": "Kimi K2.6 Fast",
       "contextWindow": 262000,
       "maxOutput": 262000,
       "inputPrice": 2,
@@ -146,8 +216,8 @@
       "releaseDate": "2026-04-17"
     },
     {
-      "id": "accounts/fireworks/routers/kimi-k2p6-fast",
-      "name": "Kimi K2.6 Fast",
+      "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
+      "name": "Kimi K2.6 Turbo",
       "contextWindow": 262000,
       "maxOutput": 262000,
       "inputPrice": 2,
@@ -196,44 +266,12 @@
       "releaseDate": "2026-04-12"
     },
     {
-      "id": "accounts/fireworks/routers/glm-5p1-fast",
-      "name": "GLM 5.1 Fast",
-      "contextWindow": 202800,
-      "maxOutput": 131072,
-      "inputPrice": 2.8,
-      "outputPrice": 8.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-01"
-    },
-    {
-      "id": "accounts/fireworks/models/glm-5p1",
-      "name": "GLM 5.1",
-      "contextWindow": 202800,
-      "maxOutput": 131072,
-      "inputPrice": 1.4,
-      "outputPrice": 4.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-01"
-    },
-    {
-      "id": "accounts/fireworks/models/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "accounts/fireworks/models/gpt-oss-20b",
+      "name": "GPT OSS 20B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -244,12 +282,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "accounts/fireworks/models/gpt-oss-20b",
-      "name": "GPT OSS 20B",
+      "id": "accounts/fireworks/models/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
       "maxOutput": 32768,
-      "inputPrice": 0.07,
-      "outputPrice": 0.3,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",

@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "qwen/qwen3.6-27b",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.6,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "canopylabs/orpheus-v1-english",
       "name": "Canopy Labs Orpheus V1 English",
       "contextWindow": 4000,
@@ -22,7 +40,7 @@
         "chat",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-12-19"
     },
     {
@@ -57,20 +75,6 @@
       "releaseDate": "2025-10-29"
     },
     {
-      "id": "groq/compound",
-      "name": "Compound",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-04"
-    },
-    {
       "id": "groq/compound-mini",
       "name": "Compound Mini",
       "contextWindow": 131072,
@@ -85,21 +89,18 @@
       "releaseDate": "2025-09-04"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
+      "id": "groq/compound",
+      "name": "Compound",
       "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "maxOutput": 8192,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-08-05"
+      "releaseDate": "2025-09-04"
     },
     {
       "id": "openai/gpt-oss-20b",
@@ -119,34 +120,21 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen/qwen3-32b",
-      "name": "Qwen3-32B",
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
       "contextWindow": 131072,
-      "maxOutput": 40960,
-      "inputPrice": 0.29,
-      "outputPrice": 0.59,
+      "maxOutput": 65536,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-06-11"
-    },
-    {
-      "id": "meta-llama/llama-prompt-guard-2-86m",
-      "name": "Prompt Guard 2 86M",
-      "contextWindow": 512,
-      "maxOutput": 512,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-05-29"
+      "releaseDate": "2025-08-05"
     },
     {
       "id": "meta-llama/llama-prompt-guard-2-22m",
@@ -163,21 +151,32 @@
       "releaseDate": "2025-05-29"
     },
     {
-      "id": "meta-llama/llama-4-scout-17b-16e-instruct",
-      "name": "Llama 4 Scout 17B 16E",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.11,
-      "outputPrice": 0.34,
+      "id": "meta-llama/llama-prompt-guard-2-86m",
+      "name": "Prompt Guard 2 86M",
+      "contextWindow": 512,
+      "maxOutput": 512,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
       "capabilities": [
         "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-04-05"
+      "releaseDate": "2025-05-29"
+    },
+    {
+      "id": "allam-2-7b",
+      "name": "ALLaM-2-7b",
+      "contextWindow": 4096,
+      "maxOutput": 4096,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01-23"
     },
     {
       "id": "llama-3.3-70b-versatile",

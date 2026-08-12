@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "zai-org/GLM-5.2",
-      "name": "GLM-5.2",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 1.5,
-      "outputPrice": 4.5,
+      "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "name": "Deepseek V4 Flash 0731",
+      "contextWindow": 1048576,
+      "maxOutput": 1048576,
+      "inputPrice": 0.13,
+      "outputPrice": 0.26,
       "capabilities": [
         "chat",
         "function_calling",
@@ -26,6 +26,94 @@
         "streaming"
       ],
       "default": true,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "thinkingmachines/inkling-small",
+      "name": "Inkling Small",
+      "contextWindow": 1048576,
+      "maxOutput": 32768,
+      "inputPrice": 0.5,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-30"
+    },
+    {
+      "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 262144,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "thinkingmachines/inkling",
+      "name": "Inkling",
+      "contextWindow": 1048576,
+      "maxOutput": 32768,
+      "inputPrice": 1,
+      "outputPrice": 4.05,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-15"
+    },
+    {
+      "id": "zai-org/GLM-5.2-Fast",
+      "name": "GLM 5.2 Fast",
+      "contextWindow": 1048576,
+      "maxOutput": 262144,
+      "inputPrice": 2.1,
+      "outputPrice": 6.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "zai-org/GLM-5.2",
+      "name": "GLM 5.2",
+      "contextWindow": 1048576,
+      "maxOutput": 262144,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-06-13"
     },
     {
@@ -66,8 +154,8 @@
     {
       "id": "deepseek-ai/DeepSeek-V4-Pro",
       "name": "Deepseek V4 Pro",
-      "contextWindow": 131000,
-      "maxOutput": 131000,
+      "contextWindow": 262144,
+      "maxOutput": 262144,
       "inputPrice": 1.74,
       "outputPrice": 3.48,
       "capabilities": [
@@ -113,14 +201,14 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     },
     {
       "id": "nvidia/Nemotron-120B-A12B",
       "name": "Nemotron Super",
       "contextWindow": 202800,
       "maxOutput": 202800,
-      "inputPrice": 0.06,
+      "inputPrice": 0.3,
       "outputPrice": 0.75,
       "capabilities": [
         "chat",
@@ -188,7 +276,7 @@
       "name": "GLM 4.7",
       "contextWindow": 200000,
       "maxOutput": 200000,
-      "inputPrice": 0.12,
+      "inputPrice": 0.6,
       "outputPrice": 2.2,
       "capabilities": [
         "chat",

@@ -1,0 +1,303 @@
+{
+  "id": "edenai",
+  "name": "Eden AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "EDENAI_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "anthropic/claude-opus-5",
+      "name": "Claude Opus 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "google/gemini-3.6-flash",
+      "name": "Gemini 3.6 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-21"
+    },
+    {
+      "id": "vertex/gemini-3.6-flash",
+      "name": "Gemini 3.6 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-21"
+    },
+    {
+      "id": "vertex/gemini-3.6-flash@eu",
+      "name": "Gemini 3.6 Flash (EU)",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-21"
+    },
+    {
+      "id": "moonshot/kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "openai/gpt-5.6-sol",
+      "name": "GPT-5.6 Sol",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai/gpt-5.6-luna",
+      "name": "GPT-5.6 Luna",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai/gpt-5.6-terra",
+      "name": "GPT-5.6 Terra",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "xai/grok-4.5",
+      "name": "Grok 4.5",
+      "contextWindow": 500000,
+      "maxOutput": 500000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-08"
+    },
+    {
+      "id": "anthropic/claude-sonnet-latest",
+      "name": "Claude Sonnet 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "anthropic/claude-sonnet-5",
+      "name": "Claude Sonnet 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "zai/glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "deepseek/deepseek-v4-pro",
+      "name": "DeepSeek V4 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 0.435,
+      "outputPrice": 0.87,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "deepinfra/openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.037,
+      "outputPrice": 0.17,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "mistral/mistral-large-2512",
+      "name": "Mistral Large 3",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.5,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-11-01"
+    },
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    }
+  ],
+  "baseUrl": "https://api.edenai.run/v3",
+  "docsUrl": "https://docs.edenai.co"
+}

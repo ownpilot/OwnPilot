@@ -48,6 +48,21 @@
       "releaseDate": "2026-05-19"
     },
     {
+      "id": "google/veo3.1-fast",
+      "name": "Veo 3.1 Fast",
+      "contextWindow": 400000,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-01"
+    },
+    {
       "id": "google/veo3.1-lite",
       "name": "Veo 3.1 Lite",
       "contextWindow": 400000,
@@ -65,21 +80,6 @@
     {
       "id": "google/veo3.1",
       "name": "Veo 3.1",
-      "contextWindow": 400000,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-01"
-    },
-    {
-      "id": "google/veo3.1-fast",
-      "name": "Veo 3.1 Fast",
       "contextWindow": 400000,
       "maxOutput": 0,
       "inputPrice": 0,
@@ -215,6 +215,23 @@
       "releaseDate": "2026-04-16"
     },
     {
+      "id": "z-ai/glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 1.05,
+      "outputPrice": 3.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
       "id": "google/gemma-4-31b-it",
       "name": "Gemma 4 31B IT",
       "contextWindow": 262144,
@@ -246,23 +263,6 @@
       ],
       "default": false,
       "releaseDate": "2026-04-01"
-    },
-    {
-      "id": "z-ai/glm-5.1",
-      "name": "GLM-5.1",
-      "contextWindow": 200000,
-      "maxOutput": 131072,
-      "inputPrice": 1.05,
-      "outputPrice": 3.5,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-27"
     },
     {
       "id": "minimax/minimax-m2.7-highspeed",
@@ -533,14 +533,15 @@
       "releaseDate": "2025-08-07"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "id": "anthropic/claude-opus-4.1",
+      "name": "Claude Opus 4.1",
+      "contextWindow": 200000,
+      "maxOutput": 32000,
+      "inputPrice": 15,
+      "outputPrice": 75,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -565,15 +566,14 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "anthropic/claude-opus-4.1",
-      "name": "Claude Opus 4.1",
-      "contextWindow": 200000,
-      "maxOutput": 32000,
-      "inputPrice": 15,
-      "outputPrice": 75,
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -628,23 +628,6 @@
       "releaseDate": "2025-07-09"
     },
     {
-      "id": "google/gemini-2.5-pro",
-      "name": "Gemini 2.5 Pro",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-06-17"
-    },
-    {
       "id": "google/gemini-2.5-flash",
       "name": "Gemini 2.5 Flash",
       "contextWindow": 1048576,
@@ -662,21 +645,21 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "openai/gpt-realtime-1.5",
-      "name": "GPT Realtime 1.5",
-      "contextWindow": 32000,
-      "maxOutput": 4096,
-      "inputPrice": 4,
-      "outputPrice": 16,
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
       "capabilities": [
         "chat",
         "vision",
-        "audio",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-06-01"
+      "releaseDate": "2025-06-17"
     },
     {
       "id": "leonardo-ai/lucid-origin",
@@ -703,6 +686,23 @@
       "capabilities": [
         "chat",
         "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-01"
+    },
+    {
+      "id": "openai/gpt-realtime-1.5",
+      "name": "GPT Realtime 1.5",
+      "contextWindow": 32000,
+      "maxOutput": 4096,
+      "inputPrice": 4,
+      "outputPrice": 16,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
         "streaming"
       ],
       "default": false,

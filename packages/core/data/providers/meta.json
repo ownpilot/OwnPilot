@@ -1,0 +1,73 @@
+{
+  "id": "meta",
+  "name": "Meta",
+  "type": "openai-compatible",
+  "apiKeyEnv": "META_MODEL_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "muse-spark-1.2-contributor",
+      "name": "Muse Spark 1.2 Contributor",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0.1,
+      "outputPrice": 0.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-05"
+    },
+    {
+      "id": "muse-spark-1.2",
+      "name": "Muse Spark 1.2",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.25,
+      "outputPrice": 4.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-08-05"
+    },
+    {
+      "id": "muse-spark-1.1",
+      "name": "Muse Spark 1.1",
+      "contextWindow": 1000000,
+      "maxOutput": 32000,
+      "inputPrice": 1.25,
+      "outputPrice": 4.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-08"
+    }
+  ],
+  "baseUrl": "https://api.meta.ai/v1",
+  "docsUrl": "https://dev.meta.ai/docs"
+}

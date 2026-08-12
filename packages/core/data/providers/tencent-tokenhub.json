@@ -12,6 +12,22 @@
   },
   "models": [
     {
+      "id": "hy3",
+      "name": "Hy3",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-06"
+    },
+    {
       "id": "hy3-preview",
       "name": "Hy3 preview",
       "contextWindow": 256000,
@@ -24,7 +40,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-20"
     }
   ],

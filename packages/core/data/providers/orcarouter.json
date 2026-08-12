@@ -12,6 +12,44 @@
   },
   "models": [
     {
+      "id": "google/gemini-flash-latest",
+      "name": "Gemini Flash Latest",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 1.5,
+      "outputPrice": 9,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-19"
+    },
+    {
+      "id": "google/gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
+      "contextWindow": 1048576,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-07"
+    },
+    {
       "id": "deepseek/deepseek-v4-flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1000000,
@@ -25,7 +63,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
@@ -100,24 +138,6 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "grok/grok-4.3",
-      "name": "Grok 4.3",
-      "contextWindow": 1000000,
-      "maxOutput": 30000,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-17"
-    },
-    {
       "id": "qwen/qwen3.6-35b-a3b",
       "name": "Qwen3.6 35B-A3B",
       "contextWindow": 262144,
@@ -128,6 +148,24 @@
         "chat",
         "vision",
         "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "grok/grok-4.3",
+      "name": "Grok 4.3",
+      "contextWindow": 1000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -154,12 +192,29 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "google/gemma-4-31b-it",
-      "name": "Gemma 4 31B IT",
+      "id": "z-ai/glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B A4B IT",
       "contextWindow": 262144,
       "maxOutput": 32768,
-      "inputPrice": 0.13,
-      "outputPrice": 0.38,
+      "inputPrice": 0.06,
+      "outputPrice": 0.33,
       "capabilities": [
         "chat",
         "vision",
@@ -172,12 +227,12 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "google/gemma-4-26b-a4b-it",
-      "name": "Gemma 4 26B A4B IT",
+      "id": "google/gemma-4-31b-it",
+      "name": "Gemma 4 31B IT",
       "contextWindow": 262144,
       "maxOutput": 32768,
-      "inputPrice": 0.06,
-      "outputPrice": 0.33,
+      "inputPrice": 0.13,
+      "outputPrice": 0.38,
       "capabilities": [
         "chat",
         "vision",
@@ -205,23 +260,6 @@
       ],
       "default": false,
       "releaseDate": "2026-04-02"
-    },
-    {
-      "id": "z-ai/glm-5.1",
-      "name": "GLM-5.1",
-      "contextWindow": 200000,
-      "maxOutput": 131072,
-      "inputPrice": 1.4,
-      "outputPrice": 4.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-27"
     },
     {
       "id": "minimax/minimax-m2.7-highspeed",
@@ -292,6 +330,23 @@
       "releaseDate": "2026-03-17"
     },
     {
+      "id": "openai/gpt-5.4-pro",
+      "name": "GPT-5.4 Pro",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 60,
+      "outputPrice": 270,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-05"
+    },
+    {
       "id": "openai/gpt-5.4",
       "name": "GPT-5.4",
       "contextWindow": 1050000,
@@ -303,23 +358,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-05"
-    },
-    {
-      "id": "openai/gpt-5.4-pro",
-      "name": "GPT-5.4 Pro",
-      "contextWindow": 1050000,
-      "maxOutput": 128000,
-      "inputPrice": 60,
-      "outputPrice": 270,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -556,7 +594,24 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02-11"
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "anthropic/claude-opus-4.6",
+      "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
     },
     {
       "id": "openai/gpt-5.3-codex",
@@ -570,23 +625,6 @@
         "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
-      "id": "anthropic/claude-opus-4.6",
-      "name": "Claude Opus 4.6",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -664,24 +702,6 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "openai/gpt-5.2",
-      "name": "GPT-5.2",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.75,
-      "outputPrice": 14,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-11"
-    },
-    {
       "id": "openai/gpt-5.2-chat-latest",
       "name": "GPT-5.2 Chat",
       "contextWindow": 128000,
@@ -718,20 +738,22 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "deepseek/deepseek-reasoner",
-      "name": "DeepSeek Reasoner",
-      "contextWindow": 1000000,
-      "maxOutput": 384000,
-      "inputPrice": 0.435,
-      "outputPrice": 0.87,
+      "id": "openai/gpt-5.2",
+      "name": "GPT-5.2",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.75,
+      "outputPrice": 14,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-12-01"
+      "releaseDate": "2025-12-11"
     },
     {
       "id": "deepseek/deepseek-chat",
@@ -743,6 +765,22 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-01"
+    },
+    {
+      "id": "deepseek/deepseek-reasoner",
+      "name": "DeepSeek Reasoner",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.435,
+      "outputPrice": 0.87,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -785,6 +823,42 @@
       "releaseDate": "2025-11-18"
     },
     {
+      "id": "openai/gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex mini",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.25,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
+    },
+    {
+      "id": "openai/gpt-5.1",
+      "name": "GPT-5.1",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11-13"
+    },
+    {
       "id": "openai/gpt-5.1-codex",
       "name": "GPT-5.1 Codex",
       "contextWindow": 400000,
@@ -821,46 +895,10 @@
       "releaseDate": "2025-11-13"
     },
     {
-      "id": "openai/gpt-5.1-codex-mini",
-      "name": "GPT-5.1 Codex mini",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.25,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-13"
-    },
-    {
       "id": "openai/gpt-5.1-chat-latest",
       "name": "GPT-5.1 Chat",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11-13"
-    },
-    {
-      "id": "openai/gpt-5.1",
-      "name": "GPT-5.1",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
       "inputPrice": 1.25,
       "outputPrice": 10,
       "capabilities": [
@@ -941,44 +979,6 @@
       ],
       "default": false,
       "releaseDate": "2025-09-29"
-    },
-    {
-      "id": "google/gemini-flash-lite-latest",
-      "name": "Gemini Flash-Lite Latest",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.25,
-      "outputPrice": 1.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
-    },
-    {
-      "id": "google/gemini-flash-latest",
-      "name": "Gemini Flash Latest",
-      "contextWindow": 1048576,
-      "maxOutput": 65536,
-      "inputPrice": 0.5,
-      "outputPrice": 3,
-      "capabilities": [
-        "chat",
-        "vision",
-        "audio",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-25"
     },
     {
       "id": "qwen/qwen3-max",
@@ -1102,22 +1102,6 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "z-ai/glm-4.5",
-      "name": "GLM-4.5",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
-      "inputPrice": 0.6,
-      "outputPrice": 2.2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-28"
-    },
-    {
       "id": "z-ai/glm-4.5-air",
       "name": "GLM-4.5-Air",
       "contextWindow": 131072,
@@ -1134,12 +1118,28 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "google/gemini-2.5-pro",
-      "name": "Gemini 2.5 Pro",
+      "id": "z-ai/glm-4.5",
+      "name": "GLM-4.5",
+      "contextWindow": 131072,
+      "maxOutput": 98304,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 2.5,
-      "outputPrice": 15,
+      "inputPrice": 0.3,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
@@ -1153,12 +1153,12 @@
       "releaseDate": "2025-06-17"
     },
     {
-      "id": "google/gemini-2.5-flash",
-      "name": "Gemini 2.5 Flash",
+      "id": "google/gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
       "contextWindow": 1048576,
       "maxOutput": 65536,
-      "inputPrice": 0.3,
-      "outputPrice": 2.5,
+      "inputPrice": 2.5,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -1225,6 +1225,23 @@
       "releaseDate": "2025-05-22"
     },
     {
+      "id": "openai/gpt-4.1-mini",
+      "name": "GPT-4.1 mini",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 0.4,
+      "outputPrice": 1.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
+    },
+    {
       "id": "openai/gpt-4.1-nano",
       "name": "GPT-4.1 nano",
       "contextWindow": 1047576,
@@ -1248,23 +1265,6 @@
       "maxOutput": 32768,
       "inputPrice": 2,
       "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
-      "id": "openai/gpt-4.1-mini",
-      "name": "GPT-4.1 mini",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 0.4,
-      "outputPrice": 1.6,
       "capabilities": [
         "chat",
         "vision",
@@ -1378,21 +1378,6 @@
       "releaseDate": "2024-05-13"
     },
     {
-      "id": "openai/gpt-4",
-      "name": "GPT-4",
-      "contextWindow": 8192,
-      "maxOutput": 8192,
-      "inputPrice": 30,
-      "outputPrice": 60,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2023-11-06"
-    },
-    {
       "id": "openai/gpt-4-turbo",
       "name": "GPT-4 Turbo",
       "contextWindow": 128000,
@@ -1402,6 +1387,21 @@
       "capabilities": [
         "chat",
         "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2023-11-06"
+    },
+    {
+      "id": "openai/gpt-4",
+      "name": "GPT-4",
+      "contextWindow": 8192,
+      "maxOutput": 8192,
+      "inputPrice": 30,
+      "outputPrice": 60,
+      "capabilities": [
+        "chat",
         "function_calling",
         "streaming"
       ],

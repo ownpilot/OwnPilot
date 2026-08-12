@@ -12,6 +12,21 @@
   },
   "models": [
     {
+      "id": "Qwen/Qwen3.6-27B",
+      "name": "Qwen3.6 27B",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.53,
+      "outputPrice": 0.76,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "Qwen/Qwen3-VL-Embedding-8B",
       "name": "Qwen3-VL Embedding 8B",
       "contextWindow": 32000,
@@ -23,16 +38,32 @@
         "vision",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "openai/gpt-oss-20b",
+      "name": "GPT OSS 20B",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.18,
+      "outputPrice": 0.29,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
       "id": "openai/gpt-oss-120b",
-      "name": "GPT-OSS 120B",
+      "name": "GPT OSS 120B",
       "contextWindow": 131000,
       "maxOutput": 8192,
-      "inputPrice": 0.49,
-      "outputPrice": 0.71,
+      "inputPrice": 0.53,
+      "outputPrice": 0.76,
       "capabilities": [
         "chat",
         "function_calling",
@@ -46,9 +77,9 @@
       "id": "google/gemma-3-27b-it",
       "name": "Gemma 3 27B",
       "contextWindow": 37000,
-      "maxOutput": 8192,
-      "inputPrice": 0.49,
-      "outputPrice": 0.71,
+      "maxOutput": 4096,
+      "inputPrice": 0.53,
+      "outputPrice": 0.76,
       "capabilities": [
         "chat",
         "vision",
@@ -61,9 +92,9 @@
       "id": "cortecs/Llama-3.3-70B-Instruct-FP8-Dynamic",
       "name": "Llama 3.3 70B",
       "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.49,
-      "outputPrice": 0.71,
+      "maxOutput": 4096,
+      "inputPrice": 0.53,
+      "outputPrice": 0.76,
       "capabilities": [
         "chat",
         "function_calling",
@@ -76,9 +107,9 @@
       "id": "Qwen/Qwen3-VL-235B-A22B-Instruct-FP8",
       "name": "Qwen3-VL 235B",
       "contextWindow": 218000,
-      "maxOutput": 8192,
-      "inputPrice": 1.64,
-      "outputPrice": 1.91,
+      "maxOutput": 16384,
+      "inputPrice": 1.76,
+      "outputPrice": 2.05,
       "capabilities": [
         "chat",
         "vision",
@@ -87,37 +118,6 @@
       ],
       "default": false,
       "releaseDate": "2024-11-01"
-    },
-    {
-      "id": "neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8",
-      "name": "Llama 3.1 8B",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.16,
-      "outputPrice": 0.27,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-23"
-    },
-    {
-      "id": "neuralmagic/Mistral-Nemo-Instruct-2407-FP8",
-      "name": "Mistral Nemo",
-      "contextWindow": 128000,
-      "maxOutput": 8192,
-      "inputPrice": 0.49,
-      "outputPrice": 0.71,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-01"
     },
     {
       "id": "intfloat/e5-mistral-7b-instruct",

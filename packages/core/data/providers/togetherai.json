@@ -12,6 +12,77 @@
   },
   "models": [
     {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "thinkingmachines/Inkling",
+      "name": "Inkling",
+      "contextWindow": 524288,
+      "maxOutput": 131072,
+      "inputPrice": 1,
+      "outputPrice": 4.05,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-15"
+    },
+    {
+      "id": "zai-org/GLM-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 512000,
+      "maxOutput": 164000,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-16"
+    },
+    {
       "id": "moonshotai/Kimi-K2.7-Code",
       "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
@@ -25,7 +96,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-14"
     },
     {
@@ -148,21 +219,6 @@
       "releaseDate": "2026-04-07"
     },
     {
-      "id": "pearl-ai/gemma-4-31b-it",
-      "name": "Pearl AI Gemma 4 31B Instruct",
-      "contextWindow": 32000,
-      "maxOutput": 32000,
-      "inputPrice": 0.28,
-      "outputPrice": 0.86,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-07"
-    },
-    {
       "id": "zai-org/GLM-5.1",
       "name": "GLM-5.1",
       "contextWindow": 202752,
@@ -173,6 +229,21 @@
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "pearl-ai/gemma-4-31b-it",
+      "name": "Pearl AI Gemma 4 31B Instruct",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.28,
+      "outputPrice": 0.86,
+      "capabilities": [
+        "chat",
         "reasoning",
         "streaming"
       ],
@@ -357,22 +428,6 @@
       "releaseDate": "2025-08-21"
     },
     {
-      "id": "openai/gpt-oss-120b",
-      "name": "GPT OSS 120B",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "openai/gpt-oss-20b",
       "name": "GPT OSS 20B",
       "contextWindow": 131072,
@@ -383,6 +438,22 @@
         "chat",
         "function_calling",
         "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
         "reasoning",
         "streaming"
       ],
@@ -469,8 +540,8 @@
       "name": "Llama 3.3 70B",
       "contextWindow": 131072,
       "maxOutput": 131072,
-      "inputPrice": 0.88,
-      "outputPrice": 0.88,
+      "inputPrice": 1.04,
+      "outputPrice": 1.04,
       "capabilities": [
         "chat",
         "function_calling",

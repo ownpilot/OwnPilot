@@ -12,11 +12,28 @@
   },
   "models": [
     {
-      "id": "moonshotai/Kimi-K2.6",
-      "name": "Kimi K2.6",
+      "id": "zai-org/GLM-5.2",
+      "name": "GLM 5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.2,
+      "outputPrice": 4.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.7-Code",
+      "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 262144,
-      "inputPrice": 0.78,
+      "inputPrice": 0.75,
       "outputPrice": 3.5,
       "capabilities": [
         "chat",
@@ -26,7 +43,43 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.66,
+      "outputPrice": 3.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.6-Fast",
+      "name": "Kimi K2.6 Fast",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.32,
+      "outputPrice": 7,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-04-21"
     },
     {
@@ -44,14 +97,14 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     },
     {
       "id": "MiniMaxAI/MiniMax-M2.5",
       "name": "MiniMax M2.5",
       "contextWindow": 196608,
       "maxOutput": 196608,
-      "inputPrice": 0.24,
+      "inputPrice": 0.15,
       "outputPrice": 0.9,
       "capabilities": [
         "chat",
@@ -62,22 +115,6 @@
       ],
       "default": false,
       "releaseDate": "2026-02-12"
-    },
-    {
-      "id": "nvidia/llama-3.3-70b-instruct-fp8",
-      "name": "Llama 3.3 70B Instruct",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.12,
-      "outputPrice": 0.38,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-06"
     }
   ],
   "baseUrl": "https://api.inceptron.io/v1",

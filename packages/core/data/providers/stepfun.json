@@ -1,6 +1,6 @@
 {
   "id": "stepfun",
-  "name": "StepFun",
+  "name": "StepFun (China)",
   "type": "openai-compatible",
   "apiKeyEnv": "STEPFUN_API_KEY",
   "features": {
@@ -11,6 +11,52 @@
     "systemMessage": true
   },
   "models": [
+    {
+      "id": "step-3.7-flash",
+      "name": "Step 3.7 Flash",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.185,
+      "outputPrice": 1.11,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-05-29"
+    },
+    {
+      "id": "stepaudio-2.5-asr",
+      "name": "StepAudio 2.5 ASR",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "stepaudio-2.5-tts",
+      "name": "StepAudio 2.5 TTS",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
     {
       "id": "step-3.5-flash-2603",
       "name": "Step 3.5 Flash 2603",
@@ -24,8 +70,22 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "step-tts-2",
+      "name": "Step TTS 2",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-01"
     },
     {
       "id": "step-3.5-flash",
@@ -53,7 +113,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -69,7 +128,6 @@
       "capabilities": [
         "chat",
         "function_calling",
-        "reasoning",
         "streaming"
       ],
       "default": false,

@@ -12,10 +12,10 @@
   },
   "models": [
     {
-      "id": "agent-prime",
-      "name": "Agent Prime",
+      "id": "agent-standard",
+      "name": "Agent Standard",
       "contextWindow": 128000,
-      "maxOutput": 64000,
+      "maxOutput": 16000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -29,15 +29,14 @@
       "releaseDate": "2026-05-04"
     },
     {
-      "id": "agent-max",
-      "name": "Agent Max",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
+      "id": "agent-prime",
+      "name": "Agent Prime",
+      "contextWindow": 196608,
+      "maxOutput": 30000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -47,10 +46,10 @@
       "releaseDate": "2026-05-04"
     },
     {
-      "id": "code-prime",
-      "name": "Code Prime",
+      "id": "code-standard",
+      "name": "Code Standard",
       "contextWindow": 128000,
-      "maxOutput": 64000,
+      "maxOutput": 16000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -82,10 +81,28 @@
       "releaseDate": "2026-05-04"
     },
     {
-      "id": "agent-standard",
-      "name": "Agent Standard",
-      "contextWindow": 128000,
-      "maxOutput": 16000,
+      "id": "agent-max",
+      "name": "Agent Max",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-04"
+    },
+    {
+      "id": "code-prime",
+      "name": "Code Prime",
+      "contextWindow": 196608,
+      "maxOutput": 30000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -99,10 +116,10 @@
       "releaseDate": "2026-05-04"
     },
     {
-      "id": "code-standard",
-      "name": "Code Standard",
-      "contextWindow": 128000,
-      "maxOutput": 16000,
+      "id": "text-prime",
+      "name": "Text Prime",
+      "contextWindow": 196608,
+      "maxOutput": 30000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -113,7 +130,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-05-04"
+      "releaseDate": "2026-02-26"
     },
     {
       "id": "text-max",
@@ -131,30 +148,13 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-24"
+      "releaseDate": "2026-02-26"
     },
     {
       "id": "text-standard",
       "name": "Text Standard",
       "contextWindow": 128000,
       "maxOutput": 16000,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-26"
-    },
-    {
-      "id": "text-prime",
-      "name": "Text Prime",
-      "contextWindow": 128000,
-      "maxOutput": 30000,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [

@@ -1,0 +1,121 @@
+{
+  "id": "aki-io",
+  "name": "AKI.IO",
+  "type": "openai-compatible",
+  "apiKeyEnv": "AKI_IO_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k2.7-code-1100b",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 81920,
+      "inputPrice": 0.86,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "qwen3.6-35b",
+      "name": "Qwen3.6 35B-A3B",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "gemma4-26b",
+      "name": "Gemma 4 26B A4B IT",
+      "contextWindow": 256000,
+      "maxOutput": 32768,
+      "inputPrice": 0.1,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "mistral4-119b",
+      "name": "Mistral Small 4",
+      "contextWindow": 262144,
+      "maxOutput": 81920,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
+    },
+    {
+      "id": "minimax-m2.5-230b",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 196608,
+      "maxOutput": 65536,
+      "inputPrice": 0.25,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.15,
+      "outputPrice": 0.55,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    }
+  ],
+  "baseUrl": "https://aki.io/v1",
+  "docsUrl": "https://aki.io/docs/"
+}

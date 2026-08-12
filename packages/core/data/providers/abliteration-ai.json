@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "abliterated-model-large",
+      "name": "Abliterated Model Large",
+      "contextWindow": 1000000,
+      "maxOutput": 999990,
+      "inputPrice": 5,
+      "outputPrice": 5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-25"
+    },
+    {
       "id": "abliterated-model",
       "name": "Abliterated Model",
       "contextWindow": 150000,
@@ -22,9 +39,10 @@
         "chat",
         "vision",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-06"
     }
   ],

@@ -12,12 +12,12 @@
   },
   "models": [
     {
-      "id": "morph-v3-fast",
-      "name": "Morph v3 Fast",
-      "contextWindow": 16000,
-      "maxOutput": 16000,
-      "inputPrice": 0.8,
-      "outputPrice": 1.2,
+      "id": "morph-v3-large",
+      "name": "Morph v3 Large",
+      "contextWindow": 32000,
+      "maxOutput": 32000,
+      "inputPrice": 0.9,
+      "outputPrice": 1.9,
       "capabilities": [
         "chat",
         "streaming"
@@ -26,12 +26,12 @@
       "releaseDate": "2024-08-15"
     },
     {
-      "id": "morph-v3-large",
-      "name": "Morph v3 Large",
-      "contextWindow": 32000,
-      "maxOutput": 32000,
-      "inputPrice": 0.9,
-      "outputPrice": 1.9,
+      "id": "morph-v3-fast",
+      "name": "Morph v3 Fast",
+      "contextWindow": 16000,
+      "maxOutput": 16000,
+      "inputPrice": 0.8,
+      "outputPrice": 1.2,
       "capabilities": [
         "chat",
         "streaming"

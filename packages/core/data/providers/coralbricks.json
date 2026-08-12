@@ -1,0 +1,69 @@
+{
+  "id": "coralbricks",
+  "name": "CoralBricks",
+  "type": "openai-compatible",
+  "apiKeyEnv": "CORAL_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "glm-5.2-fp4",
+      "name": "GLM 5.2 FP4",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 1.12,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.12,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    }
+  ],
+  "baseUrl": "https://inference.coralbricks.ai/v1",
+  "docsUrl": "https://www.coralbricks.ai/docs"
+}

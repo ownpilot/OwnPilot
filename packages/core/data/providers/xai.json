@@ -12,6 +12,58 @@
   },
   "models": [
     {
+      "id": "grok-4.6",
+      "name": "Grok 4.6",
+      "contextWindow": 500000,
+      "maxOutput": 500000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-12"
+    },
+    {
+      "id": "grok-4.5",
+      "name": "Grok 4.5",
+      "contextWindow": 500000,
+      "maxOutput": 500000,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-08"
+    },
+    {
+      "id": "grok-imagine-video-1.5",
+      "name": "Grok Imagine Video 1.5",
+      "contextWindow": 1024,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-30"
+    },
+    {
       "id": "grok-4.3",
       "name": "Grok 4.3",
       "contextWindow": 1000000,
@@ -26,7 +78,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-17"
     },
     {
@@ -63,23 +115,6 @@
       "releaseDate": "2026-04-03"
     },
     {
-      "id": "grok-4.20-multi-agent-0309",
-      "name": "Grok 4.20 Multi-Agent",
-      "contextWindow": 1000000,
-      "maxOutput": 30000,
-      "inputPrice": 1.25,
-      "outputPrice": 2.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-09"
-    },
-    {
       "id": "grok-4.20-0309-non-reasoning",
       "name": "Grok 4.20 (Non-Reasoning)",
       "contextWindow": 1000000,
@@ -91,6 +126,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-09"
+    },
+    {
+      "id": "grok-4.20-multi-agent-0309",
+      "name": "Grok 4.20 Multi-Agent",
+      "contextWindow": 1000000,
+      "maxOutput": 30000,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,

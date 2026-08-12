@@ -12,6 +12,287 @@
   },
   "models": [
     {
+      "id": "jp.anthropic.claude-opus-5",
+      "name": "Claude Opus 5 (JP)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "us.anthropic.claude-opus-5",
+      "name": "Claude Opus 5 (US)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "global.anthropic.claude-opus-5",
+      "name": "Claude Opus 5 (Global)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "eu.anthropic.claude-opus-5",
+      "name": "Claude Opus 5 (EU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5.5,
+      "outputPrice": 27.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "anthropic.claude-opus-5",
+      "name": "Claude Opus 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "au.anthropic.claude-opus-5",
+      "name": "Claude Opus 5 (AU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "openai.gpt-5.6-sol",
+      "name": "GPT-5.6 Sol",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5.5,
+      "outputPrice": 33,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai.gpt-5.6-terra",
+      "name": "GPT-5.6 Terra",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 2.2,
+      "outputPrice": 13.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai.gpt-5.6-luna",
+      "name": "GPT-5.6 Luna",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0.22,
+      "outputPrice": 1.32,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "us.anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5 (US)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "global.anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5 (Global)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "jp.anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5 (JP)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "au.anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5 (AU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "eu.anthropic.claude-sonnet-5",
+      "name": "Claude Sonnet 5 (EU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2.2,
+      "outputPrice": 11,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "anthropic.claude-fable-5",
+      "name": "Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 10,
+      "outputPrice": 50,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-09"
+    },
+    {
       "id": "global.anthropic.claude-fable-5",
       "name": "Claude Fable 5 (Global)",
       "contextWindow": 1000000,
@@ -25,7 +306,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-09"
     },
     {
@@ -80,59 +361,8 @@
       "releaseDate": "2026-05-28"
     },
     {
-      "id": "us.anthropic.claude-opus-4-8",
-      "name": "Claude Opus 4.8 (US)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-28"
-    },
-    {
-      "id": "au.anthropic.claude-opus-4-8",
-      "name": "Claude Opus 4.8 (AU)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-28"
-    },
-    {
       "id": "jp.anthropic.claude-opus-4-8",
       "name": "Claude Opus 4.8 (JP)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-05-28"
-    },
-    {
-      "id": "anthropic.claude-opus-4-8",
-      "name": "Claude Opus 4.8",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -165,6 +395,57 @@
       "releaseDate": "2026-05-28"
     },
     {
+      "id": "au.anthropic.claude-opus-4-8",
+      "name": "Claude Opus 4.8 (AU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "anthropic.claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "us.anthropic.claude-opus-4-8",
+      "name": "Claude Opus 4.8 (US)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
       "id": "openai.gpt-5.5",
       "name": "GPT-5.5",
       "contextWindow": 272000,
@@ -183,21 +464,22 @@
       "releaseDate": "2026-04-23"
     },
     {
-      "id": "anthropic.claude-opus-4-7",
-      "name": "Claude Opus 4.7",
+      "id": "xai.grok-4.3",
+      "name": "Grok 4.3",
       "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
+      "maxOutput": 131072,
+      "inputPrice": 1.25,
+      "outputPrice": 2.5,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-16"
+      "releaseDate": "2026-04-17"
     },
     {
       "id": "us.anthropic.claude-opus-4-7",
@@ -217,8 +499,25 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "jp.anthropic.claude-opus-4-7",
-      "name": "Claude Opus 4.7 (JP)",
+      "id": "eu.anthropic.claude-opus-4-7",
+      "name": "Claude Opus 4.7 (EU)",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5.5,
+      "outputPrice": 27.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-16"
+    },
+    {
+      "id": "anthropic.claude-opus-4-7",
+      "name": "Claude Opus 4.7",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -251,12 +550,12 @@
       "releaseDate": "2026-04-16"
     },
     {
-      "id": "eu.anthropic.claude-opus-4-7",
-      "name": "Claude Opus 4.7 (EU)",
+      "id": "jp.anthropic.claude-opus-4-7",
+      "name": "Claude Opus 4.7 (JP)",
       "contextWindow": 1000000,
       "maxOutput": 128000,
-      "inputPrice": 5.5,
-      "outputPrice": 27.5,
+      "inputPrice": 5,
+      "outputPrice": 25,
       "capabilities": [
         "chat",
         "vision",
@@ -336,10 +635,44 @@
       "releaseDate": "2026-03-05"
     },
     {
-      "id": "eu.anthropic.claude-sonnet-4-6",
-      "name": "Claude Sonnet 4.6 (EU)",
+      "id": "mistral.devstral-2-123b",
+      "name": "Devstral 2 123B",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.4,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "us.anthropic.claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6 (US)",
       "contextWindow": 1000000,
       "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-17"
+    },
+    {
+      "id": "au.anthropic.claude-sonnet-4-6",
+      "name": "AU Anthropic Claude Sonnet 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
       "inputPrice": 3.3,
       "outputPrice": 16.5,
       "capabilities": [
@@ -390,40 +723,6 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "mistral.devstral-2-123b",
-      "name": "Devstral 2 123B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-17"
-    },
-    {
-      "id": "us.anthropic.claude-sonnet-4-6",
-      "name": "Claude Sonnet 4.6 (US)",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-17"
-    },
-    {
       "id": "global.anthropic.claude-sonnet-4-6",
       "name": "Claude Sonnet 4.6 (Global)",
       "contextWindow": 1000000,
@@ -442,10 +741,10 @@
       "releaseDate": "2026-02-17"
     },
     {
-      "id": "au.anthropic.claude-sonnet-4-6",
-      "name": "AU Anthropic Claude Sonnet 4.6",
+      "id": "eu.anthropic.claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6 (EU)",
       "contextWindow": 1000000,
-      "maxOutput": 128000,
+      "maxOutput": 64000,
       "inputPrice": 3.3,
       "outputPrice": 16.5,
       "capabilities": [
@@ -458,23 +757,6 @@
       ],
       "default": false,
       "releaseDate": "2026-02-17"
-    },
-    {
-      "id": "qwen.qwen3-coder-next",
-      "name": "Qwen3 Coder Next",
-      "contextWindow": 131072,
-      "maxOutput": 65536,
-      "inputPrice": 0.22,
-      "outputPrice": 1.8,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-06"
     },
     {
       "id": "moonshotai.kimi-k2.5",
@@ -512,8 +794,43 @@
       "releaseDate": "2026-02-06"
     },
     {
+      "id": "qwen.qwen3-coder-next",
+      "name": "Qwen3 Coder Next",
+      "contextWindow": 131072,
+      "maxOutput": 65536,
+      "inputPrice": 0.22,
+      "outputPrice": 1.8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-06"
+    },
+    {
       "id": "anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "us.anthropic.claude-opus-4-6-v1",
+      "name": "Claude Opus 4.6 (US)",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -548,48 +865,30 @@
       "releaseDate": "2026-02-05"
     },
     {
-      "id": "au.anthropic.claude-opus-4-6-v1",
-      "name": "AU Anthropic Claude Opus 4.6",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 16.5,
-      "outputPrice": 82.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
-      "id": "us.anthropic.claude-opus-4-6-v1",
-      "name": "Claude Opus 4.6 (US)",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
       "id": "global.anthropic.claude-opus-4-6-v1",
       "name": "Claude Opus 4.6 (Global)",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
       "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
+      "id": "au.anthropic.claude-opus-4-6-v1",
+      "name": "AU Anthropic Claude Opus 4.6",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 16.5,
+      "outputPrice": 82.5,
       "capabilities": [
         "chat",
         "vision",
@@ -669,23 +968,6 @@
       "releaseDate": "2025-12-22"
     },
     {
-      "id": "mistral.ministral-3-3b-instruct",
-      "name": "Ministral 3 3B",
-      "contextWindow": 256000,
-      "maxOutput": 8192,
-      "inputPrice": 0.1,
-      "outputPrice": 0.1,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-02"
-    },
-    {
       "id": "mistral.mistral-large-3-675b-instruct",
       "name": "Mistral Large 3",
       "contextWindow": 256000,
@@ -697,6 +979,23 @@
         "vision",
         "function_calling",
         "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "moonshot.kimi-k2-thinking",
+      "name": "Kimi K2 Thinking",
+      "contextWindow": 262143,
+      "maxOutput": 16000,
+      "inputPrice": 0.6,
+      "outputPrice": 2.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -721,29 +1020,29 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "moonshot.kimi-k2-thinking",
-      "name": "Kimi K2 Thinking",
-      "contextWindow": 262143,
-      "maxOutput": 16000,
-      "inputPrice": 0.6,
-      "outputPrice": 2.5,
+      "id": "mistral.ministral-3-3b-instruct",
+      "name": "Ministral 3 3B",
+      "contextWindow": 256000,
+      "maxOutput": 8192,
+      "inputPrice": 0.1,
+      "outputPrice": 0.1,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "anthropic.claude-opus-4-5-20251101-v1:0",
-      "name": "Claude Opus 4.5",
+      "id": "eu.anthropic.claude-opus-4-5-20251101-v1:0",
+      "name": "Claude Opus 4.5 (EU)",
       "contextWindow": 200000,
       "maxOutput": 64000,
-      "inputPrice": 5,
-      "outputPrice": 25,
+      "inputPrice": 5.5,
+      "outputPrice": 27.5,
       "capabilities": [
         "chat",
         "vision",
@@ -756,8 +1055,8 @@
       "releaseDate": "2025-11-24"
     },
     {
-      "id": "us.anthropic.claude-opus-4-5-20251101-v1:0",
-      "name": "Claude Opus 4.5 (US)",
+      "id": "anthropic.claude-opus-4-5-20251101-v1:0",
+      "name": "Claude Opus 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 5,
@@ -792,8 +1091,8 @@
       "releaseDate": "2025-11-24"
     },
     {
-      "id": "eu.anthropic.claude-opus-4-5-20251101-v1:0",
-      "name": "Claude Opus 4.5 (EU)",
+      "id": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+      "name": "Claude Opus 4.5 (US)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 5,
@@ -810,12 +1109,12 @@
       "releaseDate": "2025-11-24"
     },
     {
-      "id": "openai.gpt-oss-safeguard-20b",
-      "name": "GPT OSS Safeguard 20B",
+      "id": "openai.gpt-oss-safeguard-120b",
+      "name": "GPT OSS Safeguard 120B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.07,
-      "outputPrice": 0.2,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
       "capabilities": [
         "chat",
         "function_calling",
@@ -826,12 +1125,12 @@
       "releaseDate": "2025-10-29"
     },
     {
-      "id": "openai.gpt-oss-safeguard-120b",
-      "name": "GPT OSS Safeguard 120B",
+      "id": "openai.gpt-oss-safeguard-20b",
+      "name": "GPT OSS Safeguard 20B",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.07,
+      "outputPrice": 0.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -858,8 +1157,8 @@
       "releaseDate": "2025-10-27"
     },
     {
-      "id": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
-      "name": "Claude Haiku 4.5 (Global)",
+      "id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5 (AU)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 1,
@@ -876,8 +1175,26 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
-      "name": "Claude Haiku 4.5 (AU)",
+      "id": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5 (EU)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 1.1,
+      "outputPrice": 5.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-15"
+    },
+    {
+      "id": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5 (Global)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 1,
@@ -912,8 +1229,8 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "anthropic.claude-haiku-4-5-20251001-v1:0",
-      "name": "Claude Haiku 4.5",
+      "id": "jp.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5 (JP)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 1,
@@ -930,8 +1247,8 @@
       "releaseDate": "2025-10-15"
     },
     {
-      "id": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
-      "name": "Claude Haiku 4.5 (EU)",
+      "id": "anthropic.claude-haiku-4-5-20251001-v1:0",
+      "name": "Claude Haiku 4.5",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 1,
@@ -965,8 +1282,8 @@
       "releaseDate": "2025-10-04"
     },
     {
-      "id": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (Global)",
+      "id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (AU)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -1001,8 +1318,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (AU)",
+      "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (JP)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -1019,8 +1336,26 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (JP)",
+      "id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (US)",
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-29"
+    },
+    {
+      "id": "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "name": "Claude Sonnet 4.5 (Global)",
       "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
@@ -1055,22 +1390,20 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
-      "name": "Claude Sonnet 4.5 (US)",
-      "contextWindow": 200000,
-      "maxOutput": 64000,
-      "inputPrice": 3,
-      "outputPrice": 15,
+      "id": "qwen.qwen3-next-80b-a3b",
+      "name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "contextWindow": 262000,
+      "maxOutput": 262000,
+      "inputPrice": 0.14,
+      "outputPrice": 1.4,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
-        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-09-29"
+      "releaseDate": "2025-09-18"
     },
     {
       "id": "qwen.qwen3-32b-v1:0",
@@ -1084,6 +1417,22 @@
         "function_calling",
         "json_mode",
         "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-09-18"
+    },
+    {
+      "id": "qwen.qwen3-coder-30b-a3b-v1:0",
+      "name": "Qwen3 Coder 30B A3B Instruct",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "streaming"
       ],
       "default": false,
@@ -1139,38 +1488,6 @@
       "releaseDate": "2025-09-18"
     },
     {
-      "id": "qwen.qwen3-coder-30b-a3b-v1:0",
-      "name": "Qwen3 Coder 30B A3B Instruct",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-18"
-    },
-    {
-      "id": "qwen.qwen3-next-80b-a3b",
-      "name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
-      "contextWindow": 262000,
-      "maxOutput": 262000,
-      "inputPrice": 0.14,
-      "outputPrice": 1.4,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-09-18"
-    },
-    {
       "id": "openai.gpt-oss-20b",
       "name": "gpt-oss-20b",
       "contextWindow": 128000,
@@ -1205,12 +1522,12 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai.gpt-oss-120b",
-      "name": "gpt-oss-120b",
+      "id": "openai.gpt-oss-20b-1:0",
+      "name": "gpt-oss-20b",
       "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
+      "inputPrice": 0.07,
+      "outputPrice": 0.3,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1239,23 +1556,6 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "openai.gpt-oss-20b-1:0",
-      "name": "gpt-oss-20b",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.07,
-      "outputPrice": 0.3,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "us.anthropic.claude-opus-4-1-20250805-v1:0",
       "name": "Claude Opus 4.1 (US)",
       "contextWindow": 200000,
@@ -1266,6 +1566,23 @@
         "chat",
         "vision",
         "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "openai.gpt-oss-120b",
+      "name": "gpt-oss-120b",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -1419,8 +1736,8 @@
       "releaseDate": "2025-04-05"
     },
     {
-      "id": "deepseek.r1-v1:0",
-      "name": "DeepSeek-R1",
+      "id": "us.deepseek.r1-v1:0",
+      "name": "DeepSeek-R1 (US)",
       "contextWindow": 128000,
       "maxOutput": 32768,
       "inputPrice": 1.35,
@@ -1435,8 +1752,8 @@
       "releaseDate": "2025-01-20"
     },
     {
-      "id": "us.deepseek.r1-v1:0",
-      "name": "DeepSeek-R1 (US)",
+      "id": "deepseek.r1-v1:0",
+      "name": "DeepSeek-R1",
       "contextWindow": 128000,
       "maxOutput": 32768,
       "inputPrice": 1.35,
@@ -1513,39 +1830,6 @@
       "releaseDate": "2024-12-03"
     },
     {
-      "id": "nvidia.nemotron-nano-9b-v2",
-      "name": "NVIDIA Nemotron Nano 9B v2",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.06,
-      "outputPrice": 0.23,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "amazon.nova-2-lite-v1:0",
-      "name": "Nova 2 Lite",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.33,
-      "outputPrice": 2.75,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
       "id": "mistral.ministral-3-8b-instruct",
       "name": "Ministral 3 8B",
       "contextWindow": 128000,
@@ -1554,39 +1838,6 @@
       "outputPrice": 0.15,
       "capabilities": [
         "chat",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "google.gemma-3-4b-it",
-      "name": "Gemma 3 4B IT",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.04,
-      "outputPrice": 0.08,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
-    },
-    {
-      "id": "mistral.voxtral-mini-3b-2507",
-      "name": "Voxtral Mini 3B 2507",
-      "contextWindow": 128000,
-      "maxOutput": 4096,
-      "inputPrice": 0.04,
-      "outputPrice": 0.04,
-      "capabilities": [
-        "chat",
-        "audio",
         "function_calling",
         "json_mode",
         "streaming"
@@ -1612,16 +1863,49 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "google.gemma-3-12b-it",
-      "name": "Google Gemma 3 12B",
-      "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0.049999999999999996,
-      "outputPrice": 0.09999999999999999,
+      "id": "nvidia.nemotron-nano-9b-v2",
+      "name": "NVIDIA Nemotron Nano 9B v2",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.06,
+      "outputPrice": 0.23,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "mistral.voxtral-mini-3b-2507",
+      "name": "Voxtral Mini 3B 2507",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.04,
+      "outputPrice": 0.04,
+      "capabilities": [
+        "chat",
+        "audio",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "google.gemma-3-4b-it",
+      "name": "Gemma 3 4B IT",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.04,
+      "outputPrice": 0.08,
       "capabilities": [
         "chat",
         "vision",
-        "json_mode",
+        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -1644,12 +1928,45 @@
       "releaseDate": "2024-12-01"
     },
     {
-      "id": "meta.llama3-1-70b-instruct-v1:0",
-      "name": "Llama 3.1 70B Instruct",
+      "id": "google.gemma-3-12b-it",
+      "name": "Google Gemma 3 12B",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.049999999999999996,
+      "outputPrice": 0.09999999999999999,
+      "capabilities": [
+        "chat",
+        "vision",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "amazon.nova-2-lite-v1:0",
+      "name": "Nova 2 Lite",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.72,
-      "outputPrice": 0.72,
+      "inputPrice": 0.33,
+      "outputPrice": 2.75,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-01"
+    },
+    {
+      "id": "meta.llama3-1-8b-instruct-v1:0",
+      "name": "Llama 3.1 8B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.22,
+      "outputPrice": 0.22,
       "capabilities": [
         "chat",
         "function_calling",
@@ -1659,12 +1976,12 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "meta.llama3-1-8b-instruct-v1:0",
-      "name": "Llama 3.1 8B Instruct",
+      "id": "meta.llama3-1-70b-instruct-v1:0",
+      "name": "Llama 3.1 70B Instruct",
       "contextWindow": 128000,
       "maxOutput": 4096,
-      "inputPrice": 0.22,
-      "outputPrice": 0.22,
+      "inputPrice": 0.72,
+      "outputPrice": 0.72,
       "capabilities": [
         "chat",
         "function_calling",

@@ -12,21 +12,6 @@
   },
   "models": [
     {
-      "id": "Ring-1T",
-      "name": "Ring-1T",
-      "contextWindow": 128000,
-      "maxOutput": 32000,
-      "inputPrice": 0.57,
-      "outputPrice": 2.29,
-      "capabilities": [
-        "chat",
-        "reasoning",
-        "streaming"
-      ],
-      "default": true,
-      "releaseDate": "2025-10"
-    },
-    {
       "id": "Ling-1T",
       "name": "Ling-1T",
       "contextWindow": 128000,
@@ -36,6 +21,21 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-10"
+    },
+    {
+      "id": "Ring-1T",
+      "name": "Ring-1T",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
+      "inputPrice": 0.57,
+      "outputPrice": 2.29,
+      "capabilities": [
+        "chat",
+        "reasoning",
         "streaming"
       ],
       "default": false,

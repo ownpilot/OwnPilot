@@ -1,0 +1,638 @@
+{
+  "id": "greenpt",
+  "name": "GreenPT",
+  "type": "openai-compatible",
+  "apiKeyEnv": "GREENPT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0.1596,
+      "outputPrice": 0.399,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3.762,
+      "outputPrice": 18.81,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "glm-5.2-ponytail",
+      "name": "GLM-5.2 Ponytail",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-caveman",
+      "name": "GLM-5.2 Caveman",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-ponytail-ultra",
+      "name": "GLM-5.2 Ponytail Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-caveman-ultra",
+      "name": "GLM-5.2 Caveman Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-ponytail-lite",
+      "name": "GLM-5.2 Ponytail Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-honey-ultra",
+      "name": "GLM-5.2 Honey Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-honey",
+      "name": "GLM-5.2 Honey",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-honey-lite",
+      "name": "GLM-5.2 Honey Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "glm-5.2-caveman-lite",
+      "name": "GLM-5.2 Caveman Lite",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.254,
+      "outputPrice": 5.016,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "kimi-k2.7-code",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.9006,
+      "outputPrice": 4.389,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "mistral-medium-3.5-128b",
+      "name": "Mistral Medium 3.5",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 2.052,
+      "outputPrice": 10.26,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-29"
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.7524,
+      "outputPrice": 4.275,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "kimi-k2.6-fast",
+      "name": "Kimi K2.6 Fast",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.655,
+      "outputPrice": 8.778,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "qwen3.6-35b-a3b",
+      "name": "Qwen3.6 35B-A3B",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.342,
+      "outputPrice": 2.052,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-17"
+    },
+    {
+      "id": "glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 200000,
+      "maxOutput": 131072,
+      "inputPrice": 1.756,
+      "outputPrice": 5.518,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
+      "id": "gemma4",
+      "name": "gemma4",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.57,
+      "outputPrice": 1.71,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "qwen3.5-397b-a17b",
+      "name": "Qwen3.5 397B-A17B",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 0.798,
+      "outputPrice": 4.959,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-15"
+    },
+    {
+      "id": "minimax-m2.5",
+      "name": "MiniMax-M2.5",
+      "contextWindow": 204800,
+      "maxOutput": 131072,
+      "inputPrice": 0.1938,
+      "outputPrice": 1.129,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
+      "id": "devstral-2-123b-instruct-2512",
+      "name": "Devstral 2",
+      "contextWindow": 200000,
+      "maxOutput": 16384,
+      "inputPrice": 0.57,
+      "outputPrice": 2.736,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-09"
+    },
+    {
+      "id": "holo2-30b-a3b",
+      "name": "Holo2 30B A3B",
+      "contextWindow": 22016,
+      "maxOutput": 16384,
+      "inputPrice": 0.399,
+      "outputPrice": 0.969,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-11"
+    },
+    {
+      "id": "green-r-raw",
+      "name": "Green R Raw",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.399,
+      "outputPrice": 1.083,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.228,
+      "outputPrice": 0.798,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "green-r",
+      "name": "Green R",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.399,
+      "outputPrice": 1.083,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "qwen3-235b-a22b-instruct-2507",
+      "name": "Qwen3 235B A22B Instruct 2507",
+      "contextWindow": 262144,
+      "maxOutput": 16384,
+      "inputPrice": 1.026,
+      "outputPrice": 3.078,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-21"
+    },
+    {
+      "id": "voxtral-small-24b-2507",
+      "name": "Voxtral Small 24B",
+      "contextWindow": 32768,
+      "maxOutput": 16384,
+      "inputPrice": 0.228,
+      "outputPrice": 0.513,
+      "capabilities": [
+        "chat",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-15"
+    },
+    {
+      "id": "green-l",
+      "name": "Green L",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.285,
+      "outputPrice": 0.912,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "mistral-small-3.2-24b-instruct-2506",
+      "name": "Mistral Small 3.2",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.228,
+      "outputPrice": 0.456,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "green-l-raw",
+      "name": "Green L Raw",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.285,
+      "outputPrice": 0.912,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "qwen3-coder-30b-a3b-instruct",
+      "name": "Qwen3-Coder 30B-A3B Instruct",
+      "contextWindow": 128000,
+      "maxOutput": 32768,
+      "inputPrice": 0.285,
+      "outputPrice": 1.083,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04"
+    },
+    {
+      "id": "gemma-3-27b-it",
+      "name": "Gemma 3 27B",
+      "contextWindow": 40000,
+      "maxOutput": 8192,
+      "inputPrice": 0.342,
+      "outputPrice": 0.684,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-12"
+    },
+    {
+      "id": "green-s-pro",
+      "name": "Green S Pro",
+      "contextWindow": 0,
+      "maxOutput": 8192,
+      "inputPrice": 0.00437,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-02"
+    },
+    {
+      "id": "green-s",
+      "name": "Green S",
+      "contextWindow": 0,
+      "maxOutput": 8192,
+      "inputPrice": 0.00437,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "audio",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-01"
+    },
+    {
+      "id": "llama-3.3-70b-instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 100000,
+      "maxOutput": 16384,
+      "inputPrice": 1.254,
+      "outputPrice": 1.254,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    },
+    {
+      "id": "pixtral-12b-2409",
+      "name": "Pixtral 12B",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.285,
+      "outputPrice": 0.285,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-09-01"
+    }
+  ],
+  "baseUrl": "https://api.greenpt.ai/v1",
+  "docsUrl": "https://docs.greenpt.ai"
+}

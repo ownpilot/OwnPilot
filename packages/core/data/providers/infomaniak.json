@@ -1,0 +1,183 @@
+{
+  "id": "infomaniak",
+  "name": "Infomaniak",
+  "type": "openai-compatible",
+  "apiKeyEnv": "INFOMANIAK_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "swiss-ai/Apertus-v1.5-70B",
+      "name": "Apertus v1.5 70B",
+      "contextWindow": 100000,
+      "maxOutput": 8192,
+      "inputPrice": 0.87,
+      "outputPrice": 3.1,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "moonshotai/Kimi-K2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.74,
+      "outputPrice": 3.72,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
+    },
+    {
+      "id": "google/gemma-4-31B-it",
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 100000,
+      "maxOutput": 32768,
+      "inputPrice": 0.25,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-02"
+    },
+    {
+      "id": "mistralai/Mistral-Small-4-119B-2603",
+      "name": "Mistral Small 4",
+      "contextWindow": 256000,
+      "maxOutput": 256000,
+      "inputPrice": 0.25,
+      "outputPrice": 0.93,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-16"
+    },
+    {
+      "id": "Qwen/Qwen3.5-122B-A10B-FP8",
+      "name": "Qwen3.5 122B-A10B FP8",
+      "contextWindow": 200000,
+      "maxOutput": 65536,
+      "inputPrice": 0.5,
+      "outputPrice": 3.97,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-23"
+    },
+    {
+      "id": "Qwen/Qwen3.5-397B-A17B-FP8",
+      "name": "Qwen3.5 397B-A17B FP8",
+      "contextWindow": 200000,
+      "maxOutput": 65536,
+      "inputPrice": 0.99,
+      "outputPrice": 4.46,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-15"
+    },
+    {
+      "id": "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
+      "name": "Nemotron 3 Nano 30B A3B FP8",
+      "contextWindow": 1000000,
+      "maxOutput": 262144,
+      "inputPrice": 0.06,
+      "outputPrice": 0.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-15"
+    },
+    {
+      "id": "mistralai/Ministral-3-14B-Instruct-2512",
+      "name": "Ministral 3 14B Instruct",
+      "contextWindow": 100000,
+      "maxOutput": 25600,
+      "inputPrice": 0.37,
+      "outputPrice": 0.5,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-02"
+    },
+    {
+      "id": "bge_multilingual_gemma2",
+      "name": "BGE Multilingual Gemma2",
+      "contextWindow": 8000,
+      "maxOutput": 3584,
+      "inputPrice": 0.08,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-25"
+    },
+    {
+      "id": "mini_lm_l12_v2",
+      "name": "All-MiniLM-L12-v2",
+      "contextWindow": 128,
+      "maxOutput": 384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2021-08-30"
+    }
+  ],
+  "baseUrl": "https://api.infomaniak.com/2/ai/${INFOMANIAK_PRODUCT_ID}/openai/v1",
+  "docsUrl": "https://www.infomaniak.com/en/hosting/ai-services/open-source-models"
+}

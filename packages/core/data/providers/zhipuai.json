@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
       "id": "glm-5v-turbo",
       "name": "GLM-5V-Turbo",
       "contextWindow": 200000,
@@ -25,7 +42,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-01"
     },
     {
@@ -33,8 +50,8 @@
       "name": "GLM-5.1",
       "contextWindow": 200000,
       "maxOutput": 131072,
-      "inputPrice": 6,
-      "outputPrice": 24,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -62,12 +79,12 @@
       "releaseDate": "2026-02-11"
     },
     {
-      "id": "glm-4.7-flash",
-      "name": "GLM-4.7-Flash",
+      "id": "glm-4.7-flashx",
+      "name": "GLM-4.7-FlashX",
       "contextWindow": 200000,
       "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 0.07,
+      "outputPrice": 0.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -78,12 +95,12 @@
       "releaseDate": "2026-01-19"
     },
     {
-      "id": "glm-4.7-flashx",
-      "name": "GLM-4.7-FlashX",
+      "id": "glm-4.7-flash",
+      "name": "GLM-4.7-Flash",
       "contextWindow": 200000,
       "maxOutput": 131072,
-      "inputPrice": 0.07,
-      "outputPrice": 0.4,
+      "inputPrice": 0,
+      "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
@@ -176,12 +193,12 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "glm-4.5-air",
-      "name": "GLM-4.5-Air",
+      "id": "glm-4.5",
+      "name": "GLM-4.5",
       "contextWindow": 131072,
       "maxOutput": 98304,
-      "inputPrice": 0.2,
-      "outputPrice": 1.1,
+      "inputPrice": 0.6,
+      "outputPrice": 2.2,
       "capabilities": [
         "chat",
         "function_calling",
@@ -192,12 +209,12 @@
       "releaseDate": "2025-07-28"
     },
     {
-      "id": "glm-4.5",
-      "name": "GLM-4.5",
+      "id": "glm-4.5-air",
+      "name": "GLM-4.5-Air",
       "contextWindow": 131072,
       "maxOutput": 98304,
-      "inputPrice": 0.6,
-      "outputPrice": 2.2,
+      "inputPrice": 0.2,
+      "outputPrice": 1.1,
       "capabilities": [
         "chat",
         "function_calling",

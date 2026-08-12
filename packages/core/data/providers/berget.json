@@ -12,6 +12,41 @@
   },
   "models": [
     {
+      "id": "moonshotai/Kimi-K3",
+      "name": "Kimi K3",
+      "contextWindow": 327680,
+      "maxOutput": 32768,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-27"
+    },
+    {
+      "id": "zai-org/GLM-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 524288,
+      "maxOutput": 32768,
+      "inputPrice": 1.54,
+      "outputPrice": 4.84,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
       "id": "moonshotai/Kimi-K2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
@@ -26,7 +61,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-07"
     },
     {
@@ -105,8 +140,8 @@
       "name": "GPT-OSS-120B",
       "contextWindow": 128000,
       "maxOutput": 8192,
-      "inputPrice": 0.44,
-      "outputPrice": 0.99,
+      "inputPrice": 0.22,
+      "outputPrice": 0.83,
       "capabilities": [
         "chat",
         "function_calling",

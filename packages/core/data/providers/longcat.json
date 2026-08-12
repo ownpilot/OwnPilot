@@ -1,0 +1,33 @@
+{
+  "id": "longcat",
+  "name": "LongCat",
+  "type": "openai-compatible",
+  "apiKeyEnv": "LONGCAT_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": false,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "LongCat-2.0",
+      "name": "LongCat-2.0",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.75,
+      "outputPrice": 2.95,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-30"
+    }
+  ],
+  "baseUrl": "https://api.longcat.chat/openai",
+  "docsUrl": "https://longcat.chat/platform/docs/"
+}

@@ -1,0 +1,143 @@
+{
+  "id": "trustedrouter",
+  "name": "TrustedRouter",
+  "type": "openai-compatible",
+  "apiKeyEnv": "TRUSTEDROUTER_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "synth",
+      "name": "Synth",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-20"
+    },
+    {
+      "id": "synth-code",
+      "name": "Synth Code",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-20"
+    },
+    {
+      "id": "zdr",
+      "name": "Zero Data Retention",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-01"
+    },
+    {
+      "id": "e2e",
+      "name": "End-to-End Encrypted",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-01"
+    },
+    {
+      "id": "fast",
+      "name": "Fast",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-01"
+    },
+    {
+      "id": "auto",
+      "name": "Auto",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-01"
+    },
+    {
+      "id": "cheap",
+      "name": "Cheap",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-01"
+    }
+  ],
+  "baseUrl": "https://api.trustedrouter.com/v1",
+  "docsUrl": "https://trustedrouter.com/docs"
+}

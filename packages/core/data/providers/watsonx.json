@@ -1,0 +1,98 @@
+{
+  "id": "watsonx",
+  "name": "watsonx.ai",
+  "type": "openai-compatible",
+  "apiKeyEnv": "WATSONX_AI_APIKEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "ibm/granite-4-h-small",
+      "name": "Granite-4.0-H-Small",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.0636,
+      "outputPrice": 0.265,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2025-10-02"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "inputPrice": 0.159,
+      "outputPrice": 0.636,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    },
+    {
+      "id": "meta-llama/llama-4-maverick-17b-128e-instruct-fp8",
+      "name": "Llama 4 Maverick 17B 128E Instruct FP8",
+      "contextWindow": 131072,
+      "maxOutput": 8192,
+      "inputPrice": 0.371,
+      "outputPrice": 1.484,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-05"
+    },
+    {
+      "id": "mistralai/mistral-small-3-1-24b-instruct-2503",
+      "name": "Mistral Small 3.1 24B",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.106,
+      "outputPrice": 0.318,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-03-17"
+    },
+    {
+      "id": "meta-llama/llama-3-3-70b-instruct",
+      "name": "Llama-3.3-70B-Instruct",
+      "contextWindow": 131072,
+      "maxOutput": 4096,
+      "inputPrice": 0.7526,
+      "outputPrice": 0.7526,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-12-06"
+    }
+  ],
+  "baseUrl": "https://api.watsonx.com/v1",
+  "docsUrl": "https://www.ibm.com/docs/en/watsonx/saas?topic=solutions-supported-foundation-models"
+}

@@ -12,6 +12,72 @@
   },
   "models": [
     {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048560,
+      "maxOutput": 1048560,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "kimi-k3-fast",
+      "name": "Kimi K3 Fast",
+      "contextWindow": 1048560,
+      "maxOutput": 1048560,
+      "inputPrice": 3,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "glm-5.2-short-fast",
+      "name": "GLM 5.2 Short Fast",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-short",
+      "name": "GLM 5.2 Short",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
       "id": "glm-5.2",
       "name": "GLM 5.2",
       "contextWindow": 1048560,
@@ -24,8 +90,88 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-short-flex",
+      "name": "GLM 5.2 Short Flex",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 0.725,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-fast",
+      "name": "GLM 5.2 Fast",
+      "contextWindow": 1048560,
+      "maxOutput": 1048560,
+      "inputPrice": 1.45,
+      "outputPrice": 4.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-flex",
+      "name": "GLM 5.2 Flex",
+      "contextWindow": 1048560,
+      "maxOutput": 1048560,
+      "inputPrice": 0.725,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "glm-5.2-short-fast-flex",
+      "name": "GLM 5.2 Short Fast Flex",
+      "contextWindow": 199984,
+      "maxOutput": 199984,
+      "inputPrice": 0.725,
+      "outputPrice": 2.25,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-17"
+    },
+    {
+      "id": "kimi-k2.7-code-flex",
+      "name": "Kimi K2.7 Code Flex",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0.475,
+      "outputPrice": 2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
     },
     {
       "id": "moonshotai/Kimi-K2.7-Code",
@@ -44,6 +190,40 @@
       ],
       "default": false,
       "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048560,
+      "maxOutput": 65536,
+      "inputPrice": 0.104,
+      "outputPrice": 0.207,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "kimi-k2.6-flex",
+      "name": "Kimi K2.6 Flex",
+      "contextWindow": 262128,
+      "maxOutput": 262128,
+      "inputPrice": 0.345,
+      "outputPrice": 1.61,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
     },
     {
       "id": "kimi-k2.6-fast",
@@ -79,50 +259,22 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "glm-5-fast",
-      "name": "GLM 5 Fast",
-      "contextWindow": 202736,
-      "maxOutput": 202736,
-      "inputPrice": 1.1,
-      "outputPrice": 3.6,
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B",
+      "contextWindow": 262128,
+      "maxOutput": 16384,
+      "inputPrice": 0.144,
+      "outputPrice": 0.42,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-07"
-    },
-    {
-      "id": "glm-5.1-fast",
-      "name": "GLM 5.1 Fast",
-      "contextWindow": 202736,
-      "maxOutput": 202736,
-      "inputPrice": 1.1,
-      "outputPrice": 3.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-07"
-    },
-    {
-      "id": "zai-org/GLM-5.1-FP8",
-      "name": "GLM 5.1 FP8",
-      "contextWindow": 202736,
-      "maxOutput": 202736,
-      "inputPrice": 1.1,
-      "outputPrice": 3.6,
-      "capabilities": [
-        "chat",
-        "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-07"
+      "releaseDate": "2026-04-02"
     },
     {
       "id": "qwen3.6-35b-fast",

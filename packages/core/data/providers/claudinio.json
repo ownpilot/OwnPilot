@@ -28,6 +28,24 @@
       ],
       "default": true,
       "releaseDate": "2026-05-12"
+    },
+    {
+      "id": "claudius",
+      "name": "Claudius",
+      "contextWindow": 256000,
+      "maxOutput": 64000,
+      "inputPrice": 3,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "audio",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-12"
     }
   ],
   "baseUrl": "https://api.claudin.io/v1",

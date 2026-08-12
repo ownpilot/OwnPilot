@@ -12,6 +12,23 @@
   },
   "models": [
     {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 256000,
+      "maxOutput": 16384,
+      "inputPrice": 1.8,
+      "outputPrice": 5.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
       "id": "qwen3.6-35b-a3b",
       "name": "Qwen3.6 35B A3B",
       "contextWindow": 128000,
@@ -26,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-05-01"
     },
     {
@@ -84,35 +101,6 @@
       "releaseDate": "2026-03-17"
     },
     {
-      "id": "devstral-2-123b-instruct-2512",
-      "name": "Devstral 2 123B Instruct (2512)",
-      "contextWindow": 256000,
-      "maxOutput": 16384,
-      "inputPrice": 0.4,
-      "outputPrice": 2,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01-07"
-    },
-    {
-      "id": "qwen3-embedding-8b",
-      "name": "Qwen3 Embedding 8B",
-      "contextWindow": 32768,
-      "maxOutput": 4096,
-      "inputPrice": 0.1,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-25-11"
-    },
-    {
       "id": "qwen3-235b-a22b-instruct-2507",
       "name": "Qwen3 235B A22B Instruct 2507",
       "contextWindow": 260000,
@@ -123,22 +111,6 @@
         "chat",
         "function_calling",
         "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-01"
-    },
-    {
-      "id": "voxtral-small-24b-2507",
-      "name": "Voxtral Small 24B 2507",
-      "contextWindow": 32000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.35,
-      "capabilities": [
-        "chat",
-        "audio",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -159,6 +131,20 @@
       ],
       "default": false,
       "releaseDate": "2025-06-20"
+    },
+    {
+      "id": "qwen3-embedding-8b",
+      "name": "Qwen3 Embedding 8B",
+      "contextWindow": 32768,
+      "maxOutput": 4096,
+      "inputPrice": 0.1,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-06-05"
     },
     {
       "id": "qwen3-coder-30b-a3b-instruct",
@@ -189,23 +175,6 @@
       ],
       "default": false,
       "releaseDate": "2024-12-06"
-    },
-    {
-      "id": "gemma-3-27b-it",
-      "name": "Gemma-3-27B-IT",
-      "contextWindow": 40000,
-      "maxOutput": 8192,
-      "inputPrice": 0.25,
-      "outputPrice": 0.5,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-12-01"
     },
     {
       "id": "pixtral-12b-2409",
@@ -247,6 +216,7 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "reasoning",
         "streaming"
       ],
       "default": false,

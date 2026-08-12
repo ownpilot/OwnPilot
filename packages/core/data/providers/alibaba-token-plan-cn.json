@@ -12,20 +12,153 @@
   },
   "models": [
     {
-      "id": "qwen3.7-plus",
-      "name": "Qwen3.7 Plus",
+      "id": "qwen3.8-max",
+      "name": "Qwen3.8 Max",
       "contextWindow": 1000000,
-      "maxOutput": 64000,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": true,
+      "releaseDate": "2026-08-03"
+    },
+    {
+      "id": "deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1000000,
+      "maxOutput": 384000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "qwen3.8-max-preview",
+      "name": "Qwen3.8 Max Preview",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-19"
+    },
+    {
+      "id": "happyhorse-1.1-i2v",
+      "name": "HappyHorse 1.1 Image-to-Video",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-17"
+    },
+    {
+      "id": "happyhorse-1.1-r2v",
+      "name": "HappyHorse 1.1 Reference-to-Video",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-17"
+    },
+    {
+      "id": "happyhorse-1.1-t2v",
+      "name": "HappyHorse 1.1 Text-to-Video",
+      "contextWindow": 0,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-17"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "kimi-k2.7-code",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "qwen3.7-plus",
+      "name": "Qwen3.7 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-06-02"
     },
     {
@@ -60,12 +193,13 @@
       "id": "qwen3.7-max",
       "name": "Qwen3.7 Max",
       "contextWindow": 1000000,
-      "maxOutput": 65536,
+      "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
@@ -128,35 +262,19 @@
       "id": "kimi-k2.6",
       "name": "Kimi K2.6",
       "contextWindow": 262144,
-      "maxOutput": 16384,
+      "maxOutput": 262144,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
       "releaseDate": "2026-04-21"
-    },
-    {
-      "id": "qwen3.6-plus",
-      "name": "Qwen3.6 Plus",
-      "contextWindow": 1000000,
-      "maxOutput": 65536,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-02"
     },
     {
       "id": "glm-5.1",
@@ -173,21 +291,25 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     },
     {
-      "id": "qwen-image-2.0",
-      "name": "Qwen Image 2.0",
-      "contextWindow": 8192,
-      "maxOutput": 0,
+      "id": "qwen3.6-plus",
+      "name": "Qwen3.6 Plus",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-03"
+      "releaseDate": "2026-04-02"
     },
     {
       "id": "qwen-image-2.0-pro",
@@ -204,10 +326,41 @@
       "releaseDate": "2026-03-03"
     },
     {
+      "id": "qwen-image-2.0",
+      "name": "Qwen Image 2.0",
+      "contextWindow": 8192,
+      "maxOutput": 0,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-03"
+    },
+    {
+      "id": "glm-5",
+      "name": "GLM-5",
+      "contextWindow": 202752,
+      "maxOutput": 16384,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-12"
+    },
+    {
       "id": "MiniMax-M2.5",
       "name": "MiniMax-M2.5",
       "contextWindow": 196608,
-      "maxOutput": 24576,
+      "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
@@ -220,32 +373,17 @@
       "releaseDate": "2026-02-12"
     },
     {
-      "id": "glm-5",
-      "name": "GLM-5",
-      "contextWindow": 202752,
-      "maxOutput": 16384,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-11"
-    },
-    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
-      "maxOutput": 32768,
+      "maxOutput": 98304,
       "inputPrice": 0,
       "outputPrice": 0,
       "capabilities": [
         "chat",
         "vision",
         "function_calling",
+        "json_mode",
         "reasoning",
         "streaming"
       ],

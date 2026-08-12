@@ -12,6 +12,24 @@
   },
   "models": [
     {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B IT",
+      "contextWindow": 131072,
+      "maxOutput": 40960,
+      "inputPrice": 0.99,
+      "outputPrice": 1.49,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-04-02"
+    },
+    {
       "id": "zai-glm-4.7",
       "name": "Z.AI GLM-4.7",
       "contextWindow": 131072,
@@ -25,7 +43,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-01-07"
     },
     {

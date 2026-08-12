@@ -29,26 +29,9 @@
       "releaseDate": "2026-06-13"
     },
     {
-      "id": "glm-5v-turbo",
-      "name": "GLM-5V-Turbo",
-      "contextWindow": 200000,
-      "maxOutput": 131072,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-01"
-    },
-    {
-      "id": "glm-5.1",
-      "name": "GLM-5.1",
-      "contextWindow": 200000,
+      "id": "glm-5.2-highspeed",
+      "name": "GLM-5.2 Highspeed",
+      "contextWindow": 1000000,
       "maxOutput": 131072,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -60,7 +43,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-06-13"
     },
     {
       "id": "glm-5-turbo",
@@ -94,22 +77,6 @@
       ],
       "default": false,
       "releaseDate": "2025-12-22"
-    },
-    {
-      "id": "glm-4.5-air",
-      "name": "GLM-4.5-Air",
-      "contextWindow": 131072,
-      "maxOutput": 98304,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-28"
     }
   ],
   "baseUrl": "https://api.z.ai/api/coding/paas/v4",

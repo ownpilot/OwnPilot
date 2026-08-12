@@ -12,30 +12,29 @@
   },
   "models": [
     {
-      "id": "umans-kimi-k2.7",
-      "name": "Kimi K2.7 Code",
-      "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 0.95,
-      "outputPrice": 4,
+      "id": "umans-deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash",
+      "contextWindow": 1048576,
+      "maxOutput": 393215,
+      "inputPrice": 0.14,
+      "outputPrice": 0.28,
       "capabilities": [
         "chat",
-        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-06-12"
+      "releaseDate": "2026-07-31"
     },
     {
-      "id": "umans-kimi-k2.6",
-      "name": "Kimi K2.6",
-      "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 0.95,
-      "outputPrice": 4,
+      "id": "umans-kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 3,
+      "outputPrice": 15,
       "capabilities": [
         "chat",
         "vision",
@@ -45,7 +44,25 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-21"
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "umans-glm-5.2",
+      "name": "GLM 5.2",
+      "contextWindow": 405504,
+      "maxOutput": 131072,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
     },
     {
       "id": "umans-coder",
@@ -63,7 +80,25 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04-21"
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "umans-kimi-k2.7",
+      "name": "Kimi K2.7 Code",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0.95,
+      "outputPrice": 4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
     },
     {
       "id": "umans-flash",
@@ -99,7 +134,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     }
   ],
   "baseUrl": "https://api.code.umans.ai/v1",

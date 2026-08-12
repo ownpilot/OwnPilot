@@ -1,0 +1,71 @@
+{
+  "id": "sakana",
+  "name": "Sakana AI",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SAKANA_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": true,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "fugu-ultra-20260615",
+      "name": "Fugu Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-15"
+    },
+    {
+      "id": "fugu-ultra",
+      "name": "Fugu Ultra",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-15"
+    },
+    {
+      "id": "fugu",
+      "name": "Fugu",
+      "contextWindow": 1000000,
+      "maxOutput": 1000000,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-15"
+    }
+  ],
+  "baseUrl": "https://api.sakana.ai/v1",
+  "docsUrl": "https://console.sakana.ai/models"
+}

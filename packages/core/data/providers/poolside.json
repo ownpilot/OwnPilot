@@ -12,9 +12,9 @@
   },
   "models": [
     {
-      "id": "poolside/laguna-xs.2",
-      "name": "Laguna XS.2",
-      "contextWindow": 262144,
+      "id": "poolside/laguna-s-2.1",
+      "name": "Laguna S 2.1",
+      "contextWindow": 1048576,
       "maxOutput": 32768,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -25,7 +25,23 @@
         "streaming"
       ],
       "default": true,
-      "releaseDate": "2026-04-28"
+      "releaseDate": "2026-07-21"
+    },
+    {
+      "id": "poolside/laguna-xs-2.1",
+      "name": "Laguna XS 2.1",
+      "contextWindow": 262144,
+      "maxOutput": 32768,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-02"
     },
     {
       "id": "poolside/laguna-m.1",

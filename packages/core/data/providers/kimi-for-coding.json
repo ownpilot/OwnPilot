@@ -12,7 +12,43 @@
   },
   "models": [
     {
-      "id": "k2p7",
+      "id": "k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "k3-256k",
+      "name": "Kimi K3-256K",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0,
+      "outputPrice": 0,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "kimi-for-coding",
       "name": "Kimi K2.7 Code",
       "contextWindow": 262144,
       "maxOutput": 32768,
@@ -26,12 +62,12 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-06-12"
     },
     {
-      "id": "k2p6",
-      "name": "Kimi K2.6",
+      "id": "kimi-for-coding-highspeed",
+      "name": "Kimi For Coding HighSpeed",
       "contextWindow": 262144,
       "maxOutput": 32768,
       "inputPrice": 0,
@@ -45,42 +81,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-04"
-    },
-    {
-      "id": "k2p5",
-      "name": "Kimi K2.5",
-      "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-01"
-    },
-    {
-      "id": "kimi-k2-thinking",
-      "name": "Kimi K2 Thinking",
-      "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 0,
-      "outputPrice": 0,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-11"
+      "releaseDate": "2026-06-12"
     }
   ],
   "baseUrl": "https://api.kimi.com/coding/v1",

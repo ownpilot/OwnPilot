@@ -1,6 +1,6 @@
 {
   "id": "lucidquery",
-  "name": "LucidQuery AI",
+  "name": "LucidQuery",
   "type": "openai-compatible",
   "apiKeyEnv": "LUCIDQUERY_API_KEY",
   "features": {
@@ -11,6 +11,40 @@
     "systemMessage": true
   },
   "models": [
+    {
+      "id": "lucidquery-agi-01-frontier",
+      "name": "AGI-01 Frontier",
+      "contextWindow": 300000,
+      "maxOutput": 120000,
+      "inputPrice": 4.5,
+      "outputPrice": 22,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-16"
+    },
+    {
+      "id": "lucidquery-agi-01-swift",
+      "name": "AGI-01 Swift",
+      "contextWindow": 300000,
+      "maxOutput": 120000,
+      "inputPrice": 2.5,
+      "outputPrice": 15,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-16"
+    },
     {
       "id": "lucidquery-nexus-coder",
       "name": "LucidQuery Nexus Coder",
@@ -24,7 +58,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2025-09-01"
     },
     {
@@ -45,5 +79,5 @@
     }
   ],
   "baseUrl": "https://lucidquery.com/api/v1",
-  "docsUrl": "https://lucidquery.com/api/docs"
+  "docsUrl": "https://lucidquery.com/docs"
 }

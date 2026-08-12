@@ -12,12 +12,45 @@
   },
   "models": [
     {
-      "id": "anthropic-claude-fable-5",
-      "name": "Anthropic Claude Fable 5",
+      "id": "qwen3.8-max",
+      "name": "Qwen3.8-2.4T-A95B",
+      "contextWindow": 262144,
+      "maxOutput": 52429,
+      "inputPrice": 2,
+      "outputPrice": 6,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-08-03"
+    },
+    {
+      "id": "deepseek-v4-flash-0731",
+      "name": "DeepSeek V4 Flash 0731",
+      "contextWindow": 1048576,
+      "maxOutput": 209715,
+      "inputPrice": 0.08,
+      "outputPrice": 0.252,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-31"
+    },
+    {
+      "id": "anthropic-claude-opus-5",
+      "name": "Anthropic Claude Opus 5",
       "contextWindow": 1000000,
       "maxOutput": 128000,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "inputPrice": 5,
+      "outputPrice": 25,
       "capabilities": [
         "chat",
         "vision",
@@ -25,16 +58,138 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
+      "releaseDate": "2026-07-24"
+    },
+    {
+      "id": "kimi-k3",
+      "name": "Kimi K3",
+      "contextWindow": 1048576,
+      "maxOutput": 131072,
+      "inputPrice": 2.85,
+      "outputPrice": 14.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-16"
+    },
+    {
+      "id": "openai-gpt-5.6-terra",
+      "name": "OpenAI GPT-5.6 Terra",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 12,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai-gpt-5.6-sol",
+      "name": "OpenAI GPT-5.6 Sol",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "openai-gpt-5.6-luna",
+      "name": "OpenAI GPT-5.6 Luna",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 0.2,
+      "outputPrice": 1.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-07-09"
+    },
+    {
+      "id": "anthropic-claude-5-sonnet",
+      "name": "Anthropic Claude Sonnet 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 2,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-30"
+    },
+    {
+      "id": "glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 262144,
+      "maxOutput": 52429,
+      "inputPrice": 0.63,
+      "outputPrice": 1.98,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "anthropic-claude-fable-5",
+      "name": "Anthropic Claude Fable 5",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 10,
+      "outputPrice": 50,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
       "releaseDate": "2026-06-09"
     },
     {
       "id": "nemotron-3-ultra-550b",
       "name": "Nemotron 3 Ultra",
       "contextWindow": 131072,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 26214,
+      "inputPrice": 0.9,
+      "outputPrice": 1.7,
       "capabilities": [
         "chat",
         "function_calling",
@@ -45,7 +200,7 @@
     },
     {
       "id": "anthropic-claude-opus-4.8",
-      "name": "Claude Opus 4.8",
+      "name": "Anthropic Claude Opus 4.8",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -63,10 +218,10 @@
     {
       "id": "deepseek-4-flash",
       "name": "Deepseek V4 Flash",
-      "contextWindow": 262144,
-      "maxOutput": 8192,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "contextWindow": 1048576,
+      "maxOutput": 384000,
+      "inputPrice": 0.0679,
+      "outputPrice": 0.168,
       "capabilities": [
         "chat",
         "function_calling",
@@ -77,15 +232,14 @@
     },
     {
       "id": "nemotron-3-nano-omni",
-      "name": "Nemotron Nano 3 Omni",
+      "name": "Nemotron 3 Nano Omni",
       "contextWindow": 65536,
-      "maxOutput": 65536,
+      "maxOutput": 13107,
       "inputPrice": 0.5,
       "outputPrice": 0.9,
       "capabilities": [
         "chat",
         "vision",
-        "audio",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -96,11 +250,11 @@
     },
     {
       "id": "deepseek-v4-pro",
-      "name": "DeepSeek V4 Pro",
+      "name": "Deepseek V4 Pro",
       "contextWindow": 1048576,
-      "maxOutput": 393216,
-      "inputPrice": 1.74,
-      "outputPrice": 3.48,
+      "maxOutput": 384000,
+      "inputPrice": 0.87,
+      "outputPrice": 1.74,
       "capabilities": [
         "chat",
         "function_calling",
@@ -113,7 +267,7 @@
     },
     {
       "id": "openai-gpt-5.5",
-      "name": "GPT-5.5",
+      "name": "OpenAI GPT-5.5",
       "contextWindow": 1000000,
       "maxOutput": 128000,
       "inputPrice": 5,
@@ -130,8 +284,24 @@
       "releaseDate": "2026-04-23"
     },
     {
+      "id": "mimo-v2.5-pro",
+      "name": "MiMo V2.5 Pro",
+      "contextWindow": 262144,
+      "maxOutput": 52429,
+      "inputPrice": 0.4,
+      "outputPrice": 1.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-22"
+    },
+    {
       "id": "gemma-4-31B-it",
-      "name": "Gemma 4 31B",
+      "name": "Gemma 4",
       "contextWindow": 256000,
       "maxOutput": 8192,
       "inputPrice": 0.18,
@@ -145,6 +315,24 @@
       ],
       "default": false,
       "releaseDate": "2026-04-22"
+    },
+    {
+      "id": "kimi-k2.6",
+      "name": "Kimi K2.6",
+      "contextWindow": 262144,
+      "maxOutput": 52429,
+      "inputPrice": 0.76,
+      "outputPrice": 3.2,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-21"
     },
     {
       "id": "qwen3-tts-voicedesign",
@@ -161,28 +349,10 @@
       "releaseDate": "2026-04-21"
     },
     {
-      "id": "kimi-k2.6",
-      "name": "Kimi K2.6",
-      "contextWindow": 262144,
-      "maxOutput": 262144,
-      "inputPrice": 0.95,
-      "outputPrice": 4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-04-21"
-    },
-    {
       "id": "anthropic-claude-opus-4.7",
-      "name": "Claude Opus 4.7",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
+      "name": "Anthropic Claude Opus 4.7",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
       "inputPrice": 5,
       "outputPrice": 25,
       "capabilities": [
@@ -196,10 +366,27 @@
       "releaseDate": "2026-04-16"
     },
     {
+      "id": "glm-5.1",
+      "name": "GLM-5.1",
+      "contextWindow": 163840,
+      "maxOutput": 32768,
+      "inputPrice": 0.975,
+      "outputPrice": 4.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-07"
+    },
+    {
       "id": "arcee-trinity-large-thinking",
-      "name": "Trinity Large Thinking",
-      "contextWindow": 256000,
-      "maxOutput": 128000,
+      "name": "Arcee Trinity Large Thinking (Public Preview)",
+      "contextWindow": 128000,
+      "maxOutput": 32000,
       "inputPrice": 0.25,
       "outputPrice": 0.9,
       "capabilities": [
@@ -212,26 +399,8 @@
       "releaseDate": "2026-04-02"
     },
     {
-      "id": "openai-gpt-5.4-nano",
-      "name": "GPT-5.4 nano",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.2,
-      "outputPrice": 1.25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-03-17"
-    },
-    {
       "id": "openai-gpt-5.4-mini",
-      "name": "GPT-5.4 mini",
+      "name": "OpenAI GPT-5.4 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0.75,
@@ -248,12 +417,30 @@
       "releaseDate": "2026-03-17"
     },
     {
+      "id": "openai-gpt-5.4-nano",
+      "name": "OpenAI GPT-5.4 Nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.2,
+      "outputPrice": 1.25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-03-17"
+    },
+    {
       "id": "nvidia-nemotron-3-super-120b",
-      "name": "Nemotron-3-Super-120B",
-      "contextWindow": 256000,
+      "name": "NVIDIA Nemotron 3 Super 120B  (Public Preview)",
+      "contextWindow": 1000000,
       "maxOutput": 32768,
-      "inputPrice": 0.3,
-      "outputPrice": 0.65,
+      "inputPrice": 0.165,
+      "outputPrice": 0.3575,
       "capabilities": [
         "chat",
         "function_calling",
@@ -266,8 +453,8 @@
     },
     {
       "id": "openai-gpt-5.4-pro",
-      "name": "GPT-5.4 pro",
-      "contextWindow": 400000,
+      "name": "OpenAI GPT-5.4 Pro",
+      "contextWindow": 1050000,
       "maxOutput": 128000,
       "inputPrice": 30,
       "outputPrice": 180,
@@ -283,8 +470,8 @@
     },
     {
       "id": "openai-gpt-5.4",
-      "name": "GPT-5.4",
-      "contextWindow": 1000000,
+      "name": "OpenAI GPT-5.4",
+      "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 2.5,
       "outputPrice": 15,
@@ -301,9 +488,9 @@
     },
     {
       "id": "anthropic-claude-4.6-sonnet",
-      "name": "Claude Sonnet 4.6",
-      "contextWindow": 1000000,
-      "maxOutput": 64000,
+      "name": "Anthropic Claude Sonnet 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
       "inputPrice": 3,
       "outputPrice": 15,
       "capabilities": [
@@ -319,12 +506,13 @@
     {
       "id": "qwen3.5-397b-a17b",
       "name": "Qwen 3.5 397B A17B",
-      "contextWindow": 262144,
-      "maxOutput": 81920,
-      "inputPrice": 0.55,
-      "outputPrice": 3.5,
+      "contextWindow": 131072,
+      "maxOutput": 26214,
+      "inputPrice": 0.3025,
+      "outputPrice": 1.925,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -335,13 +523,14 @@
     },
     {
       "id": "minimax-m2.5",
-      "name": "MiniMax M2.5",
-      "contextWindow": 204800,
-      "maxOutput": 128000,
-      "inputPrice": 0.3,
-      "outputPrice": 1.2,
+      "name": "MiniMax M2.5 (Public Preview)",
+      "contextWindow": 65536,
+      "maxOutput": 13107,
+      "inputPrice": 0.225,
+      "outputPrice": 0.9,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "reasoning",
         "streaming"
@@ -352,10 +541,10 @@
     {
       "id": "glm-5",
       "name": "GLM 5",
-      "contextWindow": 202752,
-      "maxOutput": 128000,
-      "inputPrice": 1,
-      "outputPrice": 3.2,
+      "contextWindow": 64000,
+      "maxOutput": 12800,
+      "inputPrice": 0.75,
+      "outputPrice": 2.4,
       "capabilities": [
         "chat",
         "function_calling",
@@ -366,25 +555,8 @@
       "releaseDate": "2026-02-11"
     },
     {
-      "id": "anthropic-claude-opus-4.6",
-      "name": "Claude Opus 4.6",
-      "contextWindow": 1000000,
-      "maxOutput": 128000,
-      "inputPrice": 5,
-      "outputPrice": 25,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2026-02-05"
-    },
-    {
       "id": "openai-gpt-5.3-codex",
-      "name": "GPT-5.3 Codex",
+      "name": "OpenAI GPT-5.3 Codex",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.75,
@@ -401,14 +573,32 @@
       "releaseDate": "2026-02-05"
     },
     {
+      "id": "anthropic-claude-opus-4.6",
+      "name": "Anthropic Claude Opus 4.6",
+      "contextWindow": 200000,
+      "maxOutput": 8192,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-02-05"
+    },
+    {
       "id": "kimi-k2.5",
       "name": "Kimi K2.5",
       "contextWindow": 262144,
-      "maxOutput": 32768,
-      "inputPrice": 0.5,
-      "outputPrice": 2.7,
+      "maxOutput": 52429,
+      "inputPrice": 0.375,
+      "outputPrice": 2.025,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -419,7 +609,7 @@
     },
     {
       "id": "mistral-3-14B",
-      "name": "Ministral 3 14B Instruct",
+      "name": "Ministral 3 14B",
       "contextWindow": 262144,
       "maxOutput": 128000,
       "inputPrice": 0.2,
@@ -450,8 +640,25 @@
       "releaseDate": "2025-12-15"
     },
     {
+      "id": "openai-gpt-5.2-pro",
+      "name": "OpenAI GPT-5.2 Pro",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 21,
+      "outputPrice": 168,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-12-11"
+    },
+    {
       "id": "openai-gpt-5.2",
-      "name": "GPT-5.2",
+      "name": "OpenAI GPT-5.2",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 1.75,
@@ -468,29 +675,12 @@
       "releaseDate": "2025-12-11"
     },
     {
-      "id": "openai-gpt-5.2-pro",
-      "name": "GPT-5.2 pro",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 21,
-      "outputPrice": 168,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-11"
-    },
-    {
       "id": "deepseek-3.2",
-      "name": "DeepSeek V3.2",
-      "contextWindow": 128000,
-      "maxOutput": 64000,
-      "inputPrice": 0.5,
-      "outputPrice": 1.6,
+      "name": "Deepseek 3.2",
+      "contextWindow": 163840,
+      "maxOutput": 32768,
+      "inputPrice": 0.25,
+      "outputPrice": 0.8,
       "capabilities": [
         "chat",
         "function_calling",
@@ -501,27 +691,10 @@
       "releaseDate": "2025-12-02"
     },
     {
-      "id": "nemotron-nano-12b-v2-vl",
-      "name": "Nemotron Nano 12B v2 VL",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.2,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-12-01"
-    },
-    {
       "id": "openai-gpt-image-1.5",
-      "name": "GPT Image 1.5",
+      "name": "OpenAI GPT Image 1.5",
       "contextWindow": 0,
-      "maxOutput": 0,
+      "maxOutput": 16384,
       "inputPrice": 5,
       "outputPrice": 10,
       "capabilities": [
@@ -534,9 +707,9 @@
     },
     {
       "id": "anthropic-claude-opus-4.5",
-      "name": "Claude Opus 4.5",
+      "name": "Anthropic Claude Opus 4.5",
       "contextWindow": 200000,
-      "maxOutput": 64000,
+      "maxOutput": 8192,
       "inputPrice": 5,
       "outputPrice": 25,
       "capabilities": [
@@ -568,10 +741,27 @@
       "releaseDate": "2025-11-13"
     },
     {
+      "id": "nemotron-nano-12b-v2-vl",
+      "name": "Nemotron-nano 12b v2-vl",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.2,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-10-28"
+    },
+    {
       "id": "anthropic-claude-haiku-4.5",
-      "name": "Claude Haiku 4.5",
+      "name": "Anthropic Claude Haiku 4.5",
       "contextWindow": 200000,
-      "maxOutput": 64000,
+      "maxOutput": 8192,
       "inputPrice": 1,
       "outputPrice": 5,
       "capabilities": [
@@ -617,8 +807,8 @@
     },
     {
       "id": "anthropic-claude-4.5-sonnet",
-      "name": "Claude Sonnet 4.5",
-      "contextWindow": 1000000,
+      "name": "Anthropic Claude 4.5 Sonnet",
+      "contextWindow": 200000,
       "maxOutput": 64000,
       "inputPrice": 3,
       "outputPrice": 15,
@@ -633,44 +823,8 @@
       "releaseDate": "2025-09-29"
     },
     {
-      "id": "openai-gpt-5",
-      "name": "GPT-5",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 1.25,
-      "outputPrice": 10,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-07"
-    },
-    {
-      "id": "openai-gpt-5-nano",
-      "name": "GPT-5 nano",
-      "contextWindow": 400000,
-      "maxOutput": 128000,
-      "inputPrice": 0.05,
-      "outputPrice": 0.4,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-07"
-    },
-    {
       "id": "openai-gpt-5-mini",
-      "name": "GPT-5 mini",
+      "name": "OpenAI GPT-5 Mini",
       "contextWindow": 400000,
       "maxOutput": 128000,
       "inputPrice": 0.25,
@@ -687,10 +841,46 @@
       "releaseDate": "2025-08-07"
     },
     {
+      "id": "openai-gpt-5-nano",
+      "name": "OpenAI GPT-5 Nano",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 0.05,
+      "outputPrice": 0.4,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
+      "id": "openai-gpt-5",
+      "name": "OpenAI GPT-5",
+      "contextWindow": 400000,
+      "maxOutput": 128000,
+      "inputPrice": 1.25,
+      "outputPrice": 10,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-07"
+    },
+    {
       "id": "openai-gpt-oss-20b",
-      "name": "gpt-oss-20b",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
+      "name": "OpenAI GPT-oss-20b",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
       "inputPrice": 0.05,
       "outputPrice": 0.45,
       "capabilities": [
@@ -705,9 +895,9 @@
     },
     {
       "id": "anthropic-claude-4.1-opus",
-      "name": "Claude Opus 4.1",
+      "name": "Anthropic Claude 4.1 Opus",
       "contextWindow": 200000,
-      "maxOutput": 32000,
+      "maxOutput": 8192,
       "inputPrice": 15,
       "outputPrice": 75,
       "capabilities": [
@@ -722,11 +912,11 @@
     },
     {
       "id": "openai-gpt-oss-120b",
-      "name": "gpt-oss-120b",
-      "contextWindow": 131072,
-      "maxOutput": 131072,
-      "inputPrice": 0.1,
-      "outputPrice": 0.7,
+      "name": "OpenAI GPT-oss-120b",
+      "contextWindow": 128000,
+      "maxOutput": 4096,
+      "inputPrice": 0.055,
+      "outputPrice": 0.385,
       "capabilities": [
         "chat",
         "function_calling",
@@ -738,6 +928,21 @@
       "releaseDate": "2025-08-05"
     },
     {
+      "id": "qwen3-coder-flash",
+      "name": "Qwen3 Coder Flash",
+      "contextWindow": 262144,
+      "maxOutput": 52429,
+      "inputPrice": 0.45,
+      "outputPrice": 1.7,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-28"
+    },
+    {
       "id": "wan2-2-t2v-a14b",
       "name": "Wan2.2-T2V-A14B",
       "contextWindow": 100,
@@ -746,21 +951,6 @@
       "outputPrice": 0,
       "capabilities": [
         "chat",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-07-28"
-    },
-    {
-      "id": "qwen3-coder-flash",
-      "name": "Qwen3 Coder Flash",
-      "contextWindow": 262144,
-      "maxOutput": 65536,
-      "inputPrice": 0.45,
-      "outputPrice": 1.7,
-      "capabilities": [
-        "chat",
-        "function_calling",
         "streaming"
       ],
       "default": false,
@@ -816,9 +1006,9 @@
     },
     {
       "id": "alibaba-qwen3-32b",
-      "name": "Qwen3-32B",
-      "contextWindow": 131000,
-      "maxOutput": 40960,
+      "name": "Qwen3 32B",
+      "contextWindow": 32768,
+      "maxOutput": 6554,
       "inputPrice": 0.25,
       "outputPrice": 0.55,
       "capabilities": [
@@ -848,11 +1038,11 @@
     },
     {
       "id": "openai-gpt-image-2",
-      "name": "GPT Image 2",
+      "name": "OpenAI GPT Image 2",
       "contextWindow": 0,
-      "maxOutput": 0,
-      "inputPrice": 0,
-      "outputPrice": 0,
+      "maxOutput": 16384,
+      "inputPrice": 8,
+      "outputPrice": 30,
       "capabilities": [
         "chat",
         "vision",
@@ -863,7 +1053,7 @@
     },
     {
       "id": "openai-o3",
-      "name": "o3",
+      "name": "OpenAI o3",
       "contextWindow": 200000,
       "maxOutput": 100000,
       "inputPrice": 2,
@@ -878,6 +1068,23 @@
       ],
       "default": false,
       "releaseDate": "2025-04-16"
+    },
+    {
+      "id": "openai-gpt-4.1",
+      "name": "OpenAI GPT-4.1",
+      "contextWindow": 1047576,
+      "maxOutput": 32768,
+      "inputPrice": 2,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-04-14"
     },
     {
       "id": "nemotron-3-nano-30b",
@@ -896,29 +1103,12 @@
       "releaseDate": "2025-04-14"
     },
     {
-      "id": "openai-gpt-4.1",
-      "name": "GPT-4.1",
-      "contextWindow": 1047576,
-      "maxOutput": 32768,
-      "inputPrice": 2,
-      "outputPrice": 8,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-04-14"
-    },
-    {
       "id": "llama-4-maverick",
-      "name": "Llama 4 Maverick 17B 128E Instruct",
-      "contextWindow": 1000000,
+      "name": "Llama 4 Maverick",
+      "contextWindow": 128000,
       "maxOutput": 16384,
-      "inputPrice": 0.25,
-      "outputPrice": 0.87,
+      "inputPrice": 0.2,
+      "outputPrice": 0.696,
       "capabilities": [
         "chat",
         "vision",
@@ -949,8 +1139,8 @@
     {
       "id": "deepseek-r1-distill-llama-70b",
       "name": "DeepSeek R1 Distill Llama 70B",
-      "contextWindow": 131072,
-      "maxOutput": 32768,
+      "contextWindow": 32678,
+      "maxOutput": 8192,
       "inputPrice": 0.99,
       "outputPrice": 0.99,
       "capabilities": [
@@ -980,13 +1170,14 @@
     },
     {
       "id": "openai-o3-mini",
-      "name": "o3-mini",
+      "name": "OpenAI o3 mini",
       "contextWindow": 200000,
       "maxOutput": 100000,
       "inputPrice": 1.1,
       "outputPrice": 4.4,
       "capabilities": [
         "chat",
+        "vision",
         "function_calling",
         "json_mode",
         "reasoning",
@@ -997,9 +1188,9 @@
     },
     {
       "id": "llama3.3-70b-instruct",
-      "name": "Llama 3.3 Instruct 70B",
+      "name": "Llama 3.3 Instruct (70B)",
       "contextWindow": 128000,
-      "maxOutput": 128000,
+      "maxOutput": 4096,
       "inputPrice": 0.65,
       "outputPrice": 0.65,
       "capabilities": [
@@ -1012,7 +1203,7 @@
     },
     {
       "id": "openai-o1",
-      "name": "o1",
+      "name": "OpenAI o1",
       "contextWindow": 200000,
       "maxOutput": 100000,
       "inputPrice": 15,
@@ -1102,23 +1293,6 @@
       "releaseDate": "2024-07-23"
     },
     {
-      "id": "openai-gpt-4o-mini",
-      "name": "GPT-4o mini",
-      "contextWindow": 128000,
-      "maxOutput": 16384,
-      "inputPrice": 0.15,
-      "outputPrice": 0.6,
-      "capabilities": [
-        "chat",
-        "vision",
-        "function_calling",
-        "json_mode",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2024-07-18"
-    },
-    {
       "id": "mistral-nemo-instruct-2407",
       "name": "Mistral Nemo Instruct",
       "contextWindow": 128000,
@@ -1128,6 +1302,24 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2024-07-18"
+    },
+    {
+      "id": "openai-gpt-4o-mini",
+      "name": "OpenAI GPT-4o mini",
+      "contextWindow": 128000,
+      "maxOutput": 16384,
+      "inputPrice": 0.15,
+      "outputPrice": 0.6,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,
@@ -1166,7 +1358,7 @@
     },
     {
       "id": "openai-gpt-4o",
-      "name": "GPT-4o",
+      "name": "OpenAI GPT-4o",
       "contextWindow": 128000,
       "maxOutput": 16384,
       "inputPrice": 2.5,

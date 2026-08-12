@@ -168,9 +168,9 @@
       "releaseDate": "2024-12-02"
     },
     {
-      "id": "c4ai-aya-expanse-32b",
-      "name": "Aya Expanse 32B",
-      "contextWindow": 128000,
+      "id": "c4ai-aya-expanse-8b",
+      "name": "Aya Expanse 8B",
+      "contextWindow": 8000,
       "maxOutput": 4000,
       "inputPrice": 0,
       "outputPrice": 0,
@@ -182,9 +182,9 @@
       "releaseDate": "2024-10-24"
     },
     {
-      "id": "c4ai-aya-expanse-8b",
-      "name": "Aya Expanse 8B",
-      "contextWindow": 8000,
+      "id": "c4ai-aya-expanse-32b",
+      "name": "Aya Expanse 32B",
+      "contextWindow": 128000,
       "maxOutput": 4000,
       "inputPrice": 0,
       "outputPrice": 0,

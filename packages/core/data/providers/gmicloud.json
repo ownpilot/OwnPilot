@@ -12,6 +12,73 @@
   },
   "models": [
     {
+      "id": "zai-org/GLM-5.2-FP8",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 0.979,
+      "outputPrice": 3.08,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "moonshotai/kimi-k2.7-code-highspeed",
+      "name": "Kimi K2.7 Code Highspeed",
+      "contextWindow": 262144,
+      "maxOutput": 262144,
+      "inputPrice": 1.9,
+      "outputPrice": 8,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-06-12"
+    },
+    {
+      "id": "anthropic/claude-opus-4.8",
+      "name": "Claude Opus 4.8",
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 25,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-28"
+    },
+    {
+      "id": "Qwen/Qwen3.7-Max",
+      "name": "Qwen3.7 Max",
+      "contextWindow": 1000000,
+      "maxOutput": 65536,
+      "inputPrice": 2.5,
+      "outputPrice": 7.5,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-21"
+    },
+    {
       "id": "deepseek-ai/DeepSeek-V4-Flash",
       "name": "DeepSeek V4 Flash",
       "contextWindow": 1048575,
@@ -25,7 +92,7 @@
         "reasoning",
         "streaming"
       ],
-      "default": true,
+      "default": false,
       "releaseDate": "2026-04-24"
     },
     {
@@ -44,6 +111,24 @@
       ],
       "default": false,
       "releaseDate": "2026-04-24"
+    },
+    {
+      "id": "openai/gpt-5.5",
+      "name": "GPT-5.5",
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "inputPrice": 5,
+      "outputPrice": 30,
+      "capabilities": [
+        "chat",
+        "vision",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-04-23"
     },
     {
       "id": "moonshotai/Kimi-K2.6",
@@ -93,7 +178,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-03-27"
+      "releaseDate": "2026-04-07"
     },
     {
       "id": "anthropic/claude-sonnet-4.6",
@@ -125,7 +210,7 @@
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2026-02-11"
+      "releaseDate": "2026-02-12"
     },
     {
       "id": "anthropic/claude-opus-4.6",

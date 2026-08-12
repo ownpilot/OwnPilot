@@ -1,0 +1,51 @@
+{
+  "id": "subconscious",
+  "name": "Subconscious",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SUBCONSCIOUS_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "subconscious/glm-5.2",
+      "name": "GLM-5.2",
+      "contextWindow": 1000000,
+      "maxOutput": 131072,
+      "inputPrice": 1.4,
+      "outputPrice": 4.4,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-06-13"
+    },
+    {
+      "id": "subconscious/tim-qwen3.6-27b",
+      "name": "TIM-Qwen3.6 27B",
+      "contextWindow": 8192,
+      "maxOutput": 5000,
+      "inputPrice": 0.3,
+      "outputPrice": 3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2026-05-11"
+    }
+  ],
+  "baseUrl": "https://api.subconscious.dev/v1",
+  "docsUrl": "https://docs.subconscious.dev"
+}

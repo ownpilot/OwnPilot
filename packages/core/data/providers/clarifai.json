@@ -111,22 +111,6 @@
       "releaseDate": "2025-10-20"
     },
     {
-      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
-      "name": "GPT OSS 120B High Throughput",
-      "contextWindow": 131072,
-      "maxOutput": 16384,
-      "inputPrice": 0.09,
-      "outputPrice": 0.36,
-      "capabilities": [
-        "chat",
-        "function_calling",
-        "reasoning",
-        "streaming"
-      ],
-      "default": false,
-      "releaseDate": "2025-08-05"
-    },
-    {
       "id": "openai/chat-completion/models/gpt-oss-20b",
       "name": "GPT OSS 20B",
       "contextWindow": 131072,
@@ -143,21 +127,20 @@
       "releaseDate": "2025-08-05"
     },
     {
-      "id": "qwen/qwenLM/models/Qwen3-30B-A3B-Thinking-2507",
-      "name": "Qwen3 30B A3B Thinking 2507",
-      "contextWindow": 262144,
-      "maxOutput": 131072,
-      "inputPrice": 0.36,
-      "outputPrice": 1.3,
+      "id": "openai/chat-completion/models/gpt-oss-120b-high-throughput",
+      "name": "GPT OSS 120B High Throughput",
+      "contextWindow": 131072,
+      "maxOutput": 16384,
+      "inputPrice": 0.09,
+      "outputPrice": 0.36,
       "capabilities": [
         "chat",
         "function_calling",
-        "json_mode",
         "reasoning",
         "streaming"
       ],
       "default": false,
-      "releaseDate": "2025-07-31"
+      "releaseDate": "2025-08-05"
     },
     {
       "id": "qwen/qwenCoder/models/Qwen3-Coder-30B-A3B-Instruct",
@@ -169,6 +152,23 @@
       "capabilities": [
         "chat",
         "function_calling",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-07-31"
+    },
+    {
+      "id": "qwen/qwenLM/models/Qwen3-30B-A3B-Thinking-2507",
+      "name": "Qwen3 30B A3B Thinking 2507",
+      "contextWindow": 262144,
+      "maxOutput": 131072,
+      "inputPrice": 0.36,
+      "outputPrice": 1.3,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
         "streaming"
       ],
       "default": false,

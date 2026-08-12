@@ -1,0 +1,51 @@
+{
+  "id": "scx",
+  "name": "SCX.ai",
+  "type": "openai-compatible",
+  "apiKeyEnv": "SCX_API_KEY",
+  "features": {
+    "streaming": true,
+    "toolUse": true,
+    "vision": false,
+    "jsonMode": true,
+    "systemMessage": true
+  },
+  "models": [
+    {
+      "id": "MiniMax-M2.7",
+      "name": "MiniMax-M2.7",
+      "contextWindow": 192000,
+      "maxOutput": 64000,
+      "inputPrice": 0.48,
+      "outputPrice": 1.79,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": true,
+      "releaseDate": "2026-03-18"
+    },
+    {
+      "id": "gpt-oss-120b",
+      "name": "GPT OSS 120B",
+      "contextWindow": 131072,
+      "maxOutput": 131072,
+      "inputPrice": 0.17,
+      "outputPrice": 0.55,
+      "capabilities": [
+        "chat",
+        "function_calling",
+        "json_mode",
+        "reasoning",
+        "streaming"
+      ],
+      "default": false,
+      "releaseDate": "2025-08-05"
+    }
+  ],
+  "baseUrl": "https://api.scx.ai/v1",
+  "docsUrl": "https://platform.scx.ai/docs"
+}
