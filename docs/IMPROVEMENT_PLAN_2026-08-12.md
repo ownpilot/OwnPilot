@@ -477,7 +477,7 @@ it needs Postgres and would double CI time; add it once the job is stable.
 | 9c  | Refresh `refactor-next.md` metrics; retarget Phase 2A to include UI pages           | S      | UI now has more >1000-LOC files than gateway (15 vs 14) yet Phase 2A lists zero UI targets                                       |
 | 9d  | Trim `ui/src/api/endpoints/index.ts` type barrel; delete genuine dead exports       | S      | 420 unused exported types, mostly this one barrel; noise hides the next real leftover                                            |
 | 9e  | Colocated tests for the ~10 genuinely untested gateway services                     | M      | Start with `claw/manager/manager.ts` (1 315 LOC). Note the health script reports 30 — ~20 are prompt/template data with no logic |
-| 9f  | Provision a backend for Playwright E2E, or remove the step                          | M      | Currently `continue-on-error: true` with no backend: a check that can never fail occupies the slot where a real one would go     |
+| 9f  | ~~Provision a backend for Playwright E2E~~ — see §6; do NOT provision as-is         | M      | Currently `continue-on-error: true` with no backend: a check that can never fail occupies the slot where a real one would go     |
 | 9g  | Begin Phase 2 decomposition — 33 files >1 000 LOC, UI first                         | L      | Large; schedule separately                                                                                                       |
 
 ---
@@ -610,3 +610,46 @@ the trade-off changes.
 4. **WI-5 pace — decided: top 5 pages plus a standing convention.** A one-off
    push across 69 pages would age badly; the "page touched ⇒ page tested" rule
    accrues coverage with normal work. _Not yet implemented._
+
+---
+
+## 6. WI-9f — Playwright E2E: measured, not provisioned
+
+**Status: do not provision the CI job yet. The suite fails against a working stack.**
+
+The plan assumed the E2E step was `continue-on-error: true` only because CI never gave
+it a backend, and that standing one up would turn it into a real check. That assumption
+was tested rather than trusted, by running the full stack locally:
+
+```
+docker compose -f docker-compose.db.yml up -d          # pgvector/pg16
+gateway  PORT=8200 + POSTGRES_* + BOOTSTRAP_TOKEN(64+)  # /health/ready in ~4s
+POST /api/v1/auth/password  -H 'X-Bootstrap-Token: …'   # sets OwnPilot2026!
+pnpm --filter @ownpilot/ui exec playwright test
+```
+
+Result against that live stack: **59 failed · 36 passed · 1 skipped**.
+
+So the step is not merely unprovisioned — the specs have drifted from the UI. Wiring the
+backend into CI as-is would convert a check that never fails into one that always does,
+which is worse: it would either block every PR or be reverted within a day.
+
+**Two prerequisites before this becomes a CI job**
+
+1. **Fix or delete the 59 failing specs.** That is its own piece of work, sized by
+   triage, not something to bundle into an infrastructure change.
+2. **Remove the port coupling.** `playwright.config.ts` hardcodes
+   `baseURL: http://localhost:8199` and starts `vite --port 8199`, while Vite proxies
+   `/api` to `PORT` read from the **monorepo-root `.env`**. A developer whose `.env` sets
+   `PORT=8200` (as ours does) silently proxies to a different gateway than the one under
+   test — the first run here failed at login for exactly that reason, with no request
+   ever reaching the gateway. CI has no `.env`, so it would default to 8080 and behave
+   differently from every developer machine. The port needs to be explicit and shared.
+
+**Also worth fixing regardless**: `headless: !!process.env.CI` means a local run opens a
+headed browser window per test — ~95 windows for the full suite. `headless: true` with an
+opt-in `PWDEBUG`/`--headed` override is the safer default.
+
+**Recommendation**: leave `continue-on-error: true` for now — it is at least honest about
+providing no signal — and track the spec triage separately. Do not delete the specs;
+36 of them still pass and the fixtures are reusable.
