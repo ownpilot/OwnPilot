@@ -50,6 +50,21 @@ export default defineConfig({
         'src/routes/model-configs.ts',
         'src/routes/workspaces.ts',
       ],
+      // Ratchet, not aspiration. Measured 2026-08-12 on 471 files / 17922
+      // tests: statements 85.55, branches 77.04, functions 86.37, lines 86.40.
+      // The gate sits ~2 points below each so ordinary churn does not trip it,
+      // while a real regression does. Raise these as coverage rises — never
+      // lower them to make a build pass.
+      //
+      // Until now coverage was measured here and gated nowhere, so 173k LOC of
+      // routes, services and repositories could regress silently. `core` has
+      // had thresholds since it was written; this brings gateway in line.
+      thresholds: {
+        statements: 83,
+        branches: 75,
+        functions: 84,
+        lines: 84,
+      },
     },
     typecheck: {
       enabled: true,

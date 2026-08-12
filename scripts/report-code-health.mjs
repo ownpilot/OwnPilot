@@ -84,6 +84,17 @@ const totals = {
   test: emptyPatternCounts(),
 };
 const packageStats = new Map();
+/**
+ * Per-package production counts.
+ *
+ * The aggregate totals hide where a signal actually lives, which has cost real
+ * effort: the combined `console.*` figure reads as a structured-logging problem
+ * in the runtime, when ~93% of it is the CLI writing to stdout — which is that
+ * package's entire job. Same shape for `child_process`, concentrated in the
+ * sandbox and tool executors where spawning is the intended mechanism. Reading
+ * the aggregate alone manufactures a work item on every report.
+ */
+const productionByPackage = new Map();
 const topFiles = [];
 const largeProductionFiles = [];
 
@@ -122,6 +133,12 @@ for (const fullPath of allFiles) {
     const count = countMatches(content, pattern.re);
     totals.all[pattern.key] += count;
     totals[isTest ? 'test' : 'production'][pattern.key] += count;
+    if (!isTest) {
+      if (!productionByPackage.has(pkg)) {
+        productionByPackage.set(pkg, emptyPatternCounts());
+      }
+      productionByPackage.get(pkg)[pattern.key] += count;
+    }
   }
 }
 
@@ -189,6 +206,28 @@ printTable([
     String(totals.all[p.key]),
   ]),
 ]);
+console.log('');
+
+console.log('### Production counts by package');
+console.log('');
+console.log(
+  'Read this table, not the aggregate above, before treating a signal as debt. ' +
+    'A count concentrated in `cli` (stdout is its output) or in sandbox/tool ' +
+    'executors (spawning is the mechanism) is not the same finding as the same ' +
+    'count spread through `gateway` runtime code.'
+);
+console.log('');
+{
+  const pkgs = [...productionByPackage.keys()].sort();
+  printTable([
+    ['Pattern', ...pkgs],
+    ['---', ...pkgs.map(() => '---:')],
+    ...patterns.map((p) => [
+      p.label,
+      ...pkgs.map((pkg) => String(productionByPackage.get(pkg)[p.key])),
+    ]),
+  ]);
+}
 console.log('');
 
 console.log('## Largest production files');
