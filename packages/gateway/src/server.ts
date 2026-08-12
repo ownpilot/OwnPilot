@@ -258,6 +258,11 @@ async function main() {
 
   log.info(`Data directory: ${dataInfo.root}`);
 
+  // State which protections this deployment has disabled. Logged early so it
+  // appears near the top of the boot output rather than buried mid-startup.
+  const { logActiveEscapeHatches } = await import('./config/escape-hatches.js');
+  logActiveEscapeHatches();
+
   // Auto-migrate legacy data if needed
   autoMigrateIfNeeded();
 
