@@ -3,8 +3,8 @@
 **Date**: 2026-08-12
 **Source**: `docs/CODEBASE_AUDIT_2026-08-12.md`
 **Baseline**: `main` @ `6c93682f`, v0.8.3
-**Status**: WI-1 through WI-8 and WI-9b implemented on
-`fix/audit-2026-08-12-tier1` (see §5 for outcomes). Remaining: WI-9a, 9c–9g.
+**Status**: WI-1 through WI-8, WI-9b, WI-9f (measured, see §6) and WI-9g (see §5.4)
+implemented on `fix/audit-2026-08-12-tier1`. Remaining: WI-9a, 9c–9e.
 
 This document turns the audit findings into executable work items. Each item states the
 problem, the decision taken and _why_, the exact changes, the test plan, and acceptance
@@ -610,6 +610,43 @@ the trade-off changes.
 4. **WI-5 pace — decided: top 5 pages plus a standing convention.** A one-off
    push across 69 pages would age badly; the "page touched ⇒ page tested" rule
    accrues coverage with normal work. _Not yet implemented._
+
+### 5.4 WI-9g — file decomposition (closed)
+
+Seven of the eight Phase-2A UI targets are split. The full table lives in
+`refactor-next.md`; the outcome that matters here is that decomposition turned out
+to be a coverage lever, not just a tidiness one.
+
+| File                     |      LOC | New tests |
+| ------------------------ | -------: | --------: |
+| `CodingAgentsPage.tsx`   | 1285→536 |         — |
+| `ClawsPage.tsx`          | 1203→791 |        15 |
+| `LogsPage.tsx`           | 1172→702 |         — |
+| `workflow-templates.ts`  |  1268→52 |         — |
+| `AnalyticsPage.tsx`      | 1058→763 |        20 |
+| `ToolPicker.tsx`         | 1247→788 |        27 |
+| `MissionControlPage.tsx` | 1109→536 |        21 |
+
+Repo-wide files over 1000 LOC: **33 → 25**. UI suite: 100 → 104 files, 1911 → 2023
+tests.
+
+**Two of these were worth doing for the tests alone.** ToolPicker's instruction
+builders produce the text injected verbatim into the prompt when a user attaches a
+resource — it is the only thing telling the agent which tool to call and how, and
+none of it was pinned because reaching it meant rendering a 1247-line component.
+Mission Control's `attentionScore` decides which claw an operator sees first across
+the whole fleet; its stall case (a claw stuck mid-task still reports `running`, so
+`cyclesInProgress` is the only signal) and the coupling between the `attention`
+filter and the sort were both unasserted.
+
+**Convention followed throughout**: the smoke test goes in _before_ the code moves,
+and must pass unchanged afterwards. `MissionControlPage` and `ToolPicker` had none,
+so they got one first. That is what makes a "no behaviour change" claim checkable
+rather than asserted.
+
+**Not done**: `ChatPage.tsx` (1050) — highest-traffic page, deliberately last. Eight
+UI pages remain in the 1041-1103 band; none has a smoke test, so each needs one
+before it is touched.
 
 ---
 

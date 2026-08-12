@@ -249,16 +249,26 @@ Each phase is independent, gated by tsc + `pnpm -r test`. Use the `git-flow` ski
 **UI targets** (all pages; each splits into a container + `components/` + a hook holding
 the data logic, mirroring the existing `pages/claws/` and `pages/workflows/` layout):
 
-| #    | Source                               |  LOC | Has smoke test | Note                                         |
-| ---- | ------------------------------------ | ---: | -------------- | -------------------------------------------- |
-| 2.1a | `pages/CodingAgentsPage.tsx`         | 1286 | yes            | Largest file in the repo's UI                |
-| 2.1b | `pages/ClawsPage.tsx`                | 1204 | yes            | `pages/claws/` already exists — extend it    |
-| 2.1c | `pages/LogsPage.tsx`                 | 1172 | yes            | Tab-per-concern; splits cleanly              |
-| 2.1d | `pages/AnalyticsPage.tsx`            | 1059 | yes            | Chart blocks extract as pure components      |
-| 2.1e | `pages/ChatPage.tsx`                 | 1050 | yes            | Highest traffic — split last, most carefully |
-| 2.1f | `components/workflows/…templates.ts` | 1269 | n/a            | Pure data; split by category, no logic risk  |
-| 2.1g | `components/ToolPicker.tsx`          | 1248 | no             | Needs a test first                           |
-| 2.1h | `pages/MissionControlPage.tsx`       | 1109 | no             | Needs a test first                           |
+**Status 2026-08-12: 2.1a-d and 2.1f-h are DONE.** Seven of the eight targets split;
+every one kept its smoke test green across the move.
+
+| #    | Source                               |      LOC | Status                                                                                         |
+| ---- | ------------------------------------ | -------: | ---------------------------------------------------------------------------------------------- |
+| 2.1a | `pages/CodingAgentsPage.tsx`         | 1285→536 | DONE — `pages/coding-agents/{NewSessionModal,cards,helpers}`                                   |
+| 2.1b | `pages/ClawsPage.tsx`                | 1203→791 | DONE — `pages/claws/{useClawActions,derive,BulkActionsBar,AttentionBanners}` (+15 tests)       |
+| 2.1c | `pages/LogsPage.tsx`                 | 1172→702 | DONE — `pages/logs/{formatters,DebugLogsTab}`                                                  |
+| 2.1d | `pages/AnalyticsPage.tsx`            | 1058→763 | DONE — `pages/analytics/{format,chart-primitives,derive}` (+20 tests)                          |
+| 2.1e | `pages/ChatPage.tsx`                 |     1050 | NOT STARTED — highest traffic, split last and most carefully                                   |
+| 2.1f | `components/workflows/…templates.ts` |  1268→52 | DONE — `templates/{scheduling,automation,ai,integration,data}`                                 |
+| 2.1g | `components/ToolPicker.tsx`          | 1247→788 | DONE — `tool-picker/{types,tabs,builtin-data,instructions,icons,filter}` (+27 tests)           |
+| 2.1h | `pages/MissionControlPage.tsx`       | 1109→536 | DONE — smoke test written first; `mission-control/{derive,ClawMissionCard,panels}` (+21 tests) |
+
+The splits were not purely mechanical: extracting the pure logic made it testable for
+the first time, and 83 new unit tests came out of four of them. Two encode decisions
+that had never been pinned — ToolPicker's instruction builders (their output is injected
+verbatim into the prompt and is the only thing telling the agent which tool to call) and
+Mission Control's `attentionScore` (a claw stalled mid-task still reports `running`, so
+`cyclesInProgress` is the only signal anything is wrong).
 
 **Gateway targets** (unchanged from the original plan; still valid):
 
@@ -276,9 +286,12 @@ Each split should leave the public barrel re-export everything so call sites don
 **Phase 2A exit criteria**:
 
 - [ ] No file > 800 LOC in `gateway/src/services/` and `gateway/src/db/repositories/`
-- [ ] No file > 800 LOC in `ui/src/pages/`
-- [ ] Repo-wide `> 1000 LOC` count down from **33**; `> 500 LOC` down from **256**
-      (verify with `node scripts/report-code-health.mjs`)
+- [ ] No file > 800 LOC in `ui/src/pages/` — 8 pages remain, all 1041-1103 LOC
+      (`ProfilePage`, `ChatHistoryPage`, `McpServersPage`, `TriggersPage`, `AgenticPage`,
+      `ChatPage`, `PlansPage`, `coding-agent-settings-tabs`). None has a smoke test yet;
+      each needs one before it is split.
+- [x] Repo-wide `> 1000 LOC` count down from **33** → **25** (2026-08-12); `> 500 LOC`
+      still to re-measure (verify with `node scripts/report-code-health.mjs`)
 - [ ] Every page split has a colocated smoke test that passed **before** the split
 - [ ] Existing `*.test.ts` files for the source still pass (re-import from new location)
 - [ ] `pnpm -r test` green, `pnpm -r typecheck` green
