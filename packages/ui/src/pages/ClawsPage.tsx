@@ -15,17 +15,12 @@ import { clawsApi } from '../api/endpoints/claws';
 import type { ClawConfig, ClawRecommendation } from '../api/endpoints/claws';
 import {
   Plus,
-  Square,
-  Trash2,
   RefreshCw,
   Activity,
   Home,
   Zap,
   Wrench,
-  X,
   Terminal,
-  Play,
-  Pause,
   LayoutGrid,
   Rows3,
 } from '../components/icons';
@@ -38,6 +33,10 @@ import { ClawListRow } from './claws/ClawListRow';
 import { ClawHomeTab } from './claws/ClawHomeTab';
 import { ClawManagementPanel, isDetailTab, type DetailTab } from './claws/ClawManagementPanel';
 import { ConcurrencyBar } from './claws/ConcurrencyBar';
+import { useClawActions } from './claws/useClawActions';
+import { filterClaws, countRunning, deriveAttention } from './claws/derive';
+import { BulkActionsBar } from './claws/BulkActionsBar';
+import { AttentionBanners } from './claws/AttentionBanners';
 import { ignoreError } from '../utils/ignore-error';
 import { usePagination } from '../hooks/usePagination';
 
@@ -48,7 +47,6 @@ import { usePagination } from '../hooks/usePagination';
 type PageTab = 'home' | 'claws';
 // DetailTab is the full union exported by ClawManagementPanel — keeps the
 // page-side type in sync so deep-links (?tab=plan) can pass through cleanly.
-type BulkOp = 'stop' | 'delete' | 'start' | 'pause';
 type ViewMode = 'grid' | 'list';
 const VIEW_MODE_STORAGE_KEY = 'claws-view-mode';
 
@@ -65,13 +63,6 @@ export function ClawsPage() {
   const [filterMode, setFilterMode] = useState<string>('');
   const [filterState, setFilterState] = useState<string>('');
   const [recommendations, setRecommendations] = useState<ClawRecommendation[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [applyingFixIds, setApplyingFixIds] = useState<Set<string>>(new Set());
-  const [isApplyingBatchFixes, setIsApplyingBatchFixes] = useState(false);
-  const [bulkOp, setBulkOp] = useState<BulkOp | null>(null);
-  const [bulkResults, setBulkResults] = useState<Array<{ id: string; ok: boolean; name: string }>>(
-    []
-  );
   const [escalations, setEscalations] = useState<
     Array<{ clawId: string; name: string; type: string; reason: string; requestedAt: string }>
   >([]);
@@ -144,6 +135,38 @@ export function ClawsPage() {
       /* ignore */
     }
   };
+
+  const {
+    selectedIds,
+    setSelectedIds,
+    applyingFixIds,
+    isApplyingBatchFixes,
+    bulkOp,
+    bulkResults,
+    startClaw,
+    pauseClaw,
+    resumeClaw,
+    stopClaw,
+    deleteClaw,
+    approveEscalation,
+    denyEscalation,
+    cloneClaw,
+    applySafeFixes,
+    applyTopSafeFixes,
+    bulkStop,
+    bulkDelete,
+    bulkStart,
+    bulkPause,
+    toggleSelect,
+  } = useClawActions({
+    claws,
+    recommendations,
+    refresh: fetchClaws,
+    toast,
+    confirm,
+    selectedClaw,
+    setSelectedClaw,
+  });
 
   useEffect(() => {
     fetchClaws();
@@ -246,392 +269,28 @@ export function ClawsPage() {
     deepLinkAppliedRef.current = true;
   }, [isLoading, claws, searchParams, setSearchParams]);
 
-  // Actions
-  const startClaw = async (id: string) => {
-    try {
-      await clawsApi.start(id);
-      toast.success('Claw started');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to start claw');
-    }
-  };
-
-  const pauseClaw = async (id: string) => {
-    try {
-      await clawsApi.pause(id);
-      toast.success('Claw paused');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to pause claw');
-    }
-  };
-
-  const resumeClaw = async (id: string) => {
-    try {
-      await clawsApi.resume(id);
-      toast.success('Claw resumed');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to resume claw');
-    }
-  };
-
-  const stopClaw = async (id: string) => {
-    try {
-      await clawsApi.stop(id);
-      toast.success('Claw stopped');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to stop claw');
-    }
-  };
-
-  const deleteClaw = async (id: string, name: string) => {
-    const ok = await confirm({
-      title: 'Delete Claw',
-      message: `Delete "${name}"? This cannot be undone.`,
-      confirmText: 'Delete',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    try {
-      await clawsApi.delete(id);
-      toast.success('Claw deleted');
-      if (selectedClaw?.id === id) setSelectedClaw(null);
-      fetchClaws();
-    } catch {
-      toast.error('Failed to delete claw');
-    }
-  };
-
-  const approveEscalation = async (id: string) => {
-    try {
-      await clawsApi.approveEscalation(id);
-      toast.success('Escalation approved');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to approve escalation');
-    }
-  };
-
-  const denyEscalation = async (id: string) => {
-    try {
-      await clawsApi.denyEscalation(id);
-      toast.success('Escalation denied — claw resumed without the request');
-      fetchClaws();
-    } catch {
-      toast.error('Failed to deny escalation');
-    }
-  };
-
-  const cloneClaw = async (source: ClawConfig) => {
-    try {
-      await clawsApi.create({
-        name: `${source.name} (copy)`,
-        mission: source.mission,
-        mode: source.mode,
-        sandbox: source.sandbox,
-        provider: source.provider,
-        model: source.model,
-        coding_agent_provider: source.codingAgentProvider,
-        skills: source.skills,
-        allowed_tools: source.allowedTools.length > 0 ? source.allowedTools : undefined,
-        interval_ms: source.intervalMs,
-        event_filters: source.eventFilters,
-        stop_condition: source.stopCondition,
-        preset: source.preset,
-        mission_contract: source.missionContract,
-        autonomy_policy: source.autonomyPolicy,
-      });
-      toast.success(`Cloned "${source.name}"`);
-      fetchClaws();
-    } catch {
-      toast.error('Failed to clone claw');
-    }
-  };
-
+  // Detail navigation
   const openClawDetail = (claw: ClawConfig, tab: DetailTab = 'overview') => {
     setSelectedClaw(claw);
     setSelectedDetailTab(tab);
   };
 
-  const applySafeFixes = async (id: string) => {
-    setApplyingFixIds((prev) => new Set(prev).add(id));
-    try {
-      const result = await clawsApi.applyRecommendations(id);
-      if (result.applied.length > 0) {
-        toast.success(
-          `Applied ${result.applied.length} safe fix${result.applied.length === 1 ? '' : 'es'}`
-        );
-      } else {
-        toast.success('No safe fixes needed');
-      }
-      if (selectedClaw?.id === id) setSelectedClaw(result.claw);
-      fetchClaws();
-    } catch {
-      toast.error('Failed to apply safe fixes');
-    } finally {
-      setApplyingFixIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }
-  };
-
-  const applyTopSafeFixes = async () => {
-    setIsApplyingBatchFixes(true);
-    try {
-      const ids = recommendations.slice(0, 4).map((item) => item.clawId);
-      const result = await clawsApi.applyRecommendationBatch(ids);
-      toast.success(`Updated ${result.updated} claw${result.updated === 1 ? '' : 's'}`);
-      if (selectedClaw && ids.includes(selectedClaw.id)) setSelectedClaw(null);
-      fetchClaws();
-    } catch {
-      toast.error('Failed to apply safe fixes');
-    } finally {
-      setIsApplyingBatchFixes(false);
-    }
-  };
-
-  // Bulk actions
-  const bulkStop = async () => {
-    setBulkOp('stop');
-    setBulkResults([]);
-    const ids = [...selectedIds];
-    const results = await Promise.allSettled(ids.map((id) => clawsApi.stop(id)));
-    const named = ids.map((id, i) => ({
-      id,
-      ok: results[i]?.status === 'fulfilled',
-      name: claws.find((c) => c.id === id)?.name ?? id,
-    }));
-    setBulkResults(named);
-    setBulkOp(null);
-    const ok = named.filter((r) => r.ok).length;
-    toast.success(`Stopped ${ok}/${ids.length} claws`);
-    setSelectedIds(new Set());
-    fetchClaws();
-  };
-
-  const bulkDelete = async () => {
-    const ok = await confirm({
-      title: 'Delete Selected',
-      message: `Delete ${selectedIds.size} claws?`,
-      confirmText: 'Delete All',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    setBulkOp('delete');
-    setBulkResults([]);
-    const ids = [...selectedIds];
-    const results = await Promise.allSettled(ids.map((id) => clawsApi.delete(id)));
-    const named = ids.map((id, i) => ({
-      id,
-      ok: results[i]?.status === 'fulfilled',
-      name: claws.find((c) => c.id === id)?.name ?? id,
-    }));
-    setBulkResults(named);
-    setBulkOp(null);
-    const success = named.filter((r) => r.ok).length;
-    toast.success(`Deleted ${success}/${ids.length} claws`);
-    setSelectedIds(new Set());
-    setSelectedClaw(null);
-    fetchClaws();
-  };
-
-  const bulkStart = async () => {
-    setBulkOp('start');
-    setBulkResults([]);
-    const ids = [...selectedIds];
-    const results = await Promise.allSettled(ids.map((id) => clawsApi.start(id)));
-    const named = ids.map((id, i) => ({
-      id,
-      ok: results[i]?.status === 'fulfilled',
-      name: claws.find((c) => c.id === id)?.name ?? id,
-    }));
-    setBulkResults(named);
-    setBulkOp(null);
-    const ok = named.filter((r) => r.ok).length;
-    toast.success(`Started ${ok}/${ids.length} claws`);
-    setSelectedIds(new Set());
-    fetchClaws();
-  };
-
-  const bulkPause = async () => {
-    setBulkOp('pause');
-    setBulkResults([]);
-    const ids = [...selectedIds];
-    const results = await Promise.allSettled(ids.map((id) => clawsApi.pause(id)));
-    const named = ids.map((id, i) => ({
-      id,
-      ok: results[i]?.status === 'fulfilled',
-      name: claws.find((c) => c.id === id)?.name ?? id,
-    }));
-    setBulkResults(named);
-    setBulkOp(null);
-    const ok = named.filter((r) => r.ok).length;
-    toast.success(`Paused ${ok}/${ids.length} claws`);
-    setSelectedIds(new Set());
-    fetchClaws();
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) {
-        n.delete(id);
-      } else {
-        n.add(id);
-      }
-      return n;
-    });
-  };
-
-  // Filtering
-  const filteredClaws = claws.filter((c) => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (
-        !c.name.toLowerCase().includes(q) &&
-        !c.mission.toLowerCase().includes(q) &&
-        !c.id.toLowerCase().includes(q)
-      )
-        return false;
-    }
-    if (filterMode && c.mode !== filterMode) return false;
-    if (filterState) {
-      const state = c.session?.state ?? 'stopped';
-      if (filterState === 'active' && !['running', 'starting', 'waiting'].includes(state))
-        return false;
-      if (
-        filterState === 'attention' &&
-        !['watch', 'stuck', 'expensive', 'failed'].includes(c.health?.status ?? 'healthy')
-      )
-        return false;
-      if (filterState === 'stopped' && !['stopped', 'completed', 'failed'].includes(state))
-        return false;
-      if (filterState === 'paused' && state !== 'paused') return false;
-    }
-    return true;
-  });
-
-  const runningCount = claws.filter(
-    (c) => c.session && ['running', 'starting', 'waiting'].includes(c.session.state)
-  ).length;
-
-  // Surface the new attention dimensions added in recent runner work
-  // (reflection / stall) at the page level so they are visible without
-  // drilling into individual claws. Each list is sorted to give the
-  // operator a one-click landing page on the Plan tab.
-  const REFLECT_THRESHOLD = 2;
-  const STALL_THRESHOLD_PAGE = 5;
-  const reflectClaws = claws.filter(
-    (c) => (c.session?.consecutiveErrors ?? 0) >= REFLECT_THRESHOLD
-  );
-  const stalledClaws = claws.filter((c) => {
-    if (!c.session?.tasks) return false;
-    const focus = c.session.tasks.find((t) => t.status === 'in_progress');
-    return focus !== undefined && (focus.cyclesInProgress ?? 0) >= STALL_THRESHOLD_PAGE;
-  });
-  const failedClaws = claws.filter((c) => c.session?.state === 'failed');
-  const operatorQueuedClaws = claws.filter((c) => c.session?.nextIntent?.startsWith('[OPERATOR] '));
+  const filteredClaws = filterClaws(claws, { searchQuery, filterMode, filterState });
+  const runningCount = countRunning(claws);
+  const { reflectClaws, stalledClaws, failedClaws, operatorQueuedClaws } = deriveAttention(claws);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Escalation Notification Banner */}
-      {escalations.length > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3 flex items-center gap-3 animate-fade-in">
-          <Activity className="w-4 h-4 text-amber-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
-              {escalations.length === 1
-                ? '1 pending escalation'
-                : `${escalations.length} pending escalations`}
-            </span>
-            {escalations.slice(0, 2).map((e) => (
-              <span key={e.clawId} className="text-sm text-amber-600 dark:text-amber-400 ml-2">
-                — {e.name}: {e.reason.slice(0, 60)}
-                {e.reason.length > 60 ? '…' : ''}
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {escalations.slice(0, 2).map((e) => (
-              <button
-                key={e.clawId}
-                onClick={() => approveEscalation(e.clawId)}
-                className="px-2 py-1 text-xs rounded bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
-              >
-                Approve
-              </button>
-            ))}
-            <button
-              onClick={() => setEscalations([])}
-              className="p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900 transition-colors"
-              title="Dismiss"
-            >
-              <X className="w-3.5 h-3.5 text-amber-500" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Attention strip — surfaces the new runner dimensions (reflection,
-          stalled focus, failed, operator-queued directives) so the recent
-          plan/intervention work is visible at first glance. Each chip is
-          a deep-link straight onto the Plan tab of the affected claw so
-          one click lands the operator on the queue-intent / reset-failures
-          / split-task controls. */}
-      {reflectClaws.length + stalledClaws.length + failedClaws.length + operatorQueuedClaws.length >
-        0 && (
-        <div className="bg-bg-secondary dark:bg-dark-bg-secondary border-b border-border dark:border-dark-border px-6 py-2 flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-text-muted dark:text-dark-text-muted font-medium">
-            Needs attention:
-          </span>
-          {reflectClaws.length > 0 && (
-            <button
-              type="button"
-              onClick={() => openClawDetail(reflectClaws[0]!, 'plan')}
-              className="px-2 py-1 rounded-full bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-colors font-medium"
-              title={`Reflection required: ${reflectClaws.map((c) => c.name).join(', ')}`}
-            >
-              ⚠ {reflectClaws.length} reflecting
-            </button>
-          )}
-          {stalledClaws.length > 0 && (
-            <button
-              type="button"
-              onClick={() => openClawDetail(stalledClaws[0]!, 'plan')}
-              className="px-2 py-1 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors font-medium"
-              title={`Stalled focus: ${stalledClaws.map((c) => c.name).join(', ')}`}
-            >
-              ⏳ {stalledClaws.length} stalled
-            </button>
-          )}
-          {failedClaws.length > 0 && (
-            <button
-              type="button"
-              onClick={() => openClawDetail(failedClaws[0]!, 'plan')}
-              className="px-2 py-1 rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors font-medium"
-              title={`Failed: ${failedClaws.map((c) => c.name).join(', ')}`}
-            >
-              ✗ {failedClaws.length} failed
-            </button>
-          )}
-          {operatorQueuedClaws.length > 0 && (
-            <button
-              type="button"
-              onClick={() => openClawDetail(operatorQueuedClaws[0]!, 'plan')}
-              className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors font-medium"
-              title={`Operator directive queued: ${operatorQueuedClaws.map((c) => c.name).join(', ')}`}
-            >
-              ↳ {operatorQueuedClaws.length} op-queued
-            </button>
-          )}
-        </div>
-      )}
-
+      <AttentionBanners
+        escalations={escalations}
+        setEscalations={setEscalations}
+        approveEscalation={approveEscalation}
+        reflectClaws={reflectClaws}
+        stalledClaws={stalledClaws}
+        failedClaws={failedClaws}
+        operatorQueuedClaws={operatorQueuedClaws}
+        openClawDetail={openClawDetail}
+      />
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border dark:border-dark-border">
         <div>
@@ -1033,87 +692,16 @@ export function ClawsPage() {
                 </span>
               </div>
 
-              {/* Bulk Actions (when items selected) */}
-              {selectedIds.size > 0 && !bulkOp && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
-                  <span className="text-sm font-medium text-primary">
-                    {selectedIds.size} selected
-                  </span>
-                  <div className="flex-1" />
-                  <button
-                    onClick={bulkStart}
-                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-green-500/10 text-green-600 hover:bg-green-500/20"
-                  >
-                    <Play className="w-3 h-3" /> Start All
-                  </button>
-                  <button
-                    onClick={bulkPause}
-                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-                  >
-                    <Pause className="w-3 h-3" /> Pause All
-                  </button>
-                  <button
-                    onClick={bulkStop}
-                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
-                  >
-                    <Square className="w-3 h-3" /> Stop All
-                  </button>
-                  <button
-                    onClick={bulkDelete}
-                    className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-red-500/10 text-red-600 hover:bg-red-500/20"
-                  >
-                    <Trash2 className="w-3 h-3" /> Delete All
-                  </button>
-                  <button
-                    onClick={() => setSelectedIds(new Set())}
-                    className="text-xs text-text-muted hover:text-text-primary"
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
-
-              {/* Bulk Op Progress/Results */}
-              {bulkOp && (
-                <div className="rounded-lg border border-border dark:border-dark-border bg-bg-secondary dark:bg-dark-bg-secondary p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-text-primary dark:text-dark-text-primary">
-                      {bulkOp === 'start'
-                        ? 'Starting claws...'
-                        : bulkOp === 'pause'
-                          ? 'Pausing claws...'
-                          : bulkOp === 'stop'
-                            ? 'Stopping claws...'
-                            : 'Deleting claws...'}
-                    </span>
-                    <span className="text-xs text-text-muted">
-                      {bulkResults.filter((r) => r.ok).length}/{bulkResults.length} done
-                    </span>
-                  </div>
-                  <div className="w-full bg-border dark:bg-dark-border rounded-full h-1.5">
-                    <div
-                      className="bg-primary rounded-full h-1.5 transition-all"
-                      style={{
-                        width: `${(bulkResults.filter((r) => r.ok).length / Math.max(bulkResults.length, 1)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    {bulkResults.map((r) => (
-                      <div key={r.id} className="flex items-center gap-2 text-xs">
-                        {r.ok ? (
-                          <span className="text-green-500">✓</span>
-                        ) : (
-                          <span className="text-red-500">✗</span>
-                        )}
-                        <span className="text-text-secondary dark:text-dark-text-secondary truncate">
-                          {r.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <BulkActionsBar
+                selectedIds={selectedIds}
+                setSelectedIds={setSelectedIds}
+                bulkOp={bulkOp}
+                bulkResults={bulkResults}
+                bulkStart={bulkStart}
+                bulkPause={bulkPause}
+                bulkStop={bulkStop}
+                bulkDelete={bulkDelete}
+              />
 
               {/* Claw Grid / List — visual show vs scan-friendly density. */}
               {viewMode === 'grid' ? (
