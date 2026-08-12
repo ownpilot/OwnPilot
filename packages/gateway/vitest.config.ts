@@ -12,7 +12,16 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
     setupFiles: ['src/test-setup.ts'],
-    testTimeout: 15_000,
+    // 30s, not 15s. Several suites here are import-bound rather than slow:
+    // they pull in real module graphs (e.g. shutdown-cleanup dynamically
+    // imports every service resetter; health.test.ts imports the app). Run
+    // alone they finish in ~5s, but under full-suite parallelism across 470
+    // files the aggregate import cost (~590s) means a single test's *import*
+    // can exhaust a 15s budget. At 15s the suite flaked ~2 files per full run,
+    // which blocks releases (release.yml runs the suite fresh, uncached) for
+    // no real defect. The timeout is a load assumption, not a quality signal.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
