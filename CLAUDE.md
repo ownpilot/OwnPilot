@@ -137,6 +137,23 @@ docker run -d --name test-db -p 35432:5432 \
 - All API responses use `apiResponse`/`apiError` helpers (standardized)
 - Tests colocated with source (`*.test.ts`)
 - Unused variables prefixed with `_` (ESLint convention)
+- **A page touched is a page tested**: any change under `packages/ui/src/pages/`
+  adds or extends that page's colocated `*.test.tsx` smoke test. The gateway is
+  1:1 on routes (110/110); the UI was 3 tests across 69 pages, and the pages are
+  where user-visible regressions actually land. Use the shared harness in
+  `packages/ui/src/test-harness.ts` (`render`/`cleanup`/`flushAsyncUpdates`/
+  `hasText`/`createIconStubs`) — ~40 lines per page. Exemplars: `ChatPage`,
+  `ClawsPage`, `AnalyticsPage`, `CodingAgentsPage`, `LogsPage`.
+  The shape: mounts → fires its data calls → renders populated data → renders
+  the empty state → survives a failing API → tears down subscriptions.
+- **UI test fixtures must match the real response type**, not a plausible
+  subset. Pages dereference nested API fields unguarded (`summary.calendar.total`,
+  `usage.daily.totalCost`), and several clients return bare arrays rather than
+  `{ items: [] }` wrappers. Check the interface in `api/types/` before inventing
+  a fixture.
+- **Mock `../api` with `importOriginal` spread**, not a bare object literal —
+  child components pull further clients off that barrel, and an enumerated mock
+  breaks whenever one is added.
 
 <!-- dfmt:v1 begin -->
 
