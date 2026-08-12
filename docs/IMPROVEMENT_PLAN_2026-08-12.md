@@ -3,7 +3,9 @@
 **Date**: 2026-08-12
 **Source**: `docs/CODEBASE_AUDIT_2026-08-12.md`
 **Baseline**: `main` @ `6c93682f`, v0.8.3
-**Status**: proposed — no code changed yet
+**Status**: WI-1, WI-2, WI-3, WI-4, WI-6, WI-7 and WI-9b implemented on
+`fix/audit-2026-08-12-tier1` (see §5 for outcomes). WI-5, WI-8 and the remaining
+WI-9 items are still open.
 
 This document turns the audit findings into executable work items. Each item states the
 problem, the decision taken and _why_, the exact changes, the test plan, and acceptance
@@ -517,13 +519,78 @@ makes the WI-1 test work legible.
 
 ---
 
-## 4. Open questions
+## 5. Implementation outcomes (2026-08-12)
 
-1. **WI-7 sampling** — sample non-mutating `GET`s in the audit log, or keep every request?
-   Trade-off is audit completeness vs write volume. Needs a call before implementation.
-2. **WI-4 threshold** — ratchet from measured (proposed), or set an aspirational target
-   and grant a grace period?
-3. **WI-8 scope** — Windows job on PRs only, or on `main` pushes too? PR-only is cheaper;
-   `main` catches merge-order interactions.
-4. **WI-5 pace** — top 5 pages now, or all 69 as a sustained push? Proposal is top 5 plus
-   the touched-page convention, letting coverage accrue with normal work.
+Branch `fix/audit-2026-08-12-tier1`. Full suite green after every commit:
+gateway 471 files / 17 922 tests, core 9 847, ui 1 902, cli 438.
+
+| Item         | Commit      | Outcome                                                                                                                                                                                                             |
+| ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WI-2         | `49593a9c`  | `testTimeout`/`hookTimeout` → 30 s. Three consecutive full runs green.                                                                                                                                              |
+| WI-1 + WI-7  | `927b82ba`  | All five exposition defects fixed and re-verified by rendering the built module. Route templates replace raw paths; `/api/v1/metrics` excluded from both metrics and audit; audit records carry the route template. |
+| WI-3         | `3912d4eb`  | `.env.example` security section + `config/escape-hatches.ts` registry + startup WARN. 11 tests.                                                                                                                     |
+| WI-6         | `f2684efb`  | `getOrCreateSessionWorkspacePath()` — cached, path-only.                                                                                                                                                            |
+| WI-4 + WI-9b | `<pending>` | Gateway coverage gated at 83/75/84/84 (measured 85.55/77.04/86.37/86.40). Health script now reports production counts per package.                                                                                  |
+
+### Findings that changed during implementation
+
+Three things turned out differently from the plan. All three made the work
+smaller or the fix better, and none invalidated a decision:
+
+1. **WI-6 was worse than the audit described.** The audit called it "4–6
+   blocking syscalls per chat turn". In fact `getSessionWorkspace()` calls
+   `calculateDirSize()`, which **recursively walks the entire session workspace**
+   with sync `readdirSync`/`statSync`. The per-message cost therefore grew with
+   the session's accumulated file count. The caller only ever used `.path`, so
+   the fix is a path-only resolver rather than an async conversion — smaller
+   than planned and strictly better.
+
+2. **WI-1's histogram had a sixth defect.** `_count` was derived from bucket
+   totals, so observations slower than the largest bucket (10 s) were dropped
+   from the count entirely — the slowest requests, precisely the ones worth
+   measuring. Fixed by tracking observations separately from buckets.
+
+3. **The escape-hatch flags do not share a convention.**
+   `OWNPILOT_ALLOW_LOCAL_EXEC` activates on `'1'`; every sibling activates on
+   `'true'`. Setting it to `true` silently does nothing. The registry encodes
+   each flag's real activating value rather than assuming uniformity, and a test
+   pins that behaviour.
+
+### Coverage baseline recorded
+
+Gateway, 2026-08-12: **statements 85.55 %, branches 77.04 %, functions 86.37 %,
+lines 86.40 %** (35 677/41 703 statements). Higher than the audit assumed — the
+gate locks in existing work rather than demanding new tests. `ui` remains
+ungated pending WI-5.
+
+---
+
+## 4. Decisions taken
+
+The four questions below were left open in the proposal and resolved during
+implementation, each using the option recommended there. Revisit any of them if
+the trade-off changes.
+
+1. **WI-7 sampling — decided: no sampling.** Every non-excluded `/api/*` request
+   still writes an audit row. Sampling reads would cut volume, but an audit log
+   with holes cannot answer "what did this actor touch?", which is the only
+   question it exists for. Exclusions stay limited to endpoints that carry no
+   security signal and fire on a timer (health probes, metrics scrapes). The
+   rationale is recorded in the `middleware/audit.ts` header so the next reader
+   does not have to rediscover it. **Revisit if** audit write volume becomes a
+   measured bottleneck — the answer then is retention policy, not sampling.
+
+2. **WI-4 threshold — decided: ratchet from measured.** 83/75/84/84 against a
+   measured 85.55/77.04/86.37/86.40. An aspirational 80 % across the board would
+   have _passed_ on statements/functions/lines and failed on branches, teaching
+   the team to lower the number. A ratchet cannot regress and cannot be argued
+   with.
+
+3. **WI-8 scope — decided: PRs only, initially.** Cheaper, and the bug classes it
+   targets (path separators, the oxide WASM fallback) are introduced by code
+   changes, which PRs already gate. Extend to `main` if a merge-order failure
+   ever gets through. _Not yet implemented._
+
+4. **WI-5 pace — decided: top 5 pages plus a standing convention.** A one-off
+   push across 69 pages would age badly; the "page touched ⇒ page tested" rule
+   accrues coverage with normal work. _Not yet implemented._
