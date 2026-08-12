@@ -27,6 +27,7 @@ import {
   getForEachBodyNodes,
 } from './dag-utils.js';
 import { runJobifiedLevel } from './jobified-level-runner.js';
+import { SYNC_ONLY_NODE_TYPES } from './node-types.js';
 import { executeForEachNode } from './foreach-executor.js';
 import type { WorkflowProgressEvent } from './types.js';
 import {
@@ -179,21 +180,11 @@ export class WorkflowService implements IWorkflowService {
 
       const toolService = this.getToolService();
 
-      // Node types that must stay synchronous (not yet jobified)
-      const SYNC_ONLY_TYPES = new Set([
-        'forEachNode',
-        'errorHandlerNode',
-        'triggerNode',
-        'stickyNoteNode',
-        'approvalNode',
-        'parallelNode',
-        'subWorkflowNode',
-        // clawNode spawns an autonomous agent via dispatchNode → executeClawNode.
-        // The jobified executeNodeInline has no clawNode case, so without this it
-        // fell through to the toolNode executor (toolName undefined) and the claw
-        // was never created in the default production path. Run it sync.
-        'clawNode',
-      ]);
+      // Node types that must stay synchronous (not yet jobified).
+      // Defined in node-types.ts so its parity with executeNodeInline's switch
+      // is enforced by node-types.test.ts — a type in neither falls through to
+      // the jobified handler's default branch.
+      const SYNC_ONLY_TYPES = SYNC_ONLY_NODE_TYPES;
 
       // Execute level by level
       for (const level of levels) {

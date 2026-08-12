@@ -223,7 +223,14 @@ async function executeWorkflowNodeJob(job: JobRecord): Promise<Record<string, un
  * Inline node executor (mirrors dispatchNode routing for a single node).
  * Uses the actual executor functions from node-executors.ts.
  */
-async function executeNodeInline(
+/**
+ * Dispatch a single node on the jobified path.
+ *
+ * Exported for tests: `node-types.test.ts` asserts that every registered node
+ * type is either handled here or listed in SYNC_ONLY_NODE_TYPES, which is the
+ * invariant that keeps a new node type from silently running as a tool node.
+ */
+export async function executeNodeInline(
   node: WorkflowNode,
   nodeOutputs: Record<string, NodeResult>,
   workflowSnapshot: {
@@ -242,6 +249,9 @@ async function executeNodeInline(
 
     case 'conditionNode':
       return nodeExecutors.executeConditionNode(node, nodeOutputs, workflowSnapshot.variables);
+
+    case 'transformerNode':
+      return nodeExecutors.executeTransformerNode(node, nodeOutputs, workflowSnapshot.variables);
 
     case 'codeNode':
       return nodeExecutors.executeCodeNode(
@@ -311,43 +321,52 @@ async function executeNodeInline(
         workflowSnapshot.variables
       );
 
-    case 'errorHandlerNode':
-    case 'stickyNoteNode':
-    case 'approvalNode':
-    case 'parallelNode':
-    case 'subWorkflowNode':
-    case 'forEachNode':
-    case 'triggerNode':
-      log.warn(`Node type ${node.type} not yet jobified, running sync`);
-      return nodeExecutors.executeNode(
-        node,
-        nodeOutputs,
-        workflowSnapshot.variables,
-        userId,
-        toolService
+    // errorHandlerNode / stickyNoteNode / approvalNode / parallelNode /
+    // subWorkflowNode / forEachNode / triggerNode deliberately have no case.
+    //
+    // They previously shared one that logged "not yet jobified, running sync"
+    // and called executeNode — but executeNode is the toolNode executor, which
+    // reads node.data.toolName. It does not dispatch by type, so that branch
+    // ran them as tool nodes rather than synchronously. It was harmless only
+    // because SYNC_ONLY_NODE_TYPES keeps them off this path entirely, which is
+    // exactly the single-upstream-check dependency this file warns against.
+    //
+    // They now fall to `default:` and fail closed. The synchronous dispatcher
+    // is reached through SYNC_ONLY_NODE_TYPES in workflow-service.ts, not here.
+    default: {
+      // Fail closed. This branch used to fall through to executeNode — the
+      // toolNode executor — for any type it did not recognise, guarded only
+      // against types missing from WORKFLOW_NODE_TYPES.
+      //
+      // That guard protected against *unknown* types but not against *known
+      // but unhandled* ones, which is the more likely case: every node type
+      // added to the registry starts life unhandled here, since this jobified
+      // switch is a second copy of dispatchNode that is easy to forget.
+      // clawNode hit exactly this and was patched at the caller by adding it
+      // to SYNC_ONLY_TYPES in workflow-service.ts — which fixed the instance
+      // and left the class open. transformerNode then hit it too: a valid
+      // registered type with a real executor, not in SYNC_ONLY_TYPES, silently
+      // running as a tool node with an undefined toolName.
+      //
+      // Now every type that reaches here errors, whether registered or not.
+      // A node type added without a case fails loudly on first run instead of
+      // quietly executing the wrong thing on a code-execution surface.
+      const isKnown = Boolean(node.type && WORKFLOW_NODE_TYPES.has(node.type));
+      log.error(
+        `Node type "${node.type}" has no jobified executor` +
+          (isKnown
+            ? ' — it is a registered type, so add a case here or to SYNC_ONLY_TYPES in workflow-service.ts'
+            : ' — unrecognized type')
       );
-
-    default:
-      // Unknown-type guard — mirror dispatchNode (workflow-dispatch.ts). This
-      // jobified path is a separate copy of dispatch; without this guard an
-      // unrecognized node type fell through to the toolNode executor below,
-      // running node.data.toolName. Save-time validation rejects unknown types,
-      // but a code-execution surface must not depend on a single upstream check.
-      if (node.type && !WORKFLOW_NODE_TYPES.has(node.type)) {
-        return {
-          nodeId: node.id,
-          status: 'error',
-          error: `Unknown node type "${node.type}"`,
-          completedAt: new Date().toISOString(),
-        };
-      }
-      return nodeExecutors.executeNode(
-        node,
-        nodeOutputs,
-        workflowSnapshot.variables,
-        userId,
-        toolService
-      );
+      return {
+        nodeId: node.id,
+        status: 'error',
+        error: isKnown
+          ? `Node type "${node.type}" is not supported on the jobified execution path`
+          : `Unknown node type "${node.type}"`,
+        completedAt: new Date().toISOString(),
+      };
+    }
   }
 }
 
