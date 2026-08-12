@@ -1,22 +1,42 @@
 # OwnPilot — Next Refactor Plan (Round 9+)
 
 **Generated**: 2026-06-13
-**Metrics refreshed**: 2026-06-22 via `node scripts/report-code-health.mjs`.
+**Metrics refreshed**: 2026-08-12 via `node scripts/report-code-health.mjs`.
 **Previous**: Round 8 (28 commits) — barrel-to-subpath migration. tsc/test/build all green.
 **Round 9 progress**: merged to `main`; see "Round 9 Status" below.
+**Round 10**: `docs/CODEBASE_AUDIT_2026-08-12.md` + `docs/IMPROVEMENT_PLAN_2026-08-12.md`
+(defect repair and control tightening — metrics endpoint, test flake, coverage gate,
+UI page tests, Windows CI). Round 10 did **not** touch file decomposition.
 **Goal**: This document is the canonical roadmap for the **next** round of structural improvement.
 
 ---
 
 ## 0. Where we are
 
-| Package             | Prod LOC | Prod files | Test files | Largest production file             | Prod files > 500 LOC | Prod files > 1000 LOC | Barrel exports | Sub-paths |
-| ------------------- | -------: | ---------: | ---------: | ----------------------------------- | -------------------: | --------------------: | -------------- | --------- |
-| `@ownpilot/core`    |   79,670 |        268 |        147 | 1277 (`agent/tools/file-system.ts`) |    included in total |     included in total | 21 (main)      | 23        |
-| `@ownpilot/gateway` |  171,333 |        577 |        440 | 1553 (`channels/service-impl.ts`)   |    included in total |     included in total | 20 (main)      | 6         |
-| `@ownpilot/cli`     |    4,993 |         18 |         13 | 511 (`commands/agentic.ts`)         |    included in total |     included in total | 0              | 0         |
-| `@ownpilot/ui`      |  145,858 |        464 |         33 | 1701 (`pages/ChatPage.tsx`)         |    included in total |     included in total | n/a            | n/a       |
-| **Total**           |  401,854 |      1,327 |        633 | 1701 (`ui/src/pages/ChatPage.tsx`)  |              **249** |                **37** | n/a            | n/a       |
+Refreshed 2026-08-12.
+
+| Package             | Prod LOC | Prod files | Test files | Largest production file                     | Files > 1000 LOC |
+| ------------------- | -------: | ---------: | ---------: | ------------------------------------------- | ---------------: |
+| `@ownpilot/core`    |   80,522 |        272 |        157 | 1118 (`agent/tools/expense-tracker.ts`)     |                4 |
+| `@ownpilot/gateway` |  173,318 |        588 |        472 | 1473 (`channels/plugins/whatsapp/…-api.ts`) |               14 |
+| `@ownpilot/cli`     |    5,078 |         19 |         14 | 511 (`commands/agentic.ts`)                 |                0 |
+| `@ownpilot/ui`      |  146,801 |        482 |         99 | 1286 (`pages/CodingAgentsPage.tsx`)         |           **15** |
+| **Total**           |  405,719 |      1,361 |        742 | —                                           |           **33** |
+
+Production files over thresholds: **> 500 LOC: 256 · > 800 LOC: 89 · > 1000 LOC: 33**.
+
+**Two things changed since the 06-22 snapshot that alter the plan below:**
+
+1. **Phase 1 is complete and overachieved.** Every correctness/type-safety target was
+   met — production `as unknown as` is **7** (target was ≤ 40), `as any` **0**,
+   `Math.random()` **0**, `eslint-disable` **2**, `@ts-expect-error` **0**. §1.10 and
+   §1.14 are closed; do not spend more effort there.
+2. **The UI is now the largest decomposition target, not the gateway.** UI has **15**
+   files over 1000 LOC against gateway's 14, yet Phase 2A below lists six gateway
+   targets and zero UI ones. That aim is stale — see the revised 2A ordering.
+
+File-size totals have barely moved (249 → 256 over 500 LOC), because no round since has
+attempted decomposition. That is the honest status: **Phase 2 has not started.**
 
 ## Round 9 Status (merged to `main`)
 
@@ -55,7 +75,11 @@
 
 **Test status**: core 9441/9441 ✅, gateway 17297/17297 ✅, ui 414/414 ✅, **`pnpm -r typecheck` clean** (caught and fixed two tsc regressions — `DataStoreType: 'tasks'` missing and `error`/`reason` fields on `ToolExecutionResult`). Zero regressions across all 25 commits. Note: gateway has a pre-existing flaky test in `src/tools/skill/tools.test.ts` (~1/3 runs fail on different test cases). It is not caused by round-9 changes — running the same suite 3 times in a row gives varying pass/fail counts.
 
-**Remaining from §1**: §1.10 (142 → ≤40, mostly docs now, needs architectural work — typed DB rows or post-validation typed handler args). §1.15 plumbing is done; follow-up is per-tool adoption (each long-running tool executor checking `ctx.signal` and forwarding to its own async APIs).
+**Remaining from §1** (updated 2026-08-12): **§1.10 is CLOSED** — production
+`as unknown as` is now **7**, well past the ≤40 target, and `as any` is 0. No further
+work needed there; treat the numbers in the table below as achieved, not aspirational.
+§1.15 plumbing is done; the only genuine follow-up is per-tool adoption (each
+long-running tool executor checking `ctx.signal` and forwarding to its own async APIs).
 
 **Risk signal counts** from `node scripts/report-code-health.mjs` (production/test separated; excludes `dist`, `coverage`, `node_modules`):
 
@@ -212,7 +236,31 @@ Each phase is independent, gated by tsc + `pnpm -r test`. Use the `git-flow` ski
 
 > Significant test coverage needed. May need rollback plan. Run collab_debug on each file split.
 
-#### 2A. Break up the 4 largest gateway files
+#### 2A. Break up the largest files
+
+> **Retargeted 2026-08-12.** This section previously listed six gateway files and no UI
+> ones, on 06-22 metrics. The UI now has more >1000 LOC files than the gateway (15 vs 14) and is where user-visible regressions land, so UI pages are first-class targets.
+>
+> **Sequencing note:** the five largest UI pages gained smoke tests in Round 10
+> (`ChatPage`, `ClawsPage`, `AnalyticsPage`, `CodingAgentsPage`, `LogsPage`). Split
+> those first — they are the only large files with a regression net under them. Any
+> other page should get its smoke test before being split, not after.
+
+**UI targets** (all pages; each splits into a container + `components/` + a hook holding
+the data logic, mirroring the existing `pages/claws/` and `pages/workflows/` layout):
+
+| #    | Source                               |  LOC | Has smoke test | Note                                         |
+| ---- | ------------------------------------ | ---: | -------------- | -------------------------------------------- |
+| 2.1a | `pages/CodingAgentsPage.tsx`         | 1286 | yes            | Largest file in the repo's UI                |
+| 2.1b | `pages/ClawsPage.tsx`                | 1204 | yes            | `pages/claws/` already exists — extend it    |
+| 2.1c | `pages/LogsPage.tsx`                 | 1172 | yes            | Tab-per-concern; splits cleanly              |
+| 2.1d | `pages/AnalyticsPage.tsx`            | 1059 | yes            | Chart blocks extract as pure components      |
+| 2.1e | `pages/ChatPage.tsx`                 | 1050 | yes            | Highest traffic — split last, most carefully |
+| 2.1f | `components/workflows/…templates.ts` | 1269 | n/a            | Pure data; split by category, no logic risk  |
+| 2.1g | `components/ToolPicker.tsx`          | 1248 | no             | Needs a test first                           |
+| 2.1h | `pages/MissionControlPage.tsx`       | 1109 | no             | Needs a test first                           |
+
+**Gateway targets** (unchanged from the original plan; still valid):
 
 Each split should leave the public barrel re-export everything so call sites don't change. Test files for the new modules come first (TDD).
 
@@ -228,8 +276,12 @@ Each split should leave the public barrel re-export everything so call sites don
 **Phase 2A exit criteria**:
 
 - [ ] No file > 800 LOC in `gateway/src/services/` and `gateway/src/db/repositories/`
+- [ ] No file > 800 LOC in `ui/src/pages/`
+- [ ] Repo-wide `> 1000 LOC` count down from **33**; `> 500 LOC` down from **256**
+      (verify with `node scripts/report-code-health.mjs`)
+- [ ] Every page split has a colocated smoke test that passed **before** the split
 - [ ] Existing `*.test.ts` files for the source still pass (re-import from new location)
-- [ ] `pnpm -r test` green
+- [ ] `pnpm -r test` green, `pnpm -r typecheck` green
 
 #### 2B. Split the over-stuffed core sub-path barrels
 
