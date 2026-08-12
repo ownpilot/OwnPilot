@@ -10,7 +10,6 @@ export { AudioWidget } from './AudioWidget';
 export { EmbedWidget } from './EmbedWidget';
 export { ChartWidget } from './ChartWidget';
 export { HtmlWidget } from './HtmlWidget';
-export { JsonWidget } from './JsonWidget';
 export { WidgetShell } from './WidgetShell';
 export { WidgetErrorBoundary, useWidgetErrorBoundary } from './WidgetErrorBoundary';
 

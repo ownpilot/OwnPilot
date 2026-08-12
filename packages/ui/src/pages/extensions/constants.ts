@@ -15,15 +15,3 @@ export const CATEGORY_COLORS: Record<string, string> = {
   lifestyle: 'bg-rose-500/20 text-rose-600 dark:text-rose-400',
   other: 'bg-gray-500/20 text-gray-600 dark:text-gray-400',
 };
-
-export const EXTENSION_CATEGORIES = [
-  'developer',
-  'productivity',
-  'communication',
-  'data',
-  'utilities',
-  'integrations',
-  'media',
-  'lifestyle',
-  'other',
-] as const;

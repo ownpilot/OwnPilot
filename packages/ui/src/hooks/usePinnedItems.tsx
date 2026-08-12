@@ -16,7 +16,6 @@ import { SIDEBAR_DATA_SECTIONS, isNavItemSection } from '../constants/sidebar-se
 
 // Re-export types for import path compatibility
 export type { SidebarPinnedConfig } from '../types/layout-config';
-export { MAX_PINNED_ITEMS } from '../types/layout-config';
 
 /** Map nav item path → data section ID if the route matches (e.g. '/workflows' → 'workflows') */
 const ROUTE_TO_DATA_SECTION = new Map<string, string>(

@@ -10,14 +10,14 @@
  *
  * Usage:
  *
- *   import { render, cleanup, flushAsyncUpdates, findByText } from '../test-harness';
+ *   import { render, cleanup, flushAsyncUpdates, hasText } from '../test-harness';
  *
  *   afterEach(cleanup);
  *
  *   it('mounts', async () => {
  *     const container = render(<MyPage />);
  *     await flushAsyncUpdates();
- *     expect(findByText(container, 'Expected')).toBeTruthy();
+ *     expect(hasText(container, 'Expected')).toBe(true);
  *   });
  *
  * Requires `// @vitest-environment happy-dom` at the top of the test file.
@@ -69,8 +69,8 @@ export async function flushAsyncUpdates(): Promise<void> {
   });
 }
 
-/** First element whose text content includes `text`, or null. */
-export function findByText(scope: HTMLElement, text: string): HTMLElement | null {
+/** First element whose text content includes `text`, or null. Internal to hasText. */
+function findByText(scope: HTMLElement, text: string): HTMLElement | null {
   const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, null);
   let node: Text | null;
   while ((node = walker.nextNode() as Text | null)) {

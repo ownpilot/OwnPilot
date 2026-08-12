@@ -251,9 +251,15 @@ Most of these were introduced by the June security sweep as deliberate opt-ins �
 
 ### K-1 · **LOW** — Dead export surface
 
-`knip` reports **29 unused exports** and **420 unused exported types**. The overwhelming majority is one file: `packages/ui/src/api/endpoints/index.ts` re-exports roughly 200 types that nothing imports. A handful are genuine leftovers worth deleting (`useWizardDraft`/`clearWizardDraft` exported twice and used nowhere; `MAX_PINNED_ITEMS` duplicated across two modules; `FileBrowser`/`FileEditorModal` in `ClawDetailTabs.tsx`).
+`knip` reports **29 unused exports** and **420 unused exported types**. The overwhelming majority is one file: `packages/ui/src/api/endpoints/index.ts` re-exports roughly 200 types that nothing imports.
 
-Low value on its own — but until the barrel is trimmed, `knip` output is too noisy to catch the _next_ real leftover. Trim once, then keep it clean.
+**Resolved 2026-08-12 — and the finding was largely wrong.** Checking each symbol individually showed that "unused export" here almost always means _"re-exported by a barrel nobody imports from"_, not dead code. `authApi`, `agenticApi`, `canvasApi` and the rest have 9–12 real call sites each; `WidgetShell` has 84. They are imported directly from their modules rather than through the barrel. Deleting them would have removed live symbols from barrels for a cleaner `knip` score — churn that makes the barrels inconsistent and fixes nothing.
+
+Only four symbols were genuinely unreachable, and those are now gone: `useWizardDraft` + `clearWizardDraft` (superseded by `useWizardDraftSync`, which is independent of both), `EXTENSION_CATEGORIES`, and `widgets/JsonWidget.tsx` — a whole component reachable only via its own barrel line, since `ChatMessageWidget` defines and uses a local `JsonWidget` of the same name. Unused exports: 30 → 22.
+
+`isPrivateUrlAsyncFresh` is left in place deliberately: its docstring records that it is retained after being superseded by `resolvePublicAddressesFresh` + DNS pinning. Removing something a previous author explicitly kept is the maintainer's call, not a cleanup sweep's.
+
+**The remaining 22 are all live-code barrel re-exports.** Do not treat that number as debt; it measures barrel breadth, not dead code. This is the third metric in this audit that overstated a problem — see also `Q-1` (`console.*`, 93 % CLI) and the "untested services" list. A pattern worth naming: **every count in this codebase's tooling needs its denominator checked before it becomes a work item.**
 
 ---
 

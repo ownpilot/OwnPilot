@@ -7,5 +7,4 @@ export { WizardLoadingView, WizardSuccessView, WizardErrorView } from './WizardS
 export { useWizardKeyboard } from './useWizardKeyboard';
 export { WizardAIButton } from './WizardAIButton';
 export { WizardCompleteView } from './WizardCompleteView';
-export { useWizardDraft, useWizardDraftSync, clearWizardDraft } from './useWizardDraft';
-export type { WizardDraft } from './useWizardDraft';
+export { useWizardDraftSync } from './useWizardDraft';

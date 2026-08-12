@@ -30,7 +30,7 @@
       {
         "hooks": [
           {
-            "command": "if (Test-Path .dfmt/last-recall.md) { Write-Host '--- Previous session summary ---'; Get-Content .dfmt/last-recall.md; Write-Host '--- End of previous session ---' }",
+            "command": "if [ -f .dfmt/last-recall.md ]; then echo '--- Previous session summary ---' \u0026\u0026 cat .dfmt/last-recall.md \u0026\u0026 echo '--- End of previous session ---'; fi",
             "statusMessage": "Loading previous session summary...",
             "timeout": 10,
             "type": "command"
