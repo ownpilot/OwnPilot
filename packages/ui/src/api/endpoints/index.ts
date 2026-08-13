@@ -3,16 +3,11 @@
  */
 
 export { authApi } from './auth';
-export type { AuthStatus, LoginResponse, PasswordResponse, SessionsResponse } from './auth';
+
 export { providersApi } from './providers';
-export type { ProvidersListData, ProviderConfigData } from './providers';
+
 export { providerAuthApi } from './providerAuth';
-export type {
-  DeviceFlowStart,
-  DeviceFlowPollResult,
-  ProviderAuthInfo,
-  ProviderOAuthOverride,
-} from './providerAuth';
+
 export { modelsApi } from './models';
 export { settingsApi, modelRoutingApi } from './settings';
 export type {
@@ -22,8 +17,6 @@ export type {
   RoutingProcess,
   ChannelRoutingKind,
   ChannelRoutingEntry,
-  ModelRoutingData,
-  ProcessRoutingData,
 } from './settings';
 export { tasksApi } from './tasks';
 export { summaryApi, costsApi } from './summary';
@@ -31,7 +24,7 @@ export { agentsApi } from './agents';
 export { customToolsApi } from './custom-tools';
 export { toolsApi } from './tools';
 export { chatApi } from './chat';
-export type { ChatRequestBody } from './chat';
+
 export { executionPermissionsApi } from './execution-permissions';
 export type {
   ExecutionPermissions,
@@ -61,151 +54,34 @@ export {
 export type { AgentOverview } from './misc';
 export { extensionsApi } from './extensions';
 export { evalApi } from './eval';
-export type { EvalRunResult, EvalGradeResult, OptimizeIteration, OptimizeResult } from './eval';
+
 export { mcpApi } from './mcp';
 export { composioApi } from './composio';
-export type {
-  ComposioApp,
-  ComposioConnection,
-  ComposioConnectionRequest,
-  ComposioStatus,
-  ComposioActionInfo,
-} from './composio';
+
 export { codingAgentsApi, orchestrationApi } from './coding-agents';
-export type {
-  CodingAgentStatus,
-  CodingAgentTestResult,
-  CodingAgentSession,
-  CodingAgentSessionState,
-  CreateCodingSessionInput,
-  CodingAgentResultRecord,
-} from './coding-agents';
+
 export { cliToolsApi } from './cli-tools';
 export { securityApi } from './security';
-export type {
-  PlatformScanResult,
-  SeverityLevel,
-  RiskItem,
-  SectionScanResult,
-  ExtensionScanItem,
-  CustomToolScanItem,
-  TriggerScanItem,
-  WorkflowScanItem,
-  CliToolScanItem,
-} from './security';
-export type {
-  CliToolStatus,
-  CliToolPolicy,
-  CliToolRiskLevel,
-  CliToolCategory,
-  CliToolPolicyEntry,
-  CliToolExecutionResult,
-  RegisterCustomCliToolInput,
-} from './cli-tools';
+
 export { workflowsApi } from './workflows';
 export { artifactsApi } from './artifacts';
 export { canvasApi } from './canvas';
-export type { CanvasElement, CanvasElementType } from './canvas';
+
 export { voiceApi } from './voice';
-export type {
-  VoiceConfig,
-  TranscribeResult,
-  VoiceListResult,
-  VoiceDiagnosticCheck,
-  VoiceDiagnostics,
-} from './voice';
+export type { VoiceDiagnostics } from './voice';
 export { skillsApi } from './skills';
 export { tunnelApi } from './tunnel';
-export type { TunnelStatus, TunnelConfig } from './tunnel';
-export type {
-  NpmSearchPackage,
-  NpmSearchResult,
-  NpmPackageInfo,
-  NpmInstallResult,
-  SkillPermissionInfo,
-  SkillPermissionData,
-  SkillUpdateInfo,
-} from './skills';
+export type { TunnelStatus } from './tunnel';
+
 export { soulsApi, crewsApi, agentMessagesApi, heartbeatLogsApi } from './souls';
-export type {
-  AgentSoul,
-  SoulVersion,
-  AgentCrew,
-  CrewMember,
-  AgentMessage as SoulAgentMessage,
-  HeartbeatLog,
-  HeartbeatStats,
-  CrewTemplate,
-  CrewStatusMetrics,
-  CrewStatus,
-  CrewMemoryEntry,
-  CrewTask,
-} from './souls';
+export type { AgentSoul, AgentCrew, HeartbeatLog, CrewStatusMetrics } from './souls';
 export { clawsApi } from './claws';
 export { agenticApi } from './agentic';
-export type {
-  AgenticExecution,
-  AgenticStats,
-  ExecuteTaskInput,
-  AgenticPlan,
-  CapabilityInfo,
-} from './agentic';
-export type {
-  ClawConfig,
-  ClawSession,
-  ClawHistoryEntry,
-  ClawMode,
-  ClawState,
-  ClawSandboxMode,
-  ClawLimits,
-  ClawMissionContract,
-  ClawAutonomyPolicy,
-  ClawHealthStatus,
-  ClawPreset,
-  ClawRecommendation,
-  ClawEscalation,
-  ClawToolCall,
-  ClawTask,
-  ClawTaskStatus,
-  ClawCycleFailure,
-  ClawPlanHistoryEntry,
-  CreateClawInput,
-  UpdateClawInput,
-} from './claws';
+
+export type { ClawConfig, ClawState, ClawTask, ClawPlanHistoryEntry } from './claws';
 export { edgeApi } from './edge';
-export type {
-  EdgeDevice,
-  EdgeCommand,
-  EdgeTelemetry,
-  EdgeSensor,
-  EdgeActuator,
-  EdgeDeviceType,
-  EdgeProtocol,
-  EdgeDeviceStatus,
-  EdgeCommandStatus,
-  RegisterDeviceInput as EdgeRegisterInput,
-  UpdateDeviceInput as EdgeUpdateInput,
-  EdgeDeviceListQuery,
-  MqttStatus,
-} from './edge';
-export type {
-  Artifact,
-  ArtifactVersion,
-  ArtifactType as ArtifactContentType,
-  DashboardSize,
-  DataBinding,
-  DataBindingSource,
-  CreateArtifactInput,
-  UpdateArtifactInput,
-  ArtifactListQuery,
-} from './artifacts';
-export type {
-  McpServer,
-  McpServerTool,
-  McpServerInfo,
-  CreateMcpServerInput,
-  UpdateMcpServerInput,
-} from './mcp';
+
+export type { CreateMcpServerInput } from './mcp';
 export {
   notesApi,
   bookmarksApi,
@@ -225,7 +101,6 @@ export type {
   PulseActivity,
   PulseEngineConfig,
   PulseLogEntry,
-  PulseActionResult,
   PulseStats,
   PulseDirectives,
   PulseRuleDefinition,
@@ -240,45 +115,29 @@ export type {
   BackupInfo,
   DatabaseStats,
   DebugLogEntry,
-  ToolCallData,
-  ToolResultData,
-  DebugErrorData,
-  RetryData,
   DebugInfo,
   RequestLog,
   LogDetail,
   LogStats,
-  ConfigFieldDefinition,
   PluginInfo,
   PluginStats,
-  RequiredByEntry,
   ConfigEntryView,
   ConfigServiceView,
   ConfigServiceStats,
   ExtensionInfo,
-  ExtensionToolInfo,
-  ExtensionTriggerInfo,
-  ExtensionRequiredService,
   WorkspaceSelectorInfo,
   FileWorkspaceInfo,
   WorkspaceFile,
   ColumnDefinition,
   CustomTable,
   CustomRecord,
-  Channel,
-  ChannelMessage,
   Conversation,
   HistoryMessage,
   UnifiedMessage,
   ChannelInfo,
   ExpenseEntry,
-  ExpenseMonthData,
-  ExpenseCategoryInfo,
   ExpenseMonthlyResponse,
   ExpenseSummaryResponse,
-  CostSummary,
-  BudgetPeriod,
-  BudgetStatus,
   ProviderBreakdown,
   DailyUsage,
   AIBriefing,
@@ -307,24 +166,10 @@ export type {
   TriggerHistoryStatus,
   TriggerHistoryEntry,
   TriggerHistoryParams,
-  PaginatedHistory,
   Workflow,
   WorkflowLog,
   WorkflowNode,
   WorkflowEdge,
-  WorkflowNodeData,
-  WorkflowToolNodeData,
-  WorkflowTriggerNodeData,
-  WorkflowLlmNodeData,
-  WorkflowConditionNodeData,
-  WorkflowCodeNodeData,
-  WorkflowTransformerNodeData,
   NodeResult,
-  WorkflowStatus,
-  WorkflowLogStatus,
-  NodeExecutionStatus,
   WorkflowProgressEvent,
-  WorkflowApproval,
-  WorkflowApprovalStatus,
-  WorkflowVersion,
 } from '../types';
