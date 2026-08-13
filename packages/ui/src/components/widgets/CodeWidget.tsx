@@ -1,14 +1,8 @@
 import { useWidgetErrorBoundary } from './WidgetErrorBoundary';
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
-
-export function CodeWidget({ data, title: titleProp }: Props) {
+export function CodeWidget({ data, title: titleProp }: WidgetProps) {
   useWidgetErrorBoundary();
   const record = typeof data === 'object' && data !== null ? data : {};
 

@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 import { safeImageSrc } from './media-url';
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 interface ImageItem {
   src: string;
@@ -25,7 +19,7 @@ function isImageItem(item: unknown): item is ImageItem {
   return typeof record.src === 'string';
 }
 
-export function ImageWidget({ data, title: titleProp }: Props) {
+export function ImageWidget({ data, title: titleProp }: WidgetProps) {
   const [loaded, setLoaded] = useState<Record<number, boolean>>({});
   const [errors, setErrors] = useState<Record<number, boolean>>({});
 

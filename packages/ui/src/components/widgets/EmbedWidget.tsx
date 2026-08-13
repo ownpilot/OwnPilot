@@ -1,12 +1,6 @@
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 import { safeEmbedSrc } from './media-url';
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 interface EmbedItem {
   src: string;
@@ -35,7 +29,7 @@ function EmbedIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function EmbedWidget({ data, title: titleProp }: Props) {
+export function EmbedWidget({ data, title: titleProp }: WidgetProps) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp;
 

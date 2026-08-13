@@ -1,13 +1,7 @@
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 import { formatBytes } from '../../utils/formatters';
 import { safeDownloadHref } from '../../utils/safe-url';
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 interface FileItem {
   name: string;
@@ -36,7 +30,7 @@ function FileIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function FileWidget({ data, title: titleProp }: Props) {
+export function FileWidget({ data, title: titleProp }: WidgetProps) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp;
 

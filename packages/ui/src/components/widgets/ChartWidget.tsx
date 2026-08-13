@@ -1,11 +1,5 @@
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 export interface ChartData {
   type: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'donut';
@@ -210,7 +204,7 @@ function ChartIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function ChartWidget({ data, title: titleProp }: Props) {
+export function ChartWidget({ data, title: titleProp }: WidgetProps) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp || 'Chart';
 

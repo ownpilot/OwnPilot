@@ -1,17 +1,11 @@
 import { createElement, Fragment, useMemo, type ReactNode } from 'react';
 import DOMPurify__default from 'dompurify';
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 
 // Handle both CJS (node test env) and ESM imports
 type DOMPurifyModule = typeof DOMPurify__default & { default?: typeof DOMPurify__default };
 const DOMPurify = (DOMPurify__default as DOMPurifyModule).default ?? DOMPurify__default;
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 export interface HtmlData {
   html: string;
@@ -190,7 +184,7 @@ function HtmlIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function HtmlWidget({ data, title: titleProp }: Props) {
+export function HtmlWidget({ data, title: titleProp }: WidgetProps) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp;
 

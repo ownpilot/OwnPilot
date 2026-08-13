@@ -12,36 +12,3 @@ export { ChartWidget } from './ChartWidget';
 export { HtmlWidget } from './HtmlWidget';
 export { WidgetShell } from './WidgetShell';
 export { WidgetErrorBoundary, useWidgetErrorBoundary } from './WidgetErrorBoundary';
-
-// Types
-export type {
-  WidgetType,
-  WidgetTone,
-  BaseWidgetProps,
-  WidgetRegistryEntry,
-  ParsedWidget,
-  WidgetProps,
-} from './widget-types';
-export type {
-  MetricData,
-  MetricsData,
-  TableData,
-  BarChartData,
-  TimelineData,
-  ListData,
-  KeyValueData,
-  CardData,
-  StepsData,
-  CalloutData,
-  ProgressData,
-  CodeData,
-  ImageData,
-  ImagesData,
-  FileData,
-  FilesData,
-  ChartData,
-  VideoData,
-  AudioData,
-  EmbedData,
-  HtmlData,
-} from './widget-types';

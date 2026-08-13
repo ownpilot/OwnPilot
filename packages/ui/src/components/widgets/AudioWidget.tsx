@@ -1,12 +1,6 @@
-import type { WidgetTone } from './widget-types';
+import type { WidgetProps } from './widget-types';
 import { WidgetShell } from './WidgetShell';
 import { safeAudioSrc } from './media-url';
-
-interface Props {
-  data: unknown;
-  tone?: WidgetTone;
-  title?: string;
-}
 
 interface AudioItem {
   src: string;
@@ -34,7 +28,7 @@ function AudioIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-export function AudioWidget({ data, title: titleProp }: Props) {
+export function AudioWidget({ data, title: titleProp }: WidgetProps) {
   const record = typeof data === 'object' && data !== null ? data : {};
   const title = (record as { title?: string }).title || titleProp;
 
