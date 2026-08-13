@@ -1,20 +1,23 @@
 /**
- * Parity between the three places a widget name is listed.
+ * Parity between the four places a widget name is listed.
  *
- * A chat widget's name travels across a package boundary, and three separate
+ * A chat widget's name travels across a package boundary, and four separate
  * lists have to agree on it:
  *
- *   1. `gateway/src/utils/chat-widgets.ts` — `WIDGET_TAG_NAMES`, the tags the
+ *   1. `gateway/src/services/agent/prompt.ts` — the curated subset the system
+ *      prompt advertises to the model.
+ *   2. `gateway/src/utils/chat-widgets.ts` — `WIDGET_TAG_NAMES`, the tags the
  *      gateway recognises in model output and normalises into widget JSON.
- *   2. `ui/src/components/ChatMessageWidget.tsx` — the render switch.
- *   3. `ui/src/components/widgets/widget-types.ts` — the `WidgetType` union.
+ *   3. `ui/src/components/ChatMessageWidget.tsx` — the render switch.
+ *   4. `ui/src/components/widgets/widget-types.ts` — the `WidgetType` union.
  *
  * Nothing connected them. The gateway can start emitting a tag the UI has no
  * case for, and the user sees a raw JSON dump instead of a widget — silently,
- * with every gate green. `WidgetType` was written to be the single source of
- * truth but nothing imported it, so it had drifted into decoration.
+ * with every gate green. The prompt can advertise a name nothing downstream
+ * parses. `WidgetType` was written to be the single source of truth but nothing
+ * imported it, so it had drifted into decoration.
  *
- * These tests read the three lists out of source and assert they line up. That
+ * These tests read all four lists out of source and assert they line up. That
  * is a deliberate choice over deleting the unused union: the union is not dead
  * weight, it is an unenforced contract, and the cheap fix is to enforce it.
  *
