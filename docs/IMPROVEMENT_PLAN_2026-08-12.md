@@ -3,8 +3,9 @@
 **Date**: 2026-08-12
 **Source**: `docs/CODEBASE_AUDIT_2026-08-12.md`
 **Baseline**: `main` @ `6c93682f`, v0.8.3
-**Status**: WI-1 through WI-8, WI-9b, WI-9f (measured, see §6) and WI-9g (see §5.4)
-implemented on `fix/audit-2026-08-12-tier1`. Remaining: WI-9a, 9c–9e.
+**Status**: WI-1 through WI-8, WI-9b, WI-9c, WI-9d (see §5.5), WI-9f (measured, see §6)
+and WI-9g (see §5.4) implemented on `fix/audit-2026-08-12-tier1`.
+Remaining: WI-9a, WI-9e.
 
 This document turns the audit findings into executable work items. Each item states the
 problem, the decision taken and _why_, the exact changes, the test plan, and acceptance
@@ -647,6 +648,50 @@ rather than asserted.
 **Not done**: `ChatPage.tsx` (1050) — highest-traffic page, deliberately last. Eight
 UI pages remain in the 1041-1103 band; none has a smoke test, so each needs one
 before it is touched.
+
+### 5.5 WI-9d — unused type exports (closed)
+
+knip reported **296** unused type exports for the UI. After this item: **102**.
+
+| Cluster                         | Findings | Action                                   |
+| ------------------------------- | -------: | ---------------------------------------- |
+| `api/endpoints/index.ts` barrel |      144 | removed the re-export lines              |
+| `widgets/index.ts` barrel       |       27 | removed the re-export lines              |
+| `widgets/widget-types.ts`       |       26 | mostly wired up, not deleted — see below |
+
+**The barrels.** Both re-exported types nothing imported _through them_. Only the
+barrel lines were removed; every definition and its own module's export stayed, so
+direct importers are untouched and `tsc` is the proof. For the api barrel, two
+independent methods (a scan of every `from '../api'` import, and knip) agreed on the
+same 144 names, which is what made this a deletion rather than a suppression.
+
+**The widget types are the interesting half — three of four groups were not dead.**
+
+- `WidgetProps` was hand-copied into all eight widget components as a byte-identical
+  local `interface Props`. Now imported; eight duplicates gone.
+- `WidgetType` was a **third copy** of a list the gateway's `WIDGET_TAG_NAMES` and the
+  UI's render switch each maintain separately, with a **fourth** curated subset in the
+  system prompt. Nothing connected them: the gateway could accept a tag the UI has no
+  case for and the user would get a raw JSON dump with every gate green.
+  `widget-parity.test.ts` now reads all four out of source and asserts they line up,
+  and types the fallback exemptions as `WidgetType` so the union cannot be edited
+  without the test noticing. **Verified it fails on drift** — adding a tag to the
+  gateway list turns two tests red naming it.
+- Only the per-widget `*Data` interfaces were genuinely dead, and for a reason worth
+  keeping: widget payloads are JSON the model wrote, so every widget takes
+  `data: unknown` and narrows at the point of use. Declaring `data: CodeData` would
+  assert a shape nothing guarantees and disable the compiler exactly where the runtime
+  guards live. Removed with a note in their place.
+
+The lists agree today, with three recorded exemptions: `json` and `raw` are the
+fallback's own names, and `map` is a widget kind the gateway accepts but the UI has
+never implemented — it renders as JSON. That is now a documented decision rather than
+an accident nobody had noticed.
+
+**Method note.** This is the fourth time in this round that a tool's count overstated
+the problem (after `console.*`, "untested services", and knip's unused _values_). The
+pattern holds: read what the number is actually counting before acting on it. Here,
+acting on the raw count would have deleted a cross-package contract.
 
 ---
 
